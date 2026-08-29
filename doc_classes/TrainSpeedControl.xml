@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainSpeedControl" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures the vehicle's cruise control (tempomat).
+	</brief_description>
+	<description>
+		[TrainSpeedControl] wraps the FIZ [code]SpeedControl:[/code] section, configuring the vehicle's cruise
+		control: whether it is present, its response curve, and its optional pneumatic-brake intervention.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="brake_intervention" type="bool" setter="set_brake_intervention" getter="get_brake_intervention" default="false">
+			[code]SpeedControl:BrakeIntervention[/code]
+			Whether the cruise control may assist with the automatic pneumatic brake when other means of slowing down
+			are insufficient.
+		</member>
+		<member name="brake_intervention_max_velocity" type="float" setter="set_brake_intervention_max_velocity" getter="get_brake_intervention_max_velocity" default="30.0">
+			[code]SpeedControl:BrakeIntMaxVel[/code]
+			Maximum velocity, in km/h, at which the cruise control may use pneumatic braking.
+		</member>
+		<member name="delay" type="float" setter="set_delay" getter="get_delay" default="0.0">
+			[code]SpeedControl:SpeedCtrlDelay[/code]
+			Delay before a newly set target velocity is applied.
+		</member>
+		<member name="disables_on" type="int" setter="set_disables_on" getter="get_disables_on" default="0">
+			[code]SpeedControl:SpeedCtrlATOF[/code]
+			Bitmask of actions that automatically disengage the cruise control: 1 - moving the main controller lever,
+			2 - braking.
+		</member>
+		<member name="full_power_velocity" type="float" setter="set_full_power_velocity" getter="get_full_power_velocity" default="-1.0">
+			[code]SpeedControl:MaxPwrVel[/code]
+			Velocity at which the initial power ramp ends and full power engages, in km/h.
+		</member>
+		<member name="impulse_lever" type="bool" setter="set_impulse_lever" getter="get_impulse_lever" default="false">
+			[code]SpeedControl:SpeedCtrlType[/code]
+			Whether the cruise control lever is impulse-type ([code]Time[/code] in the FIZ file) rather than linear.
+		</member>
+		<member name="initial_power" type="float" setter="set_initial_power" getter="get_initial_power" default="1.0">
+			[code]SpeedControl:InitPwr[/code]
+			Initial power percentage (0..1) applied before [member full_power_velocity] is reached.
+		</member>
+		<member name="integral_gain_negative" type="float" setter="set_integral_gain_negative" getter="get_integral_gain_negative" default="0.0">
+			[code]SpeedControl:kIneg[/code]
+			Integral gain applied to a 1 km/h excess in velocity, in km/h/s. Not currently used by the mover -
+			[member integral_gain_positive] is used instead, regardless of sign.
+		</member>
+		<member name="integral_gain_positive" type="float" setter="set_integral_gain_positive" getter="get_integral_gain_positive" default="0.0">
+			[code]SpeedControl:kIpos[/code]
+			Integral gain applied to a 1 km/h deficit in velocity, in km/h/s.
+		</member>
+		<member name="max_power" type="float" setter="set_max_power" getter="get_max_power" default="1.0">
+			[code]SpeedControl:MaxPwr[/code]
+			Maximum power the cruise control may request, in the range 0..1.
+		</member>
+		<member name="max_velocity" type="float" setter="set_max_velocity" getter="get_max_velocity" default="120.0">
+			[code]SpeedControl:MaxVel[/code]
+			Maximum settable target velocity, in km/h.
+		</member>
+		<member name="min_power" type="float" setter="set_min_power" getter="get_min_power" default="0.0">
+			[code]SpeedControl:MinPwr[/code]
+			Minimum power the cruise control may request, in the range 0..1.
+		</member>
+		<member name="min_velocity" type="float" setter="set_min_velocity" getter="get_min_velocity" default="0.0">
+			[code]SpeedControl:MinVel[/code]
+			Minimum settable target velocity, in km/h.
+		</member>
+		<member name="offset" type="float" setter="set_offset" getter="get_offset" default="-0.5">
+			[code]SpeedControl:Offset[/code]
+			Target velocity control error offset, in km/h.
+		</member>
+		<member name="override_manual_power" type="bool" setter="set_override_manual_power" getter="get_override_manual_power" default="false">
+			[code]SpeedControl:OverrideManual[/code]
+			Whether the cruise control overrides manual power settings.
+		</member>
+		<member name="power_down_speed" type="float" setter="set_power_down_speed" getter="get_power_down_speed" default="1000.0">
+			[code]SpeedControl:PowerDownSpeed[/code]
+			Rate at which requested power decreases, in 100%/s.
+		</member>
+		<member name="power_step" type="float" setter="set_power_step" getter="get_power_step" default="0.1">
+			[code]SpeedControl:PwrStep[/code]
+			Step size (0..1) for the +/- power adjustment buttons.
+		</member>
+		<member name="power_up_speed" type="float" setter="set_power_up_speed" getter="get_power_up_speed" default="1000.0">
+			[code]SpeedControl:PowerUpSpeed[/code]
+			Rate at which requested power increases, in 100%/s.
+		</member>
+		<member name="preset_speeds" type="PackedFloat64Array" setter="set_preset_speeds" getter="get_preset_speeds" default="PackedFloat64Array()">
+			[code]SpeedControl:SpeedButtons[/code]
+			Predefined target velocities (up to 10 values, in km/h) selectable with number key shortcuts.
+		</member>
+		<member name="proportional_gain_negative" type="float" setter="set_proportional_gain_negative" getter="get_proportional_gain_negative" default="0.5">
+			[code]SpeedControl:kPneg[/code]
+			Braking power proportional gain for a 1 km/h excess in velocity.
+		</member>
+		<member name="proportional_gain_positive" type="float" setter="set_proportional_gain_positive" getter="get_proportional_gain_positive" default="0.5">
+			[code]SpeedControl:kPpos[/code]
+			Drive power proportional gain for a 1 km/h deficit in velocity.
+		</member>
+		<member name="speed_control_enabled" type="bool" setter="set_speed_control_enabled" getter="get_speed_control_enabled" default="false">
+			[code]SpeedControl:SpeedCtrl[/code]
+			Whether the vehicle is equipped with cruise control.
+		</member>
+		<member name="start_velocity" type="float" setter="set_start_velocity" getter="get_start_velocity" default="-1.0">
+			[code]SpeedControl:StartVel[/code]
+			Velocity, in km/h, up to which the vehicle must confirm it has actually started moving (main controller
+			at its last position).
+		</member>
+		<member name="velocity_step" type="float" setter="set_velocity_step" getter="get_velocity_step" default="5.0">
+			[code]SpeedControl:VelStep[/code]
+			Step size, in km/h, for the +/- velocity adjustment buttons.
+		</member>
+	</members>
+</class>

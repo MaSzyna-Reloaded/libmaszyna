@@ -9,9 +9,50 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="dynamic_brake_resistance" type="float" setter="set_dynamic_brake_resistance" getter="get_dynamic_brake_resistance" default="5.8">
+			[code]RList:DynBrakeRes[/code]
+			Resistance of the resistors during ED (dynamic) braking, for two motors combined, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_1" type="float" setter="set_dynamic_brake_resistance_1" getter="get_dynamic_brake_resistance_1" default="5.8">
+			[code]RList:DynBrakeRes1[/code]
+			Primary ED braking resistance on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_2" type="float" setter="set_dynamic_brake_resistance_2" getter="get_dynamic_brake_resistance_2" default="5.8">
+			[code]RList:DynBrakeRes2[/code]
+			ED braking resistance used at low speeds on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="fan_cutoff_resistance" type="float" setter="set_fan_cutoff_resistance" getter="get_fan_cutoff_resistance" default="0.0">
+			[code]RList:RVentCutOff[/code]
+			Starting resistor value below which the cooling fans stop running (used when [member fan_type] is Automatic).
+		</member>
+		<member name="fan_max_rpm" type="float" setter="set_fan_max_rpm" getter="get_fan_max_rpm" default="1.0">
+			[code]RList:RVentnmax[/code]
+			Maximum rotation speed of the starting resistor cooling fans.
+		</member>
+		<member name="fan_min_current" type="float" setter="set_fan_min_current" getter="get_fan_min_current" default="50.0">
+			[code]RList:RVentMinI[/code]
+			Minimum current, in amperes, at which the cooling fans switch on.
+		</member>
+		<member name="fan_speed" type="float" setter="set_fan_speed" getter="get_fan_speed" default="0.5">
+			[code]RList:RVentSpeed[/code]
+			Cooling fan spin-up rate, in the range 0..1.
+		</member>
+		<member name="fan_type" type="int" setter="set_fan_type" getter="get_fan_type" enum="TrainElectricSeriesEngine.FanType" default="0">
+			[code]RList:RVent[/code]
+			How the starting resistor cooling fans are driven: not present, always on, or automatically controlled.
+		</member>
+		<member name="max_rpm" type="float" setter="set_max_rpm" getter="get_max_rpm" default="0.0">
+			[code]Engine:nmax[/code]
+			Maximum allowed motor rotation speed, in RPM.
+		</member>
 		<member name="nominal_voltage" type="float" setter="set_nominal_voltage" getter="get_nominal_voltage" default="0.0">
 			[code]Engine:Volt[/code]
 			Rated voltage of the motor, in volts
+		</member>
+		<member name="relay_list" type="RelayListItem[]" setter="set_relay_list" getter="get_relay_list" default="[]">
+			[code]RList[/code]
+			Automatic starting sequence table: for each resistor-start controller position (starting from 1, not
+			counting position 0), the starting resistance and motor branch configuration.
 		</member>
 		<member name="winding_resistance" type="float" setter="set_winding_resistance" getter="get_winding_resistance" default="0.0">
 			[code]Engine:WindingRes[/code]

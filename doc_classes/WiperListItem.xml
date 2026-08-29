@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WiperListItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single position of the wiper programmer table (WiperList).
+	</brief_description>
+	<description>
+		Each [WiperListItem] corresponds to one line of the [code]WiperList[/code] table. Its index within
+		[member TrainWipers.positions] corresponds to the switch position, starting from 0.
+		[b]Not wired to the mover[/b] - see [TrainWipers].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="period" type="float" setter="set_period" getter="get_period" default="0.0">
+			[code]WiperList:C[/code]
+			Period, in seconds.
+		</member>
+		<member name="return_delay" type="float" setter="set_return_delay" getter="get_return_delay" default="0.0">
+			[code]WiperList:D[/code]
+			Delay before returning from the deflected position, in seconds.
+		</member>
+		<member name="transit_time" type="float" setter="set_transit_time" getter="get_transit_time" default="0.0">
+			[code]WiperList:B[/code]
+			Time to travel from one side to the other, in seconds.
+		</member>
+		<member name="wiper_mask" type="int" setter="set_wiper_mask" getter="get_wiper_mask" default="0">
+			[code]WiperList:A[/code]
+			Bitmask of active wipers at this position.
+		</member>
+	</members>
+</class>

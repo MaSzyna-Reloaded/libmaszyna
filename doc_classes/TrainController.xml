@@ -126,9 +126,57 @@
 		<member name="battery_voltage" type="float" setter="set_battery_voltage" getter="get_battery_voltage" default="0.0">
 			[code]Light:LMaxVoltage[/code]
 		</member>
+		<member name="cntrl/automatic_cab_activation" type="bool" setter="set_automatic_cab_activation" getter="get_automatic_cab_activation" default="true">
+			[code]Cntrl.AutomaticCabActivation[/code]
+		</member>
+		<member name="cntrl/battery_start_mode" type="int" setter="set_battery_start_mode" getter="get_battery_start_mode" enum="TrainController.StartMode" default="1">
+			[code]Cntrl.BatteryStart[/code]
+		</member>
+		<member name="cntrl/compartment_lights_start_mode" type="int" setter="set_compartment_lights_start_mode" getter="get_compartment_lights_start_mode" enum="TrainController.StartMode" default="0">
+			[code]Cntrl.CompartmentLightsStart[/code]
+		</member>
+		<member name="cntrl/ground_relay_start_mode" type="int" setter="set_ground_relay_start_mode" getter="get_ground_relay_start_mode" enum="TrainController.StartMode" default="1">
+			[code]Cntrl.GroundRelayStart[/code]
+		</member>
+		<member name="cntrl/inactive_cab_flag" type="int" setter="set_inactive_cab_flag" getter="get_inactive_cab_flag" default="0">
+			[code]Cntrl.InactiveCabFlag[/code]
+			Bitmask of automatic actions performed on cab deactivation/activation.
+		</member>
+		<member name="category" type="int" setter="set_category" getter="get_category" enum="TrainController.Category" default="1">
+			[code]Param.Category[/code]
+			The vehicle's category (train, road, ship, airplane).
+		</member>
 		<member name="config" type="Dictionary" setter="" getter="get_config" default="{}">
 			Returns a dictionary with all config properties of the train.
 			This is a shortcut for iterating over [method TrainSystem.get_supported_config_properties] to read each from [method TrainSystem.get_config_property].
+		</member>
+		<member name="dimensions/drag_coefficient" type="float" setter="set_drag_coefficient" getter="get_drag_coefficient" default="0.0">
+			[code]Dimensions:Cx[/code]
+			Aerodynamic drag coefficient.
+		</member>
+		<member name="dimensions/floor_height" type="float" setter="set_floor_height" getter="get_floor_height" default="0.96">
+			[code]Dimensions:Floor[/code]
+			Floor height above the rail head, in meters; used to position universal cargo loads.
+		</member>
+		<member name="dimensions/height" type="float" setter="set_height" getter="get_height" default="0.0">
+			[code]Dimensions:H[/code]
+			Vehicle height, in meters.
+		</member>
+		<member name="dimensions/length" type="float" setter="set_length" getter="get_length" default="0.0">
+			[code]Dimensions:L[/code]
+			Vehicle length, in meters.
+		</member>
+		<member name="dimensions/width" type="float" setter="set_width" getter="get_width" default="0.0">
+			[code]Dimensions:W[/code]
+			Vehicle width, in meters.
+		</member>
+		<member name="heating_power" type="float" setter="set_heating_power" getter="get_heating_power" default="0.0">
+			[code]Param.HeatingP[/code]
+			Power drawn for heating, in kW.
+		</member>
+		<member name="light_power" type="float" setter="set_light_power" getter="get_light_power" default="0.0">
+			[code]Param.LightP[/code]
+			Power drawn for lighting, in kW.
 		</member>
 		<member name="mass" type="float" setter="set_mass" getter="get_mass" default="0.0">
 			[code]Param.M[/code] Mass of the train
@@ -145,11 +193,25 @@
 		<member name="radio_channel_min" type="int" setter="set_radio_channel_min" getter="get_radio_channel_min" default="0">
 			Minimum radio channel number
 		</member>
+		<member name="reduced_mass" type="float" setter="set_reduced_mass" getter="get_reduced_mass" default="0.0">
+			[code]Param.Mred[/code]
+			Reduced (rotating) mass, added to [member mass] for braking calculations.
+		</member>
+		<member name="sand_capacity" type="float" setter="set_sand_capacity" getter="get_sand_capacity" default="0.0">
+			[code]Param.SandCap[/code]
+			Sand box capacity, in kg.
+		</member>
 		<member name="state" type="Dictionary" setter="" getter="get_state" default="{}">
 			Actual state of the train
 		</member>
 		<member name="train_id" type="String" setter="set_train_id" getter="get_train_id" default="&quot;&quot;">
 			Unique identifier of the train. See [method TrainSystem.register_train].
+		</member>
+		<member name="train_type" type="int" setter="set_train_type" getter="get_train_type" enum="TrainController.TrainType" default="0">
+			[code]Param.Type[/code]
+			Bitmask identifying a vehicle's special-cased behavior family (e.g. EZT, ET22, ET40, ET42, EP05, DMU).
+			Not every value listed on the FIZ wiki is implemented by the mover - only the ones with a matching
+			[code]dt_*[/code] constant in [code]MOVER.h[/code] are exposed here (notably, [code]182[/code] is missing).
 		</member>
 		<member name="type_name" type="String" setter="set_type_name" getter="get_type_name" default="&quot;&quot;">
 			Train type name
@@ -199,6 +261,13 @@
 		</signal>
 	</signals>
 	<constants>
+		<constant name="START_MODE_DISABLED" value="0" enum="StartMode">Device is disabled / not present.</constant>
+		<constant name="START_MODE_MANUAL" value="1" enum="StartMode">Device is started manually, with a switch.</constant>
+		<constant name="START_MODE_AUTOMATIC" value="2" enum="StartMode">Device starts automatically.</constant>
+		<constant name="START_MODE_MANUAL_WITH_AUTO_FALLBACK" value="3" enum="StartMode">Device is started manually, or automatically as a fallback.</constant>
+		<constant name="START_MODE_CONVERTER" value="4" enum="StartMode">Device starts together with the converter.</constant>
+		<constant name="START_MODE_BATTERY" value="5" enum="StartMode">Device starts together with the battery.</constant>
+		<constant name="START_MODE_DIRECTION" value="6" enum="StartMode">Device starts once a direction is selected.</constant>
 		<constant name="POWER_SOURCE_NOT_DEFINED" value="0" enum="TrainPowerSource">
 			Indicates that the power source is not defined.
 		</constant>

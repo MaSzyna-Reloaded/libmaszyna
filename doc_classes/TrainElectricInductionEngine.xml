@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainElectricInductionEngine" inherits="TrainElectricEngine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Subclass of TrainElectricEngine for inverter-fed asynchronous (induction) traction motors.
+	</brief_description>
+	<description>
+		[TrainElectricInductionEngine] wraps the inverter-fed asynchronous motor variant of the FIZ
+		[code]Engine:[/code] section (used when [code]EngineType=ElectricInductionMotor[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="braking_decay_start_velocity" type="float" setter="set_braking_decay_start_velocity" getter="get_braking_decay_start_velocity" default="0.0">
+			[code]Engine:Vh1[/code]
+			Velocity below which ED braking force starts to decay (minimum velocity of full braking force).
+		</member>
+		<member name="braking_decay_velocity" type="float" setter="set_braking_decay_velocity" getter="get_braking_decay_velocity" default="0.0">
+			[code]Engine:Vh0[/code]
+			Velocity at which ED braking force has fully decayed to zero.
+		</member>
+		<member name="current_three_phase_ratio" type="float" setter="set_current_three_phase_ratio" getter="get_current_three_phase_ratio" default="0.0">
+			[code]Engine:icif[/code]
+			Ratio converting motor current to three-phase current.
+		</member>
+		<member name="current_torque_ratio" type="float" setter="set_current_torque_ratio" getter="get_current_torque_ratio" default="0.0">
+			[code]Engine:cim[/code]
+			Ratio converting current to motor torque.
+		</member>
+		<member name="force_drop_rate" type="float" setter="set_force_drop_rate" getter="get_force_drop_rate" default="0.0">
+			[code]Engine:a1[/code]
+			Traction force drop rate, in kN per km/h.
+		</member>
+		<member name="initial_force" type="float" setter="set_initial_force" getter="get_initial_force" default="0.0">
+			[code]Engine:F0[/code]
+			Initial (starting) traction force, in kN.
+		</member>
+		<member name="inverter_uf_setpoint" type="float" setter="set_inverter_uf_setpoint" getter="get_inverter_uf_setpoint" default="0.0">
+			[code]Engine:fcfu[/code]
+			Inverter U/f setpoint.
+		</member>
+		<member name="inverter_uf_setpoint_braking" type="float" setter="set_inverter_uf_setpoint_braking" getter="get_inverter_uf_setpoint_braking" default="0.0">
+			[code]Engine:fcfuH[/code]
+			Inverter U/f setpoint during ED braking.
+		</member>
+		<member name="inverter_voltage_drop" type="float" setter="set_inverter_voltage_drop" getter="get_inverter_voltage_drop" default="0.0">
+			[code]Engine:DU[/code]
+			Voltage drop across the inverter.
+		</member>
+		<member name="max_braking_force" type="float" setter="set_max_braking_force" getter="get_max_braking_force" default="0.0">
+			[code]Engine:Fh[/code]
+			Maximum ED braking force, in kN.
+		</member>
+		<member name="max_braking_power" type="float" setter="set_max_braking_power" getter="get_max_braking_power" default="0.0">
+			[code]Engine:Ph[/code]
+			Maximum ED braking power.
+		</member>
+		<member name="max_power" type="float" setter="set_max_power" getter="get_max_power" default="0.0">
+			[code]Engine:Pmax[/code]
+			Maximum traction power.
+		</member>
+		<member name="max_power_table" type="CurvePointItem[]" setter="set_max_power_table" getter="get_max_power_table" default="[]">
+			[code]Pmaxlist[/code] (undocumented on the wiki)
+			Maximum power as a function of velocity; see [code]EIM_Pmax_Table[/code] in [code]MOVER.h[/code]. Each
+			item's [member CurvePointItem.x] is velocity and [member CurvePointItem.y] is the maximum power at that
+			velocity.
+		</member>
+		<member name="max_slip" type="float" setter="set_max_slip" getter="get_max_slip" default="0.0">
+			[code]Engine:dfmax[/code]
+			Maximum motor slip.
+		</member>
+		<member name="max_supply_voltage" type="float" setter="set_max_supply_voltage" getter="get_max_supply_voltage" default="0.0">
+			[code]Engine:Uzmax[/code]
+			Maximum supply voltage.
+		</member>
+		<member name="max_supply_voltage_braking" type="float" setter="set_max_supply_voltage_braking" getter="get_max_supply_voltage_braking" default="0.0">
+			[code]Engine:Uzh[/code]
+			Maximum supply voltage during ED braking.
+		</member>
+		<member name="motor_max_current" type="float" setter="set_motor_max_current" getter="get_motor_max_current" default="0.0">
+			[code]Engine:Imax[/code]
+			Maximum current setting for this unit's motors.
+		</member>
+		<member name="no_load_current" type="float" setter="set_no_load_current" getter="get_no_load_current" default="0.0">
+			[code]Engine:I0[/code]
+			No-load (idle) current.
+		</member>
+		<member name="nominal_uf_ratio" type="float" setter="set_nominal_uf_ratio" getter="get_nominal_uf_ratio" default="0.0">
+			[code]Engine:cfu[/code]
+			Nominal U/f ratio of the motor.
+		</member>
+		<member name="pole_pairs" type="float" setter="set_pole_pairs" getter="get_pole_pairs" default="0.0">
+			[code]Engine:p[/code]
+			Number of motor pole pairs.
+		</member>
+		<member name="slip_current_ratio" type="float" setter="set_slip_current_ratio" getter="get_slip_current_ratio" default="0.0">
+			[code]Engine:dfic[/code]
+			Ratio of motor current to the difference between field and motor speed.
+		</member>
+	</members>
+</class>

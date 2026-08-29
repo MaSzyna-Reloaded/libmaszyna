@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="TrainBrake" inherits="TrainPart" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+<class name="TrainBrake" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 		Represents and configures the vehicle brake system and exposes controls to operate it.
 	</brief_description>
@@ -59,86 +59,162 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cntrl/anti_skid_brake_type" type="int" setter="set_anti_skid_brake_type" getter="get_anti_skid_brake_type" enum="TrainBrake.AntiSkidBrakeType" default="1">
+			[code]Cntrl.ASB[/code]
+		</member>
+		<member name="cntrl/brake_ctrl_position_count" type="int" setter="set_brake_ctrl_position_count" getter="get_brake_ctrl_position_count" default="6">
+			[code]Cntrl.BCPN[/code]
+		</member>
+		<member name="cntrl/brake_delay_1" type="float" setter="set_brake_delay_1" getter="get_brake_delay_1" default="15.0">
+			[code]Cntrl.BrakeDelay1[/code]
+		</member>
+		<member name="cntrl/brake_delay_2" type="float" setter="set_brake_delay_2" getter="get_brake_delay_2" default="3.0">
+			[code]Cntrl.BrakeDelay2[/code]
+		</member>
+		<member name="cntrl/brake_delay_3" type="float" setter="set_brake_delay_3" getter="get_brake_delay_3" default="36.0">
+			[code]Cntrl.BrakeDelay3[/code]
+		</member>
+		<member name="cntrl/brake_delay_4" type="float" setter="set_brake_delay_4" getter="get_brake_delay_4" default="22.0">
+			[code]Cntrl.BrakeDelay4[/code]
+		</member>
+		<member name="cntrl/brake_delays" type="int" setter="set_brake_delays" getter="get_brake_delays" enum="TrainBrake.BrakeDelaySetting" default="3">
+			[code]Cntrl.BrakeDelays[/code]
+			Possible brake delay settings the driver can select between.
+		</member>
+		<member name="cntrl/brake_handle_type" type="int" setter="set_brake_handle_type" getter="get_brake_handle_type" enum="TrainBrake.BrakeHandleType" default="2">
+			[code]Cntrl.BrakeHandle[/code]
+			Type of the main (train) brake handle.
+		</member>
+		<member name="cntrl/brake_op_modes" type="int" setter="set_brake_op_modes" getter="get_brake_op_modes" enum="TrainBrake.BrakeOperationMode" default="15">
+			[code]Cntrl.BrakeOpModes[/code]
+		</member>
+		<member name="cntrl/brake_system" type="int" setter="set_brake_system" getter="get_brake_system" enum="TrainBrake.BrakeSystemType" default="1">
+			[code]Cntrl.BrakeSystem[/code]
+		</member>
+		<member name="cntrl/dynamic_brake_type" type="int" setter="set_dynamic_brake_type" getter="get_dynamic_brake_type" enum="TrainBrake.DynamicBrakeType" default="0">
+			[code]Cntrl.DynamicBrake[/code]
+		</member>
+		<member name="cntrl/local_brake_handle_type" type="int" setter="set_local_brake_handle_type" getter="get_local_brake_handle_type" enum="TrainBrake.BrakeHandleType" default="9">
+			[code]Cntrl.LocBrakeHandle[/code]
+			Type of the local (independent) brake handle.
+		</member>
+		<member name="cntrl/local_brake_traxx" type="bool" setter="set_local_brake_traxx" getter="get_local_brake_traxx" default="false">
+			[code]Cntrl.LocalBrakeTraxx[/code]
+		</member>
+		<member name="cntrl/local_brake_type" type="int" setter="set_local_brake_type" getter="get_local_brake_type" enum="TrainBrake.LocalBrakeType" default="2">
+			[code]Cntrl.LocalBrake[/code]
+			How force is transmitted by the local (independent) brake.
+		</member>
+		<member name="cntrl/manual_brake_present" type="bool" setter="set_manual_brake_present" getter="get_manual_brake_present" default="true">
+			[code]Cntrl.ManualBrake[/code]
+		</member>
+		<member name="cntrl/release_parking_by_spring_brake" type="bool" setter="set_release_parking_by_spring_brake" getter="get_release_parking_by_spring_brake" default="false">
+			[code]Cntrl.ReleaseParkingBySpringBrake[/code]
+		</member>
+		<member name="cntrl/release_parking_by_spring_brake_when_door_open" type="bool" setter="set_release_parking_by_spring_brake_when_door_open" getter="get_release_parking_by_spring_brake_when_door_open" default="false">
+			[code]Cntrl.ReleaseParkingBySpringBrakeWhenDoorIsOpen[/code]
+		</member>
+		<member name="cntrl/spring_brake_cuts_off_drive" type="bool" setter="set_spring_brake_cuts_off_drive" getter="get_spring_brake_cuts_off_drive" default="true">
+			[code]Cntrl.SpringBrakeCutsOffDrive[/code]
+		</member>
+		<member name="cntrl/spring_brake_drive_emergency_velocity" type="float" setter="set_spring_brake_drive_emergency_velocity" getter="get_spring_brake_drive_emergency_velocity" default="-1.0">
+			[code]Cntrl.SpringBrakeDriveEmergencyVel[/code]
+		</member>
 		<member name="air_leak_multiplier" type="float" setter="set_air_leak_multiplier" getter="get_air_leak_multiplier" default="1.0">
 			Air leak speed multiplier for brakes.
 		</member>
-		<member name="brake_force_max" type="float" setter="set_brake_force_max" getter="get_brake_force_max" default="1.0">
-			Maximum train braking force in kN (used by the simplified brake model).
-		</member>
-		<member name="brake_force_traction" type="float" setter="set_brake_force_traction" getter="get_brake_force_traction" default="0.0">
-			Magnetic track brake force in kN.
-		</member>
-		<member name="brake_method" type="int" setter="set_brake_method" getter="get_brake_method" enum="TrainBrake.BrakeMethod" default="0">
+		<member name="brake/method" type="int" setter="set_brake_method" getter="get_brake_method" enum="TrainBrake.BrakeMethod" default="0">
 			Friction material used by the brake blocks or discs.
 		</member>
-		<member name="compressor_cab_a_max_pressure" type="float" setter="set_compressor_cab_a_max_pressure" getter="get_compressor_cab_a_max_pressure" default="0.0">
+		<member name="brake_force/max" type="float" setter="set_max_brake_force" getter="get_max_brake_force" default="1.0">
+			Maximum train braking force in kN (used by the simplified brake model).
+		</member>
+		<member name="brake_force/traction" type="float" setter="set_traction_brake_force" getter="get_traction_brake_force" default="0.0">
+			Magnetic track brake force in kN.
+		</member>
+		<member name="brake_pressure_table" type="BrakePressureTableItem[]" setter="set_brake_pressure_table" getter="get_brake_pressure_table" default="[]">
+			[code]BPT[/code]
+			The brake pressure table, right after the [code]Cntrl.[/code] section in the FIZ file. Each item maps a brake
+			handle position to the resulting pipe/cylinder pressures and brake type.
+		</member>
+		<member name="compressor/cab_a/max_pressure" type="float" setter="set_compressor_pressure_cab_a_max" getter="get_compressor_pressure_cab_a_max" default="0.0">
 			Cab A compressor cut-out (maximum) pressure in bar.
 			For engine-driven compressors, pressure cycles between this value and Cab A min pressure.
 		</member>
-		<member name="compressor_cab_a_min_pressure" type="float" setter="set_compressor_cab_a_min_pressure" getter="get_compressor_cab_a_min_pressure" default="0.0">
+		<member name="compressor/cab_a/min_pressure" type="float" setter="set_compressor_pressure_cab_a_min" getter="get_compressor_pressure_cab_a_min" default="0.0">
 			Cab A compressor cut-in (minimum) pressure in bar.
 			For engine-driven compressors, after reaching the cut-out pressure the system vents down to this value.
 		</member>
-		<member name="compressor_cab_b_max_pressure" type="float" setter="set_compressor_cab_b_max_pressure" getter="get_compressor_cab_b_max_pressure" default="0.0">
+		<member name="compressor/cab_b/max_pressure" type="float" setter="set_compressor_pressure_cab_b_max" getter="get_compressor_pressure_cab_b_max" default="0.0">
 			Cab B compressor cut-out (maximum) pressure in bar.
 			If set, Cab A values apply only when Cab A is active, and Cab B values apply when Cab B is active.
 		</member>
-		<member name="compressor_cab_b_min_pressure" type="float" setter="set_compressor_cab_b_min_pressure" getter="get_compressor_cab_b_min_pressure" default="0.0">
+		<member name="compressor/cab_b/min_pressure" type="float" setter="set_compressor_pressure_cab_b_min" getter="get_compressor_pressure_cab_b_min" default="0.0">
 			Cab B compressor cut-in (minimum) pressure in bar.
 			If set, Cab A values apply only when Cab A is active, and Cab B values apply when Cab B is active.
 		</member>
-		<member name="compressor_higher_emergency_closing_pressure" type="float" setter="set_compressor_higher_emergency_closing_pressure" getter="get_compressor_higher_emergency_closing_pressure" default="-1.0">
+		<member name="compressor/emergency_valve_area" type="float" setter="set_emergency_valve_area" getter="get_emergency_valve_area" default="0.0">
+			[code]Brake:EVArea[/code]
+			Outlet cross-section of the main tank safety valve, in l/m.
+		</member>
+		<member name="compressor/higher_emergency_closing_pressure" type="float" setter="set_higher_emergency_closing_pressure" getter="get_higher_emergency_closing_pressure" default="-1.0">
 			Main tank safety valve unlocking pressure
 		</member>
-		<member name="compressor_lower_emergency_closing_pressure" type="float" setter="set_compressor_lower_emergency_closing_pressure" getter="get_compressor_lower_emergency_closing_pressure" default="-1.0">
+		<member name="compressor/lower_emergency_closing_pressure" type="float" setter="set_lower_emergency_closing_pressure" getter="get_lower_emergency_closing_pressure" default="-1.0">
 			Main tank safety valve opening pressure
 		</member>
-		<member name="compressor_power" type="int" setter="set_compressor_power" getter="get_compressor_power" enum="TrainBrake.CompressorPower" default="0">
+		<member name="compressor/power" type="int" setter="set_compressor_power" getter="get_compressor_power" enum="TrainBrake.CompressorPower" default="0">
 			Compressor power source.
 		</member>
-		<member name="compressor_speed" type="float" setter="set_compressor_speed" getter="get_compressor_speed" default="0.0">
+		<member name="compressor/speed" type="float" setter="set_compressor_speed" getter="get_compressor_speed" default="0.0">
 			Compressor flow rate in m³/s.
 		</member>
-		<member name="compressor_tank_valve_active" type="bool" setter="set_compressor_tank_valve_active" getter="get_compressor_tank_valve_active" default="false">
+		<member name="compressor/tank_valve_active" type="bool" setter="set_compressor_tank_valve_active" getter="get_compressor_tank_valve_active" default="false">
 			Behavior upon overpressure in the main tank when the compressor is driven by an internal combustion engine:
-			false - the compressor pumps to the atmosphere, the tank slowly empties itself, after reaching [member compressor_cab_a_min_pressure], the compressor pumps to the tank
-			true - the compressor fully fills the tank, the valve releases pressure from the tank upon reaching [member compressor_cab_a_max_pressure]
+			false - the compressor pumps to the atmosphere, the tank slowly empties itself, after reaching [member compressor_pressure_cab_a_min], the compressor pumps to the tank
+			true - the compressor fully fills the tank, the valve releases pressure from the tank upon reaching [member compressor_pressure_cab_a_max]
 		</member>
-		<member name="cylinder_count" type="int" setter="set_cylinder_count" getter="get_cylinder_count" default="0">
+		<member name="compressor_list" type="CompressorListItem[]" setter="set_compressor_list" getter="get_compressor_list" default="[]">
+			[code]CompressorList[/code]
+			Compressor programmer table (not documented on the FIZ wiki; see [code]TCompressorList[/code] in
+			[code]MOVER.h[/code]). Each item is one programmer position controlling whether the compressor is allowed
+			to run and multipliers for its speed and cut-in/cut-out pressure thresholds.
+		</member>
+		<member name="cylinder/count" type="int" setter="set_cylinder_count" getter="get_cylinder_count" default="0">
 			Number of brake cylinders
 		</member>
-		<member name="cylinder_distance" type="float" setter="set_cylinder_distance" getter="get_cylinder_distance" default="0.0">
+		<member name="cylinder/distance" type="float" setter="set_cylinder_distance" getter="get_cylinder_distance" default="0.0">
 			Brake cylinder piston travel during braking in meters.
 		</member>
-		<member name="cylinder_gear_ratio" type="float" setter="set_cylinder_gear_ratio" getter="get_cylinder_gear_ratio" default="0.0">
+		<member name="cylinder/gear_ratio" type="float" setter="set_cylinder_gear_ratio" getter="get_cylinder_gear_ratio" default="0.0">
 			Mechanical advantage from cylinder force to total brake force on all serviced wheels (dimensionless).
 			Use this when the ratio is constant; otherwise use the low/high variants below.
 		</member>
-		<member name="cylinder_gear_ratio_high" type="float" setter="set_cylinder_gear_ratio_high" getter="get_cylinder_gear_ratio_high" default="0.0">
+		<member name="cylinder/gear_ratio_high" type="float" setter="set_cylinder_gear_ratio_high" getter="get_cylinder_gear_ratio_high" default="0.0">
 			Mechanical ratio for the loaded/high setting (dimensionless).
 		</member>
-		<member name="cylinder_gear_ratio_low" type="float" setter="set_cylinder_gear_ratio_low" getter="get_cylinder_gear_ratio_low" default="0.0">
+		<member name="cylinder/gear_ratio_low" type="float" setter="set_cylinder_gear_ratio_low" getter="get_cylinder_gear_ratio_low" default="0.0">
 			Mechanical ratio for the empty/low setting (dimensionless).
 		</member>
-		<member name="cylinder_radius" type="float" setter="set_cylinder_radius" getter="get_cylinder_radius" default="0.0">
+		<member name="cylinder/radius" type="float" setter="set_cylinder_radius" getter="get_cylinder_radius" default="0.0">
 			Brake cylinder radius in meters.
 		</member>
-		<member name="cylinder_spring_force" type="float" setter="set_cylinder_spring_force" getter="get_cylinder_spring_force" default="0.0">
+		<member name="cylinder/spring_force" type="float" setter="set_cylinder_spring_force" getter="get_cylinder_spring_force" default="0.0">
 			Return spring force per cylinder in kN.
 		</member>
-		<member name="est_valve_size" type="int" setter="set_est_valve_size" getter="get_est_valve_size" default="0">
+		<member name="est_valve/size" type="int" setter="set_est_valve_size" getter="get_est_valve_size" default="0">
 			Size index of the ESt family camshaft valve (e.g., 1–3). Used only with ESt/LSt-type valves.
 		</member>
 		<member name="friction_elements_per_axle" type="int" setter="set_friction_elements_per_axle" getter="get_friction_elements_per_axle" default="1">
 			Number of friction elements per axle (0–4).
 		</member>
-		<member name="main_pipe_blocking_pressure" type="float" setter="set_main_pipe_blocking_pressure" getter="get_main_pipe_blocking_pressure" default="0.0">
+		<member name="main_pipe/blocking_pressure" type="float" setter="set_main_pipe_blocking_pressure" getter="get_main_pipe_blocking_pressure" default="0.0">
 			Main line blocking pressure
 		</member>
-		<member name="main_pipe_minimum_unblocking_handle_position" type="int" setter="set_main_pipe_minimum_unblocking_handle_position" getter="get_main_pipe_minimum_unblocking_handle_position" default="-3">
+		<member name="main_pipe/minimum_unblocking_handle_position" type="int" setter="set_main_pipe_minimum_unblocking_handle_position" getter="get_main_pipe_minimum_unblocking_handle_position" default="-3">
 			Minimum brake handle position in order to unblock the main pipe
 		</member>
-		<member name="main_pipe_unblocking_pressure" type="float" setter="set_main_pipe_unblocking_pressure" getter="get_main_pipe_unblocking_pressure" default="0.0">
+		<member name="main_pipe/unblocking_pressure" type="float" setter="set_main_pipe_unblocking_pressure" getter="get_main_pipe_unblocking_pressure" default="0.0">
 			Main line unblocking pressure
 		</member>
 		<member name="max_antislip_pressure" type="float" setter="set_max_antislip_pressure" getter="get_max_antislip_pressure" default="0.0">
@@ -156,31 +232,44 @@
 		<member name="max_tare_pressure" type="float" setter="set_max_tare_pressure" getter="get_max_tare_pressure" default="0.0">
 			Maximum brake cylinder pressure at tare (an empty) load in bar.
 		</member>
-		<member name="pipe_pressure_max" type="float" setter="set_pipe_pressure_max" getter="get_pipe_pressure_max" default="5.0">
+		<member name="pipe/pressure_max" type="float" setter="set_pipe_pressure_max" getter="get_pipe_pressure_max" default="5.0">
 			Nominal high (charged) main pipe pressure in bar.
 		</member>
-		<member name="pipe_pressure_min" type="float" setter="set_pipe_pressure_min" getter="get_pipe_pressure_min" default="3.5">
+		<member name="pipe/pressure_min" type="float" setter="set_pipe_pressure_min" getter="get_pipe_pressure_min" default="3.5">
 			Nominal low (reduced) main pipe pressure in bar.
 		</member>
-		<member name="piston_stroke_adjuster_resistance" type="float" setter="set_piston_stroke_adjuster_resistance" getter="get_piston_stroke_adjuster_resistance" default="0.0">
+		<member name="piston_stroke/adjuster_resistance" type="float" setter="set_piston_stroke_adjuster_resistance" getter="get_piston_stroke_adjuster_resistance" default="0.0">
 			Slack adjuster resistance force in kN.
 		</member>
-		<member name="rapid_switching_speed" type="float" setter="set_rapid_switching_speed" getter="get_rapid_switching_speed" default="55.0">
+		<member name="rapid/switching_speed" type="float" setter="set_rapid_switching_speed" getter="get_rapid_switching_speed" default="55.0">
 			Vehicle speed in km/h at which the Rapid (R) characteristic engages.
 		</member>
-		<member name="rapid_transfer" type="float" setter="set_rapid_transfer" getter="get_rapid_transfer" default="1.0">
+		<member name="rapid/transfer" type="float" setter="set_rapid_transfer" getter="get_rapid_transfer" default="1.0">
 			High-to-low pressure ratio of braking in Rapid mode (dimensionless multiplier).
 		</member>
 		<member name="rig_effectiveness" type="float" setter="set_rig_effectiveness" getter="get_rig_effectiveness" default="0.0">
 			Brake rigging efficiency coefficient (0..1).
 		</member>
-		<member name="tank_volume_aux" type="float" setter="set_tank_volume_aux" getter="get_tank_volume_aux" default="0.0">
+		<member name="universal_brake_button/1" type="int" setter="set_universal_brake_button_1" getter="get_universal_brake_button_1" default="0">
+			[code]Brake:UBB1[/code]
+			Bitmask of functions assigned to universal brake button 1: 1 - releaser, 2 - PG unblock/bridge safety brake,
+			4 - high pressure impulse, 8 - assimilation/controlled reload button, 16 - anti-skid brake button.
+		</member>
+		<member name="universal_brake_button/2" type="int" setter="set_universal_brake_button_2" getter="get_universal_brake_button_2" default="0">
+			[code]Brake:UBB2[/code]
+			Bitmask of functions assigned to universal brake button 2. See [member universal_brake_button/1].
+		</member>
+		<member name="universal_brake_button/3" type="int" setter="set_universal_brake_button_3" getter="get_universal_brake_button_3" default="0">
+			[code]Brake:UBB3[/code]
+			Bitmask of functions assigned to universal brake button 3. See [member universal_brake_button/1].
+		</member>
+		<member name="tank/volume_aux" type="float" setter="set_aux_tank_volume" getter="get_aux_tank_volume" default="0.0">
 			Auxiliary reservoir volume in liters (l).
 		</member>
-		<member name="tank_volume_main" type="float" setter="set_tank_volume_main" getter="get_tank_volume_main" default="0.0">
+		<member name="tank/volume_main" type="float" setter="set_main_tank_volume" getter="get_main_tank_volume" default="0.0">
 			Main reservoir volume in cubic meters (m³).
 		</member>
-		<member name="valve_type" type="int" setter="set_valve_type" getter="get_valve_type" enum="TrainBrake.TrainBrakeValve" default="0">
+		<member name="valve/type" type="int" setter="set_valve_type" getter="get_valve_type" enum="TrainBrake.TrainBrakeValve" default="0">
 			Brake distributor/valve type.
 		</member>
 	</members>
@@ -335,5 +424,49 @@
 		<constant name="BRAKE_METHOD_D1MG" value="9" enum="BrakeMethod">
 			Disc brake (D1 pads) plus magnetic track brake. Use when the vehicle has magnetic rail brakes; pneumatic braking follows D1 while magnetic force adds at higher speeds.
 		</constant>
+		<constant name="BRAKE_HANDLE_TYPE_NO_HANDLE" value="0" enum="BrakeHandleType">No brake handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_WESTINGHOUSE" value="1" enum="BrakeHandleType">Westinghouse handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_FV4A" value="2" enum="BrakeHandleType">FV4a handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_M394" value="3" enum="BrakeHandleType">M394 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_M254" value="4" enum="BrakeHandleType">M254 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_FVE408" value="5" enum="BrakeHandleType">FVE408 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_FVEL6" value="6" enum="BrakeHandleType">FVel6 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_D2" value="7" enum="BrakeHandleType">D2 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_KNORR" value="8" enum="BrakeHandleType">Knorr handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_FD1" value="9" enum="BrakeHandleType">FD1 handle (typically used as the local/independent brake handle).</constant>
+		<constant name="BRAKE_HANDLE_TYPE_BS2" value="10" enum="BrakeHandleType">BS2 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_TESTH" value="11" enum="BrakeHandleType">Test handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_ST113" value="12" enum="BrakeHandleType">St113 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_P" value="13" enum="BrakeHandleType">MHZ-P handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_T" value="14" enum="BrakeHandleType">MHZ-T handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_EN57" value="15" enum="BrakeHandleType">MHZ-EN57 handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_K5P" value="16" enum="BrakeHandleType">MHZ-K5P handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_K8P" value="17" enum="BrakeHandleType">MHZ-K8P handle.</constant>
+		<constant name="BRAKE_HANDLE_TYPE_MHZ_6P" value="18" enum="BrakeHandleType">MHZ-6P handle.</constant>
+		<constant name="LOCAL_BRAKE_TYPE_NONE" value="0" enum="LocalBrakeType">No local (independent) brake.</constant>
+		<constant name="LOCAL_BRAKE_TYPE_MANUAL" value="1" enum="LocalBrakeType">Manually-applied local brake.</constant>
+		<constant name="LOCAL_BRAKE_TYPE_PNEUMATIC" value="2" enum="LocalBrakeType">Pneumatic local brake.</constant>
+		<constant name="LOCAL_BRAKE_TYPE_HYDRAULIC" value="3" enum="LocalBrakeType">Hydraulic local brake.</constant>
+		<constant name="ANTI_SKID_BRAKE_NONE" value="0" enum="AntiSkidBrakeType">No anti-skid brake.</constant>
+		<constant name="ANTI_SKID_BRAKE_MANUAL" value="1" enum="AntiSkidBrakeType">Manually-controlled anti-skid brake.</constant>
+		<constant name="ANTI_SKID_BRAKE_AUTOMATIC" value="2" enum="AntiSkidBrakeType">Automatically-controlled anti-skid brake.</constant>
+		<constant name="DYNAMIC_BRAKE_NONE" value="0" enum="DynamicBrakeType">No dynamic (ED) brake.</constant>
+		<constant name="DYNAMIC_BRAKE_PASSIVE" value="1" enum="DynamicBrakeType">Passive dynamic brake.</constant>
+		<constant name="DYNAMIC_BRAKE_SWITCH" value="2" enum="DynamicBrakeType">Switch-controlled dynamic brake.</constant>
+		<constant name="DYNAMIC_BRAKE_REVERSAL" value="4" enum="DynamicBrakeType">Reversal-controlled dynamic brake.</constant>
+		<constant name="DYNAMIC_BRAKE_AUTOMATIC" value="8" enum="DynamicBrakeType">Automatic dynamic brake.</constant>
+		<constant name="BRAKE_DELAY_G" value="1" enum="BrakeDelaySetting">"G" (freight) delay setting only.</constant>
+		<constant name="BRAKE_DELAY_P" value="2" enum="BrakeDelaySetting">"P" (passenger) delay setting only.</constant>
+		<constant name="BRAKE_DELAY_R" value="4" enum="BrakeDelaySetting">"R" (rapid) delay setting only.</constant>
+		<constant name="BRAKE_DELAY_GP" value="3" enum="BrakeDelaySetting">"G" and "P" delay settings.</constant>
+		<constant name="BRAKE_DELAY_PR" value="6" enum="BrakeDelaySetting">"P" and "R" delay settings.</constant>
+		<constant name="BRAKE_DELAY_GPR" value="7" enum="BrakeDelaySetting">"G", "P" and "R" delay settings.</constant>
+		<constant name="BRAKE_DELAY_PR_MG" value="14" enum="BrakeDelaySetting">"P", "R" and "Mg" (magnetic track brake) delay settings.</constant>
+		<constant name="BRAKE_DELAY_GPR_MG" value="15" enum="BrakeDelaySetting">"G", "P", "R" and "Mg" delay settings.</constant>
+		<constant name="BRAKE_OP_MODE_PN" value="3" enum="BrakeOperationMode">Pneumatic control and leak test only.</constant>
+		<constant name="BRAKE_OP_MODE_PNEPMED" value="15" enum="BrakeOperationMode">Pneumatic, electro-pneumatic, electro-dynamic control and leak test.</constant>
+		<constant name="BRAKE_SYSTEM_INDIVIDUAL" value="0" enum="BrakeSystemType">Individual (simplified) brake system.</constant>
+		<constant name="BRAKE_SYSTEM_PNEUMATIC" value="1" enum="BrakeSystemType">Pneumatic brake system.</constant>
+		<constant name="BRAKE_SYSTEM_ELECTRO_PNEUMATIC" value="2" enum="BrakeSystemType">Electro-pneumatic brake system.</constant>
 	</constants>
 </class>

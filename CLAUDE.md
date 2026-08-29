@@ -1,1 +1,4 @@
-See AGENTS.md in this repository root and follow it exactly
+### Content
+
+Everything is placed in the @AGENTS.md file.
+You also must follow @CODE_STYLE.md and @CODE_OF_CONDUCT.md.

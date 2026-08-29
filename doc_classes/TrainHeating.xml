@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainHeating" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Represents and configures the vehicle's train heating (Clima) power source.
+	</brief_description>
+	<description>
+		[TrainHeating] wraps the FIZ [code]Clima:[/code] section, which selects and configures the power source used
+		to heat the train (an onboard generator, an accumulator, a power cable from another vehicle, and so on).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="heating/generator/engine" type="int" setter="set_generator_engine" getter="get_generator_engine" enum="TrainEngine.EngineType" default="8">
+			[code]Clima:HGeneratorEngine[/code]
+			Type of engine driving the heating generator, when [member heating/source] is Generator. Only
+			[constant TrainEngine.MAIN] is actually supported by the mover today.
+		</member>
+		<member name="heating/generator/max_rpm" type="float" setter="set_generator_max_rpm" getter="get_generator_max_rpm" default="0.0">
+			[code]Clima:HGeneratorMaxRPM[/code]
+			Upper end of the generator's working RPM range.
+		</member>
+		<member name="heating/generator/max_voltage" type="float" setter="set_generator_max_voltage" getter="get_generator_max_voltage" default="0.0">
+			[code]Clima:HGeneratorMaxVoltage[/code]
+			Voltage generated at [member heating/generator/max_rpm].
+		</member>
+		<member name="heating/generator/min_rpm" type="float" setter="set_generator_min_rpm" getter="get_generator_min_rpm" default="0.0">
+			[code]Clima:HGeneratorMinRPM[/code]
+			Lower end of the generator's working RPM range.
+		</member>
+		<member name="heating/generator/min_voltage" type="float" setter="set_generator_min_voltage" getter="get_generator_min_voltage" default="0.0">
+			[code]Clima:HGeneratorMinVoltage[/code]
+			Voltage generated at [member heating/generator/min_rpm].
+		</member>
+		<member name="heating/max_voltage" type="float" setter="set_max_voltage" getter="get_max_voltage" default="0.0">
+			[code]Clima:HMaxVoltage[/code]
+			Maximum voltage of the electric heating circuit, in volts.
+		</member>
+		<member name="heating/power_cable/type" type="int" setter="set_power_cable_power_type" getter="get_power_cable_power_type" enum="TrainController.TrainPowerType" default="3">
+			[code]Clima:HPowerTrans[/code]
+			Form of energy delivered over the power cable, when [member heating/source] is PowerCable (electric or
+			steam).
+		</member>
+		<member name="heating/source" type="int" setter="set_heating_source" getter="get_heating_source" enum="TrainController.TrainPowerSource" default="3">
+			[code]Clima:Heating[/code]
+			Power source for the train heating circuit.
+		</member>
+	</members>
+</class>

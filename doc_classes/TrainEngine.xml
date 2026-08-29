@@ -18,9 +18,93 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cntrl/auto_relay_mode" type="int" setter="set_auto_relay_mode" getter="get_auto_relay_mode" enum="TrainEngine.AutoRelayMode" default="0">
+			[code]Cntrl.AutoRelay[/code]
+		</member>
+		<member name="cntrl/controller_step_delay" type="float" setter="set_controller_step_delay" getter="get_controller_step_delay" default="0.0">
+			[code]Cntrl.SCDelay[/code]
+		</member>
+		<member name="cntrl/controller_step_down_delay" type="float" setter="set_controller_step_down_delay" getter="get_controller_step_down_delay" default="0.0">
+			[code]Cntrl.SCDDelay[/code]
+		</member>
+		<member name="cntrl/coupled_controllers" type="bool" setter="set_coupled_controllers" getter="get_coupled_controllers" default="false">
+			[code]Cntrl.CoupledCtrl[/code]
+		</member>
+		<member name="cntrl/direction_change_max_position" type="int" setter="set_direction_change_max_position" getter="get_direction_change_max_position" default="0">
+			[code]Cntrl.DirChangeMaxPos[/code]
+		</member>
+		<member name="cntrl/eim_control_additional_zeros" type="bool" setter="set_eim_control_additional_zeros" getter="get_eim_control_additional_zeros" default="false">
+			[code]Cntrl.EIMCtrlAddZeros[/code]
+		</member>
+		<member name="cntrl/eim_control_emergency" type="bool" setter="set_eim_control_emergency" getter="get_eim_control_emergency" default="false">
+			[code]Cntrl.EIMCtrlEmergency[/code]
+		</member>
+		<member name="cntrl/eim_control_type" type="int" setter="set_eim_control_type" getter="get_eim_control_type" enum="TrainEngine.EimControlType" default="0">
+			[code]Cntrl.EIMCtrlType[/code]
+		</member>
+		<member name="cntrl/fast_series_circuit" type="bool" setter="set_fast_series_circuit" getter="get_fast_series_circuit" default="false">
+			[code]Cntrl.FSCircuit[/code]
+		</member>
+		<member name="cntrl/has_camshaft" type="bool" setter="set_has_camshaft" getter="get_has_camshaft" default="false">
+			[code]Cntrl.Camshaft[/code]
+		</member>
+		<member name="cntrl/initial_controller_delay" type="float" setter="set_initial_controller_delay" getter="get_initial_controller_delay" default="0.0">
+			[code]Cntrl.IniCDelay[/code]
+		</member>
+		<member name="cntrl/main_controller_position_count" type="int" setter="set_main_controller_position_count" getter="get_main_controller_position_count" default="0">
+			[code]Cntrl.MCPN[/code]
+		</member>
+		<member name="cntrl/series_shunt_on_series_position" type="bool" setter="set_series_shunt_on_series_position" getter="get_series_shunt_on_series_position" default="false">
+			[code]Cntrl.ScndS[/code]
+		</member>
+		<member name="cntrl/shunt_controller_position_count" type="int" setter="set_shunt_controller_position_count" getter="get_shunt_controller_position_count" default="0">
+			[code]Cntrl.SCPN[/code]
+		</member>
+		<member name="inverters_count" type="int" setter="set_inverters_count" getter="get_inverters_count" default="0">
+			[code]Engine:InvNo[/code]
+			Number of inverters powering the vehicle.
+		</member>
+		<member name="maximum_traction_force" type="float" setter="set_traction_force_max" getter="get_traction_force_max" default="0.0">
+			[code]Engine:Ftmax[/code]
+			Maximum traction force, in kN.
+		</member>
+		<member name="motor_blowers/speed" type="float" setter="set_motor_blowers_speed" getter="get_motor_blowers_speed" default="0.0">
+			[code]Engine:MotorBlowersSpeed[/code]
+			Motor cooling fan speed: a positive value is a multiplier of the main engine's RPM, a negative value is a
+			fixed RPM.
+		</member>
+		<member name="motor_blowers/start_velocity" type="float" setter="set_motor_blowers_start_velocity" getter="get_motor_blowers_start_velocity" default="-1.0">
+			[code]Engine:MotorBlowersStartVelocity[/code]
+			Vehicle velocity at which the motor cooling fans start.
+		</member>
+		<member name="motor_blowers/start_mode" type="int" setter="set_motor_blowers_start_mode" getter="get_motor_blowers_start_mode" enum="TrainEngine.StartMode" default="1">
+			[code]Cntrl.MotorBlowersStart[/code]
+		</member>
+		<member name="motor_blowers/sustain_time" type="float" setter="set_motor_blowers_sustain_time" getter="get_motor_blowers_sustain_time" default="0.0">
+			[code]Engine:MotorBlowersSustainTime[/code]
+			How long the motor cooling fans keep running after being switched off.
+		</member>
 		<member name="motor_param_table" type="MotorParameter[]" setter="set_motor_param_table" getter="get_motor_param_table" default="[]">
 			[code]MotorParamTable[/code]
 			FIXME: original FIZ file has multiple MotorParamTable sections depending of the engine type. Their values are parsed individually. This property should be a part of a specific train engine.
+		</member>
+		<member name="pressure_switch_present" type="bool" setter="set_pressure_switch_present" getter="get_pressure_switch_present" default="false">
+			[code]Engine:PressureSwitch[/code]
+			Whether the contactors have a pressure switch (requiring sufficient pipe/cylinder pressure to close).
+		</member>
+		<member name="transmission/efficiency" type="float" setter="set_gear_efficiency" getter="get_gear_efficiency" default="1.0">
+			[code]Engine:TransEff[/code]
+			Gearbox transmission efficiency.
+		</member>
+		<member name="transmission/gear_teeth_motor" type="int" setter="set_gear_teeth_motor" getter="get_gear_teeth_motor" default="0">
+			[code]Engine:Trans[/code]
+			Number of teeth on the motor side of the gearbox (the [code]X[/code] in the FIZ file's [code]X:Y[/code]
+			ratio format).
+		</member>
+		<member name="transmission/gear_teeth_wheel" type="int" setter="set_gear_teeth_wheel" getter="get_gear_teeth_wheel" default="0">
+			[code]Engine:Trans[/code]
+			Number of teeth on the wheel side of the gearbox (the [code]Y[/code] in the FIZ file's [code]X:Y[/code]
+			ratio format).
 		</member>
 	</members>
 	<signals>
@@ -36,6 +120,20 @@
 		</signal>
 	</signals>
 	<constants>
+		<constant name="START_MODE_DISABLED" value="0" enum="StartMode">Device is disabled / not present.</constant>
+		<constant name="START_MODE_MANUAL" value="1" enum="StartMode">Device is started manually, with a switch.</constant>
+		<constant name="START_MODE_AUTOMATIC" value="2" enum="StartMode">Device starts automatically.</constant>
+		<constant name="START_MODE_MANUAL_WITH_AUTO_FALLBACK" value="3" enum="StartMode">Device is started manually, or automatically as a fallback.</constant>
+		<constant name="START_MODE_CONVERTER" value="4" enum="StartMode">Device starts together with the converter.</constant>
+		<constant name="START_MODE_BATTERY" value="5" enum="StartMode">Device starts together with the battery.</constant>
+		<constant name="START_MODE_DIRECTION" value="6" enum="StartMode">Device starts once a direction is selected.</constant>
+		<constant name="EIM_CONTROL_TYPE_0" value="0" enum="EimControlType">EIM traction lever variant 0.</constant>
+		<constant name="EIM_CONTROL_TYPE_1" value="1" enum="EimControlType">EIM traction lever variant 1.</constant>
+		<constant name="EIM_CONTROL_TYPE_2" value="2" enum="EimControlType">EIM traction lever variant 2.</constant>
+		<constant name="EIM_CONTROL_TYPE_3" value="3" enum="EimControlType">EIM traction lever variant 3.</constant>
+		<constant name="AUTO_RELAY_NO" value="0" enum="AutoRelayMode">No automatic starting relay.</constant>
+		<constant name="AUTO_RELAY_YES" value="1" enum="AutoRelayMode">Automatic starting relay present.</constant>
+		<constant name="AUTO_RELAY_OPTIONAL" value="2" enum="AutoRelayMode">Automatic starting relay present, driver-toggleable.</constant>
 		<constant name="NONE" value="0" enum="EngineType">
 			No engine is on the train/vehicle
 		</constant>

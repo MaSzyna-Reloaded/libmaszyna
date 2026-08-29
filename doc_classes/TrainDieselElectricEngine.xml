@@ -1,9 +1,52 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="TrainDieselElectricEngine" inherits="TrainDieselEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Diesel engine handler class, for vehicles with an electric transmission (generator + traction motors).
 	</brief_description>
 	<description>
+		[TrainDieselElectricEngine] extends [TrainDieselEngine] with the FIZ fields specific to vehicles with
+		[code]EngineType=DieselElectric[/code] (electric transmission). Note that the mechanical-transmission
+		properties inherited from [TrainDieselEngine] (torque converter, retarder, gearbox throttle table) do not
+		apply to this engine type and should be left at their defaults.
 	</description>
 	<tutorials>
 	</tutorials>
+	<members>
+		<member name="additional_speed" type="float" setter="set_additional_speed" getter="get_additional_speed" default="1.0">
+			[code]Engine:Vadd[/code]
+		</member>
+		<member name="generator_voltage_flat" type="bool" setter="set_generator_voltage_flat" getter="get_generator_voltage_flat" default="false">
+			[code]Engine:Flat[/code]
+			Whether the generator's voltage output is capped (flattened characteristic).
+		</member>
+		<member name="heating_rpm" type="float" setter="set_heating_rpm" getter="get_heating_rpm" default="0.0">
+			[code]Clima:HeatingRPM[/code]
+			Minimum guaranteed engine RPM while heating is enabled.
+		</member>
+		<member name="hyperbolic_speed" type="float" setter="set_hyperbolic_speed" getter="get_hyperbolic_speed" default="1.0">
+			[code]Engine:Vhyp[/code]
+		</member>
+		<member name="power_correction_ratio" type="float" setter="set_power_correction_ratio" getter="get_power_correction_ratio" default="1.0">
+			[code]Engine:Cr[/code]
+			Power correction ratio (characteristic correction coefficient).
+		</member>
+		<member name="rpm_change_rate" type="float" setter="set_rpm_change_rate" getter="get_rpm_change_rate" default="2.0">
+			[code]Engine:AIM[/code]
+			Rate at which the diesel engine's RPM changes.
+		</member>
+		<member name="shunt_mode_allowed" type="bool" setter="set_shunt_mode_allowed" getter="get_shunt_mode_allowed" default="false">
+			[code]Engine:ShuntMode[/code]
+			Whether manual generator field-shunting control is available.
+		</member>
+		<member name="shunt_relay_type" type="int" setter="set_shunt_relay_type" getter="get_shunt_relay_type" default="0">
+			[code]Engine:RelayType[/code]
+			Field-shunting relay behavior flag: 0 - current dependent, 1 - velocity dependent, 2 - velocity and power
+			dependent, 41/45/46 - extended variants for specific locomotive types.
+		</member>
+		<member name="wwlist" type="WWListItem[]" setter="set_wwlist" getter="get_wwlist" default="[]">
+			[code]WWList[/code]
+			Diesel-electric generator characteristics table. Each item describes a main controller position starting
+			from 0.
+		</member>
+	</members>
 </class>

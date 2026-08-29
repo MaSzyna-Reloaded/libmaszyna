@@ -48,6 +48,52 @@ namespace godot {
 
 
         public:
+            /* shared enum for every FIZ "...Start=" device activation mode field (Cntrl. section);
+             * duplicated from TrainEngine::StartMode to avoid a circular include (TrainEngine.hpp includes
+             * TrainPart.hpp, which includes this file) */
+            enum StartMode {
+                START_MODE_DISABLED,
+                START_MODE_MANUAL,
+                START_MODE_AUTOMATIC,
+                START_MODE_MANUAL_WITH_AUTO_FALLBACK,
+                START_MODE_CONVERTER,
+                START_MODE_BATTERY,
+                START_MODE_DIRECTION,
+            };
+
+            const std::map<StartMode, Maszyna::start_t> start_mode_map = {
+                    {START_MODE_DISABLED, Maszyna::start_t::disabled},
+                    {START_MODE_MANUAL, Maszyna::start_t::manual},
+                    {START_MODE_AUTOMATIC, Maszyna::start_t::automatic},
+                    {START_MODE_MANUAL_WITH_AUTO_FALLBACK, Maszyna::start_t::manualwithautofallback},
+                    {START_MODE_CONVERTER, Maszyna::start_t::converter},
+                    {START_MODE_BATTERY, Maszyna::start_t::battery},
+                    {START_MODE_DIRECTION, Maszyna::start_t::direction},
+            };
+
+            /* Category= (train / road / ship / airplane) */
+            enum Category {
+                CATEGORY_TRAIN = 1,
+                CATEGORY_ROAD = 2,
+                CATEGORY_SHIP = 4,
+                CATEGORY_AIRPLANE = 8,
+            };
+
+            /* Type= : bitmask identifying a vehicle's special-cased behavior family */
+            enum TrainType {
+                TRAIN_TYPE_DEFAULT = 0,
+                TRAIN_TYPE_EZT = 1,
+                TRAIN_TYPE_ET41 = 2,
+                TRAIN_TYPE_ET42 = 4,
+                TRAIN_TYPE_PSEUDODIESEL = 8,
+                TRAIN_TYPE_ET22 = 0x10,
+                TRAIN_TYPE_SN61 = 0x20,
+                TRAIN_TYPE_EP05 = 0x40,
+                TRAIN_TYPE_ET40 = 0x80,
+                TRAIN_TYPE_181 = 0x100,
+                TRAIN_TYPE_DMU = 0x200,
+            };
+
             enum TrainPowerSource {
                 POWER_SOURCE_NOT_DEFINED,
                 POWER_SOURCE_INTERNAL,
@@ -146,9 +192,30 @@ namespace godot {
             MAKE_MEMBER_GS(double, max_velocity, 0.0);
             MAKE_MEMBER_GS(int, radio_channel_min, 0);
             MAKE_MEMBER_GS(int, radio_channel_max, 0);
+            MAKE_MEMBER_GS_NR(Category, category, CATEGORY_TRAIN);
+            MAKE_MEMBER_GS_NR(TrainType, train_type, TRAIN_TYPE_DEFAULT);
+            MAKE_MEMBER_GS(double, reduced_mass, 0.0);
+            MAKE_MEMBER_GS(double, sand_capacity, 0.0);
+            MAKE_MEMBER_GS(double, heating_power, 0.0);
+            MAKE_MEMBER_GS(double, light_power, 0.0);
+            MAKE_MEMBER_GS(double, length, 0.0);
+            MAKE_MEMBER_GS(double, height, 0.0);
+            MAKE_MEMBER_GS(double, width, 0.0);
+            MAKE_MEMBER_GS(double, drag_coefficient, 0.0);
+            MAKE_MEMBER_GS(double, floor_height, 0.96);
+
+            /* Cntrl. (ogolne, bateria/przekaznik ziemnozwarciowy/oswietlenie przedzialow/aktywacja kabiny) */
+            MAKE_MEMBER_GS_NR(StartMode, battery_start_mode, START_MODE_MANUAL);
+            MAKE_MEMBER_GS_NR(StartMode, ground_relay_start_mode, START_MODE_MANUAL);
+            MAKE_MEMBER_GS_NR(StartMode, compartment_lights_start_mode, START_MODE_DISABLED);
+            MAKE_MEMBER_GS(bool, automatic_cab_activation, true);
+            MAKE_MEMBER_GS(int, inactive_cab_flag, 0);
             Dictionary get_state();
     };
 } // namespace godot
 
 VARIANT_ENUM_CAST(TrainController::TrainPowerSource);
 VARIANT_ENUM_CAST(TrainController::TrainPowerType);
+VARIANT_ENUM_CAST(TrainController::Category);
+VARIANT_ENUM_CAST(TrainController::TrainType);
+VARIANT_ENUM_CAST(TrainController::StartMode);

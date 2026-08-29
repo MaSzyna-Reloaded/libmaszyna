@@ -25,6 +25,34 @@
 		</method>
 	</methods>
 	<members>
+		<member name="blending/load_correction" type="bool" setter="set_blending_load_correction" getter="get_blending_load_correction" default="false">
+			[code]Blending:MED_Ncor[/code]
+			Whether EP braking force is corrected for the effect of brake pad pressure on the friction coefficient.
+		</member>
+		<member name="blending/max_deceleration" type="float" setter="set_blending_max_deceleration" getter="get_blending_max_deceleration" default="9.81">
+			[code]Blending:MED_amax[/code]
+			Maximum service braking deceleration for MED calculations, in m/s².
+		</member>
+		<member name="blending/max_velocity" type="float" setter="set_blending_max_velocity" getter="get_blending_max_velocity" default="0.0">
+			[code]Blending:MED_Vmax[/code]
+			Maximum velocity used to calculate instantaneous EP braking force in MED, in km/h.
+		</member>
+		<member name="blending/min_ed_brake_request" type="float" setter="set_blending_min_ed_brake_request" getter="get_blending_min_ed_brake_request" default="0.0">
+			[code]Blending:MED_MinBrakeReqED[/code]
+			Minimum braking demand (0..1) at which ED braking engages.
+		</member>
+		<member name="blending/min_velocity" type="float" setter="set_blending_min_velocity" getter="get_blending_min_velocity" default="0.0">
+			[code]Blending:MED_Vmin[/code]
+			Minimum velocity used to calculate instantaneous EP braking force in MED, in km/h.
+		</member>
+		<member name="blending/reference_velocity" type="float" setter="set_blending_reference_velocity" getter="get_blending_reference_velocity" default="0.0">
+			[code]Blending:MED_Vref[/code]
+			Reference velocity used to calculate available EP braking force in MED, in km/h.
+		</member>
+		<member name="blending/velocity_correction" type="bool" setter="set_blending_velocity_correction" getter="get_blending_velocity_correction" default="false">
+			[code]Blending:MED_EPVC[/code]
+			Whether EP braking force is corrected for vehicle velocity when ED braking becomes unavailable.
+		</member>
 		<member name="coupler_check" type="int" setter="set_coupler_check" getter="get_coupler_check" enum="TrainElectroPneumaticDynamicBrake.CouplerCheck" default="0">
 			Determines in which couplings should the Electro Dynamic unit braking status be checked
 		</member>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainAIHints" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures suggested behavior hints consumed by the AI driver.
+	</brief_description>
+	<description>
+		[TrainAIHints] wraps the FIZ [code]AI:[/code] section. These properties are not authoritative vehicle
+		configuration - they are suggestions the AI driver logic may use to decide how to operate the vehicle.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="local_brake_acceleration_factor" type="float" setter="set_local_brake_acceleration_factor" getter="get_local_brake_acceleration_factor" default="1.05">
+			[code]AI:LocalBrakeAccFactor[/code]
+			Suggested braking force multiplier for the AI driver when using the local (independent) brake.
+		</member>
+		<member name="pantograph_state" type="int" setter="set_pantograph_state" getter="get_pantograph_state" enum="TrainAIHints.PantographState" default="1">
+			[code]AI:Pantstate[/code]
+			Suggested pantograph selection for the AI driver.
+		</member>
+		<member name="raise_pantographs_when_idle" type="bool" setter="set_raise_pantographs_when_idle" getter="get_raise_pantographs_when_idle" default="true">
+			[code]AI:IdlePantUp[/code]
+			Whether the AI driver should raise the second pantograph while the vehicle is idle.
+		</member>
+	</members>
+	<constants>
+		<constant name="PANTOGRAPH_STATE_FRONT" value="1" enum="PantographState">
+			Drive on the front pantograph.
+		</constant>
+		<constant name="PANTOGRAPH_STATE_REAR" value="2" enum="PantographState">
+			Drive on the rear pantograph.
+		</constant>
+		<constant name="PANTOGRAPH_STATE_BOTH" value="3" enum="PantographState">
+			Drive on both pantographs.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainSwitches" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures cab control panel switch behavior (impulse vs. toggle) and the headlight dimmer.
+	</brief_description>
+	<description>
+		[TrainSwitches] wraps the FIZ [code]Switches:[/code] and [code]DimmerList:[/code] sections.
+		[member pantograph_impulse], [member converter_impulse] and [member motor_connectors_impulse] map to real
+		[code]TMoverParameters[/code] fields ([code]PantSwitchType[/code], [code]ConvSwitchType[/code],
+		[code]StLinSwitchType[/code]), but those fields are marked [code]TODO: move these switch types where they
+		belong[/code] in [code]MOVER.h[/code] and are not read anywhere else in this codebase - setting them
+		currently has no observable effect on the simulation. [member relay_reset_button_1]/2/3,
+		[member pantograph_presets], [member pantograph_preset_default], [member modern_dimmer] and
+		[member dimmer_list] have no backing field at all and are only stored on this node.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="converter_impulse" type="bool" setter="set_converter_impulse" getter="get_converter_impulse" default="false">
+			[code]Switches:Converter[/code]
+			Whether the converter switch is impulse-type. Defaults to bistable (false) if not specified in the FIZ
+			file.
+		</member>
+		<member name="dimmer_list" type="DimmerListItem[]" setter="set_dimmer_list" getter="get_dimmer_list" default="[]">
+			[code]DimmerList[/code]
+			The dimmer switch's position table.
+		</member>
+		<member name="dimmer_list/cycle" type="bool" setter="set_dimmer_list_cycle" getter="get_dimmer_list_cycle" default="false">
+			[code]DimmerList:Cycle[/code]
+			Whether the dimmer switch can be rotated all the way around.
+		</member>
+		<member name="dimmer_list/default_position" type="int" setter="set_dimmer_list_default_position" getter="get_dimmer_list_default_position" default="0">
+			[code]DimmerList:DefaultPos[/code]
+		</member>
+		<member name="modern_dimmer" type="bool" setter="set_modern_dimmer" getter="get_modern_dimmer" default="false">
+			[code]Switches:ModernDimmer[/code]
+			Whether the vehicle is equipped with a multi-position headlight dimmer switch.
+		</member>
+		<member name="motor_connectors_impulse" type="bool" setter="set_motor_connectors_impulse" getter="get_motor_connectors_impulse" default="true">
+			[code]Switches:MotorConnectors[/code]
+			Whether the line contactor switch is impulse-type. Defaults to impulse (true) if not specified in the
+			FIZ file (the opposite default of the other switches).
+		</member>
+		<member name="pantograph_impulse" type="bool" setter="set_pantograph_impulse" getter="get_pantograph_impulse" default="false">
+			[code]Switches:Pantograph[/code]
+			Whether the pantograph switch is impulse-type. Defaults to bistable (false) if not specified in the FIZ
+			file.
+		</member>
+		<member name="pantograph_preset_default" type="int" setter="set_pantograph_preset_default" getter="get_pantograph_preset_default" default="0">
+			[code]Switches:PantographPresetDefault[/code]
+			Default index into [member pantograph_presets].
+		</member>
+		<member name="pantograph_presets" type="PackedInt32Array" setter="set_pantograph_presets" getter="get_pantograph_presets" default="PackedInt32Array()">
+			[code]Switches:PantographPresets[/code]
+			Pantograph selector switch presets; each value is a bitmask (1 = pantograph over the active cab, 2 =
+			pantograph over the opposite cab).
+		</member>
+		<member name="relay_reset_button_1" type="int" setter="set_relay_reset_button_1" getter="get_relay_reset_button_1" default="0">
+			[code]Switches:RelayResetButton1[/code]
+			Bitmask of relays reset by button 1.
+		</member>
+		<member name="relay_reset_button_2" type="int" setter="set_relay_reset_button_2" getter="get_relay_reset_button_2" default="0">
+			[code]Switches:RelayResetButton2[/code]
+			Bitmask of relays reset by button 2.
+		</member>
+		<member name="relay_reset_button_3" type="int" setter="set_relay_reset_button_3" getter="get_relay_reset_button_3" default="0">
+			[code]Switches:RelayResetButton3[/code]
+			Bitmask of relays reset by button 3.
+		</member>
+	</members>
+</class>

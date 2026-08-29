@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BrakePressureTableItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single row of the brake pressure table (BPT), mapping a brake handle position to pipe/cylinder pressure and brake type.
+	</brief_description>
+	<description>
+		Each [BrakePressureTableItem] corresponds to one line of the [code]BPT[/code] table, which appears right after
+		the [code]Cntrl.[/code] section in a FIZ file. It is not a dense, zero-based array like most other list
+		sections - the handle position (which can be negative, e.g. for the release position) is stored explicitly on
+		each item via [member handle_position].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="brake_cylinder_pressure" type="float" setter="set_brake_cylinder_pressure" getter="get_brake_cylinder_pressure" default="-1.0">
+			[code]BPT:C[/code]
+			Pressure in the brake cylinder for this handle position. [code]-1[/code] means not applicable.
+		</member>
+		<member name="brake_type" type="int" setter="set_brake_type" getter="get_brake_type" enum="BrakePressureTableItem.BrakeType" default="0">
+			[code]BPT:E[/code]
+			The brake type used at this handle position.
+		</member>
+		<member name="fill_speed" type="float" setter="set_fill_speed" getter="get_fill_speed" default="0.0">
+			[code]BPT:D[/code]
+			Fill speed for this handle position.
+		</member>
+		<member name="handle_position" type="int" setter="set_handle_position" getter="get_handle_position" default="0">
+			[code]BPT:A[/code]
+			The brake handle position number this row applies to. Can be negative.
+		</member>
+		<member name="pipe_pressure" type="float" setter="set_pipe_pressure" getter="get_pipe_pressure" default="0.0">
+			[code]BPT:B[/code]
+			Pressure in the main (train) pipe for this handle position, in MPa.
+		</member>
+	</members>
+</class>
