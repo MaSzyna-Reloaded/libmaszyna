@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="TrainElectricEngine" inherits="TrainEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+<class name="TrainElectricEngine" inherits="TrainEngine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 		Electric engine handler class. Used to check/set it's parameters
 	</brief_description>
@@ -25,53 +25,132 @@
 		</method>
 	</methods>
 	<members>
-		<member name="power_accumulator_recharge_source" type="int" setter="set_power_accumulator_recharge_source" getter="get_power_accumulator_recharge_source" enum="TrainController.TrainPowerSource" default="0">
+		<member name="circuit/imax_high" type="int" setter="set_imax_high" getter="get_imax_high" default="0">
+			[code]Circuit:ImaxHi[/code]
+			Maximum current on "high" starting stage, in amperes.
+		</member>
+		<member name="circuit/imax_low" type="int" setter="set_imax_low" getter="get_imax_low" default="0">
+			[code]Circuit:ImaxLo[/code]
+			Maximum current on "low" starting stage, in amperes.
+		</member>
+		<member name="circuit/imin_high" type="int" setter="set_imin_high" getter="get_imin_high" default="0">
+			[code]Circuit:IminHi[/code]
+			Automatic starting relay switching current on the "high" stage; also used by the AI driver.
+		</member>
+		<member name="circuit/imin_low" type="int" setter="set_imin_low" getter="get_imin_low" default="0">
+			[code]Circuit:IminLo[/code]
+			Automatic starting relay switching current on the "low" stage; also used by the AI driver.
+		</member>
+		<member name="circuit/resistance" type="float" setter="set_circuit_resistance" getter="get_circuit_resistance" default="0.0">
+			[code]Circuit:CircuitRes[/code]
+			Motor and circuit resistance, in ohms.
+		</member>
+		<member name="circuit/tuhex/diff" type="float" setter="set_tuhex_diff" getter="get_tuhex_diff" default="10.0">
+			[code]Circuit:TUHEX_Diff[/code]
+			Hysteresis of the ED braking regulator.
+		</member>
+		<member name="circuit/tuhex/max_current" type="float" setter="set_tuhex_max_current" getter="get_tuhex_max_current" default="400.0">
+			[code]Circuit:TUHEX_MaxIw[/code]
+			Maximum excitation current during ED braking (limits max braking force).
+		</member>
+		<member name="circuit/tuhex/min_current" type="float" setter="set_tuhex_min_current" getter="get_tuhex_min_current" default="60.0">
+			[code]Circuit:TUHEX_MinIw[/code]
+			Minimum excitation current during ED braking, resulting from the traction motor's magnetization curve.
+		</member>
+		<member name="circuit/tuhex/stages" type="int" setter="set_tuhex_stages" getter="get_tuhex_stages" default="0">
+			[code]Circuit:TUHEX_Stages[/code]
+			Number of distinct ED braking stages. When greater than 0, [member circuit/tuhex/sum_1],
+			[member circuit/tuhex/sum_2] and [member circuit/tuhex/sum_3] should also be set.
+		</member>
+		<member name="circuit/tuhex/sum" type="float" setter="set_tuhex_sum" getter="get_tuhex_sum" default="750.0">
+			[code]Circuit:TUHEX_Sum[/code]
+			Current ED braking regulator setpoint (sum of excitation and rotor currents).
+		</member>
+		<member name="circuit/tuhex/sum_1" type="float" setter="set_tuhex_sum_1" getter="get_tuhex_sum_1" default="750.0">
+			[code]Circuit:TUHEX_Sum1[/code]
+			ED braking regulator setpoint 1.
+		</member>
+		<member name="circuit/tuhex/sum_2" type="float" setter="set_tuhex_sum_2" getter="get_tuhex_sum_2" default="750.0">
+			[code]Circuit:TUHEX_Sum2[/code]
+			ED braking regulator setpoint 2.
+		</member>
+		<member name="circuit/tuhex/sum_3" type="float" setter="set_tuhex_sum_3" getter="get_tuhex_sum_3" default="750.0">
+			[code]Circuit:TUHEX_Sum3[/code]
+			ED braking regulator setpoint 3.
+		</member>
+		<member name="cntrl/converter_overload_relay_off_when_main_is_off" type="bool" setter="set_converter_overload_relay_off_when_main_is_off" getter="get_converter_overload_relay_off_when_main_is_off" default="false">
+			[code]Cntrl.ConverterOverloadWhenMainIsOff[/code]
+		</member>
+		<member name="cntrl/converter_overload_relay_start_mode" type="int" setter="set_converter_overload_relay_start_mode" getter="get_converter_overload_relay_start_mode" enum="TrainEngine.StartMode" default="1">
+			[code]Cntrl.ConverterOverloadRelayStart[/code]
+		</member>
+		<member name="cntrl/converter_start_delay" type="float" setter="set_converter_start_delay" getter="get_converter_start_delay" default="0.0">
+			[code]Cntrl.ConverterStartDelay[/code]
+		</member>
+		<member name="cntrl/converter_start_mode" type="int" setter="set_converter_start_mode" getter="get_converter_start_mode" enum="TrainEngine.StartMode" default="1">
+			[code]Cntrl.ConverterStart[/code]
+		</member>
+		<member name="cntrl/main_switch_start_mode" type="int" setter="set_main_switch_start_mode" getter="get_main_switch_start_mode" enum="TrainEngine.StartMode" default="1">
+			[code]Cntrl.MainStart[/code]
+		</member>
+		<member name="cntrl/pantograph_auto_valve" type="bool" setter="set_pantograph_auto_valve" getter="get_pantograph_auto_valve" default="false">
+			[code]Cntrl.PantAutoValve[/code]
+		</member>
+		<member name="cntrl/pantograph_compressor_start_mode" type="int" setter="set_pantograph_compressor_start_mode" getter="get_pantograph_compressor_start_mode" enum="TrainEngine.StartMode" default="1">
+			[code]Cntrl.PantCompressorStart[/code]
+		</member>
+		<member name="power/accumulator/recharge_source" type="int" setter="set_accumulator_recharge_source" getter="get_accumulator_recharge_source" enum="TrainController.TrainPowerSource" default="0">
 			Power source for recharging the accumulator
 		</member>
-		<member name="power_cable_source" type="int" setter="set_power_cable_source" getter="get_power_cable_source" enum="TrainController.TrainPowerType" default="0">
-			Energy source for the power cable
+		<member name="power/current_collector/collector_sliding_width" type="float" setter="set_collector_sliding_width" getter="get_collector_sliding_width" default="0.0">
+			Sliding width of the power collector (like pantograph)
 		</member>
-		<member name="power_cable_steam_pressure" type="float" setter="set_power_cable_steam_pressure" getter="get_power_cable_steam_pressure" default="0.0">
-			Steam pressure in the power cable. Applies only when the energy source for the power cable is steam
-		</member>
-		<member name="power_current_collector_max_collector_lifting" type="float" setter="set_power_current_collector_max_collector_lifting" getter="get_power_current_collector_max_collector_lifting" default="0.0">
+		<member name="power/current_collector/max_collector_lifting" type="float" setter="set_max_collector_lifting" getter="get_max_collector_lifting" default="0.0">
 			Maximum collector lifting, in meters.
 		</member>
-		<member name="power_current_collector_max_current" type="float" setter="set_power_current_collector_max_current" getter="get_power_current_collector_max_current" default="0.0">
+		<member name="power/current_collector/max_current" type="float" setter="set_max_current" getter="get_max_current" default="0.0">
 			Max current on the current collector (pantograph)
 		</member>
-		<member name="power_current_collector_max_pantograph_tank_pressure" type="float" setter="set_power_current_collector_max_pantograph_tank_pressure" getter="get_power_current_collector_max_pantograph_tank_pressure" default="0.0">
+		<member name="power/current_collector/max_pantograph_tank_pressure" type="float" setter="set_max_pantograph_tank_pressure" getter="get_max_pantograph_tank_pressure" default="0.0">
 			Maximum pressure in the Pantograph Tank
 		</member>
-		<member name="power_current_collector_max_voltage" type="float" setter="set_power_current_collector_max_voltage" getter="get_power_current_collector_max_voltage" default="0.0">
+		<member name="power/current_collector/max_voltage" type="float" setter="set_max_voltage" getter="get_max_voltage" default="0.0">
 			Max voltage on the current collector (pantograph)
 		</member>
-		<member name="power_current_collector_min_collector_lifting" type="float" setter="set_power_current_collector_min_collector_lifting" getter="get_power_current_collector_min_collector_lifting" default="0.0">
+		<member name="power/current_collector/min_collector_lifting" type="float" setter="set_min_collector_lifting" getter="get_min_collector_lifting" default="0.0">
 			Minimal collector lifting from the folded position, in meters.
 		</member>
-		<member name="power_current_collector_min_main_switch_voltage" type="float" setter="set_power_current_collector_min_main_switch_voltage" getter="get_power_current_collector_min_main_switch_voltage" default="0.0">
+		<member name="power/current_collector/min_main_switch_voltage" type="float" setter="set_min_main_switch_voltage" getter="get_min_main_switch_voltage" default="0.0">
 			The minimum closing voltage of the main switch, in volts.
 			            By default, it is 0.5*max_voltage
 		</member>
-		<member name="power_current_collector_min_pantograph_tank_pressure" type="float" setter="set_power_current_collector_min_pantograph_tank_pressure" getter="get_power_current_collector_min_pantograph_tank_pressure" default="0.0">
+		<member name="power/current_collector/min_pantograph_tank_pressure" type="float" setter="set_min_pantograph_tank_pressure" getter="get_min_pantograph_tank_pressure" default="0.0">
 			Minimum pressure in the Pantograph Tank (PT) to raise the pantograph, in MPa
 		</member>
-		<member name="power_current_collector_number_of_collectors" type="int" setter="set_power_current_collector_number_of_collectors" getter="get_power_current_collector_number_of_collectors" default="0">
+		<member name="power/current_collector/number_of_collectors" type="int" setter="set_number_of_collectors" getter="get_number_of_collectors" default="0">
 			NUmber of collectors on the train
 		</member>
-		<member name="power_current_collector_overvoltage_relay" type="bool" setter="set_power_current_collector_overvoltage_relay" getter="get_power_current_collector_overvoltage_relay" default="false">
+		<member name="power/current_collector/overvoltage_relay" type="bool" setter="set_overvoltage_relay" getter="get_overvoltage_relay" default="false">
+			Overvoltage relay presence.
 		</member>
-		<member name="power_current_collector_required_main_switch_voltage" type="float" setter="set_power_current_collector_required_main_switch_voltage" getter="get_power_current_collector_required_main_switch_voltage" default="0.0">
+		<member name="power/current_collector/physical_layout" type="int" setter="set_physical_layout" getter="get_physical_layout" default="0">
+			[code]Power:PhysicalLayout[/code]
+			Bitmask of physically present pantographs: 1 - front, 2 - rear.
+		</member>
+		<member name="power/current_collector/required_main_switch_voltage" type="float" setter="set_required_main_switch_voltage" getter="get_required_main_switch_voltage" default="0.0">
 			Required voltage to switch the main switch on.
 			            By default, it is 0.6*max_voltage
 		</member>
-		<member name="power_current_collector_sliding_width" type="float" setter="set_power_current_collector_sliding_width" getter="get_power_current_collector_sliding_width" default="0.0">
-			Sliding width of the power collector (like pantograph)
+		<member name="power/power_cable/source" type="int" setter="set_power_cable_power_source" getter="get_power_cable_power_source" enum="TrainController.TrainPowerType" default="0">
+			Energy source for the power cable
 		</member>
-		<member name="power_source" type="int" setter="set_power_source" getter="get_power_source" enum="TrainController.TrainPowerSource" default="0">
+		<member name="power/power_cable/steam_pressure" type="float" setter="set_power_cable_steam_pressure" getter="get_power_cable_steam_pressure" default="0.0">
+			Steam pressure in the power cable. Applies only when the energy source for the power cable is steam
+		</member>
+		<member name="power/source" type="int" setter="set_engine_power_source" getter="get_engine_power_source" enum="TrainController.TrainPowerSource" default="0">
 			Energy source for the engine
 		</member>
-		<member name="power_transducer_input_voltage" type="float" setter="set_power_transducer_input_voltage" getter="get_power_transducer_input_voltage" default="0.0">
+		<member name="power/transducer/input_voltage" type="float" setter="set_transducer_input_voltage" getter="get_transducer_input_voltage" default="0.0">
 			Input voltage for the transducer
 		</member>
 	</members>

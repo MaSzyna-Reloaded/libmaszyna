@@ -4,22 +4,26 @@
 		Represents the universal controller in a train.
 	</brief_description>
 	<description>
-		[TrainUniversalController] is a train part that handles the universal controller, grouping traction and braking controls together as defined by the [code]UCList[/code] configuration in MaSzyna. It handles positions that map to both traction and braking states.
+		[TrainUniversalController] wraps the FIZ [code]UCList:[/code] section - a combined traction/braking
+		controller used on vehicles with [code]EngineType=DieselElectric[/code] or
+		[code]EngineType=ElectricInductionMotor[/code]. It groups positions that map to both traction and braking
+		states.
 	</description>
 	<tutorials>
 	</tutorials>
 	<members>
 		<member name="integrated_brake" type="bool" setter="set_integrated_brake" getter="get_integrated_brake" default="true">
-			[code]Cntrl:UniCtrlIntegratedBrakeCtrl[/code]
-			Determines whether the integrated brake (ED/HD/auxiliary pneumatic) is supported on this controller.
+			[code]UCList:IntegratedBrake[/code]
+			Whether the ED/HD/auxiliary pneumatic brake is supported on this controller.
 		</member>
 		<member name="integrated_brake_pn" type="bool" setter="set_integrated_brake_pn" getter="get_integrated_brake_pn" default="true">
-			[code]Cntrl:UniCtrlIntegratedBrakePNCtrl[/code]
-			Determines whether the train's pneumatic brake is supported on this controller.
+			[code]UCList:IntegratedBrakePN[/code]
+			Whether the train's (automatic) pneumatic brake is supported on this controller.
 		</member>
 		<member name="positions" type="UniversalControllerListItem[]" setter="set_positions" getter="get_positions" default="[]">
 			[code]UCList[/code]
-			An array of [UniversalControllerListItem] resources defining the controller's positions.
+			The controller's position table. Each item's index corresponds to the position number (column A in the
+			wiki table), starting from 0.
 		</member>
 		<member name="selector_position" type="int" setter="set_selector_position" getter="get_selector_position" default="0">
 			The current position of the controller selector.

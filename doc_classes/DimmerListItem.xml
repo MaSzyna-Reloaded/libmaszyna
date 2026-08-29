@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DimmerListItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single position of the headlight dimmer switch (DimmerList).
+	</brief_description>
+	<description>
+		Each [DimmerListItem] corresponds to one line of the [code]DimmerList:[/code] table. Its index within
+		[member TrainSwitches.dimmer_list] corresponds to the switch position, starting from 0.
+		[b]Not wired to the mover[/b] - see [TrainSwitches].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="dimmed" type="bool" setter="set_dimmed" getter="get_dimmed" default="false">
+			Whether the headlights are dimmed at this position.
+		</member>
+		<member name="high_beam" type="bool" setter="set_high_beam" getter="get_high_beam" default="false">
+			Whether the high beam is selected at this position.
+		</member>
+		<member name="off" type="bool" setter="set_off" getter="get_off" default="false">
+			Whether this position turns the headlights off.
+		</member>
+	</members>
+</class>

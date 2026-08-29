@@ -17,8 +17,10 @@
 #include "engines/TrainDieselElectricEngine.hpp"
 #include "engines/TrainDieselEngine.hpp"
 #include "engines/TrainElectricEngine.hpp"
+#include "engines/TrainElectricInductionEngine.hpp"
 #include "engines/TrainElectricSeriesEngine.hpp"
 #include "engines/TrainEngine.hpp"
+#include "heating/TrainHeating.hpp"
 #include "lighting/TrainLighting.hpp"
 #include "load/TrainLoad.hpp"
 #include "loaders/E3DResourceFormatLoader.hpp"
@@ -26,13 +28,24 @@
 #include "parsers/e3d_parser.hpp"
 #include "parsers/maszyna_parser.hpp"
 #include "register_types.h"
+#include "resources/brakes/BrakePressureTableItem.hpp"
+#include "resources/brakes/CompressorListItem.hpp"
 #include "resources/controllers/UniversalControllerListItem.hpp"
+#include "resources/engines/CurvePointItem.hpp"
 #include "resources/engines/MotorParameter.hpp"
+#include "resources/engines/RelayListItem.hpp"
+#include "resources/engines/ThrottlePositionItem.hpp"
 #include "resources/engines/WWListItem.hpp"
 #include "resources/lighting/LightListItem.hpp"
 #include "resources/load/LoadListItem.hpp"
+#include "resources/switches/DimmerListItem.hpp"
+#include "resources/wipers/WiperListItem.hpp"
+#include "speed_control/TrainSpeedControl.hpp"
+#include "switches/TrainSwitches.hpp"
+#include "systems/TrainAIHints.hpp"
 #include "systems/TrainSecuritySystem.hpp"
 #include "wheels/TrainWheels.hpp"
+#include "wipers/TrainWipers.hpp"
 #include <gdextension_interface.h>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -76,9 +89,12 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(TrainDieselElectricEngine);
         GDREGISTER_ABSTRACT_CLASS(TrainElectricEngine);
         GDREGISTER_CLASS(TrainElectricSeriesEngine);
+        GDREGISTER_CLASS(TrainElectricInductionEngine);
         GDREGISTER_CLASS(TrainController);
+        GDREGISTER_CLASS(TrainHeating);
         GDREGISTER_CLASS(TrainWheels);
         GDREGISTER_CLASS(TrainSecuritySystem);
+        GDREGISTER_CLASS(TrainAIHints);
         GDREGISTER_CLASS(TrainSystem);
         GDREGISTER_CLASS(TrainLighting)
         GDREGISTER_CLASS(GameLog);
@@ -89,8 +105,18 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(TrainLoad)
         GDREGISTER_CLASS(LoadListItem)
         GDREGISTER_CLASS(TrainBuffCoupl)
+        GDREGISTER_CLASS(TrainSpeedControl)
         GDREGISTER_CLASS(TrainUniversalController)
         GDREGISTER_CLASS(UniversalControllerListItem)
+        GDREGISTER_CLASS(TrainWipers)
+        GDREGISTER_CLASS(WiperListItem)
+        GDREGISTER_CLASS(TrainSwitches)
+        GDREGISTER_CLASS(DimmerListItem)
+        GDREGISTER_CLASS(BrakePressureTableItem)
+        GDREGISTER_CLASS(CompressorListItem)
+        GDREGISTER_CLASS(RelayListItem)
+        GDREGISTER_CLASS(CurvePointItem)
+        GDREGISTER_CLASS(ThrottlePositionItem)
 
         user_settings_singleton = memnew(UserSettings);
         train_system_singleton = memnew(TrainSystem);

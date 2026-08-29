@@ -43,8 +43,7 @@ namespace godot {
             }
         }
 
-        p_mover->MainCtrlPos = selector_position; // Or whichever variable controls current position
-        // Also possibly p_mover->MainCtrlPosNo?
+        p_mover->MainCtrlPos = selector_position;
     }
 
     void TrainUniversalController::_do_fetch_state_from_mover(TMoverParameters *p_mover, Dictionary &p_state) {

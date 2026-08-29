@@ -32,6 +32,15 @@ namespace godot {
             MAKE_MEMBER_GS(float, electro_pneumatic_min_regenerative_braking, 0.0f);
             MAKE_MEMBER_GS(float, electro_pneumatic_max_ep_brake_engagement_speed, 0.0f);
             MAKE_MEMBER_GS(bool, ep_brake_fuse, false);
+
+            /* Blending: (laczenie trybow hamowania EP+ED) */
+            MAKE_MEMBER_GS(double, blending_max_velocity, 0.0);
+            MAKE_MEMBER_GS(double, blending_min_velocity, 0.0);
+            MAKE_MEMBER_GS(double, blending_reference_velocity, 0.0);
+            MAKE_MEMBER_GS(double, blending_max_deceleration, 9.81);
+            MAKE_MEMBER_GS(bool, blending_velocity_correction, false);
+            MAKE_MEMBER_GS(bool, blending_load_correction, false);
+            MAKE_MEMBER_GS(double, blending_min_ed_brake_request, 0.0);
     };
 } // namespace godot
 VARIANT_ENUM_CAST(TrainElectroPneumaticDynamicBrake::CouplerCheck)

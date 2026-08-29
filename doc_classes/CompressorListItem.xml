@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CompressorListItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single position of the compressor programmer table (CompressorList).
+	</brief_description>
+	<description>
+		Each [CompressorListItem] corresponds to one position of the [code]CompressorList[/code] table. This section
+		is not documented on the FIZ wiki (https://wiki.eu07.pl/index.php/Plik_charakterystyki) - its meaning is taken
+		from the [code]TCompressorList[/code] enum and its usages in [code]MOVER.h[/code]/[code]Mover.cpp[/code].
+		Items are indexed in order, starting at position 1 (position 0 is reserved/hardcoded by the mover).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="allow" type="int" setter="set_allow" getter="get_allow" default="0">
+			[code]CompressorList:A[/code] (undocumented on the wiki)
+			Compressor run permission for this position: [code]0[/code] leaves the current permission unchanged,
+			[code]1[/code] disallows the compressor, [code]2[/code] allows it.
+		</member>
+		<member name="max_pressure_factor" type="int" setter="set_max_pressure_factor" getter="get_max_pressure_factor" default="1">
+			[code]CompressorList:D[/code] (undocumented on the wiki)
+			Multiplier applied to the compressor cut-out (maximum) pressure threshold for this position.
+		</member>
+		<member name="min_pressure_factor" type="int" setter="set_min_pressure_factor" getter="get_min_pressure_factor" default="1">
+			[code]CompressorList:C[/code] (undocumented on the wiki)
+			Multiplier applied to the compressor cut-in (minimum) pressure threshold for this position.
+		</member>
+		<member name="speed_factor" type="int" setter="set_speed_factor" getter="get_speed_factor" default="1">
+			[code]CompressorList:B[/code] (undocumented on the wiki)
+			Multiplier applied to the compressor's flow rate for this position.
+		</member>
+	</members>
+</class>

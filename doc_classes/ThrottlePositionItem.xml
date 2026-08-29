@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ThrottlePositionItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single row of the throttle table (DList) for a mechanical-transmission diesel engine.
+	</brief_description>
+	<description>
+		Each [ThrottlePositionItem] corresponds to one line of the [code]DList[/code] table. Its index within
+		[member TrainDieselEngine.throttle_table] corresponds to the throttle position, starting from 0.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="clutch_behavior" type="int" setter="set_clutch_behavior" getter="get_clutch_behavior" enum="ThrottlePositionItem.ClutchBehavior" default="0">
+			[code]DList:C[/code]
+			Clutch and governor behavior at this throttle position.
+		</member>
+		<member name="fuel_dose" type="float" setter="set_fuel_dose" getter="get_fuel_dose" default="0.0">
+			[code]DList:B[/code]
+			Fuel dose at this throttle position, as a fraction (0..1) of the nominal dose.
+		</member>
+		<member name="throttle_position" type="int" setter="set_throttle_position" getter="get_throttle_position" default="0">
+			[code]DList:A[/code]
+			The throttle position number this row applies to, starting from 0.
+		</member>
+	</members>
+	<constants>
+		<constant name="CLUTCH_BEHAVIOR_NONE" value="0" enum="ClutchBehavior">
+			No clutch engagement at this position.
+		</constant>
+		<constant name="CLUTCH_BEHAVIOR_HALF_CLUTCH_MIN_RPM" value="1" enum="ClutchBehavior">
+			Half clutch engagement, at minimum RPM.
+		</constant>
+		<constant name="CLUTCH_BEHAVIOR_FULL_CLUTCH_MAX_RPM" value="2" enum="ClutchBehavior">
+			Full clutch engagement, at maximum RPM.
+		</constant>
+		<constant name="CLUTCH_BEHAVIOR_HALF_CLUTCH_THEN_FULL" value="3" enum="ClutchBehavior">
+			Half clutch engagement up to [member TrainDieselEngine.min_rpm], then full clutch.
+		</constant>
+		<constant name="CLUTCH_BEHAVIOR_TWO_THIRDS_CLUTCH" value="4" enum="ClutchBehavior">
+			Two-thirds clutch engagement; RPM interpolated 2/3 min + 1/3 max.
+		</constant>
+	</constants>
+</class>

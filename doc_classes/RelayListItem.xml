@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RelayListItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single position of the automatic starting sequence table (RList), used by electric vehicles with resistor-based starting.
+	</brief_description>
+	<description>
+		Each [RelayListItem] corresponds to one line of the [code]RList[/code] table. Its index within
+		[member TrainElectricSeriesEngine.relay_list] corresponds to the controller position, starting from 1
+		(position 0 is not part of the list).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="auto_switch" type="bool" setter="set_auto_switch" getter="get_auto_switch" default="false">
+			[code]RList:E[/code]
+			Whether this position is engaged automatically (true) or only manually (false).
+		</member>
+		<member name="branch_count" type="int" setter="set_branch_count" getter="get_branch_count" default="0">
+			[code]RList:C[/code]
+			Number of parallel motor branches at this position.
+		</member>
+		<member name="motors_per_branch" type="int" setter="set_motors_per_branch" getter="get_motors_per_branch" default="0">
+			[code]RList:D[/code]
+			Number of motors per branch at this position.
+		</member>
+		<member name="relay_position" type="int" setter="set_relay_position" getter="get_relay_position" default="0">
+			[code]RList:A[/code]
+			Target starting-sequence position associated with this entry.
+		</member>
+		<member name="resistance" type="float" setter="set_resistance" getter="get_resistance" default="0.0">
+			[code]RList:B[/code]
+			Starting resistance at this position, in ohms.
+		</member>
+		<member name="shunt_index" type="int" setter="set_shunt_index" getter="get_shunt_index" default="0">
+			[code]RList:F[/code]
+			If the controller has field shunting, which shunt stage applies at this position.
+		</member>
+	</members>
+</class>

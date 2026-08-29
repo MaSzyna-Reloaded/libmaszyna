@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CurvePointItem" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A single (x, y) point of a linearly-interpolated characteristic curve.
+	</brief_description>
+	<description>
+		[CurvePointItem] is shared by every FIZ table section that reduces to a two-column X/Y table
+		(e.g. [code]Pmaxlist[/code], [code]DMList[/code], [code]HTCList[/code], [code]V2NMAXList[/code]). The
+		owning property's documentation states which section and which axes [member x]/[member y] represent.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="x" type="float" setter="set_x" getter="get_x" default="0.0">
+			The X axis value (column A).
+		</member>
+		<member name="y" type="float" setter="set_y" getter="get_y" default="0.0">
+			The Y axis value (column B).
+		</member>
+	</members>
+</class>

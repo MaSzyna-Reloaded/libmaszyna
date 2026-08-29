@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrainWipers" inherits="TrainPart" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures the windshield wiper programmer switch.
+	</brief_description>
+	<description>
+		[TrainWipers] wraps the FIZ [code]WiperList:[/code] section.
+		[b]Not wired to the mover:[/b] this fork of the MaSzyna simulation has no field anywhere for wiper state or
+		configuration - "wiper" does not appear in [code]MOVER.h[/code], [code]Mover.cpp[/code], or any GDScript
+		addon. There is nothing in [code]TMoverParameters[/code] to write these values into, so this node only
+		stores the configuration; it currently has no effect on the simulated vehicle. It exists so the section has
+		a documented home, ready to be wired up if wiper simulation is ever implemented.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="angle" type="float" setter="set_angle" getter="get_angle" default="0.0">
+			[code]WiperList:Angle[/code]
+			The wiper's working angle.
+		</member>
+		<member name="default_position" type="int" setter="set_default_position" getter="get_default_position" default="0">
+			[code]WiperList:Default[/code]
+			Starting switch position, counting from 0.
+		</member>
+		<member name="positions" type="WiperListItem[]" setter="set_positions" getter="get_positions" default="[]">
+			[code]WiperList[/code]
+			The wiper switch's position table.
+		</member>
+	</members>
+</class>

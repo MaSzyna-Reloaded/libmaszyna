@@ -33,6 +33,31 @@ namespace godot {
                     TrainController::TrainPowerType, power_cable_source,
                     TrainController::TrainPowerType::POWER_TYPE_NONE);
             MAKE_MEMBER_GS(float, power_cable_steam_pressure, 0.0f);
+            MAKE_MEMBER_GS(int, physical_layout, 0);
+
+            /* Circuit: (elektryczny obwod napedowy) */
+            MAKE_MEMBER_GS(double, circuit_resistance, 0.0);
+            MAKE_MEMBER_GS(int, imax_low, 0);
+            MAKE_MEMBER_GS(int, imax_high, 0);
+            MAKE_MEMBER_GS(int, imin_low, 0);
+            MAKE_MEMBER_GS(int, imin_high, 0);
+            MAKE_MEMBER_GS(double, tuhex_sum, 750.0);
+            MAKE_MEMBER_GS(double, tuhex_diff, 10.0);
+            MAKE_MEMBER_GS(double, tuhex_min_current, 60.0);
+            MAKE_MEMBER_GS(double, tuhex_max_current, 400.0);
+            MAKE_MEMBER_GS(int, tuhex_stages, 0);
+            MAKE_MEMBER_GS(double, tuhex_sum_1, 750.0);
+            MAKE_MEMBER_GS(double, tuhex_sum_2, 750.0);
+            MAKE_MEMBER_GS(double, tuhex_sum_3, 750.0);
+
+            /* Cntrl. (elektryczne) */
+            MAKE_MEMBER_GS_NR(TrainEngine::StartMode, converter_start_mode, TrainEngine::START_MODE_MANUAL);
+            MAKE_MEMBER_GS(double, converter_start_delay, 0.0);
+            MAKE_MEMBER_GS_NR(TrainEngine::StartMode, converter_overload_relay_start_mode, TrainEngine::START_MODE_MANUAL);
+            MAKE_MEMBER_GS(bool, converter_overload_relay_off_when_main_is_off, false);
+            MAKE_MEMBER_GS_NR(TrainEngine::StartMode, pantograph_compressor_start_mode, TrainEngine::START_MODE_MANUAL);
+            MAKE_MEMBER_GS(bool, pantograph_auto_valve, false);
+            MAKE_MEMBER_GS_NR(TrainEngine::StartMode, main_switch_start_mode, TrainEngine::START_MODE_MANUAL);
 
             void set_power_source(TrainController::TrainPowerSource p_source);
             TrainController::TrainPowerSource get_power_source() const;
@@ -40,7 +65,6 @@ namespace godot {
             void converter(bool p_enabled);
             void _register_commands() override;
             void _unregister_commands() override;
-            //@TODO: Implement bitmask for PhysicalLayout
 
         protected:
             void _do_update_internal_mover(TMoverParameters *p_mover) override;
