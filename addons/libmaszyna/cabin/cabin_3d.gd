@@ -40,10 +40,10 @@ func _process(delta):
         if controller_path:
             var controller:TrainController = get_node(controller_path)
             set_train_controller(controller)
-            
+
 func _ready() -> void:
     _cabin_ready = true
-    cabin_ready.emit()                
+    cabin_ready.emit()
 
 func is_cabin_ready() -> bool:
     return _cabin_ready

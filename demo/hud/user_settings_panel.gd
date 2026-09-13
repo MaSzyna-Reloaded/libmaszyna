@@ -28,18 +28,11 @@ func _auto_user_settings_visibility():
 
 func _update_render_settings():
     var viewport: Viewport = get_tree().root.get_viewport()
-    var world3d: World3D = viewport.world_3d
-    world3d.environment.sdfgi_enabled = UserSettings.get_setting("render", "sdfgi_enabled", true)
-    world3d.environment.volumetric_fog_enabled = UserSettings.get_setting("render", "volumetric_fog_enabled", true)
-    world3d.environment.ssao_enabled = UserSettings.get_setting("render", "ssao_enabled", true)
-    world3d.environment.ssil_enabled = UserSettings.get_setting("render", "ssil_enabled", true)
-    world3d.environment.ssr_enabled = UserSettings.get_setting("render", "ssr_enabled", true)
     viewport.anisotropic_filtering_level = UserSettings.get_setting("render", "anisotropic_filtering_level", 2)
     viewport.screen_space_aa = UserSettings.get_setting("render", "screen_space_aa", Viewport.SCREEN_SPACE_AA_FXAA)
     viewport.msaa_3d = UserSettings.get_setting("render", "msaa_3d", 2)
     viewport.use_taa = UserSettings.get_setting("render", "use_taa", true)
     viewport.fsr_sharpness = UserSettings.get_setting("render", "fsr_sharpness", 0.2)
-    world3d.environment.glow_enabled = true
     DisplayServer.window_set_vsync_mode(
         DisplayServer.VSYNC_ENABLED
         if UserSettings.get_setting("window", "vsync_enabled", true)

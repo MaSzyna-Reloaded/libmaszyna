@@ -12,25 +12,6 @@ var _previous_season: MaszynaEnvironment.Season
 var _previous_weather: MaszynaEnvironment.Weather
 
 
-func _is_leap_year(value: int) -> bool:
-    return ((value % 4) == 0 and not (value % 100) == 0) or (value % 400) == 0
-
-
-func _get_year_day(value_day: int, value_month: int, value_year: int) -> int:
-    var month_lengths: Array[int] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    var year_day: int = value_day
-    var month_index: int = 0
-
-    if _is_leap_year(value_year):
-        month_lengths[1] = 29
-
-    while month_index < value_month - 1:
-        year_day += month_lengths[month_index]
-        month_index += 1
-
-    return year_day
-
-
 func before_each() -> void:
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     _previous_season = MaterialManager.season
@@ -119,84 +100,6 @@ func test_refresh_prunes_dead_managed_material_entries() -> void:
     var refreshed_material: ShaderMaterial = MaterialManager.get_material("", MATERIAL_NAME) as ShaderMaterial
     assert_not_null(refreshed_material)
     assert_eq(refreshed_material.shader.resource_path, SHADOWLESS_SHADER_PATH)
-
-
-func test_environment_node_proxies_season_and_weather_to_material_manager() -> void:
-    var environment_node := MaszynaEnvironmentNode.new()
-
-    environment_node.season = MaszynaEnvironment.Season.SEASON_WINTER
-    environment_node.weather = MaszynaEnvironment.Weather.WEATHER_RAIN
-
-    assert_eq(MaterialManager.season, MaszynaEnvironment.Season.SEASON_WINTER)
-    assert_eq(MaterialManager.weather, MaszynaEnvironment.Weather.WEATHER_RAIN)
-    environment_node.free()
-
-
-func test_environment_node_sets_season_from_manual_date_thresholds() -> void:
-    var environment_node: MaszynaEnvironmentNode = add_child_autofree(MaszynaEnvironmentNode.new())
-    var time_of_day: TimeOfDay = TimeOfDay.new()
-    var cases: Array[Array] = [
-        [5, 3, 2026, MaszynaEnvironment.Season.SEASON_WINTER],
-        [7, 3, 2026, MaszynaEnvironment.Season.SEASON_SPRING],
-        [7, 6, 2026, MaszynaEnvironment.Season.SEASON_SPRING],
-        [8, 6, 2026, MaszynaEnvironment.Season.SEASON_SUMMER],
-        [9, 9, 2026, MaszynaEnvironment.Season.SEASON_SUMMER],
-        [10, 9, 2026, MaszynaEnvironment.Season.SEASON_AUTUMN],
-        [7, 12, 2026, MaszynaEnvironment.Season.SEASON_AUTUMN],
-        [8, 12, 2026, MaszynaEnvironment.Season.SEASON_WINTER],
-    ]
-
-    time_of_day.name = "TimeOfDay"
-    environment_node.add_child(time_of_day)
-    environment_node.time_of_day_path = NodePath("TimeOfDay")
-    for case_data: Array in cases:
-        environment_node.day = case_data[0]
-        environment_node.month = case_data[1]
-        environment_node.year = case_data[2]
-        environment_node._process(0.0)
-
-        assert_eq(environment_node.season, case_data[3])
-        assert_eq(MaterialManager.season, case_data[3])
-
-
-func test_environment_node_set_date_normalizes_invalid_date_via_time_of_day() -> void:
-    var environment_node: MaszynaEnvironmentNode = add_child_autofree(MaszynaEnvironmentNode.new())
-    var time_of_day: TimeOfDay = TimeOfDay.new()
-
-    time_of_day.name = "TimeOfDay"
-    environment_node.add_child(time_of_day)
-    environment_node.time_of_day_path = NodePath("TimeOfDay")
-    environment_node.set_date(2025, 4, 31)
-
-    assert_eq(environment_node.day, 1)
-    assert_eq(environment_node.month, 5)
-    assert_eq(environment_node.year, 2025)
-
-
-func test_environment_node_uses_time_of_day_date_when_system_time_enabled() -> void:
-    var environment_node: MaszynaEnvironmentNode = add_child_autofree(MaszynaEnvironmentNode.new())
-    var time_of_day: TimeOfDay = TimeOfDay.new()
-    var system_date: Dictionary = Time.get_datetime_dict_from_system()
-
-    time_of_day.set_from_datetime_dict(system_date)
-    time_of_day.name = "TimeOfDay"
-    environment_node.add_child(time_of_day)
-    environment_node.time_of_day_path = NodePath("TimeOfDay")
-    environment_node.day = 1
-    environment_node.month = 1
-    environment_node.year = 2026
-    environment_node.use_system_time = true
-    environment_node._process(0.0)
-
-    assert_eq(environment_node.day, time_of_day.day)
-    assert_eq(environment_node.month, time_of_day.month)
-    assert_eq(environment_node.year, time_of_day.year)
-    assert_eq(
-        environment_node.season,
-        environment_node._season_from_year_day(
-            _get_year_day(system_date.day, system_date.month, system_date.year)
-        )
-    )
 
 
 func test_get_material_uses_default_shader_before_variant_override() -> void:
