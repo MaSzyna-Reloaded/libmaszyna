@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalAspect" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		One aspect of a [SignalHeadKind]: what each light does when the signal head shows it.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="lights" type="PackedInt32Array" setter="set_lights" getter="get_lights" default="PackedInt32Array()">
+		</member>
+		<member name="off_times" type="PackedFloat32Array" setter="set_off_times" getter="get_off_times" default="PackedFloat32Array()">
+		</member>
+		<member name="on_times" type="PackedFloat32Array" setter="set_on_times" getter="get_on_times" default="PackedFloat32Array()">
+		</member>
+		<member name="phases" type="PackedFloat32Array" setter="set_phases" getter="get_phases" default="PackedFloat32Array()">
+		</member>
+	</members>
+	<constants>
+		<constant name="LIGHT_OFF" value="0" enum="LightCommand">
+		</constant>
+		<constant name="LIGHT_ON" value="1" enum="LightCommand">
+		</constant>
+		<constant name="LIGHT_BLINK" value="2" enum="LightCommand">
+		</constant>
+		<constant name="LIGHT_KEEP" value="3" enum="LightCommand">
+		</constant>
+	</constants>
+</class>
