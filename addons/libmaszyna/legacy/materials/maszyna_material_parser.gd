@@ -11,14 +11,16 @@ func parse(model_path:String, material_file:String) -> MaszynaMaterial:
     var material_name:String = material_file
     # FIXME: move this to MaterialManager
     var possible_paths:Array[String] = [
-        project_data_dir+"/"+model_path+"/"+material_name+".mat",
-        project_data_dir+"/textures/"+model_path+"/"+material_name+".mat",
-        project_data_dir+"/"+material_name+".mat",
-        project_data_dir+"/"+"textures/"+material_name+".mat",
+        model_path.trim_prefix("/").path_join(material_name + ".mat"),
+        "textures".path_join(model_path.trim_prefix("/")).path_join(material_name + ".mat"),
+        material_name + ".mat",
+        "textures".path_join(material_name + ".mat"),
     ]
-    for p:String in possible_paths:
-        if FileAccess.file_exists(p):
-            final_path = p
+    for relative_path:String in possible_paths:
+        relative_path = MaszynaDataPath.resolve(project_data_dir, relative_path)
+        var full_path:String = project_data_dir.path_join(relative_path)
+        if FileAccess.file_exists(full_path):
+            final_path = full_path
             break
 
     var file:FileAccess = FileAccess.open(final_path, FileAccess.READ) as FileAccess
@@ -73,7 +75,7 @@ func _update_material(mat: MaszynaMaterial, data: Dictionary) -> void:
     mat.selfillum = float(_pop_dict(data, "selfillum", 0.0))
     mat.glossiness = float(_pop_dict(data, "glossiness", 0.0))
     mat.shadow_rank = int(_pop_dict(data, "glossiness", 0))
-    mat.size = _parse_vector2i(_pop_dict(data, "size", []))
+    mat.size = _parse_size(_pop_dict(data, "size", []))
 
     for key in data:
         var value = data[key]
@@ -116,17 +118,20 @@ func _update_variant(variant: MaszynaMaterial.MaszynaMaterialVariant, key: Strin
         else:
             variant.set_texture_path(texture_name, cleaned_value)
     elif key == "shader":
-        variant.shader = str(value)
+        # the original resolves "mat_<name>.frag" on a case insensitive file system
+        # (opengl33renderer.cpp:2018) and the data relies on it ("shader: Default_1")
+        variant.shader = str(value).to_lower()
     elif key.begins_with("param_"):
         var parameter_name := key.substr(6)
         if typeof(value) == TYPE_ARRAY:
             var values: Array = value
             if values.size() == 4:
                 variant.set_parameter_vec4(parameter_name, _parse_vector4(values))
-            elif values.size() == 1:
-                variant.set_parameter(parameter_name, float(values[0]))
             else:
-                push_warning("Unsupported material parameter array for %s" % key)
+                # Quirk: besides a 4 component value, an array here is the same key repeated in one
+                # block (real data, e.g. pods_grass.mat) - the original keeps the first definition,
+                # a later one with the same priority is ignored (material.cpp:351-357).
+                variant.set_parameter(parameter_name, float(values[0]))
         else:
             variant.set_parameter(parameter_name, float(value))
 
@@ -135,11 +140,11 @@ func _pop_dict(dict: Dictionary, key: Variant, default: Variant=null) -> Variant
     dict.erase(key)
     return output
 
-func _parse_vector2i(value: Array) -> Vector2i:
-    if value:
-        if value.size() == 2:
-            return Vector2i(int(value[0].strip_edges()), int(value[1].strip_edges()))
-    return Vector2i.ONE
+## Metres, fractions allowed ("size: 0.4 0.4"); -1 when absent (material.cpp:399-403)
+func _parse_size(value: Array) -> Vector2:
+    if value.size() == 2:
+        return Vector2(float(value[0].strip_edges()), float(value[1].strip_edges()))
+    return Vector2(-1.0, -1.0)
 
 func _parse_vector4(value: Array) -> Vector4:
     if value.size() == 4:
@@ -152,7 +157,8 @@ func _parse_vector4(value: Array) -> Vector4:
     return Vector4.ZERO
 
 func _clean_texture_path(path:String) -> String:
-    return path.split(":")[0]
+    # utilities.cpp:537 (deserialize_random_set) - the original swaps "\\" for "/" in texture paths.
+    return path.split(":")[0].replace("\\", "/")
 
 func _texture_requires_transparency(path:String) -> bool:
     var _parts:PackedStringArray = path.split(":")

@@ -28,12 +28,11 @@ static var WEATHER_MAP: Dictionary[MaszynaEnvironment.Weather, String] = {
 }
 
 class MaszynaMaterialVariant extends RefCounted:
+    # Numbered textures ("tex1", "tex2", ...) have no alias: which slot of the shader they bind is
+    # resolved by MaszynaMaterialFactory.
     const TEXTURE_ALIASES = {
-        "tex1": ["diffuse"],
-        "tex2": ["normals", "normalmap"],
-        "normals": ["normalmap", "tex2"],
-        "diffuse": ["tex1"],
-        "normalmap": ["normals", "tex2"],
+        "normals": ["normalmap"],
+        "normalmap": ["normals"],
     }
 
     var _textures: Dictionary[String, String] = {}
@@ -102,7 +101,8 @@ var selfillum: float = 0.0
 var glossiness: float = 0.0
 var shadow_rank: int
 var transparent: bool = false
-var size:Vector2i = Vector2i.ONE
+## Physical size of the texture in metres, -1 where the .mat declares none (material.h:32)
+var size:Vector2 = Vector2(-1.0, -1.0)
 
 var default: MaszynaMaterialVariant = MaszynaMaterialVariant.new()
 var variants: Dictionary[String, MaszynaMaterialVariant] = {}
