@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalHeadKind" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a kind of signal head can show: its aspects by name.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_aspect" qualifiers="const">
+			<return type="SignalAspect" />
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="get_aspect_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="has_aspect" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="aspects" type="Dictionary" setter="set_aspects" getter="get_aspects" default="{}">
+		</member>
+		<member name="blink_off_time" type="float" setter="set_blink_off_time" getter="get_blink_off_time" default="0.5">
+		</member>
+		<member name="blink_on_time" type="float" setter="set_blink_on_time" getter="get_blink_on_time" default="0.5">
+		</member>
+	</members>
+</class>
