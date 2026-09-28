@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryHUDMouseServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Scenery models operated by mouse while walking.
+	</brief_description>
+	<description>
+		A left click on a registered scenery model calls what its owner handed in, Shift+click the other operation - the original's click on a scenery model in free-fly mode, which fires the event launcher of the model's name and is how a hand-thrown switch is set. The model under the cursor is outlined the way [CabinHUDMouseSystem] outlines a cab control; the original shows nothing there.
+		A pickable is an [E3DRenderingServer] instance and its operations. Picking tests the camera ray against the registered instances alone, on mouse motion only, while the cursor is visible and over no GUI control; an instance that is not built (not streamed in) is not hit. Nothing hides a model: one standing behind a building is picked through it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="mouse_input">
+			<return type="bool" />
+			<param index="0" name="event" type="InputEvent" />
+			<description>
+				Feeds one input event. Mouse motion updates the hovered pickable and its outline; a left button press on it calls [code]pressed[/code] - with Shift held [code]shift_pressed[/code] - of every pickable of the hovered instance. Returns [code]true[/code] when the event operated a pickable and is consumed.
+			</description>
+		</method>
+		<method name="mouse_set_active">
+			<return type="void" />
+			<param index="0" name="active" type="bool" />
+			<description>
+				Inactive, nothing is picked and the outline is taken off - the original picks scenery only in free-fly mode, never from the cab.
+			</description>
+		</method>
+		<method name="mouse_set_camera">
+			<return type="void" />
+			<param index="0" name="camera_id" type="int" />
+			<description>
+				The [Camera3D], by instance id, whose view is picked from; nothing is picked while it is not current.
+			</description>
+		</method>
+		<method name="pickable_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="caption" type="String" />
+			<param index="2" name="hints" type="String" />
+			<param index="3" name="pressed" type="Callable" />
+			<param index="4" name="shift_pressed" type="Callable" />
+			<description>
+				Registers the [E3DRenderingServer] [param instance] as a pickable: a click on it calls [param pressed], a Shift+click [param shift_pressed]. [param caption] and [param hints] (the keys that do the same) are sent with [signal pickable_hovered] for the tooltip.
+			</description>
+		</method>
+		<method name="pickable_free">
+			<return type="void" />
+			<param index="0" name="pickable" type="RID" />
+			<description>
+				Forgets the pickable, taking its outline off if it is hovered. Free it before its instance.
+			</description>
+		</method>
+		<method name="pickable_get_hovered" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The pickable under the cursor, an invalid [RID] for none.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="pickable_hovered">
+			<param index="0" name="caption" type="String" />
+			<param index="1" name="hints" type="String" />
+			<description>
+				The cursor came onto a pickable: its caption and key hints, for the tooltip.
+			</description>
+		</signal>
+		<signal name="pickable_unhovered">
+			<description>
+				No pickable is under the cursor any more.
+			</description>
+		</signal>
+	</signals>
+</class>
