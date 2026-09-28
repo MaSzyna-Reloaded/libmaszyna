@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://b6p4h8x4k2r5s"]
+
+[ext_resource type="Script" uid="uid://c7vyavjvrceta" path="res://addons/libmaszyna/editor/info_window.gd" id="1_1"]
+
+[node name="InfoWindow" type="Window" unique_id=1508918683]
+title = "Tracks topology"
+initial_position = 2
+size = Vector2i(400, 300)
+visible = false
+script = ExtResource("1_1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=533262192]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="VBoxContainer" unique_id=1558571723]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Rebuilding..."
+autowrap_mode = 2
+
+[node name="OKButton" type="Button" parent="VBoxContainer" unique_id=1923034173]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "OK"
