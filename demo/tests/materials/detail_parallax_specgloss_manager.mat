@@ -1,0 +1,5 @@
+shader: detail_parallax_specgloss
+texture_diffuse: dps_diffuse
+texture_normalmap: dps_normal
+texture_specgloss: dps_specgloss
+texture_detailnormalmap: fx/t_detail_normal_3
