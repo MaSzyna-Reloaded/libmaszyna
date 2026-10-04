@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WorkerTaskQueue" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Multithreaded FIFO of tasks on worker threads of its own.
+	</brief_description>
+	<description>
+		Runs submitted [Callable]s on [code]max(processor count - 2, 1)[/code] worker threads of its own, started with the first task - never Godot's [WorkerThreadPool], which the engine's own loading waits for: a task there that waits for the main thread (a mesh read back from the [RenderingServer]) deadlocks it. A task may submit further tasks and [method wait] for them: the waiting thread runs queued tasks meanwhile, so nested waiting does not deadlock. Used by [code]SceneryInstancer[/code] to parse every scenery include as a separate task, by [SceneryStreamingServer] to preload what it streams, and to read vehicle profiles. Queued tasks are dropped when the queue is freed; the queue must not be freed by its own task.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="drain">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_completed_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of finished tasks.
+			</description>
+		</method>
+		<method name="get_submitted_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of tasks submitted so far, including those submitted by other tasks.
+			</description>
+		</method>
+		<method name="get_worker_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of worker threads: [code]max(processor count - 2, 1)[/code].
+			</description>
+		</method>
+		<method name="is_done" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="task_id" type="int" />
+			<description>
+				Returns [code]true[/code] when the task has finished and its result can be taken with [method wait] without blocking.
+			</description>
+		</method>
+		<method name="submit">
+			<return type="int" />
+			<param index="0" name="task" type="Callable" />
+			<description>
+				Queues [param task] ([code]task() -&gt; Variant[/code]) and returns its id.
+			</description>
+		</method>
+		<method name="wait">
+			<return type="Variant" />
+			<param index="0" name="task_id" type="int" />
+			<description>
+				Returns the result of the task and forgets it. Until the task is done, the calling thread runs other queued tasks.
+			</description>
+		</method>
+	</methods>
+</class>

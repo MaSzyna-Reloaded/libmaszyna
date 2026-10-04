@@ -1,0 +1,7 @@
+// subscene cache fixture: big.scm without parameters is a cached subscene (twice, other origin)
+include subscene/big.scm end
+origin 100 0 0
+include subscene/big.scm end
+endorigin
+include subscene/big.scm x end
+include subscene/small.inc end
