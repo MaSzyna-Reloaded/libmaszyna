@@ -38,6 +38,13 @@
 				Returns [code]true[/code] if the main cache file exists. If [param hash] is not empty, returns [code]true[/code] only when a matching sidecar file at [code]&lt;cache file&gt;.hash[/code] exists and contains the same value.
 			</description>
 		</method>
+		<method name="get_file_path" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Where the entry [param path] is kept, for files an entry writes beside it (a scenery's terrain chunks).
+			</description>
+		</method>
 		<method name="remove" qualifiers="const">
 			<return type="void" />
 			<param index="0" name="path" type="String" />

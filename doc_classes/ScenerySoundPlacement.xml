@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenerySoundPlacement" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		An ambient sound supplied by a [SceneryStreamingProvider].
+	</brief_description>
+	<description>
+		An item of [constant SceneryStreamingProvider.CONTENT_SOUNDS]: a sound looped at its place by [code]ScenerySoundServer[/code] while its cell is supplied and the listener is within its reach. It is named by nothing, so no event plays or stops it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="position" type="Vector3" setter="set_position" getter="get_position" default="Vector3(0, 0, 0)">
+			Where the sound is in the world.
+		</member>
+		<member name="reach" type="float" setter="set_reach" getter="get_reach" default="0.0">
+			How far it is heard [m]; it is streamed that far.
+		</member>
+		<member name="stream" type="AudioStream" setter="set_stream" getter="get_stream">
+			What is looped - a stream that loops itself.
+		</member>
+		<member name="volume_db" type="float" setter="set_volume_db" getter="get_volume_db" default="0.0">
+			Its gain [dB].
+		</member>
+	</members>
+</class>

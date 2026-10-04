@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryTrianglesSink" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where a scenery's [code]triangles[/code] nodes go as they are parsed.
+	</brief_description>
+	<description>
+		Cuts the triangles along the 1 km grid and merges them into chunks - a texture, a cell and a visibility range each - as they are added, so the raw triangles of every include are never kept. A sink with a directory keeps at most [constant BUDGET_BYTES] of geometry in memory and writes its largest chunks to the directory past that; [method finish] puts each chunk together in one [MaszynaTrianglesChunkGeometry] file there. A sink without one keeps everything in memory. Thread-safe.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_geometry">
+			<return type="void" />
+			<param index="0" name="geometry" type="MaszynaTrianglesChunkGeometry" />
+			<description>
+				Appends a whole chunk's geometry to the chunk of its texture, cell and range.
+			</description>
+		</method>
+		<method name="add_triangles">
+			<return type="void" />
+			<param index="0" name="texture" type="String" />
+			<param index="1" name="vertices" type="PackedVector3Array" />
+			<param index="2" name="normals" type="PackedVector3Array" />
+			<param index="3" name="uvs" type="PackedVector2Array" />
+			<param index="4" name="range_min" type="float" />
+			<param index="5" name="range_max" type="float" />
+			<description>
+				Adds triangles in world space, three vertices each, cut into the cells they cover.
+			</description>
+		</method>
+		<method name="cell_get_origin" qualifiers="static">
+			<return type="Vector3" />
+			<param index="0" name="cell" type="Vector2i" />
+			<description>
+				The centre of a cell of the grid, which a chunk's positions are relative to.
+			</description>
+		</method>
+		<method name="create" qualifiers="static">
+			<return type="SceneryTrianglesSink" />
+			<param index="0" name="directory" type="String" />
+			<param index="1" name="budget_bytes" type="int" default="268435456" />
+			<description>
+				A sink writing to [param directory], which is emptied first; an empty one keeps everything in memory.
+			</description>
+		</method>
+		<method name="finish">
+			<return type="Array" />
+			<description>
+				Writes every chunk to [code]&lt;directory&gt;/&lt;index&gt;.res[/code] and empties the sink. Returns a [Dictionary] per chunk: [code]path[/code], [code]position[/code], [code]texture[/code], [code]range_min[/code], [code]range_max[/code].
+			</description>
+		</method>
+		<method name="get_geometries" qualifiers="const">
+			<return type="MaszynaTrianglesChunkGeometry[]" />
+			<description>
+				The chunks kept in memory, in the order they first appeared.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="BUDGET_BYTES" value="268435456">
+			Geometry kept in memory by a sink with a directory before its largest chunks go to disk.
+		</constant>
+	</constants>
+</class>

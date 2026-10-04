@@ -1,0 +1,3 @@
+// a switch's .inc nests an origin in its own (2-5-13/l34000_r.inc)
+include nested_origin.inc 100 0 50 end
+node -1 0 after model 1 0 0 0 a/after.t3d none endmodel
