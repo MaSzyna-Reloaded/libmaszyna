@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CabinHUDMouseSystem" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Cab controls operated by mouse.
+	</brief_description>
+	<description>
+		The control under the cursor is outlined and captioned, a left click presses it, and dragging a draggable control moves it one step per [constant DRAG_STEP_PIXELS] of travel. A drag works along one mouse axis, up-down or left-right, chosen by its first movement and kept until the button is let go. Which way an increase goes on each axis follows the control's grip - for a turning control the point farthest from its axis, or the top of its turning circle when the axis lies flat (a wheel) - unless the control fixes it. The cursor is hidden for the drag and put back where it began.
+		A control is a [MeshInstance3D] and the operations its owner hands in. Picking tests the camera ray against the triangles of each control mesh in the mesh's space, on mouse motion only, while the cursor is visible and over no GUI control. The nearest control hit wins unless an occluder is hit nearer.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="control_create">
+			<return type="RID" />
+			<param index="0" name="mesh_instance_id" type="int" />
+			<param index="1" name="caption" type="String" />
+			<param index="2" name="hints" type="String" />
+			<param index="3" name="pressed" type="Callable" />
+			<param index="4" name="released" type="Callable" />
+			<param index="5" name="increase" type="Callable" />
+			<param index="6" name="decrease" type="Callable" />
+			<param index="7" name="step_rotation" type="Basis" />
+			<param index="8" name="step_offset" type="Vector3" />
+			<param index="9" name="drag" type="Callable" />
+			<param index="10" name="drag_signs" type="Vector2" />
+			<description>
+				Registers the mesh with instance id [param mesh_instance_id] as a control, with every mesh under it (a handle turning with it). A control with another control under it is a panel and only its own mesh: what lies on it is not its own. [param pressed] and [param released] are called when the left button goes down on it and up again; a valid [param increase] makes it draggable, [param increase] and [param decrease] being called per step. An empty [param caption] shows no caption; [param hints] are the keys that work the control. A non-zero [param drag_signs] fixes which way an increase goes on each mouse axis (x: +1 right, y: +1 down) instead of taking it from the control's grip. A valid [param drag] makes the control move continuously instead: it is called with the travel of every mouse motion, in pixels along the control's movement on screen, and the steps are not used. One increase turns the mesh by [param step_rotation] in its own space and shifts it by [param step_offset] in its parent's - the drag direction on screen comes from that.
+			</description>
+		</method>
+		<method name="control_free">
+			<return type="void" />
+			<param index="0" name="control" type="RID" />
+			<description>
+				Forgets the control, ending a hover or a drag it is part of.
+			</description>
+		</method>
+		<method name="control_get_hovered" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The control under the cursor, or an empty [RID].
+			</description>
+		</method>
+		<method name="control_set_state">
+			<return type="void" />
+			<param index="0" name="control" type="RID" />
+			<param index="1" name="state" type="String" />
+			<description>
+				What the control shows now - a position, a level - as its owner words it. Shown under the caption, and announced with [signal control_state_changed] while the control is hovered.
+			</description>
+		</method>
+		<method name="mouse_input">
+			<return type="bool" />
+			<param index="0" name="event" type="InputEvent" />
+			<description>
+				Feeds one input event. Returns [code]true[/code] when the event operated a control and should be consumed.
+			</description>
+		</method>
+		<method name="mouse_set_camera">
+			<return type="void" />
+			<param index="0" name="camera_id" type="int" />
+			<description>
+				The [Camera3D], by instance id, whose view the cursor points into. Picking is off while it is not current.
+			</description>
+		</method>
+		<method name="occluder_create">
+			<return type="RID" />
+			<param index="0" name="mesh_instance_id" type="int" />
+			<description>
+				Registers the mesh with instance id [param mesh_instance_id] as geometry that hides the controls behind it (the cab's desk and walls). A control's own mesh may be registered too - its hits stay the control's.
+			</description>
+		</method>
+		<method name="occluder_free">
+			<return type="void" />
+			<param index="0" name="occluder" type="RID" />
+			<description>
+				Forgets the occluder.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="control_hovered">
+			<param index="0" name="caption" type="String" />
+			<param index="1" name="hints" type="String" />
+			<param index="2" name="state" type="String" />
+			<description>
+				The cursor came onto a control that has a caption.
+			</description>
+		</signal>
+		<signal name="control_state_changed">
+			<param index="0" name="state" type="String" />
+			<description>
+				The hovered control's state changed.
+			</description>
+		</signal>
+		<signal name="control_unhovered">
+			<description>
+				The cursor left the control it was on.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="DRAG_STEP_PIXELS" value="28">
+			Vertical mouse travel, in pixels, that moves a dragged control by one step.
+		</constant>
+	</constants>
+</class>
