@@ -2,40 +2,17 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLANG_TIDY_BUILD_DIR="${ROOT_DIR}/build-clang-tidy"
-CLANG_TIDY_EXTRA_ARGS=()
 
 usage() {
     echo "Usage: scripts/style-fix [path/to/file]" >&2
-}
-
-ensure_compile_commands() {
-    if [ ! -f "${CLANG_TIDY_BUILD_DIR}/compile_commands.json" ] || \
-        [ ! -f "${CLANG_TIDY_BUILD_DIR}/godot-cpp/gen/include/godot_cpp/classes/engine.hpp" ] || \
-        [ ! -f "${CLANG_TIDY_BUILD_DIR}/godot-cpp/gen/include/godot_cpp/core/gdextension_interface_loader.hpp" ]; then
-        echo "Style: configuring clang-tidy database..."
-        cmake --log-level=ERROR -S "${ROOT_DIR}" -B "${CLANG_TIDY_BUILD_DIR}" \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-        cmake --build "${CLANG_TIDY_BUILD_DIR}" --target generate_bindings
-    fi
 }
 
 is_supported_format_file() {
     [[ "$1" == *.cpp || "$1" == *.hpp || "$1" == *.h ]]
 }
 
-is_supported_tidy_file() {
-    [[ "$1" == *.cpp || "$1" == *.cc || "$1" == *.cxx || "$1" == *.c || "$1" == *.hpp || "$1" == *.h ]]
-}
-
-is_header_tidy_file() {
-    [[ "$1" == *.hpp || "$1" == *.h ]]
-}
-
 is_excluded_file() {
-    [[ "$1" == src/maszyna/* || "$1" == src/gen/* ]]
+    [[ "$1" == src/legacy/maszyna-mover/* || "$1" == src/gen/* ]]
 }
 
 resolve_target_file() {
@@ -55,7 +32,7 @@ resolve_target_file() {
         exit 1
     fi
 
-    if ! is_supported_format_file "${file}" && ! is_supported_tidy_file "${file}"; then
+    if ! is_supported_format_file "${file}"; then
         echo "Style fix: unsupported file type: ${file}" >&2
         exit 1
     fi
@@ -66,71 +43,12 @@ resolve_target_file() {
 run_clang_format() {
     if [ "$#" -eq 0 ]; then
         find "${ROOT_DIR}/src" \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \) \
-            -not -path "${ROOT_DIR}/src/maszyna/*" \
+            -not -path "${ROOT_DIR}/src/legacy/maszyna-mover/*" \
             -not -path "${ROOT_DIR}/src/gen/*" \
             -exec clang-format -i --style=file {} +
     elif is_supported_format_file "$1"; then
         clang-format -i --style=file "${ROOT_DIR}/$1"
     fi
-}
-
-run_clang_tidy() {
-    local files=()
-    local file=""
-
-    if [ "$#" -eq 0 ]; then
-        while IFS= read -r file; do
-            files+=("${file#${ROOT_DIR}/}")
-        done < <(
-            find "${ROOT_DIR}/src" \( -name "*.cpp" -or -name "*.cc" -or -name "*.cxx" -or -name "*.c" -or -name "*.hpp" -or -name "*.h" \) \
-                -not -path "${ROOT_DIR}/src/maszyna/*" \
-                -not -path "${ROOT_DIR}/src/gen/*"
-        )
-    elif is_supported_tidy_file "$1"; then
-        files=("$1")
-    fi
-
-    for file in "${files[@]}"; do
-        local translation_unit="${file}"
-        local line_filter="${ROOT_DIR}/${file}"
-        local header_filter_args=()
-
-        if is_header_tidy_file "${file}"; then
-            translation_unit=""
-
-            for extension in cpp cc cxx c; do
-                local candidate="${file%.*}.${extension}"
-                if [ -f "${ROOT_DIR}/${candidate}" ] && ! is_excluded_file "${candidate}"; then
-                    translation_unit="${candidate}"
-                    break
-                fi
-            done
-
-            if [ -z "${translation_unit}" ]; then
-                translation_unit="$(
-                    find "${ROOT_DIR}/src" -type f \
-                        \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.c' \) \
-                        -exec grep -l -m 1 "#include [\"<].*$(basename "${file}")[\">]" {} + | head -n 1
-                )"
-                translation_unit="${translation_unit#${ROOT_DIR}/}"
-            fi
-
-            if [ -z "${translation_unit}" ]; then
-                echo "Style fix: could not find translation unit for header: ${file}" >&2
-                exit 1
-            fi
-
-            header_filter_args=("-header-filter=${ROOT_DIR}/${file}")
-        fi
-
-        (
-            cd "${ROOT_DIR}"
-            clang-tidy --fix --fix-errors --quiet -p "${CLANG_TIDY_BUILD_DIR}" "${CLANG_TIDY_EXTRA_ARGS[@]}" \
-                -warnings-as-errors=-* \
-                "${header_filter_args[@]}" \
-                -line-filter="[{\"name\":\"${line_filter}\"}]" "${translation_unit}"
-        )
-    done
 }
 
 if [ "$#" -gt 1 ]; then
@@ -143,23 +61,9 @@ if [ "$#" -eq 1 ]; then
     target_file="$(resolve_target_file "$1")"
 fi
 
-ensure_compile_commands
-
+# Formatting only. clang-tidy fixes are not applied here: run per file, a rename reaches the
+# declaration but not its uses in other files. Fix clang-tidy findings by hand.
 echo "Style fix: running clang-format..."
-if [ -n "${target_file}" ]; then
-    run_clang_format "${target_file}"
-else
-    run_clang_format
-fi
-
-echo "Style fix: running clang-tidy fixes..."
-if [ -n "${target_file}" ]; then
-    run_clang_tidy "${target_file}"
-else
-    run_clang_tidy
-fi
-
-echo "Style fix: running clang-format after fixes..."
 if [ -n "${target_file}" ]; then
     run_clang_format "${target_file}"
 else
