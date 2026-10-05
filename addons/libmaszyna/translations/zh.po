@@ -1,0 +1,155 @@
+# Strings of the wrapper's own that the game's catalogue (lang/*.po) does not have - the state of a
+# cab control shown under its caption, the development console, the scenery loading stages.
+# MaszynaTranslationServer merges them under the game's catalogue.
+# template.po lists every msgid, as the game's lang/template.po does, for a new language to start from.
+msgid ""
+msgstr ""
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "forward"
+msgstr "前进"
+
+msgid "neutral"
+msgstr "空挡"
+
+msgid "backward"
+msgstr "后退"
+
+msgid "on"
+msgstr "开"
+
+msgid "off"
+msgstr "关"
+
+msgid "pressed"
+msgstr "按下"
+
+msgid "released"
+msgstr "松开"
+
+msgid "high tone"
+msgstr "高音"
+
+msgid "low tone"
+msgstr "低音"
+
+msgid "filling"
+msgstr "充风"
+
+msgid "drive"
+msgstr "运转"
+
+msgid "cutoff"
+msgstr "保压"
+
+msgid "first braking step"
+msgstr "初制动"
+
+msgid "full braking"
+msgstr "全制动"
+
+msgid "emergency braking"
+msgstr "紧急制动"
+
+# the development console
+
+msgid "Development console."
+msgstr "开发者控制台。"
+
+msgid "Enter \"help\" for instructions"
+msgstr "输入 \"help\" 查看说明"
+
+msgid "Too few arguments! Required < %d >"
+msgstr "参数太少！需要 < %d >"
+
+msgid "Too many arguments! < %d > Max"
+msgstr "参数太多！最多 < %d >"
+
+msgid "Command not found."
+msgstr "未找到命令。"
+
+msgid "Exit game"
+msgstr "退出游戏"
+
+msgid "Clear console"
+msgstr "清空控制台"
+
+msgid "Delete console history"
+msgstr "删除控制台历史"
+
+msgid "Print this help"
+msgstr "显示此帮助"
+
+msgid "Broadcast message to all trains"
+msgstr "向所有列车广播消息"
+
+msgid "Send message to a train"
+msgstr "向列车发送消息"
+
+msgid "List trains"
+msgstr "列出列车"
+
+msgid "List available train commands"
+msgstr "列出可用的列车命令"
+
+msgid "Get train state / parameter"
+msgstr "获取列车状态 / 参数"
+
+msgid "Get train config property"
+msgstr "获取列车配置属性"
+
+msgid "List train config properties"
+msgstr "列出列车配置属性"
+
+msgid "Occupied cabin: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+msgstr "所驾驶的司机室：controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+
+# loading a scenery, under the loading screen's progress bar
+
+msgid "Parsing %s"
+msgstr "正在解析 %s"
+
+msgid "Reading cache"
+msgstr "正在读取缓存"
+
+msgid "Saving cache"
+msgstr "正在保存缓存"
+
+msgid "Registering tracks and traction"
+msgstr "正在注册轨道与接触网"
+
+msgid "Registering tracks"
+msgstr "正在注册轨道"
+
+msgid "Registering traction"
+msgstr "正在注册接触网"
+
+msgid "Registering %s"
+msgstr "正在注册 %s"
+
+msgid "Building terrain"
+msgstr "正在构建地形"
+
+msgid "Registering terrain"
+msgstr "正在注册地形"
+
+msgid "Instancing objects"
+msgstr "正在实例化对象"
+
+msgid "Instancing %s"
+msgstr "正在实例化 %s"
+
+msgid "Instancing vehicles"
+msgstr "正在实例化车辆"
+
+msgid "cab activation"
+msgstr "驾驶室激活"
+
+msgid "mirrors"
+msgstr "后视镜"
+
+msgid "radio call 1"
+msgstr "无线电1号频道呼叫"

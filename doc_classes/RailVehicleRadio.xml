@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleRadio" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="channel_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="channel_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="channel_set">
+			<return type="void" />
+			<param index="0" name="channel" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_channel" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_powered" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_radio_stop_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="radio">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="radio_call">
+			<return type="void" />
+			<param index="0" name="pressed" type="bool" />
+			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
+			<description>
+			</description>
+		</method>
+		<method name="radio_stop">
+			<return type="void" />
+			<param index="0" name="pressed" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="volume_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="volume_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="channel_max" type="int" setter="set_channel_max" getter="get_channel_max" default="10">
+		</member>
+		<member name="channel_min" type="int" setter="set_channel_min" getter="get_channel_min" default="1">
+		</member>
+	</members>
+	<signals>
+		<signal name="channel_changed">
+			<param index="0" name="channel" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="radio_toggled">
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="RADIO_CALL1" value="0" enum="RadioCall">
+		</constant>
+		<constant name="RADIO_CALL3" value="1" enum="RadioCall">
+		</constant>
+	</constants>
+</class>
