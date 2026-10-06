@@ -1,0 +1,39 @@
+models: test_body.t3d
+
+sounds:
+oilpump: 697_test-oilpump.wav
+fuelpump: [1007]test-fuelpump.wav
+horn1: horn-sn61-start.wav horn-sn61.wav horn-sn61-stop.wav 220
+small-compressor: s-compressor-start.wav,s-compressor.wav,s-compressor-stop.wav 20
+pantographup: pantup1.wav
+battery: { soundbegin: battery-start.wav soundmain: battery-trwa.wav soundend: battery-stop.wav }
+compressor: { soundset: [ comp-a-start.wav|comp-a-mid.wav|comp-a-end.wav, comp-b-start.wav|comp-b-mid.wav|comp-b-end.wav ] range: 120 }
+engine: {
+ crossfade: 90
+ soundend: engine-stop.wav
+ sound400: silence1.wav pitch400: 400
+ sound600: engine-idle-1.wav pitch600: 600
+ sound1000: engine-idle-2.wav pitch1000: 1000 }
+unrecognizedlabel: { soundmain: unrecognized.wav }
+endsounds
+
+internaldata:
+rainsound: { sound0: rain_default.wav sound30: rain_normal.wav amplitudefactor: 0.5 }
+ignition: { range: 150 soundmain: engine-start.wav }
+shutdown: engine-shutdown-unused.wav
+buzzer: [ buczek.wav 24150_buczek_cashp.wav ]
+buzzershp: { soundmain: buzzershp-main.wav }
+tachoclock: { sound1: hasler_1_km.wav sound10: hasler_10_km.wav sound150: hasler_150_km.wav }
+brakesound: { soundmain: cab-brakesound.wav placement: internal }
+slipperysound: cab-slippery.wav 2.0 0.2
+airsound: { soundmain: [ cab-airsound.wav ] amplitudeoffset: -0.01 }
+airsound2: [1007]cab-airsound2.wav 0.05 -0.01
+localbrakesound: { soundbegin: local-start.wav soundmain: local-mid.wav soundend: local-end.wav }
+localbrakesound2: { soundbegin: local2-start.wav soundmain: local2-mid.wav soundend: silence1.wav }
+cab1definition: -1.0 1.0 -2.0 1.0 2.0 -1.0
+driver1pos: 0.5 3.0 -3.0
+cab1model: test_kabina.t3d
+brakesound: { soundmain: internaldata_brakesound.wav }
+buzzer: [ buczek.wav bzyczek.wav ]
+mainctrl: nastawnik rot -0.056 0 0.1
+cab0definition: 0 0

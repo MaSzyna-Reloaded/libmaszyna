@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlanarMirror3D" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A planar mirror on the glass it is the child of.
+	</brief_description>
+	<description>
+		The parent [MeshInstance3D] reflects on the side away from its own parent mesh, the mirror's housing (on the side it is seen from without one). A camera mirrored across it renders the scene into a texture drawn over the glass as its [member GeometryInstance3D.material_overlay]. It renders only while the glass is visible, in view and within [member max_distance] of the camera, and cheaply: at [member resolution_scale] of the pixels the glass covers on the screen, without omni/spot shadows, anti-aliasing, GI and screen-space effects, with coarser LODs. The scene's environment is copied each time the mirror starts rendering.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="max_distance" type="float" setter="set_max_distance" getter="get_max_distance" default="30.0">
+			How far from the camera the mirror still renders, in meters.
+		</member>
+		<member name="resolution_scale" type="float" setter="set_resolution_scale" getter="get_resolution_scale" default="2.0">
+			The size of the reflection relative to the pixels the glass covers on the screen.
+		</member>
+	</members>
+</class>

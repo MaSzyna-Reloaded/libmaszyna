@@ -1,1 +1,0 @@
-extends Cabin3D
