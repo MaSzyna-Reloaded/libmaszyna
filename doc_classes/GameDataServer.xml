@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GameDataServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The game's data - everything read from the MaSzyna game directory - and what is kept of it.
+	</brief_description>
+	<description>
+		Knows none of the owners of that data. Each of them follows its requests itself: every [ResourceCache] connects its own [method ResourceCache.clear] to [signal cache_clear_requested] when it is created, and every server, system and node that holds or has built something of the game's data follows [signal data_unload_requested] and [signal data_reload_requested].
+		"Clear caches" ([method cache_clear]) throws the caches on disk away. A reload ([method data_reload]) - the game directory changed ([signal UserSettings.game_dir_changed]), or "Reload game data" asked - goes in two rounds: every owner first drops what it holds in memory, then builds again what it has built. Whatever is built takes its data from its owner when it needs it, so by the second round every owner hands out the new data, in whatever order they rebuild. The two are separate: a reload leaves the caches on disk, whose keys know the game directory.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_check_version">
+			<return type="bool" />
+			<description>
+				Compares the build stamp with the one stored in the user settings ([code]app/build_number[/code]) and, when they differ, emits [signal cache_clear_requested] and stores the current stamp. Returns whether the caches were cleared.
+				Runs at most once per run and does nothing in a checkout that was never built. Call it from the entry point of a scene, before anything reads a cache.
+			</description>
+		</method>
+		<method name="build_get_number" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the stamp written by the build itself ([code]cmake/write_build_number.cmake[/code]), so it names the library that is actually loaded. Empty in a checkout that was never built.
+			</description>
+		</method>
+		<method name="cache_clear">
+			<return type="void" />
+			<description>
+				Emits [signal cache_clear_requested], which clears every cache connected to it.
+			</description>
+		</method>
+		<method name="data_reload">
+			<return type="void" />
+			<description>
+				Everything read from the game directory is read again: emits [signal data_unload_requested], then [signal data_reload_requested]. Called on every change of the game directory.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="cache_clear_requested">
+			<description>
+				Emitted when every cache on disk is to be dropped, by [method cache_clear] or by [method build_check_version].
+			</description>
+		</signal>
+		<signal name="data_reload_requested">
+			<description>
+				The second round of [method data_reload]: every owner builds again what it has built of the game's data. Everything held in memory has been dropped by then.
+			</description>
+		</signal>
+		<signal name="data_unload_requested">
+			<description>
+				The first round of [method data_reload]: every owner drops what it holds in memory of the game's data - a memo of loaded models, materials, templates, a vehicle built of it.
+			</description>
+		</signal>
+	</signals>
+</class>

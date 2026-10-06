@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehiclePhysicsNode" inherits="VehiclePhysicsNode" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="load_amount" type="float" setter="set_load_amount" getter="get_load_amount" default="0.0">
+		</member>
+		<member name="load_name" type="String" setter="set_load_name" getter="get_load_name" default="&quot;&quot;">
+		</member>
+		<member name="type_name" type="String" setter="set_type_name" getter="get_type_name" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

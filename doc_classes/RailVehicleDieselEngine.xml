@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleDieselEngine" inherits="RailVehicleEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Diesel engine handler class, for vehicles with a mechanical transmission (gearbox, optional torque converter and retarder).
+	</brief_description>
+	<description>
+		Class handling diesel engines with a mechanical transmission. Vehicles with an electric transmission
+		([code]EngineType=DieselElectric[/code]) should use [RailVehicleDieselElectricEngine] instead, which extends this
+		class with the electric-transmission-specific FIZ fields (and [member RailVehicleDieselElectricEngine.wwlist]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="fuel_pump">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Operate fuel pump
+			</description>
+		</method>
+		<method name="fuel_pump_switch_off">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_auxiliary_circuit_water_temperature" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_clutch_desired" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_clutch_engagement" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_engine_temperature" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fill" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fill_desired" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fuel_pump_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fuel_pump_disabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fuel_pump_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_heat_malfunction" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_idle_rpm_count" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ignition" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_circuit_water_temperature" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_max_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_oil_pump_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_oil_pump_disabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_oil_pump_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_oil_pump_pressure" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_oil_temperature" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_output_power" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_retarder_fill" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spinup" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_startup" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_torque" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_circuits_link" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_heater_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_heater_breaker" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_heater_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_pump_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_pump_breaker" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_pump_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_water_temperature" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="oil_pump">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Operate oil pump
+			</description>
+		</method>
+		<method name="oil_pump_switch_off">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_circuits_link">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_heater">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_heater_breaker">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_pump">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_pump_breaker">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="water_pump_switch_off">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="clutch_diameter" type="float" setter="set_clutch_diameter" getter="get_clutch_diameter" default="0.5">
+		</member>
+		<member name="clutch_friction" type="float" setter="set_clutch_friction" getter="get_clutch_friction" default="0.5">
+		</member>
+		<member name="clutch_max_force" type="float" setter="set_clutch_max_force" getter="get_clutch_max_force" default="6000.0">
+		</member>
+		<member name="clutch_min_velocity_full_engage" type="float" setter="set_clutch_min_velocity_full_engage" getter="get_clutch_min_velocity_full_engage" default="0.0">
+		</member>
+		<member name="cooling_fan_speed" type="float" setter="set_cooling_fan_speed" getter="get_cooling_fan_speed" default="0.075">
+			[code]Engine:WaterCoolingFanSpeed[/code]
+			Cooling fan speed: a share of the engine's revolutions, or an absolute value when negative.
+		</member>
+		<member name="cooling_heat_kfe" type="float" setter="set_cooling_heat_kfe" getter="get_cooling_heat_kfe" default="1.0">
+			[code]Engine:HeatKFE[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heat_kfo" type="float" setter="set_cooling_heat_kfo" getter="get_cooling_heat_kfo" default="25.0">
+			[code]Engine:HeatKFO[/code]
+			Heat exchange factor of the oil.
+		</member>
+		<member name="cooling_heat_kfo2" type="float" setter="set_cooling_heat_kfo2" getter="get_cooling_heat_kfo2" default="25.0">
+			[code]Engine:HeatKFO2[/code]
+			Heat exchange factor of the oil to the auxiliary water circuit.
+		</member>
+		<member name="cooling_heat_kfs" type="float" setter="set_cooling_heat_kfs" getter="get_cooling_heat_kfs" default="80.0">
+			[code]Engine:HeatKFS[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heat_kv" type="float" setter="set_cooling_heat_kv" getter="get_cooling_heat_kv" default="0.6">
+			[code]Engine:HeatKV[/code]
+			Heat exchange factor of the radiator in the air flow.
+		</member>
+		<member name="cooling_heat_kw" type="float" setter="set_cooling_heat_kw" getter="get_cooling_heat_kw" default="0.35">
+			[code]Engine:HeatKW[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heater_max_temperature" type="float" setter="set_cooling_heater_max_temperature" getter="get_cooling_heater_max_temperature" default="-1.0">
+			[code]Engine:HeaterMaxTemperature[/code]
+			Water temperature the water heater switches off above [deg C], -1 when not set.
+		</member>
+		<member name="cooling_heater_min_temperature" type="float" setter="set_cooling_heater_min_temperature" getter="get_cooling_heater_min_temperature" default="-1.0">
+			[code]Engine:HeaterMinTemperature[/code]
+			Water temperature the water heater switches on below [deg C], -1 when not set.
+		</member>
+		<member name="cooling_nominal_power" type="float" setter="set_cooling_nominal_power" getter="get_cooling_nominal_power" default="1235.0">
+			[code]Engine:NominalCoolingPower[/code]
+			Nominal cooling power; the engine's heat is scaled by 1235 (su45) over it.
+		</member>
+		<member name="cooling_oil_max_temperature" type="float" setter="set_cooling_oil_max_temperature" getter="get_cooling_oil_max_temperature" default="-1.0">
+			[code]Engine:OilMaxTemperature[/code]
+			Highest accepted oil temperature [deg C], -1 when not set.
+		</member>
+		<member name="cooling_oil_min_temperature" type="float" setter="set_cooling_oil_min_temperature" getter="get_cooling_oil_min_temperature" default="-1.0">
+			[code]Engine:OilMinTemperature[/code]
+			Lowest accepted oil temperature [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_aux_circuit" type="bool" setter="set_cooling_water_aux_circuit" getter="get_cooling_water_aux_circuit" default="false">
+			[code]Engine:WaterAuxCircuit[/code]
+			The cooling has an auxiliary water circuit.
+		</member>
+		<member name="cooling_water_aux_cooling_temperature" type="float" setter="set_cooling_water_aux_cooling_temperature" getter="get_cooling_water_aux_cooling_temperature" default="-1.0">
+			[code]Engine:WaterAuxCoolingTemperature[/code]
+			Temperature the auxiliary circuit's active cooling starts at [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_aux_max_temperature" type="float" setter="set_cooling_water_aux_max_temperature" getter="get_cooling_water_aux_max_temperature" default="-1.0">
+			[code]Engine:WaterAuxMaxTemperature[/code]
+			Highest accepted temperature of the auxiliary circuit [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_aux_min_temperature" type="float" setter="set_cooling_water_aux_min_temperature" getter="get_cooling_water_aux_min_temperature" default="-1.0">
+			[code]Engine:WaterAuxMinTemperature[/code]
+			Lowest accepted temperature of the auxiliary circuit [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_aux_shutters" type="bool" setter="set_cooling_water_aux_shutters" getter="get_cooling_water_aux_shutters" default="false">
+			[code]Engine:WaterAuxShutters[/code]
+			The auxiliary circuit's radiator has shutters.
+		</member>
+		<member name="cooling_water_cooling_temperature" type="float" setter="set_cooling_water_cooling_temperature" getter="get_cooling_water_cooling_temperature" default="-1.0">
+			[code]Engine:WaterCoolingTemperature[/code]
+			Water temperature the active cooling starts at [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_flow_temperature" type="float" setter="set_cooling_water_flow_temperature" getter="get_cooling_water_flow_temperature" default="-1.0">
+			[code]Engine:WaterFlowTemperature[/code]
+			Water temperature the flow through the radiator starts at [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_max_temperature" type="float" setter="set_cooling_water_max_temperature" getter="get_cooling_water_max_temperature" default="-1.0">
+			[code]Engine:WaterMaxTemperature[/code]
+			Highest accepted water temperature [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_min_temperature" type="float" setter="set_cooling_water_min_temperature" getter="get_cooling_water_min_temperature" default="-1.0">
+			[code]Engine:WaterMinTemperature[/code]
+			Lowest accepted water temperature [deg C], -1 when not set.
+		</member>
+		<member name="cooling_water_shutters" type="bool" setter="set_cooling_water_shutters" getter="get_cooling_water_shutters" default="false">
+			[code]Engine:WaterShutters[/code]
+			The radiator has shutters.
+		</member>
+		<member name="fuel_pump_start_mode" type="int" setter="set_fuel_pump_start_mode" getter="get_fuel_pump_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.FuelStart[/code]
+		</member>
+		<member name="mechanical_clutch_disengage_speed" type="float" setter="set_mechanical_clutch_disengage_speed" getter="get_mechanical_clutch_disengage_speed" default="0.9">
+			[code]Engine:EDS[/code]
+			Gearbox clutch disengagement rate, in 1/s.
+		</member>
+		<member name="mechanical_clutch_engage_speed" type="float" setter="set_mechanical_clutch_engage_speed" getter="get_mechanical_clutch_engage_speed" default="0.5">
+			[code]Engine:EUS[/code]
+			Gearbox clutch engagement rate, in 1/s.
+		</member>
+		<member name="mechanical_fuel_cutoff_rpm" type="float" setter="set_mechanical_fuel_cutoff_rpm" getter="get_mechanical_fuel_cutoff_rpm" default="0.0">
+			[code]Engine:nmax_cutoff[/code]
+			Engine speed at which the fuel cutoff limiter activates, in RPM.
+		</member>
+		<member name="mechanical_inertia" type="float" setter="set_mechanical_inertia" getter="get_mechanical_inertia" default="1.0">
+			[code]Engine:AIM[/code]
+			Moment of inertia of the engine/shaft.
+		</member>
+		<member name="mechanical_max_rpm" type="float" setter="set_mechanical_max_rpm" getter="get_mechanical_max_rpm" default="0.0">
+			[code]Engine:nmax[/code]
+			Maximum engine speed, in RPM.
+		</member>
+		<member name="mechanical_min_rpm" type="float" setter="set_mechanical_min_rpm" getter="get_mechanical_min_rpm" default="0.0">
+			[code]Engine:nmin[/code]
+			Minimum engine speed, in RPM.
+		</member>
+		<member name="mechanical_min_rpm_hydro_drive" type="float" setter="set_mechanical_min_rpm_hydro_drive" getter="get_mechanical_min_rpm_hydro_drive" default="0.0">
+		</member>
+		<member name="mechanical_min_rpm_hydro_drive_factor" type="float" setter="set_mechanical_min_rpm_hydro_drive_factor" getter="get_mechanical_min_rpm_hydro_drive_factor" default="0.0">
+		</member>
+		<member name="mechanical_min_rpm_retarder" type="float" setter="set_mechanical_min_rpm_retarder" getter="get_mechanical_min_rpm_retarder" default="0.0">
+		</member>
+		<member name="mechanical_nominal_max_rpm" type="float" setter="set_mechanical_nominal_max_rpm" getter="get_mechanical_nominal_max_rpm" default="0.0">
+		</member>
+		<member name="mechanical_regulator_acceleration" type="float" setter="set_mechanical_regulator_acceleration" getter="get_mechanical_regulator_acceleration" default="999.0">
+		</member>
+		<member name="mechanical_rpm_decrease_rate" type="float" setter="set_mechanical_rpm_decrease_rate" getter="get_mechanical_rpm_decrease_rate" default="2.0">
+		</member>
+		<member name="mechanical_shunt_mode_ratio" type="float" setter="set_mechanical_shunt_mode_ratio" getter="get_mechanical_shunt_mode_ratio" default="0.0">
+		</member>
+		<member name="oil_pump_pressure_maximum" type="float" setter="set_oil_pump_pressure_maximum" getter="get_oil_pump_pressure_maximum" default="0.65">
+			[code]Engine:OilMaxPressure[/code]
+			Minimum oil pressure required for the engine to start
+		</member>
+		<member name="oil_pump_pressure_minimum" type="float" setter="set_oil_pump_pressure_minimum" getter="get_oil_pump_pressure_minimum" default="0.0">
+			[code]Engine:OilMinPressure[/code]
+			Minimum oil pressure required for the engine to start
+		</member>
+		<member name="oil_pump_start_mode" type="int" setter="set_oil_pump_start_mode" getter="get_oil_pump_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.OilStart[/code]
+		</member>
+		<member name="retarder_clutch" type="bool" setter="set_retarder_clutch" getter="get_retarder_clutch" default="false">
+		</member>
+		<member name="retarder_clutch_speed" type="float" setter="set_retarder_clutch_speed" getter="get_retarder_clutch_speed" default="10.0">
+		</member>
+		<member name="retarder_engage_velocity" type="float" setter="set_retarder_engage_velocity" getter="get_retarder_engage_velocity" default="1.0">
+		</member>
+		<member name="retarder_fill_rate_decrease" type="float" setter="set_retarder_fill_rate_decrease" getter="get_retarder_fill_rate_decrease" default="1.0">
+			[code]Engine:R_FRD[/code]
+			Retarder emptying (fill decrease) rate, in 1/s.
+		</member>
+		<member name="retarder_fill_rate_increase" type="float" setter="set_retarder_fill_rate_increase" getter="get_retarder_fill_rate_increase" default="1.0">
+			[code]Engine:R_FRI[/code]
+			Retarder filling rate, in 1/s.
+		</member>
+		<member name="retarder_max_power" type="float" setter="set_retarder_max_power" getter="get_retarder_max_power" default="1.0">
+			[code]Engine:R_MP[/code]
+			Retarder maximum power, in kW (also limits torque).
+		</member>
+		<member name="retarder_max_torque" type="float" setter="set_retarder_max_torque" getter="get_retarder_max_torque" default="1.0">
+			[code]Engine:R_MT[/code]
+			Retarder maximum torque, in Nm.
+		</member>
+		<member name="retarder_min_velocity" type="float" setter="set_retarder_min_velocity" getter="get_retarder_min_velocity" default="1.0">
+			[code]Engine:R_MinVel[/code]
+			Minimum velocity at which the retarder operates, in km/h.
+		</member>
+		<member name="retarder_placement" type="int" setter="set_retarder_placement" getter="get_retarder_placement" enum="RailVehicleDieselEngine.RetarderPlacement" default="0">
+			[code]Engine:R_Place[/code]
+			Where the retarder is placed within the transmission.
+		</member>
+		<member name="retarder_present" type="bool" setter="set_retarder_present" getter="get_retarder_present" default="false">
+			[code]Engine:IsRetarder[/code]
+			Whether the vehicle has a retarder.
+		</member>
+		<member name="retarder_torque_in_in" type="float" setter="set_retarder_torque_in_in" getter="get_retarder_torque_in_in" default="1.0">
+			[code]Engine:R_TII[/code]
+			Retarder torque constant proportional to the square of input RPM.
+		</member>
+		<member name="retarder_with_individual" type="bool" setter="set_retarder_with_individual" getter="get_retarder_with_individual" default="false">
+		</member>
+		<member name="throttle_table_max_rpm_torque" type="float" setter="set_throttle_table_max_rpm_torque" getter="get_throttle_table_max_rpm_torque" default="2.0">
+			[code]DList:Mnmax[/code]
+			Torque at maximum RPM, in Nm.
+		</member>
+		<member name="throttle_table_max_torque" type="float" setter="set_throttle_table_max_torque" getter="get_throttle_table_max_torque" default="1.0">
+			[code]DList:Mmax[/code]
+			Maximum torque, in Nm.
+		</member>
+		<member name="throttle_table_max_torque_rpm" type="float" setter="set_throttle_table_max_torque_rpm" getter="get_throttle_table_max_torque_rpm" default="1.0">
+			[code]DList:nMmax[/code]
+			Engine speed at maximum torque, in RPM.
+		</member>
+		<member name="throttle_table_nominal_fuel_consumption_rate" type="float" setter="set_throttle_table_nominal_fuel_consumption_rate" getter="get_throttle_table_nominal_fuel_consumption_rate" default="250.0">
+			[code]DList:NomFuelConsRate[/code]
+			Nominal fuel consumption rate at full power, in g/kWh.
+		</member>
+		<member name="throttle_table_nominal_fuel_dose" type="float" setter="set_throttle_table_nominal_fuel_dose" getter="get_throttle_table_nominal_fuel_dose" default="0.0">
+			[code]DList:nominalfill[/code]
+			Nominal (rated) fuel dose, dimensionless (0..1).
+		</member>
+		<member name="throttle_table_positions" type="RailVehicleThrottlePositionItem[]" setter="set_throttle_table_positions" getter="get_throttle_table_positions" default="[]">
+			[code]DList[/code]
+			Throttle table: for each throttle position (starting from 0), the fuel dose and clutch/governor behavior.
+		</member>
+		<member name="throttle_table_resistance_torque" type="float" setter="set_throttle_table_resistance_torque" getter="get_throttle_table_resistance_torque" default="0.0">
+			[code]DList:Mstand[/code]
+			Engine's own resistance torque at zero RPM, in Nm.
+		</member>
+		<member name="torque_converter_coupling_point" type="float" setter="set_torque_converter_coupling_point" getter="get_torque_converter_coupling_point" default="0.85">
+			[code]Engine:TC_CP[/code]
+			Relative speed at which the torque converter transitions into fluid-coupling mode.
+		</member>
+		<member name="torque_converter_fill_rate_decrease" type="float" setter="set_torque_converter_fill_rate_decrease" getter="get_torque_converter_fill_rate_decrease" default="1.0">
+			[code]Engine:TC_FRD[/code]
+			Torque converter emptying rate, in 1/s.
+		</member>
+		<member name="torque_converter_fill_rate_increase" type="float" setter="set_torque_converter_fill_rate_increase" getter="get_torque_converter_fill_rate_increase" default="1.0">
+			[code]Engine:TC_FRI[/code]
+			Torque converter filling rate, in 1/s.
+		</member>
+		<member name="torque_converter_lockup_rate" type="float" setter="set_torque_converter_lockup_rate" getter="get_torque_converter_lockup_rate" default="1.0">
+			[code]Engine:TC_LR[/code]
+			Torque converter lockup clutch engagement rate, in 1/s.
+		</member>
+		<member name="torque_converter_lockup_speed" type="float" setter="set_torque_converter_lockup_speed" getter="get_torque_converter_lockup_speed" default="1.0">
+			[code]Engine:TC_LS[/code]
+			Velocity threshold at which the lockup clutch engages.
+		</member>
+		<member name="torque_converter_lockup_torque" type="float" setter="set_torque_converter_lockup_torque" getter="get_torque_converter_lockup_torque" default="3000.0">
+			[code]Engine:TC_LT[/code]
+			Maximum torque of the torque converter's lockup clutch, in Nm.
+		</member>
+		<member name="torque_converter_max_torque_ratio" type="float" setter="set_torque_converter_max_torque_ratio" getter="get_torque_converter_max_torque_ratio" default="2.0">
+			[code]Engine:TC_TMMax[/code]
+			Maximum torque multiplication ratio of the torque converter.
+		</member>
+		<member name="torque_converter_present" type="bool" setter="set_torque_converter_present" getter="get_torque_converter_present" default="false">
+			[code]Engine:IsTC[/code]
+			Whether the vehicle has a hydraulic torque converter.
+		</member>
+		<member name="torque_converter_table" type="VehicleCurvePointItem[]" setter="set_torque_converter_table" getter="get_torque_converter_table" default="[]">
+			[code]HTCList[/code]
+			Torque converter's torque-ratio table. Recommended when the converter's real characteristic is known and
+			cannot be reproduced with the basic formula. Each item's [member VehicleCurvePointItem.x] is the output/input
+			RPM ratio and [member VehicleCurvePointItem.y] is the torque multiplication ratio.
+		</member>
+		<member name="torque_converter_torque_in_in" type="float" setter="set_torque_converter_torque_in_in" getter="get_torque_converter_torque_in_in" default="4.5">
+			[code]Engine:TC_TII[/code]
+			Torque converter constant proportional to the square of input RPM, in Nm/(rps)².
+		</member>
+		<member name="torque_converter_torque_in_out" type="float" setter="set_torque_converter_torque_in_out" getter="get_torque_converter_torque_in_out" default="0.0">
+			[code]Engine:TC_TIO[/code]
+			Torque converter constant: input-output coupling, in Nm/(rps).
+		</member>
+		<member name="torque_converter_torque_out_out" type="float" setter="set_torque_converter_torque_out_out" getter="get_torque_converter_torque_out_out" default="0.0">
+			[code]Engine:TC_TOO[/code]
+			Torque converter constant proportional to the square of output RPM, in Nm/(rps)².
+		</member>
+		<member name="torque_converter_unlock_rate" type="float" setter="set_torque_converter_unlock_rate" getter="get_torque_converter_unlock_rate" default="1.0">
+			[code]Engine:TC_ULR[/code]
+			Torque converter lockup clutch release rate, in 1/s.
+		</member>
+		<member name="torque_converter_unlock_speed" type="float" setter="set_torque_converter_unlock_speed" getter="get_torque_converter_unlock_speed" default="1.0">
+			[code]Engine:TC_ULS[/code]
+			Velocity threshold at which the lockup clutch releases.
+		</member>
+		<member name="torque_converter_unlock_velocity" type="float" setter="set_torque_converter_unlock_velocity" getter="get_torque_converter_unlock_velocity" default="3.0">
+		</member>
+		<member name="torque_table" type="VehicleCurvePointItem[]" setter="set_torque_table" getter="get_torque_table" default="[]">
+			[code]DMList[/code]
+			Linearly-interpolated engine torque curve. Each item's [member VehicleCurvePointItem.x] is engine speed in RPM
+			and [member VehicleCurvePointItem.y] is torque in Nm.
+		</member>
+		<member name="turbo_position" type="int" setter="set_turbo_position" getter="get_turbo_position" default="0">
+			[code]TurboPos:TurboPos[/code]
+			The master controller position from which the turbocharger is heard; 0 without it (LoadFIZ_TurboPos, Mover.cpp:10714; DynObj.cpp:8267).
+		</member>
+		<member name="vel2nmax_table" type="VehicleCurvePointItem[]" setter="set_vel2nmax_table" getter="get_vel2nmax_table" default="[]">
+		</member>
+		<member name="water_pump_start_mode" type="int" setter="set_water_pump_start_mode" getter="get_water_pump_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.WaterStart[/code]
+		</member>
+	</members>
+	<constants>
+		<constant name="RETARDER_PLACEMENT_AFTER_GEARBOX" value="0" enum="RetarderPlacement">
+			Retarder placed after the gearbox.
+		</constant>
+		<constant name="RETARDER_PLACEMENT_BETWEEN_GEARBOX_AND_TC" value="1" enum="RetarderPlacement">
+			Retarder placed between the gearbox and the torque converter.
+		</constant>
+		<constant name="RETARDER_PLACEMENT_BETWEEN_TC_AND_ENGINE" value="2" enum="RetarderPlacement">
+			Retarder placed between the torque converter and the engine.
+		</constant>
+	</constants>
+</class>

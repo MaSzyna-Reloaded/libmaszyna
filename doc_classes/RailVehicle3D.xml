@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicle3D" inherits="Node3D" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A rail vehicle in the scene - the node it is drawn at.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_controller" qualifiers="const">
+			<return type="RailVehicleController" />
+			<description>
+				The controller the vehicle runs on, null before it has one.
+			</description>
+		</method>
+		<method name="get_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The vehicle's handle.
+			</description>
+		</method>
+		<method name="is_editable_in_editor" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the models of the vehicle this node draws stand as nodes in the editor's Scene dock ("Edit FIZ").
+			</description>
+		</method>
+		<method name="set_editable_in_editor">
+			<return type="void" />
+			<param index="0" name="editable" type="bool" />
+			<description>
+				Shows the models of the vehicle this node draws as nodes in the editor's Scene dock, to be inspected and edited there, or hides them again ([method RailVehicleRenderingServer.vehicle_set_editable]) - for every vehicle the node draws from now on. A view of the vehicle, not kept by the scene.
+			</description>
+		</method>
+		<method name="set_vehicle">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Takes the vehicle [param vehicle]: the servers are handed it with what the scene set, and whoever follows this node hears [signal vehicle_changed].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="appearance" type="RailVehicleAppearance" setter="set_appearance" getter="get_appearance">
+			What a vehicle assembled by hand looks like, beyond the parts its paths name.
+		</member>
+		<member name="controller_path" type="NodePath" setter="set_controller_path" getter="get_controller_path" default="NodePath(&quot;&quot;)">
+			The VehiclePhysicsNode a vehicle assembled by hand takes its vehicle from.
+		</member>
+		<member name="front_bogie_path" type="NodePath" setter="set_front_bogie_path" getter="get_front_bogie_path" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="front_rolling_wheel_paths" type="NodePath[]" setter="set_front_rolling_wheel_paths" getter="get_front_rolling_wheel_paths" default="[]">
+		</member>
+		<member name="head_display_material" type="Material" setter="set_head_display_material" getter="get_head_display_material">
+			The material the vehicle's head display is drawn with.
+		</member>
+		<member name="low_poly_cabin_path" type="NodePath" setter="set_low_poly_cabin_path" getter="get_low_poly_cabin_path" default="NodePath(&quot;&quot;)">
+			The low-poly interior (E3DModelInstance) of a vehicle assembled by hand.
+		</member>
+		<member name="mirror_paths" type="NodePath[]" setter="set_mirror_paths" getter="get_mirror_paths" default="[]">
+			The exterior mirrors in the original's numbering from 1: odd on the left, even on the right. The ones at the end of the occupied cab turn about their vertical axis by [member RailVehicleDoors.mirror_max_shift], as far as their side is unfolded.
+		</member>
+		<member name="model_instance_path" type="NodePath" setter="set_model_instance_path" getter="get_model_instance_path" default="NodePath(&quot;&quot;)">
+			The exterior model (E3DModelInstance) of a vehicle assembled by hand; the part paths name its submodels.
+		</member>
+		<member name="pantograph_front_arm_paths" type="NodePath[]" setter="set_pantograph_front_arm_paths" getter="get_pantograph_front_arm_paths" default="[]">
+		</member>
+		<member name="pantograph_rear_arm_paths" type="NodePath[]" setter="set_pantograph_rear_arm_paths" getter="get_pantograph_rear_arm_paths" default="[]">
+		</member>
+		<member name="powered_wheel_paths" type="NodePath[]" setter="set_powered_wheel_paths" getter="get_powered_wheel_paths" default="[]">
+		</member>
+		<member name="rear_bogie_path" type="NodePath" setter="set_rear_bogie_path" getter="get_rear_bogie_path" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="rear_rolling_wheel_paths" type="NodePath[]" setter="set_rear_rolling_wheel_paths" getter="get_rear_rolling_wheel_paths" default="[]">
+		</member>
+		<member name="start_direction" type="int" setter="set_start_direction" getter="get_start_direction" enum="TrackServer.Direction" default="0">
+			Which way the vehicle stands on its start track.
+		</member>
+		<member name="start_track_name" type="String" setter="set_start_track_name" getter="get_start_track_name" default="&quot;&quot;">
+		</member>
+		<member name="start_track_offset" type="float" setter="set_start_track_offset" getter="get_start_track_offset" default="0.0">
+		</member>
+		<member name="wiper_arm_paths" type="NodePath[]" setter="set_wiper_arm_paths" getter="get_wiper_arm_paths" default="[]">
+		</member>
+	</members>
+	<signals>
+		<signal name="vehicle_changed">
+			<description>
+				The vehicle this node draws has changed - it has one now, or a different one.
+			</description>
+		</signal>
+	</signals>
+</class>

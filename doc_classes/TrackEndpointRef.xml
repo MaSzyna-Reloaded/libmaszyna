@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrackEndpointRef" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="endpoint_index" type="int" setter="set_endpoint_index" getter="get_endpoint_index" default="0">
+		</member>
+		<member name="track_rid" type="RID" setter="set_track_rid" getter="get_track_rid" default="RID()">
+		</member>
+	</members>
+</class>

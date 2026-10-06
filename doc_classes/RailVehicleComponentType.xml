@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleComponentType" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="COMPONENT_BRAKES" value="11" enum="Type">
+		</constant>
+		<constant name="COMPONENT_SPRING_BRAKE" value="12" enum="Type">
+		</constant>
+		<constant name="COMPONENT_EP_ED_BRAKE" value="13" enum="Type">
+		</constant>
+		<constant name="COMPONENT_BUFFERS" value="14" enum="Type">
+		</constant>
+		<constant name="COMPONENT_SPEED_CONTROL" value="15" enum="Type">
+		</constant>
+		<constant name="COMPONENT_SWITCHES" value="16" enum="Type">
+		</constant>
+		<constant name="COMPONENT_AI_HINTS" value="17" enum="Type">
+		</constant>
+		<constant name="COMPONENT_SECURITY" value="18" enum="Type">
+		</constant>
+		<constant name="COMPONENT_UNIVERSAL_CONTROLLER" value="19" enum="Type">
+		</constant>
+		<constant name="COMPONENT_MASTER_CONTROLLER" value="20" enum="Type">
+		</constant>
+		<constant name="COMPONENT_POWER_SUPPLY" value="21" enum="Type">
+		</constant>
+		<constant name="COMPONENT_ENGINE_POWER_SOURCE" value="22" enum="Type">
+			[RailVehicleEnginePowerSource] - what the traction is fed from, and the pantographs.
+		</constant>
+	</constants>
+</class>

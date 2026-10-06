@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleElectricSeriesEngine" inherits="RailVehicleElectricEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Subclass of RailVehicleElectricEngine. Adds additional parameters for more specific engines
+	</brief_description>
+	<description>
+		Subclass of RailVehicleElectricEngine
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_circuit_imin" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_circuit_imin_high_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the automatic start steps on the high current ([code]Imin == IminHi[/code]). State key [code]circuit_imin_high_enabled[/code].
+			</description>
+		</method>
+		<method name="get_next_position_velocity" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="main_controller" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_resistor_fan_rotation" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="direction_switches_circuit_imin_high" type="bool" setter="set_direction_switches_circuit_imin_high" getter="get_direction_switches_circuit_imin_high" default="false">
+			[code]Param:Type=ezt[/code]
+			The reverser's step past "forward" switches the automatic start to the high current, and its step back from there to the low one (TMoverParameters::DirectionForward/Backward, Mover.cpp:719, 3250). In the config dump, with [code]direction_position_max[/code] - the reverser key's last position.
+		</member>
+		<member name="dynamic_brake_resistance" type="float" setter="set_dynamic_brake_resistance" getter="get_dynamic_brake_resistance" default="5.8">
+			[code]RList:DynBrakeRes[/code]
+			Resistance of the resistors during ED (dynamic) braking, for two motors combined, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_1" type="float" setter="set_dynamic_brake_resistance_1" getter="get_dynamic_brake_resistance_1" default="5.8">
+			[code]RList:DynBrakeRes1[/code]
+			Primary ED braking resistance on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_2" type="float" setter="set_dynamic_brake_resistance_2" getter="get_dynamic_brake_resistance_2" default="5.8">
+			[code]RList:DynBrakeRes2[/code]
+			ED braking resistance used at low speeds on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="max_rpm" type="float" setter="set_max_rpm" getter="get_max_rpm" default="0.0">
+			[code]Engine:nmax[/code]
+			Maximum allowed motor rotation speed, in RPM.
+		</member>
+		<member name="nominal_voltage" type="float" setter="set_nominal_voltage" getter="get_nominal_voltage" default="0.0">
+			[code]Engine:Volt[/code]
+			Rated voltage of the motor, in volts
+		</member>
+		<member name="relay_list" type="RailVehicleRelayListItem[]" setter="set_relay_list" getter="get_relay_list" default="[]">
+			[code]RList[/code]
+			Automatic starting sequence table: for each resistor-start controller position (starting from 1, not
+			counting position 0), the starting resistance and motor branch configuration.
+		</member>
+		<member name="resistor_fan_cutoff_resistance" type="float" setter="set_resistor_fan_cutoff_resistance" getter="get_resistor_fan_cutoff_resistance" default="0.0">
+			[code]RList:RVentCutOff[/code]
+			Starting resistor value below which the cooling fans stop running (used when [member resistor_fan_type] is Automatic).
+		</member>
+		<member name="resistor_fan_max_rpm" type="float" setter="set_resistor_fan_max_rpm" getter="get_resistor_fan_max_rpm" default="1.0">
+			[code]RList:RVentnmax[/code]
+			Maximum rotation speed of the starting resistor cooling fans.
+		</member>
+		<member name="resistor_fan_min_current" type="float" setter="set_resistor_fan_min_current" getter="get_resistor_fan_min_current" default="50.0">
+			[code]RList:RVentMinI[/code]
+			Minimum current, in amperes, at which the cooling fans switch on.
+		</member>
+		<member name="resistor_fan_speed" type="float" setter="set_resistor_fan_speed" getter="get_resistor_fan_speed" default="0.5">
+			[code]RList:RVentSpeed[/code]
+			Cooling fan spin-up rate, in the range 0..1.
+		</member>
+		<member name="resistor_fan_type" type="int" setter="set_resistor_fan_type" getter="get_resistor_fan_type" enum="RailVehicleElectricSeriesEngine.FanType" default="0">
+			[code]RList:RVent[/code]
+			How the starting resistor cooling fans are driven: not present, always on, or automatically controlled.
+		</member>
+		<member name="winding_resistance" type="float" setter="set_winding_resistance" getter="get_winding_resistance" default="0.0">
+			[code]Engine:WindingRes[/code]
+			Motor winding resistance, in ohms
+		</member>
+	</members>
+	<constants>
+		<constant name="FAN_TYPE_NONE" value="0" enum="FanType">
+		</constant>
+		<constant name="FAN_TYPE_YES" value="1" enum="FanType">
+		</constant>
+		<constant name="FAN_TYPE_AUTOMATIC" value="2" enum="FanType">
+		</constant>
+	</constants>
+</class>

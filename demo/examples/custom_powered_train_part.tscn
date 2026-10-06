@@ -16,7 +16,7 @@ grow_vertical = 2
 visible = true
 
 [node name="train1" parent="." unique_id=1618340066 instance=ExtResource("2_ep4dj")]
-train_id = "train1"
+vehicle_id = "train1"
 
-[node name="PoweredTrainPart" type="GenericTrainPart" parent="train1" unique_id=1580505920]
+[node name="PoweredTrainPart" type="GenericVehicleComponentNode" parent="train1" unique_id=1580505920]
 script = ExtResource("1_1fn40")
