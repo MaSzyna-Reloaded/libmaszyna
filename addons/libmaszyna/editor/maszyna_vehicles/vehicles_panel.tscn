@@ -1,0 +1,168 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/vehicles_panel.gd" id="1_panel"]
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/editor_viewport_drop.gd" id="2_drop"]
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/track_drop_hint.gd" id="3_hint"]
+
+[node name="VehiclesPanel" type="VBoxContainer"]
+custom_minimum_size = Vector2(0, 240)
+script = ExtResource("1_panel")
+
+[node name="Toolbar" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Search" type="LineEdit" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search..."
+clear_button_enabled = true
+
+[node name="ReloadButton" type="Button" parent="Toolbar"]
+layout_mode = 2
+text = "Reload"
+
+[node name="Count" type="Label" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "not loaded"
+
+[node name="PagePrev" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "<"
+
+[node name="PageNumber" type="Label" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1/1"
+
+[node name="PageNext" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ">"
+
+[node name="Content" type="HSplitContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VehiclesScroll" type="ScrollContainer" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="Vehicles" type="HFlowContainer" parent="Content/VehiclesScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailsPanel" type="PanelContainer" parent="Content"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="Details" type="VBoxContainer" parent="Content/DetailsPanel"]
+layout_mode = 2
+
+[node name="VehicleName" type="Label" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="VehiclePath" type="Label" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="Profile" type="TextureRect" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Skins" type="ItemList" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TrackRow" type="HBoxContainer" parent="Content/DetailsPanel/Details"]
+layout_mode = 2
+
+[node name="TrackName" type="LineEdit" parent="Content/DetailsPanel/Details/TrackRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Track (none: in front of the camera)"
+clear_button_enabled = true
+
+[node name="TrackPickButton" type="Button" parent="Content/DetailsPanel/Details/TrackRow"]
+layout_mode = 2
+tooltip_text = "Pick a named track"
+text = "..."
+
+[node name="TrackOffset" type="SpinBox" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -100000.0
+max_value = 100000.0
+step = 0.01
+prefix = "Offset"
+suffix = "m"
+
+[node name="SpawnButton" type="Button" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Spawn"
+
+[node name="SpawnStatus" type="Label" parent="Content/DetailsPanel/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="TrackPicker" type="PopupPanel" parent="."]
+unique_name_in_owner = true
+
+[node name="TrackPickerBox" type="VBoxContainer" parent="TrackPicker"]
+
+[node name="TrackSearch" type="LineEdit" parent="TrackPicker/TrackPickerBox"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search tracks..."
+clear_button_enabled = true
+
+[node name="Tracks" type="ItemList" parent="TrackPicker/TrackPickerBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SelectTrackButton" type="Button" parent="TrackPicker/TrackPickerBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+disabled = true
+text = "Select"
+
+[node name="ViewportDrop" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_drop")
+
+[node name="TrackDropHint" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_hint")
+
+[connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
+[connection signal="text_changed" from="Toolbar/Search" to="." method="_on_search_text_changed"]
+[connection signal="pressed" from="Toolbar/ReloadButton" to="." method="load_vehicles"]
+[connection signal="pressed" from="Toolbar/PagePrev" to="." method="_on_page_prev_pressed"]
+[connection signal="pressed" from="Toolbar/PageNext" to="." method="_on_page_next_pressed"]
+[connection signal="item_selected" from="Content/DetailsPanel/Details/Skins" to="." method="select_skin"]
+[connection signal="pressed" from="Content/DetailsPanel/Details/TrackRow/TrackPickButton" to="." method="open_track_picker"]
+[connection signal="text_changed" from="TrackPicker/TrackPickerBox/TrackSearch" to="." method="_on_track_search_text_changed"]
+[connection signal="item_selected" from="TrackPicker/TrackPickerBox/Tracks" to="." method="_on_tracks_item_selected"]
+[connection signal="pressed" from="TrackPicker/TrackPickerBox/SelectTrackButton" to="." method="select_track"]
+[connection signal="dragged" from="ViewportDrop" to="TrackDropHint" method="show_tracks_near"]
+[connection signal="drag_stopped" from="ViewportDrop" to="TrackDropHint" method="clear"]
+[connection signal="pressed" from="Content/DetailsPanel/Details/SpawnButton" to="." method="_on_spawn_button_pressed"]

@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/trainset_row.gd" id="1_row"]
+
+[node name="TrainsetRow" type="HBoxContainer"]
+script = ExtResource("1_row")
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text_overrun_behavior = 3
+
+[node name="Show" type="Button" parent="."]
+layout_mode = 2
+text = "Show"
+
+[node name="Vehicles" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[connection signal="pressed" from="Show" to="." method="_on_show_pressed"]

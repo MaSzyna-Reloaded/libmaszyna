@@ -1,0 +1,4 @@
+// wagons of the test
+!=A,WAGON
+red.dds=Wagon,WAGON//v2,red
+blue.dds=wagon,WAGON
