@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/trainsets_dock.gd" id="1_dock"]
+
+[node name="TrainsetsDock" type="VBoxContainer"]
+custom_minimum_size = Vector2(0, 250)
+script = ExtResource("1_dock")
+
+[node name="SpawnButton" type="Button" parent="."]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Spawn..."
+
+[node name="TrainsetsScroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Trainsets" type="VBoxContainer" parent="TrainsetsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="pressed" from="SpawnButton" to="." method="_on_spawn_button_pressed"]
