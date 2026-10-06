@@ -114,6 +114,7 @@ mouse_filter = 2
 expand_mode = 3
 stretch_mode = 5
 
+[connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
 [connection signal="item_selected" from="Toolbar/GroupSelector" to="." method="_on_group_selected"]
 [connection signal="text_changed" from="Toolbar/Search" to="." method="_on_search_text_changed"]
 [connection signal="pressed" from="Toolbar/ReloadButton" to="." method="_on_reload_pressed"]

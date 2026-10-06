@@ -5,12 +5,12 @@ var _t:float = 0.0
 @onready var train = $SM42
 @onready var brake = $SM42/Brake
 @onready var engine = $SM42/StonkaDieselEngine
-@onready var security = $SM42/TrainSecuritySystem
-@onready var doors = $SM42/TrainDoors
+@onready var security = $SM42/RailVehicleSecuritySystem
+@onready var doors = $SM42/RailVehicleDoors
 @onready var battery_progress_bar = $%BatteryProgressBar
 
-@onready var FORWARD = $UI/MoverSwitches/General/HBoxContainer2/Forward
-@onready var REVERSE = $UI/MoverSwitches/General/HBoxContainer2/Reverse
+@onready var FORWARD = $UI/MoverSwitches/Controller/Direction/Forward
+@onready var REVERSE = $UI/MoverSwitches/Controller/Direction/Reverse
 
 const rich_print_loglevel_colors = {
     GameLog.LogLevel.DEBUG: "#777",
@@ -26,8 +26,8 @@ const loglevel_names = {
     }
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-    $%TrainName.text = "%s (type: %s)" % [train.name, train.type_name]
-    GameLog.log_updated.connect(print_log_entry_to_godot_console)
+    $%TrainName.text = tr("%s (type: %s)") % [train.vehicle_id, train.type_name]
+    GameLog.message_logged.connect(print_log_entry_to_godot_console)
 
 
 func _colorize_loglevel(loglevel, line):
@@ -37,7 +37,9 @@ func _colorize_loglevel(loglevel, line):
     else:
         return line
 
-func print_log_entry_to_godot_console(loglevel, line):
+func print_log_entry_to_godot_console(logger_id, loglevel, line):
+    if not logger_id == "game":
+        return
     print_rich(_colorize_loglevel(loglevel, "%s: %s" % [loglevel_names[loglevel], line]))
 
 
@@ -63,10 +65,10 @@ func _process(delta: float) -> void:
         $%BatteryProgressBar.value = bv
         $%BatteryValue.text = "%.2f V" % [bv]
 
-        var security_state = security.get_mover_state()
-        var brake_state = brake.get_mover_state()
-        var engine_state = engine.get_mover_state()
-        var door_state = doors.get_mover_state()
+        var security_state = security.get_state()
+        var brake_state = brake.get_state()
+        var engine_state = engine.get_state()
+        var door_state = doors.get_state()
 
         draw_dictionary(engine_state, $%DebugEngine)
         draw_dictionary(train_state, $%DebugTrain)
@@ -77,7 +79,7 @@ func _process(delta: float) -> void:
 
 
 func _on_brake_level_value_changed(value):
-    TrainSystem.broadcast_command("brake_level_set", value, null)
+    VehicleServer.vehicle_broadcast_command("brake_level_set", value, null)
 
 func _on_main_decrease_button_up():
     train.send_command("main_controller_decrease")
@@ -91,5 +93,5 @@ func _on_reverse_button_up():
 func _on_forward_button_up():
     train.send_command("direction_increase")
 
-func _on_sm_42_mover_initialized():
-    print("Mover initialized. Train config: ", $SM42.config)
+func _on_sm_42_simulation_initialized():
+    print("Mover initialized. Train config: ", $SM42.get_config())

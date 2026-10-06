@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleElectroPneumaticDynamicBrake" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Class used to handle Electro Pneumatic and Electro Dynamic brakes along with their parameters.
+	</brief_description>
+	<description>
+		Class used to handle Electro Pneumatic and Electro Dynamic brakes along with their parameters. Useful in Electric/Hybrid/Diesel Multiple Units and newer locomotives as elder locos don't have such braking systems
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_ed_braking_ep_delay" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ep_force" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ep_fuse" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ep_max_brake_engagement_speed" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_ep_min_regenerative_braking" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_ep_brake_force">
+			<return type="void" />
+			<param index="0" name="value" type="int" />
+			<description>
+				Sets Electro Pneumatic braking force to a desired level
+			</description>
+		</method>
+		<method name="switch_ep_fuse">
+			<return type="void" />
+			<param index="0" name="value" type="bool" />
+			<description>
+				Switch Electro Pneumatic brake on or off
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="blending_load_correction" type="bool" setter="set_blending_load_correction" getter="get_blending_load_correction" default="false">
+			[code]Blending:MED_Ncor[/code]
+			Whether EP braking force is corrected for the effect of brake pad pressure on the friction coefficient.
+		</member>
+		<member name="blending_max_deceleration" type="float" setter="set_blending_max_deceleration" getter="get_blending_max_deceleration" default="9.81">
+			[code]Blending:MED_amax[/code]
+			Maximum service braking deceleration for MED calculations, in m/s².
+		</member>
+		<member name="blending_max_velocity" type="float" setter="set_blending_max_velocity" getter="get_blending_max_velocity" default="0.0">
+			[code]Blending:MED_Vmax[/code]
+			Maximum velocity used to calculate instantaneous EP braking force in MED, in km/h.
+		</member>
+		<member name="blending_min_ed_brake_request" type="float" setter="set_blending_min_ed_brake_request" getter="get_blending_min_ed_brake_request" default="0.0">
+			[code]Blending:MED_MinBrakeReqED[/code]
+			Minimum braking demand (0..1) at which ED braking engages.
+		</member>
+		<member name="blending_min_velocity" type="float" setter="set_blending_min_velocity" getter="get_blending_min_velocity" default="0.0">
+			[code]Blending:MED_Vmin[/code]
+			Minimum velocity used to calculate instantaneous EP braking force in MED, in km/h.
+		</member>
+		<member name="blending_reference_velocity" type="float" setter="set_blending_reference_velocity" getter="get_blending_reference_velocity" default="0.0">
+			[code]Blending:MED_Vref[/code]
+			Reference velocity used to calculate available EP braking force in MED, in km/h.
+		</member>
+		<member name="blending_velocity_correction" type="bool" setter="set_blending_velocity_correction" getter="get_blending_velocity_correction" default="false">
+			[code]Blending:MED_EPVC[/code]
+			Whether EP braking force is corrected for vehicle velocity when ED braking becomes unavailable.
+		</member>
+		<member name="coupler_check" type="int" setter="set_coupler_check" getter="get_coupler_check" enum="RailVehicleElectroPneumaticDynamicBrake.CouplerCheck" default="0">
+			Determines in which couplings should the Electro Dynamic unit braking status be checked
+		</member>
+		<member name="electro_pneumatic_brake_delay" type="float" setter="set_electro_pneumatic_brake_delay" getter="get_electro_pneumatic_brake_delay" default="0.0">
+			The delay time of the Electro Pneumatic brake's possible actuation during Electro Dynamic braking, in seconds
+		</member>
+		<member name="electro_pneumatic_max_ep_brake_engagement_speed" type="float" setter="set_electro_pneumatic_max_ep_brake_engagement_speed" getter="get_electro_pneumatic_max_ep_brake_engagement_speed" default="0.0">
+			Speed below which the Electro Pneumatic brake of the unit engages during Electro Dynamic braking, in km/h – recommended value for rolling units
+		</member>
+		<member name="electro_pneumatic_min_regenerative_braking" type="float" setter="set_electro_pneumatic_min_regenerative_braking" getter="get_electro_pneumatic_min_regenerative_braking" default="0.0">
+			Electro Dynamic braking current at which the Electro Pneumatic brake of the unit is deactivated, in A - recommended value for engine units
+		</member>
+		<member name="ep_brake_fuse" type="bool" setter="set_ep_brake_fuse" getter="get_ep_brake_fuse" default="false">
+			State of Electro Pneumatic brake fuse
+		</member>
+	</members>
+	<constants>
+		<constant name="NONE" value="0" enum="CouplerCheck">
+		</constant>
+		<constant name="FRONT" value="1" enum="CouplerCheck">
+		</constant>
+		<constant name="BACK" value="2" enum="CouplerCheck">
+		</constant>
+	</constants>
+</class>
