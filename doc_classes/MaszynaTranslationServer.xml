@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTranslationServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The one catalogue [TranslationServer] translates with: the wrapper's strings and the game's own.
+	</brief_description>
+	<description>
+		In the language of [member SimulationServer.language], merges the wrapper's own [code].po[/code] files (project setting [code]maszyna/locale/translations[/code]) and, over them, the game's [code]&lt;game_dir&gt;/lang/&lt;language&gt;.po[/code] - the original engine's [code]locale[/code] (translation.cpp) - into a single [Translation], so the game's translation of a msgid wins. It is rebuilt on start, whenever the language changes and whenever the game directory changes.
+		The merged catalogue is the only translation in [TranslationServer]: every [Control], [method Object.tr] and [method Node.atr] looks up through it, and the scene tree re-translates itself on every rebuild.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="translation_get_languages" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				The languages there is a catalogue for in the game's [code]lang/[/code] ([code]template.po[/code] excepted), with [code]"en"[/code] - the untranslated strings - always first.
+			</description>
+		</method>
+		<method name="translation_load">
+			<return type="void" />
+			<param index="0" name="po_path" type="String" />
+			<description>
+				Replaces the game's catalogue with the one in [param po_path] and rebuilds the merged catalogue. Without such a file only the wrapper's own strings are translated.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="translation_languages_changed">
+			<description>
+				The game's data was read again (another game directory): [method translation_get_languages] lists the languages it has now.
+			</description>
+		</signal>
+	</signals>
+</class>
