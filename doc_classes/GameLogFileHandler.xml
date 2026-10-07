@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GameLogFileHandler" inherits="GameLogHandler" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Writes a logger's lines to a file.
+	</brief_description>
+	<description>
+		Made by [method open], which starts the file afresh. Every line is on the disk at once: a log that explains a crash must not lose its end in the file's buffer.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_path" qualifiers="const">
+			<return type="String" />
+			<description>
+				The path of the file.
+			</description>
+		</method>
+		<method name="open" qualifiers="static">
+			<return type="GameLogFileHandler" />
+			<param index="0" name="path" type="String" />
+			<description>
+				The handler of a new file at [param path], its directory made; null when the file cannot be opened.
+			</description>
+		</method>
+	</methods>
+</class>
