@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="E3DModelSmokeSourceDefinition" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Describes a particle emitter of an E3D model
+	</brief_description>
+	<description>
+		An emitter is a transform submodel named [code]smokesource_&lt;template&gt;[/code]. The whole submodel name is also the name of the parameter file the emitter uses, which the original reads from the game's [code]data/[/code] directory. See https://wiki.eu07.pl/index.php/Emiter_dymu
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="submodel_path" type="NodePath" setter="set_submodel_path" getter="get_submodel_path" default="NodePath(&quot;&quot;)">
+			Node path to the submodel the particles are emitted from.
+		</member>
+		<member name="template_name" type="String" setter="set_template_name" getter="get_template_name" default="&quot;&quot;">
+			Name of the parameter template, i.e. the submodel name in lower case.
+		</member>
+	</members>
+</class>
