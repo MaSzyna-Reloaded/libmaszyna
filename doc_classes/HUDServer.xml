@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HUDServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What the HUD shows.
+	</brief_description>
+	<description>
+		The one owner of the HUD's state: which of its panels are open, the HUD shown at all, and the vehicle whose card is open. The HUD's scenes draw this state and ask for its changes here - a menu, a close button, a key, a script ([code]maszyna.hud[/code]) alike. The server knows no panel of its own: a panel is a name the HUD gives it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="card_close">
+			<return type="void" />
+			<description>
+				The vehicle card closed.
+			</description>
+		</method>
+		<method name="card_get_vehicle" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The vehicle whose card is open, an invalid [RID] for none.
+			</description>
+		</method>
+		<method name="card_open">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The card of the vehicle; one already open shows this vehicle instead. The card of a freed vehicle closes.
+			</description>
+		</method>
+		<method name="hud_is_visible" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the HUD is shown.
+			</description>
+		</method>
+		<method name="hud_set_visible">
+			<return type="void" />
+			<param index="0" name="visible" type="bool" />
+			<description>
+				The HUD shown or hidden as a whole (e.g. while a scenery loads).
+			</description>
+		</method>
+		<method name="panel_is_visible" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="panel" type="StringName" />
+			<description>
+				Whether the panel is open; a panel never set is closed.
+			</description>
+		</method>
+		<method name="panel_set_visible">
+			<return type="void" />
+			<param index="0" name="panel" type="StringName" />
+			<param index="1" name="visible" type="bool" />
+			<description>
+				The panel opened or closed.
+			</description>
+		</method>
+		<method name="panel_toggle">
+			<return type="void" />
+			<param index="0" name="panel" type="StringName" />
+			<description>
+				The panel opened when closed, closed when open.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="card_changed">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The card shows another vehicle; an invalid [RID] when it closed.
+			</description>
+		</signal>
+		<signal name="hud_visibility_changed">
+			<param index="0" name="visible" type="bool" />
+			<description>
+				The HUD was shown or hidden.
+			</description>
+		</signal>
+		<signal name="panel_visibility_changed">
+			<param index="0" name="panel" type="StringName" />
+			<param index="1" name="visible" type="bool" />
+			<description>
+				The panel was opened or closed.
+			</description>
+		</signal>
+	</signals>
+</class>
