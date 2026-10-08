@@ -23,7 +23,8 @@ enum AccelMode {NORMAL, MEDIUM, FAST}
 
 @export var acceleration_medium:float = 100
 @export var acceleration_fast:float = 1000
-@export var deceleration = 100:
+## How fast a glide handed over by glide() slows down [m/s²]
+@export var deceleration = 4.0:
     set(x):
         deceleration = clampf(x, 0, 1000)
 @export var velocity_multiplier:float = 1.0
@@ -40,6 +41,13 @@ var _direction: Vector3 = Vector3.ZERO
 var _smoothed_direction: Vector3 = Vector3.ZERO
 var _pending_mouse_delta: Vector2 = Vector2.ZERO
 var _mouse_look_velocity: Vector2 = Vector2.ZERO
+# Looking around while the right button is held - not whenever the mouse is captured, which a cab
+# lever drag does as well (CabinHUDMouseSystem)
+var _looking: bool = false
+# The velocity the camera keeps after a hand-over, until deceleration stops it [m/s]
+var _glide_velocity: Vector3 = Vector3.ZERO
+# The keys have steered the camera since the hand-over: the glide only fades out
+var _glide_steered: bool = false
 
 # Keyboard state
 var _w: float = 0.0
@@ -66,6 +74,10 @@ func _input(event):
     if event is InputEventMouseButton:
         match event.button_index:
             MOUSE_BUTTON_RIGHT: # Only allows rotation if right click down
+                # the right button with a modifier is another action, not the look (cabin_sit_down)
+                if event.pressed and (event.ctrl_pressed or event.shift_pressed or event.alt_pressed):
+                    return
+                _looking = event.pressed
                 Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if event.pressed else Input.MOUSE_MODE_VISIBLE)
             MOUSE_BUTTON_WHEEL_UP:
                 if hovered_control:
@@ -100,8 +112,25 @@ func _input(event):
             key_up:
                 _e = float(event.pressed)
 
-    if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and event is InputEventMouseMotion:
+    if _looking and event is InputEventMouseMotion:
         _pending_mouse_delta += event.relative
+
+## The camera stands still where it is put next: the look, the keys' and a glide's motion left over
+## from before do not carry it on
+func stop_motion() -> void:
+    _looking = false
+    _pending_mouse_delta = Vector2.ZERO
+    _mouse_look_velocity = Vector2.ZERO
+    _smoothed_direction = Vector3.ZERO
+    _glide_velocity = Vector3.ZERO
+
+
+## Keeps the camera moving at the velocity [m/s] another camera had when it handed over, slowing
+## down by deceleration until it stops - or, once the keys steer it, fading into their speed
+func glide(p_velocity:Vector3) -> void:
+    _glide_velocity = p_velocity
+    _glide_steered = false
+
 
 # Updates mouselook and movement every frame
 func _process(delta: float) -> void:
@@ -111,13 +140,23 @@ func _process(delta: float) -> void:
 
 # Updates camera movement
 func _update_movement(delta: float) -> void:
-    var step_delta: float = minf(delta, 0.05)
-    var smoothing_weight: float = _get_smoothing_weight(MOVEMENT_SMOOTHING, step_delta)
+    var smoothing_weight: float = _get_smoothing_weight(MOVEMENT_SMOOTHING, delta)
 
     # Computes desired direction from key states
     _direction = Vector3(_d - _a, _e - _q, _s - _w)
     if not _direction.is_zero_approx():
         _direction = _direction.normalized()
+
+    if not _glide_velocity.is_zero_approx():
+        # once the keys steer, the glide fades as fast as their own speed builds up, so the one
+        # blends into the other and is not counted after; left alone, it slows down by the
+        # deceleration
+        _glide_steered = _glide_steered or not _direction.is_zero_approx()
+        if _glide_steered:
+            _glide_velocity = _glide_velocity.lerp(Vector3.ZERO, smoothing_weight)
+        else:
+            _glide_velocity = _glide_velocity.move_toward(Vector3.ZERO, deceleration * delta)
+        global_position += _glide_velocity * delta
 
     _smoothed_direction = _smoothed_direction.lerp(_direction, smoothing_weight)
 
@@ -137,7 +176,7 @@ func _update_movement(delta: float) -> void:
         
     var velocity: Vector3 = _smoothed_direction * accel * velocity_multiplier
 
-    var new_position: Vector3 = transform.translated_local(velocity * step_delta).origin
+    var new_position: Vector3 = transform.translated_local(velocity * delta).origin
     if bound_enabled:
         new_position.x = clamp(new_position.x, bound_min.x, bound_max.x)
         new_position.y = clamp(new_position.y, bound_min.y, bound_max.y)
@@ -146,8 +185,7 @@ func _update_movement(delta: float) -> void:
 
 # Updates mouse look
 func _update_mouselook(delta: float) -> void:
-    var step_delta: float = minf(delta, 0.05)
-    var smoothing_weight: float = _get_smoothing_weight(MOUSE_SMOOTHING, step_delta)
+    var smoothing_weight: float = _get_smoothing_weight(MOUSE_SMOOTHING, delta)
 
     _mouse_look_velocity += _pending_mouse_delta
     _pending_mouse_delta = Vector2.ZERO
