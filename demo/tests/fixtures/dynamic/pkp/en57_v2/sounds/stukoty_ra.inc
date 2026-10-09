@@ -1,0 +1,34 @@
+wheel_clatter:  55.0 
+-8.625 //oœ 1
+{ sound0: en57_stukot_15a_1.wav pitch0: 0.6
+ sound15: en57_stukot_15a_1.wav pitch15: 0.6
+ sound25: en57_stukot_30_3.wav pitch25: 0.6
+ sound60: en57_stukot_30_3.wav pitch60: 0.8
+ sound90: en57_stukot_90c.wav pitch90: 0.9
+ sound1060: silence1.wav pitch1060: 6.0
+ crossfade: 80 }
+-5.917 //oœ 2
+{ sound0: en57_stukot_15b_1.wav pitch0: 0.6
+ sound15: en57_stukot_15b_1.wav pitch15: 0.6
+ sound25: en57_stukot_30_4.wav pitch25: 0.6
+ sound60: en57_stukot_30_4.wav pitch60: 0.8
+ sound90: en57_stukot_90b.wav pitch90: 0.9
+ sound1060: silence1.wav pitch1060: 6.0
+ crossfade: 80 }
+6.236 //oœ 3
+{ sound0: en57_stukot_15a_1.wav pitch0: 0.6
+ sound15: en57_stukot_15a_1.wav pitch15: 0.6
+ sound25: en57_stukot_30_3.wav pitch25: 0.6
+ sound60: en57_stukot_30_3.wav pitch60: 0.8
+ sound90: en57_stukot_90c.wav pitch90: 0.9
+ sound1060: silence1.wav pitch1060: 6.0
+ crossfade: 80 }
+8.944 //oœ 4
+{ sound0: en57_stukot_15b_1.wav pitch0: 0.6
+ sound15: en57_stukot_15b_1.wav pitch15: 0.6
+ sound25: en57_stukot_30_4.wav pitch25: 0.6
+ sound60: en57_stukot_30_4.wav pitch60: 0.8
+ sound90: en57_stukot_90b.wav pitch90: 0.9
+ sound1060: silence1.wav pitch1060: 6.0
+ crossfade: 80 } 
+end

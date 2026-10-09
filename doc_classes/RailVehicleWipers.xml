@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleWipers" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures the windshield wiper programmer switch.
+	</brief_description>
+	<description>
+		[RailVehicleWipers] wraps the FIZ [code]WiperList:[/code] section.
+		[b]Not part of the simulation:[/b] the vehicle's simulation has no wiper state or configuration, so the
+		wipers - the switch and the movement of every wiper - are simulated by this component itself.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_sweep_positions" qualifiers="const">
+			<return type="PackedFloat64Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_switch_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_decrease">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_increase">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="angle" type="float" setter="set_angle" getter="get_angle" default="0.0">
+			[code]WiperList:Angle[/code]
+			The wiper's working angle.
+		</member>
+		<member name="default_position" type="int" setter="set_default_position" getter="get_default_position" default="0">
+			[code]WiperList:Default[/code]
+			Starting switch position, counting from 0.
+		</member>
+		<member name="positions" type="RailVehicleWiperListItem[]" setter="set_positions" getter="get_positions" default="[]">
+			[code]WiperList[/code]
+			The wiper switch's position table.
+		</member>
+		<member name="wiper_count" type="int" setter="set_wiper_count" getter="get_wiper_count" default="0">
+		</member>
+	</members>
+</class>
