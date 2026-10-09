@@ -1,0 +1,9 @@
+// SN61-02 as calkowo_sn61_zima.scn sets it out: a trainset with no timetable given 0.1 km/h, so its
+// driver wants to move off (Tb1, "Increase tractive force") instead of holding the brake
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.1
+node -1 0 SN61-02 dynamic pkp\sn61_v2 SN61-02 SN61_v1 0 reardriver 3 0 enddynamic
+endtrainset
