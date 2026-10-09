@@ -10,7 +10,8 @@ var _cache: ResourceCache = ResourceCache.create("nodebank")
 
 
 func load_library(force_rebuild: bool = false) -> PackedScene:
-    var nodebank_path: String = UserSettings.get_maszyna_game_dir().path_join("nodebank.txt")
+    var game_dir:String = UserSettings.get_maszyna_game_dir()
+    var nodebank_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, "nodebank.txt"))
     if not FileAccess.file_exists(nodebank_path):
         push_warning("Nodebank file does not exist: %s" % nodebank_path)
         return EMPTY_NODEBANK

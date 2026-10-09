@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://dy1vamg5fea6s"
+path="res://.godot/imported/rolling.fiz-8f5bd8356dcbcf3be953f6cfde67a0c2.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/animated_v1/rolling.fiz"
+dest_files=["res://.godot/imported/rolling.fiz-8f5bd8356dcbcf3be953f6cfde67a0c2.res"]
+
+[params]
+

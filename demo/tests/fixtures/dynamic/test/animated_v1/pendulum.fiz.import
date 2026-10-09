@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://btns68q080056"
+path="res://.godot/imported/pendulum.fiz-cfc43aeba2126a370aeaa2264fc9d90d.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/animated_v1/pendulum.fiz"
+dest_files=["res://.godot/imported/pendulum.fiz-cfc43aeba2126a370aeaa2264fc9d90d.res"]
+
+[params]
+

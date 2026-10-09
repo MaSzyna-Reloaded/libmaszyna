@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://0sjdfxjqhtal"
+path="res://.godot/imported/doors.fiz-492c70580aff17d9c8bf88994b6ac6a6.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/animated_v1/doors.fiz"
+dest_files=["res://.godot/imported/doors.fiz-492c70580aff17d9c8bf88994b6ac6a6.res"]
+
+[params]
+

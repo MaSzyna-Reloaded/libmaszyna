@@ -1,0 +1,5 @@
+// a vehicle with a current collector and no pantograph type of its own
+Param. Category=train M=20000 Vmax=100
+Dimensions: L=16.0 H=4.3 W=3.0
+Wheels: D=1.0 Axle=Bo'Bo'
+Power: EnginePower=CurrentCollector CollectorsNo=2 MaxVoltage=3600 MinH=0.5 MaxH=2.4 CSW=1.4

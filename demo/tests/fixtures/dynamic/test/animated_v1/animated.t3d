@@ -1,0 +1,451 @@
+/* A fabricated vehicle for reading animated submodels by the MMD's prefixes and animations:
+   counts (demo/tests/test_mmd_vehicle_animations.gd). Every submodel is one triangle. */
+Parent: none
+Type: Mesh
+Name: nadwozie
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: pantrd1_pant01
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 1 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: pantrg1_pant01
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 2 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: slizg_pant01
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 3 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: pantrd1_pant02
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 4 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: pantrg1_pant02
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 5 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: slizg_pant02
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 6 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: wheel1
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 7 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: wheel2
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 8 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: wiper1_p1
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 9 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: wiper4_p1
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 10 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: kierunek_przod_off
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 20 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: tablica
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: -4
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 21 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: drzwi1
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 22 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: drzwi1
+Type: Mesh
+Name: drzwi1_a
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: drzwi1_a
+Type: Mesh
+Name: drzwi1_b
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: drzwi2
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 23 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
+
+Parent: none
+Type: Mesh
+Name: stopien1
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 24 1 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1
