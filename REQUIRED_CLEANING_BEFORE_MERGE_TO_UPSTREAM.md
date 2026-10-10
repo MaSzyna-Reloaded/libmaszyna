@@ -62,7 +62,7 @@ Legend:
 - [x] [RC-024](#rc-024) Controller and server call each other; `get_state()` builds a cache
 - [x] [RC-025](#rc-025) `vehicle_get_transform()` writes a cache
 - [x] [RC-026](#rc-026) Drawing node creates a second vehicle RID
-- [ ] [RC-027](#rc-027) Mover member names as public state keys
+- [x] [RC-027](#rc-027) Mover member names as public state keys
 - [x] [RC-028](#rc-028) `RailVehicleHorns` includes the vendored Mover
 - [ ] [RC-029](#rc-029) `Mover*` classes public and instantiated from GDScript
 - [ ] [RC-030](#rc-030) `Mover*` components hold state the Mover does not have
@@ -198,22 +198,6 @@ Legend:
 * **Problem:** the default `resolution_scale = 2.0` is outside the inspector range
   `"0.05,1,0.05"`.
 * **Fix:** make the default and the range agree.
-
-### RC-027
-
-**Mover member names as public state keys** ALARM
-
-* **Where:**
-  * `src/vehicles/rail/RailVehicleEngine.cpp:225-228`: `"Mm"`, `"Mw"`, `"Fw"`, `"Ft"`
-  * `RailVehicleElectricEngine.cpp:121`: `"Im"`
-  * `RailVehicleDieselElectricEngine.cpp:9`: `"Im"`
-* **Rule:** the backend never appears in a public interface
-* **Problem:** these keys are Mover member names in the public state dump, while every other key
-  is descriptive `snake_case`.
-* **Fix:** descriptive names such as `motor_torque` and `motor_current`, with their readers
-  updated: `addons/libmaszyna/legacy/cabin/python_screen_state.gd:133, 135` and the tests
-  (`test_train_electric_induction_engine.gd:152, 178`, `maszyna_startup_test.gd:417`,
-  `test_zzz_driver_hints_sn61_v2.gd:32`).
 
 ### RC-029
 

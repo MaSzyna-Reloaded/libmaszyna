@@ -6,7 +6,7 @@ namespace godot {
         if (!is_simulation_ready()) {
             return;
         }
-        p_state["Im"] = get_motor_current();
+        p_state["motor_current"] = get_motor_current();
         p_state["engine_voltage"] = get_engine_voltage();
         p_state["circuit_imax"] = get_circuit_imax();
         p_state["dynamic_brake_active"] = get_dynamic_brake_active();

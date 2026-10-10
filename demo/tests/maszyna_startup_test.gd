@@ -414,7 +414,7 @@ func _cars_text() -> String:
                 "compressor_pressure", "compressor_enabled", "compressor_allowed", "feed_pipe_pressure", "main_pipe_locked", "brake_is_cut_off", "pipe_pressure",
                 "brake_air_pressure", "brake_controller_position",
                 "brake_local_position_normalized", "spring_brake/active", "controller_main_position",
-                "controller_main_actual_position", "engine_current", "Ft", "speed",
+                "controller_main_actual_position", "engine_current", "tractive_force", "speed",
                 "blinking", "vigilance_blinking", "cabsignal_blinking", "braking",
                 "brake_emergency_valve_flow", "brake_main_valve_flow", "brake_handle_release_flow",
                 "brake_handle_emergency_flow", "brake_handle_braking_flow", "alarm_chain_pulled",

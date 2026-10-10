@@ -222,10 +222,10 @@ namespace godot {
         p_state["main_switch_enabled"] = get_main_switch_enabled();
         p_state["main_switch_closable"] = get_main_switch_closable();
         p_state["engine_type"] = get_type();
-        p_state["Mm"] = get_motor_torque();
-        p_state["Mw"] = get_wheel_torque();
-        p_state["Fw"] = get_wheel_force();
-        p_state["Ft"] = get_tractive_force();
+        p_state["motor_torque"] = get_motor_torque();
+        p_state["wheel_torque"] = get_wheel_torque();
+        p_state["wheel_force"] = get_wheel_force();
+        p_state["tractive_force"] = get_tractive_force();
         p_state["engine_power"] = get_power();
         p_state["engine_rpm_count"] = get_rpm_count();
         p_state["engine_rpm_ratio"] = get_rpm_ratio();

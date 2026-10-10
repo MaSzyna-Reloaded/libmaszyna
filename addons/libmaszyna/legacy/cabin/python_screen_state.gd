@@ -130,9 +130,9 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     result["mainctrl_pos_count"] = config.get("main_controller_position_max", 0)   # MainCtrlPosNo
     result["velocity"] = absf(state.get("speed", 0.0))   # abs(Vel), km/h
     result["manual_brake"] = state.get("brake_manual_position", 0) > 0
-    result["tractionforce"] = absf(state.get("Ft", 0.0))   # abs(mvOccupied->Ft)
+    result["tractionforce"] = absf(state.get("tractive_force", 0.0))   # abs(mvOccupied->Ft)
     result["voltage"] = absf(controlled.get("engine_voltage", 0.0))   # abs(EngineVoltage)
-    result["im"] = absf(controlled.get("Im", 0.0))   # abs(Im)
+    result["im"] = absf(controlled.get("motor_current", 0.0))   # abs(Im)
     # Train.cpp:717-718 and fHVoltage (Train.cpp:8617-8626)
     var main_countdown:float = controlled.get("main_switch_time", 0.0)   # MainsInitTimeCountdown
     result["main_init"] = main_countdown < controlled_config.get("main_init_time", 0.0) and main_countdown > 0.0
