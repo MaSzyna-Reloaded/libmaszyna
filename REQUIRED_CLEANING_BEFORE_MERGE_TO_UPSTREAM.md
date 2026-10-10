@@ -70,7 +70,7 @@ Legend:
 - [ ] [RC-032](#rc-032) Radio component calls up into the vehicle servers
 - [x] [RC-033](#rc-033) `E3DInstanceBackend` and `E3DRenderingServer` include each other
 - [x] [RC-034](#rc-034) Driver layer tracks player-controlled vehicles
-- [ ] [RC-035](#rc-035) `Cabin3D` keeps a controller path it says it has not got
+- [x] [RC-035](#rc-035) `Cabin3D` keeps a controller path it says it has not got
 - [x] [RC-036](#rc-036) `SimulationServer` holds cache, build and language
 - [ ] [RC-037](#rc-037) `track_get_endpoints()` fills a cache
 - [x] [RC-038](#rc-038) `build_get_number()` reads a file and sets a flag
@@ -227,18 +227,6 @@ Legend:
 * **Decision:** the component emits events, and the server, or whoever cares, reacts; what it
   needs to know of the occupancy is handed down by the owner.
 
-### RC-035
-
-**`Cabin3D` keeps a controller path it says it has not got** ALARM
-
-* **Where:** `src/cabin/Cabin3D.hpp:61, 118-119` vs the comment at `:98-99`; bound at
-  `Cabin3D.cpp:48-54`, accessors `:330-334`; used by
-  `addons/libmaszyna/legacy/cabin/maszyna_dynamic_train_cabin.gd:56-60`
-* **Problem:** a bound `NodePath controller_path` to a `VehiclePhysicsNode`, although the class
-  says "there is deliberately no path to a controller here" and already holds `vehicle_rid`. The
-  cab has two ways to reach its vehicle.
-* **Fix:** remove the path and use `vehicle_rid` only.
-
 ### RC-037
 
 **`track_get_endpoints()` fills a cache**
@@ -375,9 +363,6 @@ of API style, one that is stored is a defect only when it may outlive what it po
   allowed; `GenericVehicleComponent::script_owner` was a use-after-free and is an `ObjectID`,
   its node taking the component out of the vehicle on leaving the tree
 * **Where (still open):**
-  * `src/cabin/Cabin3D.hpp:56`: `Ref<RailVehicleDieselEngine> engine` - a strong reference to a
-    component instead of the vehicle's RID; `Cabin3D.cpp:232` dereferences
-    `engine->get_controller()` unchecked, null once the vehicle is released
   * `src/logging/GameLogger.hpp:28`: `GameLog *game_log` - a logger kept by a script past the
     extension's teardown points at a freed log
 

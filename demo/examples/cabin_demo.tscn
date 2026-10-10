@@ -6,6 +6,7 @@
 [ext_resource type="Shader" uid="uid://cer53we0fnelj" path="res://addons/libmaszyna/environment/sky.gdshader" id="2_x8lk3"]
 [ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_camera.gd" id="3_xr1tx"]
 [ext_resource type="PackedScene" uid="uid://do3s7mkbpv7es" path="res://vehicles/sm42/sm_42_cabin.tscn" id="8_1ye4a"]
+[ext_resource type="Script" path="res://examples/cabin_demo.gd" id="9_cabdm"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_yo2ou"]
 shader = ExtResource("2_x8lk3")
@@ -54,11 +55,11 @@ volumetric_fog_temporal_reprojection_amount = 0.99
 adjustment_enabled = true
 
 [node name="CabinDemo" type="Node3D" unique_id=562475351]
+script = ExtResource("9_cabdm")
 
 [node name="SM42v1" parent="." unique_id=83480242 instance=ExtResource("1_b8jw8")]
 
 [node name="SM42Cabin" parent="." unique_id=759671070 instance=ExtResource("8_1ye4a")]
-controller_path = NodePath("../SM42v1")
 
 [node name="Buda" type="VisualInstance3D" parent="." unique_id=1882743326]
 unique_name_in_owner = false

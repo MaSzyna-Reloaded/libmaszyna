@@ -200,10 +200,9 @@ func cabin_show(cabin_rid:RID, parent:Node) -> Cabin3D:
         return null
     _cabins[vehicle_rid] = cabin.get_instance_id()
     parent.add_child(cabin)
-    # a cabin holds the handles of its cabin and of the vehicle it sits in and takes everything else
+    # a cabin holds the handle of its cabin, its vehicle comes with it, and takes everything else
     # from here - told once it is in the tree, because building its interior puts nodes there
     cabin.set_cabin(cabin_rid)
-    cabin.set_vehicle_rid(vehicle_rid)
     vehicle_cabin_built.emit(vehicle_rid)
     return cabin
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "vehicles/rail/RailVehicleDieselEngine.hpp"
 #include <godot_cpp/classes/node3d.hpp>
-#include <godot_cpp/variant/node_path.hpp>
+#include <godot_cpp/core/math.hpp>
+#include <godot_cpp/variant/rid.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 
@@ -43,22 +43,17 @@ namespace godot {
             static constexpr double SHAKE_JOLT_MIN_VELOCITY = 25.0;      // DynObj.cpp:8113 [km/h]
             static constexpr double SHAKE_JOLT_DIVISOR = 4.0;            // DynObj.cpp:8117
 
-            /// The RailVehicleServer handle of the vehicle this cab sits in
+            /// The vehicle of `cabin` (VehicleServer::cabin_get_vehicle()), taken when the cabin is set
             RID vehicle_rid;
             bool cabin_ready = false;
             double engine_angle = Math::PI * 0.5; // MOVER.h:2207 eAngle
             Vector3 shake_velocity;
             Vector3 shake_offset;
             double shake_accumulator = 0.0;
-            /* The engine that shakes the cab, taken when the cab or its vehicle's controller
-             * changes; only a diesel does in the original, and without one the cab does not
-             * process */
-            Ref<RailVehicleDieselEngine> engine;
 
             RID cabin;
             bool has_cab_model = true;
             bool cab_window_open = false;
-            NodePath controller_path;
             Vector3 camera_bound_min;
             Vector3 camera_bound_max;
             bool camera_bound_enabled = false;
@@ -81,7 +76,7 @@ namespace godot {
 
             Vector3 _compute_spring_force(const Vector3 &p_position) const;
             void _process_engine_shake(double p_delta);
-            void _resolve_engine();
+            void _refresh_shake();
             void _on_vehicle_changed(const RID &p_vehicle);
             /* The cab's elements are GDScript nodes this class only hosts, so the name is handed
              * down by a named call - the one case `CODE_STYLE.md` allows. */
@@ -95,9 +90,8 @@ namespace godot {
             // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method): Godot's GDCLASS dispatches to this name
             void _notification(int p_what);
 
-            /// The vehicle this cab sits in, by name. There is deliberately no path to a
-            /// controller here.
-            void set_vehicle_rid(const RID &p_vehicle_rid);
+            /// The vehicle this cab sits in, by name - the vehicle of its cabin (set_cabin()). There
+            /// is deliberately no path to a controller here.
             RID get_vehicle_rid() const;
 
             Transform3D get_camera_transform() const;
@@ -108,15 +102,14 @@ namespace godot {
              * cab2 = 0, machine room = 1, cab1 = 2 - and an open window is 3. */
             int get_sound_listener_context() const;
 
-            /* The VehicleServer cabin this interior is of - set by whoever builds it */
+            /* The VehicleServer cabin this interior is of - set by whoever builds it; its vehicle
+             * comes with it */
             void set_cabin(const RID &p_cabin);
             RID get_cabin() const;
             void set_has_cab_model(bool p_has_cab_model);
             bool get_has_cab_model() const;
             void set_cab_window_open(bool p_open);
             bool get_cab_window_open() const;
-            void set_controller_path(const NodePath &p_path);
-            NodePath get_controller_path() const;
             void set_camera_bound_min(const Vector3 &p_min);
             Vector3 get_camera_bound_min() const;
             void set_camera_bound_max(const Vector3 &p_max);

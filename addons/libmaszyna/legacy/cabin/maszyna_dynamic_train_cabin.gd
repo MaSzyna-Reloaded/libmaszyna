@@ -50,19 +50,11 @@ func _ready() -> void:
     # the MMD and the models are the game directory's
     GameDataServer.data_reload_requested.connect(reload)
     ProjectSettings.settings_changed.connect(_apply_reverse_cull_face)
-    # controller_path (inherited from Cabin3D) may already name the vehicle when this cab is
-    # placed in a scene rather than built by CabinSystem.cabin_show(), which names it itself.
-    # It is the vehicle's front cab then, as the original's cab 1.
-    if controller_path:
-        var physics_node:VehiclePhysicsNode = get_node_or_null(controller_path)
-        var vehicle:RID = physics_node.get_vehicle_rid() if physics_node else RID()
-        set_cabin(RailVehicleServer.vehicle_get_front_cabin(vehicle))
-        set_vehicle_rid(vehicle)
     # Cabin3D's own _ready() emits cabin_ready; the engine calls it beside this one.
 
 
-## Cabin3D announces the vehicle rather than letting a subclass override set_vehicle_rid(): the
-## vehicle calls that method typed, so a script method of the same name would never run.
+## Cabin3D announces the vehicle of its cabin rather than letting a subclass override set_cabin():
+## CabinSystem calls that method typed, so a script method of the same name would never run.
 func _on_vehicle_rid_changed(_vehicle_rid:RID) -> void:
     _rebuild_generated()
 
@@ -73,13 +65,13 @@ func _on_cabin_changed(_cabin:RID) -> void:
 
 
 func _exit_tree() -> void:
-    # the announcement goes first: clearing the vehicle would otherwise rebuild the cab on its
-    # way out of the tree
+    # the announcement goes first: clearing the cabin would otherwise rebuild the cab on its way
+    # out of the tree
     vehicle_rid_changed.disconnect(_on_vehicle_rid_changed)
     cabin_changed.disconnect(_on_cabin_changed)
     GameDataServer.data_reload_requested.disconnect(reload)
     ProjectSettings.settings_changed.disconnect(_apply_reverse_cull_face)
-    set_vehicle_rid(RID())
+    set_cabin(RID())
     _free_occluders()
 
 

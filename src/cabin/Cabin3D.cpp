@@ -1,7 +1,6 @@
 #include "Cabin3D.hpp"
 #include "utils/LibMaszynaUnits.hpp"
 #include "vehicles/base/VehicleComponentType.hpp"
-#include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleDieselEngine.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
@@ -24,7 +23,6 @@ namespace godot {
     const char *Cabin3D::cabin_changed_signal = "cabin_changed";
 
     void Cabin3D::_bind_methods() {
-        ClassDB::bind_method(D_METHOD("set_vehicle_rid", "vehicle_rid"), &Cabin3D::set_vehicle_rid);
         ClassDB::bind_method(D_METHOD("get_vehicle_rid"), &Cabin3D::get_vehicle_rid);
         ClassDB::bind_method(D_METHOD("get_camera_transform"), &Cabin3D::get_camera_transform);
         ClassDB::bind_method(D_METHOD("get_camera_shake_offset"), &Cabin3D::get_camera_shake_offset);
@@ -44,14 +42,6 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("set_cab_window_open", "open"), &Cabin3D::set_cab_window_open);
         ClassDB::bind_method(D_METHOD("get_cab_window_open"), &Cabin3D::get_cab_window_open);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "cab_window_open"), "set_cab_window_open", "get_cab_window_open");
-
-        ClassDB::bind_method(D_METHOD("set_controller_path", "path"), &Cabin3D::set_controller_path);
-        ClassDB::bind_method(D_METHOD("get_controller_path"), &Cabin3D::get_controller_path);
-        ADD_PROPERTY(
-                PropertyInfo(
-                        Variant::NODE_PATH, "controller_path", PROPERTY_HINT_NODE_PATH_VALID_TYPES,
-                        "VehiclePhysicsNode"),
-                "set_controller_path", "get_controller_path");
 
         ClassDB::bind_method(D_METHOD("set_camera_bound_min", "min"), &Cabin3D::set_camera_bound_min);
         ClassDB::bind_method(D_METHOD("get_camera_bound_min"), &Cabin3D::get_camera_bound_min);
@@ -125,9 +115,10 @@ namespace godot {
                 "get_engine_shake_fade_out_factor");
 
         ADD_SIGNAL(MethodInfo(cabin_ready_signal));
-        /* The cab now sits in a different vehicle. A subclass reacts to this rather than
-         * overriding set_vehicle_rid(): a typed call from C++ reaches the native method, and a
-         * script's method of the same name would simply be skipped. */
+        /* The cab now sits in a different vehicle - the vehicle of the cabin set_cabin() was
+         * given. A subclass reacts to this rather than overriding set_cabin(): a typed call from
+         * C++ reaches the native method, and a script's method of the same name would simply be
+         * skipped. */
         ADD_SIGNAL(MethodInfo(vehicle_rid_changed_signal, PropertyInfo(Variant::RID, "vehicle_rid")));
         ADD_SIGNAL(MethodInfo(cabin_changed_signal, PropertyInfo(Variant::RID, "cabin")));
         /// Emitted after rebuilding the cabin's driver position and camera bounds.
@@ -148,7 +139,7 @@ namespace godot {
                 server->connect(
                         VehicleServer::vehicle_configured_signal, callable_mp(this, &Cabin3D::_on_vehicle_changed));
                 // the vehicle may have got its controller while the cab was out of the tree
-                _resolve_engine();
+                _refresh_shake();
             } break;
             case NOTIFICATION_EXIT_TREE: {
                 VehicleServer *server = VehicleServer::get_instance();
@@ -175,23 +166,28 @@ namespace godot {
     }
 
     /* In the original only a diesel shakes the cab, so the engine's own kind answers the question -
-     * no configuration is looked up for it. A cab left without one stands at rest. */
-    void Cabin3D::_resolve_engine() {
-        const VehicleServer *server = VehicleServer::get_instance();
-        engine = server != nullptr && vehicle_rid.is_valid()
-                         ? server->vehicle_component_get(vehicle_rid, VehicleComponentType::COMPONENT_ENGINE)
-                         : Ref<VehicleComponent>();
-        if (engine.is_null()) {
+     * no configuration is looked up for it. Asked of the server by the vehicle's handle each time:
+     * the cab holds neither the engine nor the controller. */
+    static Ref<RailVehicleDieselEngine> shaking_engine(const VehicleServer *p_server, const RID &p_vehicle) {
+        return p_server != nullptr && p_vehicle.is_valid()
+                       ? p_server->vehicle_component_get(p_vehicle, VehicleComponentType::COMPONENT_ENGINE)
+                       : Ref<VehicleComponent>();
+    }
+
+    /* A cab whose vehicle has no diesel stands at rest and does not process */
+    void Cabin3D::_refresh_shake() {
+        const bool shaking = shaking_engine(VehicleServer::get_instance(), vehicle_rid).is_valid();
+        if (!shaking) {
             shake_velocity = Vector3();
             shake_offset = Vector3();
             shake_accumulator = 0.0;
         }
-        set_process(engine.is_valid());
+        set_process(shaking);
     }
 
     void Cabin3D::_on_vehicle_changed(const RID &p_vehicle) {
         if (p_vehicle == vehicle_rid) {
-            _resolve_engine();
+            _refresh_shake();
         }
     }
 
@@ -209,6 +205,12 @@ namespace godot {
     }
 
     void Cabin3D::_process_engine_shake(const double p_delta) {
+        const VehicleServer *server = VehicleServer::get_instance();
+        const Ref<RailVehicleDieselEngine> engine = shaking_engine(server, vehicle_rid);
+        if (engine.is_null()) {
+            _refresh_shake();
+            return;
+        }
         Vector3 shake_vector;
         const double engine_revolutions = Math::abs(engine->get_rpm_count());
         if (engine_revolutions > 0.0) {
@@ -229,7 +231,7 @@ namespace godot {
 
         Vector3 shake = _compute_spring_force(shake_vector) * SHAKE_FORCE_GAIN;
         // the extra shake at increased velocity (DynObj.cpp:8102, 8113-8123)
-        const double velocity = MIN(Math::abs(engine->get_controller()->get_speed()), SHAKE_MAX_VELOCITY);
+        const double velocity = MIN(Math::abs(server->vehicle_get_speed(vehicle_rid)), SHAKE_MAX_VELOCITY);
         if (UtilityFunctions::randf_range(0.0, velocity) > SHAKE_JOLT_MIN_VELOCITY) {
             const double jolt_range = velocity * 2.0;
             const auto jolt = [velocity, jolt_range]() {
@@ -260,13 +262,6 @@ namespace godot {
                 child->call("set_vehicle_rid", vehicle_rid);
             }
         }
-    }
-
-    void Cabin3D::set_vehicle_rid(const RID &p_vehicle_rid) {
-        vehicle_rid = p_vehicle_rid;
-        _resolve_engine();
-        _propagate_vehicle_rid(this);
-        emit_signal(vehicle_rid_changed_signal, vehicle_rid);
     }
 
     RID Cabin3D::get_vehicle_rid() const {
@@ -310,6 +305,14 @@ namespace godot {
             return;
         }
         cabin = p_cabin;
+        const VehicleServer *server = VehicleServer::get_instance();
+        const RID vehicle = server != nullptr && cabin.is_valid() ? server->cabin_get_vehicle(cabin) : RID();
+        if (vehicle != vehicle_rid) {
+            vehicle_rid = vehicle;
+            _refresh_shake();
+            _propagate_vehicle_rid(this);
+            emit_signal(vehicle_rid_changed_signal, vehicle_rid);
+        }
         emit_signal(cabin_changed_signal, cabin);
     }
 
@@ -327,12 +330,6 @@ namespace godot {
     }
     bool Cabin3D::get_cab_window_open() const {
         return cab_window_open;
-    }
-    void Cabin3D::set_controller_path(const NodePath &p_path) {
-        controller_path = p_path;
-    }
-    NodePath Cabin3D::get_controller_path() const {
-        return controller_path;
     }
     void Cabin3D::set_camera_bound_min(const Vector3 &p_min) {
         camera_bound_min = p_min;
