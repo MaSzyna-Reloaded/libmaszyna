@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""Cut a vehicle of a real scenery into a test fixture (demo/tests/fixtures).
+
+Copies the trainset the vehicle is in - for a multiple unit every car of it - with the data its
+cars are built from: each car's FIZ and MMD and everything they include, every member of a
+random include list ("include [ a b c ] end", the parser picks one at random) and the skins'
+.mat files. Models, sounds and textures are left out: a vehicle simulates without them, and its
+cab logic is built from the MMD alone. Text keeps its cp1250 bytes; CRLF becomes LF.
+
+Writes fixtures/scenery/startup_line.inc once (the tracks, the wire and its power source of
+ep07.scn, a kilometre of td.scn) and fixtures/scenery/startup_<vehicle>.scn with the trainset
+standing at the start of it.
+
+    scripts/cut-vehicle-fixture --game-dir ~/Games/Maszyna --dynamic pkp/ep09_v1
+    scripts/cut-vehicle-fixture --game-dir ~/Games/Maszyna --scenery wrzosy_roj66582.scn \\
+        --vehicle 36WEa-014A
+
+Then import the project (godot-double --headless --path demo --import) and commit the generated
+.fiz.import files with the fixture. .claude/skills/testing/SKILL.md "Start-up test of a vehicle".
+"""
+
+import argparse
+import os
+import re
+import sys
+
+ENCODING = "cp1250"
+# the parser's include keywords (mmd_cabin_instancer.gd _handle_include)
+INCLUDE = "include"
+INCLUDE_END = "end"
+RANDOM_OPEN = "["
+RANDOM_CLOSE = "]"
+# parser.cpp:280 - an include has up to this many (pN) parameters, a missing one is "none"
+MAX_INCLUDE_PARAMETERS = 20
+# the fixture scenery whose line the start-up line is, and the track of it a trainset starts on -
+# the middle of the kilometre, so a long multiple unit stands on the rails behind it too
+TEMPLATE_SCENERY = "ep07.scn"
+START_TRACK = "ep07_n4"
+# EngineType= of a vehicle with nothing to start
+NO_ENGINE = ("none", "dumb")
+# Type= of a multiple unit, driven from a car its engine may not be in
+UNIT_TYPES = ("ezt", "dmu")
+
+
+def read_text(path):
+    with open(path, "rb") as f:
+        return f.read().replace(b"\r\n", b"\n").decode(ENCODING)
+
+
+def write_text(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(text.encode(ENCODING))
+
+
+def find_file(directory, name):
+    """The file of a directory whose name matches regardless of the letter case, as the game's
+    data path lookup does (MaszynaDataPath)"""
+    if not os.path.isdir(directory):
+        return None
+    wanted = name.lower()
+    for entry in os.listdir(directory):
+        if entry.lower() == wanted:
+            return os.path.join(directory, entry)
+    return None
+
+
+def find_path(root, relative):
+    path = root
+    for part in re.split(r"[\\/]", relative):
+        if not part:
+            continue
+        path = find_file(path, part)
+        if path is None:
+            return None
+    return path
+
+
+# a UTF-8 byte order mark, read as cp1250 like the rest of the file; the game's parser skips it
+BYTE_ORDER_MARK = b"\xef\xbb\xbf".decode(ENCODING)
+
+
+def tokens(text):
+    text = text.removeprefix(BYTE_ORDER_MARK)
+    for line in text.split("\n"):
+        line = line.split("//", 1)[0]
+        yield from line.split()
+
+
+def substitute(text, parameters):
+    return re.sub(r"\(p(\d+)\)", lambda m: parameters.get(int(m.group(1)), "none"), text)
+
+
+def include_closure(vehicle_dir, filename, parameters, found, missing):
+    """Every file a FIZ/MMD reads, through its includes; paths are the vehicle directory's"""
+    path = find_path(vehicle_dir, filename)
+    if path is None:
+        missing.append(os.path.join(vehicle_dir, filename))
+        return
+    key = (path, tuple(sorted(parameters.items())))
+    if key in found:
+        return
+    found[key] = path
+    stream = tokens(substitute(read_text(path), parameters))
+    for token in stream:
+        if token.lower() != INCLUDE:
+            continue
+        first = next(stream, "")
+        names = [first]
+        if first == RANDOM_OPEN:
+            names = []
+            for name in stream:
+                if name == RANDOM_CLOSE:
+                    break
+                names.append(name)
+        values = []
+        for value in stream:
+            if value.lower() == INCLUDE_END:
+                break
+            values.append(value)
+        included = {i + 1: v for i, v in enumerate(values[:MAX_INCLUDE_PARAMETERS])}
+        for name in names:
+            include_closure(vehicle_dir, name, included, found, missing)
+
+
+def trainset_of(scenery_text, vehicle):
+    """The trainset ... endtrainset block naming the vehicle"""
+    for match in re.finditer(r"^trainset\b.*?^endtrainset\b", scenery_text, re.M | re.S | re.I):
+        block = match.group(0)
+        if re.search(r"\b%s\b" % re.escape(vehicle), block, re.I):
+            return block
+    return None
+
+
+def dynamic_lines(block):
+    return [line for line in block.split("\n") if re.match(r"\s*node\b.*\bdynamic\b", line, re.I)]
+
+
+def startup_line(out):
+    """The tracks, the wire and its power source of ep07.scn - EP07-424's kilometre of td.scn"""
+    lines = read_text(os.path.join(out, "scenery", TEMPLATE_SCENERY)).split("\n")
+    start = next(i for i, line in enumerate(lines) if line.startswith("node"))
+    end = next(i for i, line in enumerate(lines) if line.startswith("trainset"))
+    return "// The fixtures' start-up line: the tracks, the wire and its power source of %s\n" \
+        "// (scripts/cut-vehicle-fixture)\n\n%s\n" % (TEMPLATE_SCENERY, "\n".join(lines[start:end]).strip())
+
+
+def driven_vehicle_type(vehicle_dir):
+    """The first vehicle of a directory a driver starts: a FIZ with an engine and an MMD with a cab"""
+    for entry in sorted(os.listdir(vehicle_dir)):
+        if not entry.lower().endswith(".fiz"):
+            continue
+        fiz = read_text(os.path.join(vehicle_dir, entry))
+        engine = re.search(r"\bEngineType=(\w+)", fiz)
+        mmd = find_file(vehicle_dir, entry[:-len(".fiz")] + ".mmd")
+        if engine and engine.group(1).lower() not in NO_ENGINE and mmd \
+                and "cab1definition" in read_text(mmd).lower():
+            return entry[:-len(".fiz")], fiz
+    return None, None
+
+
+def unit_trainset(game_dir, data_path):
+    """A scenery's trainset led by a car of the directory - a multiple unit with every car of it"""
+    pattern = re.compile(r"\bdynamic\s+%s\s" % re.escape(data_path).replace(r"\\", r"[\\/]"), re.I)
+    scenery_dir = os.path.join(game_dir, "scenery")
+    for entry in sorted(os.listdir(scenery_dir)):
+        if not entry.lower().endswith(".scn"):
+            continue
+        text = read_text(os.path.join(scenery_dir, entry))
+        for match in re.finditer(r"^trainset\b.*?^endtrainset\b", text, re.M | re.S | re.I):
+            lines = dynamic_lines(match.group(0))
+            if lines and pattern.search(lines[0]):
+                return entry, match.group(0)
+    return None, None
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--game-dir", required=True)
+    parser.add_argument("--dynamic", help="a vehicle directory under dynamic/ (pkp/ep09_v1): its first "
+                        "vehicle with an engine and a cab - a multiple unit with its cars, from a scenery")
+    parser.add_argument("--scenery", help="the scenery the vehicle stands in, under scenery/")
+    parser.add_argument("--vehicle", help="the vehicle's name in the scenery")
+    parser.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "demo", "tests", "fixtures"))
+    args = parser.parse_args()
+    game_dir = os.path.expanduser(args.game_dir)
+    out = os.path.normpath(args.out)
+
+    if args.dynamic:
+        data_path = args.dynamic.replace("/", "\\")
+        vehicle_dir = find_path(os.path.join(game_dir, "dynamic"), args.dynamic)
+        if vehicle_dir is None:
+            sys.exit("no dynamic/%s" % args.dynamic)
+        vehicle_type, fiz = driven_vehicle_type(vehicle_dir)
+        if vehicle_type is None:
+            sys.exit("dynamic/%s has no vehicle with an engine and a cab" % args.dynamic)
+        name = os.path.basename(vehicle_dir)
+        source = "dynamic/%s" % args.dynamic
+        train_type = re.search(r"(?<![A-Za-z])Type=(\w+)", fiz)
+        block = None
+        if train_type and train_type.group(1).lower() in UNIT_TYPES:
+            source, block = unit_trainset(game_dir, data_path)
+            if block is None:
+                sys.exit("%s is a multiple unit in no scenery's trainset" % vehicle_type)
+        else:
+            block = "trainset\nnode -1 0 %s dynamic %s %s %s 0 headdriver 0 0 enddynamic\nendtrainset" % (
+                    vehicle_type, data_path, vehicle_type, vehicle_type)
+    else:
+        if not args.scenery or not args.vehicle:
+            sys.exit("--dynamic, or --scenery with --vehicle")
+        scenery_path = find_path(os.path.join(game_dir, "scenery"), args.scenery)
+        if scenery_path is None:
+            sys.exit("no scenery %s" % args.scenery)
+        block = trainset_of(read_text(scenery_path), args.vehicle)
+        if block is None:
+            sys.exit("%s is in no trainset of %s" % (args.vehicle, args.scenery))
+        name = args.vehicle
+        source = args.scenery
+    cut(game_dir, out, block, name, source)
+
+
+def cut(game_dir, out, block, name, source):
+    found = {}
+    missing = []
+    for line in dynamic_lines(block):
+        fields = line.split()
+        # node -1 0 <name> dynamic <data path> <skin> <type> ...
+        data_path, skin, vehicle_type = fields[5], fields[6], fields[7]
+        vehicle_dir = find_path(os.path.join(game_dir, "dynamic"), data_path)
+        if vehicle_dir is None:
+            sys.exit("no dynamic/%s" % data_path)
+        for extension in (".fiz", ".mmd"):
+            include_closure(vehicle_dir, vehicle_type + extension, {}, found, missing)
+        for entry in os.listdir(vehicle_dir):
+            lower = entry.lower()
+            if lower.endswith(".mat") and (lower.startswith(skin.lower() + ",") or lower == skin.lower() + ".mat"):
+                found[(os.path.join(vehicle_dir, entry), ())] = os.path.join(vehicle_dir, entry)
+    if missing:
+        sys.exit("missing includes:\n  " + "\n  ".join(sorted(set(missing))))
+
+    for path in sorted(set(found.values())):
+        relative = os.path.relpath(path, game_dir)
+        write_text(os.path.join(out, relative), read_text(path))
+        print(relative)
+
+    line_path = os.path.join(out, "scenery", "startup_line.inc")
+    if not os.path.exists(line_path):
+        write_text(line_path, startup_line(out))
+        print(os.path.relpath(line_path, out))
+    header = "trainset none %s 0.0 0.0" % START_TRACK
+    trainset = "\n".join([header] + dynamic_lines(block) + ["endtrainset"])
+    scenery = (
+        "// %s (%s) standing at the start of the fixtures' start-up line\n"
+        "// (scripts/cut-vehicle-fixture)\n"
+        "time 10:30 06:30 19:00 endtime\n\n"
+        "include startup_line.inc end\n\n%s\n" % (name, source, trainset))
+    scenery_out = os.path.join(out, "scenery", "startup_%s.scn" % name.lower())
+    write_text(scenery_out, scenery)
+    print(os.path.relpath(scenery_out, out))
+
+
+if __name__ == "__main__":
+    main()

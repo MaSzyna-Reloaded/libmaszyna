@@ -1,0 +1,499 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/weather_controls.gd" id="1_weather"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slider_fill"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.14713949, 0.46044487, 0.34612492, 0.8901961)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slider_fill_highlight"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.2, 0.56, 0.43, 0.95)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="Theme" id="Theme_weather"]
+HSlider/styles/grabber_area = SubResource("StyleBoxFlat_slider_fill")
+HSlider/styles/grabber_area_highlight = SubResource("StyleBoxFlat_slider_fill_highlight")
+
+[node name="WeatherControls" type="HFlowContainer"]
+mouse_filter = 2
+theme = SubResource("Theme_weather")
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 12
+script = ExtResource("1_weather")
+
+[node name="Settings" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Settings"]
+layout_mode = 2
+text = "Settings"
+
+[node name="Calendar" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Calendar"]
+layout_mode = 2
+text = "Calendar"
+
+[node name="Weather" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Weather"]
+layout_mode = 2
+text = "Weather"
+
+[node name="Fog" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Fog"]
+layout_mode = 2
+text = "Fog"
+
+[node name="WindGroup" type="VBoxContainer" parent="Weather"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Weather/WindGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Wind"
+
+[node name="Row" type="HBoxContainer" parent="Weather/WindGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="WindSlider" type="HSlider" parent="Weather/WindGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+
+[node name="WindValueLabel" type="Label" parent="Weather/WindGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "0%"
+horizontal_alignment = 2
+
+[node name="WindDirectionGroup" type="VBoxContainer" parent="Weather"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Weather/WindDirectionGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Dir"
+
+[node name="Row" type="HBoxContainer" parent="Weather/WindDirectionGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="WindDirectionSlider" type="HSlider" parent="Weather/WindDirectionGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 360.0
+step = 0.1
+
+[node name="WindDirectionValueLabel" type="Label" parent="Weather/WindDirectionGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "0\u00b0"
+horizontal_alignment = 2
+
+[node name="RainGroup" type="VBoxContainer" parent="Weather"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Weather/RainGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Rain"
+
+[node name="Row" type="HBoxContainer" parent="Weather/RainGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="RainSlider" type="HSlider" parent="Weather/RainGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+
+[node name="RainValueLabel" type="Label" parent="Weather/RainGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "0%"
+horizontal_alignment = 2
+
+[node name="CloudGroup" type="VBoxContainer" parent="Weather"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Weather/CloudGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Clouds"
+
+[node name="Row" type="HBoxContainer" parent="Weather/CloudGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="CloudSlider" type="HSlider" parent="Weather/CloudGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+
+[node name="CloudValueLabel" type="Label" parent="Weather/CloudGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "0%"
+horizontal_alignment = 2
+
+[node name="FogDensityGroup" type="VBoxContainer" parent="Fog"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Fog/FogDensityGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Fog"
+
+[node name="Row" type="HBoxContainer" parent="Fog/FogDensityGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="FogDensitySlider" type="HSlider" parent="Fog/FogDensityGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+value = 0.15
+
+[node name="FogDensityValueLabel" type="Label" parent="Fog/FogDensityGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "15%"
+horizontal_alignment = 2
+
+[node name="FogDistanceGroup" type="VBoxContainer" parent="Fog"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Fog/FogDistanceGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Fog Distance"
+
+[node name="Row" type="HBoxContainer" parent="Fog/FogDistanceGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="FogDistanceSlider" type="HSlider" parent="Fog/FogDistanceGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(170, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 10.0
+max_value = 5000.0
+step = 10.0
+allow_greater = true
+value = 470.0
+
+[node name="FogDistanceValueLabel" type="Label" parent="Fog/FogDistanceGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "470 m"
+horizontal_alignment = 2
+
+[node name="SystemTimeGroup" type="VBoxContainer" parent="Settings"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="SimulationTime" type="Label" parent="Settings/SystemTimeGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "--"
+
+[node name="Row" type="HBoxContainer" parent="Settings/SystemTimeGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="SystemTimeCheckBox" type="CheckBox" parent="Settings/SystemTimeGroup/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "Use system time"
+
+[node name="TimeGroup" type="VBoxContainer" parent="Calendar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Calendar/TimeGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Time"
+
+[node name="Row" type="HBoxContainer" parent="Calendar/TimeGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="TimeSlider" type="HSlider" parent="Calendar/TimeGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(210, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 23.99
+step = 0.01
+
+[node name="TimeValueLabel" type="Label" parent="Calendar/TimeGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "12:00"
+horizontal_alignment = 2
+
+[node name="DayGroup" type="VBoxContainer" parent="Calendar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Calendar/DayGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Day"
+
+[node name="Row" type="HBoxContainer" parent="Calendar/DayGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="DaySlider" type="HSlider" parent="Calendar/DayGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(110, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 31.0
+value = 1.0
+
+[node name="DayValueLabel" type="Label" parent="Calendar/DayGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "1"
+horizontal_alignment = 2
+
+[node name="MonthGroup" type="VBoxContainer" parent="Calendar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Calendar/MonthGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Month"
+
+[node name="Row" type="HBoxContainer" parent="Calendar/MonthGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="MonthSlider" type="HSlider" parent="Calendar/MonthGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(90, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 12.0
+value = 1.0
+
+[node name="MonthValueLabel" type="Label" parent="Calendar/MonthGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "1"
+horizontal_alignment = 2
+
+[node name="YearGroup" type="VBoxContainer" parent="Calendar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Calendar/YearGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Year"
+
+[node name="Row" type="HBoxContainer" parent="Calendar/YearGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="YearSlider" type="HSlider" parent="Calendar/YearGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(120, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1900.0
+max_value = 2100.0
+value = 1900.0
+
+[node name="YearValueLabel" type="Label" parent="Calendar/YearGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+text = "2026"
+horizontal_alignment = 2
+
+[node name="TimeScaleGroup" type="VBoxContainer" parent="Settings"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="Label" parent="Settings/TimeScaleGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "Time Speed"
+
+[node name="Row" type="HBoxContainer" parent="Settings/TimeScaleGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="PauseButton" type="Button" parent="Settings/TimeScaleGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+focus_mode = 0
+tooltip_text = "Pause"
+toggle_mode = true
+text = "II"
+
+[node name="TimeScaleSlider" type="HSlider" parent="Settings/TimeScaleGroup/Row"]
+unique_name_in_owner = true
+focus_mode = 0
+custom_minimum_size = Vector2(140, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+value = 3.0
+ticks_on_borders = true
+
+[node name="TimeScaleValueLabel" type="Label" parent="Settings/TimeScaleGroup/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.89, 0.85, 0.88)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+
+[node name="ClockTimer" type="Timer" parent="."]
+autostart = true
+
+[connection signal="timeout" from="ClockTimer" to="." method="_on_clock_timer_timeout"]
+[connection signal="toggled" from="Settings/TimeScaleGroup/Row/PauseButton" to="." method="_on_pause_button_toggled"]

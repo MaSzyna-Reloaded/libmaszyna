@@ -1,0 +1,2 @@
+compressor: { soundbegin: 697_et22_compressor-1.wav soundmain: 697_et22_compressor-2.wav soundend: 697_et22_compressor-3.wav range: 120 placement: custom }
+converter: { soundbegin: 697_et22_converter-1.wav soundmain: 697_et22_converter-2.wav soundend: 697_et22_converter-3.wav range: 100 placement: custom }

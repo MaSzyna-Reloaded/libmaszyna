@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLANG_TIDY_BUILD_DIR="${ROOT_DIR}/build-clang-tidy"
-CLANG_TIDY_EXTRA_ARGS=()
 
 usage() {
     echo "Usage: scripts/style-check [path/to/file]" >&2
@@ -35,7 +34,7 @@ is_header_tidy_file() {
 }
 
 is_excluded_file() {
-    [[ "$1" == src/maszyna/* || "$1" == src/gen/* ]]
+    [[ "$1" == src/legacy/maszyna-mover/* || "$1" == src/gen/* ]]
 }
 
 resolve_target_file() {
@@ -66,7 +65,7 @@ resolve_target_file() {
 run_clang_format() {
     if [ "$#" -eq 0 ]; then
         find "${ROOT_DIR}/src" \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \) \
-            -not -path "${ROOT_DIR}/src/maszyna/*" \
+            -not -path "${ROOT_DIR}/src/legacy/maszyna-mover/*" \
             -not -path "${ROOT_DIR}/src/gen/*" \
             -exec clang-format --dry-run --Werror --style=file {} +
     elif is_supported_format_file "$1"; then
@@ -74,62 +73,55 @@ run_clang_format() {
     fi
 }
 
+# Checks one file; a header through a source that includes it
 run_clang_tidy() {
-    local files=()
-    local file=""
+    local file="$1"
+    local translation_unit="${file}"
+    local line_filter="${ROOT_DIR}/${file}"
+    local header_filter_args=()
 
-    if [ "$#" -eq 0 ]; then
-        while IFS= read -r file; do
-            files+=("${file#${ROOT_DIR}/}")
-        done < <(
-            find "${ROOT_DIR}/src" \( -name "*.cpp" -or -name "*.cc" -or -name "*.cxx" -or -name "*.c" -or -name "*.hpp" -or -name "*.h" \) \
-                -not -path "${ROOT_DIR}/src/maszyna/*" \
-                -not -path "${ROOT_DIR}/src/gen/*"
-        )
-    elif is_supported_tidy_file "$1"; then
-        files=("$1")
-    fi
+    if is_header_tidy_file "${file}"; then
+        translation_unit=""
 
-    for file in "${files[@]}"; do
-        local translation_unit="${file}"
-        local line_filter="${ROOT_DIR}/${file}"
-        local header_filter_args=()
-
-        if is_header_tidy_file "${file}"; then
-            translation_unit=""
-
-            for extension in cpp cc cxx c; do
-                local candidate="${file%.*}.${extension}"
-                if [ -f "${ROOT_DIR}/${candidate}" ] && ! is_excluded_file "${candidate}"; then
-                    translation_unit="${candidate}"
-                    break
-                fi
-            done
-
-            if [ -z "${translation_unit}" ]; then
-                translation_unit="$(
-                    find "${ROOT_DIR}/src" -type f \
-                        \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.c' \) \
-                        -exec grep -l -m 1 "#include [\"<].*$(basename "${file}")[\">]" {} + | head -n 1
-                )"
-                translation_unit="${translation_unit#${ROOT_DIR}/}"
+        for extension in cpp cc cxx c; do
+            local candidate="${file%.*}.${extension}"
+            if [ -f "${ROOT_DIR}/${candidate}" ] && ! is_excluded_file "${candidate}"; then
+                translation_unit="${candidate}"
+                break
             fi
+        done
 
-            if [ -z "${translation_unit}" ]; then
-                echo "Style check: could not find translation unit for header: ${file}" >&2
-                exit 1
-            fi
+        # a header without its own source is checked through a source that includes it, directly
+        # or through another header; grep exits 1 when nothing matches and head closes the pipe
+        # early - neither is a failure here, an empty result is checked below
+        local included="${file}"
+        local visited=" "
+        while [ -z "${translation_unit}" ] && [ -n "${included}" ] && [[ "${visited}" != *" ${included} "* ]]; do
+            visited+="${included} "
+            local pattern="#include [\"<].*$(basename "${included}")[\">]"
+            translation_unit="$(
+                grep -rl -m 1 --include='*.cpp' --include='*.cc' --include='*.cxx' --include='*.c' \
+                    "${pattern}" "${ROOT_DIR}/src" | head -n 1 || true
+            )"
+            included="$(grep -rl -m 1 --include='*.hpp' --include='*.h' "${pattern}" "${ROOT_DIR}/src" | head -n 1 || true)"
+            included="${included#${ROOT_DIR}/}"
+        done
+        translation_unit="${translation_unit#${ROOT_DIR}/}"
 
-            header_filter_args=("-header-filter=${ROOT_DIR}/${file}")
+        if [ -z "${translation_unit}" ]; then
+            echo "Style check: could not find translation unit for header: ${file}" >&2
+            return 1
         fi
 
-        (
-            cd "${ROOT_DIR}"
-            clang-tidy --quiet -p "${CLANG_TIDY_BUILD_DIR}" "${CLANG_TIDY_EXTRA_ARGS[@]}" \
-                "${header_filter_args[@]}" \
-                -line-filter="[{\"name\":\"${line_filter}\"}]" "${translation_unit}"
-        )
-    done
+        header_filter_args=("-header-filter=${ROOT_DIR}/${file}")
+    fi
+
+    (
+        cd "${ROOT_DIR}"
+        clang-tidy --quiet -p "${CLANG_TIDY_BUILD_DIR}" \
+            "${header_filter_args[@]}" \
+            -line-filter="[{\"name\":\"${line_filter}\"}]" "${translation_unit}"
+    )
 }
 
 if [ "$#" -gt 1 ]; then
@@ -153,9 +145,18 @@ fi
 
 echo "Style check: checking clang-tidy..."
 if [ -n "${target_file}" ]; then
-    run_clang_tidy "${target_file}"
+    if is_supported_tidy_file "${target_file}"; then
+        run_clang_tidy "${target_file}"
+    fi
 else
-    run_clang_tidy
+    # every file is checked on its own, so the whole tree runs in parallel, one job per core;
+    # xargs exits non-zero when any file fails
+    export ROOT_DIR CLANG_TIDY_BUILD_DIR
+    export -f run_clang_tidy is_header_tidy_file is_excluded_file
+    find "${ROOT_DIR}/src" \( -name "*.cpp" -or -name "*.cc" -or -name "*.cxx" -or -name "*.c" -or -name "*.hpp" -or -name "*.h" \) \
+        -not -path "${ROOT_DIR}/src/legacy/maszyna-mover/*" \
+        -not -path "${ROOT_DIR}/src/gen/*" -printf "src/%P\\n" |
+        xargs -P "$(nproc)" -I{} bash -c 'set -euo pipefail; run_clang_tidy "$1"' _ {}
 fi
 
 echo "Style check: OK"

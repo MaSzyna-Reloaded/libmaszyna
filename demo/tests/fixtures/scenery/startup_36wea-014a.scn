@@ -1,0 +1,14 @@
+// 36WEa-014A (wrzosy_roj66582.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 36WEa-014A dynamic pkp\impuls_v1 36WEa-014A 36WEa-A_KD 0 headdriver 255 0 enddynamic
+node -1 0 36WEa-014B dynamic pkp\impuls_v1 36WEa-014B 36WEa-B_KD 0 nobody 255 0 enddynamic
+node -1 0 36WEa-014C dynamic pkp\impuls_v1 36WEa-014C 36WEa-C_KD 0 nobody 39 0 enddynamic
+node -1 0 36WEa-015A dynamic pkp\impuls_v1 36WEa-015A 36WEa-A_KD 0 nobody 255 0 enddynamic
+node -1 0 36WEa-015B dynamic pkp\impuls_v1 36WEa-015B 36WEa-B_KD 0 nobody 255 0 enddynamic
+node -1 0 36WEa-015C dynamic pkp\impuls_v1 36WEa-015C 36WEa-C_KD 0 nobody 39 0 enddynamic
+endtrainset

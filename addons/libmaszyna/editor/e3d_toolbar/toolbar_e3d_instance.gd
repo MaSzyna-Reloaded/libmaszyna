@@ -6,12 +6,15 @@ var _selected_e3d:E3DModelInstance
 
 @onready var btn = $Editable
 
+
 func _ready():
     EditorInterface.get_selection().selection_changed.connect(_on_selection_changed)
     btn.disabled = true
 
+
 func _exit_tree():
     EditorInterface.get_selection().selection_changed.disconnect(_on_selection_changed)
+
 
 func _find_parent_e3d(node: Node):
     if not node:

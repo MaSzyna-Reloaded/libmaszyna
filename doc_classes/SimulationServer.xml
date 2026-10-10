@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SimulationServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The state of the world the whole simulation shares, and its one clock.
+	</brief_description>
+	<description>
+		Owns the environment's time of day, date, location, cloud cover and air temperature, works the light level out of them ([code]Global.fLuminance[/code], [code]cSun[/code] in [code]sun.cpp[/code]) and announces their changes by signals; and runs the one clock of the simulation ([code]Timer::UpdateTimers()[/code], [code]Timer.cpp:70-92[/code]): the physics, the events, the drivers and the time of day all advance by the same seconds, read here. The caches and the game's data are [GameDataServer]'s.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clock_hold">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="clock_release">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="date_get_day" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_get_month" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_get_year" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_set">
+			<return type="void" />
+			<param index="0" name="year" type="int" />
+			<param index="1" name="month" type="int" />
+			<param index="2" name="day" type="int" />
+			<description>
+				The day the time of day belongs to. A day or a month past its end carries over (the 32nd of January is the 1st of February). Emits [signal date_changed] on a change; the clock rolls the date itself at midnight.
+			</description>
+		</method>
+		<method name="environment_reset">
+			<return type="void" />
+			<description>
+				The time of day, the date, the location, the cloud cover and the temperature back to their defaults - what an environment starts from before its scene sets its own ([code]MaszynaEnvironmentNode[/code]).
+			</description>
+		</method>
+		<method name="simulation_advance">
+			<return type="void" />
+			<param index="0" name="frame_delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="simulation_get_current_speed" qualifiers="const">
+			<return type="float" />
+			<description>
+				The speed the clock runs at now, on its way to [member simulation_speed]: like a tape's motor, it gets most of the way there in the Project Setting [code]maszyna/simulation/speed_change_time[/code].
+			</description>
+		</method>
+		<method name="simulation_get_time" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="simulation_is_paused" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the world is paused, see [method simulation_pause].
+			</description>
+		</method>
+		<method name="simulation_pause">
+			<return type="void" />
+			<description>
+				Stops the world while something covers it - a loading screen, the spinner of "Exit to menu". Emits [signal simulation_paused] if it was running. [RailVehicleServer] stops stepping the vehicles, the environment holds its weather and the sound systems hold the world's voices; the scene tree itself keeps running, so a scenery still loads and vehicles still take their places.
+			</description>
+		</method>
+		<method name="simulation_reset_speed">
+			<return type="void" />
+			<description>
+				The wall clock's speed, at once rather than over the speed change time - a scenery starts at it, and the menu is heard at it.
+			</description>
+		</method>
+		<method name="simulation_unpause">
+			<return type="void" />
+			<description>
+				Starts the world again after [method simulation_pause]. Emits [signal simulation_unpaused] if it was paused.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="air_temperature" type="float" setter="set_air_temperature" getter="get_air_temperature" default="15.0">
+			Degrees Celsius; the sun's refraction depends on it.
+		</member>
+		<member name="cloud_cover" type="float" setter="set_cloud_cover" getter="get_cloud_cover" default="0.5">
+			0-1, the weather's; full cover dims the daylight by 0.65 ([code]simulationenvironment.cpp:163[/code]).
+		</member>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;pl&quot;">
+			The language of the game's strings, named as its catalogue in the game's [code]lang/[/code] ([code]"pl"[/code] for [code]lang/pl.po[/code]); [code]"en"[/code] is the original's own strings, untranslated. Kept in the user settings; [MaszynaTranslationServer] loads the catalogue.
+		</member>
+		<member name="latitude" type="float" setter="set_latitude" getter="get_latitude" default="50.271">
+			Where the sun is seen from, decimal degrees north. The original's is a fixed 52 N ([code]sun.cpp:13[/code]).
+		</member>
+		<member name="light_level" type="float" setter="" getter="get_light_level" default="1.0">
+			How bright the scene is, 0-1: daylight from the refracted altitude of the sun ([code]cSun::move()[/code], [code]refract()[/code], [code]sun.cpp:104-240[/code]), ramped between the project settings [code]maszyna/lights/night_altitude[/code] and [code]day_altitude[/code], dimmed by [member cloud_cover]. Worked out when a minute passes and when anything it depends on is set; [signal light_level_changed] when it moves.
+		</member>
+		<member name="longitude" type="float" setter="set_longitude" getter="get_longitude" default="19.04">
+			Decimal degrees east. The original's is a fixed 19 E ([code]sun.cpp:13[/code]).
+		</member>
+		<member name="simulation_speed" type="float" setter="set_simulation_speed" getter="get_simulation_speed" default="1.0">
+		</member>
+		<member name="time_of_day" type="float" setter="set_time_of_day" getter="get_time_of_day" default="8.0">
+			Hours since midnight. Set, it jumps; running, it advances with the simulation and carries the date past midnight.
+		</member>
+		<member name="timezone_offset" type="int" setter="set_timezone_offset" getter="get_timezone_offset" default="1">
+			Hours the time of day is ahead of UTC.
+		</member>
+		<member name="use_system_time" type="bool" setter="set_use_system_time" getter="get_use_system_time" default="false">
+			The time of day and the date follow the system's clock instead of the simulation's.
+		</member>
+	</members>
+	<signals>
+		<signal name="date_changed">
+			<description>
+				The date was set, or the clock passed midnight.
+			</description>
+		</signal>
+		<signal name="language_changed">
+			<description>
+				[member language] was set to another language.
+			</description>
+		</signal>
+		<signal name="light_level_changed">
+			<param index="0" name="light_level" type="float" />
+			<description>
+				[member light_level] moved.
+			</description>
+		</signal>
+		<signal name="simulation_advanced">
+			<param index="0" name="seconds" type="float" />
+			<description>
+			</description>
+		</signal>
+		<signal name="simulation_current_speed_changed">
+			<description>
+				The speed the clock runs at changed - every frame while it goes to the one set.
+			</description>
+		</signal>
+		<signal name="simulation_paused">
+			<description>
+				Emitted by [method simulation_pause] when the world stops.
+			</description>
+		</signal>
+		<signal name="simulation_speed_changed">
+			<description>
+			</description>
+		</signal>
+		<signal name="simulation_unpaused">
+			<description>
+				Emitted by [method simulation_unpause] when the world starts again.
+			</description>
+		</signal>
+		<signal name="time_of_day_changed">
+			<description>
+				A minute passed, or the time of day was set.
+			</description>
+		</signal>
+		<signal name="time_of_day_hour_changed">
+			<description>
+				An hour passed, or the time of day was set to another hour.
+			</description>
+		</signal>
+	</signals>
+</class>

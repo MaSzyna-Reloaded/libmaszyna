@@ -1,41 +1,61 @@
 extends MaszynaGutTest
 
-var train: TrainController
+## Simulated seconds the battery's drain takes to show: 2 V/s at 110 V without a converter
+## (Mover.cpp:887-888), so the vehicle's next step lowers it - and that shows within a frame of the
+## clock after it, which counts at most SimulationServer::MAX_FRAME_DELTA; the done check comes
+## before the limit, so the frame that shows it passes however long it was
+const BATTERY_DRAIN_SECONDS:float = 0.25
+
+var train: VehicleController
+
+## The battery voltage is configuration the Mover reads while the vehicle is being built, so it
+## is authored into the model - writing it afterwards does not reach the backend until a step
+## (see test_battery_start_disabled_from_zero_voltage_blocks_switching).
+func _model(battery_voltage:float) -> VehicleController:
+    var model:RailVehicleController = MoverRailVehicleController.new()
+    model.add_component(build_power_supply(battery_voltage))
+    return model
+
 
 func before_each():
-    train = TrainController.new()
-    train.train_id = "TestTrain"
-    train.battery_voltage = 110.0
-    add_child(train)
+    train = build_vehicle("TestTrain", _model(110.0))
 
-func after_each():
-    remove_child(train)
-    train.free()
+# Original engine: Battery defaults to false and CheckLocomotiveParameters() only turns it on
+# for a vehicle spawned ready to depart (Mover.cpp:8943), i.e. with a non-zero scenery velocity
+# (DynObj.cpp:1851, `driveractive = (fVel != 0.0)`).
+func test_battery_starts_off_when_not_ready_to_depart():
+    assert_false(train.get_state()["battery_enabled"], "Battery should start off for initial_velocity == 0")
 
-# FIXME: BatteryStart mode is unhandled!!!
-#func test_battery_should_be_initially_turned_off():
-#    assert_false(train.state["battery_enabled"])
+func test_battery_starts_on_when_ready_to_depart():
+    var ready_train: VehicleController = build_vehicle("TestTrainReady", _model(110.0), 10.0)
+
+    assert_true(ready_train.get_state()["battery_enabled"], "Battery should start on for initial_velocity != 0")
+
 
 func test_successful_battery_enabling():
     train.send_command("battery", true)
-    assert_true(train.state["battery_enabled"], "Battery should be enabled")
+    assert_true(train.get_state()["battery_enabled"], "Battery should be enabled")
 
-func test_not_enabling_battery_when_battery_voltage_is_zero():
-    # This is a quite fun case: we're changing train's properties at runtime.
-    # To make sure the original Mover is updating, you must wait two IDLE frames or more.
-    # Alternatively you can call train.update_mover(), but this is an experimental method.
-    #
-    # This is not how tests should be written, but it shows how to handle similar cases.
+func test_battery_start_disabled_from_zero_voltage_blocks_switching():
+    # Original engine: CheckLocomotiveParameters() (Mover.cpp) forces BatteryStart to Disabled
+    # when NominalBatteryVoltage is 0 - a load-time FIZ misconfiguration guard, not something a
+    # real vehicle's voltage changes into at runtime. So this must be set before the vehicle
+    # ever initializes, not mutated afterward (Battery itself, once on, isn't retroactively
+    # switched off by a later voltage change - only BatterySwitch()'s manual-mode gate is).
+    var disabled_train: VehicleController = build_vehicle("TestTrainZeroVoltage", _model(0.0))
 
-    train.battery_voltage = 0.0
-    await wait_idle_frames(2)
+    assert_false(disabled_train.get_state()["battery_enabled"], "Battery should start off when BatteryStart is forced Disabled")
+    disabled_train.send_command("battery", true)
+    assert_false(disabled_train.get_state()["battery_enabled"], "BatterySwitch should have no effect while BatteryStart is Disabled")
 
-    train.send_command("battery", true)
-    assert_false(train.state["battery_enabled"], "Battery should be disabled")
 
 func test_successful_battery_voltage_drop_after_two_seconds():
-    var before = train.state["battery_voltage"]
-    await wait_seconds(2)
-    var after = train.state["battery_voltage"]
+    train.send_command("battery", true)
+    assert_true(train.get_state()["battery_enabled"], "Battery should be enabled")
+    var before:float = train.get_state()["battery_voltage"]
+    if not await wait_simulated_until(func() -> bool: return train.get_state()["battery_voltage"] < before,
+            BATTERY_DRAIN_SECONDS, "the battery's drain"):
+        return
+    var after:float = train.get_state()["battery_voltage"]
 
-    assert_true(before > after, "There should be a battery voltage drop after 2 seconds")
+    assert_true(before > after, "There should be a battery voltage drop")

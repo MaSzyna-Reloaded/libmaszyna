@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cy5wnw0d6vlf2"
+path="res://.godot/imported/36wea-b_pgz.fiz-4d0cf549c69a4b2e808479ba6eac636d.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/impuls_v1/36wea-b_pgz.fiz"
+dest_files=["res://.godot/imported/36wea-b_pgz.fiz-4d0cf549c69a4b2e808479ba6eac636d.res"]
+
+[params]
+

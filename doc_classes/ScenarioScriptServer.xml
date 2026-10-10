@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenarioScriptServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Runs a scenario's scripts.
+	</brief_description>
+	<description>
+		Runs the scripts of a scenario (the original's [code]lua &lt;file&gt;[/code]). A context is one scenario's script environment: the code loaded into it and everything its scripts made - their events, timers and subscriptions - which [method context_free] takes along. The scripts reach the simulation only through the servers' public APIs.
+		A script's function never runs inside the server that reported something: timers, events and subscriptions run as [ScenarioEventServer] events, on the simulation clock, and stop while the simulation is paused.
+		The code of a context runs in units - a file, or code applied under a name ([method context_apply_source]); applying a unit again first frees what its previous run made. In a build without a runtime every script is refused with an error.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="context_apply_source">
+			<return type="bool" />
+			<param index="0" name="context" type="RID" />
+			<param index="1" name="unit" type="StringName" />
+			<param index="2" name="source" type="String" />
+			<description>
+				Frees what [param unit] made before, then runs [param source] as that unit. Returns [code]false[/code] when it failed; the error is logged and reported by [signal script_error].
+			</description>
+		</method>
+		<method name="context_attach_cabin_implementation">
+			<return type="void" />
+			<param index="0" name="context" type="RID" />
+			<param index="1" name="cabin" type="ScenarioScriptCabinImplementation" />
+			<description>
+				Gives the context's scripts their way to the cabs ([code]maszyna.cabin[/code]).
+			</description>
+		</method>
+		<method name="context_check_source">
+			<return type="String" />
+			<param index="0" name="context" type="RID" />
+			<param index="1" name="unit" type="StringName" />
+			<param index="2" name="source" type="String" />
+			<description>
+				Compiles [param source] without running it. Returns the error, empty when there is none; its positions are named after [param unit].
+			</description>
+		</method>
+		<method name="context_create">
+			<return type="RID" />
+			<param index="0" name="base_dir" type="String" />
+			<description>
+				Creates a context whose scripts load their files and modules from [param base_dir] and nowhere else.
+			</description>
+		</method>
+		<method name="context_free">
+			<return type="void" />
+			<param index="0" name="context" type="RID" />
+			<description>
+				Frees the context with everything its scripts made.
+			</description>
+		</method>
+		<method name="context_get_cabin_implementation" qualifiers="const">
+			<return type="ScenarioScriptCabinImplementation" />
+			<param index="0" name="context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="context_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+			</description>
+		</method>
+		<method name="context_run_file">
+			<return type="bool" />
+			<param index="0" name="context" type="RID" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Runs a file of the context's base directory as the unit named after it. Returns [code]false[/code] when it failed.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="script_error">
+			<param index="0" name="context" type="RID" />
+			<param index="1" name="message" type="String" />
+			<description>
+				A script of the context failed; [param message] says where and why. The error is in the game log as well.
+			</description>
+		</signal>
+	</signals>
+</class>

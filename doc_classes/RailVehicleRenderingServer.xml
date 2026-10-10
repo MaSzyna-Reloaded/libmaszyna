@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleRenderingServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Draws rail vehicles: their models, what moves on them, lights, smoke, couplers and detail.
+	</brief_description>
+	<description>
+		What a rail vehicle looks like, drawn, keyed by its [RailVehicleServer] handle. The vehicle is drawn at a node ([method vehicle_attach]) - the one its cab, sounds and anything else of the vehicle ride on; the server moves that node wherever [RailVehicleServer] places the vehicle, and draws the models there. Bogies, wheels, pantographs, wipers and mirrors are animated from the vehicle's state natively, once a frame for the vehicles near the camera and a few times a second for the rest.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="builds_get_pending_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				How many vehicles within the streaming's draw distance still wait for their models to be built. A vehicle's models are built once it stands within the draw distance of the streaming camera, the nearest first, and freed beyond it.
+			</description>
+		</method>
+		<method name="cabin_set_light_level">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="level" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="detection_area_get_vehicle" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="area" type="RID" />
+			<description>
+				The vehicle a detection area ([PhysicsServer3D]) finds - what a shape cast of the player hits; an empty RID for an area that is no vehicle's.
+			</description>
+		</method>
+		<method name="vehicle_attach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="node_id" type="int" />
+			<description>
+				The vehicle is drawn in the world of the scene node [param node_id], once it has a place: where [RailVehicleServer] places it on a track, or where [method vehicle_set_transform] says. The node itself is never moved - one that is to follow the vehicle is mounted ([method vehicle_mount_node]). Freed with the vehicle ([signal VehicleServer.vehicle_freed]).
+			</description>
+		</method>
+		<method name="vehicle_detach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The vehicle is drawn no more; the models this server built for it are freed.
+			</description>
+		</method>
+		<method name="vehicle_get_appearance" qualifiers="const">
+			<return type="RailVehicleAppearance" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				What the vehicle looks like, as last set.
+			</description>
+		</method>
+		<method name="vehicle_get_model" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The exterior model as [E3DRenderingServer] draws it.
+			</description>
+		</method>
+		<method name="vehicle_get_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Where the vehicle is drawn. The identity for a vehicle not drawn, or without a place yet.
+			</description>
+		</method>
+		<method name="vehicle_is_attached" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Whether the vehicle is drawn.
+			</description>
+		</method>
+		<method name="vehicle_is_detailed" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Whether the vehicle is drawn in detail - as nodes, animated - near the camera.
+			</description>
+		</method>
+		<method name="vehicle_is_editable" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Whether the vehicle's models stand as nodes the editor shows and edits.
+			</description>
+		</method>
+		<method name="vehicle_mount_node">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="node_id" type="int" />
+			<description>
+				A [Node3D] of another layer rides on the vehicle - a cab, a sound emitter, the node of a vehicle assembled by hand: it is put where the vehicle stands - now, when the vehicle has a place - and wherever the vehicle is placed, until [method vehicle_unmount_node] or the vehicle is freed.
+			</description>
+		</method>
+		<method name="vehicle_set_appearance">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="appearance" type="RailVehicleAppearance" />
+			<description>
+				What the vehicle looks like. With model files this server builds the models itself; without, it draws the ones [method vehicle_set_models] hands it.
+			</description>
+		</method>
+		<method name="vehicle_set_editable">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="editable" type="bool" />
+			<description>
+				Whether the vehicle's models stand as nodes the editor shows and edits ("Edit FIZ"): drawn in detail wherever the camera is, under a holder node of the scene, owned by the scene node's owner. Whoever saves the scene takes them off first.
+			</description>
+		</method>
+		<method name="vehicle_set_head_display_material">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="material" type="Material" />
+			<description>
+				The material the vehicle's head display is drawn with.
+			</description>
+		</method>
+		<method name="vehicle_set_load_model">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="data_path" type="String" />
+			<param index="2" name="model_filename" type="String" />
+			<description>
+				The cargo, drawn at the floor of the vehicle; none for an empty file name.
+			</description>
+		</method>
+		<method name="vehicle_set_models">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="model" type="RID" />
+			<param index="2" name="low_poly" type="RID" />
+			<description>
+				The exterior and the low-poly interior as [E3DRenderingServer] instances somebody else owns - a vehicle assembled by hand. Announced by [signal vehicle_model_built].
+			</description>
+		</method>
+		<method name="vehicle_set_scenario">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_set_transform">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+				Where a vehicle that stands on no track is drawn - one assembled by hand, where its node stands. [RailVehicleServer]'s placement takes over once the vehicle is on a track. A vehicle's models are in no world until it has a place.
+			</description>
+		</method>
+		<method name="vehicle_set_visible_low_poly_cabins">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="visible" type="bool" />
+			<description>
+				Whether the low-poly interior shows every cab. Not visible - the interior of the occupied cab is drawn in its place by whoever shows it - the low-poly cab of the occupied cab is hidden, or all of them with jointcabs:.
+			</description>
+		</method>
+		<method name="vehicle_unmount_node">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="node_id" type="int" />
+			<description>
+				The node rides on the vehicle no more ([method vehicle_mount_node]); it stays where it is.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="vehicle_model_built">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The vehicle's exterior model was built - as nodes near the camera, as RenderingServer instances far from it; what dresses its nodes does it again.
+			</description>
+		</signal>
+	</signals>
+</class>

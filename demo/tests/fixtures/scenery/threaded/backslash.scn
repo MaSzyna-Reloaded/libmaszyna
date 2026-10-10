@@ -1,0 +1,3 @@
+// backslash include fixture: original assets use Windows path separators
+include threaded\b.inc bs1 end
+include Threaded\B.inc bs2 end

@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cpgi6q2qboclt"
+path="res://.godot/imported/303e-ep-tv.fiz-69eda419025e781d57f31c9b452866a4.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/303e_v1/303e-ep-tv.fiz"
+dest_files=["res://.godot/imported/303e-ep-tv.fiz-69eda419025e781d57f31c9b452866a4.res"]
+
+[params]
+

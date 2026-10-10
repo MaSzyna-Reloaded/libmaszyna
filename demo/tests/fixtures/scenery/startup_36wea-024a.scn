@@ -1,0 +1,11 @@
+// 36WEa-024a (l053_poranek.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 36WEa-024a dynamic pkp\impuls_v1 36WEa-024a 36WEa-A_KS 0 headdriver 255 0 enddynamic
+node -1 0 36WEa-024b dynamic pkp\impuls_v1 36WEa-024b 36WEa-B_PGZ 0 nobody 255 0 enddynamic
+node -1 0 36WEa-024c dynamic pkp\impuls_v1 36WEa-024c 36WEa-C_KS 0 nobody 0 0 enddynamic
+endtrainset

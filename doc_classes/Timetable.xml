@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Timetable" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="brake_ratio" type="float" setter="set_brake_ratio" getter="get_brake_ratio" default="0.0">
+		</member>
+		<member name="entries" type="TimetableEntry[]" setter="set_entries" getter="get_entries" default="[]">
+		</member>
+		<member name="locomotive_load" type="float" setter="set_locomotive_load" getter="get_locomotive_load" default="0.0">
+		</member>
+		<member name="locomotive_series" type="String" setter="set_locomotive_series" getter="get_locomotive_series" default="&quot;&quot;">
+		</member>
+		<member name="relation_from" type="String" setter="set_relation_from" getter="get_relation_from" default="&quot;&quot;">
+		</member>
+		<member name="relation_to" type="String" setter="set_relation_to" getter="get_relation_to" default="&quot;&quot;">
+		</member>
+		<member name="train_category" type="String" setter="set_train_category" getter="get_train_category" default="&quot;&quot;">
+		</member>
+		<member name="train_label" type="String" setter="set_train_label" getter="get_train_label" default="&quot;&quot;">
+		</member>
+		<member name="train_name" type="String" setter="set_train_name" getter="get_train_name" default="&quot;&quot;">
+		</member>
+		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+		</member>
+	</members>
+</class>

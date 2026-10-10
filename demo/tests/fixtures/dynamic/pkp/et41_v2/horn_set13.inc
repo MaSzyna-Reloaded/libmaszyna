@@ -1,0 +1,2 @@
+horn1: { soundbegin: 26284_eu07_horn_low-start.wav soundmain: 26284_eu07_horn_low-trwa.wav soundend: 26284_eu07_horn_low-stop.wav range: 1000 offset: [ (p1), 3.80 , (p2) ] }
+horn2: { soundbegin: 14745_41syrwys_start.wav soundmain: 14745_41syrwys_trwa.wav soundend: 14745_41syrwys_stop.wav range: 1000 offset: [ (p3), 3.80 , (p4) ] }

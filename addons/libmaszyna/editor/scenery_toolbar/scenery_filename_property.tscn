@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/scenery_toolbar/scenery_filename_property.gd" id="1_property"]
+
+[node name="SceneryFilenameProperty" type="EditorProperty"]
+script = ExtResource("1_property")
+
+[node name="FilenameRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Filename" type="LineEdit" parent="FilenameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Browse" type="Button" parent="FilenameRow"]
+layout_mode = 2
+text = "Browse"
+
+[node name="Dialog" type="EditorFileDialog" parent="."]
+unique_name_in_owner = true
+title = "Open a scenery"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.scn ; MaSzyna scenery")
+
+[connection signal="text_submitted" from="FilenameRow/Filename" to="." method="_on_filename_submitted"]
+[connection signal="focus_exited" from="FilenameRow/Filename" to="." method="_on_filename_focus_exited"]
+[connection signal="pressed" from="FilenameRow/Browse" to="." method="_on_browse_pressed"]
+[connection signal="file_selected" from="Dialog" to="." method="_on_dialog_file_selected"]

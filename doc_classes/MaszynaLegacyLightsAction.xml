@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyLightsAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="aspects" type="StringName[]" setter="set_aspects" getter="get_aspects" default="[]">
+		</member>
+		<member name="signal_heads" type="RID[]" setter="set_signal_heads" getter="get_signal_heads" default="[]">
+		</member>
+	</members>
+</class>

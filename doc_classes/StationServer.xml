@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="StationServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The dispatch of a train at a stop, one step after another.
+	</brief_description>
+	<description>
+		A dispatch is kept under the vehicle the train is driven from. Its steps follow one another as the cars report them done: the passengers exchanged ([signal RailVehicleLoad.load_exchange_finished]), the train let go ([method dispatch_depart]), its doors closed ([signal RailVehicleDoors.doors_closed]). The cars open their doors and exchange by themselves; whoever drives works the cab's doors as [signal dispatch_step_changed] asks. The original keeps this as a negative [code]fStopTime[/code] of the driver and its [code]Doors()[/code] (Driver.cpp:1233-1241, 4266-4356, 6767-6801).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="dispatch_cancel">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Drops the dispatch - the train left the stop.
+			</description>
+		</method>
+		<method name="dispatch_depart">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The train may go as far as its timetable says: once its passengers are done, its doors close and the dispatch is over.
+			</description>
+		</method>
+		<method name="dispatch_get_exchange_time" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The seconds the longest exchange of the dispatch still takes, 0 when none.
+			</description>
+		</method>
+		<method name="dispatch_get_step" qualifiers="const">
+			<return type="int" enum="StationServer.DispatchStep" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The step of the train's dispatch, [constant DISPATCH_STEP_NONE] without one.
+			</description>
+		</method>
+		<method name="dispatch_start">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="cars" type="RID[]" />
+			<description>
+				Starts the dispatch of the train driven from [param vehicle], of [param cars]: those whose load is being exchanged ([method RailVehicleServer.load_add], [method RailVehicleServer.load_remove]) are waited for. The train's earlier dispatch is dropped.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="dispatch_finished">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The dispatch is over, the train may go.
+			</description>
+		</signal>
+		<signal name="dispatch_step_changed">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="step" type="int" />
+			<description>
+				The dispatch of the train driven from [param vehicle] went to another [param step] ([enum DispatchStep]).
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="DISPATCH_STEP_NONE" value="0" enum="DispatchStep">
+			No dispatch.
+		</constant>
+		<constant name="DISPATCH_STEP_EXCHANGE" value="1" enum="DispatchStep">
+			The passengers get off and on.
+		</constant>
+		<constant name="DISPATCH_STEP_WAIT_DEPARTURE" value="2" enum="DispatchStep">
+			The exchange is over, the train is not let go yet.
+		</constant>
+		<constant name="DISPATCH_STEP_CLOSE_DOORS" value="3" enum="DispatchStep">
+			The train is let go: its doors close.
+		</constant>
+	</constants>
+</class>

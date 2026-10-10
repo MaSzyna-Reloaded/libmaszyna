@@ -1,0 +1,9 @@
+// ep01_v1 (dynamic/pkp/ep01_v1) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 el101 dynamic pkp\ep01_v1 el101 el101 0 headdriver 0 0 enddynamic
+endtrainset

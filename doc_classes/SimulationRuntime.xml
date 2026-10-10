@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SimulationRuntime" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The running simulation: [SimulationServer]'s clock ticks only while this node is in the tree.
+	</brief_description>
+	<description>
+		The game places it in its scene explicitly. A scenery loaded without it - in the editor, in a viewer - is built, but nothing in it runs: no drivers, events or vehicle physics. In the editor the node does nothing, so a game scene opened there does not start the clock.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

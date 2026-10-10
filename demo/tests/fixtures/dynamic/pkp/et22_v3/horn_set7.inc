@@ -1,0 +1,2 @@
+horn1: { soundbegin: et22_horn_v1_start.wav soundmain: et22_horn_v1_mid.wav soundend: et22_horn_v1_stop.wav range: 1000 }
+horn2: { soundbegin: 697_et22-horn-1a.wav soundmain: 697_et22-horn-1b.wav soundend: 697_et22-horn-1c.wav range: 1000 }

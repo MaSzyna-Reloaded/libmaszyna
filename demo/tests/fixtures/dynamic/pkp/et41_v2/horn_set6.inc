@@ -1,0 +1,2 @@
+horn1: { soundbegin: eu06_10_niski_start.wav soundmain: eu06_10_niski_trwa.wav soundend: eu06_10_niski_stop.wav range: 1000 offset: [ (p1), 3.80 , (p2) ] }
+horn2: { soundbegin: eu06_10_wysoki_start.wav soundmain: eu06_10_wysoki_trwa.wav soundend: eu06_10_wysoki_stop.wav range: 1000 offset: [ (p3), 3.80 , (p4) ] }

@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://ctaqefk5oklvj"
+path="res://.godot/imported/test_vehicle.fiz-eb7362652074d46ce860e44f40150abd.res"
+
+[deps]
+
+source_file="res://tests/fixtures/test_vehicle.fiz"
+dest_files=["res://.godot/imported/test_vehicle.fiz-eb7362652074d46ce860e44f40150abd.res"]
+
+[params]
+

@@ -1,83 +1,97 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="GameLog" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		Application-wide logger for general purpose. Use it to write messages to the game's debug console. For development-only logs, prefer Godot's built-in functions such as push_error(), push_warning(), print(), and print_rich().
+		The game's log, as Python's logging: named loggers ([GameLogger]) and the handlers of their lines ([GameLogHandler]). For development-only logs, prefer Godot's built-in functions such as push_error(), push_warning(), print(), and print_rich().
 	</brief_description>
 	<description>
-		Provides a simple, application-wide logging system with severity levels and a signal that emits whenever a new log line is produced.
-
-		GameLog is available as an Engine singleton named "GameLog", so you can access the same instance from anywhere in scripts. For example, in GDScript:
-
+		GameLog is available as an Engine singleton named "GameLog". A logger is taken by its id - [method get_logger] creates a logger missing yet - and kept where a script logs more than once:
 		[codeblock]
-		GameLog.info("Scenario initialized")
-		GameLog.warning("Low FPS detected")
-		GameLog.error("Failed to load route")
-		GameLog.debug("Loaded config in %s ms" % load_time)
+		var _log: GameLogger = GameLog.get_logger("ai")
+		_log.debug("SetVelocity 40")
+		GameLog.get_logger("game").error("Failed to load route")
 		[/codeblock]
-
-		Use this logger to output information relevant to the game runtime and to subscribe to log updates. For ad-hoc development diagnostics or editor-time messages, use Godot's built-in logging helpers (push_error, push_warning, print, print_rich).
+		There is no hierarchy of loggers. A line goes at once - nothing is kept in memory - to the logger's handlers. GameLog only manages: a handler is registered by name ([method register_handler]) and assigned to loggers by name ([method assign_handler]), and GameLog attaches it to them. One handler may serve many loggers, and the handler, the logger and the assignment may come in any order:
+		[codeblock]
+		var handler: GameLogFileHandler = GameLogFileHandler.open("user://logs/gameplay.log")
+		GameLog.register_handler("gameplay.log", handler)
+		GameLog.assign_handler("gameplay", "gameplay.log")
+		GameLog.assign_handler("scenario", "gameplay.log")
+		[/codeblock]
+		The logger "game", of the game's own messages, is made with the log.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="debug">
+		<method name="assign_handler">
 			<return type="void" />
-			<param index="0" name="line" type="String" />
+			<param index="0" name="logger_id" type="String" />
+			<param index="1" name="handler_name" type="String" />
 			<description>
-				Logs a message at DEBUG level. See [enum GameLog.LogLevel].
-				[codeblock]
-				GameLog.debug("Loaded config in %s ms" % load_time)
-				[/codeblock]
+				Assigns the handler [param handler_name] to the logger [param logger_id]. It is attached to the logger at once when both exist, else when the second of them comes.
 			</description>
 		</method>
-		<method name="error">
-			<return type="void" />
-			<param index="0" name="line" type="String" />
+		<method name="create_logger">
+			<return type="GameLogger" />
+			<param index="0" name="logger_id" type="String" />
 			<description>
-				Logs a message at ERROR level. See [enum GameLog.LogLevel].
-				[codeblock]
-				GameLog.error("Failed to load route: %s" % err)
-				[/codeblock]
+				Creates the logger [param logger_id] and emits [signal logger_created]. An error when it exists already.
 			</description>
 		</method>
-		<method name="info">
-			<return type="void" />
-			<param index="0" name="line" type="String" />
+		<method name="get_logger">
+			<return type="GameLogger" />
+			<param index="0" name="logger_id" type="String" />
 			<description>
-				Logs a message at INFO level. See [enum GameLog.LogLevel].
-				[codeblock]
-				GameLog.info("Scenario initialized")
-				[/codeblock]
+				The logger [param logger_id], created when it is missing yet (as Python's logging.getLogger()).
 			</description>
 		</method>
-		<method name="log">
-			<return type="void" />
-			<param index="0" name="loglevel" type="int" enum="GameLog.LogLevel" />
-			<param index="1" name="line" type="String" />
+		<method name="get_loggers" qualifiers="const">
+			<return type="PackedStringArray" />
 			<description>
-				Logs a message at the specified level.
-				[codeblock]
-				GameLog.log(GameLog.LogLevel.WARNING, "Low FPS detected")
-				[/codeblock]
+				The ids of the loggers, in the order they were created.
 			</description>
 		</method>
-		<method name="warning">
+		<method name="register_handler">
 			<return type="void" />
-			<param index="0" name="line" type="String" />
+			<param index="0" name="handler_name" type="String" />
+			<param index="1" name="handler" type="GameLogHandler" />
 			<description>
-				Logs a message at WARNING level. See [enum GameLog.LogLevel].
-				[codeblock]
-				GameLog.warning("Battery voltage low")
-				[/codeblock]
+				Registers [param handler] by [param handler_name] and attaches it to the loggers it is assigned to. An error when the name is taken.
+			</description>
+		</method>
+		<method name="remove_logger">
+			<return type="void" />
+			<param index="0" name="logger_id" type="String" />
+			<description>
+				Removes the logger [param logger_id]: [signal logger_removing] is emitted first, then its handlers are detached - a script keeping it logs to nobody. Its assignments stay for a logger of the same id created later.
+			</description>
+		</method>
+		<method name="unassign_handler">
+			<return type="void" />
+			<param index="0" name="logger_id" type="String" />
+			<param index="1" name="handler_name" type="String" />
+			<description>
+				Takes the handler [param handler_name] off the logger [param logger_id].
+			</description>
+		</method>
+		<method name="unregister_handler">
+			<return type="void" />
+			<param index="0" name="handler_name" type="String" />
+			<description>
+				Detaches the handler [param handler_name] from every logger and forgets it; its assignments stay.
 			</description>
 		</method>
 	</methods>
 	<signals>
-		<signal name="log_updated">
-			<param index="0" name="loglevel" type="int" />
-			<param index="1" name="line" type="String" />
+		<signal name="logger_created">
+			<param index="0" name="logger_id" type="String" />
 			<description>
-				Emitted whenever a new log message is produced.
+				Emitted when a logger is created.
+			</description>
+		</signal>
+		<signal name="logger_removing">
+			<param index="0" name="logger_id" type="String" />
+			<description>
+				Emitted when a logger is about to be removed ([method remove_logger]), while it still has its handlers.
 			</description>
 		</signal>
 	</signals>

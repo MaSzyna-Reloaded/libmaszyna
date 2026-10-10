@@ -1,0 +1,36 @@
+# to jest plik z parametrami dla Dl2 
+Author fiz=Stele
+Param. Category=train M=260 Vmax=60 PWR=4.413
+# masa [kg], Vmax [km/h] Masa=180+80kg za kierowce
+Dimensions: L=1.71 H=0.821 W=1.70 Cx=0.08 Floor= 0
+Load: MaxLoad=1 LoadQ=pieces LoadAccepted=Passengers OverLoadFactor=1 LoadSpeed=0.5 UnLoadSpeed=0.5
+Wheels: D=0.4 Tw=1.435 AIM=4.8 Axle=1'A Bd=1.2 Rmin=20 BearingType=Roll
+BuffCoupl. CType=None AllowedFlag=0
+Brake: BrakeType=Individual MBF=0.329
+Cntrl. BrakeSystem=Individual LocalBrake=ManualBrake MCPN=8 SCPN=3 AutoRelay=No IniCDelay=0.3 SCDelay=0.3 FuelStart=Automatic OilStart=Automatic WaterStart=Battery ConverterStart=Automatic
+Light: Light=Generator LGeneratorEngine=ElectricSeriesMotor LMaxVoltage=6 LMaxCurrent=100
+Engine: EngineType=DieselEngine Trans=132:825 nmin=1200 nmax=4250 nmax_cutoff=4300 AIM=0.2
+
+MotorParamTable: minVelfullengage=3.8 engageDia=0.1 engageMaxForce=500 engagefriction=0.8
+0	0		0	-1
+1	3.16	-1	12
+2	1.49	5	30
+3	1		18	200
+END-MPT 
+
+DList: Size=8 Mmax=10.1 nMmax=60 Mnmax=9.916 nmax=70.83 nominalfill=1.0 Mstand=3.8
+0	0.01	0
+1	0.125	1
+2	0.25	4
+3	0.375	4
+4	0.50	4
+5	0.625	4
+6	0.75	4
+7	0.875	4
+8	1		4
+END-DL 
+
+LightsList: Size=2 Wrap=No Default=1
+0 0
+4 32
+endL

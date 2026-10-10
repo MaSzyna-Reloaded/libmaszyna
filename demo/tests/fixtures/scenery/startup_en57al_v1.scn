@@ -1,0 +1,11 @@
+// en57al_v1 (baltyk_skm1.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 EN57AL-1230ra dynamic pkp\en57al_v1 EN57AL-1230ra AL-zachpom_I_RA 0 headdriver 247 0 enddynamic
+node -1 0 EN57AL-1230s dynamic pkp\en57al_v1 EN57AL-1230s AL-zachpom_I_S 0 passenger 247 0 enddynamic
+node -1 0 EN57AL-1230rb dynamic pkp\en57al_v1 EN57AL-1230rb AL-zachpom_I_RB 0 passenger 0 0 enddynamic
+endtrainset

@@ -1,0 +1,2 @@
+horn1: { soundbegin: 27673_en71_sn_start.wav soundmain: 27673_en71_sn_trwa.wav soundend: 27673_en71_sn_stop.wav range: 1000 offset: [ (p1), (p2) , (p3) ] }
+horn2: { soundbegin: 27673_en71_sw_start.wav soundmain: 27673_en71_sw_trwa.wav soundend: 27673_en71_sw_stop.wav range: 1000 offset: [ (p4), (p5), (p6) ] }

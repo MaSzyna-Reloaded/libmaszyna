@@ -1,0 +1,14 @@
+// SN61-02 told by the scenery to couple up to the SN61 its buffers touch, as calkowo's shunting
+// events tell it: "Shunt -3 -99" asks for heating too, which no SN61 coupler has (AllowedFlag=39).
+// Given 0.1 km/h it is ready to drive from the start (CheckLocomotiveParameters(), DynObj.cpp:2034).
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 24.3 0.1
+node -1 0 SN61-02 dynamic pkp\sn61_v2 SN61-02 SN61_v1 0 reardriver 3 0 enddynamic
+endtrainset
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 SN61-03 dynamic pkp\sn61_v2 SN61-02 SN61_v1 0 nobody 3 0 enddynamic
+endtrainset

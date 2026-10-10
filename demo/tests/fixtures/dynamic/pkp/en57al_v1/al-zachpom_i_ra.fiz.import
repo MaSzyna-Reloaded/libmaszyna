@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cxsc7ickcbcma"
+path="res://.godot/imported/al-zachpom_i_ra.fiz-b5020f6df8a45b0d775248d2aac4f594.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/en57al_v1/al-zachpom_i_ra.fiz"
+dest_files=["res://.godot/imported/al-zachpom_i_ra.fiz-b5020f6df8a45b0d775248d2aac4f594.res"]
+
+[params]
+

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryStreamingProvider" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Supplies scenery content to [SceneryStreamingServer] cell by cell, as the camera comes near.
+	</brief_description>
+	<description>
+		The interface of a source of streamed content, the way a map tile server supplies tiles: [SceneryStreamingServer] asks for the content of a 1[code] [/code]km cell as the camera comes within the draw distance of it, hands it to the consumer of its kind ([method SceneryStreamingServer.content_set_consumer]) and lets it go once the camera has left. Register an instance with [method SceneryStreamingServer.provider_register].
+		A provider knows nothing of cameras, ranges or budgets: it says which cells it has ([method _get_chunk_cells]), how far their content reaches out of them ([method _chunk_get_overhang]) and which kinds it supplies ([method _get_content_kinds]), and supplies the cell it is asked for ([method _chunk_load]). It is never asked for a kind it does not supply.
+		Only presentation is supplied so - what the simulation needs whatever the camera does (tracks, traction) never comes from a provider.
+		This class is only the interface: implement it in C++ by overriding the virtual methods ([MaszynaLegacySBTTerrainProvider]), or in GDScript by overriding the [code]_[/code] methods. [method _chunk_load] runs on the streaming worker threads and must be safe there.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_chunk_get_overhang" qualifiers="virtual const">
+			<return type="float" />
+			<param index="0" name="cell" type="Vector2i" />
+			<description>
+				How far the content of [param cell] reaches out of it [m]; the cell is asked for that much earlier. [code]0[/code] when it stays within.
+			</description>
+		</method>
+		<method name="_chunk_load" qualifiers="virtual">
+			<return type="Array" />
+			<param index="0" name="cell" type="Vector2i" />
+			<param index="1" name="kind" type="int" />
+			<description>
+				The content of [param cell] of [param kind] (a [enum ContentKind]): an [Array] of items of the type the kind names. Called on the streaming worker threads, for each kind of [method _get_content_kinds], every time the cell comes into reach again.
+			</description>
+		</method>
+		<method name="_get_chunk_cells" qualifiers="virtual const">
+			<return type="Vector2i[]" />
+			<description>
+				The cells ([code]floor(position / SceneryStreamingServer chunk size)[/code] on X and Z) the provider has content for. Asked for once, at [method SceneryStreamingServer.provider_register].
+			</description>
+		</method>
+		<method name="_get_content_kinds" qualifiers="virtual const">
+			<return type="PackedInt32Array" />
+			<description>
+				The [enum ContentKind] values the provider supplies. Asked for once, at [method SceneryStreamingServer.provider_register].
+			</description>
+		</method>
+		<method name="chunk_get_overhang" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="cell" type="Vector2i" />
+			<description>
+				How far the content of [param cell] reaches out of it [m] - [method _chunk_get_overhang], or a C++ provider's own.
+			</description>
+		</method>
+		<method name="chunk_load">
+			<return type="Array" />
+			<param index="0" name="cell" type="Vector2i" />
+			<param index="1" name="kind" type="int" enum="SceneryStreamingProvider.ContentKind" />
+			<description>
+				The content of [param cell] of [param kind] - [method _chunk_load], or a C++ provider's own.
+			</description>
+		</method>
+		<method name="get_chunk_cells" qualifiers="const">
+			<return type="Vector2i[]" />
+			<description>
+				The cells the provider has content for - [method _get_chunk_cells], or a C++ provider's own.
+			</description>
+		</method>
+		<method name="get_content_kinds" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				The kinds the provider supplies - [method _get_content_kinds], or a C++ provider's own.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="CONTENT_TERRAIN" value="0" enum="ContentKind">
+			Terrain: [MaszynaTrianglesChunkGeometry] items, taken by [code]MaszynaSceneryChunkRenderingServer[/code]. An item is at most [constant MaszynaTrianglesChunkGeometry.MAX_VERTICES] vertices.
+		</constant>
+		<constant name="CONTENT_MODELS" value="1" enum="ContentKind">
+			Decoration models: [SceneryModelPlacement] items, taken by [E3DRenderingServer]. Named by nothing - no event or signal reaches them.
+		</constant>
+		<constant name="CONTENT_SOUNDS" value="2" enum="ContentKind">
+			Ambient sounds: [ScenerySoundPlacement] items, looped by [code]ScenerySoundServer[/code] within their reach. Named by nothing - no event plays or stops them.
+		</constant>
+		<constant name="CONTENT_KIND_MAX" value="3" enum="ContentKind">
+			The number of kinds.
+		</constant>
+	</constants>
+</class>

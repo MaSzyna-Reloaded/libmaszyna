@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyVehicleCommandAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="command" type="String" setter="set_command" getter="get_command" default="&quot;&quot;">
+		</member>
+		<member name="position" type="Vector3" setter="set_position" getter="get_position" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="source" type="RID" setter="set_source" getter="get_source" default="RID()">
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+		</member>
+	</members>
+</class>

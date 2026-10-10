@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://doqfrfxc21ngj"
+path="res://.godot/imported/asf.fiz-38b690ca02939af9de81108d5ea6072b.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/el16_v2/asf.fiz"
+dest_files=["res://.godot/imported/asf.fiz-38b690ca02939af9de81108d5ea6072b.res"]
+
+[params]
+

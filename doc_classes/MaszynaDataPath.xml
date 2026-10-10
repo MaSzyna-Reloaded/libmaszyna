@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaDataPath" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Finds a file the game data names, whatever its letter case.
+	</brief_description>
+	<description>
+		The game data is made on Windows, whose file names ignore letter case: a scenery says [code]PKP\\SN61_V2[/code] for [code]pkp/sn61_v2[/code], and 821 names on disk carry capitals. [method resolve] is the one operation every loader of the data uses.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="resolve" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="base_dir" type="String" />
+			<param index="1" name="relative_path" type="String" />
+			<description>
+				The path of [param relative_path] under [param base_dir] as it is on disk: as authored, else its lowercase form, else each part matched against its directory's entries letter case aside. Backslashes become slashes. Returns [param relative_path] unchanged when nothing matches, for the caller's own diagnostics.
+			</description>
+		</method>
+	</methods>
+</class>

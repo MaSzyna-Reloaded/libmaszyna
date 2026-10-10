@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GenericVehicleComponent" inherits="VehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Generic VehicleComponent
+	</brief_description>
+	<description>
+		Generic VehicleComponent
+		This class allows to implement a custom VehicleComponent in GDScript.
+		You need to implement [code]_get_component_state()[/code] returning a [Dictionary] of the actual state of this component.
+		You also need to implement [code]_process_component(delta)[/code] if you need to compute a custom behaviour of this component. The vehicle calls it on every tick while the component is enabled.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_vehicle_state">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

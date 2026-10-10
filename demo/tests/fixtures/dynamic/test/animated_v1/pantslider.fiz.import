@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://b67qbqc4xapqt"
+path="res://.godot/imported/pantslider.fiz-749a266665cf86e9e5522c1bfa4d07d1.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/animated_v1/pantslider.fiz"
+dest_files=["res://.godot/imported/pantslider.fiz-749a266665cf86e9e5522c1bfa4d07d1.res"]
+
+[params]
+

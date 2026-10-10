@@ -1,0 +1,2 @@
+horn1: { soundbegin: 23756_en57_nisk-start.wav soundmain: 23756_en57_nisk-trwa.wav soundend: 23756_en57_nisk-koniec.wav range: 1000 offset: [ (p1), (p2) , (p3) ] }
+horn2: { soundbegin: 23756_en57_wys-start.wav soundmain: 23756_en57_wys-trwa.wav soundend: 23756_en57_wys-koniec.wav range: 1000 offset: [ (p4), (p5), (p6) ] }

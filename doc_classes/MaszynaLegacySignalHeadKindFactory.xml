@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacySignalHeadKindFactory" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Makes the kind of an original scenery signal head out of the [code]lights[/code] events aimed at it.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_kind" qualifiers="static">
+			<return type="SignalHeadKind" />
+			<param index="0" name="aspects" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="get_aspect_name" qualifiers="static">
+			<return type="StringName" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="signal_head_name" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

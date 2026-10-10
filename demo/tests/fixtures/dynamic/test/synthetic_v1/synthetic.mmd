@@ -1,0 +1,22 @@
+// A fabricated vehicle for the vehicle frame, lights and cab tests - not a real one.
+// Cab 1 has a hi-fi cab model; cab 0 (the machine room) has none, so the low-poly interior's
+// cabN submodels all stay visible in it (DynObj.cpp:1214).
+models: synthetic.t3d
+lowpolyinterior: synthetic_int.t3d
+endmodels
+
+cab1definition:
+-1.0 1.5 4.0 1.0 3.0 6.0
+driver1pos:
+0.0 2.5 5.0
+cab1model: synthetic_kabina.t3d
+
+cab2definition:
+-1.0 1.5 -6.0 1.0 3.0 -4.0
+driver2pos:
+0.0 2.5 -5.0
+
+cab0definition:
+-0.5 1.5 -2.0 0.5 3.0 2.0
+driver0pos:
+0.0 2.5 0.0

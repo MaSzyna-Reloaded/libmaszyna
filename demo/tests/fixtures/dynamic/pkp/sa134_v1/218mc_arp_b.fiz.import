@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://wnt4iy42wiwy"
+path="res://.godot/imported/218mc_arp_b.fiz-9921bf7fb7ab7f33cce0fac9dfd0b2ba.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/sa134_v1/218mc_arp_b.fiz"
+dest_files=["res://.godot/imported/218mc_arp_b.fiz-9921bf7fb7ab7f33cce0fac9dfd0b2ba.res"]
+
+[params]
+

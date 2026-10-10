@@ -1,0 +1,23 @@
+// a trainset of two, a dynamic outside a trainset, and one on a track that is not there
+node -1 0 main_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+0.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+0.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+node -1 0 side_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+10.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+10.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+trainset express main_track 150 0
+node -1 0 first dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+node -1 0 second dynamic test/synthetic_v1 none synthetic 0 nobody 3 0 enddynamic
+endtrainset
+node -1 0 lone dynamic test/synthetic_v1 none synthetic side_track -20.0 nobody 0 0 enddynamic
+node -1 0 road_car dynamic test/synthetic_v1 none synthetic road_track -20.0 nobody 0 0 enddynamic

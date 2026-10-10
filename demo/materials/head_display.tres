@@ -1,7 +1,7 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://dq82err50w03x"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dq82err50w03x"]
 
-[ext_resource type="Shader" path="res://materials/head_display.gdshader" id="1_wfica"]
-[ext_resource type="Texture2D" uid="uid://ojnpgic0lgux" path="res://vehicles/impuls/maszyna_reloaded_headdisplay.png" id="2_7l262"]
+[ext_resource type="Shader" uid="uid://ctcto5uik4cnr" path="res://materials/head_display.gdshader" id="1_wfica"]
+[ext_resource type="Texture2D" uid="uid://ojnpgic0lgux" path="res://materials/maszyna_reloaded_headdisplay.png" id="2_7l262"]
 
 [resource]
 render_priority = 0

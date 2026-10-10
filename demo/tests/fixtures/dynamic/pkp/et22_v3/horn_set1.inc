@@ -1,0 +1,2 @@
+horn1: { soundbegin: 9629]201e_rp1_start_1.wav soundmain: 9629]201e_rp1_trwa_1.wav soundend: 9629]201e_rp1_stop_1.wav range: 1000 }
+horn2: { soundbegin: 9629]201e_rp1_start_2.wav soundmain: 9629]201e_rp1_trwa_2.wav soundend: 9629]201e_rp1_stop_2.wav range: 1000 }

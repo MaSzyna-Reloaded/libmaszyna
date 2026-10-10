@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PersonServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="person_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="person_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="person_free">
+			<return type="void" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="person_freed">
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

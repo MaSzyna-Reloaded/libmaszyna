@@ -4,6 +4,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  LLVM_VERSION: 22.1.4
+
 jobs:
   clang-tidy:
     runs-on: ubuntu-24.04
@@ -14,6 +17,40 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: '3.x'
+
+      - name: Cache LLVM
+        id: cache-llvm
+        uses: actions/cache@v5
+        with:
+          path: LLVM-${{ env.LLVM_VERSION }}-Linux-X64.tar.xz
+          key: ${{ runner.os }}-llvm-${{ env.LLVM_VERSION }}
+
+      - name: Install LLVM (clang/clang-tidy/clang-format) and dependencies
+        run: |
+          sudo apt update
+          sudo add-apt-repository universe
+          sudo apt update
+          sudo apt install libncurses5-dev ripgrep
+          if [ "${{ steps.cache-llvm.outputs.cache-hit }}" != "true" ]; then
+            wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/LLVM-${{ env.LLVM_VERSION }}-Linux-X64.tar.xz
+          fi
+          sudo tar -xf LLVM-${{ env.LLVM_VERSION }}-Linux-X64.tar.xz
+          sudo mv LLVM-${{ env.LLVM_VERSION }}-Linux-X64 /usr/local/llvm-${{ env.LLVM_VERSION }}
+          sudo ln -s /usr/local/llvm-${{ env.LLVM_VERSION }}/bin/clang-tidy /usr/local/bin/clang-tidy
+          sudo ln -s /usr/local/llvm-${{ env.LLVM_VERSION }}/bin/run-clang-tidy /usr/local/bin/run-clang-tidy
+          sudo ln -s /usr/local/llvm-${{ env.LLVM_VERSION }}/bin/clang-format /usr/local/bin/clang-format
+
+      # CMake dumps the double precision API from it (CMakeLists.txt) when it configures the
+      # clang-tidy database
+      - name: Fetch the double precision Godot
+        run: |
+          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Run style-check
         id: run
         shell: bash
@@ -21,9 +58,9 @@ jobs:
           set -o pipefail
           : > style-check.log
           
-          # make style-check runs in the docker compose image, which provides Godot for the double API dump
-          # container paths are stripped so annotations point at repository files
-          docker compose run --rm style_check 2>&1 | sed 's#/var/maszyna/##g' | tee style-check.log
+          # make style-check configures the clang-tidy database if needed; the checkout's path is
+          # stripped so annotations point at repository files
+          make style-check 2>&1 | sed "s#$GITHUB_WORKSPACE/##g" | tee style-check.log
 
           issues=$(grep -E "^[^=][^=]*:[0-9]+:[0-9]+: (warning|error): .* \[[^]]+\]" style-check.log | grep -v -E "godot[-_]?cpp" | wc -l || true)
           echo "issues=$issues" >> $GITHUB_OUTPUT
@@ -76,7 +113,7 @@ jobs:
         run: |
           # Parse clang-tidy log and create GitHub annotations
           grep -E ": (warning|error): .* \[[^]]+\]" style-check.log | \
-          grep -v -E "godot[-_]?cpp|src/maszyna|src/gen" | \
+          grep -v -E "godot[-_]?cpp|src/legacy/maszyna-mover|src/gen" | \
           awk '
             function esc(s) {
               gsub(/%/, "%25", s); gsub(/\r/, "%0D", s); gsub(/\n/, "%0A", s);

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PythonScreenServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="screen_create">
+			<return type="RID" />
+			<param index="0" name="script_path" type="String" />
+			<param index="1" name="commands_received" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="screen_free">
+			<return type="void" />
+			<param index="0" name="screen" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="screen_get_average_color" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="screen" type="RID" />
+			<description>
+				The average colour of the last frame the screen's script drew (black before the first) - what the screen throws around it.
+			</description>
+		</method>
+		<method name="screen_get_texture" qualifiers="const">
+			<return type="Texture2D" />
+			<param index="0" name="screen" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="screen_request_render">
+			<return type="void" />
+			<param index="0" name="screen" type="RID" />
+			<param index="1" name="state" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="python_runtime_failed">
+			<param index="0" name="message" type="String" />
+			<description>
+				The Python host process (maszyna-python-host) has ended - the runtime is missing or broken, or a script brought the interpreter down - and the screens stay blank until the game is restarted. [param message] is what the host printed on its way out and its exit code; it is in the log too. Emitted once.
+			</description>
+		</signal>
+		<signal name="screen_rendered">
+			<param index="0" name="screen" type="RID" />
+			<description>
+				A frame the script drew reached the screen's texture.
+			</description>
+		</signal>
+	</signals>
+</class>

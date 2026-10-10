@@ -48,9 +48,9 @@ layout_mode = 2
 layout_mode = 2
 text = "Clear caches"
 
-[node name="ReloadModelsButton" type="Button" parent="VBoxContainer/HBoxContainer2" unique_id=123521632]
+[node name="ReloadGameDataButton" type="Button" parent="VBoxContainer/HBoxContainer2" unique_id=123521632]
 layout_mode = 2
-text = "Reload models"
+text = "Reload game data"
 
 [node name="HBoxContainer3" type="HBoxContainer" parent="VBoxContainer" unique_id=1076233621]
 layout_mode = 2
@@ -255,8 +255,8 @@ size_flags_horizontal = 3
 horizontal_alignment = 1
 
 [connection signal="visibility_changed" from="." to="." method="_refresh"]
-[connection signal="text_changed" from="VBoxContainer/GameDirSection/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="text_submitted" from="VBoxContainer/GameDirSection/LineEdit" to="." method="_on_line_edit_text_submitted"]
 [connection signal="button_up" from="VBoxContainer/GameDirSection/Browse" to="." method="_on_browse_button_up"]
 [connection signal="dir_selected" from="VBoxContainer/GameDirSection/DirectorySelectorDialog" to="." method="_on_directory_selector_dialog_dir_selected"]
 [connection signal="button_up" from="VBoxContainer/HBoxContainer2/ClearCacheButton" to="." method="_on_clear_cache_button_button_up"]
-[connection signal="button_up" from="VBoxContainer/HBoxContainer2/ReloadModelsButton" to="." method="_on_reload_models_button_button_up"]
+[connection signal="button_up" from="VBoxContainer/HBoxContainer2/ReloadGameDataButton" to="." method="_on_reload_game_data_button_button_up"]

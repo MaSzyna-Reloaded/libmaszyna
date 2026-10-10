@@ -1,0 +1,5 @@
+shader: rain_windscreen
+texture_diffuse: glass
+texture_raindropsatlas: fx/raindrops-atlas
+texture_wipermask: wipermask
+param_raindrop_grid_size: 150

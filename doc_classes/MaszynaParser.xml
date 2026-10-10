@@ -41,6 +41,12 @@
 				Reads and returns a single byte from the input stream.
 			</description>
 		</method>
+		<method name="get_length" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the size of the parsed buffer in bytes.
+			</description>
+		</method>
 		<method name="get_line">
 			<return type="String" />
 			<description>
@@ -51,6 +57,12 @@
 			<return type="Dictionary" />
 			<description>
 				Returns the currently parsed metadata.
+			</description>
+		</method>
+		<method name="get_position" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current read position in the buffer, in bytes.
 			</description>
 		</method>
 		<method name="get_tokens">
@@ -77,6 +89,17 @@
 				Initializes the parser with the file data.
 			</description>
 		</method>
+		<method name="interrupt">
+			<return type="void" />
+			<description>
+				Called from a handler: makes the running [method parse_chunk] return right after that handler, e.g. to continue parsing in another (included) file first.
+			</description>
+		</method>
+		<method name="is_cancelled" qualifiers="static">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="next_token">
 			<return type="String" />
 			<param index="0" name="stops" type="Array" default="[]" />
@@ -97,6 +120,13 @@
 				Parses the entire file and returns the extracted mesh data.
 			</description>
 		</method>
+		<method name="parse_chunk">
+			<return type="Array" />
+			<param index="0" name="bytes" type="int" />
+			<description>
+				Parses tokens until at least [param bytes] bytes have been read or the end of the buffer is reached, and returns the objects produced by the handlers. A handler may read past the limit. Call repeatedly until [method eof_reached] to parse the whole buffer in chunks, e.g. to report progress with [method get_position] and [method get_length].
+			</description>
+		</method>
 		<method name="pop_metadata">
 			<return type="Dictionary" />
 			<description>
@@ -115,6 +145,12 @@
 			<param index="1" name="callback" type="Callable" />
 			<description>
 				Registers a custom handler for a specific token.
+			</description>
+		</method>
+		<method name="set_cancelled" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="cancelled" type="bool" />
+			<description>
 			</description>
 		</method>
 		<method name="set_parameters">

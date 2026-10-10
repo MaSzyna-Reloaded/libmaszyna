@@ -1,0 +1,162 @@
+
+models: eu05.t3d
+lowpolyinterior: 05]lowpoly.t3d
+animations: 4 0 0 4 2 2 -1
+animwheelprefix: wheel0
+animpantrd1prefix: ramiedolne1_pant0
+animpantrd2prefix: ramiedolne2_pant0
+animpantrg1prefix: ramiegorne1_pant0
+animpantrg2prefix: ramiegorne2_pant0
+animpantslprefix: slizg_pant0
+pantfactors: -4.084 4.084 4.391 0.185
+endmodels
+
+sounds:
+wheel_clatter: 70 -5.75 697_e181_stukot-1.wav -2.42 697_e181_stukot-3.wav 2.42 697_e181_stukot-1.wav 5.75 697_e181_stukot-3.wav end
+curve: 104e_3]curve.wav 100
+tractionmotor: {
+ amplitudeoffset: 0.3
+ amplitudefactor: 1.0
+ frequencyfactor: 0.02
+ range: 160
+ crossfade: 80
+ sound0: silence1.wav pitch0: 1
+ sound3: 697_motor-e18x_15.wav pitch3: 54
+ sound6: 697_motor-e18x_30.wav pitch6: 108
+ sound12: 697_motor-e18x_60.wav pitch12: 217
+ sound14: 697_motor-e18x_80.wav pitch14: 290
+ sound56: 697_motor-e18x_80.wav pitch56: 1060 }
+ventilator: rvent-ep05.wav 185.0 1.325 0.3  1.5 0.65
+brake: { range: 150 amplitudefactor: 1.25 amplitudeoffset: 0.7 crossfade: 90
+ sound0: silence1.wav
+ sound1: [1007]pisk_406r416.wav
+ sound10: [1007]pisk_406r416.wav 
+ sound50: silence1.wav
+ sound200: silence1.wav }
+brakesound: { range: 150 amplitudefactor: 1.25 amplitudeoffset: 0.1 crossfade: 60
+ sound0: silence1.wav
+ sound10: [1007]_eaos_brake.wav 
+ sound50: [1007]_eaos_brake.wav 
+ sound200: [1007]_eaos_brake.wav }
+derail: derail.wav 200
+horn1: 104e_3]horn1-start.wav 104e_3]horn1.wav 104e_3]horn1-stop.wav 300  
+horn2: 6dg_rp1_2_start.wav 6dg_rp1_2_trwa.wav 6dg_rp1_2_stop.wav 600
+compressor: 05]sprezarka_start.wav,05]sprezarka_trwa.wav,05]sprezarka_stop.wav 70
+converter: 07]przetw_3-start.wav 07]przetw_3-mid.wav 07]przetw_3-end.wav 90
+pantographup: pantup1.wav
+pantographdown: pantdown.wav
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+emergencybrake: { soundbegin: 20786_et22_emergency_brake_1 soundmain: 20786_et22_emergency_brake_2 soundend: 20786_et22_emergency_brake_3 }
+endsounds 
+
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+ctrl: 07]nastawnik.wav
+buzzer: [ buczek.wav 24150_buczek_cashp.wav 20786_203e_buzzer.wav 697_su45-czuwak.wav 14745_czuwak181.wav 07]bzyczek.wav bzyczek.wav et42_bzyczek.wav bzyczek4.wav bzyczek3.wav ]
+tachoclock: { sound1: hasler_1_km.wav sound2: hasler_2_km.wav sound3: hasler_3_km.wav sound4: hasler_4_km.wav sound5: 20786_hasler_5km.wav sound10: 20786_hasler_10_km.wav sound20: 20786_hasler_20_km.wav sound30: 20786_hasler_30_km.wav sound40: 20786_hasler_40_km.wav sound50: 20786_hasler_50_km.wav  sound60: 20786_hasler_60_km.wav sound70: 20786_hasler_70_km.wav sound80: 20786_hasler_80_km.wav sound90: 20786_hasler_90_km.wav sound100: 20786_hasler_100_km.wav sound110: 20786_hasler_110_km.wav sound120: 20786_hasler_120_km.wav sound130: 20786_hasler_130_km.wav sound140: 20786_hasler_140_km.wav sound150: 20786_hasler_150_km.wav sound500: 20786_hasler_150_km.wav }
+switch: 07]przelacznik.wav
+relay: 07]stycznik.wav
+pneumaticrelay: pneumaticrelay_18x.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+
+brakesound: brake.wav 0.1 0.4 1 0
+slipperysound: brake-slipp.wav 2.0 0.2
+airsound:  { soundmain: [ 697_fv4a_syk.wav 697_ep05-hiss.wav sm42-powietrze.wav 07]hiss.wav ] amplitudeoffset: -0.01 }
+airsound2: [1007]fv4a_luz.wav 0.05 -0.01
+airsound3: [1007]fv4a_e.wav 0.25 -0.01
+airsound4: { soundmain: [ [1007]fv4a_x.wav 20786_et22_popelnianie.wav ] amplitudeoffset: -0.01 }
+airsound5: [1007]fv4a_t.wav 10.0 -0.01
+localbrakesound: { soundset: [ 697_303e_localbrake-start.wav|697_303e_localbrake-end.wav|silence1.wav, 26284_201e_localbrakesound_start.wav|26284_201e_localbrakesound_main.wav|26284_201e_localbrakesound_stop.wav ] placement: internal amplitudeoffset: 0.2 amplitudefactor: 2.6 range: 50 }
+localbrakesound2: { soundbegin: 697_303e_localbrake2-start.wav soundmain: 697_303e_localbrake2-end.wav soundend: silence1.wav placement: internal amplitudefactor: 0.3 }
+runningnoise: 104e_3]runningnoise.wav 2.0 0.0 0.5 0.5
+
+mechspring: 100      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+
+cab1definition:
+-1.65 1.4 5.77 1.65 1.3 6.4 
+driver1pos:
+1.039 2.758 6.063
+driver1sitpos:
+-0.629 2.663 5.82
+cab1model: 05]kabina_a.t3d
+
+cab2definition:
+-1.65 1.4 -6.4 1.65 1.3 -5.77
+driver2pos:
+-1.039 2.758 -6.063
+driver2sitpos:
+0.629 2.663 -5.82
+cab2model: 05]kabina_b.t3d
+
+mainctrl: nastawnikpodst rot 0.0164 0.0 0.1 
+//scndctrl: bocznikpodst rot -0.053 0.0 0.15
+dirkey: kluczpodst rot 0.05 0.01 0.15 
+brakectrl: kran_zasadniczy rot 0.073 0.075 0.15 
+localbrake: kran_pomocniczy rot 0.05 0.0 0.3
+
+//brakeprofile_sw: przelacznik-hamulec-typ rot 1.0 0.0 0.2
+//maxcurrent_sw: przelacznik-prad-rozruchu rot -0.25 0.0 0.2
+//security_reset_bt: przycisk-czuwak mov -0.005 0 0.2
+releaser_bt: przycisk-odluzniacz mov -0.005 0 0.25 
+//antislip_bt: przelacznik-antyposlizg rot -0.2 0 0.2 
+//fuse_bt: przycisk-roznicowy-i-nadmiarowy-silnikow mov -0.005 0 0.2
+compressor_sw: sw-sprezarka01 rot 0.2 0 0.2
+converter_sw: przelacznik06 rot 0.2 0 0.2
+upperlight_sw: reflektor_gora rot 0.25 0 0.2
+leftlight_sw: reflektor_lewo rot 0.25 0 0.2
+rightlight_sw: reflektor_prawo rot 0.25 0 0.2
+trainheating_sw: ogrzewanie_pociagu rot 0.25 0 0.2
+pantselect_sw: przelacznik_pantograf rot -0.09 0 0.2
+mainctrlact: zabek rot 0.0164 0 0.0
+leftend_sw: koncowki rot 0.25 0 0.2
+rightend_sw: koncowka_prawa rot 0.25 0 0.2
+main_sw: sw-pantogr21 mov -0.005 0 0.2
+instrumentlight_sw: oswietlenie_przyrzadow rot 0.25 0 0
+sand_bt: { pedal1 rot -0.025 0 0.2 soundinc: 20786_203e_sandbox_pedal_1_on.wav sounddec: 20786_203e_sandbox_pedal_1_of.wav }
+hornlow_bt: { pedal2.001 rot 0.01 0 0.2 soundinc: 20786_203e_sandbox_pedal_2_on.wav sounddec: 20786_203e_sandbox_pedal_2_of.wav }
+hornhigh_bt: { pedal2.002 rot 0.01 0 0.2 soundinc: 20786_203e_sandbox_pedal_3_on.wav sounddec: 20786_203e_sandbox_pedal_3_of.wav }
+//security_reset_bt: { pedal3 rot -0.025 0 0.2 soundinc: 20786_203e_sandbox_pedal_1_on.wav sounddec: 20786_203e_sandbox_pedal_1_of.wav }
+tachometer: speedknob rot 0.0044 0 0
+distcounter: hasler dgt 1 133143 0
+tachometern: speedknobb rot 0.00091 0 0.3
+hVcurrent1: i1knob rot 0.00017 0 0.3
+hVcurrent2: i2knob rot 0.00017 0 0.3
+hvoltage: utknob rot 0.000035 0 0.3 
+//lvoltage: ubknob mov 0.0 0 0.3
+brakepress: cylhamknob rot 0.11 0 0.1
+pipepress: przglknob rot 0.11 0 0.1
+compressor: zbglknob rot 0.08 0 0.1
+universal1: { okno_mechu mov 0.6 0.0 0.2 soundinc: 20786_201e_window_open.wav sounddec: 20786_201e_window_close.wav }
+clock: analog
+
+//i-contactors: styczn
+//i-conv_ovld: nadm_przetw
+//i-diff_relay: przek_rozn
+//i-motor_ovld: nadm_siln
+i-mainbreaker: szybki
+//i-vent_ovld: nadm_went
+//i-comp_ovld: nadm_spr
+i-resistors: opory
+//i-security_aware: czuwak
+//i-security_cabsignal: shp
+i-trainheating: grzanie
+i-instrumentlight: podswietlenie
+
+cab0definition:
+-0.1 1.5 -3.7 0.2 1.5 3.7
+driver0pos:
+0.0 3.0 0.1
+cab0model: korytarz.t3d

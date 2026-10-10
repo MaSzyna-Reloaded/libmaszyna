@@ -1,0 +1,103 @@
+// to jest plik z parametrami dla ET40
+// stale uniwersalne stosowane dla kazdego pojazdu
+Author chk=EU07-457,Bartosz "ET22_RULZ" Wojciechowski,
+# prametry hamulca dla SPKS: youBy
+Param. Category=train M=82000 Mred=12000 Vmax=100 PWR=4080 SandCap=500 Type=et40
+Load: MaxLoad=52 LoadQ=pieces LoadAccepted=pantstate LoadSpeed=1 UnLoadSpeed=0.1
+// rodzaj (train,auto,ship), masa [kg], Vmax [km/h], moc [kW] 
+Dimensions: L=17.20 H=4.343 W=2.903 Cx=0.3 
+// dlugosc ze zderzakami, wysokosc, szerokosc [m], wspolcz. oporu aerodynam.
+Wheels: D=1.250 AIM=2000 Tw=1.435 Axle=Bo'Bo' Ad=3.05 Bd=8.55 Rmin=120 BearingType=Roll
+// srednica kol napednych, moment bezwladosci [kgm^2], szerokosc, uklad i rozstaw osi, rozstaw czopow, min. promien skretu [m]
+Brake: BrakeValve=LSt NBpA=4 MBF=85.0 MaxBP=3.8 MaxASBP=1.8 RM=0.56 BCN=4 BCR=0.1524 BCD=0.05 BCM=6.96 Vv=1.1 MinCP=7.5 MaxCP=9.0 BCS=1.2 BSA=0.0 BM=P10-Bgu BVV=240 CompressorSpeed=0.06 CompressorPower=Main BRE=0.85
+// ilosc elementow ciernych na os, max sila docisku ham. recznego [kN], max. cisnienie w cyl.,
+// cylindry: ilosc, promien, skok roboczy, mnoznik przekladni,
+// cisnienie nominalne w przew. glownym [MPa], opcjonalnie dane dotyczace sprezarki i zbiornika glownego
+BuffCoupl1. CType=Screw kB=9200 DmaxB=0.15 FmaxB=740 kC=4800 DmaxC=0.15 FmaxC=780 beta=0.58 AllowedFlag=99
+BuffCoupl2. CType=Screw kB=9200 DmaxB=0.15 FmaxB=740 kC=4800 DmaxC=0.15 FmaxC=780 beta=0.58 AllowedFlag=-127
+// urzadzenia zderzno-cieglowe, sily w kN (uwaga - sprezystosc kB to 2*sprezystosc pojedynczego zderzaka!)
+Cntrl. BrakeSystem=Pneumatic BCPN=6 BrakeDelays=GP BrakeHandle=FV4a LocBrakeHandle=FD1 BDelay1=15 BDelay2=4 BDelay3=35 BDelay4=25 ASB=Manual LocalBrake=PneumaticBrake DynamicBrake=Passive MCPN=43 SCPN=5 AutoRelay=Yes SCIM=255 IniCDelay=0.455 SCDelay=0.26 Camshaft=Yes
+-1	0.60	-1	15	Pneumatic
+ 0	0.50	-1	9	Pneumatic
+ 1	0.46	-1	9	Pneumatic
+ 2	0.42	-1	9	Pneumatic
+ 3	0.38	-1	9	Pneumatic
+ 4	0.34	-1	9	Pneumatic
+ 5	0.28	-1	9	Pneumatic
+ 6	0.00	-1	15	Pneumatic
+// tabelka z parametrami nastaw glownego hamulca: cisnienie w przewodzie glowny, cylindrach (-1: nie dotyczy), szybkosc nap.,
+// powyzej rodzaj hamulca zespolonego, ilosc nastaw hamulca oraz opoznienie dzialania, typ hamulca niesamoczynnego
+// ilosc nastaw glownego i dodatkowego nastawnika, rozruch aut., opoznienia zadzialania stycznikow
+Security: AwareSystem=Active,CabSignal AwareDelay=60 SoundSignalDelay=5 MaxHoldTime=1.0 EmergencyBrakeDelay=6 RadioStop=Yes
+// systemy zabezpieczajace: czuwaki, sygnalizacja kabinowa itp
+Light: Light=Generator LGeneratorEngine=ElectricSeriesMotor LMaxVoltage=48 LMaxCurrent=155 
+// zrodlo mocy dla oswietlenia
+Clima: Heating=Main
+Power: EnginePower=CurrentCollector CollectorsNo=1 MaxVoltage=3600 MaxCurrent=1450 MinH=0.38 MinV=1900 MaxH=2.4 CSW=1.4 PhysicalLayout=3
+// zrodlo mocy dla silnikow trakcyjnych
+Engine: EngineType=ElectricSeriesMotor Volt=1500 Trans=27:84 WindingRes=0.108 nmax=1500
+// Parametry stale dla elektrycznych silnikow trakcyjnych
+Switches: Pantograph=Continuos
+
+// parametry silnika dla roznych stopni bocznikowania
+// pozycja, alfa,beta,gamma(->moment), fi,Isat(->SEM)
+// zmiana - fi,Isat->moment, fi,Isat->SEM
+MotorParamTable0: 
+0 37.55 170 0.12 244.6 170 0.12
+1 37.38 230 0.11 246 230 0.11
+2 38.02 300 0.1 247.3 300 0.1
+3 43.21 750 -0.02 282.9 750 -0.02
+4 36.45 800 -0.05 237.5 800 -0.05
+5 35.45 1000 -0.07 231 1000 -0.07
+END-MPT 
+Circuit: CircuitRes=0.01 ImaxLo=1500 ImaxHi=1500 IminLo=350 IminHi=350
+// informacje o obwodzie elektrycznym
+
+// naglowek listy: ilosc pozycji nastawnika, rodzaj wentylatorow oporow rozr. i ich predkosc obr., rez. zal. went.
+// lista: nastawnik, rezystory rozruchowe, ilosc galezi, ilosc silnikow w galezi, automatycznie przeskakiwanie pozycji
+RList: Size=43 RVent=Automatic RVentnmax=9999999 RVentCutOff=0.1
+0	0		0	0		0 255
+1	999999	        1	4		1 5
+2	12.5056		1	4		1 5
+3	11.0004		1	4		1 1
+4	8.3984		1	4		1 1
+5	7.3016		1	4		1 0
+6	6.4228		1	4		1 0
+7       5.9919		1	4		1 0
+8	5.5610		1	4		1 0
+9	5.2109		1	4		1 0
+10      4.8608		1	4		1 0
+11      4.4571		1	4		1 0
+12      4.0534		1	4		1 0
+13	3.7755		1	4		1 0
+14	3.4976		1	4		1 0
+15	3.2087		1	4		1 0
+16	2.9198		1	4		1 0
+17	2.6123		1	4		1 0
+18	2.3048		1	4		1 0
+19      2.0546		1	4		1 0
+20      1.8044		1	4		1 0
+21	1.5292		1	4		1 0
+22	1.2540		1	4		1 0
+23	0.8780		1	4		1 0
+24	0.5020		1	4		1 0
+25	0.2510		1	4		1 0
+26	0.000		1	4		1 255
+27	4.7476		2	2		1 0
+28	3.6508		2	2		1 0
+29	2.7805		2	2		1 0
+30	2.4304		2	2		1 0
+31	2.0267		2	2		1 0
+32	1.7488		2	2		1 0
+33	1.4599		2	2		1 0
+34	1.1524		2	2		1 0
+35	0.9022		2	2		1 0
+36	0.6270		2	2		1 0
+37	0.2510		2	2		1 0	
+38	0.00		2	2		1 255
+39	0.00		2	2		1 1
+40	0.00		2	2		1 2
+41	0.00		2	2		1 3
+42	0.00		2	2		1 4
+43	0.00		2	2		1 5
+END-RL

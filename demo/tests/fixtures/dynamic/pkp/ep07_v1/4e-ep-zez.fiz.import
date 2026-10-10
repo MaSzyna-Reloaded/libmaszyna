@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cojv71vpv2mgq"
+path="res://.godot/imported/4e-ep-zez.fiz-0c68ea5fb2000911af60938eeb736f8c.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/ep07_v1/4e-ep-zez.fiz"
+dest_files=["res://.godot/imported/4e-ep-zez.fiz-0c68ea5fb2000911af60938eeb736f8c.res"]
+
+[params]
+

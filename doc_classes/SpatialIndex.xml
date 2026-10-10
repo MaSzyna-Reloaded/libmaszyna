@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpatialIndex" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add">
+			<return type="void" />
+			<param index="0" name="item" type="RID" />
+			<param index="1" name="aabb" type="Rect2" />
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="query" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="aabb" type="Rect2" />
+			<description>
+			</description>
+		</method>
+		<method name="remove">
+			<return type="void" />
+			<param index="0" name="item" type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cell_size" type="float" setter="set_cell_size" getter="get_cell_size" default="1.0">
+		</member>
+	</members>
+</class>

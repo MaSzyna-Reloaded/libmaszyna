@@ -1,0 +1,3 @@
+// A scenery whose "time" section sets its scenario clock to 18:45
+time 18:45 06:30 19:00 endtime
+node -1 0 evening_time_cell memcell 0 0 0 none 0 0 none endmemcell

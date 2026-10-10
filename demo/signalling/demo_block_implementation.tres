@@ -1,0 +1,6 @@
+[gd_resource type="SignallingImplementation" format=3]
+
+[ext_resource type="Script" path="res://signalling/demo_block_implementation.gd" id="1_implementation"]
+
+[resource]
+script = ExtResource("1_implementation")

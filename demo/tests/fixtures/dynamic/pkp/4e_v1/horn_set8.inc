@@ -1,0 +1,2 @@
+horn1: { soundbegin: 14745_41syrnis_start.wav soundmain: 14745_41syrnis_trwa.wav soundend: 14745_41syrnis_stop.wav range: 1000 }
+horn2: { soundbegin: 14745_41syrwys_start.wav soundmain: 14745_41syrwys_trwa.wav soundend: 14745_41syrwys_stop.wav range: 1000 }

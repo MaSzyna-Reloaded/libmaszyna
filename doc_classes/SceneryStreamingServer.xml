@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryStreamingServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Builds scenery content only where the camera is.
+	</brief_description>
+	<description>
+		A real scenery places hundreds of thousands of pieces - models, merged terrain meshes, tracks, traction spans - and building them all while loading costs both the loading time and the frame rate, because most of them are nowhere near the camera.
+		A rendering server registers itself as an owner with [method owner_create] and then registers each of its pieces with [method stream_register], saying where it is and how far it is meant to be visible. The piece is built once the camera set with [method streaming_set_camera] comes within that range of the 1[code] [/code]km chunk holding it, and cleared again when the camera leaves. Pieces that declare no range of their own are streamed up to [method streaming_get_draw_distance] ([code]maszyna/rendering/scenery_draw_distance[/code]).
+		Planning runs on a worker thread, together with whatever an owner wants prepared off the main thread (the [code]preload[/code] callable - loading a model, building a mesh). Building and clearing run on the main thread within a per-frame time budget, because they touch [RenderingServer] and GDScript.
+		Owners: [E3DRenderingServer] (scenery models, their lights and smoke), [code]MaszynaSceneryChunkRenderingServer[/code] (merged terrain meshes), [code]TrackRenderingServer[/code], [code]TractionRenderingServer[/code] and [code]ScenerySoundServer[/code].
+		[b]Providers.[/b] Content may also be supplied by chunk, the way a map tile server supplies tiles: a [SceneryStreamingProvider] registered with [method provider_register] is asked for the content of a cell ([method SceneryStreamingProvider.chunk_load]) as the camera comes within the draw distance of it, plus how far the cell's content reaches out of it ([method SceneryStreamingProvider.chunk_get_overhang]). What a cell gives is handed to the consumer of its kind ([method content_set_consumer]), which registers it as pieces like any other; once the camera has left, or the provider is freed with [method provider_free], the consumer releases it. Only presentation is supplied so - terrain, decoration models, ambient sounds; what the simulation needs whatever the camera does (tracks, traction) is never a provider's. A provider knows nothing of cameras or ranges: it supplies the cell it is asked for. The first provider is [MaszynaLegacySBTTerrainProvider], the original's binary region files.
+		[b]Ranges.[/b] A piece is built once the camera is within its range of its chunk, and cleared only one chunk (1[code] [/code]km) past it, so a train shunting into the next chunk and back finds what it left built. A piece up to 500[code] [/code]m past its range is built ahead, with at most 1[code] [/code]ms a frame and only while nothing in range waits; nothing waits for it ([method area_is_ready]). The chunk of the anchor ([method streaming_set_anchor_position] - the player's vehicle) is kept built wherever the camera is.
+		[b]Budget.[/b] Building and clearing get 4[code] [/code]ms a frame. While an area fills - a camera set, or one that jumped farther than a chunk - and the backlog is long, they get 16[code] [/code]ms: the loading screen fills the world, a train driving through it keeps its frame rate. One build is never cut, so the content is bounded instead (a terrain chunk is at most [constant MaszynaTrianglesChunkGeometry.MAX_VERTICES] vertices), and whatever is computation - reading, decoding, mesh arrays - is a [code]preload[/code], run in batches on the streaming's own [WorkerTaskQueue], never on the [WorkerThreadPool]. A preload must not wait for the main thread: nothing in it reads back from the [RenderingServer] (a model read from its source is saved into the cache by the main thread, [code]E3DModelManager[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="area_get_pending_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				How many wanted pieces of the camera chunk and the [param chunk_radius] chunks around it are still to be built - the progress towards [method area_is_ready].
+			</description>
+		</method>
+		<method name="area_is_ready" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				Returns whether the current camera revision has been scanned and every wanted piece in the camera chunk plus [param chunk_radius] neighbouring chunks has been built. A radius of [code]1[/code] describes the 3×3 starting area used by the demo loading screen; work farther away may still be pending.
+			</description>
+		</method>
+		<method name="chunk_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="chunk" type="Vector2i" />
+			<description>
+				What the owners registered in the chunk (the [code]rid[/code] of [method stream_register]), built or not.
+			</description>
+		</method>
+		<method name="content_set_consumer">
+			<return type="void" />
+			<param index="0" name="kind" type="int" enum="SceneryStreamingProvider.ContentKind" />
+			<param index="1" name="adopt" type="Callable" />
+			<param index="2" name="release" type="Callable" />
+			<description>
+				Sets the server that takes supplied content of [param kind]. [param adopt] is called as [code]adopt(item: Variant, scenario: RID) -&gt; RID[/code] on the main thread, within the per-frame budget, with an item of the type the [enum SceneryStreamingProvider.ContentKind] names: it makes it - registering its pieces with [method stream_register] - and returns its handle. [param release] is called as [code]release(rid: RID)[/code] with that handle once the cell is let go.
+				Consumers: [constant SceneryStreamingProvider.CONTENT_TERRAIN] - [code]MaszynaSceneryChunkRenderingServer.adopt_terrain[/code], [constant SceneryStreamingProvider.CONTENT_MODELS] - [E3DRenderingServer], [constant SceneryStreamingProvider.CONTENT_SOUNDS] - [code]ScenerySoundServer.adopt_sound[/code].
+			</description>
+		</method>
+		<method name="owner_create">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="preload" type="Callable" />
+			<param index="2" name="build" type="Callable" />
+			<param index="3" name="clear" type="Callable" />
+			<description>
+				Registers a rendering server with the streaming and returns its owner id, to be passed to [method stream_register]. [param name] is what the debug window calls it ([code]owner_msec[/code] of [method streaming_get_statistics]).
+				[param preload] is called as [code]preload(rid: RID) -&gt; Variant[/code] on the worker thread and its result is handed to [param build]; pass an empty [Callable] when there is nothing to prepare off the main thread. [param build] is called as [code]build(rid: RID, preloaded: Variant)[/code] and [param clear] as [code]clear(rid: RID)[/code], both on the main thread, within the per-frame budget.
+			</description>
+		</method>
+		<method name="owner_rebuild">
+			<return type="void" />
+			<param index="0" name="owner" type="int" />
+			<description>
+				Clears every piece of [param owner] built so far; the next plan builds again - [code]preload[/code] included - those it still wants. For an owner whose pieces are built of data that has changed, the game's data read again ([signal GameDataServer.data_reload_requested]). A piece out of range is built from the new data whenever it comes into range.
+			</description>
+		</method>
+		<method name="provider_free">
+			<return type="void" />
+			<param index="0" name="provider" type="RID" />
+			<description>
+				Frees a provider registered with [method provider_register]: everything it supplied is released at once, and its loads still on the worker are dropped.
+			</description>
+		</method>
+		<method name="provider_register">
+			<return type="RID" />
+			<param index="0" name="provider" type="SceneryStreamingProvider" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
+				Registers [param provider], whose content goes into [param scenario], and returns its handle for [method provider_free]. Its cells ([method SceneryStreamingProvider.get_chunk_cells]), their overhang and its kinds are asked for once, here: a provider's map does not change. From then on a cell is asked for ([method SceneryStreamingProvider.chunk_load], on the worker threads) as the camera comes within the draw distance plus the cell's overhang of it - 500[code] [/code]m ahead with the low prefetch budget - and let go one chunk past that.
+			</description>
+		</method>
+		<method name="stream_free">
+			<return type="void" />
+			<param index="0" name="stream_rid" type="RID" />
+			<description>
+				Unregisters a piece. The owner's [code]clear[/code] callable is not called - whoever frees the piece frees its content too.
+			</description>
+		</method>
+		<method name="stream_register">
+			<return type="RID" />
+			<param index="0" name="owner" type="int" />
+			<param index="1" name="rid" type="RID" />
+			<param index="2" name="position" type="Vector3" />
+			<param index="3" name="range_end" type="float" />
+			<description>
+				Registers one piece of an owner, placed at [param position] and visible up to [param range_end] ([code]0[/code] - up to [method streaming_get_draw_distance]). [param rid] is the owner's own handle for the piece and is what the owner's callables receive. Returns the handle for [method stream_free].
+			</description>
+		</method>
+		<method name="streaming_clear_anchor">
+			<return type="void" />
+			<description>
+				No chunk is kept built for an anchor any more ([method streaming_set_anchor_position]).
+			</description>
+		</method>
+		<method name="streaming_drain">
+			<return type="void" />
+			<description>
+				Stops the planning thread and waits for the pass it is in, leaving the server able to start a fresh one. Called while the scene tree is still alive: the worker calls owners' [code]preload[/code] and providers' [method SceneryStreamingProvider.chunk_load], which may be scripts, and they must not be creating rendering resources while the scenery frees them.
+			</description>
+		</method>
+		<method name="streaming_get_camera_chunk" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+				The chunk the streaming camera is in, as [signal streaming_camera_chunk_changed] last announced it.
+			</description>
+		</method>
+		<method name="streaming_get_camera_position" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Where the streaming camera is - its last valid position when it has left the tree - for anything else that has to know what is near.
+			</description>
+		</method>
+		<method name="streaming_get_draw_distance" qualifiers="const">
+			<return type="float" />
+			<description>
+				Range used for pieces registered with a [code]range_end[/code] of [code]0[/code], read from [code]maszyna/rendering/scenery_draw_distance[/code] at startup.
+			</description>
+		</method>
+		<method name="streaming_get_statistics" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				What the streaming is doing right now, shown by the "Scenery Streaming" debug window ([code]res://hud/scenery_streaming_panel.gd[/code]): [code]owners[/code], [code]registered[/code], [code]streamed[/code], [code]chunks[/code], [code]active_chunks[/code], [code]pending_builds[/code], [code]pending_nearby[/code], [code]nearby_ready[/code], [code]pending_clears[/code], [code]planning[/code], [code]target_revision[/code], [code]scanned_revision[/code], [code]build_rate[/code] (builds applied in the last second), [code]budget_msec[/code] (the per-frame budget in use), [code]plan_msec[/code] (duration of the last completed planning pass), [code]draw_distance[/code], [code]chunk_size[/code], [code]camera_position[/code], [code]camera_chunk[/code] and [code]has_camera[/code].
+				Also [code]pending_prefetches[/code] (builds ahead of their range waiting), [code]filling[/code] (an area is filled, the catch-up budget may be used), [code]providers[/code], [code]supplied_cells[/code], [code]pending_provides[/code], and the main thread's time in the last full second [ms]: [code]owner_msec[/code] and [code]owner_max_msec[/code] (a [Dictionary] by owner name - builds and clears together, and the longest single one), [code]provide_msec[/code], [code]provide_max_msec[/code] and [code]withdraw_msec[/code].
+			</description>
+		</method>
+		<method name="streaming_get_streamed_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Pieces currently streamed in - what the streaming actually keeps built.
+			</description>
+		</method>
+		<method name="streaming_has_camera" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the streaming currently follows a camera.
+			</description>
+		</method>
+		<method name="streaming_is_building" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether pieces in range are still waiting to be built - between [signal streaming_builds_started] and [signal streaming_builds_finished].
+			</description>
+		</method>
+		<method name="streaming_is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the streaming builds and clears content each frame ([method streaming_set_enabled]).
+			</description>
+		</method>
+		<method name="streaming_set_anchor_position">
+			<return type="void" />
+			<param index="0" name="position" type="Vector3" />
+			<description>
+				Where the anchor is. Its chunk is kept built wherever the camera is: its pieces and provider cells are never cleared, and those out of the camera's range are built with the prefetch budget. Said again as the anchor moves, so the kept chunk moves with it - a vehicle driven on by an AI while the camera looks elsewhere. [PlayerServer] says where the player's vehicle is, and [method streaming_clear_anchor] when the player leaves it.
+			</description>
+		</method>
+		<method name="streaming_set_camera">
+			<return type="void" />
+			<param index="0" name="camera_id" type="int" />
+			<description>
+				The [Camera3D], by instance id, the streaming follows; without one nothing is ever built. Passing [code]0[/code] stops the streaming, leaving whatever is built in place. In game this is the player's camera, in the editor the camera of the 3D view.
+			</description>
+		</method>
+		<method name="streaming_set_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Pauses or resumes building and clearing on [code]process_frame[/code]. Tearing a scenery down frees the very RIDs it streams, and that teardown yields frames for its budget, so the streaming is paused for the duration.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="chunk_cleared">
+			<param index="0" name="chunk" type="Vector2i" />
+			<description>
+				The last built piece of the chunk was cleared as the camera went away.
+			</description>
+		</signal>
+		<signal name="streaming_builds_finished">
+			<description>
+				Every piece in range of the camera is built, or the streaming has no camera any more.
+			</description>
+		</signal>
+		<signal name="streaming_builds_started">
+			<description>
+				Pieces in range of the camera started waiting to be built.
+			</description>
+		</signal>
+		<signal name="streaming_camera_changed">
+			<description>
+				The camera the streaming follows was set or cleared ([method streaming_set_camera]).
+			</description>
+		</signal>
+		<signal name="streaming_camera_chunk_changed">
+			<param index="0" name="chunk" type="Vector2i" />
+			<description>
+				The streaming camera moved into another chunk.
+			</description>
+		</signal>
+	</signals>
+</class>

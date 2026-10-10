@@ -1,0 +1,116 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_engine.gd" id="1_engine"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="2_switch"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="3_button"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/vertical_gauge.tscn" id="9_vgauge"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="Engine" type="VBoxContainer"]
+script = ExtResource("1_engine")
+target = 1
+
+[node name="EngineType" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Type: -"
+
+[node name="Main" parent="." instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Main"
+type = 0
+state_property = "main_switch_enabled"
+command = "main_switch"
+target = 1
+
+[node name="Compressor" parent="." instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Compressor"
+state_property = "compressor_enabled"
+command = "compressor"
+
+[node name="FuseReset" parent="." instance=ExtResource("3_button")]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Overload relay reset"
+command = "fuse_reset"
+target = 1
+
+[node name="Diesel" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="OilPump" parent="Diesel" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Oil Pump"
+type = 1
+state_property = "oil_pump_active"
+command = "oil_pump"
+target = 1
+
+[node name="FuelPump" parent="Diesel" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Fuel Pump"
+type = 1
+state_property = "fuel_pump_active"
+command = "fuel_pump"
+target = 1
+
+[node name="Gauges" type="HFlowContainer" parent="Diesel"]
+layout_mode = 2
+
+[node name="EngineRPM" parent="Diesel/Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 1400.0
+unit = "rpm"
+decimals = 0
+label = "RPM"
+
+[node name="OilPressure" parent="Diesel/Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 1.0
+unit = "MPa"
+decimals = 2
+label = "Oil"
+
+[node name="Electric" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Converter" parent="Electric" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Converter"
+state_property = "converter_enabled"
+command = "converter"
+
+[node name="ConverterFuseReset" parent="Electric" instance=ExtResource("3_button")]
+layout_mode = 2
+text = "Converter fuse reset"
+command = "converter_fuse_reset"
+target = 1
+
+[node name="Gauges" type="HFlowContainer" parent="Electric"]
+layout_mode = 2
+
+[node name="EngineCurrent" parent="Electric/Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 1500.0
+unit = "A"
+decimals = 0
+label = "Current"
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

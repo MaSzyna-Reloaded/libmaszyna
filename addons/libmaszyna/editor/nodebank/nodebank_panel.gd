@@ -38,10 +38,10 @@ func _ready() -> void:
         refresh_items()
 
 func _enter_tree() -> void:
-    UserSettings.game_dir_changed.connect(_on_game_dir_changed)
+    GameDataServer.data_reload_requested.connect(_on_data_reload_requested)
 
 func _exit_tree() -> void:
-    UserSettings.game_dir_changed.disconnect(_on_game_dir_changed)
+    GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
     _clear_items()
 
     if _library:
@@ -68,7 +68,7 @@ func refresh_items() -> void:
     _clear_items()
 
     var search_query = _search_edit.text.strip_edges().to_lower()
-    var is_searching: bool = not search_query.is_empty()
+    var is_searching: bool = not not search_query
     var search_root = _library
     var filters: Array[Callable] = []
 
@@ -153,7 +153,7 @@ func _on_reload_pressed() -> void:
     load_library(true)
     refresh_items()
 
-func _on_game_dir_changed() -> void:
+func _on_data_reload_requested() -> void:
     if visible:
         load_library(true)
         refresh_items()

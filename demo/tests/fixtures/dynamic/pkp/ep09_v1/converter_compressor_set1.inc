@@ -1,0 +1,2 @@
+compressor: { soundbegin:  104e_3]sprezarka_start.wav soundmain: 104e_3]sprezarka.wav soundend: 104e_3]sprezarka_koniec.wav range: 110 placement: custom }
+converter: { soundbegin:  104e_3]przetwornica_start.wav soundmain: 104e_3]przetwornica.wav soundend: 104e_3]przetwornica_koniec.wav range: 120 placement: custom }

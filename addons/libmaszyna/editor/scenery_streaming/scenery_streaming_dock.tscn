@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" uid="uid://cs3n2ry5tr34m" path="res://addons/libmaszyna/scenery/scenery_streaming_panel.tscn" id="1_panel"]
+
+[node name="SceneryStreamingScroll" type="ScrollContainer"]
+custom_minimum_size = Vector2(0, 250)
+
+[node name="SceneryStreamingPanel" parent="." instance=ExtResource("1_panel")]
+layout_mode = 2
+size_flags_horizontal = 3

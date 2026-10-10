@@ -1,0 +1,114 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bq7v7bisax4ir" path="res://addons/libmaszyna/debug_hud/mover_switches_section.gd" id="1_section"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="2_switch"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="3_button"]
+
+[node name="Lights" type="VBoxContainer"]
+script = ExtResource("1_section")
+
+[node name="Selector" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Decrease" parent="Selector" instance=ExtResource("3_button")]
+layout_mode = 2
+text = "Light selector -"
+command = "decrease_light_selector_position"
+
+[node name="Increase" parent="Selector" instance=ExtResource("3_button")]
+layout_mode = 2
+text = "Light selector +"
+command = "increase_light_selector_position"
+
+[node name="HeadlightsDim" parent="." instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Dim headlights"
+state_property = "headlights_dimmed"
+command = "headlights_dim"
+
+[node name="EndLights" type="HFlowContainer" parent="."]
+layout_mode = 2
+
+[node name="FrontLights" type="VBoxContainer" parent="EndLights"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="EndLights/FrontLights"]
+layout_mode = 2
+text = "Front end"
+
+[node name="HeadlightUpper" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Upper headlight"
+state_property = "lights/front_headlight_upper_enabled"
+command = "light"
+command_argument = "front_headlight_upper"
+
+[node name="HeadlightLeft" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Left headlight"
+state_property = "lights/front_headlight_left_enabled"
+command = "light"
+command_argument = "front_headlight_left"
+
+[node name="HeadlightRight" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Right headlight"
+state_property = "lights/front_headlight_right_enabled"
+command = "light"
+command_argument = "front_headlight_right"
+
+[node name="RedmarkerLeft" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Left red marker"
+state_property = "lights/front_redmarker_left_enabled"
+command = "light"
+command_argument = "front_redmarker_left"
+
+[node name="RedmarkerRight" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Right red marker"
+state_property = "lights/front_redmarker_right_enabled"
+command = "light"
+command_argument = "front_redmarker_right"
+
+[node name="RearLights" type="VBoxContainer" parent="EndLights"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="EndLights/RearLights"]
+layout_mode = 2
+text = "Rear end"
+
+[node name="HeadlightUpper" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Upper headlight"
+state_property = "lights/rear_headlight_upper_enabled"
+command = "light"
+command_argument = "rear_headlight_upper"
+
+[node name="HeadlightLeft" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Left headlight"
+state_property = "lights/rear_headlight_left_enabled"
+command = "light"
+command_argument = "rear_headlight_left"
+
+[node name="HeadlightRight" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Right headlight"
+state_property = "lights/rear_headlight_right_enabled"
+command = "light"
+command_argument = "rear_headlight_right"
+
+[node name="RedmarkerLeft" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Left red marker"
+state_property = "lights/rear_redmarker_left_enabled"
+command = "light"
+command_argument = "rear_redmarker_left"
+
+[node name="RedmarkerRight" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Right red marker"
+state_property = "lights/rear_redmarker_right_enabled"
+command = "light"
+command_argument = "rear_redmarker_right"

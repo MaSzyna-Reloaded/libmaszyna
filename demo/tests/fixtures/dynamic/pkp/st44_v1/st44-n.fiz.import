@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://d0kqa6wpqrg2e"
+path="res://.godot/imported/st44-n.fiz-8c5dc419dd1a92fc9a35a87beabff3be.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/st44_v1/st44-n.fiz"
+dest_files=["res://.godot/imported/st44-n.fiz-8c5dc419dd1a92fc9a35a87beabff3be.res"]
+
+[params]
+

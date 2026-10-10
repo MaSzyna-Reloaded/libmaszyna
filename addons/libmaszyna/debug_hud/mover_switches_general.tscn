@@ -1,0 +1,149 @@
+[gd_scene format=3 uid="uid://karqply1tqnp"]
+
+[ext_resource type="Script" uid="uid://b10xu4ckobtx" path="res://addons/libmaszyna/debug_hud/mover_switches_general.gd" id="1_tjh4e"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="1_u3w4d"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="2_tjh4e"]
+[ext_resource type="PackedScene" uid="uid://1v37c7y4cwcx" path="res://addons/libmaszyna/debug_hud/gauge.tscn" id="3_gauge"]
+
+[node name="General" type="VBoxContainer" unique_id=1612449326]
+script = ExtResource("1_tjh4e")
+
+[node name="Battery" parent="." unique_id=1518851399 instance=ExtResource("1_u3w4d")]
+layout_mode = 2
+label = "Battery"
+state_property = "battery_enabled"
+command = "battery"
+
+[node name="HornLow" parent="." instance=ExtResource("1_u3w4d")]
+layout_mode = 2
+label = "Horn low"
+type = 1
+state_property = "horn_low_active"
+command = "horn_low"
+
+[node name="HornHigh" parent="." instance=ExtResource("1_u3w4d")]
+layout_mode = 2
+label = "Horn high"
+type = 1
+state_property = "horn_high_active"
+command = "horn_high"
+
+[node name="Whistle" parent="." instance=ExtResource("1_u3w4d")]
+layout_mode = 2
+label = "Whistle"
+type = 1
+state_property = "whistle_active"
+command = "whistle"
+
+[node name="Front" type="HBoxContainer" parent="." unique_id=172976274]
+layout_mode = 2
+
+[node name="Couple" parent="Front" unique_id=596235396 instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Couple front"
+command = "coupler_connect"
+command_argument = 0
+
+[node name="Decouple" parent="Front" unique_id=996360353 instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Decouple front"
+command = "coupler_disconnect"
+command_argument = 0
+
+[node name="Rear" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Couple" parent="Rear" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Couple rear"
+command = "coupler_connect"
+command_argument = 1
+
+[node name="Decouple" parent="Rear" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Decouple rear"
+command = "coupler_disconnect"
+command_argument = 1
+
+[node name="Gauges" type="HFlowContainer" parent="." unique_id=1423109694]
+layout_mode = 2
+
+[node name="Speed" parent="Gauges" unique_id=653893429 instance=ExtResource("3_gauge")]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+unit = "km/h"
+start_angle = 120.0
+label = "Speed"
+
+[node name="Radio" parent="." instance=ExtResource("1_u3w4d")]
+layout_mode = 2
+label = "Radio"
+state_property = "radio_enabled"
+command = "radio"
+
+[node name="RadioChannel" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ChannelDecrease" parent="RadioChannel" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Channel -"
+command = "radio_channel_decrease"
+
+[node name="ChannelIncrease" parent="RadioChannel" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Channel +"
+command = "radio_channel_increase"
+
+[node name="Channel" type="Label" parent="RadioChannel"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RadioVolume" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="VolumeDecrease" parent="RadioVolume" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Volume -"
+command = "radio_volume_decrease"
+
+[node name="VolumeIncrease" parent="RadioVolume" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Volume +"
+command = "radio_volume_increase"
+
+[node name="Volume" type="Label" parent="RadioVolume"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RadioSend" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="RadioStop" parent="RadioSend" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Radio-stop"
+command = "radio_stop"
+command_argument = "true"
+convert_argument_to_bool = true
+
+[node name="RadioCall3" parent="RadioSend" instance=ExtResource("2_tjh4e")]
+layout_mode = 2
+text = "Call 3"
+command = "radio_call3"
+command_argument = "true"
+convert_argument_to_bool = true
+
+[node name="Damage" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Damage: none"
+
+[node name="Couplers" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RefreshTimer" type="Timer" parent="." unique_id=1244003862]
+wait_time = 0.1
+autostart = true
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

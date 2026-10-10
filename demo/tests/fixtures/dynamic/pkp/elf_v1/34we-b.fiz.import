@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bx6402bqgq2s7"
+path="res://.godot/imported/34we-b.fiz-d936e68401bf18fba35c9317fb7314e0.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/elf_v1/34we-b.fiz"
+dest_files=["res://.godot/imported/34we-b.fiz-d936e68401bf18fba35c9317fb7314e0.res"]
+
+[params]
+

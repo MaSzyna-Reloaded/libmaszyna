@@ -5,174 +5,95 @@
 [ext_resource type="Material" uid="uid://b7qto250huuby" path="res://materials/custom_demo_ground.tres" id="2_imrpy"]
 [ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libmaszyna/environment/maszyna_environment_node.gd" id="2_py6pt"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="2_qg2pq"]
-[ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="2_s0qy7"]
-[ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="3_dcvyd"]
-[ext_resource type="PackedScene" uid="uid://karqply1tqnp" path="res://hud/mover_switches_general.tscn" id="3_l04v0"]
-[ext_resource type="Script" uid="uid://bwbpde8e6vyk" path="res://hud/window.gd" id="3_rrc65"]
-[ext_resource type="Script" uid="uid://dgifxvb2e4hww" path="res://addons/libmaszyna/e3d/e3d_model_instance.gd" id="4_drlsl"]
-[ext_resource type="PackedScene" uid="uid://b2knt6him76rc" path="res://hud/mover_switches_diesel.tscn" id="4_lsqkb"]
-[ext_resource type="Texture2D" uid="uid://cfqk60lpl5ljv" path="res://addons/sky_3d/assets/resources/SNoise.tres" id="4_ydfqx"]
-[ext_resource type="Texture2D" uid="uid://cr8hfekmcxxx" path="res://addons/sky_3d/assets/textures/noiseClouds.png" id="5_lnei4"]
-[ext_resource type="PackedScene" uid="uid://bn0vwl5vjwu45" path="res://hud/mover_switches_brakes.tscn" id="6_lsqkb"]
-[ext_resource type="Texture2D" uid="uid://condyxjqond2i" path="res://addons/sky_3d/assets/thirdparty/textures/moon/MoonMap.png" id="6_wgi5e"]
-[ext_resource type="Texture2D" uid="uid://bum6csy21i4vm" path="res://addons/sky_3d/assets/textures/noise.jpg" id="7_iqpw1"]
-[ext_resource type="PackedScene" uid="uid://ce8ab4bwjftcl" path="res://hud/mover_switches_doors.tscn" id="7_t705k"]
-[ext_resource type="PackedScene" uid="uid://bqm2tjc1181ek" path="res://hud/mover_switches_security.tscn" id="8_h5mje"]
-[ext_resource type="Texture2D" uid="uid://4wdfqvf2os05" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/StarField.jpg" id="8_mwrhi"]
-[ext_resource type="Texture2D" uid="uid://doayyxs362bku" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/Milkyway.jpg" id="9_jg8su"]
-[ext_resource type="PackedScene" uid="uid://e8tfpu8xl6ps" path="res://hud/mover_gauges.tscn" id="9_ss847"]
-[ext_resource type="Script" uid="uid://deo0gxkmk2ahd" path="res://addons/sky_3d/src/Sky3D.gd" id="10_54dc2"]
-[ext_resource type="PackedScene" uid="uid://bcxtf08c2yqx4" path="res://vehicles/sm42/sm_42.tscn" id="11_8gidn"]
-[ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="11_oupng"]
+[ext_resource type="Script" uid="uid://dgifxvb2e4hww" path="res://addons/libmaszyna/legacy/e3d/e3d_model_instance.gd" id="4_drlsl"]
+[ext_resource type="Script" uid="uid://onxj3ocy4jip" path="res://addons/libmaszyna/trainsets/train_set_3d.gd" id="9_ss847"]
 [ext_resource type="PackedScene" uid="uid://bbq6b2v2678h0" path="res://hud/user_settings_panel.tscn" id="12_eihw1"]
-[ext_resource type="PackedScene" uid="uid://dqwt31s3qnglp" path="res://vehicles/impuls/impuls.tscn" id="12_hsov8"]
-[ext_resource type="Script" uid="uid://ciyrwbjgc1mu2" path="res://addons/libmaszyna/maszyna_track_3d.gd" id="12_m0qth"]
-[ext_resource type="PackedScene" uid="uid://xh8isp1j28uj" path="res://vehicles/tem2/tem2.tscn" id="13_fe5ju"]
 [ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libmaszyna/player/player.tscn" id="13_nxmm0"]
-[ext_resource type="Script" uid="uid://bami2gx4l6pyl" path="res://addons/libmaszyna/maszyna_switch_3d.gd" id="15_rrc65"]
-[ext_resource type="Script" uid="uid://cd0fdelf7u8gv" path="res://hud/top_bar.gd" id="17_l04v0"]
-[ext_resource type="PackedScene" uid="uid://dqg8w15j37q0" path="res://hud/mover_switches_uclist.tscn" id="20_5crau"]
 [ext_resource type="E3DModel" uid="uid://buxg17oldnjq6" path="res://e3d_models/dzik.e3d" id="21_sa6xs"]
-[ext_resource type="Script" uid="uid://do35jm13yiccm" path="res://addons/libmaszyna/traction/maszyna_traction_3d.gd" id="24_6m450"]
-[ext_resource type="Script" uid="uid://dotmfqnin31lo" path="res://addons/libmaszyna/traction/maszyna_traction_line.gd" id="25_jchga"]
-[ext_resource type="PackedScene" uid="uid://fv4an7lb63lu" path="res://vehicles/ep09/ep09.tscn" id="26_jchga"]
+[ext_resource type="Script" uid="uid://q5rsmctbnhqt" path="res://addons/libmaszyna/tracks/track_curve.gd" id="22_track_curve"]
+[ext_resource type="Script" uid="uid://crnc02lngpqkm" path="res://addons/libmaszyna/tracks/track_normal_3d.gd" id="23_track_normal"]
+[ext_resource type="Script" uid="uid://do35jm13yiccm" path="res://addons/libmaszyna/traction/traction_3d.gd" id="24_6m450"]
+[ext_resource type="Script" uid="uid://dotmfqnin31lo" path="res://addons/libmaszyna/traction/traction_line.gd" id="25_jchga"]
+[ext_resource type="Script" uid="uid://duaegoh4xg84s" path="res://addons/libmaszyna/tracks/track_switch_3d.gd" id="25_track_switch"]
+[ext_resource type="Material" uid="uid://bokq2xuaxcfw8" path="res://materials/impuls_head_display.tres" id="28_tdoik"]
+[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
+[ext_resource type="SignallingImplementation" path="res://signalling/demo_block_implementation.tres" id="demo_block_implementation"]
+[ext_resource type="Resource" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
+[ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
+[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="scenery_streamer"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_jcpdq"]
-shader = ExtResource("3_dcvyd")
-shader_parameter/sky_visible = true
-shader_parameter/color_correction = Vector2(0, 1)
-shader_parameter/ground_color = Color(0.3, 0.3, 0.3, 1)
-shader_parameter/horizon_offset = 0.0
-shader_parameter/atm_darkness = 0.5
-shader_parameter/atm_sun_intensity = 18.0
-shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
-shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
-shader_parameter/atm_night_tint = Color(0, 0, 0, 0)
-shader_parameter/atm_level_params = Vector3(1, 0, 0)
-shader_parameter/atm_thickness = 0.7
-shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
-shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
-shader_parameter/sun_light_color = Color(1, 1, 1, 1)
-shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
-shader_parameter/sun_disk_intensity = 30.0
-shader_parameter/sun_disk_size = 0.02
-shader_parameter/atm_sun_mie_tint = Color(1, 1, 1, 1)
-shader_parameter/atm_sun_mie_intensity = 1.0
-shader_parameter/atm_sun_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
-shader_parameter/moon_color = Color(1, 1, 1, 1)
-shader_parameter/moon_texture = ExtResource("6_wgi5e")
-shader_parameter/moon_texture_alignment = Vector3(7, 1.4, 4.8)
-shader_parameter/moon_texture_flip_u = false
-shader_parameter/moon_texture_flip_v = false
-shader_parameter/moon_size = 0.07
-shader_parameter/atm_moon_mie_tint = Color(0.137255, 0.184314, 0.292196, 1)
-shader_parameter/atm_moon_mie_intensity = 0.0
-shader_parameter/atm_moon_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
-shader_parameter/starmap_color = Color(0.709804, 0.709804, 0.709804, 0.854902)
-shader_parameter/starmap_texture = ExtResource("9_jg8su")
-shader_parameter/starmap_flip_u = false
-shader_parameter/starmap_flip_v = false
-shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
-shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -24.997255761896582
-shader_parameter/star_tilt = 48.7002036732051
-shader_parameter/star_field_color = Color(1, 1, 1, 1)
-shader_parameter/star_field_texture = ExtResource("8_mwrhi")
-shader_parameter/star_scintillation = 0.75
-shader_parameter/star_scintillation_speed = 0.01
-shader_parameter/noise_tex = ExtResource("7_iqpw1")
-shader_parameter/clouds_night_color = Color(0.090196, 0.094118, 0.129412, 1)
-shader_parameter/cirrus_visible = true
-shader_parameter/cirrus_intensity = 2.0
-shader_parameter/cirrus_coverage = 0.5
-shader_parameter/cirrus_thickness = 1.7
-shader_parameter/cirrus_absorption = 2.0
-shader_parameter/cirrus_sky_tint_fade = 0.5
-shader_parameter/cirrus_size = 1.0
-shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.14376585, 0.14376585)
-shader_parameter/cirrus_position2 = Vector2(0.14376585, 0.14376585)
-shader_parameter/cirrus_texture = ExtResource("4_ydfqx")
-shader_parameter/cumulus_visible = true
-shader_parameter/cumulus_intensity = 0.6
-shader_parameter/cumulus_coverage = 0.55
-shader_parameter/cumulus_thickness = 0.0243
-shader_parameter/cumulus_absorption = 2.0
-shader_parameter/cumulus_noise_freq = 2.7
-shader_parameter/cumulus_sky_tint_fade = 0.0
-shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(0.7187264, 0.7187264)
-shader_parameter/cumulus_texture = ExtResource("5_lnei4")
-shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
-shader_parameter/cumulus_mie_intensity = 1.0
-shader_parameter/show_azimuthal_grid = false
-shader_parameter/azimuthal_grid_color = Color(0.87058824, 0.72156864, 0.5294118, 1)
-shader_parameter/azimuthal_grid_rotation_offset = 0.03
-shader_parameter/show_equatorial_grid = false
-shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
-shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(-0.39154297, 0.92014587, 0.0050769895, -0.39856035, -0.16461825, -0.9022476, -0.82936347, -0.35529214, 0.4311888)
+[sub_resource type="ProceduralSkyMaterial" id="DemoSkyMaterial"]
 
-[sub_resource type="Sky" id="Sky_hntck"]
-sky_material = SubResource("ShaderMaterial_jcpdq")
+[sub_resource type="Sky" id="DemoSky"]
+sky_material = SubResource("DemoSkyMaterial")
 
-[sub_resource type="Environment" id="Environment_3o33i"]
+[sub_resource type="Environment" id="DemoEnvironment"]
 background_mode = 2
-sky = SubResource("Sky_hntck")
-ambient_light_source = 3
-ambient_light_color = Color(1, 1, 1, 1)
-reflected_light_source = 2
+sky = SubResource("DemoSky")
 tonemap_mode = 4
-tonemap_white = 6.0
-tonemap_agx_white = 6.19
-tonemap_agx_contrast = 1.55
-ssr_enabled = true
-ssao_enabled = true
-ssil_enabled = true
-sdfgi_enabled = true
-glow_enabled = true
-fog_enabled = true
-fog_mode = 1
-fog_light_color = Color(0.3605356, 0.39691955, 0.44612736, 1)
-fog_light_energy = 0.7
-fog_sun_scatter = 0.07
-fog_density = 0.2
-fog_sky_affect = 0.1
-fog_depth_begin = 200.0
-fog_depth_end = 1000.0
-volumetric_fog_enabled = true
-volumetric_fog_density = 0.001
-volumetric_fog_anisotropy = 0.0
-volumetric_fog_length = 6.5
-volumetric_fog_detail_spread = 1.0
-volumetric_fog_sky_affect = 0.47
-adjustment_enabled = true
+tonemap_agx_contrast = 1.0
 
-[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_q5r6x"]
+[sub_resource type="Resource" id="TrackCurve_common"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, -136)
+p2 = Vector3(-25.8, 0, 100)
 
-[sub_resource type="Curve3D" id="Curve3D_esmlu"]
-bake_interval = 1.0
-_data = {
-"points": PackedVector3Array(0, 0, 0, 1.747859, 0, -10.183362, -23.444, 0, 147.67, -0.66759187, 0, 10.310684, 0.5981633, 0, -9.238388, -18.450117, 0, 118.57468, 0, 0, 0, 0, 0, 0, -19.849932, 0, 92.16108, -0.32857656, 0, 20.483587, 0.2021752, 0, -12.603679, -23.086369, 0, 33.718567, -4.9744463, 0, 11.582247, 9.18649, 0, -21.389355, -18.339779, 0, -1.9824181, -18.185575, 0, 14.532068, 44.758102, 0, -35.766136, 16.563, 0, -58.599, -57.281147, 0, 1.1720206, 59.472244, 0, -1.2168522, 157.24503, 0, -142.292, -52.9003, 0, -27.202703, 0, 0, 0, 308.38873, 0, -64.57),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0)
-}
-point_count = 8
+[sub_resource type="Resource" id="TrackCurve_diverging"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-19.19, 0, -100)
+p2 = Vector3(-19.19, 0, 70)
 
-[sub_resource type="Curve3D" id="Curve3D_qg2pq"]
-bake_interval = 1.0
-_data = {
-"points": PackedVector3Array(0, 0, 0, 0.33323526, 0, -1.6563102, -23.444, 0, 147.67, -0.4298226, 0, 1.6339101, 2.5139513, 0, -9.556432, -22.4919, 0, 142.93768, -1.8886186, 0, 9.699405, 0.873898, 0, -4.48809, -15.035694, 0, 115.70701, 0.22356537, 0, 4.5669103, -0.8960822, 0, -18.304832, -14.647063, 0, 102.64885, 1.2548047, 0, 18.283747, 0, 0, 0, -18.23222, 0, 50.409576),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0)
-}
-point_count = 5
+[sub_resource type="Resource" id="TrackCurve_start"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, 236)
+p2 = Vector3(-25.8, 0, 536)
 
-[sub_resource type="Curve3D" id="Curve3D_rrc65"]
-bake_interval = 1.0
-_data = {
-"points": PackedVector3Array(0, 0, 0, 1.1770676, 0, -46.7242, -28.74, 0, 300, 0, 0, 0, 0, 0, 0, -25.37695, 0, 166.50227, -0.114873014, 0, 1.8130357, 0.13763739, 0, -2.172325, -25.246233, 0, 161.31343, -0.28505298, 0, 2.1579351, 0.34607038, 0, -2.6198547, -24.655928, 0, 155.12242, -0.4241746, 0, 2.608348, 0, 0, 0, -23.444, 0, 147.67),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0)
-}
-point_count = 5
+[sub_resource type="Resource" id="TrackCurve_switch_diverging"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, 236)
+c1 = Vector3(0, 0, -35.333)
+c2 = Vector3(0, 0, 35.333)
+p2 = Vector3(-19.19, 0, 130)
+
+[sub_resource type="Resource" id="TrackCurve_switch_common"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, 236)
+p2 = Vector3(-25.8, 0, 136)
+
+[sub_resource type="Resource" id="TrackCurve_switch2_diverging"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-19.19, 0, 130)
+c1 = Vector3(0, 0, -16.667)
+c2 = Vector3(0, 0, 16.667)
+p2 = Vector3(-12.53, 0, 80)
+
+[sub_resource type="Resource" id="TrackCurve_switch2_common"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-19.19, 0, 130)
+p2 = Vector3(-19.19, 0, 70)
+
+[sub_resource type="Resource" id="TrackCurve_diverging2"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-12.53, 0, -100)
+p2 = Vector3(-12.53, 0, 80)
+
+[sub_resource type="Resource" id="TrackCurve_left_switch_diverging"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, 136)
+c1 = Vector3(0, 0, -11.205)
+c2 = Vector3(0, 0, 10.675)
+p2 = Vector3(-32.5, 0, 100)
+
+[sub_resource type="Resource" id="TrackCurve_left_switch_common"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-25.8, 0, 136)
+p2 = Vector3(-25.8, 0, 100)
+
+[sub_resource type="Resource" id="TrackCurve_left_diverging"]
+script = ExtResource("22_track_curve")
+p1 = Vector3(-32.5, 0, 100)
+p2 = Vector3(-32.5, 0, -100)
 
 [sub_resource type="Resource" id="Resource_6m450"]
 script = ExtResource("25_jchga")
@@ -189,186 +110,20 @@ metadata/_custom_type_script = "uid://dotmfqnin31lo"
 [node name="Demo3D" type="Node3D" unique_id=553602174]
 script = ExtResource("1_ut343")
 
-[node name="Sky3D" type="WorldEnvironment" parent="." unique_id=372214992]
-environment = SubResource("Environment_3o33i")
-camera_attributes = SubResource("CameraAttributesPractical_q5r6x")
-script = ExtResource("10_54dc2")
-editor_time_enabled = false
-current_time = 10.0
-minutes_per_day = 14.4
-wind_direction = 2.35619451204804
-metadata/_custom_type_script = "uid://deo0gxkmk2ahd"
-
-[node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=108589340]
-transform = Transform3D(-0.3490238, -0.60127556, 0.71878374, 0, 0.76701856, 0.6416249, -0.9371138, 0.22394237, -0.26770774, 0.71878374, 0.6416249, -0.26770774)
-shadow_enabled = true
-
-[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1723783332]
-transform = Transform3D(0, -0.55870944, -0.8293635, 0.77175844, 0.5274054, -0.35529217, 0.6359158, -0.6400683, 0.43118873, -0.82936347, -0.35529214, 0.4311887)
-light_color = Color(0.572549, 0.776471, 0.956863, 1)
-light_energy = 0.0
-
-[node name="SkyDome" type="Node" parent="Sky3D" unique_id=194103583]
-script = ExtResource("2_s0qy7")
-sun_azimuth = -1.2142671
-sun_altitude = -0.87418145
-moon_azimuth = -4.232946
-moon_altitude = -1.9340229
-wind_direction = 2.35619451204804
-
-[node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=1437780417]
-script = ExtResource("11_oupng")
-editor_time_enabled = false
-dome_path = NodePath("../SkyDome")
-minutes_per_day = 14.4
-current_time = 10.0
-day = 3
-month = 5
-year = 2026
-latitude = 50.271
-longitude = 19.04
-utc = 2.0
+[node name="SimulationRuntime" type="SimulationRuntime" parent="." unique_id=102396005]
 
 [node name="DebugMenuFPS" parent="." unique_id=28357571 instance=ExtResource("2_qg2pq")]
 
-[node name="TopBar" type="Container" parent="." unique_id=1102380660]
-self_modulate = Color(0.39215687, 0.39215687, 0.39215687, 0.1882353)
-clip_contents = true
-anchors_preset = 10
-anchor_right = 1.0
+[node name="DiagnosticsBar" type="MenuBar" parent="." unique_id=1447103033]
+offset_right = 120.0
 offset_bottom = 31.0
-grow_horizontal = 2
-script = ExtResource("17_l04v0")
-drag_enabled = false
-resize_enabled = false
-window_decorations = false
-allow_close = false
 
-[node name="HBoxContainer" type="HBoxContainer" parent="TopBar" unique_id=1216009355]
-clip_contents = true
-layout_mode = 2
+[node name="Diagnostics" type="PopupMenu" parent="DiagnosticsBar" unique_id=1149420873]
+unique_name_in_owner = true
+title = "Diagnostics"
 
-[node name="MenuBar" type="MenuBar" parent="TopBar/HBoxContainer" unique_id=2006595567]
-clip_contents = true
-layout_mode = 2
-
-[node name="PopupMenu" type="PopupMenu" parent="TopBar/HBoxContainer/MenuBar" unique_id=1597513232]
-title = "Controls"
-system_menu_id = 2
-
-[node name="ToggleAllControls" type="Button" parent="TopBar/HBoxContainer" unique_id=2090323336]
-clip_contents = true
-layout_mode = 2
-toggle_mode = true
-text = "Toggle controls"
-
-[node name="ControlWindows" type="Node" parent="." unique_id=104336370]
-
-[node name="General" type="Container" parent="ControlWindows" unique_id=1974252148]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 24.0
-offset_top = 467.0
-offset_right = 387.0
-offset_bottom = 721.0
-script = ExtResource("3_rrc65")
-title = "General"
-
-[node name="General" parent="ControlWindows/General" unique_id=1612449326 instance=ExtResource("3_l04v0")]
-clip_contents = true
-layout_mode = 2
-train_controller = NodePath("")
-
-[node name="Diesel" type="Container" parent="ControlWindows" unique_id=1842182184]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 405.0
-offset_top = 467.0
-offset_right = 555.0
-offset_bottom = 622.0
-script = ExtResource("3_rrc65")
-title = "Diesel"
-
-[node name="Diesel" parent="ControlWindows/Diesel" unique_id=1618493965 instance=ExtResource("4_lsqkb")]
-clip_contents = true
-layout_mode = 2
-
-[node name="Brakes" type="Container" parent="ControlWindows" unique_id=2108387886]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 579.0
-offset_top = 467.0
-offset_right = 753.0
-offset_bottom = 804.0
-script = ExtResource("3_rrc65")
-title = "Brakes"
-
-[node name="Brakes" parent="ControlWindows/Brakes" unique_id=207886123 instance=ExtResource("6_lsqkb")]
-clip_contents = true
-layout_mode = 2
-
-[node name="Doors" type="Container" parent="ControlWindows" unique_id=396795069]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 779.0
-offset_top = 467.0
-offset_right = 989.0
-offset_bottom = 804.0
-script = ExtResource("3_rrc65")
-title = "Doors"
-
-[node name="Doors" parent="ControlWindows/Doors" unique_id=1529964687 instance=ExtResource("7_t705k")]
-clip_contents = true
-layout_mode = 2
-
-[node name="Security" type="Container" parent="ControlWindows" unique_id=2063708692]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 1011.0
-offset_top = 467.0
-offset_right = 1231.0
-offset_bottom = 569.0
-script = ExtResource("3_rrc65")
-title = "Security"
-
-[node name="Security" parent="ControlWindows/Security" unique_id=628826945 instance=ExtResource("8_h5mje")]
-clip_contents = true
-layout_mode = 2
-
-[node name="UCList" type="Container" parent="ControlWindows" unique_id=901337577]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 1011.0
-offset_top = 467.0
-offset_right = 1231.0
-offset_bottom = 569.0
-script = ExtResource("3_rrc65")
-title = "Security"
-
-[node name="UCList2" parent="ControlWindows/UCList" unique_id=1787189492 instance=ExtResource("20_5crau")]
-clip_contents = true
-layout_mode = 2
-
-[node name="Gauges" type="Container" parent="ControlWindows" unique_id=833711953]
-top_level = true
-custom_minimum_size = Vector2(100, 50)
-clip_contents = true
-offset_left = 24.0
-offset_top = 823.0
-offset_right = 1396.0
-offset_bottom = 1061.0
-script = ExtResource("3_rrc65")
-title = "Gauges"
-
-[node name="Gauges" parent="ControlWindows/Gauges" unique_id=1086519321 instance=ExtResource("9_ss847")]
-clip_contents = true
-layout_mode = 2
+[node name="DebugHud" parent="." unique_id=194798435 instance=ExtResource("debug_hud_scene")]
+unique_name_in_owner = true
 
 [node name="DeveloperConsole" parent="." unique_id=495569075 instance=ExtResource("2_ig825")]
 visible = null
@@ -376,69 +131,158 @@ visible = null
 [node name="UserSettingsPanel" parent="." unique_id=1798306963 instance=ExtResource("12_eihw1")]
 
 [node name="MaszynaEnvironmentNode" type="Node" parent="." unique_id=1464463242]
+unique_name_in_owner = true
 script = ExtResource("2_py6pt")
 current_time = 10.0
-simulation_speed = 100.0
-time_of_day_path = NodePath("../Sky3D/TimeOfDay")
+timezone_offset = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1419385403]
+environment = SubResource("DemoEnvironment")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=912604814]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 50, 0)
+shadow_enabled = true
 
 [node name="Player" parent="." unique_id=423486079 instance=ExtResource("13_nxmm0")]
-transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, 21.04, 1.959, -18.089)
-controlled_vehicle_path = NodePath("../SM42-099")
+transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, -18.508982, 1.959, 168.0919)
+sfx_bank = ExtResource("player_sfx_bank")
+
+[node name="SceneryStreamer" type="Node" parent="." unique_id=197017765 node_paths=PackedStringArray("camera")]
+script = ExtResource("scenery_streamer")
+active = true
+camera = NodePath("../Player/FreeCamera3D")
+
+[node name="ImpulsTrainset" type="Node3D" parent="." unique_id=1580396332]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)
+script = ExtResource("9_ss847")
+start_track_name = "diverging2"
+start_track_offset = 149.24
+couplings = Array[int]([255, 255, 255])
+velocity = 20.0
+metadata/_custom_type_script = "uid://onxj3ocy4jip"
+
+[node name="Impuls-024a" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=300782032]
+head_display_material = ExtResource("28_tdoik")
+transform = Transform3D(-1, 0, 1.2779545607196068e-16, 0, 1, 0, -1.2779545607196068e-16, 0, -1, -11.923031099999998, 0.6616861199999999, 38.14975780000001)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/impuls_v1"
+file_name = "36wea-a_kd"
+skin = "36wea-019a"
+vehicle_id = "impuls-a"
+metadata/_custom_type_script = "uid://djd17om24oh3s"
+
+[node name="Impuls-024b" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1161615865]
+head_display_material = ExtResource("28_tdoik")
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, 19.659757800000012)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/impuls_v1"
+file_name = "31wea-b_kd"
+skin = "36wea-019b,1|36wea-019b,2|36wea-019b,3|36wea-019c,4"
+vehicle_id = "impuls-b"
+metadata/_custom_type_script = "uid://djd17om24oh3s"
+
+[node name="Impuls-024c" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1550835407]
+head_display_material = ExtResource("28_tdoik")
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, 3.739757800000011)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/impuls_v1"
+file_name = "31wea-c_kd"
+skin = "36wea-019b,1|36wea-019c,2|36wea-019c,3|36wea-019c,4"
+vehicle_id = "impuls-c"
+metadata/_custom_type_script = "uid://djd17om24oh3s"
+
+[node name="Impuls-024d" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1037242744]
+head_display_material = ExtResource("28_tdoik")
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -14.750242199999997)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/impuls_v1"
+file_name = "31wea-d_kd"
+skin = "36wea-019a,1|36wea-019a,2|36wea-019a,3|36wea-019a,4"
+vehicle_id = "impuls-d"
+metadata/_custom_type_script = "uid://djd17om24oh3s"
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=1495808372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)
 material_override = ExtResource("2_imrpy")
 size = Vector3(5000, 0.1, 5000)
 
-[node name="SM42-099" parent="." unique_id=1125812614 instance=ExtResource("11_8gidn")]
-transform = Transform3D(-0.9996828, 0, 0.02518662, 0, 1, 0, -0.02518662, 0, -0.9996828, -25.735577, 0.16, 180.73814)
-lights = Dictionary[String, bool]({
-"endsignal12": false,
-"endsignal13": false,
-"endsignal22": true,
-"endsignal23": true,
-"headlamp11": true,
-"headlamp12": true,
-"headlamp13": true,
-"headlamp21": false,
-"headlamp22": false,
-"headlamp23": false
-})
+[node name="ST44-700" type="RailVehicle3D" parent="." unique_id=917708164]
+start_track_name = "left_diverging_track"
+start_track_offset = 100.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.5, 0.18, 0)
+script = ExtResource("29_dcvyd")
+data_path = "dynamic/pkp/st44_v2"
+file_name = "st44-700"
+skin = "st44-700"
+vehicle_id = "st44"
 
-[node name="Impuls" parent="." unique_id=2111644575 instance=ExtResource("12_hsov8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.021647027, -0.019251347, -4.3020163)
+[node name="SU45" type="RailVehicle3D" parent="." unique_id=1297199175]
+start_track_name = "common"
+start_track_offset = 120.0
+transform = Transform3D(-1, 0, 3.4492365813597056e-16, 0, 1, 0, -3.4492365813597056e-16, 0, -1, -25.799999999999997, 0.18, -16)
+script = ExtResource("29_dcvyd")
+data_path = "dynamic/pkp/su45_v2"
+file_name = "301d"
+skin = "301d-225"
+vehicle_id = "su45"
 
-[node name="TEM2" parent="." unique_id=803954038 instance=ExtResource("13_fe5ju")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.3788, 0, 0)
-lights = Dictionary[String, bool]({
-"endsignal12": true,
-"endsignal13": true,
-"endsignal22": false,
-"endsignal23": false,
-"endtab1": false,
-"endtab2": false,
-"headlamp11": false,
-"headlamp12": false,
-"headlamp13": false,
-"headlamp21": true,
-"headlamp22": true,
-"headlamp23": true
-})
+[node name="SM42" type="RailVehicle3D" parent="." unique_id=769861990]
+start_track_name = "left_diverging_track"
+start_track_offset = 180.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.5, 0.18, -80)
+script = ExtResource("29_dcvyd")
+data_path = "dynamic/pkp/sm42_v1"
+file_name = "6d1"
+skin = "6d-1076"
+vehicle_id = "sm42"
 
-[node name="EP09" parent="." unique_id=1451239513 instance=ExtResource("26_jchga")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.282572, -4.7683716e-07, 169.09251)
-lights = Dictionary[String, bool]({
-"endsignal12": true,
-"endsignal13": true,
-"endsignal22": false,
-"endsignal23": false,
-"headlamp11": false,
-"headlamp12": false,
-"headlamp13": false,
-"headlamp21": true,
-"headlamp22": true,
-"headlamp23": true
-})
+[node name="SM42-907" type="RailVehicle3D" parent="." unique_id=1204789574]
+start_track_name = "start"
+start_track_offset = 12.0
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -25.800000000000004, 0.18, 248)
+script = ExtResource("29_dcvyd")
+data_path = "dynamic/pkp/sm42_v1"
+file_name = "6da"
+skin = "6d-907"
+vehicle_id = "sm42-907"
+
+[node name="EP09" type="RailVehicle3D" parent="." unique_id=426636050]
+start_track_name = "left_diverging_track"
+start_track_offset = 50.0
+start_direction = 1
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -32.5, 0.18, 50)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/ep09_v1/"
+file_name = "104e_1"
+skin = "104e-035"
+vehicle_id = "ep09"
+
+[node name="SM31" type="RailVehicle3D" parent="." unique_id=162152882]
+start_track_name = "common"
+start_track_offset = 17.23
+transform = Transform3D(-1, 0, -2.711995174656872e-16, 0, 1, 0, 2.711995174656872e-16, 0, -1, -25.800000000000004, 0.18, -118.77)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/sm31_v1/"
+file_name = "411d"
+vehicle_id = "sm31"
+
+[node name="KA" type="RailVehicle3D" parent="." unique_id=754884786]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.631773, 0, 119.65934)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/road/clio"
+file_name = "clio"
+skin = "red"
+vehicle_id = "clio"
+
+[node name="TEM2-122" type="RailVehicle3D" parent="." unique_id=225663093]
+start_track_name = "diverging"
+start_track_offset = 112.0
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -19.19, 0.18, 12)
+script = ExtResource("29_dcvyd")
+data_path = "/dynamic/pkp/tem2_v2"
+file_name = "tem2-122a"
+skin = "tem2-122"
+vehicle_id = "tem2"
 
 [node name="Dekoracje" type="Node3D" parent="." unique_id=1893813040]
 
@@ -1215,57 +1059,250 @@ script = ExtResource("4_drlsl")
 model = ExtResource("21_sa6xs")
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[node name="MaszynaTrack3D" type="Path3D" parent="." unique_id=665070806]
-process_thread_group = 2
-process_thread_group_order = 0
-process_thread_messages = 0
-curve = SubResource("Curve3D_esmlu")
-script = ExtResource("12_m0qth")
-rail_spacing = 1.5
-sleeper_model_name = "models/quark/podklad1"
-sleeper_model_skin = "quark/podklad_betonowy1"
-sleeper_height = -0.25
-ballast_material = "tory/podsypka-2"
-ballast_offset = -0.1
-previous_track = NodePath("../MaszynaTrack3D3")
+[node name="SBL" type="VisualInstance3D" parent="Dekoracje" unique_id=1624308571]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1.0000000000000038, 0, 0, 0, 1, 0, 0, 0, 1.0000000000000038, -20.505828389161007, 0, 196.3552999344456)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("4_drlsl")
+lights_state = Dictionary[String, bool]({
+"00": false,
+"01": false,
+"02": false
+})
+data_path = "models/sem"
+model_filename = "sbl_3_p_zcp_ks_ds_03"
+metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[node name="MaszynaSwitch3D" type="Node3D" parent="." unique_id=364459163 node_paths=PackedStringArray("straight_track", "diverging_track", "common_track")]
-transform = Transform3D(-0.16263713, 0, -0.98668593, 0, 1, 0, 0.98668593, 0, -0.16263713, -18.468254, -0.04, 122.02463)
-script = ExtResource("15_rrc65")
-state = 1
-straight_track = NodePath("../MaszynaTrack3D")
-diverging_track = NodePath("../MaszynaTrack3D2")
-common_track = NodePath("../MaszynaTrack3D3")
-metadata/_custom_type_script = "uid://bami2gx4l6pyl"
+[node name="TrackExample" type="Node3D" parent="." unique_id=371000835]
 
-[node name="MaszynaTrack3D2" type="Path3D" parent="." unique_id=1426965910]
-curve = SubResource("Curve3D_qg2pq")
-script = ExtResource("12_m0qth")
-rail_spacing = 1.5
-sleeper_model_name = "models/quark/podklad1"
-sleeper_model_skin = "quark/podklad_betonowy1"
-sleeper_height = -0.25
-ballast_material = "tory/podsypka-2"
-ballast_offset = -0.1
-previous_track = NodePath("../MaszynaTrack3D3")
-metadata/_custom_type_script = "uid://ciyrwbjgc1mu2"
+[node name="CommonTrack" type="VisualInstance3D" parent="TrackExample" unique_id=136143682]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.8, 0, -18)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("23_track_normal")
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+track_name = "common"
+curve = SubResource("TrackCurve_common")
 
-[node name="MaszynaTrack3D3" type="Path3D" parent="." unique_id=1077451802]
-curve = SubResource("Curve3D_rrc65")
-script = ExtResource("12_m0qth")
-rail_spacing = 1.5
-sleeper_model_name = "models/quark/podklad1"
-sleeper_model_skin = "quark/podklad_betonowy1"
-sleeper_height = -0.25
-ballast_material = "tory/podsypka-2"
-ballast_offset = -0.1
-next_track = NodePath("../MaszynaSwitch3D")
-metadata/_custom_type_script = "uid://ciyrwbjgc1mu2"
+[node name="DivergingTrack" type="VisualInstance3D" parent="TrackExample" unique_id=309524581]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.19, 0, -15)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("23_track_normal")
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+track_name = "diverging"
+curve = SubResource("TrackCurve_diverging")
+
+[node name="StartTrack" type="VisualInstance3D" parent="TrackExample" unique_id=604604820]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.8, 0, 386)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("23_track_normal")
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+track_name = "start"
+curve = SubResource("TrackCurve_start")
+
+[node name="Switch" type="VisualInstance3D" parent="TrackExample" unique_id=240651396]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.495, 0, 183)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("25_track_switch")
+diverging_curve = SubResource("TrackCurve_switch_diverging")
+material1 = "rail_screw_used1"
+material2 = "rail_screw_used1"
+trackbed_material = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+curve = SubResource("TrackCurve_switch_common")
+
+[node name="Switch2" type="VisualInstance3D" parent="TrackExample" unique_id=1545905703]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.86, 0, 100)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("25_track_switch")
+diverging_curve = SubResource("TrackCurve_switch2_diverging")
+material1 = "rail_screw_used1"
+material2 = "rail_screw_used1"
+trackbed_material = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+curve = SubResource("TrackCurve_switch2_common")
+
+[node name="DivergingTrack2" type="VisualInstance3D" parent="TrackExample" unique_id=1784592109]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.53, 0, -10)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("23_track_normal")
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+track_name = "diverging2"
+curve = SubResource("TrackCurve_diverging2")
+
+[node name="LeftSwitch" type="VisualInstance3D" parent="TrackExample" unique_id=1173733212]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.15, 0, 118)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("25_track_switch")
+diverging_curve = SubResource("TrackCurve_left_switch_diverging")
+active_track = 1
+material1 = "rail_screw_used1"
+material2 = "rail_screw_used1"
+trackbed_material = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+curve = SubResource("TrackCurve_left_switch_common")
+
+[node name="LeftDivergingTrack" type="VisualInstance3D" parent="TrackExample" unique_id=1553601117]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.5, 0, 0)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+layers = 1
+script = ExtResource("23_track_normal")
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+track_name = "left_diverging_track"
+curve = SubResource("TrackCurve_left_diverging")
 
 [node name="TractionExample" type="Node3D" parent="." unique_id=2005792960]
 transform = Transform3D(0.99787855, -0.017198822, 0.06279014, 0.0174523, 0.99984163, -0.0034906515, -0.062720165, 0.0045790784, 0.99802065, -24.347713, 0, 28.925892)
 
-[node name="MaszynaTraction3D" type="Node3D" parent="TractionExample" unique_id=737516648]
+[node name="Traction3D" type="Node3D" parent="TractionExample" unique_id=737516648]
 transform = Transform3D(1, 0, 0, 0, 0.999979, -0.00651009, 0, 0.00651009, 0.999979, 0, 0, 0)
 script = ExtResource("24_6m450")
 wires = 1
@@ -1376,5 +1413,21 @@ model_filename = "tra/-3d"
 skins = ["tra/betonrelief1"]
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[connection signal="index_pressed" from="TopBar/HBoxContainer/MenuBar/PopupMenu" to="." method="_on_popup_menu_index_pressed"]
-[connection signal="toggled" from="TopBar/HBoxContainer/ToggleAllControls" to="." method="_on_show_all_controls_button_toggled"]
+[node name="SBLSignal" type="SignalHeadNode" parent="." unique_id=880412397 node_paths=PackedStringArray("model")]
+signal_head_name = &"demo_sbl"
+model = NodePath("../Dekoracje/SBL")
+kind = ExtResource("sbl_3_kind")
+aspect = &"S1"
+
+[node name="DemoBlock" type="SignallingSystemNode" parent="." unique_id=1340977105]
+implementation = ExtResource("demo_block_implementation")
+signal_head_names = PackedStringArray("demo_sbl")
+
+[node name="AspectCycle" type="Timer" parent="." unique_id=517233640]
+wait_time = 5.0
+autostart = true
+
+[connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="." method="_on_diagnostics_menu_index_pressed"]
+[connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="DebugHud" method="menu_index_pressed"]
+[connection signal="camera_changed" from="Player" to="SceneryStreamer" method="set_camera"]
+[connection signal="timeout" from="AspectCycle" to="DemoBlock" method="send_event" binds= [&"next"]]

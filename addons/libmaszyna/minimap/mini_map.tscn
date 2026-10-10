@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://b1d2e3f4g5h6j"]
+
+[ext_resource type="Script" uid="uid://dia23jiidpxd2" path="res://addons/libmaszyna/minimap/mini_map.gd" id="1_map"]
+
+[node name="MiniMapControl" type="Control" unique_id=471890477]
+clip_contents = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_map")
+
+[node name="UIContainer" type="HBoxContainer" parent="." unique_id=782607786]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -60.0
+offset_bottom = 31.0
+grow_horizontal = 0
+
+[node name="BtnZoomIn" type="Button" parent="UIContainer" unique_id=1354612765]
+layout_mode = 2
+focus_mode = 0
+text = "+"
+
+[node name="BtnZoomOut" type="Button" parent="UIContainer" unique_id=1555153075]
+layout_mode = 2
+focus_mode = 0
+text = "-"
+
+[node name="BtnReset" type="Button" parent="UIContainer" unique_id=861133088]
+layout_mode = 2
+focus_mode = 0
+text = "R"

@@ -1,0 +1,1 @@
+Doors: OpenCtrl=Mixed CloseCtrl=DriverCtrl OpenSpeed=0.42 CloseSpeed=0.35 DoorCloseDelay=2.90 DoorMaxShiftL=0.57 DoorMaxShiftR=0.57 DoorOpenMethod=Shift DoorClosureWarning=Yes DoorClosureWarningAuto=Yes DoorBlocked=Yes DoorNeedPermit=Yes DoorAutoCloseVel=10.0

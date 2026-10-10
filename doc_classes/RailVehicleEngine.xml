@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleEngine" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Core engine class. Contains most common things for all of available engine types
+	</brief_description>
+	<description>
+		Core engine class
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_angle" qualifiers="const">
+			<return type="float" />
+			<description>
+				The engine's turn [rad]: its revolutions summed (eAngle, Mover.cpp:5554) - what a pendulum swings by (DynObj.cpp:1121-1125).
+			</description>
+		</method>
+		<method name="get_circuit_nmax_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_circuit_rlist_size" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_current0" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_current1" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_current2" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_damage" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_eimic_real" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_no_power_pos" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_switch_closable" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_switch_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_switch_time" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_blowers_active" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_blowers_disabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_blowers_enabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_overload_relay_high_threshold" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_torque" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_power" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_relay_ground" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_relay_novolt" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_relay_overvoltage" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rpm_count" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rpm_ratio" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tractive_force" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_transmission_ratio" qualifiers="const">
+			<return type="float" />
+			<description>
+				Wheel gear teeth over motor gear teeth, [code]1.0[/code] without a gear.
+			</description>
+		</method>
+		<method name="get_type" qualifiers="const">
+			<return type="int" enum="RailVehicleEngine.EngineType" />
+			<description>
+			</description>
+		</method>
+		<method name="get_wheel_force" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_wheel_torque" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="main_switch">
+			<return type="bool" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Operate main switch immediately (vehicle level, no cab hold logic). Returns whether the main switch state was changed.
+			</description>
+		</method>
+		<method name="motor_blowers">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+			</description>
+		</method>
+		<method name="motor_blowers_switch_off">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+			</description>
+		</method>
+		<method name="motor_overload_relay_threshold">
+			<return type="bool" />
+			<param index="0" name="high" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cntrl_auto_relay_mode" type="int" setter="set_cntrl_auto_relay_mode" getter="get_cntrl_auto_relay_mode" enum="RailVehicleEngine.AutoRelayMode">
+			[code]Cntrl.AutoRelay[/code]
+		</member>
+		<member name="cntrl_eim_control_additional_zeros" type="bool" setter="set_cntrl_eim_control_additional_zeros" getter="get_cntrl_eim_control_additional_zeros">
+			[code]Cntrl.EIMCtrlAddZeros[/code]
+		</member>
+		<member name="cntrl_eim_control_emergency" type="bool" setter="set_cntrl_eim_control_emergency" getter="get_cntrl_eim_control_emergency">
+			[code]Cntrl.EIMCtrlEmergency[/code]
+		</member>
+		<member name="cntrl_eim_control_type" type="int" setter="set_cntrl_eim_control_type" getter="get_cntrl_eim_control_type" enum="RailVehicleEngine.EimControlType">
+			[code]Cntrl.EIMCtrlType[/code]
+		</member>
+		<member name="cntrl_fast_series_circuit" type="bool" setter="set_cntrl_fast_series_circuit" getter="get_cntrl_fast_series_circuit">
+			[code]Cntrl.FSCircuit[/code]
+		</member>
+		<member name="cntrl_has_camshaft" type="bool" setter="set_cntrl_has_camshaft" getter="get_cntrl_has_camshaft">
+			[code]Cntrl.Camshaft[/code]
+		</member>
+		<member name="cntrl_series_shunt_on_series_position" type="bool" setter="set_cntrl_series_shunt_on_series_position" getter="get_cntrl_series_shunt_on_series_position">
+			[code]Cntrl.ScndS[/code]
+		</member>
+		<member name="inverters_count" type="int" setter="set_inverters_count" getter="get_inverters_count">
+			[code]Engine:InvNo[/code]
+			Number of inverters powering the vehicle.
+		</member>
+		<member name="main_init_time" type="float" setter="set_main_init_time" getter="get_main_init_time">
+		</member>
+		<member name="maximum_traction_force" type="float" setter="set_maximum_traction_force" getter="get_maximum_traction_force">
+			[code]Engine:Ftmax[/code]
+			Maximum traction force, in kN.
+		</member>
+		<member name="motor_blowers_speed" type="float" setter="set_motor_blowers_speed" getter="get_motor_blowers_speed">
+			[code]Engine:MotorBlowersSpeed[/code]
+			Motor cooling fan speed: a positive value is a multiplier of the main engine's RPM, a negative value is a
+			fixed RPM.
+		</member>
+		<member name="motor_blowers_start_mode" type="int" setter="set_motor_blowers_start_mode" getter="get_motor_blowers_start_mode" enum="RailVehicleController.StartMode">
+			[code]Cntrl.MotorBlowersStart[/code]
+		</member>
+		<member name="motor_blowers_start_velocity" type="float" setter="set_motor_blowers_start_velocity" getter="get_motor_blowers_start_velocity">
+			[code]Engine:MotorBlowersStartVelocity[/code]
+			Vehicle velocity at which the motor cooling fans start.
+		</member>
+		<member name="motor_blowers_sustain_time" type="float" setter="set_motor_blowers_sustain_time" getter="get_motor_blowers_sustain_time">
+			[code]Engine:MotorBlowersSustainTime[/code]
+			How long the motor cooling fans keep running after being switched off.
+		</member>
+		<member name="motor_param_table" type="RailVehicleMotorParameter[]" setter="set_motor_param_table" getter="get_motor_param_table">
+			[code]MotorParamTable[/code]
+			FIXME: original FIZ file has multiple MotorParamTable sections depending of the engine type. Their values are parsed individually. This property should be a part of a specific train engine.
+		</member>
+		<member name="pressure_switch_present" type="bool" setter="set_pressure_switch_present" getter="get_pressure_switch_present">
+			[code]Engine:PressureSwitch[/code]
+			Whether the contactors have a pressure switch (requiring sufficient pipe/cylinder pressure to close).
+		</member>
+		<member name="transmission_efficiency" type="float" setter="set_transmission_efficiency" getter="get_transmission_efficiency">
+			[code]Engine:TransEff[/code]
+			Gearbox transmission efficiency.
+		</member>
+		<member name="transmission_gear_teeth_motor" type="int" setter="set_transmission_gear_teeth_motor" getter="get_transmission_gear_teeth_motor">
+			[code]Engine:Trans[/code]
+			Number of teeth on the motor side of the gearbox (the [code]X[/code] in the FIZ file's [code]X:Y[/code]
+			ratio format).
+		</member>
+		<member name="transmission_gear_teeth_wheel" type="int" setter="set_transmission_gear_teeth_wheel" getter="get_transmission_gear_teeth_wheel">
+			[code]Engine:Trans[/code]
+			Number of teeth on the wheel side of the gearbox (the [code]Y[/code] in the FIZ file's [code]X:Y[/code]
+			ratio format).
+		</member>
+	</members>
+	<signals>
+		<signal name="engine_start">
+			<description>
+				Emitted when the engine has started
+			</description>
+		</signal>
+		<signal name="engine_stop">
+			<description>
+				Emitted when the engine has stopped
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="NONE" value="0" enum="EngineType">
+			No engine is on the train/vehicle
+		</constant>
+		<constant name="DUMB" value="1" enum="EngineType">
+			Dumb
+		</constant>
+		<constant name="WHEELS_DRIVEN" value="2" enum="EngineType">
+			Wheels driven
+		</constant>
+		<constant name="ELECTRIC_SERIES_MOTOR" value="3" enum="EngineType">
+			Electric series motor
+		</constant>
+		<constant name="ELECTRIC_INDUCTION_MOTOR" value="4" enum="EngineType">
+			Electric induction motor
+		</constant>
+		<constant name="DIESEL" value="5" enum="EngineType">
+			Diesel engine
+		</constant>
+		<constant name="STEAM" value="6" enum="EngineType">
+			Steam engine
+		</constant>
+		<constant name="DIESEL_ELECTRIC" value="7" enum="EngineType">
+			Diesel-electric engine
+		</constant>
+		<constant name="MAIN" value="8" enum="EngineType">
+			Main
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_0" value="0" enum="EimControlType">
+			EIM traction lever variant 0.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_1" value="1" enum="EimControlType">
+			EIM traction lever variant 1.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_2" value="2" enum="EimControlType">
+			EIM traction lever variant 2.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_3" value="3" enum="EimControlType">
+			EIM traction lever variant 3.
+		</constant>
+		<constant name="AUTO_RELAY_NO" value="0" enum="AutoRelayMode">
+			No automatic starting relay.
+		</constant>
+		<constant name="AUTO_RELAY_YES" value="1" enum="AutoRelayMode">
+			Automatic starting relay present.
+		</constant>
+		<constant name="AUTO_RELAY_OPTIONAL" value="2" enum="AutoRelayMode">
+			Automatic starting relay present, driver-toggleable.
+		</constant>
+	</constants>
+</class>

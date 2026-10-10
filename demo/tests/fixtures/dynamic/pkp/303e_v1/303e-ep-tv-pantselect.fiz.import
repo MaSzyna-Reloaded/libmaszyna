@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://da38yptgtjkwn"
+path="res://.godot/imported/303e-ep-tv-pantselect.fiz-9eb6578a164e626173cc46308e1728f0.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/303e_v1/303e-ep-tv-pantselect.fiz"
+dest_files=["res://.godot/imported/303e-ep-tv-pantselect.fiz-9eb6578a164e626173cc46308e1728f0.res"]
+
+[params]
+

@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cabin_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_free">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_get_vehicle" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="cabin" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_has_person_role" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_list_persons" qualifiers="const">
+			<return type="VehiclePerson[]" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_person_change_role">
+			<return type="int" enum="Error" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_person_enter">
+			<return type="int" enum="Error" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_person_leave">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="cabin_person_move">
+			<return type="int" enum="Error" />
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="cabin" type="RID" />
+			<description>
+				The person over to another cabin, of the same vehicle or another one (a gangway), in the role it has. [constant ERR_UNAVAILABLE] for a driver going where one already drives.
+			</description>
+		</method>
+		<method name="controller_configure">
+			<return type="void" />
+			<param index="0" name="controller" type="RID" />
+			<param index="1" name="description" type="VehicleController" />
+			<description>
+			</description>
+		</method>
+		<method name="controller_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="controller_free">
+			<return type="void" />
+			<param index="0" name="controller" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="implementation_get_list" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="implementation_register">
+			<return type="void" />
+			<param index="0" name="name" type="StringName" />
+			<param index="1" name="implementation_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="implementation_unregister">
+			<return type="void" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="person_get_cabin" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="person_get_role" qualifiers="const">
+			<return type="int" enum="VehiclePersonRole.Role" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="person_get_vehicle" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="stepping_advance">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="stepping_is_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="stepping_set_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_bind_controller">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="controller" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_broadcast_command">
+			<return type="void" />
+			<param index="0" name="command" type="StringName" />
+			<param index="1" name="p1" type="Variant" default="null" />
+			<param index="2" name="p2" type="Variant" default="null" />
+			<description>
+				Sends [param command] to every vehicle that has it. Reports an error when no vehicle does.
+			</description>
+		</method>
+		<method name="vehicle_cabin_attach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="cabin" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_cabin_detach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="cabin" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_component_get" qualifiers="const">
+			<return type="VehicleComponent" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="type" type="int" enum="VehicleComponentType.Type" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_dump_config" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_dump_state">
+			<return type="Dictionary" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_free">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_generic_component_find" qualifiers="const">
+			<return type="VehicleComponent[]" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="tag" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_cabin_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_cabins" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_commands" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Returns the commands [param vehicle] answers to.
+			</description>
+		</method>
+		<method name="vehicle_get_controller" qualifiers="const">
+			<return type="VehicleController" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The controller the vehicle runs on - the copy its simulation was built from, null without one.
+			</description>
+		</method>
+		<method name="vehicle_get_dimensions" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+				Returns the handles of every vehicle the server holds.
+			</description>
+		</method>
+		<method name="vehicle_get_speed" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_velocity" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_has_command" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="command" type="StringName" />
+			<description>
+				Returns [code]true[/code] when [param vehicle] answers to [param command] - a component that registers it is present.
+			</description>
+		</method>
+		<method name="vehicle_has_person_role" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_is_simulation_ready" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_list_persons" qualifiers="const">
+			<return type="VehiclePerson[]" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_send_command">
+			<return type="Variant" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="command" type="StringName" />
+			<param index="2" name="p1" type="Variant" default="null" />
+			<param index="3" name="p2" type="Variant" default="null" />
+			<description>
+				Sends [param command] to [param vehicle] by its handle and returns what its handler answered (whether the command was accepted), or [code]null[/code] when the vehicle has no such command. A vehicle is reached by its handle whatever its scenery name - use [method vehicle_get_rid_by_name] to find one by name.
+			</description>
+		</method>
+		<method name="vehicle_set_initial_velocity">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="velocity" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_set_name">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="cabin_person_entered">
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</signal>
+		<signal name="cabin_person_left">
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="cabin_person_moved">
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="cabin" type="RID" />
+			<param index="2" name="previous" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="cabin_person_role_changed">
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="person" type="RID" />
+			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_cabin_detached">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="cabin" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_command_received">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="p1" type="Variant" />
+			<param index="3" name="p2" type="Variant" />
+			<description>
+				A command ran against [param vehicle].
+			</description>
+		</signal>
+		<signal name="vehicle_config_changed">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_configured">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_controller_changed">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_freed">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				[param vehicle] was freed; its handle is not reused.
+			</description>
+		</signal>
+		<signal name="vehicle_moved">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="position" type="Vector3" />
+			<description>
+				[param vehicle] moved to [param position].
+			</description>
+		</signal>
+	</signals>
+</class>

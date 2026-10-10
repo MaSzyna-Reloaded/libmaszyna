@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://3tf14wm3r5pr"
+path="res://.godot/imported/e6act-001.fiz-f9aef48c0b50b88640d92c66a357391f.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/e6act_v1/e6act-001.fiz"
+dest_files=["res://.godot/imported/e6act-001.fiz-f9aef48c0b50b88640d92c66a357391f.res"]
+
+[params]
+

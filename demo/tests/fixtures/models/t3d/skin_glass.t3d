@@ -1,0 +1,31 @@
+//---------------------------------------------------------------------------------
+// an indexed quad swaying in the wind, like models/grass_l61/*.t3d
+Parent: none
+Type: Mesh
+Name: Grass
+Anim: wind
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 10 10 10
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 0
+Map: replacableskin
+MaxDistance: 300
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 0 1
+
+NumIndices: 6
+0 1 2
+3 2 1
+
+NumVerts: 4
+0 0 0  0 -1 0  0 1  1 0 0 1
+1 0 0  0 -1 0  1 1  1 0 0 1
+0 0 2  0 -1 0  0 0  1 0 0 1
+1 0 2  0 -1 0  1 0  1 0 0 1

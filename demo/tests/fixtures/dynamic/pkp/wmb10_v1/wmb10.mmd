@@ -1,0 +1,143 @@
+models: wmb10.t3d
+animations: 3 0 0 4 0 0 -1
+lowpolyinterior: lowpolyint.t3d
+animwheelprefix: wheel0
+endmodels
+
+locations:
+ bogies: -2.55 2.57 end
+endlocations
+
+sounds:
+wheel_clatter: 70 -2.22 697_wm10_stukot.wav 2.57 697_wm10_stukot.wav end
+curve: {
+ amplitudefactor: 0.5
+ amplitudeoffset: 0.5 
+ range: 50
+ crossfade: 75
+ sound1: silence1.wav
+ sound15: 20786_104e_curve_2.wav
+ sound40: 20786_104e_curve_2.wav
+ sound60: 26284_curve-mix.wav
+ sound80: silence1.wav }
+engine: {
+ amplitudefactor: 2
+ amplitudeoffset: 1.9
+ frequencyfactor: 0.1
+ frequencyoffset: 0.55 
+ placement: external
+ range: 120
+ crossfade: 90
+ soundend: andoria_sw400_release.flac
+ sound40: silence1.wav pitch40: 300
+ sound110: 697_wm10_idle1.wav pitch110: 575
+ sound190: 697_wm10_idle2.wav pitch190: 1000
+ sound800: 697_wm10_idle2.wav pitch800: 5400 }
+horn1: 697_wm10_horn1.wav 697_wm10_horn2.wav 697_wm10_horn3.wav 500
+brake: {
+ amplitudefactor: 0.5
+ amplitudeoffset: 0.2
+ range: 30
+ crossfade: 50
+ sound1: disc_brake_1.wav
+ sound5: disc_brake_1.wav 
+ sound7: silence1.wav 
+ sound20: silence1.wav }
+ outernoise: { range: 90 soundmain: runningnoise.wav }
+
+endsounds 
+
+internaldata:
+ctrlscnd: schalthebel_gasse_r.wav
+buzzer: bzyczek4.wav
+relay: pss.wav
+pneumaticrelay: pneumaticrelay.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+ignition: { range: 150 soundmain: 697_autosan_andoria_ignition.wav }
+brakesound: 697_wm10_brake.wav 1.0 0.3 0.2 0.9
+airsound: silence1.wav 1000.0 -0.1 
+runningnoise: {
+ range: -1
+ amplitudefactor: 0.4
+ amplitudeoffset: 2.0
+ crossfade: 90
+ sound30: silence1.wav pitch30: 20
+ sound60: 697_wm10_runningnoise.wav pitch60: 60
+ sound200: silence1.wav pitch200: 200 }
+
+mechspring: 100 0.02 0.2 0.2 0.03 0.15  0.02 0.01
+enginespring: 1.2 200 0.3 1000 0.1
+jointcabs: true
+
+cab1definition:
+-1.4 0.9 1.25 1.4 0.8 3.45
+driver1pos:
+-0.80 2.36 2.476
+driver1sitpos:
+0.77 2.18 2.15
+cab1model: kabina_a.t3d
+
+cab2definition:
+-1.4 0.9 1.25 1.4 0.8 3.45
+driver2pos:
+-0.80 2.36 2.476
+driver2sitpos:
+0.77 2.18 2.55
+cab2model: kabina_b.t3d
+
+mainctrl: gaz1 rot -0.01 0.0 0.3
+dirkey: { sw-nawrotnik rot 0.07 0.0 0.15 soundinc: wmb10_swith_pakieciak.wav sounddec: wmb10_swith_pakieciak.wav }
+scndctrl: biegi rot 0.007 0.0 0.15
+localbrake: hamulec1 rot -0.01 0.0 0.3
+tachometern: ws_tacho rot -0.0083 0.332 1
+enrot1m: ws_obrotomierz rot -0.0136 0 1
+pipepress: ws_pg rot -0.5 0 1
+compressor: ws_zg rot -0.5 0 1
+water1temp: ws_woda rotvar 0.00055 -0.0694 0.1 100 0.0011
+oilpress: ws_olej rot -0.149 0.044 0.1
+
+main_sw: sw_zaplon rot -0.22 0 0.15
+cablight_sw: { sw-osw_kab rot 0.08 0.0 0.1 soundinc: wmb10_swith_3.wav sounddec: wmb10_swith.wav }
+trainheating_sw: { sw-nawiew_tyl rot 0.08 0.0 0.1 soundinc: wmb10_swith_3.wav sounddec: wmb10_swith.wav }
+lights_sw: { sw-kierunek_swiatel rot 0.04 0.0 0.1 soundinc: wmb10_swith_3.wav sounddec: wmb10_swith.wav }
+springbraketoggle_bt: { sw-ham_post rot 0.04 0.0 0.1 soundinc: wmb10_swith_3.wav sounddec: wmb10_swith.wav }
+hornlow_bt: bt_syrena mov -0.01 0 0.02
+radiochannel_sw: { swr-kanal rot -0.085 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiovolume_sw: { swr-glosnosc rot -0.7 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiostop_sw: radiostop mov -0.005 0 0
+radio_sw: { swr-wl mov -0.004 0.002 0.002 soundinc: 20786_203e_button_radio_3_on.wav sounddec: 20786_203e_button_radio_3_of.wav }
+radiocall3_sw: { swr-wywolanie3 mov -0.003 0 0.002 soundinc: 20786_203e_button_radio_3_on.wav sounddec: 20786_203e_button_radio_3_of.wav }
+universal1: ramie_drzwi_l wip 0.45 0 1.5
+universal2: ramie_drzwi_r wip -0.45 0 1.5
+universal3: { uchwyt_l1 mov 0.1 0 0.50 soundinc: 23180_105na_window1_open.wav sounddec: 23180_105na_window1_close.wav }
+universal4: { uchwyt_l2 mov 0.1 0 0.2 soundinc: 23180_105na_window2_open.wav sounddec: 23180_105na_window2_close.wav }
+universal5: { uchwyt_r1 mov 0.1 0 0.27 soundinc: 23180_105na_window3_open.wav sounddec: 23180_105na_window3_close.wav }
+universal6: { uchwyt_r2 mov 0.1 0 0.3 soundinc: 23180_105na_window4_open.wav sounddec: 23180_105na_window4_close.wav }
+universal7: { pokrywka_popielniczki rot 0.22 0 0.2 soundinc: ashtry_open.flac sounddec: ashtry_close.flac }
+
+i-cablight: ramka
+i-trainheating: i-12
+i-radio: ir-wl
+i-leftlight: i-02
+i-forward: i-03
+i-backward: i-04
+i-vent_trim: i-07
+
+distcounter: pulpit dgt 1 009552 0
+
+cab0definition:
+-1.4 0.9 1.25 1.4 0.8 3.45
+driver0pos:
+-0.80 2.36 2.476
+cab0model: kabina_0.t3d

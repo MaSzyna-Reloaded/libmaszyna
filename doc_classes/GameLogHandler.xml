@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GameLogHandler" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where the lines of a [GameLogger] go.
+	</brief_description>
+	<description>
+		Registered by name with [method GameLog.register_handler] and assigned to loggers with [method GameLog.assign_handler]; one handler may serve many loggers. The lines below [member min_level] are left out. Override [method _handle] in a script to handle the lines.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_handle" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="logger_id" type="String" />
+			<param index="1" name="loglevel" type="int" enum="GameLog.LogLevel" />
+			<param index="2" name="line" type="String" />
+			<description>
+				A line of the logger [param logger_id], at [member min_level] or above.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="min_level" type="int" setter="set_min_level" getter="get_min_level" enum="GameLog.LogLevel" default="0">
+			The lowest level of the lines handled.
+		</member>
+	</members>
+</class>

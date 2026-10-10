@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://ct4al6ma16ed3"]
+
+[ext_resource type="Script" uid="uid://bf434i6ru4ch" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_automation"]
+[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_event"]
+[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_clip.gd" id="3_clip"]
+[ext_resource type="AudioStream" uid="uid://dcqoys3eain4n" path="res://sounds/player/91512__timkahn__switch_01-on.wav" id="4_on"]
+[ext_resource type="AudioStream" uid="uid://bav38uivscj1o" path="res://sounds/player/91512__timkahn__switch_01-off.wav" id="5_off"]
+[ext_resource type="Script" uid="uid://dcy83smx1expw" path="res://addons/gnd_sfx/sfx_track.gd" id="5_ojjiu"]
+[ext_resource type="Script" uid="uid://dd8my4sifw81e" path="res://addons/gnd_sfx/sfx_parameter_modulation.gd" id="6_flhs4"]
+
+[sub_resource type="Curve" id="Curve_on"]
+_data = [Vector2(0.4764151, 0), 0.0, 0.0, 0, 0, Vector2(0.5023585, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_on"]
+script = ExtResource("3_clip")
+stream = ExtResource("4_on")
+fade_out_curve = SubResource("Curve_on")
+
+[sub_resource type="Curve" id="Curve_off"]
+_data = [Vector2(0.5023585, 0), 0.0, 0.0, 0, 0, Vector2(0.5070755, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Resource" id="Resource_off"]
+script = ExtResource("3_clip")
+stream = ExtResource("5_off")
+fade_in_curve = SubResource("Curve_off")
+
+[sub_resource type="Resource" id="Resource_toggle"]
+script = ExtResource("1_automation")
+parameter_name = &"toggle"
+clips = Array[ExtResource("3_clip")]([SubResource("Resource_on"), SubResource("Resource_off")])
+
+[sub_resource type="Resource" id="Resource_w1tak"]
+script = ExtResource("5_ojjiu")
+track_name = &"Master"
+
+[resource]
+script = ExtResource("2_event")
+master_track = SubResource("Resource_w1tak")
+name = &"flashlight"
+automations = Array[ExtResource("1_automation")]([SubResource("Resource_toggle")])

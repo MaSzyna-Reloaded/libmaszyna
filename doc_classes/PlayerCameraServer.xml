@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlayerCameraServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where the player looks from.
+	</brief_description>
+	<description>
+		The one owner of the player's view: the cab of the vehicle driven ([PlayerServer]), the free camera (walking) or the camera following a vehicle, which vehicle and in which view. Everything that changes the view - F4, Shift+F4 (drivermode.cpp:1244-1277, 803-804), the HUD, scripts ([code]maszyna.camera[/code]) - calls these operations by the vehicles' [RailVehicleServer] handles. The server holds the view and announces it; the cameras are the player's node's, which follows [signal camera_changed] and [signal camera_placed]. Named apart from Godot's own [code]CameraServer[/code] (camera feeds).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="camera_cycle_follow_view">
+			<return type="void" />
+			<description>
+				Shift+F4: following, the next view of [enum CameraFollowView]; else the vehicle the player drives is followed.
+			</description>
+		</method>
+		<method name="camera_get_follow_view" qualifiers="const">
+			<return type="int" enum="PlayerCameraServer.CameraFollowView" />
+			<description>
+				The view the following camera takes.
+			</description>
+		</method>
+		<method name="camera_get_mode" qualifiers="const">
+			<return type="int" enum="PlayerCameraServer.CameraMode" />
+			<description>
+				The view's mode.
+			</description>
+		</method>
+		<method name="camera_get_show_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Where [method camera_show_vehicle] puts the free camera: beside the vehicle, looking at it. The player's node starts following a far vehicle from there rather than flying to it.
+			</description>
+		</method>
+		<method name="camera_get_target" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The vehicle the following camera follows, an invalid [RID] for none.
+			</description>
+		</method>
+		<method name="camera_set_follow_view">
+			<return type="void" />
+			<param index="0" name="view" type="int" enum="PlayerCameraServer.CameraFollowView" />
+			<description>
+				The view the following camera takes; the camera following now takes it.
+			</description>
+		</method>
+		<method name="camera_set_mode">
+			<return type="void" />
+			<param index="0" name="mode" type="int" enum="PlayerCameraServer.CameraMode" />
+			<description>
+				The view from the cab (only with a vehicle driven), the free camera - going on from where the view was - or the following camera (only with a target).
+			</description>
+		</method>
+		<method name="camera_set_target">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The vehicle the following camera follows; following now, it follows this one. Cleared while following, the view becomes the free camera. A freed vehicle is cleared.
+			</description>
+		</method>
+		<method name="camera_show_vehicle">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The vehicle card's crosshair: the free camera stands beside the vehicle, at least 12 m away and further for a longer vehicle, looking at it. [signal camera_placed] comes before [signal camera_changed], so nothing following the view moves the camera elsewhere.
+			</description>
+		</method>
+		<method name="camera_toggle_cabin">
+			<return type="void" />
+			<description>
+				F4: from outside - following or walking - back into the cab of the vehicle driven (following with none, the free camera); in the cab, out of it - the player's node puts the free camera beside the vehicle (DistantView, drivermode.cpp:1060).
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="camera_changed">
+			<description>
+				The mode, the target or the follow view changed.
+			</description>
+		</signal>
+		<signal name="camera_placed">
+			<param index="0" name="transform" type="Transform3D" />
+			<description>
+				The free camera is to stand at [param transform].
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="CAMERA_MODE_CABIN" value="0" enum="CameraMode">
+			From the cab of the vehicle driven.
+		</constant>
+		<constant name="CAMERA_MODE_FREE" value="1" enum="CameraMode">
+			The free camera - the player walking.
+		</constant>
+		<constant name="CAMERA_MODE_FOLLOW" value="2" enum="CameraMode">
+			The following camera, following the target.
+		</constant>
+		<constant name="CAMERA_FOLLOW_VIEW_TRAINSET_FRONT" value="0" enum="CameraFollowView">
+			From ahead of the trainset.
+		</constant>
+		<constant name="CAMERA_FOLLOW_VIEW_TRAINSET_REAR" value="1" enum="CameraFollowView">
+			From behind the trainset.
+		</constant>
+		<constant name="CAMERA_FOLLOW_VIEW_BOGIE" value="2" enum="CameraFollowView">
+			At a bogie.
+		</constant>
+		<constant name="CAMERA_FOLLOW_VIEW_DRIVEBY" value="3" enum="CameraFollowView">
+			From a point beside the track the trainset drives by.
+		</constant>
+		<constant name="CAMERA_FOLLOW_VIEW_MAX" value="4" enum="CameraFollowView">
+			The number of the views.
+		</constant>
+	</constants>
+</class>

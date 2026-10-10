@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrackRouteSegment" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
+		</member>
+		<member name="length" type="float" setter="set_length" getter="get_length" default="0.0">
+		</member>
+		<member name="line_end" type="bool" setter="set_line_end" getter="get_line_end" default="false">
+		</member>
+		<member name="toward_end" type="bool" setter="set_toward_end" getter="get_toward_end" default="false">
+		</member>
+		<member name="track_rid" type="RID" setter="set_track_rid" getter="get_track_rid" default="RID()">
+		</member>
+		<member name="track_switch" type="bool" setter="set_track_switch" getter="get_track_switch" default="false">
+		</member>
+		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+		</member>
+	</members>
+</class>

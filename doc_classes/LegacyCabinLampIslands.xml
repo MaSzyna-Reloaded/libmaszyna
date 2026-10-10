@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LegacyCabinLampIslands" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Workaround for E3D cab models: the separate lamps of a cab lamp's mesh, a light to be put at each.
+	</brief_description>
+	<description>
+		A workaround for E3D cab models made for the original renderer, nothing of the original's: it lights a cab only with its ambient term, so a lamp of several bulbs (a dashboard backlight, a row of indicator dots) is one submodel there and the models do not say where the bulbs are. [method submodel_islands] guesses them from the mesh for [code]MmdCabinInstancer[/code], which puts a light at each.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="submodel_islands" qualifiers="static">
+			<return type="Dictionary[]" />
+			<param index="0" name="lamp" type="Node3D" />
+			<description>
+				The pieces of [param lamp]'s mesh and of the meshes under it. Triangles joined by a shared vertex are one piece, pieces nearer than 0.02 m are one lamp, and at most 16 are kept by merging the nearest. A mesh of more than 1024 pieces is a backlight of unwelded triangles, not bulbs, and gets one light at all of it. Each is [code]{position, color}[/code]: the global centre, and the average of the piece's texture over its UV bounds, weighted by alpha, tinted by the material's [code]albedo[/code] and brought to full brightness. A texture without colour channels leaves the tint alone.
+			</description>
+		</method>
+	</methods>
+</class>

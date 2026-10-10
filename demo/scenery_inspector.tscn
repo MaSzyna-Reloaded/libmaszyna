@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://b35jd5w5pa4rw"]
+
+[ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libmaszyna/environment/maszyna_environment_node.gd" id="1_gij37"]
+[ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libmaszyna/player/player.tscn" id="1_qu2xm"]
+[ext_resource type="Script" uid="uid://b1awg5iad35ss" path="res://addons/libmaszyna/legacy/scenery/maszyna_scenery.gd" id="1_y7igu"]
+[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="5_7xkf5"]
+[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_camera.gd" id="5_qu2xm"]
+[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="streamer"]
+
+[node name="SceneryInspector" type="Node3D" unique_id=2049876890]
+
+[node name="Player" parent="." unique_id=1819896729 instance=ExtResource("1_qu2xm")]
+
+[node name="MaszynaEnvironmentNode" type="Node" parent="." unique_id=2133298923]
+script = ExtResource("1_gij37")
+fog_enabled = false
+fog_distance = 174.0
+metadata/_custom_type_script = "uid://b0r5vydn7ve4l"
+
+[node name="MaszynaSceneryNode" type="Node3D" parent="." unique_id=2088471628]
+script = ExtResource("1_y7igu")
+filename = "td.scn"
+metadata/_custom_type_script = "uid://b1awg5iad35ss"
+
+[node name="FreeCamera3D" type="Camera3D" parent="." unique_id=456953431]
+script = ExtResource("5_qu2xm")
+enabled = false
+metadata/_custom_type_script = "uid://cqet31gklr3sb"
+
+[node name="SceneryStreamer" type="Node" parent="." unique_id=771436232 node_paths=PackedStringArray("camera")]
+script = ExtResource("streamer")
+active = true
+camera = NodePath("../FreeCamera3D")
+
+[node name="eaos_vrz-99" type="RailVehicle3D" parent="." unique_id=2115983144]
+start_track_name = "start"
+start_track_offset = 68.33593094200805
+transform = Transform3D(-1, 0, 3.3320018746253147e-18, 0, 1, 0, -3.3320018746253147e-18, 0, -1, 0.396825, 0.38, 204.44693094200804)
+script = ExtResource("5_7xkf5")
+data_path = "/dynamic/bdz/eaos_vrz-99_v1"
+file_name = "eaos_vrz-99"
+skin = "33525412083-5"
+
+[node name="181_pl3" type="RailVehicle3D" parent="." unique_id=376480136]
+start_track_name = "tdo_n25"
+start_track_offset = 27.233
+transform = Transform3D(-1, -1.8849527115281495e-32, 5.905441620346591e-18, -1.8849527115281495e-32, 1, 0, -5.905441620346591e-18, -1.1131478195043496e-49, -1, 0.396825, 0.38, 263.344)
+script = ExtResource("5_7xkf5")
+data_path = "/dynamic/cd/181_v2"
+file_name = "181_pl3"
+skin = "181_053-0'10"
+
+[node name="182_pl7" type="RailVehicle3D" parent="." unique_id=1114292565]
+start_track_name = "tor_st1_2"
+start_track_offset = 21.33998296739685
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 5.04488, 0.38, 486.33798296739684)
+script = ExtResource("5_7xkf5")
+data_path = "/dynamic/cd/181_v2"
+file_name = "182_pl7"
+skin = "182_115-6'17"
+
+[node name="SimulationRuntime" type="SimulationRuntime" parent="." unique_id=600815869]

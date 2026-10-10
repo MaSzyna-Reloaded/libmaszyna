@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleLoad" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A class that manages cargo loading and unloading operations for train cars.
+	</brief_description>
+	<description>
+		RailVehicleLoad class handles the loading and unloading operations for train cars. It provides functionality to manage cargo transfer speeds, load capacity, and different types of cargo units (tons or pieces). The class includes overload protection and supports various loading configurations through a list of load items.
+
+		Example usage:
+		[codeblock]
+		var train_load = RailVehicleLoad.new()
+		train_load.max_load = 50.0
+		train_load.load_unit = RailVehicleLoad.LOAD_UNIT_TONS
+		train_load.load_speed = 2.0
+		train_load.current_load = 25.0 # Load 25 tons of cargo
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_load_amount" qualifiers="const">
+			<return type="float" />
+			<description>
+				How much the vehicle carries now.
+			</description>
+		</method>
+		<method name="get_load_exchange_speed" qualifiers="const">
+			<return type="int" />
+			<description>
+				How many doors are open at the platform's side of the exchange - 0 while none is, and the exchange waits ([code]LoadExchangeSpeed()[/code], [code]DynObj.cpp:2855[/code]).
+			</description>
+		</method>
+		<method name="get_load_exchange_time" qualifiers="const">
+			<return type="float" />
+			<description>
+				The seconds the exchange still takes: what is still to get off at [member unload_speed] and to get on at [member load_speed], through the doors open at the platform - or, while none is, as fast as its side allows ([code]LoadExchangeTime()[/code], [code]DynObj.cpp:2843[/code]). 0 when there is nothing to exchange.
+			</description>
+		</method>
+		<method name="get_load_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				What the vehicle carries, empty for nothing.
+			</description>
+		</method>
+		<method name="load_add">
+			<return type="void" />
+			<param index="0" name="amount" type="float" />
+			<param index="1" name="side" type="int" enum="RailVehicleLoad.PlatformSide" />
+			<param index="2" name="load_name" type="String" />
+			<description>
+				So much more to get on at the platform's [param side], in the vehicle's own frame. An empty vehicle takes [param load_name] first, or the first load it accepts for an empty name ([code]station.cpp:49-54[/code]). Standing, the vehicle opens its doors at that side and takes a second's worth per open door; faster than 2 km/h it gives the exchange up; once done, passengers may close the doors they control ([code]TDynamicObject::update_exchange()[/code], [code]DynObj.cpp:2872-2960[/code]).
+			</description>
+		</method>
+		<method name="load_remove">
+			<return type="void" />
+			<param index="0" name="amount" type="float" />
+			<param index="1" name="side" type="int" enum="RailVehicleLoad.PlatformSide" />
+			<description>
+				So much more to get off at the platform's [param side], in the vehicle's own frame, before anything gets on; an emptied vehicle carries nothing ([code]TDynamicObject::LoadExchange()[/code], [code]DynObj.cpp:2813[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="accepted_loads" type="String[]" setter="set_accepted_loads" getter="get_accepted_loads" default="[]">
+			Type of cargo (pantstate — start with the pantograph raised on the electric locomotive).
+		</member>
+		<member name="load_list" type="RailVehicleLoadListItem[]" setter="set_load_list" getter="get_load_list" default="[]">
+			List of [code]RailVehicleLoadListItem[/code] resources specifying load parameters for each car separately
+		</member>
+		<member name="load_speed" type="float" setter="set_load_speed" getter="get_load_speed" default="0.0">
+			Rate at which cargo can be loaded per second.
+		</member>
+		<member name="load_unit" type="int" setter="set_load_unit" getter="get_load_unit" enum="RailVehicleLoad.LoadUnit" default="0">
+			Type of load unit being used (tons or pieces).
+		</member>
+		<member name="max_load" type="float" setter="set_max_load" getter="get_max_load" default="0.0">
+			Maximum amount of cargo load
+		</member>
+		<member name="minimum_load_offsets" type="float[]" setter="set_minimum_load_offsets" getter="get_minimum_load_offsets" default="[]">
+			Offset, in meters, of the cargo model at minimum loading. A negative value means a downward offset. If there are more cargos than offset values, the last specified value will be used for the remaining cargos.
+		</member>
+		<member name="overload_factor" type="float" setter="set_overload_factor" getter="get_overload_factor" default="0.0">
+			Percentage of vehicle's overload possibility (total number of places/number of seats)
+		</member>
+		<member name="unload_speed" type="float" setter="set_unload_speed" getter="get_unload_speed" default="0.0">
+			Rate at which cargo can be unloaded per second.
+		</member>
+	</members>
+	<signals>
+		<signal name="load_exchange_finished">
+			<description>
+				The exchange at a platform is over: everything got off and on, or the vehicle moved off and gave it up. Emitted once per exchange.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="LOAD_UNIT_TONS" value="0" enum="LoadUnit">
+			Load is measured in metric tons (1000 kilograms).
+		</constant>
+		<constant name="LOAD_UNIT_PIECES" value="1" enum="LoadUnit">
+			Load is measured in individual pieces or units.
+		</constant>
+		<constant name="PLATFORM_SIDE_LEFT" value="0" enum="PlatformSide">
+			The platform is on the vehicle's left.
+		</constant>
+		<constant name="PLATFORM_SIDE_RIGHT" value="1" enum="PlatformSide">
+			The platform is on the vehicle's right.
+		</constant>
+		<constant name="PLATFORM_SIDE_BOTH" value="2" enum="PlatformSide">
+			Platforms on both sides - the exchange goes twice as fast.
+		</constant>
+	</constants>
+</class>

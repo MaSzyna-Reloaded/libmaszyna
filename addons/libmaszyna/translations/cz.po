@@ -1,0 +1,155 @@
+# Strings of the wrapper's own that the game's catalogue (lang/*.po) does not have - the state of a
+# cab control shown under its caption, the development console, the scenery loading stages.
+# MaszynaTranslationServer merges them under the game's catalogue.
+# template.po lists every msgid, as the game's lang/template.po does, for a new language to start from.
+msgid ""
+msgstr ""
+"Language: cz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "forward"
+msgstr "vpřed"
+
+msgid "neutral"
+msgstr "neutrál"
+
+msgid "backward"
+msgstr "vzad"
+
+msgid "on"
+msgstr "zap."
+
+msgid "off"
+msgstr "vyp."
+
+msgid "pressed"
+msgstr "stisknuto"
+
+msgid "released"
+msgstr "uvolněno"
+
+msgid "high tone"
+msgstr "vysoký tón"
+
+msgid "low tone"
+msgstr "nízký tón"
+
+msgid "filling"
+msgstr "plnění"
+
+msgid "drive"
+msgstr "jízda"
+
+msgid "cutoff"
+msgstr "závěr"
+
+msgid "first braking step"
+msgstr "první brzdový stupeň"
+
+msgid "full braking"
+msgstr "plné brzdění"
+
+msgid "emergency braking"
+msgstr "rychločinné brzdění"
+
+# the development console
+
+msgid "Development console."
+msgstr "Vývojářská konzole."
+
+msgid "Enter \"help\" for instructions"
+msgstr "Zadejte \"help\" pro nápovědu"
+
+msgid "Too few arguments! Required < %d >"
+msgstr "Příliš málo argumentů! Vyžadováno < %d >"
+
+msgid "Too many arguments! < %d > Max"
+msgstr "Příliš mnoho argumentů! Max. < %d >"
+
+msgid "Command not found."
+msgstr "Příkaz nenalezen."
+
+msgid "Exit game"
+msgstr "Ukončit hru"
+
+msgid "Clear console"
+msgstr "Vymazat konzoli"
+
+msgid "Delete console history"
+msgstr "Smazat historii konzole"
+
+msgid "Print this help"
+msgstr "Vypsat tuto nápovědu"
+
+msgid "Broadcast message to all trains"
+msgstr "Odeslat zprávu všem vlakům"
+
+msgid "Send message to a train"
+msgstr "Odeslat zprávu vlaku"
+
+msgid "List trains"
+msgstr "Seznam vlaků"
+
+msgid "List available train commands"
+msgstr "Seznam dostupných příkazů vlaku"
+
+msgid "Get train state / parameter"
+msgstr "Zjistit stav / parametr vlaku"
+
+msgid "Get train config property"
+msgstr "Zjistit vlastnost konfigurace vlaku"
+
+msgid "List train config properties"
+msgstr "Seznam vlastností konfigurace vlaku"
+
+msgid "Occupied cabin: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+msgstr "Obsazená kabina: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+
+# loading a scenery, under the loading screen's progress bar
+
+msgid "Parsing %s"
+msgstr "Zpracování %s"
+
+msgid "Reading cache"
+msgstr "Čtení mezipaměti"
+
+msgid "Saving cache"
+msgstr "Ukládání mezipaměti"
+
+msgid "Registering tracks and traction"
+msgstr "Registrace kolejí a trakčního vedení"
+
+msgid "Registering tracks"
+msgstr "Registrace kolejí"
+
+msgid "Registering traction"
+msgstr "Registrace trakčního vedení"
+
+msgid "Registering %s"
+msgstr "Registrace %s"
+
+msgid "Building terrain"
+msgstr "Sestavování terénu"
+
+msgid "Registering terrain"
+msgstr "Registrace terénu"
+
+msgid "Instancing objects"
+msgstr "Vytváření objektů"
+
+msgid "Instancing %s"
+msgstr "Vytváření %s"
+
+msgid "Instancing vehicles"
+msgstr "Vytváření vozidel"
+
+msgid "cab activation"
+msgstr "aktivace kabiny"
+
+msgid "mirrors"
+msgstr "zrcátka"
+
+msgid "radio call 1"
+msgstr "volání 1"

@@ -1,0 +1,4 @@
+shader: default_detail
+texture_diffuse: detail_diffuse
+texture2: fx/t_detail_normal_3
+param_detail_scale: 0.00125

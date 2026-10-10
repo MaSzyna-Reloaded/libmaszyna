@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrianglesImporter" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="import_triangles" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="parser" type="MaszynaParser" />
+			<param index="1" name="rotate" type="Vector3" />
+			<param index="2" name="origin" type="Vector3" />
+			<param index="3" name="sink" type="SceneryTrianglesSink" />
+			<param index="4" name="range_min" type="float" />
+			<param index="5" name="range_max" type="float" />
+			<description>
+				Reads a [code]triangles[/code] node, placed by [param rotate] and [param origin], into [param sink]. Returns [code]false[/code] when the node is malformed.
+			</description>
+		</method>
+	</methods>
+</class>

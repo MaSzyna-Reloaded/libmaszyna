@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleMasterController" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The driver's master controller of a vehicle.
+	</brief_description>
+	<description>
+		The positions of the main and second controller and how fast they step - the controller part of the FIZ [code]Cntrl.[/code] section. Every vehicle with that section has one, with an engine or without: a control car reverses and steps its own controller.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="distance_counter_activate">
+			<return type="void" />
+			<param index="0" name="pressed" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_cabin" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_cabin_controleable" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_distance_counter" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_actual_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_delayed" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_no_power_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_main_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_second_actual_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_second_position" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tachometer_clock_speed" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tachometer_speed" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tachometer_speed_jump" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="coupled_controllers" type="bool" setter="set_coupled_controllers" getter="get_coupled_controllers" default="false">
+			[code]Cntrl.CoupledCtrl[/code]: the second controller continues the main one.
+		</member>
+		<member name="direction_change_max_position" type="int" setter="set_direction_change_max_position" getter="get_direction_change_max_position" default="0">
+			[code]Cntrl.DirChangeMaxPos[/code]: the highest main position the reverser may be moved at.
+		</member>
+		<member name="initial_delay" type="float" setter="set_initial_delay" getter="get_initial_delay" default="0.0">
+			[code]Cntrl.IniCDelay[/code] [s].
+		</member>
+		<member name="main_position_count" type="int" setter="set_main_position_count" getter="get_main_position_count" default="0">
+			[code]Cntrl.MCPN[/code]: without positions the vehicle has no reverser and no line breaker to close.
+		</member>
+		<member name="second_position_count" type="int" setter="set_second_position_count" getter="get_second_position_count" default="0">
+			[code]Cntrl.SCPN[/code].
+		</member>
+		<member name="step_delay" type="float" setter="set_step_delay" getter="get_step_delay" default="0.0">
+			[code]Cntrl.SCDelay[/code] [s].
+		</member>
+		<member name="step_down_delay" type="float" setter="set_step_down_delay" getter="get_step_down_delay" default="0.0">
+			[code]Cntrl.SCDDelay[/code] [s]; the FIZ importer gives it [member step_delay] when absent.
+		</member>
+		<member name="tachometer_max_speed" type="float" setter="set_tachometer_max_speed" getter="get_tachometer_max_speed" default="0.0">
+			[code]Cntrl.MaxTachoSpeed[/code] [km/h]: the top of the speed recorder's dial. 0 takes the vehicle's maximum velocity plus 5%.
+		</member>
+	</members>
+</class>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleCabinKind" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="RAIL_VEHICLE_CABIN_NONE" value="0" enum="Kind">
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_FRONT" value="1" enum="Kind">
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_MACHINE" value="2" enum="Kind">
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_REAR" value="3" enum="Kind">
+		</constant>
+	</constants>
+</class>

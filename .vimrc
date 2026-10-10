@@ -30,7 +30,7 @@ autocmd FileType xml setlocal shiftwidth=4 noexpandtab
 let g:ale_fix_on_save = 1
 
 function! s:configure_format_on_save() abort
-  let b:ale_fix_on_save = expand('%:p') =~# '/src/maszyna/' ? 0 : 1
+  let b:ale_fix_on_save = expand('%:p') =~# '/src/legacy/maszyna-mover/' ? 0 : 1
 endfunction
 
 augroup AleFixOnSaveMaszyna

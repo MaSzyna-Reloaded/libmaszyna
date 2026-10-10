@@ -1,0 +1,2 @@
+compressor: { soundbegin:  09]compressor-start.wav soundmain: 09]compressor.wav soundend: 09]compressor-stop.wav range: 110 placement: custom }
+converter: { soundbegin:  09]converter-start.wav soundmain: 09]converter.wav soundend: 09]converter-stop.wav range: 120 placement: custom }

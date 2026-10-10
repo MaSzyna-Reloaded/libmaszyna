@@ -1,0 +1,60 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/scenery_streaming/scenery_load_indicator.gd" id="1_indicator"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.1, 0.1, 0.12, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="SceneryLoadIndicator" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(420, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -210.0
+offset_top = 48.0
+offset_right = 210.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_indicator")
+
+[node name="Rows" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Message" type="Label" parent="Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.92, 1)
+text = "Loading scenery"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="ProgressRow" type="HBoxContainer" parent="Rows"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Progress" type="ProgressBar" parent="Rows/ProgressRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+max_value = 1.0
+step = 0.001
+show_percentage = false
+
+[node name="Stop" type="Button" parent="Rows/ProgressRow"]
+layout_mode = 2
+text = "Stop"
+
+[connection signal="pressed" from="Rows/ProgressRow/Stop" to="." method="_on_stop_pressed"]

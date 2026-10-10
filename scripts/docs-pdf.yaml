@@ -1,0 +1,17 @@
+---
+# pandoc metadata of `make docs-pdf` (scripts/make-docs-book assembles the book)
+title: "MaSzyna Reloaded Core"
+subtitle: "Architecture, guides and API reference"
+documentclass: report
+papersize: a4
+geometry: margin=2cm
+fontsize: 10pt
+colorlinks: true
+linkcolor: blue
+urlcolor: blue
+header-includes:
+  # long lines of code wrap instead of running off the page
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+  - \fvset{breaklines,breakanywhere}
+---

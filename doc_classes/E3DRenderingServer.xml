@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="E3DRenderingServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		RID based server of E3D model instances.
+	</brief_description>
+	<description>
+		Singleton with an API similar to [RenderingServer]. An instance is created with [method instance_create], set up with the [code]instance_set_*[/code] methods and [method instance_attach_object_instance_id], and built with [method instance_build]. The [enum Instancer] of an instance selects how it is built: [constant INSTANCER_OPTIMIZED] renders every submodel as a [RenderingServer] instance without creating any nodes (used for scenery models), [constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build a [Node3D]/[MeshInstance3D]/[SpotLight3D] tree under the attached node. [code]E3DModelInstance[/code] is a node client of this server. [RenderingServer] instances are freed when the singleton is deleted.
+		Scenery placements are registered with [method instance_register] instead: [SceneryStreamingServer] builds them only while its camera is within their visibility range of the chunk they fall into, and clears them again when it leaves.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="emission_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="environment_set_light_level">
+			<return type="void" />
+			<param index="0" name="level" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="environment_set_time">
+			<return type="void" />
+			<param index="0" name="hours" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="environment_set_wind">
+			<return type="void" />
+			<param index="0" name="strength" type="float" />
+			<param index="1" name="direction" type="Vector3" />
+			<description>
+				The wind every particle emitter drifts with: [param strength] in metres per second along the unit [param direction]. Separate so that the direction can grow a vertical component without the signature changing. Pushed by [code]MaszynaEnvironmentNode[/code] together with the time of day and the light level.
+			</description>
+		</method>
+		<method name="instance_attach_object_instance_id">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="id" type="int" />
+			<description>
+				The [Node3D], by instance id, that [constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build their node tree under. [constant INSTANCER_OPTIMIZED] instances report it as their owner (e.g. for picking in the editor). [code]0[/code] detaches it. Rebuilds an already built instance.
+			</description>
+		</method>
+		<method name="instance_build">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				Builds (or rebuilds) the content of the [param instance]. Materials are resolved with the callable set by [method material_set_resolver].
+			</description>
+		</method>
+		<method name="instance_create">
+			<return type="RID" />
+			<param index="0" name="model" type="E3DModel" />
+			<param index="1" name="instancer" type="int" enum="E3DRenderingServer.Instancer" />
+			<param index="2" name="instance_kind" type="int" enum="E3DRenderingServer.InstanceKind" />
+			<description>
+				Creates an empty instance; set it up with the [code]instance_set_*[/code] methods and [method instance_attach_object_instance_id], then call [method instance_build].
+				[param instance_kind] says what the placement is, in the words a [code].scn[/code] uses for it. It is given here rather than through a setter because it cannot be changed once the instance is built: the smoke density it selects is baked into every particle emitter of the model - its process material, its particle budget and its spawn rate. A client that has to change it frees the instance and creates it again.
+			</description>
+		</method>
+		<method name="instance_free">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				Frees the [param instance] with its [RenderingServer] instances or generated nodes.
+			</description>
+		</method>
+		<method name="instance_get_aabb" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The bounds of every mesh of the model, in the model's space.
+			</description>
+		</method>
+		<method name="instance_get_attached_node" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The instance id of the node attached with [method instance_attach_object_instance_id] - the one a node tree is built under - or [code]0[/code] for none, or for one that is gone.
+			</description>
+		</method>
+		<method name="instance_get_data_path" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The directory the instance's model and textures are read from.
+			</description>
+		</method>
+		<method name="instance_get_light_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_get_model" qualifiers="const">
+			<return type="E3DModel" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The model the instance draws.
+			</description>
+		</method>
+		<method name="instance_get_model_filename" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The model file of a registered instance ([method instance_register]); empty for one created from a model ([method instance_create]).
+			</description>
+		</method>
+		<method name="instance_get_opaque_meshes" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The instance ids of the [MeshInstance3D] nodes of the instance's opaque submodels - what the original draws into its pick buffer; a translucent submodel is left out. Empty for an instance not built as nodes.
+			</description>
+		</method>
+		<method name="instance_get_skins" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The skins the instance's model is drawn with.
+			</description>
+		</method>
+		<method name="instance_get_submodel_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+				The submodel's transform in the model, through every parent, without any pose.
+			</description>
+		</method>
+		<method name="instance_get_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				Where the instance stands ([method instance_set_transform], [method instance_register]).
+			</description>
+		</method>
+		<method name="instance_has_submodel" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+				Whether the model has the submodel.
+			</description>
+		</method>
+		<method name="instance_intersect_segment" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="from" type="Vector3" />
+			<param index="2" name="to" type="Vector3" />
+			<description>
+				Where the segment [param from]..[param to] (world space) first meets the meshes of the instance: [code]{position, distance}[/code], the distance measured from [param from]. Empty when it misses, or when the instance is hidden or not built (not streamed in).
+			</description>
+		</method>
+		<method name="instance_register">
+			<return type="RID" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="model_filename" type="String" />
+			<param index="2" name="skins" type="PackedStringArray" />
+			<param index="3" name="transform" type="Transform3D" />
+			<param index="4" name="range_begin" type="float" />
+			<param index="5" name="range_end" type="float" />
+			<param index="6" name="scenario" type="RID" />
+			<description>
+				Registers a scenery model placement for streaming instead of building it right away. Nothing is loaded or built until [SceneryStreamingServer]'s camera comes within [param range_end] of the chunk the [param transform] falls into; the instance is cleared again when the camera leaves. [param range_end] of [code]0[/code] (a scenery node that declares no range) means the global draw distance. The model is loaded on the streaming worker thread with the callable set by [method model_set_loader].
+				Without a streaming camera a registered instance is never built. Free it with [method instance_free] like any other instance.
+			</description>
+		</method>
+		<method name="instance_set_emission_energy">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="energy" type="float" />
+			<description>
+				The self-illumination energy of every emissive material of the instance.
+			</description>
+		</method>
+		<method name="instance_set_instancer">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="instancer" type="int" enum="E3DRenderingServer.Instancer" />
+			<description>
+				Builds the instance again with another instancer, keeping the RID and everything set on it.
+			</description>
+		</method>
+		<method name="instance_set_layer_mask">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="mask" type="int" />
+			<description>
+				Render layers of an [constant INSTANCER_OPTIMIZED] instance.
+			</description>
+		</method>
+		<method name="instance_set_light_blink">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="on_time" type="float" />
+			<param index="3" name="off_time" type="float" />
+			<param index="4" name="phase" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_light_mode">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="mode" type="int" enum="E3DRenderingServer.LightMode" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_lights_colors">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="colors" type="PackedColorArray" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_lights_dimmed">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="lights_dimmed" type="Dictionary" />
+			<param index="2" name="multiplier" type="float" />
+			<description>
+				Light name to dimmed: a dimmed light shows its "_xon" submodel instead of "_on" when it has one, and its spotlight ([constant INSTANCER_NODES]) shines at [param multiplier] of its energy.
+			</description>
+		</method>
+		<method name="instance_set_lights_modes">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="modes" type="PackedFloat32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_lights_state">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="lights_state" type="Dictionary" />
+			<description>
+				Light name to enabled state; shows the "on" or the "off" submodels of the model's lights (and the spotlights of [constant INSTANCER_NODES]).
+			</description>
+		</method>
+		<method name="instance_set_material_overlay">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="material" type="Material" />
+			<description>
+				Draws [param material] over every submodel of the instance (an outline, a tint); [code]null[/code] for none. Kept while the instance is streamed out and in again.
+			</description>
+		</method>
+		<method name="instance_set_node_transform">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+				Where the model sits in the attached node - a node tree built under it is placed there.
+			</description>
+		</method>
+		<method name="instance_set_options">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="data_path" type="String" />
+			<param index="2" name="skins" type="PackedStringArray" />
+			<param index="3" name="exclude_node_names" type="Array" />
+			<param index="4" name="force_alpha" type="bool" />
+			<param index="5" name="force_alpha_submodel_paths" type="NodePath[]" />
+			<param index="6" name="max_texture_size" type="int" />
+			<description>
+				Material lookup path and skins, submodels excluded from rendering, forced alpha blending and the largest texture size its materials load, [code]0[/code] for the project's [code]maszyna/import/dds_max_texture_size[/code] (see [code]E3DModelInstance[/code]). Rebuilds an already built instance.
+			</description>
+		</method>
+		<method name="instance_set_scenario">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
+				Scenario of an [constant INSTANCER_OPTIMIZED] instance. Rebuilds an already built instance.
+			</description>
+		</method>
+		<method name="instance_set_smoke_intensity">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="intensity" type="float" />
+			<description>
+				Spawn rate multiplier of every particle emitter of the instance, as the engine state drives it. [code]1.0[/code] is the emitter template's own rate - what a scenery chimney keeps. An [constant INSTANCE_KIND_DYNAMIC] instance starts at [code]0.0[/code] and spawns nothing until its client sets the rate.
+				Only the rate: nothing here may reach a particle that is already in the air. Both the process material's colour and its initial colour ramp are read on every frame, so driving either of them from the engine state steps the whole plume down together instead of letting it thin out.
+			</description>
+		</method>
+		<method name="instance_set_submodel_emission_energy">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="energy" type="float" />
+			<description>
+				The self-illumination energy of a submodel, by name, and of everything under it, kept across rebuilds; below 0 gives it the instance's own again - one cab of a low-poly interior lit by its cab light.
+			</description>
+		</method>
+		<method name="instance_set_submodel_material_override">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="material" type="Material" />
+			<description>
+				Draws a submodel, by name, with [param material] instead of its own.
+			</description>
+		</method>
+		<method name="instance_set_submodel_poses">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="poses" type="Dictionary" />
+			<description>
+				Poses submodels, by name, on top of their own transform, kept across rebuilds.
+			</description>
+		</method>
+		<method name="instance_set_submodel_rotation">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="degrees" type="Vector3" />
+			<param index="3" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_submodel_translation">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="offset" type="Vector3" />
+			<param index="3" name="speed" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="instance_set_submodel_visible">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="visible" type="bool" />
+			<description>
+				Shows or hides a submodel, by name, kept across rebuilds.
+			</description>
+		</method>
+		<method name="instance_set_transform">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+				Global transform of an [constant INSTANCER_OPTIMIZED] instance. A node tree follows its attached node instead.
+			</description>
+		</method>
+		<method name="instance_set_visibility_range">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="begin" type="float" />
+			<param index="2" name="end" type="float" />
+			<description>
+				Limits the visibility range of all submodels of an [constant INSTANCER_OPTIMIZED] instance, [code]0[/code] - no limit. Rebuilds an already built instance.
+			</description>
+		</method>
+		<method name="instance_set_visible">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="visible" type="bool" />
+			<description>
+				Visibility of an [constant INSTANCER_OPTIMIZED] instance.
+			</description>
+		</method>
+		<method name="light_disable">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="light_enable">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="light_free">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="light_get_statistics" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="material_set_resolver">
+			<return type="void" />
+			<param index="0" name="material_resolver" type="Callable" />
+			<description>
+				Called as [code]material_resolver(submodel: E3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int) -&gt; Material[/code] for every rendered submodel. Set by [code]MaterialManager[/code].
+			</description>
+		</method>
+		<method name="model_load">
+			<return type="E3DModel" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="model_filename" type="String" />
+			<description>
+				The model of a file, loaded once and shared by every instance of it.
+			</description>
+		</method>
+		<method name="model_set_loader">
+			<return type="void" />
+			<param index="0" name="model_loader" type="Callable" />
+			<description>
+				Called as [code]model_loader(data_path: String, filename: String) -&gt; E3DModel[/code] on the streaming worker thread, for instances registered with [method instance_register] that enter the camera's range. The result is memoized per path. Set by [code]E3DModelManager[/code].
+			</description>
+		</method>
+		<method name="omni_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<param index="2" name="submodel_path" type="NodePath" />
+			<description>
+			</description>
+		</method>
+		<method name="smoke_get_statistics" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Number of particle emitters the server owns ([code]total[/code]) and how many of them are currently built ([code]built[/code]). A scenery emitter is built only while it is streamed in.
+			</description>
+		</method>
+		<method name="smoke_rebuild">
+			<return type="void" />
+			<description>
+				Builds every instance's particle emitters again - what the source resolver makes them of has changed. The server does it itself when [code]maszyna/smoke/enabled[/code] or a smoke distance changes.
+			</description>
+		</method>
+		<method name="smoke_set_source_resolver">
+			<return type="void" />
+			<param index="0" name="smoke_source_resolver" type="Callable" />
+			<description>
+				Called as [code]smoke_source_resolver(template_name: String, owner: InstanceKind) -&gt; Dictionary[/code] with the keys [code]process_material[/code], [code]mesh[/code], [code]amount[/code], [code]lifetime[/code] and [code]aabb[/code], when an emitter is built. An empty dictionary leaves the emitter unbuilt. Set by [code]SmokeSourceLibrary[/code], which reads the templates from the game's [code]data/[/code] directory.
+			</description>
+		</method>
+		<method name="spot_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<param index="2" name="submodel_path" type="NodePath" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="instance_built">
+			<param index="0" name="instance" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="instance_freed">
+			<param index="0" name="instance" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="instance_submodel_animation_finished">
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="INSTANCER_OPTIMIZED" value="0" enum="Instancer">
+			Renders submodels as [RenderingServer] instances, without nodes.
+		</constant>
+		<constant name="INSTANCER_NODES" value="1" enum="Instancer">
+			Builds an internal node tree under the attached node.
+		</constant>
+		<constant name="INSTANCER_EDITABLE_NODES" value="2" enum="Instancer">
+			Builds a node tree under the attached node, editable in the editor.
+		</constant>
+		<constant name="INSTANCE_KIND_STATIC" value="0" enum="InstanceKind">
+			A static [code]node ... model[/code] of a scenery - a chimney, a cooling tower, a road vehicle standing as a prop. This is what a placement registered with [method instance_register] always is. Its smoke follows [code]maszyna/rendering/smoke_density_static[/code].
+		</constant>
+		<constant name="INSTANCE_KIND_DYNAMIC" value="1" enum="InstanceKind">
+			Part of a [code]dynamic[/code], which is a vehicle. Its smoke follows [code]maszyna/rendering/smoke_density_dynamic[/code].
+		</constant>
+		<constant name="TRANSLUCENCY_CUTOUT" value="0" enum="Translucency">
+			The submodel is drawn as its material says: opaque, or cut out at the alpha threshold.
+		</constant>
+		<constant name="TRANSLUCENCY_BLENDED" value="1" enum="Translucency">
+			Alpha-blended - a forced submodel drawn as nodes.
+		</constant>
+		<constant name="TRANSLUCENCY_OPAQUE" value="2" enum="Translucency">
+			Opaque whatever its texture's alpha - a forced submodel of the optimized instancer, which never draws in the alpha pass.
+		</constant>
+		<constant name="LIGHT_MODE_OFF" value="0" enum="LightMode">
+		</constant>
+		<constant name="LIGHT_MODE_ON" value="1" enum="LightMode">
+		</constant>
+		<constant name="LIGHT_MODE_BLINK" value="2" enum="LightMode">
+		</constant>
+		<constant name="LIGHT_MODE_DARK" value="3" enum="LightMode">
+		</constant>
+		<constant name="LIGHT_MODE_HOME" value="4" enum="LightMode">
+		</constant>
+	</constants>
+</class>

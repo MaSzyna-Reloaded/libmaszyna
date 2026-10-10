@@ -1,0 +1,11 @@
+// EN57-636ra (l053_poranek.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 EN57-636ra dynamic pkp\en57_v2 EN57-636ra EN57RA_GSO_DSN_DN_ON8_WPR2_NG2_CG 0 headdriver 255 0 enddynamic
+node -1 0 EN57-636s dynamic pkp\en57_v2 EN57-636s EN57S_DN_ON4_WPR4_NG2_S_CG 0 nobody 255 0 enddynamic
+node -1 0 EN57-636rb dynamic pkp\en57_v2 EN57-636rb EN57RB_GSO_DSN_DN_ON8_WPR2_NG2_CG 0 nobody 0 0 enddynamic
+endtrainset

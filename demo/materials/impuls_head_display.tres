@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bokq2xuaxcfw8"]
+
+[ext_resource type="Shader" uid="uid://ctcto5uik4cnr" path="res://materials/head_display.gdshader" id="1_doi6j"]
+[ext_resource type="Texture2D" uid="uid://ojnpgic0lgux" path="res://materials/maszyna_reloaded_headdisplay.png" id="2_f6bp6"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_doi6j")
+shader_parameter/scroll_speed = 0.2
+shader_parameter/text_color = Color(0.816406, 0.386552, 0.0414581, 1)
+shader_parameter/scale = Vector2(0.5, -2.97)
+shader_parameter/offset = Vector2(0, -0.04)
+shader_parameter/text_texture = ExtResource("2_f6bp6")

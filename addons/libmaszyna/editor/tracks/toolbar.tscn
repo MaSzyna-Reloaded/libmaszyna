@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://ofb2hxtgpcdm"]
+
+[ext_resource type="Script" uid="uid://dywhq8tp250wv" path="res://addons/libmaszyna/editor/tracks/toolbar.gd" id="1_ihd8u"]
+[ext_resource type="PackedScene" uid="uid://b6p4h8x4k2r5s" path="res://addons/libmaszyna/editor/info_window.tscn" id="2_q774n"]
+
+[node name="TracksToolbar" type="HBoxContainer" unique_id=1889642562]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ihd8u")
+
+[node name="RebuildTopologyButton" type="Button" parent="." unique_id=581842767]
+layout_mode = 2
+text = "Rebuild tracks topology"
+
+[node name="ViewTopologyButton" type="Button" parent="." unique_id=581842768]
+layout_mode = 2
+text = "View topology"
+
+[node name="InfoWindow" parent="." unique_id=340930920 instance=ExtResource("2_q774n")]
+
+[connection signal="pressed" from="RebuildTopologyButton" to="." method="_on_rebuild_topology_button_pressed"]
+[connection signal="pressed" from="ViewTopologyButton" to="." method="_on_view_topology_button_pressed"]

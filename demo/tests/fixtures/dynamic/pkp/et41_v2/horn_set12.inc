@@ -1,0 +1,2 @@
+horn1: { soundbegin: 4873_ep07-start-2.wav soundmain: 4873_ep07-trwa-2.wav soundend: 4873_ep07-stop-2.wav range: 1000 offset: [ (p1), 3.80 , (p2) ] }
+horn2: { soundbegin: 4873_ep07-start-4.wav soundmain: 4873_ep07-trwa-4.wav soundend: 4873_ep07-stop-4.wav range: 1000 offset: [ (p3), 3.80 , (p4) ] }

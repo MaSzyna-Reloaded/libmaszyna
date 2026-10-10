@@ -2,6 +2,37 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.17)
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_EXTENSIONS ON)
 SET(CMAKE_COLOR_DIAGNOSTICS ON)
+# scripts/style-check binds the same double-precision API as the build, so clang-tidy sees the
+# same types; it is dumped by the configure below and never versioned
+set(GODOTCPP_PRECISION "double" CACHE STRING "" FORCE)
+set(GODOTCPP_CUSTOM_API_FILE "${CMAKE_SOURCE_DIR}/extension_api.json" CACHE FILEPATH "" FORCE)
+# godot-cpp ships the single-precision API only, so the double one is dumped once from a
+# double-precision Godot and not versioned; delete it to dump it again after a GODOT_VERSION bump
+IF (NOT EXISTS "${GODOTCPP_CUSTOM_API_FILE}")
+    FIND_PROGRAM(
+        GODOT_EXECUTABLE NAMES godot-double godot REQUIRED
+        DOC "A double-precision Godot, used to dump extension_api.json"
+    )
+    MESSAGE(STATUS "Dumping extension_api.json with ${GODOT_EXECUTABLE}")
+    # --dump-extension-api writes the file into the working directory
+    EXECUTE_PROCESS(
+        COMMAND "${GODOT_EXECUTABLE}" --headless --dump-extension-api
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        RESULT_VARIABLE GODOT_DUMP_RESULT
+        OUTPUT_QUIET
+    )
+    IF (EXISTS "${GODOTCPP_CUSTOM_API_FILE}")
+        # "precision" sits in the "header" object at the top of the dump
+        FILE(READ "${GODOTCPP_CUSTOM_API_FILE}" GODOT_API_HEADER LIMIT 1024)
+        STRING(FIND "${GODOT_API_HEADER}" "\"precision\": \"double\"" GODOT_API_DOUBLE)
+    ENDIF ()
+    IF (NOT GODOT_DUMP_RESULT EQUAL 0 OR NOT GODOT_API_DOUBLE GREATER -1)
+        FILE(REMOVE "${GODOTCPP_CUSTOM_API_FILE}")
+        MESSAGE(FATAL_ERROR
+            "${GODOT_EXECUTABLE} did not dump a double-precision extension API; "
+            "pass -DGODOT_EXECUTABLE=<path to a double-precision Godot>")
+    ENDIF ()
+ENDIF ()
 OPTION(LIBMASZYNA_DEBUG "If the build should contain custom library logger" OFF)
 # Do not hard‑force a generator; allow users to select one suitable for cross‑compiling.
 # Silence unused variable warning when specified from toolchain
@@ -69,7 +100,8 @@ IF (DEFINED GODOTCPP_PLATFORM AND NOT CMAKE_SYSTEM_NAME)
 ENDIF ()
 
 SET(LIBNAME "libmaszyna" CACHE STRING "The name of the library")
-SET(GODOT_PROJECT_DIR "demo" CACHE STRING "The directory of a Godot project folder")
+SET(GODOT_PROJECT_DIR "demo" CACHE STRING "The directory of a Godot project folder - relative to this one, or absolute (a game using libmaszyna as a submodule builds into its own project)")
+GET_FILENAME_COMPONENT(GODOT_PROJECT_PATH "${GODOT_PROJECT_DIR}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 SET(IS_DEBUG_BUILD)
 
 FIND_PACKAGE(Python3 3.4 REQUIRED)
@@ -98,13 +130,30 @@ IF (MSVC)
 ENDIF ()
 
 FILE(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.hpp")
+# maszyna-python-host is a program of its own (below), not a part of the library
+LIST(FILTER SRC_FILES EXCLUDE REGEX "src/legacy/cabin/python_host/main\\.cpp$")
+
+# Scenario scripts (ScenarioScriptServer) run on Lua, the vendor/lua submodule. Without it the
+# server stays, and refuses every script as the original's build without Lua does
+OPTION(LIBMASZYNA_LUA "Run scenario scripts in Lua (vendor/lua)" ON)
+IF (NOT LIBMASZYNA_LUA)
+    LIST(FILTER SRC_FILES EXCLUDE REGEX "src/scripting/lua/|src/legacy/scenario/MaszynaLegacyLuaEventsModule")
+ENDIF ()
 
 IF (CMAKE_SYSTEM_NAME STREQUAL "Android")
     # Disable warnings for maszyna directory explicitly for Android
-    FILE(GLOB_RECURSE MASZYNA_SRC_FILES "src/maszyna/*.cpp")
+    FILE(GLOB_RECURSE MASZYNA_SRC_FILES "src/legacy/maszyna-mover/*.cpp")
     IF(MASZYNA_SRC_FILES)
         SET_SOURCE_FILES_PROPERTIES(${MASZYNA_SRC_FILES} PROPERTIES COMPILE_OPTIONS "-w")
     ENDIF()
+ENDIF ()
+
+IF (NOT MSVC)
+    # The vendored engine is written against its own stdafx.h, which includes <stdlib.h>: that is
+    # what makes an unqualified abs(double) resolve to std::abs. Without it C's int abs() wins and
+    # every |x| < 1 truncates to 0 - the brake handles' control reservoir froze (FINDINGS 2026-09-24)
+    FILE(GLOB_RECURSE MASZYNA_VENDORED_FILES "src/legacy/maszyna-mover/*.cpp")
+    SET_PROPERTY(SOURCE ${MASZYNA_VENDORED_FILES} APPEND PROPERTY COMPILE_OPTIONS "-include" "stdlib.h")
 ENDIF ()
 
 ADD_LIBRARY(${LIBNAME} SHARED ${SRC_FILES})
@@ -121,11 +170,45 @@ ENDIF ()
 
 TARGET_LINK_LIBRARIES(${LIBNAME} godot-cpp)
 
+IF (LIBMASZYNA_LUA)
+    # The core and the libraries a scenario script may use - not the interpreters, the test
+    # harness, the amalgamation, nor io/os/debug/package, which a script has no business with
+    SET(LUA_SRC_FILES)
+    FOREACH (LUA_MODULE lapi lauxlib lbaselib lcode lcorolib lctype ldebug ldo ldump lfunc lgc llex
+             lmathlib lmem lobject lopcodes lparser lstate lstring lstrlib ltable ltablib ltm lundump
+             lutf8lib lvm lzio)
+        LIST(APPEND LUA_SRC_FILES "vendor/lua/${LUA_MODULE}.c")
+    ENDFOREACH ()
+    # Compiled as C++: a script error then unwinds as an exception (LUAI_THROW, ldo.c) instead of a
+    # longjmp over the String and Variant locals of the wrapper's own functions
+    SET_SOURCE_FILES_PROPERTIES(${LUA_SRC_FILES} PROPERTIES LANGUAGE CXX)
+    ADD_LIBRARY(maszyna_lua STATIC ${LUA_SRC_FILES})
+    SET_TARGET_PROPERTIES(maszyna_lua PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_VISIBILITY_PRESET hidden)
+    TARGET_COMPILE_OPTIONS(maszyna_lua PRIVATE $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-w>)
+    TARGET_INCLUDE_DIRECTORIES(${LIBNAME} PRIVATE vendor/lua)
+    TARGET_COMPILE_DEFINITIONS(${LIBNAME} PRIVATE LIBMASZYNA_LUA)
+    TARGET_LINK_LIBRARIES(${LIBNAME} maszyna_lua)
+ENDIF ()
+
+# The build number is not stamped here. A stamp written while the library links is overwritten by
+# the next build of any other configuration, and the export then packs whichever one happened to
+# be on disk - which is how a release shipped a library and a project two hours apart. The
+# Makefile's `build-number` target writes it when asked, so it describes a release and so the
+# Linux and the Windows package, built by separate invocations, carry the same one.
+
+# A MinGW-built DLL otherwise needs libstdc++-6.dll, libgcc_s_seh-1.dll and libwinpthread-1.dll
+# sitting next to the game, and Godot only ships the executable and this library - the extension
+# would simply fail to load on a clean Windows. Godot's own MinGW builds do the same
+# (use_static_cpp).
+IF (MINGW)
+    TARGET_LINK_OPTIONS(${LIBNAME} PRIVATE -static-libgcc -static-libstdc++ -static)
+ENDIF ()
+
 SET_TARGET_PROPERTIES(${LIBNAME}
         PROPERTIES
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
-        RUNTIME_OUTPUT_DIRECTORY "$<1:${PROJECT_SOURCE_DIR}/demo/bin/libmaszyna/${GODOTCPP_PLATFORM}>"
+        RUNTIME_OUTPUT_DIRECTORY "$<1:${GODOT_PROJECT_PATH}/bin/libmaszyna/${GODOTCPP_PLATFORM}>"
         PREFIX ""
         OUTPUT_NAME "${LIBNAME}"
 )
@@ -188,9 +271,34 @@ IF (GODOTCPP_TARGET STREQUAL "template_debug")
 ENDIF ()
 
 SET(_OUTPUT_NAME "${LIBNAME}${DEBUG_SUFFIX}${ARCH_SUFFIX}")
-SET(GODOT_PROJECT_BINARY_DIR "${PROJECT_SOURCE_DIR}/${GODOT_PROJECT_DIR}/bin/libmaszyna/${GODOTCPP_PLATFORM}")
+SET(GODOT_PROJECT_BINARY_DIR "${GODOT_PROJECT_PATH}/bin/libmaszyna/${GODOTCPP_PLATFORM}")
 
 SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES OUTPUT_NAME "${_OUTPUT_NAME}" LIBRARY_OUTPUT_DIRECTORY "${GODOT_PROJECT_BINARY_DIR}")
+
+# PythonScreenServer runs CPython in maszyna-python-host, a program next to the library (and next
+# to an exported game's executable, [dependencies] of libmaszyna.gdextension): whatever the runtime
+# does ends that process, never the game. It has no Godot in it; it loads CPython at run time.
+# A platform without it (Android, iOS) names none, and the screens stay blank with the error said.
+IF (CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux|Darwin)$")
+    ADD_EXECUTABLE(maszyna-python-host src/legacy/cabin/python_host/main.cpp)
+    SET_TARGET_PROPERTIES(maszyna-python-host PROPERTIES
+            OUTPUT_NAME "maszyna-python-host${ARCH_SUFFIX}"
+            RUNTIME_OUTPUT_DIRECTORY "${GODOT_PROJECT_BINARY_DIR}"
+    )
+    TARGET_LINK_LIBRARIES(maszyna-python-host ${CMAKE_DL_LIBS})
+    IF (WIN32)
+        # CommandLineToArgvW - the arguments in UTF-16, whatever the code page
+        TARGET_LINK_LIBRARIES(maszyna-python-host shell32)
+    ENDIF ()
+    IF (MINGW)
+        # no MinGW runtime DLLs beside the game, as for the library below
+        TARGET_LINK_OPTIONS(maszyna-python-host PRIVATE -static-libgcc -static-libstdc++ -static)
+    ENDIF ()
+    ADD_DEPENDENCIES(${LIBNAME} maszyna-python-host)
+    TARGET_COMPILE_DEFINITIONS(${LIBNAME} PRIVATE "MASZYNA_PYTHON_HOST_FILE=\"$<TARGET_FILE_NAME:maszyna-python-host>\"")
+ELSE ()
+    TARGET_COMPILE_DEFINITIONS(${LIBNAME} PRIVATE "MASZYNA_PYTHON_HOST_FILE=\"\"")
+ENDIF ()
 
 # For multi-config generators (like Visual Studio), ensure output directory doesn't have a config subfolder
 GET_PROPERTY(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -202,17 +310,20 @@ IF (IS_MULTI_CONFIG)
                 RUNTIME_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}"
                 ARCHIVE_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}"
         )
+        IF (TARGET maszyna-python-host)
+            SET_TARGET_PROPERTIES(maszyna-python-host PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}")
+        ENDIF ()
     ENDFOREACH ()
 ENDIF ()
 
-SET(ADDONS_DEMO_DIR "${PROJECT_SOURCE_DIR}/${GODOT_PROJECT_DIR}/addons")
+SET(ADDONS_DEMO_DIR "${GODOT_PROJECT_PATH}/addons")
 ADD_CUSTOM_COMMAND(TARGET ${LIBNAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${ADDONS_DEMO_DIR}"
 )
 
 SET(SRC_ADDON_LIBMASZYNA "${PROJECT_SOURCE_DIR}/addons/libmaszyna")
 SET(DST_ADDON_LIBMASZYNA "${ADDONS_DEMO_DIR}/libmaszyna")
-MESSAGE(NOTICE "Copying/linking addons and submodules to demo/addons...")
+MESSAGE(NOTICE "Copying/linking addons and submodules to ${ADDONS_DEMO_DIR}...")
 IF (UNIX)
     # On UNIX: prefer symlinks; if destination already a symlink, do nothing.
     IF (NOT IS_SYMLINK "${DST_ADDON_LIBMASZYNA}")

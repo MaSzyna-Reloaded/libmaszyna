@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://qnqs3vbobatw"
+path="res://.godot/imported/sm40.fiz-9b84cb33e9f5f4545fbd124eaf95cd58.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/sm40_v1/sm40.fiz"
+dest_files=["res://.godot/imported/sm40.fiz-9b84cb33e9f5f4545fbd124eaf95cd58.res"]
+
+[params]
+

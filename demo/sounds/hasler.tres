@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://cmmb3s07th3xp" path="res://addons/libmaszyna/sound/maszyna_audio_stream.gd" id="3_n0wvt"]
 [ext_resource type="Curve" uid="uid://ct72vfwtf0ufy" path="res://sounds/hasler_fade_out_curve.tres" id="4_7gox4"]
 [ext_resource type="Script" uid="uid://dcy83smx1expw" path="res://addons/gnd_sfx/sfx_track.gd" id="7_1be0m"]
+[ext_resource type="Script" uid="uid://dd8my4sifw81e" path="res://addons/gnd_sfx/sfx_parameter_modulation.gd" id="7_7gox4"]
 
 [sub_resource type="AudioStream" id="AudioStream_n0wvt"]
 script = ExtResource("3_n0wvt")

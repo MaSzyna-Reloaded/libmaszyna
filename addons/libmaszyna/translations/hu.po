@@ -1,0 +1,155 @@
+# Strings of the wrapper's own that the game's catalogue (lang/*.po) does not have - the state of a
+# cab control shown under its caption, the development console, the scenery loading stages.
+# MaszynaTranslationServer merges them under the game's catalogue.
+# template.po lists every msgid, as the game's lang/template.po does, for a new language to start from.
+msgid ""
+msgstr ""
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "forward"
+msgstr "előre"
+
+msgid "neutral"
+msgstr "semleges"
+
+msgid "backward"
+msgstr "hátra"
+
+msgid "on"
+msgstr "be"
+
+msgid "off"
+msgstr "ki"
+
+msgid "pressed"
+msgstr "lenyomva"
+
+msgid "released"
+msgstr "felengedve"
+
+msgid "high tone"
+msgstr "magas hang"
+
+msgid "low tone"
+msgstr "mély hang"
+
+msgid "filling"
+msgstr "töltés"
+
+msgid "drive"
+msgstr "menet"
+
+msgid "cutoff"
+msgstr "zárás"
+
+msgid "first braking step"
+msgstr "első fékfokozat"
+
+msgid "full braking"
+msgstr "teljes fékezés"
+
+msgid "emergency braking"
+msgstr "vészfékezés"
+
+# the development console
+
+msgid "Development console."
+msgstr "Fejlesztői konzol."
+
+msgid "Enter \"help\" for instructions"
+msgstr "Írd be: \"help\" a súgóhoz"
+
+msgid "Too few arguments! Required < %d >"
+msgstr "Túl kevés argumentum! Szükséges < %d >"
+
+msgid "Too many arguments! < %d > Max"
+msgstr "Túl sok argumentum! Legfeljebb < %d >"
+
+msgid "Command not found."
+msgstr "A parancs nem található."
+
+msgid "Exit game"
+msgstr "Kilépés a játékból"
+
+msgid "Clear console"
+msgstr "Konzol törlése"
+
+msgid "Delete console history"
+msgstr "Konzolelőzmények törlése"
+
+msgid "Print this help"
+msgstr "Súgó kiírása"
+
+msgid "Broadcast message to all trains"
+msgstr "Üzenet küldése minden vonatnak"
+
+msgid "Send message to a train"
+msgstr "Üzenet küldése egy vonatnak"
+
+msgid "List trains"
+msgstr "Vonatok listája"
+
+msgid "List available train commands"
+msgstr "Elérhető vonatparancsok listája"
+
+msgid "Get train state / parameter"
+msgstr "Vonat állapotának / paraméterének lekérése"
+
+msgid "Get train config property"
+msgstr "Vonat konfigurációs tulajdonságának lekérése"
+
+msgid "List train config properties"
+msgstr "Vonat konfigurációs tulajdonságainak listája"
+
+msgid "Occupied cabin: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+msgstr "Elfoglalt vezetőállás: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+
+# loading a scenery, under the loading screen's progress bar
+
+msgid "Parsing %s"
+msgstr "%s feldolgozása"
+
+msgid "Reading cache"
+msgstr "Gyorsítótár olvasása"
+
+msgid "Saving cache"
+msgstr "Gyorsítótár mentése"
+
+msgid "Registering tracks and traction"
+msgstr "Vágányok és felsővezeték regisztrálása"
+
+msgid "Registering tracks"
+msgstr "Vágányok regisztrálása"
+
+msgid "Registering traction"
+msgstr "Felsővezeték regisztrálása"
+
+msgid "Registering %s"
+msgstr "%s regisztrálása"
+
+msgid "Building terrain"
+msgstr "Terep építése"
+
+msgid "Registering terrain"
+msgstr "Terep regisztrálása"
+
+msgid "Instancing objects"
+msgstr "Objektumok létrehozása"
+
+msgid "Instancing %s"
+msgstr "%s létrehozása"
+
+msgid "Instancing vehicles"
+msgstr "Járművek létrehozása"
+
+msgid "cab activation"
+msgstr "vezetőállás aktiválása"
+
+msgid "mirrors"
+msgstr "visszapillantó tükrök"
+
+msgid "radio call 1"
+msgstr "hívójel 1"

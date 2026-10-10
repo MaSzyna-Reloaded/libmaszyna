@@ -1,0 +1,8 @@
+// threaded parsing fixture: nested includes with parameters and origin
+node -1 0 m1 model 1 0 0 0 a/root1.t3d none endmodel
+include threaded/a.inc 10 end
+node -1 0 m2 model 2 0 0 0 a/root2.t3d none endmodel
+origin 100 0 0
+include threaded/b.inc b1 end
+endorigin
+node -1 0 m3 model 3 0 0 0 a/root3.t3d none endmodel

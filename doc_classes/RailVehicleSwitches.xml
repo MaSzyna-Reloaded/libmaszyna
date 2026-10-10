@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleSwitches" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Configures cab control panel switch behavior (impulse vs. toggle) and the headlight dimmer.
+	</brief_description>
+	<description>
+		[RailVehicleSwitches] wraps the FIZ [code]Switches:[/code] and [code]DimmerList:[/code] sections.
+		[member pantograph_impulse], [member converter_impulse] and [member motor_connectors_impulse] are the kinds of the
+		cab's pantograph, converter and line contactor switches. [member relay_reset_button_1]/2/3 assign the relays of the cab's relay reset buttons. [member pantograph_presets]
+		is what the cab's pantograph selector offers. [member modern_dimmer] and [member dimmer_list_positions] are the
+		cab's headlight dimmer, not ported; [member pantograph_preset_default] is no key of the original.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_pantograph_preset" qualifiers="const">
+			<return type="int" enum="RailVehicleSwitches.PantographPreset" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The preset the pantograph selector of the cab at [param end] selects.
+			</description>
+		</method>
+		<method name="get_pantograph_preset_position" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The position of the pantograph selector of the cab at [param end].
+			</description>
+		</method>
+		<method name="get_sand_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="next_pantograph_preset">
+			<return type="void" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				Moves the pantograph selector of the cab at [param end] one position on, within [member pantograph_presets].
+			</description>
+		</method>
+		<method name="previous_pantograph_preset">
+			<return type="void" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				Moves the pantograph selector of the cab at [param end] one position back.
+			</description>
+		</method>
+		<method name="sand">
+			<return type="void" />
+			<param index="0" name="active" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="universal_relay_reset">
+			<return type="void" />
+			<param index="0" name="button" type="int" enum="RailVehicleSwitches.RelayResetButton" />
+			<description>
+				Resets the relays [param button] is assigned ([member relay_reset_button_1] and its twins), when the vehicle has its low voltage.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="converter_impulse" type="bool" setter="set_converter_impulse" getter="get_converter_impulse" default="false">
+			[code]Switches:Converter[/code]
+			Whether the converter switch is impulse-type. Defaults to bistable (false) if not specified in the FIZ
+			file.
+		</member>
+		<member name="dimmer_list_cycle" type="bool" setter="set_dimmer_list_cycle" getter="get_dimmer_list_cycle" default="false">
+			[code]DimmerList:Cycle[/code]
+			Whether the dimmer switch can be rotated all the way around.
+		</member>
+		<member name="dimmer_list_default_position" type="int" setter="set_dimmer_list_default_position" getter="get_dimmer_list_default_position" default="0">
+			[code]DimmerList:DefaultPos[/code]
+		</member>
+		<member name="dimmer_list_positions" type="RailVehicleDimmerListItem[]" setter="set_dimmer_list_positions" getter="get_dimmer_list_positions" default="[]">
+			[code]DimmerList[/code]
+			The dimmer switch's position table.
+		</member>
+		<member name="modern_dimmer" type="bool" setter="set_modern_dimmer" getter="get_modern_dimmer" default="false">
+			[code]Switches:ModernDimmer[/code]
+			Whether the vehicle is equipped with a multi-position headlight dimmer switch.
+		</member>
+		<member name="motor_connectors_impulse" type="bool" setter="set_motor_connectors_impulse" getter="get_motor_connectors_impulse" default="true">
+			[code]Switches:MotorConnectors[/code]
+			Whether the line contactor switch is impulse-type. Defaults to impulse (true) if not specified in the
+			FIZ file (the opposite default of the other switches).
+		</member>
+		<member name="pantograph_impulse" type="bool" setter="set_pantograph_impulse" getter="get_pantograph_impulse" default="false">
+			[code]Switches:Pantograph[/code]
+			Whether the pantograph switch is impulse-type. Defaults to bistable (false) if not specified in the FIZ
+			file.
+		</member>
+		<member name="pantograph_preset_default" type="int" setter="set_pantograph_preset_default" getter="get_pantograph_preset_default" default="0">
+			[code]Switches:PantographPresetDefault[/code]
+			Default index into [member pantograph_presets].
+		</member>
+		<member name="pantograph_presets" type="PackedInt32Array" setter="set_pantograph_presets" getter="get_pantograph_presets" default="PackedInt32Array(0, 1, 3, 2)">
+			[code]Switches:PantographPresets[/code]
+			What each position of the cab's pantograph selector raises, a [enum PantographPreset] each.
+		</member>
+		<member name="relay_reset_button_1" type="int" setter="set_relay_reset_button_1" getter="get_relay_reset_button_1" default="0">
+			[code]Switches:RelayResetButton1[/code]
+			Bitmask of relays reset by button 1.
+		</member>
+		<member name="relay_reset_button_2" type="int" setter="set_relay_reset_button_2" getter="get_relay_reset_button_2" default="0">
+			[code]Switches:RelayResetButton2[/code]
+			Bitmask of relays reset by button 2.
+		</member>
+		<member name="relay_reset_button_3" type="int" setter="set_relay_reset_button_3" getter="get_relay_reset_button_3" default="0">
+			[code]Switches:RelayResetButton3[/code]
+			Bitmask of relays reset by button 3.
+		</member>
+	</members>
+	<constants>
+		<constant name="RELAY_RESET_BUTTON_1" value="0" enum="RelayResetButton">
+			The cab's relay reset button 1 ([code]relayreset1_bt:[/code]).
+		</constant>
+		<constant name="RELAY_RESET_BUTTON_2" value="1" enum="RelayResetButton">
+			The cab's relay reset button 2.
+		</constant>
+		<constant name="RELAY_RESET_BUTTON_3" value="2" enum="RelayResetButton">
+			The cab's relay reset button 3.
+		</constant>
+		<constant name="PANTOGRAPH_PRESET_NONE" value="0" enum="PantographPreset">
+			No pantograph.
+		</constant>
+		<constant name="PANTOGRAPH_PRESET_OWN_END" value="1" enum="PantographPreset">
+			The pantograph over the end of the cab the driver sits in.
+		</constant>
+		<constant name="PANTOGRAPH_PRESET_OTHER_END" value="2" enum="PantographPreset">
+			The pantograph over the other end.
+		</constant>
+		<constant name="PANTOGRAPH_PRESET_BOTH" value="3" enum="PantographPreset">
+			Both pantographs.
+		</constant>
+	</constants>
+</class>

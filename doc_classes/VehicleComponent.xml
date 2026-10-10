@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleComponent" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Basic class of the train part.
+	</brief_description>
+	<description>
+		A base class for creating a specialized behaviours of the train. Provides shortcuts for most important methods.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_config">
+			<return type="void" />
+			<description>
+			Writes this component's configuration into the simulation of its [VehicleController].
+			</description>
+		</method>
+		<method name="emit_config_changed_signal">
+			<return type="void" />
+			<description>
+			Emits the "config_changed" signal
+			</description>
+		</method>
+		<method name="get_config">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="get_controller" qualifiers="const">
+			<return type="VehicleController" />
+			<description>
+			</description>
+		</method>
+		<method name="get_state">
+			<return type="Dictionary" />
+			<description>
+			Returns a dictionary of this component's live state, read from the simulation.
+			</description>
+		</method>
+		<method name="log">
+			<return type="void" />
+			<param index="0" name="loglevel" type="int" enum="GameLog.LogLevel" />
+			<param index="1" name="line" type="String" />
+			<description>
+			Logs a message
+			</description>
+		</method>
+		<method name="log_debug">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			Logs a debug message. See [GameLog.LogLevel].
+			</description>
+		</method>
+		<method name="log_error">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			Logs an error message. See [GameLog.LogLevel].
+			</description>
+		</method>
+		<method name="log_info">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			Logs an info message. See [GameLog.LogLevel].
+			</description>
+		</method>
+		<method name="log_warning">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			Logs a warning message. See [GameLog.LogLevel].
+			</description>
+		</method>
+		<method name="mark_dirty">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			Registers a command on the vehicle this component belongs to. See [method VehicleController.register_command].
+			</description>
+		</method>
+		<method name="send_command">
+			<return type="Variant" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="p1" type="Variant" default="null" />
+			<param index="2" name="p2" type="Variant" default="null" />
+			<description>
+			Sends command to the train, which part belongs to. Returns what the command's handler returned (see [method VehicleController.send_command]).
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<description>
+			Removes a command from the vehicle this component belongs to. See [method VehicleController.unregister_command].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="component_tag" type="StringName" setter="set_component_tag" getter="get_component_tag" default="&amp;&quot;&quot;">
+		</member>
+		<member name="enabled" type="bool" setter="set_enabled" getter="get_enabled" default="true">
+			If true, this train part will be processed by [VehicleController] during updating and fetching the simulation's state.
+		</member>
+	</members>
+	<signals>
+		<signal name="component_disabled">
+			<description>
+			</description>
+		</signal>
+		<signal name="component_enabled">
+			<description>
+			</description>
+		</signal>
+		<signal name="config_changed">
+			<description>
+			Emitted when the internal config has changed
+			</description>
+		</signal>
+		<signal name="enable_changed">
+			<param index="0" name="enabled" type="bool" />
+			<description>
+			Train part status was enabled or disabled
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignallingServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		RID based registry of signal heads, their kinds and aspects, and of the systems that control them.
+	</brief_description>
+	<description>
+		A signal head is the lights of one model instance of [E3DRenderingServer]: it is created for that instance with [method signal_head_create] and lives exactly as long as it - freeing the instance frees the signal head. Its lights are numbered from 0, as the original engine numbers the [code]Light_On00[/code]..[code]Light_On07[/code] submodels.
+		Low level, a signal head's lights are switched one by one ([method signal_head_light_enable], [method signal_head_light_disable], [method signal_head_light_blink]). High level, a signal head has a [SignalHeadKind] - what it can show - and shows one of its aspects at a time ([method signal_head_set_aspect]). The server knows no aspect of its own: "S1" or "Sz" is the vocabulary of a kind.
+		Signal heads and event sources are grouped into systems. A system is the same object for every signalling system; what differs is its [SignallingImplementation], which receives the system's events and decides what they mean. A signal head or a source belongs to one system at most.
+		A signal head, a source and a system can each be named, for scripts and for the scenery's events to find them. A name registered twice goes to the newest, as the original's name tables do.
+		[SignalHeadNode] and [SignallingSystemNode] are node proxies of a signal head and of a system.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="signal_head_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				Creates a signal head of the lights of [param instance], an [E3DRenderingServer] instance, and returns it. An instance has one signal head at most. The signal head is freed together with the instance.
+			</description>
+		</method>
+		<method name="signal_head_free">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Frees the signal head: takes it out of its system and unregisters its name ([signal signal_head_unregistered]). The signal head of a freed instance is freed on its own.
+			</description>
+		</method>
+		<method name="signal_head_get_aspect" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the aspect the signal head shows, empty when none was set since its kind.
+			</description>
+		</method>
+		<method name="signal_head_get_aspects" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the names of the aspects the signal head's kind can show, in their declared order; empty without a kind.
+			</description>
+		</method>
+		<method name="signal_head_get_instance" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the model instance (E3DRenderingServer) whose lights the signal head is.
+			</description>
+		</method>
+		<method name="signal_head_get_kind" qualifiers="const">
+			<return type="SignalHeadKind" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the signal head's kind, or [code]null[/code].
+			</description>
+		</method>
+		<method name="signal_head_get_light_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the number of lights of the signal head's model - the highest numbered [code]light_onNN[/code]/[code]light_offNN[/code] pair plus one. It is 0 until the model is loaded; [signal signal_head_config_changed] tells when it is known.
+			</description>
+		</method>
+		<method name="signal_head_get_light_state" qualifiers="const">
+			<return type="int" enum="SignallingServer.LightState" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="light" type="int" />
+			<description>
+				Returns what the [param light] was last set to.
+			</description>
+		</method>
+		<method name="signal_head_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the name the signal head is registered under, empty when it has none.
+			</description>
+		</method>
+		<method name="signal_head_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+				Returns the signal head registered under [param name], or an empty RID.
+			</description>
+		</method>
+		<method name="signal_head_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+				Returns every signal head.
+			</description>
+		</method>
+		<method name="signal_head_get_system" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Returns the system the signal head belongs to, or an empty RID.
+			</description>
+		</method>
+		<method name="signal_head_light_blink">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="on_time" type="float" />
+			<param index="3" name="off_time" type="float" />
+			<param index="4" name="phase" type="float" />
+			<description>
+				Blinks the [param light]: on for [param on_time] seconds, off for [param off_time], the cycle shifted by [param phase] seconds. Every blinking light runs on one clock, so lights with the same times blink together.
+			</description>
+		</method>
+		<method name="signal_head_light_disable">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="light" type="int" />
+			<description>
+				Puts the [param light] out.
+			</description>
+		</method>
+		<method name="signal_head_light_enable">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="light" type="int" />
+			<description>
+				Lights the [param light], from 0 to [constant MAX_LIGHTS] - 1. A light past the model's own may be set too, as the original allows; it shows once the model has it.
+			</description>
+		</method>
+		<method name="signal_head_set_aspect">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="aspect" type="StringName" />
+			<description>
+				Shows the [param aspect] of the signal head's kind: sets each light the way the aspect describes it, then emits [signal signal_head_aspect_changed] and tells the implementation of the signal head's system ([method SignallingImplementation._signal_head_aspect_changed]). An aspect the kind does not have is refused.
+			</description>
+		</method>
+		<method name="signal_head_set_kind">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="kind" type="SignalHeadKind" />
+			<description>
+				Sets what the signal head can show. The lights are left as they are, and no aspect is shown until [method signal_head_set_aspect]. Emits [signal signal_head_config_changed].
+			</description>
+		</method>
+		<method name="signal_head_set_name">
+			<return type="void" />
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Registers the signal head under [param name] ([signal signal_head_registered]), unregistering its previous name. An empty name only unregisters it.
+			</description>
+		</method>
+		<method name="source_create">
+			<return type="RID" />
+			<description>
+				Creates an event source: a system element that is not a signal head, such as a track circuit or a dispatcher's button. It is only a handle - the element's own state stays with its owner.
+			</description>
+		</method>
+		<method name="source_free">
+			<return type="void" />
+			<param index="0" name="source" type="RID" />
+			<description>
+				Frees the source, taking it out of its system.
+			</description>
+		</method>
+		<method name="source_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="source" type="RID" />
+			<description>
+				Returns the name the source is registered under.
+			</description>
+		</method>
+		<method name="source_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+				Returns the source registered under [param name], or an empty RID.
+			</description>
+		</method>
+		<method name="source_get_system" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="source" type="RID" />
+			<description>
+				Returns the system the source belongs to, or an empty RID.
+			</description>
+		</method>
+		<method name="source_send_event">
+			<return type="void" />
+			<param index="0" name="source" type="RID" />
+			<param index="1" name="event" type="StringName" />
+			<param index="2" name="arguments" type="Dictionary" default="{}" />
+			<description>
+				A report of the source, handed to the implementation of the system it belongs to ([method SignallingImplementation._handle_source_event]). The sender knows only its own source; which system and implementation receive it is the server's business. A source that belongs to no system refuses it.
+			</description>
+		</method>
+		<method name="source_set_name">
+			<return type="void" />
+			<param index="0" name="source" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Registers the source under [param name]; an empty name only unregisters it.
+			</description>
+		</method>
+		<method name="system_add_signal_head">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Adds the signal head to the system and tells the system's implementation. A signal head that already belongs to a system is refused.
+			</description>
+		</method>
+		<method name="system_add_source">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Adds the event source to the system and tells the system's implementation. A source that already belongs to a system is refused.
+			</description>
+		</method>
+		<method name="system_attach_implementation">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="implementation" type="SignallingImplementation" />
+			<description>
+				Gives the system its behaviour. The previous implementation is told it is detached; the new one is told it is attached and then about every signal head and source the system already has, so the order the system is set up in does not matter. [code]null[/code] only detaches.
+			</description>
+		</method>
+		<method name="system_create">
+			<return type="RID" />
+			<description>
+				Creates an empty system: no implementation, no signal heads, no sources.
+			</description>
+		</method>
+		<method name="system_free">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Frees the system, detaching its implementation. Its signal heads and sources are not freed; they belong to no system afterwards.
+			</description>
+		</method>
+		<method name="system_get_implementation" qualifiers="const">
+			<return type="SignallingImplementation" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the system's implementation, or [code]null[/code].
+			</description>
+		</method>
+		<method name="system_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the name the system is registered under.
+			</description>
+		</method>
+		<method name="system_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+				Returns the system registered under [param name], or an empty RID.
+			</description>
+		</method>
+		<method name="system_get_signal_heads" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the system's signal heads, in the order they were added.
+			</description>
+		</method>
+		<method name="system_get_sources" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the system's sources, in the order they were added.
+			</description>
+		</method>
+		<method name="system_remove_signal_head">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Takes the signal head out of the system and tells the system's implementation.
+			</description>
+		</method>
+		<method name="system_remove_source">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Takes the source out of the system and tells the system's implementation.
+			</description>
+		</method>
+		<method name="system_send_event">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="event" type="StringName" />
+			<param index="2" name="arguments" type="Dictionary" default="{}" />
+			<description>
+				A command to the system as a whole - from a script, a dispatcher or a scenery event - handed to its implementation ([method SignallingImplementation._handle_event]). [param arguments] carry whatever the event needs. A system without an implementation refuses it.
+			</description>
+		</method>
+		<method name="system_set_name">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Registers the system under [param name]; an empty name only unregisters it.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="signal_head_aspect_changed">
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="aspect" type="StringName" />
+			<description>
+				Emitted when the signal head shows the [param aspect].
+			</description>
+		</signal>
+		<signal name="signal_head_config_changed">
+			<param index="0" name="signal_head" type="RID" />
+			<description>
+				Emitted when the signal head's configuration changes: its kind is set, or its model is loaded and its light count is known.
+			</description>
+		</signal>
+		<signal name="signal_head_light_state_changed">
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="state" type="int" />
+			<description>
+				Emitted when the [param light] is set to a different [enum LightState].
+			</description>
+		</signal>
+		<signal name="signal_head_registered">
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Emitted when the signal head is registered under [param name].
+			</description>
+		</signal>
+		<signal name="signal_head_unregistered">
+			<param index="0" name="signal_head" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Emitted when the signal head's [param name] is unregistered - on a rename, or when the signal head is freed.
+			</description>
+		</signal>
+		<signal name="system_signal_head_added">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Emitted when the signal head is added to the system.
+			</description>
+		</signal>
+		<signal name="system_signal_head_removed">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Emitted when the signal head is taken out of the system, also when it is freed.
+			</description>
+		</signal>
+		<signal name="system_source_added">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Emitted when the source is added to the system.
+			</description>
+		</signal>
+		<signal name="system_source_removed">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Emitted when the source is taken out of the system, also when it is freed.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="LIGHT_STATE_OFF" value="0" enum="LightState">
+			The light is out.
+		</constant>
+		<constant name="LIGHT_STATE_ON" value="1" enum="LightState">
+			The light is lit.
+		</constant>
+		<constant name="LIGHT_STATE_BLINKING" value="2" enum="LightState">
+			The light blinks.
+		</constant>
+		<constant name="MAX_LIGHTS" value="8">
+			Lights a signal head can have, as a model of the original engine can ([code]iMaxNumLights[/code]).
+		</constant>
+	</constants>
+</class>

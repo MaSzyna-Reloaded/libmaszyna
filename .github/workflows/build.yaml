@@ -1,156 +1,144 @@
-name: docker-build
+name: build
 
+# The unit tests and the library of each platform, with the double precision Godot fetched from the
+# release godot-<version>-double (ci/fetch-godot.sh), which the godot-engine workflow builds once
+# per engine version. The tests and the Windows and Android libraries are built on the runner; the
+# Linux release library in ci/docker/linux-sdk, for an old glibc. Exporting and releasing the game
+# is the game's repository's.
 on:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    strategy:
-      matrix:
-        arch: [x86_64]
-        target: [template_debug]
+  godot-engine:
+    uses: ./.github/workflows/godot-engine.yml
+    permissions:
+      contents: write
+
+  run-tests:
+    needs: godot-engine
     runs-on: ubuntu-24.04
+    # the start-up report is a comment of the pull request
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
-      - name: Checkout
+      - name: Check out the code
         uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/cache/restore@v6
-        id: cache-restore
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-win64/
-          key: ${{ matrix.target }}-windows-${{ matrix.arch }}-godot-cpp
-          restore-keys: |
-            ${{ matrix.target }}-windows-${{ matrix.arch }}-godot-
-            ${{ matrix.target }}-windows-${{ matrix.arch }}
+      - name: Fetch the double precision Godot
+        run: |
+          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Docker build Windows ${{ matrix.arch }}
-        run: sudo chmod 777 ci/docker/entrypoint.sh |
-          docker compose run windows_${{ matrix.arch }} ${{ matrix.target }}
+      # the addons the demo links in from the checkout (see .gitignore)
+      - name: Link the addons
+        run: |
+          ln -s ../../vendor/gut/addons/gut demo/addons/gut
+          ln -s ../../addons/libmaszyna demo/addons/libmaszyna
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: tests
+
+      # the tests need no old glibc, so the library is built on the runner itself; the empty
+      # overrides leave out the clang-tidy database compile-debug prepares for the IDE
+      - name: Build the library
+        run: make compile-debug CLANG_TIDY_COMPILE_COMMANDS_FILE= CLANG_TIDY_BINDINGS_FILE=
+
+      - name: Import the project
+        run: godot-double --headless --path demo --import
+
+      # GUT skips a test script that does not parse with only a warning and does not count it, so
+      # the run fails on the engine's own message for it; pipefail keeps GUT's own exit code, which
+      # tee would otherwise replace with its own success
+      - name: Run the tests
+        run: |
+          set -o pipefail
+          godot-double --headless --path demo -s addons/gut/gut_cmdln.gd \
+            -gdir=res://tests/ -gexit -gjunit_xml_file=res://test_results.xml 2>&1 | tee gut.log
+          ! grep "Failed to load script" gut.log
 
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: lib-windows-${{ matrix.target }}-${{ matrix.arch }}
-          path: demo/bin/libmaszyna/windows
+          name: gut-test-results
+          path: demo/test_results.xml
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: game-windows-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/windows
+      # vehicle -> OK / FAIL of its start-up test, in the run's summary and in one comment of the
+      # pull request, updated by every run
+      - name: Start-up report
+        if: always()
+        run: |
+          scripts/startup-report demo/test_results.xml > startup-report.md
+          cat startup-report.md >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/cache/save@v6
-        id: cache
-        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-win64/
-          key: ${{ matrix.target }}-windows-${{ matrix.arch }}-godot-cpp
+      # a pull request from a fork has a read-only token and gets the summary only
+      - name: Start-up report on the pull request
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          comment=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '.[] | select(.body | startswith("<!-- startup-report -->")) | .id' | head -1)
+          if [ -n "$comment" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$comment" -F body=@startup-report.md
+          else
+            gh api -X POST "repos/${{ github.repository }}/issues/$PR/comments" -F body=@startup-report.md
+          fi
 
-  build-linux:
+  build:
+    needs: godot-engine
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x86_64]
-        target: [template_debug]
-    runs-on: ubuntu-latest
+        include:
+          - platform: linux
+            make: compile-release-linux
+          - platform: windows
+            make: compile-windows-release
+          - platform: android
+            make: compile-android-release
+    runs-on: ubuntu-24.04
+    env:
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
+      # the directory ccache-action keeps; the Makefile mounts it into the Linux SDK container
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/cache/restore@v6
-        id: cache-restore
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-linux64/
-          key: ${{ matrix.target }}-linux-${{ matrix.arch }}-godot-cpp
-          restore-keys: |
-            ${{ matrix.target }}-linux-${{ matrix.arch }}-godot-
-            ${{ matrix.target }}-linux-${{ matrix.arch }}-
+      # CMake dumps the double precision API from it (CMakeLists.txt) - on the runner also for the
+      # Linux library, whose SDK container has no Godot
+      - name: Fetch the double precision Godot
+        run: |
+          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Docker build Linux ${{ matrix.arch }}
-        run: sudo chmod 777 ci/docker/entrypoint.sh |
-          docker compose run linux_${{ matrix.arch }} ${{ matrix.target }}
+      - name: Install MinGW
+        if: matrix.platform == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-x86-64
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.platform }}
+
+      - name: Build the ${{ matrix.platform }} library
+        run: make ${{ matrix.make }}
 
       - uses: actions/upload-artifact@v7
         with:
-          name: lib-linux-${{ matrix.target }}-${{ matrix.arch }}
-          path: demo/bin/libmaszyna/linux
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: game-linux-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/linux
-
-      - uses: actions/cache/save@v6
-        id: cache
-        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-linux64/
-          key: ${{ matrix.target }}-linux-${{ matrix.arch }}-godot-cpp
-
-  build-android:
-    strategy:
-      matrix:
-        arch: [x86_64, arm64]
-        target: [template_debug]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - uses: actions/cache/restore@v6
-        id: cache-restore
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-android64/
-          key: ${{ matrix.target }}-android-${{ matrix.arch }}-godot-cpp
-          restore-keys: |
-            ${{ matrix.target }}-android-${{ matrix.arch }}-godot-
-            ${{ matrix.target }}-android-
-
-      - name: Docker build Android ${{ matrix.arch }}
-        run: sudo chmod 777 ci/docker/entrypoint.sh |
-          docker compose run android_${{ matrix.arch }} ${{ matrix.target }}
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: lib-android-${{ matrix.target }}-${{ matrix.arch }}
-          path: demo/bin/libmaszyna/android
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: game-android-${{ matrix.target }}-${{ matrix.arch }}
-          path: build/android
-
-      - uses: actions/cache/save@v6
-        id: cache
-        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-        with:
-          path: |
-            godot-cpp/
-            build-api/
-            build-host/
-            build-android64/
-          key: ${{ matrix.target }}-android-${{ matrix.arch }}-godot-cpp
+          name: lib-${{ matrix.platform }}-template_release
+          path: demo/bin/libmaszyna/${{ matrix.platform }}
+          if-no-files-found: error

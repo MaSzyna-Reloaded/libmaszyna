@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenarioScriptCabinImplementation" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		How the scenario scripts reach the cabs.
+	</brief_description>
+	<description>
+		The cab layer a scenario script manipulates through [code]maszyna.cabin[/code]. Implemented next to the cab layer (the demo's [code]CabinScriptImplementation[/code] forwards to [code]CabinSystem[/code]) and attached with [method ScenarioScriptServer.context_attach_cabin_implementation].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_act" qualifiers="virtual">
+			<return type="Variant" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="control_id" type="StringName" />
+			<param index="2" name="action" type="StringName" />
+			<param index="3" name="value" type="Variant" />
+			<description>
+				Manipulates a control of the vehicle's cab - [param action] is [code]increase[/code], [code]decrease[/code], [code]hold[/code], [code]release[/code], [code]toggle[/code] or [code]set[/code]. Returns what the control answered.
+			</description>
+		</method>
+		<method name="_get_control" qualifiers="virtual const">
+			<return type="Variant" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="control_id" type="StringName" />
+			<description>
+				Where the control stands.
+			</description>
+		</method>
+		<method name="_get_controls" qualifiers="virtual const">
+			<return type="Array" />
+			<param index="0" name="cabin" type="RID" />
+			<description>
+				The ids of the cab's controls.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="control_changed">
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="control_id" type="StringName" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+				Emitted by the implementation when a control of a cab changed; the scripts subscribed to the vehicle hear of it.
+			</description>
+		</signal>
+	</signals>
+</class>

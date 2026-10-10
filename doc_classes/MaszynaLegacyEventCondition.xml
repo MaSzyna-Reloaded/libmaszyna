@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyEventCondition" inherits="ScenarioEventCondition" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mask" type="int" setter="set_mask" getter="get_mask" enum="ScenarioEventServer.MemoryField" is_bitfield="true" default="0">
+		</member>
+		<member name="memories" type="RID[]" setter="set_memories" getter="get_memories" default="[]">
+		</member>
+		<member name="pass" type="int" setter="set_pass" getter="get_pass" enum="MaszynaLegacyEventCondition.Pass" default="0">
+		</member>
+		<member name="probability" type="float" setter="set_probability" getter="get_probability" default="1.0">
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
+		</member>
+		<member name="text_operator" type="int" setter="set_text_operator" getter="get_text_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+		</member>
+		<member name="track_test" type="int" setter="set_track_test" getter="get_track_test" enum="MaszynaLegacyEventCondition.TrackTest" default="0">
+		</member>
+		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+		</member>
+		<member name="value1_operator" type="int" setter="set_value1_operator" getter="get_value1_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+		</member>
+		<member name="value2_operator" type="int" setter="set_value2_operator" getter="get_value2_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="OPERATOR_EQUAL" value="0" enum="Operator">
+		</constant>
+		<constant name="OPERATOR_NOT_EQUAL" value="1" enum="Operator">
+		</constant>
+		<constant name="OPERATOR_LESS" value="2" enum="Operator">
+		</constant>
+		<constant name="OPERATOR_GREATER" value="3" enum="Operator">
+		</constant>
+		<constant name="OPERATOR_LESS_EQUAL" value="4" enum="Operator">
+		</constant>
+		<constant name="OPERATOR_GREATER_EQUAL" value="5" enum="Operator">
+		</constant>
+		<constant name="PASS_ALL" value="0" enum="Pass">
+		</constant>
+		<constant name="PASS_ANY" value="1" enum="Pass">
+		</constant>
+		<constant name="PASS_NONE" value="2" enum="Pass">
+		</constant>
+		<constant name="TRACK_TEST_NONE" value="0" enum="TrackTest">
+		</constant>
+		<constant name="TRACK_TEST_OCCUPIED" value="1" enum="TrackTest">
+		</constant>
+		<constant name="TRACK_TEST_FREE" value="2" enum="TrackTest">
+		</constant>
+	</constants>
+</class>

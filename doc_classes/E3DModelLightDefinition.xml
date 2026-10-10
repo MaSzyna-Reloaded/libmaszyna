@@ -12,6 +12,9 @@
 		<member name="off_submodel_path" type="NodePath" setter="set_off_submodel_path" getter="get_off_submodel_path" default="NodePath(&quot;&quot;)">
 			Node path to submodel that should be shown, when light is off.
 		</member>
+		<member name="xon_submodel_path" type="NodePath" setter="set_xon_submodel_path" getter="get_xon_submodel_path" default="NodePath(&quot;&quot;)">
+			Node path to submodel that should be shown instead of the "on" one, when the light is dimmed ("_xon").
+		</member>
 		<member name="on_submodel_path" type="NodePath" setter="set_on_submodel_path" getter="get_on_submodel_path" default="NodePath(&quot;&quot;)">
 			Node path to submodel that should be shown, when light is on.
 		</member>

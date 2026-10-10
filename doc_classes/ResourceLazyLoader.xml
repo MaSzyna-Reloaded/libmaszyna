@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceLazyLoader" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Resources loaded when they are wanted and let go when nobody wants them.
+	</brief_description>
+	<description>
+		Holds the resources needed only while something near the camera uses them - a scenery's models, its terrain - so their memory, RAM and the VRAM of a mesh or a texture, goes back once nothing holds them. A resource is registered under a key with the [Callable] that loads it; one key is one resource, shared by everybody who registers it. [method resource_load] loads a copy, [method resource_hold] holds it, [method resource_release] lets it go. A copy not held is not shared: each load loads it anew. Everything held is let go when the game's data is unloaded ([signal GameDataServer.data_unload_requested]). Thread-safe.
+		With [member lazy_loading] a resource is loaded when it is wanted and let go once nobody holds it. Without it - the default - it is loaded when its key is registered first and kept until its last registration is freed; holding and releasing it then only says who builds from it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="resource_free">
+			<return type="void" />
+			<param index="0" name="resource" type="RID" />
+			<description>
+				Frees one registration; the resource goes with the last one.
+			</description>
+		</method>
+		<method name="resource_get_statistics" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				[code]registered[/code], [code]resident[/code] (held now) and [code]loads[/code] (loader calls so far).
+			</description>
+		</method>
+		<method name="resource_hold">
+			<return type="Resource" />
+			<param index="0" name="resource" type="RID" />
+			<param index="1" name="loaded" type="Resource" />
+			<description>
+				Holds the resource until the matching [method resource_release] and returns the copy held: the one somebody already holds, or else [param loaded], a copy from [method resource_load].
+			</description>
+		</method>
+		<method name="resource_is_resident" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="resource" type="RID" />
+			<description>
+				Returns [code]true[/code] while somebody holds the resource.
+			</description>
+		</method>
+		<method name="resource_load">
+			<return type="Resource" />
+			<param index="0" name="resource" type="RID" />
+			<description>
+				Returns the held resource, or loads a new copy without holding it - for a worker preparing what the main thread then holds with [method resource_hold].
+			</description>
+		</method>
+		<method name="resource_register">
+			<return type="RID" />
+			<param index="0" name="key" type="String" />
+			<param index="1" name="loader" type="Callable" />
+			<description>
+				Registers the resource [param loader] ([code]() -&gt; Resource[/code]) loads. The same [param key] gives the same RID; each registration is freed by its own [method resource_free].
+			</description>
+		</method>
+		<method name="resource_release">
+			<return type="void" />
+			<param index="0" name="resource" type="RID" />
+			<description>
+				Lets go of a resource held by [method resource_hold]; once nobody holds it, the loader keeps no reference of its own.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="lazy_loading" type="bool" setter="set_lazy_loading" getter="get_lazy_loading" default="false">
+			Read when the loader is created from the project setting [code]maszyna/resources/lazy_loading[/code], and [code]true[/code] whatever it says with the [code]--enable-lazy-loading[/code] command-line switch. A change takes effect on the keys registered after it; a key registered already keeps its mode.
+		</member>
+	</members>
+</class>

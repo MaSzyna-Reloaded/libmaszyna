@@ -2,6 +2,29 @@
 
 [ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_camera.gd" id="1_iuonp"]
 [ext_resource type="Script" uid="uid://dc3kl1adyw5y0" path="res://addons/libmaszyna/player/player.gd" id="1_t4mm8"]
+[ext_resource type="Script" uid="uid://b16505entp2ac" path="res://addons/libmaszyna/sound/train_sound_listener_3d.gd" id="3_listener"]
+[ext_resource type="Script" uid="uid://b0yeu01hnd1fq" path="res://addons/libmaszyna/player/external_camera.gd" id="4_external"]
+[ext_resource type="Script" uid="uid://lj2sjiebi4m0" path="res://addons/gnd_sfx/sfx_player.gd" id="5_sfx_player"]
+[ext_resource type="Shader" uid="uid://bam8t74au56dl" path="res://addons/libmaszyna/player/headlamp_glow.gdshader" id="6_headlamp_glow"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_headlamp_glow"]
+render_priority = 0
+shader = ExtResource("6_headlamp_glow")
+shader_parameter/light_position = Vector3(0, 0.16, -0.05)
+shader_parameter/light_direction = Vector3(0, -0.26, -0.97)
+shader_parameter/light_color = Color(1, 0.965, 0.93, 1)
+shader_parameter/cone_inner_angle = 8.0
+shader_parameter/cone_outer_angle = 25.0
+shader_parameter/glow_range = 8.0
+shader_parameter/near_distance = 0.3
+shader_parameter/boost = 20.0
+shader_parameter/adaptation_luminance = 0.1
+shader_parameter/light_energy = 2.0
+shader_parameter/lift = 0.01
+
+[sub_resource type="QuadMesh" id="QuadMesh_headlamp_glow"]
+material = SubResource("ShaderMaterial_headlamp_glow")
+size = Vector2(2, 2)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_mexgx"]
 radius = 2.0
@@ -12,11 +35,46 @@ script = ExtResource("1_t4mm8")
 [node name="Camera3D" type="Camera3D" parent="." unique_id=2023831069]
 fov = 45.0
 script = ExtResource("1_iuonp")
+velocity_multiplier = 0.2
 
-[node name="RailVehicleDetector" type="ShapeCast3D" parent="Camera3D" unique_id=626357363]
+[node name="Headlamp" type="SpotLight3D" parent="Camera3D" unique_id=121900474]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.31600000000617, -0.28100000000267755, -0.05)
+visible = false
+light_color = Color(1, 0.965, 0.93, 1)
+light_energy = 0.4
+light_volumetric_fog_energy = 0.0
+light_size = 0.5
+shadow_enabled = true
+shadow_blur = 0.2
+spot_range = 10.807
+spot_attenuation = 0.4499999999999993
+spot_angle = 25.75
+spot_angle_attenuation = 2.4000077
+
+[node name="HeadlampGlow" type="MeshInstance3D" parent="Camera3D" unique_id=806859192]
+visible = false
+cast_shadow = 0
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_headlamp_glow")
+
+[node name="FreeCamera3D" type="Camera3D" parent="." unique_id=1377215094]
+fov = 45.0
+script = ExtResource("1_iuonp")
+
+[node name="RailVehicleDetector" type="ShapeCast3D" parent="FreeCamera3D" unique_id=626357363]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.88708)
 shape = SubResource("SphereShape3D_mexgx")
 target_position = Vector3(0, 0, 0)
 max_results = 2
 collide_with_areas = true
 collide_with_bodies = false
+
+[node name="PlayerSfx" type="Node" parent="." unique_id=1893016641]
+script = ExtResource("5_sfx_player")
+
+[node name="ExternalCamera3D" type="Camera3D" parent="." unique_id=552734860]
+fov = 45.0
+script = ExtResource("4_external")
+
+[node name="TrainSoundListener3D" type="AudioListener3D" parent="." unique_id=1598907920]
+script = ExtResource("3_listener")

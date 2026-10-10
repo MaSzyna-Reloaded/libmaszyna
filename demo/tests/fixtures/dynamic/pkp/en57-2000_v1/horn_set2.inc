@@ -1,0 +1,2 @@
+horn1: { soundbegin: 697_en71_syrena-nisk-1.wav soundmain: 697_en71_syrena-nisk-2.wav soundend: 697_en71_syrena-nisk-3.wav range: 1000 offset: [ (p1), (p2) , (p3) ] }
+horn2: { soundbegin: 697_en71_syrena-wys-1.wav soundmain: 697_en71_syrena-wys-2.wav soundend: 697_en71_syrena-wys-3.wav range: 1000 offset: [ (p4), (p5), (p6) ] }

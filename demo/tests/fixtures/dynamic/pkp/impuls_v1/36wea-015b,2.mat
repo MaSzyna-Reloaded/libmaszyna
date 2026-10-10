@@ -1,0 +1,8 @@
+shader: parallax_specgloss
+texture_diffuse: skins\36wea\repl2_160ec
+texture_normalmap: skins\36wea\repl2_160ec_normal
+texture_specgloss: skins\36wea\repl2_160ec_specgloss
+param_height_scale: 0.0015
+param_height_offset: 0
+param_specular: 1
+param_glossiness: 2

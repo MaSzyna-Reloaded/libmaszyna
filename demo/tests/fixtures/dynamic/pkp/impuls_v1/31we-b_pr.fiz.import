@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://b0l2pbrorm77g"
+path="res://.godot/imported/31we-b_pr.fiz-44f33ef1eb139e69a0969f72a6f169ee.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/impuls_v1/31we-b_pr.fiz"
+dest_files=["res://.godot/imported/31we-b_pr.fiz-44f33ef1eb139e69a0969f72a6f169ee.res"]
+
+[params]
+

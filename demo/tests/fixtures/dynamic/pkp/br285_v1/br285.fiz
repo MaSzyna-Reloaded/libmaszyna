@@ -1,0 +1,82 @@
+Param. Category=train M=82400 Mred=12000 Vmax=140 PWR=2200 SandCap=700
+Load: MaxLoad=52 LoadQ=pieces LoadAccepted=pantstate LoadSpeed=1 UnLoadSpeed=0.1
+
+Dimensions: L=18.900 H=3.95 W=2.977 Cx=0.1
+
+Wheels: D=1.250 AIM=4000 Tw=1.435 Axle=Bo'Bo' Ad=1.75 Bd=10.3 Rmin=80
+
+Brake: BrakeValve=KE NBpA=4 MBF=50 MaxBP=3.8 BCN=8 RM=1.4 BCR=0.127 BCD=0.04 BCM=2.7 BCS=0.8 BSA=0 BM=Disk2 BVV=125 Vv=0.8 CompressorSpeed=0.04 CompressorPower=Converter MinCP=8 MaxCP=10 UBB3=8 LPOn=3.0 LPOff=4.5 HandlePipeUnlockPos=2 EmergencyCutsOffHandle=Yes
+
+SpringBrake: Volume=10 MBF=8 MaxSP=5.5 ResetP=4.0 MinFP=3.5 PressOff=4.5 PressOn=3.5 ValveOnArea=0.0002 ValveOffArea=0.0002 ValvePNBArea=0.002 MTC=4
+
+BuffCoupl. CType=Screw kB=9200 DmaxB=0.15 FmaxB=740 kC=4800 DmaxC=0.15 FmaxC=780 beta=0.58 AllowedFlag=103
+
+Cntrl. BrakeSystem=Pneumatic BCPN=6 BDelay1=15 BDelay2=4 BDelay3=35 BDelay4=25 ASB=Manual LocalBrake=PneumaticBrake MCPN=24 SCPN=0 AutoRelay=No IniCDelay=0.5 SCDelay=0.1 BrakeDelays=GPR BrakeHandle=MHZ_6P LocBrakeHandle=FD1 LocalBrakeTraxx=Yes ConverterStart=Automatic ConverterStartDelay=10 FuelStart=Automatic WaterStart=Battery OilStart=Automatic
+
+-1 0.8 	-1	20 Pneumatic 
+ 0 0.5	-1	2  Pneumatic
+ 1 0.46 -1	2  Pneumatic
+ 2 0.42 -1	2  Pneumatic
+ 3 0.38	-1	2  Pneumatic
+ 4 0.34	-1	2  Pneumatic
+ 5 0.29	-1	2  Pneumatic
+ 6 0	-1	40 Pneumatic
+
+Security: AwareSystem=Active,CabSignal,SeparateAcknowledge AwareDelay=30 SoundSignalDelay=2.5 MaxHoldTime=1.0 RadioStop=Yes
+ 
+Light: Light=Generator LGeneratorEngine=ElectricSeriesMotor LMaxVoltage=110 LMaxCurrent=100
+Clima: HMaxVoltage=3000 Heating=Generator HGeneratorEngine=Main HGeneratorMinRPM=600 HGeneratorMinVoltage=2400 HGeneratorMaxRPM=1860 HGeneratorMaxVoltage=3300
+Engine: EngineType=DieselElectric Trans=18:64 Ftmax=300000 Flat=1 Vhyp=24 Vadd=0.0 Cr=1.0 WaterMinTemperature=40 WaterFlowTemperature=70 WaterCoolingTemperature=82 WaterMaxTemperature=91 WaterShutters=Yes WaterAuxCircuit=Yes WaterAuxCoolingTemperature=50 WaterAuxMaxTemperature=74 WaterAuxShutters=Yes OilMinPressure=0.15 HeatKFO2=33
+Doors: DoorPermitList=0|3 DoorPermitListDefault=1
+
+Circuit: CircuitRes=0.01 ImaxLo=5000 IminLo=5000
+
+Clima: Heating=PowerCable HPowerTrans=ElectricPower HMaxVoltage=3000 
+
+MotorParamTable: 
+0	8.35	50	2000	48.2	0	0
+END-MPT  
+
+
+WWList: Size=24
+600	0	0	0
+600	100	1404	6000
+600	200	1404	6000
+650	300	1404	6000
+700	400	1404	6000
+750	500	1404	6000
+800	600	1404	6000
+850	700	1404	6000
+900	800	1404	6000
+950	900	1404	6000
+1000	1000	1404	6000
+1050	1100	1404	6000
+1100	1200	1404	6000
+1150	1300	1404	6000
+1200	1400	1404	6000
+1250	1500	1404	6000
+1300	1600	1404	6000
+1350	1700	1404	6000
+1400	1800	1404	6000
+1450	1850	1404	6000
+1500	1900	1404	6000
+1550	1950	1404	6000
+1600	2000	1404	6000
+1700	2100	1404	6000
+1860	2188	1404	6000
+END-WWL 
+
+LightsList: Size=12 Wrap=Yes Default=1 
+21	34	//oznaczenie czo³a poci¹gu (UIC)
+34	0	//oznaczenie koñca poci¹gu (UIC)
+37	34	//sygna³ specjalny (I)
+21	34	//sygna³ specjalny (I)
+38	34	//sygna³ ostrzegawczy (NL)
+22	34	//nieprzyporz¹dkowany
+17	17	//miganie ostrzegawcze (F,L)
+17	17	//miganie ostrzegawcze (B)
+42	42	//sygna³ ostrzegawczy (CH)
+4	4	//jazda manewrowa (NL)
+17	17	//jazda manewrowa(DK, F, L, S, N, H)
+16	1	//jazda manewrowa / postój (CH)
+endL 

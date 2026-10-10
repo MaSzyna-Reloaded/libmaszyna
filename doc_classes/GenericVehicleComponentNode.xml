@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GenericVehicleComponentNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_component" qualifiers="const">
+			<return type="GenericVehicleComponent" />
+			<description>
+			</description>
+		</method>
+		<method name="get_controller" qualifiers="const">
+			<return type="VehicleController" />
+			<description>
+			</description>
+		</method>
+		<method name="log_debug">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="log_warning">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

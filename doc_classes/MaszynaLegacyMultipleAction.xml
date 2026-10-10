@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyMultipleAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="else_events" type="RID[]" setter="set_else_events" getter="get_else_events" default="[]">
+		</member>
+		<member name="events" type="RID[]" setter="set_events" getter="get_events" default="[]">
+		</member>
+	</members>
+</class>

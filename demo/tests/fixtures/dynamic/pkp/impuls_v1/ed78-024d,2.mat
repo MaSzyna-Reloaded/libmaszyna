@@ -1,0 +1,8 @@
+shader: parallax_specgloss
+texture_diffuse: skins\ed78\repl2_160ec_merak_oslony_ed78
+texture_normalmap: skins\ed78\repl2_160ec_merak_oslony_ed78_normal
+texture_specgloss: skins\ed78\repl2_160ec_merak_oslony_ed78_specgloss
+param_height_scale: 0.0014
+param_height_offset: 0
+param_specular: 1
+param_glossiness: 2

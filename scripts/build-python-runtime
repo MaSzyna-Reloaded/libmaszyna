@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# The Python 2 runtime the original's cab screen scripts run on (PythonScreenServer): CPython with
+# Pillow, installed as one relocatable directory in the build dir - copy it into the game dir as
+# python2.7/.
+# Run in ci/docker/linux-sdk (make python-runtime), so it starts on the same glibc as the release.
+set -euo pipefail
+
+PREFIX="$(realpath -m "$1")"
+BUILD_DIR="$(realpath -m "$2")"
+
+PYTHON_VERSION=2.7.18
+PYTHON_SHA256=da3080e3b488f648a3d7a4560ddee895284c3380b11d6de75edb986526b9a814
+# the manylinux1 wheel carries its own libjpeg, freetype and zlib, so the runtime depends on no
+# image library of the host; cp27mu is the UCS4 build configured below
+PILLOW_WHEEL=Pillow-6.2.2-cp27-cp27mu-manylinux1_x86_64.whl
+PILLOW_URL=https://files.pythonhosted.org/packages/12/ad/61f8dfba88c4e56196bf6d056cdbba64dc9c5dfdfbc97d02e6472feed913/${PILLOW_WHEEL}
+PILLOW_SHA256=e3a797a079ce289e59dbd7eac9ca3bf682d52687f718686857281475b7ca8e6a
+
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+curl -fsSLo "Python-${PYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz"
+curl -fsSLo "${PILLOW_WHEEL}" "${PILLOW_URL}"
+echo "${PYTHON_SHA256}  Python-${PYTHON_VERSION}.tgz" | sha256sum -c -
+echo "${PILLOW_SHA256}  ${PILLOW_WHEEL}" | sha256sum -c -
+
+rm -rf "Python-${PYTHON_VERSION}"
+tar -xzf "Python-${PYTHON_VERSION}.tgz"
+cd "Python-${PYTHON_VERSION}"
+# setup.py adds the host's /usr/local unless cross compiling, and the SDK's compiler refuses any
+# header or library path outside its sysroot
+sed -i "s/add_dir_to_list(self.compiler.*'\/usr\/local.*/pass/" setup.py
+# for the same reason setup.py looks for zlib.h on the host and skips zlib; the compiler finds it
+# in the sysroot on its own
+printf '*shared*\nzlib zlibmodule.c -lz\n' > Modules/Setup.local
+# GCC 15 defaults to C23, where bool and false are keywords Include/asdl.h redefines
+./configure CFLAGS=-std=gnu11 --prefix="${PREFIX}" --enable-shared --enable-unicode=ucs4 --without-ensurepip
+make -j"$(nproc)"
+rm -rf "${PREFIX}"
+make install
+
+# a wheel is a zip unpacked into site-packages; no pip is needed for one package
+python3 -m zipfile -e "../${PILLOW_WHEEL}" "${PREFIX}/lib/python2.7/site-packages"
+LD_LIBRARY_PATH="${PREFIX}/lib" PYTHONHOME="${PREFIX}" "${PREFIX}/bin/python2.7" \
+    -c 'import zlib, PIL.Image, PIL.ImageDraw, PIL.ImageFont; print("Pillow " + PIL.__version__)'

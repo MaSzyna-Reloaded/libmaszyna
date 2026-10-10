@@ -1,0 +1,128 @@
+models: main/36wea-b_pgz.t3d#
+animations: 4 4 0 0 2 0 0 2 -1
+animwheelprefix: wheel0
+animdoorprefix: drzwi
+animstepprefix: stopien
+lowpolyinterior: low_poly_int/int_36wea-b.t3d
+
+loads: 
+{
+passengers: loads/36wea-b_passengers
+}
+
+endmodels
+
+locations:
+ doors: 2.8 both end
+ bogies: -7.96 7.96 end
+endlocations
+
+sounds:
+curve: { amplitudefactor: 1.35 amplitudeoffset: 1.35 range: 100 crossfade: 75 sound1: 20786_curve_111a.wav sound10: 20786_curve_111a.wav sound40: 20786_curve_111a.wav sound50: 20786_curve_111a.wav sound60: 697_et22_curve.wav sound80: silence1.wav }
+wheel_clatter: 70 -9.225 20786_31we_wheel_1.wav -6.585 20786_31we_wheel_2.wav 6.585 20786_31we_wheel_5.wav 9.225 20786_31we_wheel_6.wav end
+outernoise: { range: 90 amplitudefactor: 2 amplitudeoffset: 0.2 crossfade: 90
+sound1: outernoise_z1_12.wav
+sound20: outernoise_z1_4.wav
+sound40: outernoise_z1_5.wav
+sound60: outernoise_z1_6.wav
+sound80: outernoise_z1_5.wav
+sound100: outernoise_z1_11.wav
+sound120: outernoise_z1_11.wav
+sound160: outernoise_z1_11.wav
+sound500: outernoise_z1_11.wav }
+brake: { soundmain: silence1.wav }
+derail: derail.wav 200
+unbrake: { soundmain: 20786_en62_hiss_1.wav range: 30 soundproofing: [ 0.0001 0.0001 0.0001 1.0 1.0 1.0 ] amplitudeoffset: -1.2 amplitudefactor: 2.0 }
+dooropen: { soundmain: 20786_36wea_doors_open_v2.wav placement: external pitchvariation: 0 }
+doorclose: { soundmain: 20786_36wea_doors_close_v2.wav placement: external pitchvariation: 0 }
+doorstepopen: { soundmain: 20786_36wea_door_step_open.wav placement: external pitchvariation: 0 }
+doorstepclose: { soundmain: 20786_36wea_door_step_close.wav placement: external pitchvariation: 0 }
+doorpermit: { soundmain: 20786_36wea_doors_activation.wav placement: external pitchvariation: 0 }
+unloading: { soundmain: [ passengers_loading_1.wav passengers_loading_2.wav ] placement: custom soundproofing: [ 0 0.1 0 0.1 1 1 ] }
+loading: { soundmain: [ passengers_loading_1.wav passengers_loading_2.wav ] placement: custom soundproofing: [ 0 0.1 0 0.1 1 1 ] }
+heater: { soundbegin: 20786_36wea_passengers_heating_start.wav soundmain: 20786_36wea_passengers_heating_work.wav soundend: 20786_36wea_passengers_heating_stop.wav placement: external range: 70 soundproofing: [ 0.8 0.8 0.8 1.0 1.0 1.0 ] offset: [0.1, 4.1, -1.80] }
+epbrakeinc: { placement: internal soundproofing: [ 0.12 1.0 0.12 0.1 0.1 0.1 ]
+sound1: [1007]epc_inc0.wav
+sound2: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound4: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound6: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound8: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound10: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound12: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound14: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound16: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound18: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound20: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound22: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound24: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound26: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound28: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound30: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound32: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound34: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound36: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound38: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound40: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound42: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound44: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound46: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound48: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+sound50: [ 20786_en62_pop_1.wav 20786_en62_pop_3.wav 20786_en62_pop_4.wav 20786_en62_pop_5.wav 20786_en62_pop_6.wav ] 
+ }
+epbrakedec: { placement: internal soundproofing: [ 0.85 1.0 0.85 0.8 0.8 0.8 ]
+ sound1: 1007_36wea_ep_relay_050b.wav 
+ sound2: 1007_36wea_ep_relay_060.wav
+ sound4: 1007_36wea_ep_relay_070.wav
+ sound7: 1007_36wea_ep_relay_086.wav
+ sound10: 1007_36wea_ep_relay_106.wav
+ sound13: 1007_36wea_ep_relay_122.wav
+ sound16: 1007_36wea_ep_relay_148.wav
+ sound20: 1007_36wea_ep_relay.wav
+ sound30: 1007_36wea_ep_relay_210.wav
+ sound40: 1007_36wea_ep_relay_252.wav
+ sound100: silence1.wav
+ }
+//sand: 20786_elf_sand_1.wav 20786_elf_sand_2.wav 20786_elf_sand_3.wav 15 
+announcements: {
+ stop: sip/stacja.wav
+ soundproofing: [ 0.1 0.2 0.1 0.0 0.0 0.0 ] 
+ next_stop: sip/nastepna_stacja.wav 
+}
+endsounds
+
+internaldata:
+
+runningnoise: {
+sound0: silence1.wav pitch0: 0.5
+sound10: 24150_impuls_runningnoise_20.flac pitch10: 0.8
+sound20: 24150_impuls_runningnoise_20.flac pitch20: 1
+sound80: 24150_impuls_runningnoise_80.flac pitch80: 1
+sound100: 24150_impuls_runningnoise_100.flac pitch100: 1
+sound120: 24150_impuls_runningnoise_120.flac pitch120: 1
+sound190: 24150_impuls_runningnoise_120.flac pitch190: 1.58
+sound500: 24150_impuls_runningnoise_120.flac pitch500: 2
+crossfade: 75 placement: internal amplitudefactor: 0.6 range: -1 }
+brakesound: silence1.wav 0.3 0.05 0.2 0.9
+slipperysound: silence1.wav 2.0 0.2 
+
+mechspring: 100 0.02 0.2 0.2 0.03 0.15 0.02 0.01
+
+cab1definition: //rozmiary kabiny po ktorej mozna chodzic
+-1.28 0.7 -7.38 1.28 1.25 7.24
+driver1pos:
+0 3 5.6
+driver1sitpos: 
+0 2.73 6.99
+
+cab2definition:
+-1.28 0.7 -7.38 1.28 1.25 7.24
+driver2pos:
+0.0 2.73 -7.03
+
+cab0definition:
+-1.28 0.7 -7.38 1.28 1.25 7.24
+driver0pos:
+0.0 2.42 -2.82
+
+pydestinationsign: { scripts/led_impuls_n_3 parameters: kod_e=IC&kod_p=TLK&kod_o=R instance: name }
+destinationsignbackground: make:scripts/led_impuls_n_3?dummy=1

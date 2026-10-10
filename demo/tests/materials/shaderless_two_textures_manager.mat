@@ -1,0 +1,2 @@
+texture1: legacy_diffuse
+rain: { texture2: legacy_wet }

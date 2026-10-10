@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cmihvwwej5tfx"
+path="res://.godot/imported/en57rb_gso_dsn_dn_on8_wpr2_ng2_cg.fiz-39fe2cecaf926cda6fdcfc3b8aac9a45.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/en57_v2/en57rb_gso_dsn_dn_on8_wpr2_ng2_cg.fiz"
+dest_files=["res://.godot/imported/en57rb_gso_dsn_dn_on8_wpr2_ng2_cg.fiz-39fe2cecaf926cda6fdcfc3b8aac9a45.res"]
+
+[params]
+

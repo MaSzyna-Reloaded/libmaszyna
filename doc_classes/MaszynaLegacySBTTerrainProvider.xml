@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacySBTTerrainProvider" inherits="SceneryStreamingProvider" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The terrain of the original engine's binary region files ([code].sbt[/code]), supplied section by section.
+	</brief_description>
+	<description>
+		A [SceneryStreamingProvider] of [constant SceneryStreamingProvider.CONTENT_TERRAIN]. A region file is the original's [code]basic_region::serialize()[/code] (scene.cpp): the [code]triangles[/code] shapes of a scenery cut into 1[code] [/code]km sections - the streaming's own cells - each with its size and the radius its shapes reach. [method open] lists the sections without reading them (22 900 of Braniewo szeroki's 1.2[code] [/code]GB in ~50[code] [/code]ms); a section is read and decoded only when the streaming asks for its cell, into one chunk per texture and visibility range, cut at [constant MaszynaTrianglesChunkGeometry.MAX_VERTICES]. Lines are left out, as [code]lines[/code] nodes are.
+		A scenery uses a region file when it has [code]&lt;scenario&gt;.sbt[/code] beside it or a [code]terrain x.sbt[/code] line; its [code]triangles[/code] nodes, terrain models and [code]_ter.scm[/code] includes are then left out, as in the original (MASZYNA_ORIGINAL_QUIRKS.md, "Terrain that exists only as an SBT").
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="is_region" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns whether [param path] is a region file of the version the original writes ([code]basic_region::is_scene()[/code]): its header is [code]EU07[/code] [code]SBT2[/code].
+			</description>
+		</method>
+		<method name="open">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Lists the sections of the region file at [param path] - their place, size and overhang - and keeps the file open for [method SceneryStreamingProvider.chunk_load]. Returns [code]false[/code] when it is no region file. Call it before [method SceneryStreamingServer.provider_register].
+			</description>
+		</method>
+	</methods>
+</class>

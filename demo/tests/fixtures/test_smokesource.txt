@@ -1,0 +1,12 @@
+{
+    spawn_rate: 30
+    initializer: {
+        min_inclination: 0 max_inclination: 15
+        min_velocity: 0.25 max_velocity: 1.7
+        min_size: 0.2 max_size: 0.6
+        min_opacity: 0.3 max_opacity: 0.6
+	color: [ 50, 56, 59 ]
+    }
+    size_change: { step: 0.8 min: 0.05 max: 40.0 }
+    opacity_change: { step: -0.15 min: 0.0 max: 1.0 }
+}

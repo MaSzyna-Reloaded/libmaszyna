@@ -1,0 +1,216 @@
+//model pojazdu i definicje podmodeli:
+models: 218md_a.t3d#
+animations: 4 4 0 2 2 0 0 0 0 -1
+lowpolyinterior: wnetrze_arp.t3d
+//ruchome czesci (animations)
+//krecace sie kola (o srednicy jak w *.chk)
+animwheelprefix: wheel0
+animdoorprefix: door0
+loads: 
+{
+passengers: 218md_a_passengers
+}
+endmodels
+
+locations:
+ doors: 0.68 both end
+ bogies: -6.843 10.2 end
+endlocations
+
+
+sounds:
+outernoise: { range: 90 amplitudefactor: 0.6 amplitudeoffset: 0.3 crossfade: 90 sound0: silence1.wav sound1: outernoise_z1_5.wav sound10: outernoise_z1_20.wav sound20: outernoise_z1_20.wav sound40: outernoise_z1_40.wav sound60: outernoise_z1_60.wav sound80: outernoise_z1_80.wav sound120: outernoise_z1_120.wav sound300: outernoise_z1_120.wav }
+wheel_clatter: 70 -7.827 26284_sa135_wheel_1.wav -5.827 26284_sa135_wheel_2.wav 9.123 26284_sa135_wheel_1.wav end
+engine: { amplitudefactor: 0.35 amplitudeoffset: 0.65 range: 150 crossfade: 85 offset: [ 0, 0.75, 3.2 ] placement: external
+ sound575: d_2566uhx-575.wav pitch575: 575
+ sound722: d_2566uhx-722.wav pitch722: 722
+ sound1214: d_2566uhx-1214.wav pitch1214: 1214
+ sound1280: d_2566uhx-1280.wav pitch1280: 1280
+ sound1653: d_2566uhx-1653.wav pitch1653: 1653
+ sound2296: d_2566uhx-2296.wav pitch2296: 2296 
+ soundend: 10016_sa133_stop.wav }
+turbo: { amplitudefactor: 1.00 amplitudeoffset: -0.5 frequencyfactor: 1.2 frequencyoffset: 0.0 range: 100 offset: [ 0, 0.75, 5.2 ] placement: external
+ crossfade: 85
+  soundproofing: [ 0.1 0.3 0.1 1 1 1 ]
+ sound40: cisza.wav pitch40: 40
+ sound73: 6h1800__turbo__8100.wav pitch73: 81
+ sound85: 6h1800__turbo__9900.wav pitch85: 99
+ sound170: cisza.wav pitch170: 168 }
+brake: {
+ amplitudefactor: 0.75
+ amplitudeoffset: 0.5 
+ range: 200
+ crossfade: 85
+ sound0: jbg_brake_3.wav
+ sound1: jbg_brake_3.wav
+ sound6: jbg_brake_6.wav
+ sound12: jbg_brake_12.wav
+ sound17: jbg_brake_17.wav
+ sound23: jbg_brake_22.wav
+ sound33: jbg_brake_27.wav
+ sound40: cisza.wav }
+unbrake: { soundmain: [1007]estluz.wav soundproofing: [ 0.0001 0.01 0.0001 1 1 1 ] }
+brakeacc: brakeacc_pesobus.wav 50
+derail: derail.wav 200
+curve: { amplitudefactor: 1.35 amplitudeoffset: 1.35 range: 100 crossfade: 75 sound1: 20786_curve_111a.wav sound10: 20786_curve_111a.wav sound40: 20786_curve_111a.wav sound50: 20786_curve_111a.wav sound60: 697_et22_curve.wav sound80: silence1.wav }
+//converter: { amplitudeoffset: -0.5 soundmain: en57-przetw_statyczna.wav range: 10 offset: [ 0.6, 2, 7.85 ] }
+horn1: { soundbegin: 20786_en62_horn_high_1.wav soundmain: 20786_en62_horn_high_2.wav soundend: 20786_en62_horn_high_3.wav range: 1000 }
+horn2: { soundset: [ 26284_syrena_sa135-start.wav|26284_syrena_sa135-trwa.wav|26284_syrena_sa135-stop.wav, 26284_sa13x_syrena_1.wav|26284_sa13x_syrena_2.wav|26284_sa13x_syrena_3.wav, 26284_sa13x_syrena_4.wav|26284_sa13x_syrena_5.wav|26284_sa13x_syrena_6.wav, 26284_sa133-001_horn_high-start.wav|26284_sa133-001_horn_high-trwa.wav|26284_sa133-001_horn_high-stop.wav, 26284_sa133-009-horn_high-start.wav|26284_sa133-009-horn_high-trwa.wav|26284_sa133-009-horn_high-stop.wav, 26284_sa133-009-horn_high-start2.wav|26284_sa133-009-horn_high-trwa2.wav|26284_sa133-009-horn_high-stop2.wav, 26284_sa133-010_horn_high-start.wav|26284_sa133-010_horn_high-trwa.wav|26284_sa133-010_horn_high-stop.wav, 26284_sa133-020_horn_high-start.wav|26284_sa133-020_horn_high-trwa.wav|26284_sa133-020_horn_high-stop.wav ] range: 1000 offset: [ 0.8, 3.74 , 7.75 ] }
+compressor: {
+ frequencyfactor: 0.8
+ amplitudeoffset: 0.3
+ amplitudefactor: 0.0
+ range: 50
+ crossfade: 80
+ offset: [ 0, 0.75, 6.2 ]
+ placement: internal
+ soundbegin: 214m_compressor_on.wav
+ sound1: silence1.wav pitch1: 1
+ sound100: 214m_compressor_1000.wav pitch100: 100
+ sound145: 214m_compressor_1450.wav pitch145: 145
+ sound200: 214m_compressor_2000.wav pitch200: 200
+ sound300: silence1.wav pitch300: 300
+ soundend: 214m_compressor_off.wav }
+compressoridle: {
+ frequencyfactor: 0.0
+ frequencyoffset: 1.0
+range: 50
+ offset: [ 0.8, 0.7, -8.0 ]
+ soundproofing: [ 0.1 0.1 0.1 1 1 1 ]
+ placement: external
+ soundbegin: 214mb_compressor_idle_on.wav
+ sound1: 214mb_compressor_idle.wav pitch1: 1
+ sound500: cisza.wav pitch500: 1
+ soundend: cisza.wav }
+}
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+dooropen: 9295_elf_door_open.wav
+doorclose: 9295_elf_door_close.wav
+emergencybrake: { soundbegin: 20786_et22_emergency_brake_1 soundmain: 20786_et22_emergency_brake_2 soundend: 20786_et22_emergency_brake_3 }
+announcements: {
+ chime: sip/jingiel_arriva
+  soundproofing: [ 0.1 0.2 0.1 0.0 0.0 0.0 ]
+ next_stop: sip/nastepna_stacja
+ stop: sip/stacja
+}
+endsounds
+
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+ctrl: 20786_4e_control_5.wav
+buzzer: 20786_en62_buzzer.wav
+//switch: switch.wav
+relay: silence1.wav
+pneumaticrelay: pneumaticrelay.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+dooropen: 20786_switch_en57-1112.wav
+doorclose: 20786_switch_en57-1112.wav
+ignition: 10016_sa133_start.wav
+brakesound: silence1.wav 1.0 0 0.2 0.9
+slipperysound: brake-slipp.wav 2.0 0.2
+airsound:  { soundmain: [ 697_fv4a_syk.wav 697_ep05-hiss.wav sm42-powietrze.wav 07]hiss.wav ] amplitudeoffset: -0.01 }
+airsound2: [1007]fv4a_luz.wav 0.05 -0.01
+airsound3: [1007]fv4a_e.wav 0.25 -0.01
+airsound4: { soundmain: [ [1007]fv4a_x.wav 20786_et22_popelnianie.wav ] amplitudeoffset: -0.01 }
+airsound5: [1007]fv4a_t.wav 10.0 -0.01
+runningnoise: 20786_runningnoise_monobloki_fast.wav 0.5 0.0 1.0 0.2
+
+maxtachovel: 120
+//bujanie kamery:
+//          springk, dampf, x,  y,  z, max, roll, pitch
+mechspring: 100      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+// wyzerowac 3,4,5 parametr aby nie trzeslo
+// wyzerowac ostatnie dwa parametry aby kamera sie nie kiwala
+
+cab1definition:   //rozmiary kabiny po ktorej mozna chodzic
+-1.464 1.5 8.0 1.464 1.5 9.113
+driver1pos: // pozycja poczatkowa
+0 2.7 8.38
+driver1sitpos: // pozycja siedzaca
+0 2.4 8.38
+cab1model: kabina_a.t3d //nazwa modelu kabiny a
+
+mainctrl: { nastawnik rot -0.04 0.09 0.1 
+sound0: 26284_sa13x_nastawnik_hamowanie_nagle.wav 
+sound1: [ 26284_sa13x_nastawnik_hamowanie.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie2.wav 26284_sa13x_nastawnik_hamowanie3.wav ] 
+sound2: [ 26284_sa13x_nastawnik_hamowanie.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie3.wav ]
+sound3: [ 26284_sa13x_nastawnik_neutralna.wav 26284_sa13x_nastawnik_neutralna1.wav 26284_sa13x_nastawnik_neutralna2.wav 26284_sa13x_nastawnik_neutralna3.wav ]
+sound4: 26284_sa13x_nastawnik_utrzymanie_mocy.wav
+sound5: 26284_sa13x_nastawnik_zadawanie_mocy.wav }
+dooralloff_sw: { bt-drzwi_close mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+doorallon_sw: { bt-drzwi_open mov -0.002 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+doorpermitpreset_sw: { sw-drzwi rot -0.0806 0.065 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav sound2: 20786_en62_switch_position_v2_3.wav sound3: 20786_en62_switch_position_2.wav } //programator zgody drzwi
+main_off_bt: { bt-silnik_stop mov -0.003 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+main_on_bt: { bt-silnik_start  mov -0.003 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+alarmchain: { bt-hamulec_bezpieczenstwa mov -0.004 0 0.1 soundinc: 26284_36wea_grzybek_on.wav sounddec: 26284_36wea_grzybek_off.wav }
+dirkey: { sw-kierunek_jazdy rot -0.055 0.01 0.1 soundinc: 20786_en62_switch_panto_v1_on.wav sounddec: 20786_en62_switch_panto_v1_of.wav }
+hornhigh_bt: { bt-syrena mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+security_reset_bt: { bt-czuwak mov -0.005 0 0.1 soundinc: 20786_en62_button_shp_ca_on.wav sounddec: 20786_en62_button_shp_ca_of.wav }
+sand_bt: { bt-piasecznica mov -0.003 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+lights_sw: { sw-reflektory rot -0.083 0.1667 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav sound2: 20786_en62_switch_position_v2_3.wav sound3: 20786_en62_switch_position_2.wav sound4: 20786_en62_switch_position_2.wav }
+dimheadlights_sw: { sw-przyc_reflektorow rot 0.222 -0.111 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav  }
+cablight_sw: { sw-osw_kabiny rot -0.222 0.111 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav }
+i-doors: i-drzwi
+springbraketoggle_bt: { bt-zal_ham_post mov -0.002 0 0.1  soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav } //za³¹czenie postojowego
+
+brakepress: mano_a rot 1.00 0.69 0.1
+brakepress: mano_b rot 1.07 0.69 0.11
+compressor: mano_pz rot 0.66 0.69 0.1
+pipepress: mano_pg rot 0.62 0.69 0.1
+
+i-security_aware: i-CA
+i-security_cabsignal: i-SHP
+
+speedinc_bt: { bt-tempomat+ mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speeddec_bt: { bt-tempomat- mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton0: { bt-tempomat_0 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton1: { bt-tempomat_30 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton2: { bt-tempomat_40 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton3: { bt-tempomat_50 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton4: { bt-tempomat_60 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton5: { bt-tempomat_70 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton6: { bt-tempomat_80 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton7: { bt-tempomat_90 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton8: { bt-tempomat_100 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton9: { bt-tempomat_120 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedctrlpowerinc_bt: { bt-tempomat_opt+ mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedctrlpowerdec_bt: { bt-tempomat_opt- mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+tempomat_sw: { sw-tempomat rot -0.222 0 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav } //za³¹czenie tempomatu
+pyscreen: lokel screen_218mc
+pyscreen: atm sa134_atm
+
+brakepress: mano_a rot 1.00 0.69 0.1
+brakepress: mano_b rot 1.07 0.69 0.11
+compressor: mano_pz rot 0.66 0.69 0.1
+pipepress: mano_pg rot 0.62 0.69 0.1
+
+i-security_aware: i-CA
+i-security_cabsignal: i-SHP
+
+cab2definition:
+-1.464 1.5 -11.113 1.464 1.5 -10.23
+driver2pos:
+0 2.98 -10.622
+driver2sitpos:
+0.716 2.614 -10.514
+
+cab0definition:
+-0.3 1.5 -4.8 0.2 1.5 4.8
+driver0pos:
+0.0 3.0 1.0
+
+
+pydestinationsign: { led_sa134 }

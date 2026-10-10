@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TimetableEntry" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="is_stop" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="arrival" type="float" setter="set_arrival" getter="get_arrival" default="-1.0">
+		</member>
+		<member name="departure" type="float" setter="set_departure" getter="get_departure" default="-1.0">
+		</member>
+		<member name="facilities" type="String" setter="set_facilities" getter="get_facilities" default="&quot;&quot;">
+		</member>
+		<member name="kilometre" type="float" setter="set_kilometre" getter="get_kilometre" default="0.0">
+		</member>
+		<member name="radio_channel" type="int" setter="set_radio_channel" getter="get_radio_channel" default="-1">
+		</member>
+		<member name="station_name" type="String" setter="set_station_name" getter="get_station_name" default="&quot;&quot;">
+		</member>
+		<member name="track_count" type="int" setter="set_track_count" getter="get_track_count" default="1">
+		</member>
+		<member name="travel_minutes" type="float" setter="set_travel_minutes" getter="get_travel_minutes" default="0.0">
+		</member>
+		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+		</member>
+	</members>
+</class>

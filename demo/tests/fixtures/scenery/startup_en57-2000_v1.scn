@@ -1,0 +1,14 @@
+// en57-2000_v1 (baltyk_sdm.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 EN57-2067ra dynamic PKP\EN57-2000_V1 EN57-2067_RA 6BA_pr  0 headdriver 247 0 enddynamic
+node -1 0 EN57-2067s dynamic PKP\EN57-2000_V1 EN57-2067_S 6BS_pr  0 nobody 247 0 enddynamic
+node -1 0 EN57-2067rb dynamic PKP\EN57-2000_V1 EN57-2067_RB 6BB_pr  0 nobody 247 0 enddynamic
+node -1 0 EN57-2040ra dynamic PKP\EN57-2000_V1 EN57-2040_RA 6BA  0 nobody 247 0 enddynamic
+node -1 0 EN57-2040s dynamic PKP\EN57-2000_V1 EN57-2040_S 6BS  0 nobody 247 0 enddynamic
+node -1 0 EN57-2040rb dynamic PKP\EN57-2000_V1 EN57-2040_RB 6BB  0 nobody 247 0 enddynamic
+endtrainset

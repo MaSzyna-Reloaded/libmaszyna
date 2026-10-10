@@ -1,0 +1,7 @@
+// an include inside an open trainset: its vehicle stands between the two of this file
+trainset express main_track 100 0
+node -1 0 first dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+include trainset/middle.inc end
+node -1 0 last dynamic test/synthetic_v1 none synthetic 0 nobody 3 0 enddynamic
+endtrainset
+node -1 0 lone dynamic test/synthetic_v1 none synthetic side_track -20.0 nobody 0 0 enddynamic

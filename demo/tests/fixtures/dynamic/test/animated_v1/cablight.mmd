@@ -1,0 +1,19 @@
+// cablight: three ways - internaldata:'s interior light colour, a cab's own colours before its
+// bounds (TCab::Load) and a stray cablight: among the controls, as in EP07 4e-ep-tv-g.mmd
+models: animated.t3d
+endmodels
+
+internaldata:
+cablight: 10 10 10 127.5 63.75 255 20 20 20
+
+cab1definition:
+cablight: 1 2 3 4 5 6 7 8 9
+-1.0 1.5 4.0 1.0 3.0 6.0
+driver1pos:
+0.0 2.5 5.0
+cab1model: none
+cablight: nadwozie
+converter_sw: nadwozie rot 0.1 0 0.1
+
+cab0definition:
+-0.5 1.5 -2.0 0.5 3.0 2.0

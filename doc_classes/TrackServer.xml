@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrackServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="isolated_add_track">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_free">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="isolated" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_is_occupied" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="isolated" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_set_name">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_set_parent">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="parent" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_active_track" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_blade_boundary_offset" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_branch_end_endpoint" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_branch_start_endpoint" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_common_endpoints" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_endpoint_branch" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="endpoint_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_f_offset1" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_get_f_offset2" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_is_right" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_set_active_track">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="active_track" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_track_get_length" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="switch_track" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="switch_track_get_neighbors">
+			<return type="TrackBranchNeighbors" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="switch_track" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="topology_get_summary">
+			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="topology_rebuild">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="track_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_free">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_common_endpoint_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_curve" qualifiers="const">
+			<return type="Resource" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_domain_curve" qualifiers="const">
+			<return type="Curve3D" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_endpoint_connections">
+			<return type="TrackEndpointRef[]" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="endpoint_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_endpoints">
+			<return type="PackedVector3Array" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_environment" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_length" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="switch_track" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_next">
+			<return type="TrackEndpointRef" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="endpoint_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_quality_flag" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_roll" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" default="0" />
+			<description>
+				The roll of the branch's curve at its start (x) and its end (y), in degrees, as read out of the curve resource when it was set.
+			</description>
+		</method>
+		<method name="track_get_sound_distance" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_vehicles" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_velocity" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_width" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_is_occupied" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_is_switch" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_set_velocity">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="velocity" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="track_update">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="type" type="int" />
+			<param index="2" name="name" type="String" />
+			<param index="3" name="width" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="track_update_curves">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="curve1" type="Resource" />
+			<param index="2" name="curve2" type="Resource" />
+			<description>
+			</description>
+		</method>
+		<method name="track_update_properties">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="quality_flag" type="int" />
+			<param index="2" name="environment" type="int" />
+			<param index="3" name="sound_distance" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="track_vehicle_entered">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_vehicle_left">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="tracks_find_in_aabb" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="aabb" type="Rect2" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="is_topology_changed" type="bool" setter="" getter="get_is_topology_changed">
+		</member>
+		<member name="rail_height" type="float" setter="" getter="get_rail_height">
+		</member>
+		<member name="switch_max_offset" type="float" setter="" getter="get_switch_max_offset">
+		</member>
+		<member name="switch_offset_delay" type="float" setter="" getter="get_switch_offset_delay">
+		</member>
+	</members>
+	<signals>
+		<signal name="isolated_freed">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="isolated_occupied">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="isolated_vehicle_entered">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="isolated_vehicle_left">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="switch_active_track_changed">
+			<param index="0" name="track_rid" type="RID" />
+			<param index="1" name="active_track" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="switch_movement_finished">
+			<param index="0" name="track_rid" type="RID" />
+			<param index="1" name="active_track" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="switch_movement_started">
+			<param index="0" name="track_rid" type="RID" />
+			<param index="1" name="from_track" type="int" />
+			<param index="2" name="to_track" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="switch_offset_changed">
+			<param index="0" name="track_rid" type="RID" />
+			<param index="1" name="offset" type="float" />
+			<description>
+			</description>
+		</signal>
+		<signal name="topology_changed">
+			<description>
+			</description>
+		</signal>
+		<signal name="topology_rebuilt">
+			<description>
+			</description>
+		</signal>
+		<signal name="tracks_changed">
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="TRACK_COMMON" value="0" enum="SwitchTrack">
+		</constant>
+		<constant name="TRACK_DIVERGING" value="1" enum="SwitchTrack">
+		</constant>
+		<constant name="POINT_NONE" value="-1" enum="SwitchCommonPoint">
+		</constant>
+		<constant name="POINT_P1" value="0" enum="SwitchCommonPoint">
+		</constant>
+		<constant name="POINT_P2" value="1" enum="SwitchCommonPoint">
+		</constant>
+		<constant name="CURVE1_P1" value="0" enum="EndpointIndex">
+		</constant>
+		<constant name="CURVE1_P2" value="1" enum="EndpointIndex">
+		</constant>
+		<constant name="CURVE2_P1" value="2" enum="EndpointIndex">
+		</constant>
+		<constant name="CURVE2_P2" value="3" enum="EndpointIndex">
+		</constant>
+		<constant name="TRACK_UNKNOWN" value="-1" enum="TrackType">
+		</constant>
+		<constant name="TRACK_NORMAL" value="0" enum="TrackType">
+		</constant>
+		<constant name="TRACK_SWITCH" value="1" enum="TrackType">
+		</constant>
+		<constant name="TRACK_ROAD" value="2" enum="TrackType">
+		</constant>
+		<constant name="TRACK_CROSS" value="3" enum="TrackType">
+		</constant>
+		<constant name="TRACK_RIVER" value="4" enum="TrackType">
+		</constant>
+		<constant name="TRACK_TRIBUTARY" value="5" enum="TrackType">
+		</constant>
+		<constant name="TRACK_TURN" value="6" enum="TrackType">
+		</constant>
+		<constant name="TRACK_TABLE" value="7" enum="TrackType">
+		</constant>
+		<constant name="GROUP_NONE" value="0" enum="TrackTypeGroup">
+		</constant>
+		<constant name="GROUP_RAIL" value="1" enum="TrackTypeGroup">
+		</constant>
+		<constant name="GROUP_ROAD" value="2" enum="TrackTypeGroup">
+		</constant>
+		<constant name="GROUP_WATER" value="3" enum="TrackTypeGroup">
+		</constant>
+		<constant name="DIRECTION_NORMAL" value="0" enum="Direction">
+		</constant>
+		<constant name="DIRECTION_REVERSED" value="1" enum="Direction">
+		</constant>
+		<constant name="INVALID_NODE_ID" value="-1">
+		</constant>
+	</constants>
+</class>

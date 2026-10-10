@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://c3m54okvoo56o"
+path="res://.godot/imported/303d.fiz-871f8afea32620d321d9744029de1e27.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/su46_v2/303d.fiz"
+dest_files=["res://.godot/imported/303d.fiz-871f8afea32620d321d9744029de1e27.res"]
+
+[params]
+

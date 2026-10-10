@@ -1,0 +1,2 @@
+horn1: { soundbegin: 104e_3]horn1-start.wav soundmain: 104e_3]horn1.wav soundend: 104e_3]horn1-stop.wav range: 1000 }
+horn2: { soundbegin: 104e_3]horn2-start.wav soundmain: 104e_3]horn2.wav soundend: 104e_3]horn2-stop.wav range: 1000 }

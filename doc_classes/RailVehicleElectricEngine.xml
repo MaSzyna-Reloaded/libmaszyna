@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleElectricEngine" inherits="RailVehicleEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Electric engine handler class. Used to check/set it's parameters
+	</brief_description>
+	<description>
+		Class handling electric engines
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="converter_fuse_reset">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="fuse_reset">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camshaft_available" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_circuit_imax" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_contactors_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_converter_overload" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_diff_relay_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_dynamic_brake_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_engine_voltage" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_fuse_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_highcurrent_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_line_breaker_closes_at_no_power" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_line_breaker_delay" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_line_breaker_initial_delay" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_mainbreaker_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_connectors_open" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_current" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_resistors_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_total_current" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vent_overload_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_line_contactor_closed" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_pressure_switch_tripped" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_motor_connectors_open">
+			<return type="void" />
+			<param index="0" name="open" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="circuit_imax_high" type="int" setter="set_circuit_imax_high" getter="get_circuit_imax_high">
+			[code]Circuit:ImaxHi[/code]
+			Maximum current on "high" starting stage, in amperes.
+		</member>
+		<member name="circuit_imax_low" type="int" setter="set_circuit_imax_low" getter="get_circuit_imax_low">
+			[code]Circuit:ImaxLo[/code]
+			Maximum current on "low" starting stage, in amperes.
+		</member>
+		<member name="circuit_imin_high" type="int" setter="set_circuit_imin_high" getter="get_circuit_imin_high">
+			[code]Circuit:IminHi[/code]
+			Automatic starting relay switching current on the "high" stage; also used by the AI driver.
+		</member>
+		<member name="circuit_imin_low" type="int" setter="set_circuit_imin_low" getter="get_circuit_imin_low">
+			[code]Circuit:IminLo[/code]
+			Automatic starting relay switching current on the "low" stage; also used by the AI driver.
+		</member>
+		<member name="circuit_resistance" type="float" setter="set_circuit_resistance" getter="get_circuit_resistance">
+			[code]Circuit:CircuitRes[/code]
+			Motor and circuit resistance, in ohms.
+		</member>
+		<member name="circuit_tuhex_diff" type="float" setter="set_circuit_tuhex_diff" getter="get_circuit_tuhex_diff">
+			[code]Circuit:TUHEX_Diff[/code]
+			Hysteresis of the ED braking regulator.
+		</member>
+		<member name="circuit_tuhex_max_current" type="float" setter="set_circuit_tuhex_max_current" getter="get_circuit_tuhex_max_current">
+			[code]Circuit:TUHEX_MaxIw[/code]
+			Maximum excitation current during ED braking (limits max braking force).
+		</member>
+		<member name="circuit_tuhex_min_current" type="float" setter="set_circuit_tuhex_min_current" getter="get_circuit_tuhex_min_current">
+			[code]Circuit:TUHEX_MinIw[/code]
+			Minimum excitation current during ED braking, resulting from the traction motor's magnetization curve.
+		</member>
+		<member name="circuit_tuhex_stages" type="int" setter="set_circuit_tuhex_stages" getter="get_circuit_tuhex_stages">
+			[code]Circuit:TUHEX_Stages[/code]
+			Number of distinct ED braking stages. When greater than 0, [member circuit_tuhex_sum_1],
+			[member circuit_tuhex_sum_2] and [member circuit_tuhex_sum_3] should also be set.
+		</member>
+		<member name="circuit_tuhex_sum" type="float" setter="set_circuit_tuhex_sum" getter="get_circuit_tuhex_sum">
+			[code]Circuit:TUHEX_Sum[/code]
+			Current ED braking regulator setpoint (sum of excitation and rotor currents).
+		</member>
+		<member name="circuit_tuhex_sum_1" type="float" setter="set_circuit_tuhex_sum_1" getter="get_circuit_tuhex_sum_1">
+			[code]Circuit:TUHEX_Sum1[/code]
+			ED braking regulator setpoint 1.
+		</member>
+		<member name="circuit_tuhex_sum_2" type="float" setter="set_circuit_tuhex_sum_2" getter="get_circuit_tuhex_sum_2">
+			[code]Circuit:TUHEX_Sum2[/code]
+			ED braking regulator setpoint 2.
+		</member>
+		<member name="circuit_tuhex_sum_3" type="float" setter="set_circuit_tuhex_sum_3" getter="get_circuit_tuhex_sum_3">
+			[code]Circuit:TUHEX_Sum3[/code]
+			ED braking regulator setpoint 3.
+		</member>
+		<member name="cntrl_converter_overload_relay_off_when_main_is_off" type="bool" setter="set_cntrl_converter_overload_relay_off_when_main_is_off" getter="get_cntrl_converter_overload_relay_off_when_main_is_off">
+			[code]Cntrl.ConverterOverloadWhenMainIsOff[/code]
+		</member>
+		<member name="cntrl_converter_overload_relay_start_mode" type="int" setter="set_cntrl_converter_overload_relay_start_mode" getter="get_cntrl_converter_overload_relay_start_mode" enum="RailVehicleController.StartMode">
+			[code]Cntrl.ConverterOverloadRelayStart[/code]
+		</member>
+		<member name="cntrl_main_switch_start_mode" type="int" setter="set_cntrl_main_switch_start_mode" getter="get_cntrl_main_switch_start_mode" enum="RailVehicleController.StartMode">
+			[code]Cntrl.MainStart[/code]
+		</member>
+	</members>
+</class>

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Installed by `make install-git-hooks` (core.hooksPath = scripts/git-hooks)
+set -euo pipefail
+
+"$(git rev-parse --show-toplevel)/scripts/check-staged-uids"

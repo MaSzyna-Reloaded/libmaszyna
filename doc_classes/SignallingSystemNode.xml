@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignallingSystemNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A node proxy of a signalling system: creates it with an implementation and groups signal heads by name.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_system" qualifiers="const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="send_event">
+			<return type="void" />
+			<param index="0" name="event" type="StringName" />
+			<param index="1" name="arguments" type="Dictionary" default="{}" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="implementation" type="SignallingImplementation" setter="set_implementation" getter="get_implementation">
+		</member>
+		<member name="signal_head_names" type="PackedStringArray" setter="set_signal_head_names" getter="get_signal_head_names" default="PackedStringArray()">
+		</member>
+	</members>
+</class>

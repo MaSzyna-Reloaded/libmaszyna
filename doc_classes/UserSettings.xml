@@ -14,9 +14,14 @@
 		<method name="get_maszyna_game_dir" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the configured Maszyna game directory.
-				In release builds outside the editor this method always returns [code]"."[/code].
-				If the stored value is empty, [code]"."[/code] is returned as a fallback.
+				Returns the Maszyna game directory in use, as an absolute path.
+				The configured [code]maszyna/game_dir[/code] (resolved against the executable's directory when relative; empty stands for [code]"."[/code]) when it is a game directory (see [method is_maszyna_game_dir]); otherwise the executable's directory when that one is; otherwise the configured one.
+			</description>
+		</method>
+		<method name="find_maszyna_game_dirs" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns the game directories found where an installation is usually kept: the executable's directory and the one above it, every game of every Steam library, the folders at the root of each drive and in its [code]Games[/code] folder, and the same in the home directory. Only directories passing [method is_maszyna_game_dir] are returned, the executable's own first.
 			</description>
 		</method>
 		<method name="get_setting" qualifiers="const">
@@ -27,6 +32,25 @@
 			<description>
 				Returns a setting value from the given config [param section] and [param key].
 				If the key does not exist, [param default_value] is returned.
+			</description>
+		</method>
+		<method name="is_config_changed" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether something set ([method set_setting], [method erase_setting]) differs from what the config file holds - since it was last loaded or saved. A value set and set back again is no change.
+			</description>
+		</method>
+		<method name="is_maszyna_game_dir" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns [code]true[/code] when [param path] holds the original's data - the [code]scenery[/code], [code]dynamic[/code] and [code]textures[/code] directories.
+			</description>
+		</method>
+		<method name="is_maszyna_game_dir_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the directory returned by [method get_maszyna_game_dir] is a game directory.
 			</description>
 		</method>
 		<method name="load_config">

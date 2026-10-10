@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleInverter" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The state of one inverter of an induction motor.
+	</brief_description>
+	<description>
+		One entry of [code]TMoverParameters::Inverters[/code], as the vehicle's state carries it under [code]inverters[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="active" type="bool" setter="set_active" getter="get_active" default="true">
+			It works ([code]IsActive[/code]).
+		</member>
+		<member name="allow" type="bool" setter="set_allow" getter="get_allow" default="true">
+			It is allowed to work ([code]Activate[/code]).
+		</member>
+		<member name="error" type="bool" setter="set_error" getter="get_error" default="false">
+			It failed ([code]Error[/code]).
+		</member>
+	</members>
+</class>

@@ -1,0 +1,12 @@
+// elf_v1 (krzyzowa2.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 EN96-004-A dynamic PKP\ELF_V1 EN96A-004 34WE-A 0 headdriver 255 0 enddynamic
+node -1 0 EN96-004-B dynamic PKP\ELF_V1 EN96B-004 34WE-B 0 nobody 127 0 enddynamic
+node -1 0 EN96-003-A dynamic PKP\ELF_V1 EN96A-003 34WE-A 0 nobody 255 0 enddynamic
+node -1 0 EN96-003-B dynamic PKP\ELF_V1 EN96B-003 34WE-B 0 nobody 3 0 enddynamic
+endtrainset

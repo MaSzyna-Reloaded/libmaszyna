@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://wu25rukudjor"
+path="res://.godot/imported/3e2.fiz-fafff1c6c045b31c98ba3e0cc560bbe0.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/et21_v2/3e2.fiz"
+dest_files=["res://.godot/imported/3e2.fiz-fafff1c6c045b31c98ba3e0cc560bbe0.res"]
+
+[params]
+

@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://cmyymrftiov0g"
+path="res://.godot/imported/sm41-111.fiz-4c49ac7f940b9a3c83543c8372421e73.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/sm41_v1/sm41-111.fiz"
+dest_files=["res://.godot/imported/sm41-111.fiz-4c49ac7f940b9a3c83543c8372421e73.res"]
+
+[params]
+

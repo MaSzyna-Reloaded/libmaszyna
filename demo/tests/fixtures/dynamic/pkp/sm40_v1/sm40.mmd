@@ -1,0 +1,94 @@
+models: sm40-01.t3d
+animations: 4 0 0 4 2 0 -1
+animwheelprefix: wheel0  
+endmodels 
+
+sounds: 
+wheel_clatter: 70.0 -5.05 wheel-heavy.wav -2.45 wheel-heavy.wav 2.45 wheel-heavy.wav 5.05 wheel-heavy.wav end 
+engine: [5514]silnik_sm03_trwa.wav 350.0  0.5 0.85  0.09 -0.05 
+horn1: horn1-start.wav horn1.wav horn1-stop.wav 200 
+horn2: horn2-start.wav horn2.wav horn2-stop.wav 200 
+brake: brake_scr.wav 100.0 3000.0 -1.0 
+compressor: compressor-start.wav,compressor.wav,compressor-stop.wav 100
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+emergencybrake: { soundbegin: 20786_et22_emergency_brake_1 soundmain: 20786_et22_emergency_brake_2 soundend: 20786_et22_emergency_brake_3 }
+endsounds  
+
+internaldata: 
+ctrl: nastawnik.wav 
+buzzer: [ buczek.wav 24150_buczek_cashp.wav 20786_203e_buzzer.wav 697_su45-czuwak.wav 14745_czuwak181.wav 07]bzyczek.wav bzyczek.wav et42_bzyczek.wav bzyczek4.wav bzyczek3.wav ]
+reverserkey: 20786_6d_nawrotnik.wav 
+tachoclock: { sound1: hasler_1_km.wav sound2: hasler_2_km.wav sound3: hasler_3_km.wav sound4: hasler_4_km.wav sound5: 20786_hasler_5km.wav sound10: 20786_hasler_10_km.wav sound20: 20786_hasler_20_km.wav sound30: 20786_hasler_30_km.wav sound40: 20786_hasler_40_km.wav sound50: 20786_hasler_50_km.wav  sound60: 20786_hasler_60_km.wav sound70: 20786_hasler_70_km.wav sound80: 20786_hasler_80_km.wav sound90: 20786_hasler_90_km.wav sound100: 20786_hasler_100_km.wav sound110: 20786_hasler_110_km.wav sound120: 20786_hasler_120_km.wav sound130: 20786_hasler_130_km.wav sound140: 20786_hasler_140_km.wav sound150: 20786_hasler_150_km.wav sound500: 20786_hasler_150_km.wav } 
+switch: switch.wav 
+relay: pss.wav 
+pneumaticrelay: pneumaticrelay.wav 
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+brakesound: brake.wav 0.1 0 0.2 0.9 
+slipperysound: brake-slipp.wav 2.0 0.2 
+airsound: hiss.wav 1000.0 -0.1 
+airsound2: hiss.wav 1000.0 -0.1
+mechspring: 100      0.02 0.2 0.2 0.02 0.15  0.02   0.01
+enginespring: 2.0 150 0.3 800 0.1
+
+cab1definition:   
+-1.73 1.5 -3.8 1.73 1.5 -2.6
+driver1pos:  
+1.11 3.21 -3.37
+driver1sitpos:   
+-1.17 3.07 -3.21	
+cab1model: kabina.t3d   
+
+cab2definition: 
+-1.55 1.5 -4.9 1.55 1.6 -4.7
+driver2pos:
+0.0 3.21 4.73
+cab2model: none   
+ 
+mainctrl: nastawnik_kolo_main rot -0.020 0.1 0.05 
+dirkey: nawrotnik_main rot 0.1 0.00 0.15 
+brakectrl: ham_zesp_raczka rot -0.05 -0.05 0.2 
+localbrake: pomocniczy rot -0.023 0.0 0.3
+horn_bt: horn rot 0.04 0 0.2
+converter_sw: rozruch rot -0.128 0 0.2
+fuse_bt: nadmiar rot -0.005 0 0.2 
+universal2: { plane86 mov 0.6 0.0 0.3 soundinc: [ 23180_105na_window1_open.wav 23180_105na_window2_open.wav 23180_105na_window3_open.wav 23180_105na_window4_open.wav 23180_105na_window5_open.wav ] sounddec: [ 23180_105na_window1_close.wav 23180_105na_window2_close.wav 23180_105na_window3_close.wav 23180_105na_window4_close.wav 23180_105na_window5_close.wav ] }
+security_reset_bt: czuwak mov -0.0015 0 0.2
+fuelpump_sw: box42 rot 0.25 0 0.2
+dimheadlights_sw: box39 rot 0.25 0 0.2
+main_off_bt: sphere05 mov -0.02 0 0.2
+scndctrl: sphere11 mov -0.02 0 0.2
+
+tachometer: hslr_wsk rot 0.0069 -0.395 0
+clock: analog
+brakepress: cylhamknob rot -1.16 0 0
+brakepressb: cylhamknob2 rot -1.16 0 0
+pipepress: przglknob rot 0.425 0 0
+compressor: zbglknob rot 0.375 0 0.2
+
+leftlight_sw: p_l_b rot 0.2 0 0.2
+rightlight_sw: p_p_b rot 0.2 0 0.2
+leftend_sw: p_l_c rot 0.2 0 0.2
+rightend_sw: p_p_c rot 0.2 0 0.2
+
+rearleftlight_sw: t_l_b rot 0.2 0 0.2
+rearrightlight_sw: t_p_b rot 0.2 0 0.2
+rearleftend_sw: t_l_c rot 0.2 0 0.2
+rearrightend_sw: t_p_c rot 0.2 0 0.2
+
+cab0definition:
+-1.3 1.5 4.89 1.3 1.6 4.93
+driver0pos:
+0.0 3.21 -4.87
+cab0model: none   

@@ -1,11 +1,35 @@
 #ifndef MACROS_HPP
 #define MACROS_HPP
-#include "core/utils.hpp"
-
+#include "utils/utils.hpp"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <algorithm>
+#include <initializer_list>
+#include <utility>
+
+/**
+ * Builds a PROPERTY_HINT_ENUM hint string from real enum constants instead of hand-typed
+ * integer literals, so a property's inspector labels can never drift out of sync with the
+ * enum's actual (possibly non-sequential/bitflag) values.
+ * <example>
+ * enum_hint({{"Train", CATEGORY_TRAIN}, {"Road", CATEGORY_ROAD}, {"Ship", CATEGORY_SHIP}, {"Airplane",
+ * CATEGORY_AIRPLANE}})
+ * </example>
+ */
+inline godot::String enum_hint(std::initializer_list<std::pair<const char *, int64_t>> p_entries) {
+    godot::String result;
+    bool first = true;
+    for (const auto &entry: p_entries) {
+        if (!first) {
+            result += ",";
+        }
+        result += godot::String(entry.first) + ":" + godot::String::num_int64(entry.second);
+        first = false;
+    }
+    return result;
+}
 /**
  * Macro for generating private members with their setters and getters
  * @param type Member type
@@ -176,8 +200,8 @@ namespace libmaszyna::internal {
  * Binds a property and its conventionally named setter and getter. An optional slash-separated grouping path accepts
  * a group and a subgroup. Group markers are generated from the path automatically.
  * <example>
- * BIND_PROPERTY(TrainWheels, Variant::FLOAT, bogie_pivot_spacing);
- * BIND_PROPERTY(TrainBrake, Variant::FLOAT, brake_force_max, "brake_force");
+ * BIND_PROPERTY(RailVehicleWheels, Variant::FLOAT, bogie_pivot_spacing);
+ * BIND_PROPERTY(RailVehicleBrake, Variant::FLOAT, brake_force_max, "brake_force");
  * </example>
  */
 #define INTERNAL_BIND_PROPERTY(p_class, p_type, p_name)                                                                \

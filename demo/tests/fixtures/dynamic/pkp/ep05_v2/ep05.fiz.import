@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://yoryinq6254p"
+path="res://.godot/imported/ep05.fiz-4f33870c2f49fd334f5456184b614108.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/ep05_v2/ep05.fiz"
+dest_files=["res://.godot/imported/ep05.fiz-4f33870c2f49fd334f5456184b614108.res"]
+
+[params]
+

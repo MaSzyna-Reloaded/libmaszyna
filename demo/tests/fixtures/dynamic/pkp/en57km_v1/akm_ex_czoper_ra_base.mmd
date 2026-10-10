@@ -1,0 +1,224 @@
+﻿models: /base/(p1).t3d#
+animations: 4 4 0 0 2 0 -1
+lowpolyinterior: /lowpoly/akm_ex_czoper_lowpoly_ra
+loads: {
+passengers: /passengers/akm_ex_czoper_ludziki_ra
+}
+animwheelprefix: wheel0
+animdoorprefix: door0
+endmodels
+
+locations:
+ doors: -3.79 both 2.9 both end
+ bogies: -7.4 7.4 end
+endlocations
+
+sounds:
+curve: {
+ amplitudefactor: 1.35
+ amplitudeoffset: 1.35
+ range: 100
+ crossfade: 75
+ placement: custom
+ sound1: 697_104e_curve_1.wav
+ sound20: 697_en57-skrzypi.wav
+ sound40: curve_en57-1.wav
+ sound60: curve_en57.wav
+ sound80: silence1.wav }
+include stukoty_ra.inc end
+include brake_external.inc end
+include brakesound_external.inc end
+derail: derail.wav 200
+horn1: { soundbegin: 22657_en57fps_syr-nisk-1.wav soundmain: 22657_en57fps_syr-nisk-2.wav soundend: 22657_en57fps_syr-nisk-3.wav range: 1000 offset: [ 1.01, 3.74 , 9.55 ] }
+horn2: { soundbegin: 22657_en57fps_syr-wys-1.wav soundmain: 22657_en57fps_syr-wys-2.wav soundend: 22657_en57fps_syr-wys-3.wav range: 1000 offset: [ -1.01, 3.74 , 9.55 ] }
+compressor: { soundbegin: 2193_en57ak_compressor_1.wav soundmain: 2193_en57ak_compressor_2.wav soundend: 2193_en57ak_compressor_3.wav range: 50 placement: external offset: [ 0.6, 0.65, 2.45 ] }
+dooropen: { soundmain: 26284_en57akm_door_open.wav soundproofing: [ 0.1 0.9 0.1 0.9 0.9 0.9 ] }
+doorclose: { soundmain: 26284_en57akm_door_close.wav soundproofing: [ 0.1 0.9 0.1 0.9 0.9 0.9 ] }
+doorlock: { soundmain: 26284_en57akm_blokada_drzwi-on.wav soundproofing: [ 0.2 0.9 0.2 0.9 0.9 0.9 ] }
+doorunlock: { soundmain: 26284_en57akm_blokada_drzwi-off.wav soundproofing: [ 0.2 0.9 0.2 0.9 0.9 0.9 ] }
+outernoise: {
+ range: 130
+ crossfade: 85
+ sound0: silence1.wav pitch0: 35
+ sound35: 697_en57_outernoise_35.wav pitch35: 35
+ sound80: 697_en57_outernoise_80.wav pitch80: 40
+ sound200: 697_en57_outernoise_80.wav pitch200: 80 }
+unloading: 24150_en57_pasazery.flac
+loading: 24150_en57_pasazery.flac
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+sand: 20786_es64x4_sand_1.wav 20786_es64x4_sand_2.wav 20786_es64x4_sand_3.wav 25
+springbrake: { soundmain: 26284_en57al_hamulec_postojowy_on.wav placement: internal offset: [ -0.9, 1.4 , 7.90 ] }
+springbrakeoff: { soundmain: 26284_en57al_hamulec_postojowy_off.wav placement: internal offset: [ -0.9, 1.4 , 7.90 ] }
+brakecylinderinc: { range: 20 soundproofing: [ 0.04 0.25 0.04 0.64 0.64 0.64 ]
+ sound1: 2193_en57-brakecyl-begin
+ sound2: 2193_en57-brakecyl-low pitch2: 1.1
+ sound5: 2193_en57-brakecyl-low pitch5: 1.0
+ sound6: 2193_en57-brakecyl-high pitch6: 1.0
+ sound9: 2193_en57-brakecyl-high pitch9: 0.9 }
+ unbrake: { range: 20 soundbegin: 697_en57-luz-start.wav soundmain: 697_en57-luz-trwa.wav soundend: 697_en57-luz-koniec.wav range: 20 soundproofing: [ 0.01 0.25 0.01 0.64 0.64 0.64 ] }
+heater: { soundbegin: 26284_en57fps_ogrzewanie-start.wav soundmain: 26284_en57fps_ogrzewanie-trwa.wav soundend: 26284_en57fps_ogrzewanie-stop.wav soundproofing: [ 0.15 1.0 0.15 1.0 1.0 1.0 ] }
+ emergencybrake: { soundbegin: 26284_en57al_nagle_start.wav soundmain: 26284_en57al_nagle_trwa.wav soundend: 26284_en57al_nagle_stop.wav amplitudefactor: 1.8 placement: interal offset: [ -0.9, 1.4 , 7.90 ] }
+    announcements: {
+ stop: sip/stacja.wav 
+ next_stop: sip/nastepna_stacja.wav 
+ soundproofing: [ 0.05 0.2 0.05 0.0 0.0 0.0 ]
+}
+endsounds
+
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+radiostop: [ 24150_radmor_rs_sygnal.wav 697_radiostop.wav ]
+buzzer: [ buczek.wav 24150_buczek_cashp.wav 4625_en57_920_signal.wav 4625_en57_856_signal.wav 4625_en57_905_signal.wav 4625_en57_1805_signal.wav 4625_en57_1027_signal.wav 20439_653-signal_trwa.wav 697_en57_door_buczek_trwa.wav 20786_203e_buzzer.wav 14745_czuwak181.wav 07]bzyczek.wav et42_bzyczek.wav ]
+pneumaticrelay: pneumaticrelay.wav
+pneumaticswitch: en57-pswitch.wav
+couplerattach: [ 26284_en57aks_sprzeg_mech.wav 26284_22wed_sprzeg_mechaniczny_2.wav  26284_22wed_sprzeg_mechaniczny.wav ]
+couplerdetach: 26284_flirt_rozpiecie_sprzegu.wav
+controlattach: { soundbegin: [ 26284_scharfenberg_klawiatury.wav 26284_scharfenberg_klawiatury_2.wav  ] soundmain: [ 26284_22wed_pneumatyka_2.wav 26284_22wed_pneumatyka.wav ] soundend: silence1.wav }
+controldetach: 26284_flirt_rozpiecie_klawiatur.wav
+include brakesound_internal.inc end
+slipperysound: brake-slipp.wav 2.0 0.2  //normalized: AM/Vmax
+airsound: { soundmain: 26284_en57al_hamowanie_pn.wav amplitudefactor: 2000.0 amplitudeoffset: -0.01 offset: [ -0.9, 1.4 , 7.90 ] pitchvariation: 0 range: 40  }
+airsound2: { soundmain: 26284_en57al_luzowanie_pn.wav amplitudefactor: 2000.0 amplitudeoffset: -0.1 offset: [ -0.9, 1.4 , 7.90 ] pitchvariation: 0 range: 40 }
+localbrakesound:  silence1.wav 0.0 -1.0
+localbrakesound2: silence1.wav 0.0 -1.0
+startjolt: { soundmain: 1007akm_trzaski_czopa_1.wav placement: internal }
+runningnoise: {
+ range: -1
+ amplitudefactor: 0.7
+ amplitudeoffset: 0.3
+ crossfade: 95
+ sound0: silence1.wav pitch0: 90
+ sound10: akm_runningnoise_20.wav pitch10: 90
+ sound20: akm_runningnoise_20.wav pitch20: 90
+ sound30: akm_runningnoise_30.wav pitch30: 90
+ sound40: akm_runningnoise_40a.wav pitch40: 90
+ sound50: akm_runningnoise_50a.wav pitch50: 90
+ sound60: akm_runningnoise_60a.wav pitch60: 90
+ sound70: akm_runningnoise_70a.wav pitch70: 90
+ sound80: akm_runningnoise_80a.wav pitch80: 90
+ sound90: akm_runningnoise_90a.wav pitch90: 90
+ sound200: akm_runningnoise_115a.wav pitch200: 150 }
+ 
+  huntingnoise: {
+ range: -1
+ amplitudefactor: 0.5
+ crossfade: 90
+ sound100: silence1.wav 
+ sound110: 26284_en57al_wezykowanie2.wav 
+ sound200: 26284_en57al_wezykowanie2.wav }
+
+mechspring: 120      0.08 0.11 0.21 0.075 0.15  0.02   0.01
+huntingspring: 2.0 2.0 119 130
+soundproofing:
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ 0.5 1.0 0.5 0.65 0.65 0.65
+
+cab1definition: 
+-1.6 1.5 8.1 1.6 1.4 9.4 
+driver1pos: 
+0.0 2.84 8.2
+driver1sitpos: 
+0.0 2.57 8.8
+cab1model: cab_akm_a.t3d //nazwa modelu kabiny A
+
+
+universalbrake2_bt: { przyc_odblokhb mov -0.004 0 0.05 soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+
+universalbrake1_bt: { przyc_odluzniacz mov -0.004 0 0.05 soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+cabactivation_sw: { sw-aktywacja rot 0.125 0 0.1 soundinc: 22657_przelacznikd2_1.wav sounddec: 22657_przelacznikd2_0.wav }
+pipepress: ws_pg rot -0.75 -0.0079 0 //przewód główny
+brakepress: ws_cyl rot -0.75 0 0 //cylinder hamulcowy
+scndpress: ws_zasil rot -0.46875 0 0 //przewód zasilający
+springbrakepress: ws_hampos rot -0.75 0 0 
+
+
+
+
+
+doorleftpermit_sw: { drzwilewe_przycisk mov -0.003 0 0.05 type: return soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+i-doorpermit_left: drzwilewe
+doorleftoff_sw: { zamlew_przycisk mov -0.003 0 0.05 type: return soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+i-door_left: zamlew
+doorallon_sw: { otw_centr mov -0.003 0 0.05 type: return soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+doorrightpermit_sw: { drzwiprawe_przycisk mov -0.003 0 0.05 type: return soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+i-doorpermit_right: drzwiprawe
+doorrightoff_sw: { zampraw_przycisk mov -0.003 0 0.05 type: return soundinc: 20786_203e_button_panto_1_on.wav sounddec: 20786_203e_button_panto_1_of.wav }
+i-door_right: zampraw
+
+hornlow_bt: hornlow rot 0.01 0 0.02
+hornhigh_bt: hornhigh rot 0.01 0 0.02
+
+tachometern: piap-wsk rot 0.005652825 0 0
+tachometern: piap-wsk_n rot 0.005652825 0 0
+alarmchain: { hamulec_bezp rot 0.2 0 0.05 soundinc: 20786_203e_big_button_3_on.wav sounddec: 20786_203e_big_button_3_of.wav }
+pantfrontoff_sw: { pantografprzod_opuszczony rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+pantfront_sw: { pantografprzod_podnies rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek2_on.wav sounddec: 26284_en57al_hebelek2_off.wav }
+pantrear_sw: { pantograftyl_podnies rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+security_reset_bt: { przyc_czuwak mov -0.008 0 0.05 soundinc: 26284_en57al_shp_on.wav sounddec: 26284_en57al_shp_off.wav }
+door_signalling_sw: { blokada_drzwi rot -0.1667 0.1667 0.1 soundinc: 26284_en57al_hebelek2_on.wav sounddec: 26284_en57al_hebelek2_off.wav }
+mainctrl: { nastawnik rot -0.00625 0 0.1 soundinc: 20786_traxx_little_silence.wav sounddec: 20786_traxx_little_silence.wav sound50: 22657_rozruch_max.wav sound0: 22657_rozruch_0.wav sound1: 22657_rozruch_poz1.wav sound-10: 22657_rozruch_max.wav sound-1: 22657_rozruch_poz1.wav }
+dirkey: { nastawnik_kierunku rot 0.111 0 0.07 sound-1: 26284_en57al_pokretlo_1.wav sound0: 26284_en57al_pokretlo_2.wav sound1: 26284_en57al_pokretlo_3.wav sound2: 26284_en57al_pokretlo_4.wav }
+brakectrl: { hamulec rot 0.018 0 0.1 sound-1: 22657_ham_10.wav sound0: 22657_ham_0.wav sound1: 22657_ham_1.wav sound2: 22657_ham_2.wav sound3: 22657_ham_3.wav sound4: 22657_ham_4.wav sound5: 22657_ham_5.wav sound6: 22657_ham_6.wav sound7: 22657_ham_7.wav sound8: 22657_ham_8.wav sound9: 22657_ham_9.wav sound10: 22657_ham_eb.wav }
+brakeopmode_sw: { przel_rezim_ham rot -0.25 0.2389 0.1 sound0: 26284_en57al_pokretlo_7.wav sound1: 26284_en57al_pokretlo_1.wav sound2: 26284_en57al_pokretlo_2.wav sound3: 26284_en57al_pokretlo_3.wav sound4: 26284_en57al_pokretlo_4.wav }
+springbraketoggle_bt: { sw_sprezynowy rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek3_on.wav sounddec: 26284_en57al_hebelek3_off.wav }
+upperlight_sw: { ref_gor rot 0.2 0 0.1 soundinc: 26284_en57al_pokretlo_1.wav sounddec: 26284_en57al_pokretlo_2.wav }
+leftlight_sw: { ref_lew rot -0.2 0 0.1 soundinc: 26284_en57al_pokretlo_3.wav sounddec: 26284_en57al_pokretlo_4.wav }
+rightlight_sw: { ref_czer rot -0.2 0 0.1 soundinc: 26284_en57al_pokretlo_5.wav sounddec: 26284_en57al_pokretlo_6.wav }
+trainheating_sw: { ogrzewanie_przedzialow rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+//battery_sw: { rozrzad rot 0.125 0 0.1 soundinc: 20786_ep09_switch_v2_2_on_1.wav sounddec: 20786_ep09_switch_v2_2_of_1.wav }
+main_on_bt: { ws rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek2_on.wav sounddec: 26284_en57al_hebelek2_off.wav }
+pantalloff_sw: { przyc_pantografyopuszczone mov -0.008 0 0.05 type: return soundinc: 26284_en57al_shp_on.wav sounddec: 26284_en57al_shp_off.wav }
+dimheadlights_sw: { przyc_refl rot 0.111 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+tempomat_sw: { przyc_tempomat mov -0.004 0 0.06 type: return soundinc: 26284_en57al_przycisk_on.wav sounddec: 26284_en57al_przycisk_off.wav }
+instrumentlight_sw: { osw_pulpit rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+cablight_sw: { osw_kab rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek2_on.wav sounddec: 26284_en57al_hebelek2_off.wav }
+compartmentlightson_sw: { oswietlenie_zal rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+compartmentlightsoff_sw: { oswietlernie_wyl rot 0.1667 0 0.1 soundinc: 26284_en57al_hebelek3_on.wav sounddec: 26284_en57al_hebelek3_off.wav } 
+radio_sw: { radiotelefon rot 0.125 0 0.1 soundinc: 26284_en57al_hebelek1_on.wav sounddec: 26284_en57al_hebelek1_off.wav }
+radiochannel_sw: { swr-kanal rot -0.085 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiovolume_sw: { swr-glosnosc rot -0.7 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiostop_sw: radiostop mov -0.005 0 0
+radiocall3_sw: { swr-wywolanie3 mov -0.003 0 0.002 soundinc: 20786_203e_button_radio_3_on.wav sounddec: 20786_203e_button_radio_3_of.wav }
+
+couplingdisconnect_sw: { Cylinder06.001 mov -0.011 0 0.07 type: return soundinc: 20786_189_sifa_pedal_v2_on.wav sounddec: 20786_189_sifa_pedal_v2_of.wav }
+
+
+universal1: pixy_1 mov 0.000 0 0
+universal2: pixy_2 mov 0.000 0 0
+universal3: pixy_3 mov 0.000 0 0
+universal4: pixy_4 mov 0.000 0 0
+
+i-security_aware: { czuwak soundinc: 20786_203e_light_ca_start.wav sounddec: 20786_203e_light_ca_stop.wav }
+i-security_cabsignal: { shp soundinc: 20786_203e_light_shp_start.wav sounddec: 20786_203e_light_shp_stop.wav }
+i-departure_signal: sygnodj
+i-instrumentlight: podswietlenie
+i-radio: ir-wl
+i-cablight: i-lamp
+i-door_blocked: sygnbl
+i-security_aware: czuwak
+i-security_cabsignal: shp
+i-mainpipelock: hambezp
+i-battery: lampka_baterii
+
+pyscreen: { dynamic/pkp/en57al_v1/screen_en57al target: ekran_pixy parameters: zadajnik=3&ipsz=1 }
+pyscreen: ekran-srg srg5000p
+
+cab0definition:
+ -1.2 1.1 -3.8
+  1.2 1.1  7.5
+driver0pos:
+0.0 2.8 2.0
+
+cab2definition: 
+ -1.2 1.1 -10.0
+  1.2 1.1  -2.0 
+driver2pos: 
+0.0 2.8 -6.5
+
+pydestinationsign: { scripts/led_en57_n_9 parameters: kod_e=&kod_p=&kod_o=&margin1=15 instance: name }
+destinationsignbackground: make:scripts/led_en57_n_9?dummy=1&margin1=15
+
