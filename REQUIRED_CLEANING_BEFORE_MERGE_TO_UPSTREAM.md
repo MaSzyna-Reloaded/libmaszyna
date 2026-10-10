@@ -123,7 +123,7 @@ Legend:
 - [x] [RC-074](#rc-074) `MaszynaTrianglesImporter::import_triangles(MaszynaParser *)` ✔
 - [x] [RC-075](#rc-075) Vehicle layer bound methods taking and returning pointers
 - [x] [RC-076](#rc-076) `E3DSubModel::set_parent(E3DSubModel *)` ✔
-- [ ] [RC-123](#rc-123) Scene-tree nodes holding pointers to objects they do not own
+- [x] [RC-123](#rc-123) Scene-tree nodes holding pointers to objects they do not own
 
 ### Calls by name
 
@@ -343,28 +343,6 @@ Legend:
   * In view, it calls `set_keep_aspect_mode()` (a constant) and builds the string-named
     `"mirror_view_projection"` every frame.
 * **Fix:** set on change only, with the constant set once and a cached `StringName`.
-
-## Raw pointers in public API
-
-A pointer is judged by what it costs, not by being one: one that only crosses a call is a question
-of API style, one that is stored is a defect only when it may outlive what it points at
-(`CODE_STYLE.md`, "No pointers in a public API").
-
-### RC-123
-
-**Scene-tree nodes holding pointers to objects they do not own**
-
-* **Rule:** a stored pointer only to what outlives the holder by construction - its owner (which
-  clears it on release), its parent (cleared on `EXIT_TREE`), its own children, a singleton, a
-  non-Object backend; anything else as an `ObjectID`, a vehicle by its RID (FINDINGS.md
-  2026-09-30, "Edit FIZ" aborted the editor)
-* **Swept 2026-10-10:** `PlanarMirror3D::glass` (its parent) and
-  `VehicleComponent::train_controller_node` (its owner, now released in the editor too) are
-  allowed; `GenericVehicleComponent::script_owner` was a use-after-free and is an `ObjectID`,
-  its node taking the component out of the vehicle on leaving the tree
-* **Where (still open):**
-  * `src/logging/GameLogger.hpp:28`: `GameLog *game_log` - a logger kept by a script past the
-    extension's teardown points at a freed log
 
 ## Calls by name
 

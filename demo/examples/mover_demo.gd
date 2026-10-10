@@ -31,13 +31,31 @@ const loglevel_names = {
     GameLog.LogLevel.WARNING: "WARNING",
     GameLog.LogLevel.ERROR: "ERROR",
     }
+
+const CONSOLE_LOG_HANDLER := "mover_demo_console"
+
+
+## The lines of the game's logger, to the Godot console
+class ConsoleLogHandler extends GameLogHandler:
+    var _print_entry: Callable
+
+    func _init(print_entry: Callable) -> void:
+        _print_entry = print_entry
+
+    func _handle(_logger_id: String, loglevel: GameLog.LogLevel, line: String) -> void:
+        _print_entry.call(loglevel, line)
+
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
     $%TrainName.text = tr("%s (type: %s)") % [train.vehicle_id, train.controller.type_name]
-    GameLog.message_logged.connect(print_log_entry_to_godot_console)
+    GameLog.register_handler(CONSOLE_LOG_HANDLER, ConsoleLogHandler.new(print_log_entry_to_godot_console))
+    GameLog.assign_handler("game", CONSOLE_LOG_HANDLER)
 
 
 func _exit_tree() -> void:
+    GameLog.unassign_handler("game", CONSOLE_LOG_HANDLER)
+    GameLog.unregister_handler(CONSOLE_LOG_HANDLER)
     PersonServer.person_free(_driver)
 
 
@@ -48,9 +66,7 @@ func _colorize_loglevel(loglevel, line):
     else:
         return line
 
-func print_log_entry_to_godot_console(logger_id, loglevel, line):
-    if not logger_id == "game":
-        return
+func print_log_entry_to_godot_console(loglevel, line):
     print_rich(_colorize_loglevel(loglevel, "%s: %s" % [loglevel_names[loglevel], line]))
 
 

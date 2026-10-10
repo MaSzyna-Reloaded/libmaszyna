@@ -1,17 +1,22 @@
 #pragma once
 
 #include "./GameLog.hpp"
+#include "./GameLogHandler.hpp"
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/templates/vector.hpp>
 
 namespace godot {
-    /// A named logger of GameLog (GameLog::get_logger()): its lines go to the handlers registered for
-    /// its id
+    /// A named logger of GameLog (GameLog::get_logger()): its lines go to its handlers, which GameLog
+    /// attaches to it (GameLog::assign_handler()). It knows nothing of GameLog.
     class GameLogger : public RefCounted {
             GDCLASS(GameLogger, RefCounted);
 
         public:
-            /// Called once, by the GameLog that makes the logger
-            void setup(GameLog *p_game_log, const String &p_logger_id);
+            /// Called once, by GameLog when it makes the logger
+            void setup(const String &p_logger_id);
+            /// By GameLog only - not bound, a script assigns a handler through GameLog
+            void add_handler(const Ref<GameLogHandler> &p_handler);
+            void remove_handler(const Ref<GameLogHandler> &p_handler);
 
             String get_logger_id() const;
             void log(GameLog::LogLevel p_level, const String &p_line);
@@ -24,8 +29,7 @@ namespace godot {
             static void _bind_methods();
 
         private:
-            /// The log that owns the logger - a raw pointer, the log holds the logger's Ref
-            GameLog *game_log = nullptr;
             String logger_id;
+            Vector<Ref<GameLogHandler>> handlers;
     };
 } // namespace godot

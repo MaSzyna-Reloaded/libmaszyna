@@ -605,12 +605,14 @@ For dev logging, use and only Godot's built-in methods.
 For in-game logging, use a `GameLogger` of `GameLog`, as Python's `logging`: a logger by its id
 (`GameLog.get_logger("game")`, `"ai"`, `"gameplay"`, `"scenario"`), kept in a member where a
 script logs more than once (`var _log: GameLogger = GameLog.get_logger("ai")`, then
-`_log.debug(...)`). A line goes at once - nothing is kept in memory - to the handlers registered
-for the logger's id (`GameLog.create_handler()`, a `GameLogHandler` with its `min_level`, e.g.
-`GameLogFileHandler`) and to `GameLog.message_logged`, which the HUD's Logs window shows, a tab per
-logger. The game sets up the log files (its `game.gd`); a handler may be registered
-for an id whose logger does not exist yet. Nothing goes to the Godot's console nor to the developer
-console (`~`).
+`_log.debug(...)`). There is no hierarchy of loggers. A line goes at once - nothing is kept in
+memory - to the logger's handlers. `GameLog` only manages: a handler (a `GameLogHandler` with its
+`min_level`, e.g. `GameLogFileHandler`) is registered by name (`GameLog.register_handler()`) and
+assigned to loggers by name (`GameLog.assign_handler()`), and `GameLog` attaches it to them - one
+handler may serve many loggers, and either may come first. The logger calls its handlers itself
+and knows nothing of `GameLog`. The game sets up the log files (its `game.gd`); the HUD's Logs
+window is a handler of its own, a tab per logger, following `logger_created` and
+`logger_removing`. Nothing goes to the Godot's console nor to the developer console (`~`).
 
 `GameLog.get_logger()` is **the one getter that changes state**, a deliberate exception to "A
 getter never changes state": it creates a logger missing yet (and emits `logger_created`), as
