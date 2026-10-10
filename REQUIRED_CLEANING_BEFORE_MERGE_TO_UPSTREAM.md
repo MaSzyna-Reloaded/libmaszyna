@@ -64,7 +64,7 @@ Legend:
 - [x] [RC-026](#rc-026) Drawing node creates a second vehicle RID
 - [x] [RC-027](#rc-027) Mover member names as public state keys
 - [x] [RC-028](#rc-028) `RailVehicleHorns` includes the vendored Mover
-- [ ] [RC-029](#rc-029) `Mover*` classes public and instantiated from GDScript
+- [x] [RC-029](#rc-029) `Mover*` classes public and instantiated from GDScript (accepted: the FIZ importer creates them by name)
 - [ ] [RC-030](#rc-030) `Mover*` components hold state the Mover does not have
 - [x] [RC-031](#rc-031) Brake backend keeps a rate only the sound needs
 - [ ] [RC-032](#rc-032) Radio component calls up into the vehicle servers
@@ -198,21 +198,6 @@ Legend:
 * **Problem:** the default `resolution_scale = 2.0` is outside the inspector range
   `"0.05,1,0.05"`.
 * **Fix:** make the default and the range agree.
-
-### RC-029
-
-**`Mover*` classes public and instantiated from GDScript** ALARM
-
-* **Where:** `src/register_types.cpp:298-332` (`GDREGISTER_CLASS(MoverRailVehicle*)`,
-  `set_controller_implementation` at `:317`); `Mover*.new()` in about 18
-  `addons/libmaszyna/legacy/fiz/fiz_train_*_parser.gd` and in `fiz_vehicle_builder.gd:170-171`
-  (horns, radio)
-* **Rule:** the backend never appears in a public interface
-* **Problem:** the backend's name is part of the extension's API. `set_controller_implementation`
-  exists precisely to hide it, and the controller is created through it, but the FIZ importer
-  still instantiates the `Mover*` components by name.
-* **Decision:** register them as internal/abstract and create them through the implementation
-  factory; or accept it for the FIZ importer and write that down.
 
 ### RC-030
 
