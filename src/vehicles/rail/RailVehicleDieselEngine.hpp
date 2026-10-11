@@ -82,122 +82,205 @@ namespace godot {
             int get_turbo_position() const;
 
         private:
-            MAKE_MEMBER_GS(float, oil_pump_pressure_minimum, 0.0);
-            MAKE_MEMBER_GS(float, oil_pump_pressure_maximum, 0.65);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, fuel_pump_start_mode, RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, oil_pump_start_mode, RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, water_pump_start_mode, RailVehicleController::START_MODE_MANUAL);
+            float oil_pump_pressure_minimum = 0.0;
+            float oil_pump_pressure_maximum = 0.65;
+            RailVehicleController::StartMode fuel_pump_start_mode = RailVehicleController::START_MODE_MANUAL;
+            RailVehicleController::StartMode oil_pump_start_mode = RailVehicleController::START_MODE_MANUAL;
+            RailVehicleController::StartMode water_pump_start_mode = RailVehicleController::START_MODE_MANUAL;
 
             /* Engine: (Kont.), przekladnia mechaniczna */
-            MAKE_MEMBER_GS(double, mechanical_min_rpm, 0.0);
-            MAKE_MEMBER_GS(double, mechanical_max_rpm, 0.0);
-            MAKE_MEMBER_GS(double, mechanical_fuel_cutoff_rpm, 0.0);
-            MAKE_MEMBER_GS(double, mechanical_inertia, 1.0);
-            MAKE_MEMBER_GS(double, mechanical_clutch_engage_speed, 0.5);
-            MAKE_MEMBER_GS(double, mechanical_clutch_disengage_speed, 0.9);
+            double mechanical_min_rpm = 0.0;
+            double mechanical_max_rpm = 0.0;
+            double mechanical_fuel_cutoff_rpm = 0.0;
+            double mechanical_inertia = 1.0;
+            double mechanical_clutch_engage_speed = 0.5;
+            double mechanical_clutch_disengage_speed = 0.9;
             /* nmin_hdrive [1/s]: the idle speed while driving on the torque converter */
-            MAKE_MEMBER_GS(double, mechanical_min_rpm_hydro_drive, 0.0);
+            double mechanical_min_rpm_hydro_drive = 0.0;
             /* nmin_hdrive_factor [1/s]: its rise with the power asked for */
-            MAKE_MEMBER_GS(double, mechanical_min_rpm_hydro_drive_factor, 0.0);
+            double mechanical_min_rpm_hydro_drive_factor = 0.0;
             /* nmin_retarder [1/s]: the speed while the retarder brakes */
-            MAKE_MEMBER_GS(double, mechanical_min_rpm_retarder, 0.0);
+            double mechanical_min_rpm_retarder = 0.0;
             /* Engine: nmax [1/s]: the engine's top speed (not DList's) */
-            MAKE_MEMBER_GS(double, mechanical_nominal_max_rpm, 0.0);
+            double mechanical_nominal_max_rpm = 0.0;
             /* nreg_acc [1/s2]: how fast the governor raises the speed */
-            MAKE_MEMBER_GS(double, mechanical_regulator_acceleration, 999.0);
+            double mechanical_regulator_acceleration = 999.0;
             /* RPMDecRate */
-            MAKE_MEMBER_GS(double, mechanical_rpm_decrease_rate, 2.0);
+            double mechanical_rpm_decrease_rate = 2.0;
             /* ShuntMode: the extra gear of a shunting mode (2Ls150), 0 without one */
-            MAKE_MEMBER_GS(double, mechanical_shunt_mode_ratio, 0.0);
+            double mechanical_shunt_mode_ratio = 0.0;
             /* minVelfullengage [km/h]: the clutch holds without slip above it */
-            MAKE_MEMBER_GS(double, clutch_min_velocity_full_engage, 0.0);
+            double clutch_min_velocity_full_engage = 0.0;
             /* engageDia [m] */
-            MAKE_MEMBER_GS(double, clutch_diameter, 0.5);
+            double clutch_diameter = 0.5;
             /* engageMaxForce [N] */
-            MAKE_MEMBER_GS(double, clutch_max_force, 6000.0);
+            double clutch_max_force = 6000.0;
             /* engagefriction */
-            MAKE_MEMBER_GS(double, clutch_friction, 0.5);
+            double clutch_friction = 0.5;
             /* MaxVelANS [km/h]: the converter disengages below it */
-            MAKE_MEMBER_GS(double, torque_converter_unlock_velocity, 3.0);
+            double torque_converter_unlock_velocity = 3.0;
             /* R_EngageVel [km/h] */
-            MAKE_MEMBER_GS(double, retarder_engage_velocity, 1.0);
+            double retarder_engage_velocity = 1.0;
             /* R_IsClutch: the retarder has its own clutch */
-            MAKE_MEMBER_GS(bool, retarder_clutch, false);
+            bool retarder_clutch = false;
             /* R_ClutchSpeed */
-            MAKE_MEMBER_GS(double, retarder_clutch_speed, 10.0);
+            double retarder_clutch_speed = 10.0;
             /* R_WithIndividual */
-            MAKE_MEMBER_GS(bool, retarder_with_individual, false);
-            MAKE_MEMBER_GS(bool, torque_converter_present, false);
-            MAKE_MEMBER_GS(double, torque_converter_max_torque_ratio, 2.0);
-            MAKE_MEMBER_GS(double, torque_converter_coupling_point, 0.85);
-            MAKE_MEMBER_GS(double, torque_converter_lockup_torque, 3000.0);
-            MAKE_MEMBER_GS(double, torque_converter_lockup_rate, 1.0);
-            MAKE_MEMBER_GS(double, torque_converter_unlock_rate, 1.0);
-            MAKE_MEMBER_GS(double, torque_converter_fill_rate_increase, 1.0);
-            MAKE_MEMBER_GS(double, torque_converter_fill_rate_decrease, 1.0);
-            MAKE_MEMBER_GS(double, torque_converter_torque_in_in, 4.5);
-            MAKE_MEMBER_GS(double, torque_converter_torque_in_out, 0.0);
-            MAKE_MEMBER_GS(double, torque_converter_torque_out_out, 0.0);
-            MAKE_MEMBER_GS(double, torque_converter_lockup_speed, 1.0);
-            MAKE_MEMBER_GS(double, torque_converter_unlock_speed, 1.0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<VehicleCurvePointItem>, torque_converter_table)
+            bool retarder_with_individual = false;
+            bool torque_converter_present = false;
+            double torque_converter_max_torque_ratio = 2.0;
+            double torque_converter_coupling_point = 0.85;
+            double torque_converter_lockup_torque = 3000.0;
+            double torque_converter_lockup_rate = 1.0;
+            double torque_converter_unlock_rate = 1.0;
+            double torque_converter_fill_rate_increase = 1.0;
+            double torque_converter_fill_rate_decrease = 1.0;
+            double torque_converter_torque_in_in = 4.5;
+            double torque_converter_torque_in_out = 0.0;
+            double torque_converter_torque_out_out = 0.0;
+            double torque_converter_lockup_speed = 1.0;
+            double torque_converter_unlock_speed = 1.0;
+            TypedArray<VehicleCurvePointItem> torque_converter_table;
             /* V2NList: predkosc -> maksymalne obroty silnika (dizel_vel2nmax_Table) */
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<VehicleCurvePointItem>, vel2nmax_table)
-            MAKE_MEMBER_GS(bool, retarder_present, false);
-            MAKE_MEMBER_GS_NR(RetarderPlacement, retarder_placement, RETARDER_PLACEMENT_AFTER_GEARBOX);
-            MAKE_MEMBER_GS(double, retarder_torque_in_in, 1.0);
-            MAKE_MEMBER_GS(double, retarder_max_torque, 1.0);
-            MAKE_MEMBER_GS(double, retarder_max_power, 1.0);
-            MAKE_MEMBER_GS(double, retarder_fill_rate_increase, 1.0);
-            MAKE_MEMBER_GS(double, retarder_fill_rate_decrease, 1.0);
-            MAKE_MEMBER_GS(double, retarder_min_velocity, 1.0);
+            TypedArray<VehicleCurvePointItem> vel2nmax_table;
+            bool retarder_present = false;
+            RetarderPlacement retarder_placement = RETARDER_PLACEMENT_AFTER_GEARBOX;
+            double retarder_torque_in_in = 1.0;
+            double retarder_max_torque = 1.0;
+            double retarder_max_power = 1.0;
+            double retarder_fill_rate_increase = 1.0;
+            double retarder_fill_rate_decrease = 1.0;
+            double retarder_min_velocity = 1.0;
 
             /* DList: tabela przepustnicy */
-            MAKE_MEMBER_GS(double, throttle_table_max_torque, 1.0);
-            MAKE_MEMBER_GS(double, throttle_table_max_torque_rpm, 1.0);
-            MAKE_MEMBER_GS(double, throttle_table_max_rpm_torque, 2.0);
-            MAKE_MEMBER_GS(double, throttle_table_nominal_fuel_dose, 0.0);
-            MAKE_MEMBER_GS(double, throttle_table_resistance_torque, 0.0);
-            MAKE_MEMBER_GS(double, throttle_table_nominal_fuel_consumption_rate, 250.0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleThrottlePositionItem>, throttle_table_positions)
+            double throttle_table_max_torque = 1.0;
+            double throttle_table_max_torque_rpm = 1.0;
+            double throttle_table_max_rpm_torque = 2.0;
+            double throttle_table_nominal_fuel_dose = 0.0;
+            double throttle_table_resistance_torque = 0.0;
+            double throttle_table_nominal_fuel_consumption_rate = 250.0;
+            TypedArray<RailVehicleThrottlePositionItem> throttle_table_positions;
 
             /* DMList: charakterystyka momentu obrotowego */
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<VehicleCurvePointItem>, torque_table)
+            TypedArray<VehicleCurvePointItem> torque_table;
 
             /* Engine: cooling (dizel_heat, LoadFIZ_Engine, Mover.cpp:11340-11373 of the original);
              * a temperature of -1 [deg C] is not set */
             /* HeatKW, HeatKV, HeatKFE, HeatKFS, HeatKFO, HeatKFO2: heat exchange factors */
-            MAKE_MEMBER_GS(double, cooling_heat_kw, 0.35);
-            MAKE_MEMBER_GS(double, cooling_heat_kv, 0.6);
-            MAKE_MEMBER_GS(double, cooling_heat_kfe, 1.0);
-            MAKE_MEMBER_GS(double, cooling_heat_kfs, 80.0);
-            MAKE_MEMBER_GS(double, cooling_heat_kfo, 25.0);
-            MAKE_MEMBER_GS(double, cooling_heat_kfo2, 25.0);
+            double cooling_heat_kw = 0.35;
+            double cooling_heat_kv = 0.6;
+            double cooling_heat_kfe = 1.0;
+            double cooling_heat_kfs = 80.0;
+            double cooling_heat_kfo = 25.0;
+            double cooling_heat_kfo2 = 25.0;
             /* WaterMin/Max/Flow/CoolingTemperature [deg C], WaterShutters */
-            MAKE_MEMBER_GS(double, cooling_water_min_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_water_max_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_water_flow_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_water_cooling_temperature, -1.0);
-            MAKE_MEMBER_GS(bool, cooling_water_shutters, false);
+            double cooling_water_min_temperature = -1.0;
+            double cooling_water_max_temperature = -1.0;
+            double cooling_water_flow_temperature = -1.0;
+            double cooling_water_cooling_temperature = -1.0;
+            bool cooling_water_shutters = false;
             /* WaterAuxCircuit: the cooling has a second water circuit, WaterAux*: its settings */
-            MAKE_MEMBER_GS(bool, cooling_water_aux_circuit, false);
-            MAKE_MEMBER_GS(double, cooling_water_aux_min_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_water_aux_max_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_water_aux_cooling_temperature, -1.0);
-            MAKE_MEMBER_GS(bool, cooling_water_aux_shutters, false);
+            bool cooling_water_aux_circuit = false;
+            double cooling_water_aux_min_temperature = -1.0;
+            double cooling_water_aux_max_temperature = -1.0;
+            double cooling_water_aux_cooling_temperature = -1.0;
+            bool cooling_water_aux_shutters = false;
             /* OilMin/MaxTemperature [deg C] */
-            MAKE_MEMBER_GS(double, cooling_oil_min_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_oil_max_temperature, -1.0);
+            double cooling_oil_min_temperature = -1.0;
+            double cooling_oil_max_temperature = -1.0;
             /* WaterCoolingFanSpeed: a share of the engine's revolutions, or absolute when negative */
-            MAKE_MEMBER_GS(double, cooling_fan_speed, 0.075);
+            double cooling_fan_speed = 0.075;
             /* HeaterMin/MaxTemperature [deg C]: the water heater */
-            MAKE_MEMBER_GS(double, cooling_heater_min_temperature, -1.0);
-            MAKE_MEMBER_GS(double, cooling_heater_max_temperature, -1.0);
+            double cooling_heater_min_temperature = -1.0;
+            double cooling_heater_max_temperature = -1.0;
             /* NominalCoolingPower: the engine's heat is scaled by su45's 1235 over it */
-            MAKE_MEMBER_GS(double, cooling_nominal_power, NOMINAL_COOLING_POWER);
+            double cooling_nominal_power = NOMINAL_COOLING_POWER;
+
+        public:
+            MAKE_GS(float, oil_pump_pressure_minimum);
+            MAKE_GS(float, oil_pump_pressure_maximum);
+            MAKE_GS_NR(RailVehicleController::StartMode, fuel_pump_start_mode);
+            MAKE_GS_NR(RailVehicleController::StartMode, oil_pump_start_mode);
+            MAKE_GS_NR(RailVehicleController::StartMode, water_pump_start_mode);
+
+            MAKE_GS(double, mechanical_min_rpm);
+            MAKE_GS(double, mechanical_max_rpm);
+            MAKE_GS(double, mechanical_fuel_cutoff_rpm);
+            MAKE_GS(double, mechanical_inertia);
+            MAKE_GS(double, mechanical_clutch_engage_speed);
+            MAKE_GS(double, mechanical_clutch_disengage_speed);
+            MAKE_GS(double, mechanical_min_rpm_hydro_drive);
+            MAKE_GS(double, mechanical_min_rpm_hydro_drive_factor);
+            MAKE_GS(double, mechanical_min_rpm_retarder);
+            MAKE_GS(double, mechanical_nominal_max_rpm);
+            MAKE_GS(double, mechanical_regulator_acceleration);
+            MAKE_GS(double, mechanical_rpm_decrease_rate);
+            MAKE_GS(double, mechanical_shunt_mode_ratio);
+            MAKE_GS(double, clutch_min_velocity_full_engage);
+            MAKE_GS(double, clutch_diameter);
+            MAKE_GS(double, clutch_max_force);
+            MAKE_GS(double, clutch_friction);
+            MAKE_GS(double, torque_converter_unlock_velocity);
+            MAKE_GS(double, retarder_engage_velocity);
+            MAKE_GS(bool, retarder_clutch);
+            MAKE_GS(double, retarder_clutch_speed);
+            MAKE_GS(bool, retarder_with_individual);
+            MAKE_GS(bool, torque_converter_present);
+            MAKE_GS(double, torque_converter_max_torque_ratio);
+            MAKE_GS(double, torque_converter_coupling_point);
+            MAKE_GS(double, torque_converter_lockup_torque);
+            MAKE_GS(double, torque_converter_lockup_rate);
+            MAKE_GS(double, torque_converter_unlock_rate);
+            MAKE_GS(double, torque_converter_fill_rate_increase);
+            MAKE_GS(double, torque_converter_fill_rate_decrease);
+            MAKE_GS(double, torque_converter_torque_in_in);
+            MAKE_GS(double, torque_converter_torque_in_out);
+            MAKE_GS(double, torque_converter_torque_out_out);
+            MAKE_GS(double, torque_converter_lockup_speed);
+            MAKE_GS(double, torque_converter_unlock_speed);
+            MAKE_GS_NR(TypedArray<VehicleCurvePointItem>, torque_converter_table);
+            MAKE_GS_NR(TypedArray<VehicleCurvePointItem>, vel2nmax_table);
+            MAKE_GS(bool, retarder_present);
+            MAKE_GS_NR(RetarderPlacement, retarder_placement);
+            MAKE_GS(double, retarder_torque_in_in);
+            MAKE_GS(double, retarder_max_torque);
+            MAKE_GS(double, retarder_max_power);
+            MAKE_GS(double, retarder_fill_rate_increase);
+            MAKE_GS(double, retarder_fill_rate_decrease);
+            MAKE_GS(double, retarder_min_velocity);
+
+            MAKE_GS(double, throttle_table_max_torque);
+            MAKE_GS(double, throttle_table_max_torque_rpm);
+            MAKE_GS(double, throttle_table_max_rpm_torque);
+            MAKE_GS(double, throttle_table_nominal_fuel_dose);
+            MAKE_GS(double, throttle_table_resistance_torque);
+            MAKE_GS(double, throttle_table_nominal_fuel_consumption_rate);
+            MAKE_GS_NR(TypedArray<RailVehicleThrottlePositionItem>, throttle_table_positions);
+
+            MAKE_GS_NR(TypedArray<VehicleCurvePointItem>, torque_table);
+
+            MAKE_GS(double, cooling_heat_kw);
+            MAKE_GS(double, cooling_heat_kv);
+            MAKE_GS(double, cooling_heat_kfe);
+            MAKE_GS(double, cooling_heat_kfs);
+            MAKE_GS(double, cooling_heat_kfo);
+            MAKE_GS(double, cooling_heat_kfo2);
+            MAKE_GS(double, cooling_water_min_temperature);
+            MAKE_GS(double, cooling_water_max_temperature);
+            MAKE_GS(double, cooling_water_flow_temperature);
+            MAKE_GS(double, cooling_water_cooling_temperature);
+            MAKE_GS(bool, cooling_water_shutters);
+            MAKE_GS(bool, cooling_water_aux_circuit);
+            MAKE_GS(double, cooling_water_aux_min_temperature);
+            MAKE_GS(double, cooling_water_aux_max_temperature);
+            MAKE_GS(double, cooling_water_aux_cooling_temperature);
+            MAKE_GS(bool, cooling_water_aux_shutters);
+            MAKE_GS(double, cooling_oil_min_temperature);
+            MAKE_GS(double, cooling_oil_max_temperature);
+            MAKE_GS(double, cooling_fan_speed);
+            MAKE_GS(double, cooling_heater_min_temperature);
+            MAKE_GS(double, cooling_heater_max_temperature);
+            MAKE_GS(double, cooling_nominal_power);
 
         private:
         protected:

@@ -38,19 +38,33 @@ namespace godot {
         protected:
             EngineType get_type() const override;
 
+        private:
+            double nominal_voltage = 0.0;
+            double winding_resistance = 0.0;
+            double max_rpm = 0.0;
+            FanType resistor_fan_type = FAN_TYPE_NONE;
+            double resistor_fan_max_rpm = 1.0;
+            double resistor_fan_cutoff_resistance = 0.0;
+            double resistor_fan_min_current = 50.0;
+            double resistor_fan_speed = 0.5;
+            double dynamic_brake_resistance = 5.8;
+            double dynamic_brake_resistance_1 = 5.8;
+            double dynamic_brake_resistance_2 = 5.8;
+            TypedArray<RailVehicleRelayListItem> relay_list;
+
         public:
-            MAKE_MEMBER_GS(double, nominal_voltage, 0.0);
-            MAKE_MEMBER_GS(double, winding_resistance, 0.0);
-            MAKE_MEMBER_GS(double, max_rpm, 0.0);
-            MAKE_MEMBER_GS_NR(FanType, resistor_fan_type, FAN_TYPE_NONE);
-            MAKE_MEMBER_GS(double, resistor_fan_max_rpm, 1.0);
-            MAKE_MEMBER_GS(double, resistor_fan_cutoff_resistance, 0.0);
-            MAKE_MEMBER_GS(double, resistor_fan_min_current, 50.0);
-            MAKE_MEMBER_GS(double, resistor_fan_speed, 0.5);
-            MAKE_MEMBER_GS(double, dynamic_brake_resistance, 5.8);
-            MAKE_MEMBER_GS(double, dynamic_brake_resistance_1, 5.8);
-            MAKE_MEMBER_GS(double, dynamic_brake_resistance_2, 5.8);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleRelayListItem>, relay_list)
+            MAKE_GS(double, nominal_voltage);
+            MAKE_GS(double, winding_resistance);
+            MAKE_GS(double, max_rpm);
+            MAKE_GS_NR(FanType, resistor_fan_type);
+            MAKE_GS(double, resistor_fan_max_rpm);
+            MAKE_GS(double, resistor_fan_cutoff_resistance);
+            MAKE_GS(double, resistor_fan_min_current);
+            MAKE_GS(double, resistor_fan_speed);
+            MAKE_GS(double, dynamic_brake_resistance);
+            MAKE_GS(double, dynamic_brake_resistance_1);
+            MAKE_GS(double, dynamic_brake_resistance_2);
+            MAKE_GS_NR(TypedArray<RailVehicleRelayListItem>, relay_list);
 
             /* The reverser's step past "forward" switches the automatic start to the high current, and
              * its step back from there to the low one (TMoverParameters::DirectionForward/Backward,

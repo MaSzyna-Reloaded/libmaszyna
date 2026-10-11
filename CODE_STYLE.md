@@ -758,7 +758,9 @@ the logic into a separate class) instead of reaching into internals.
 
 ### MAKE_* macros
 
-* MAKE_* macros / macros.hpp are deprecated. Use straight and readable declarations.  
+* A macro never changes the section it stands in. A field with plain accessors is declared by hand in `private:`;
+  `MAKE_GS(type, name)` (getter returning a const reference) or `MAKE_GS_NR(type, name)` (getter returning a copy)
+  in `public:` generates its getter and setter.
 
 ### Random generation
 

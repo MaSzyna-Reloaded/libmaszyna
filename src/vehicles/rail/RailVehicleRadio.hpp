@@ -58,12 +58,16 @@ namespace godot {
              * true when it braked the vehicle */
             virtual bool _radio_stop_receive(bool p_driven) = 0;
 
-        public:
+        private:
             // the original hardcodes 1..10 for every vehicle (OnCommand_radiochannelset:
             // std::clamp((int)Command.param1, 1, 10)) - not configurable there, so this is only
             // the same range, never 0..0, which would clamp every channel change to nothing
-            MAKE_MEMBER_GS(int, channel_min, 1);
-            MAKE_MEMBER_GS(int, channel_max, 10);
+            int channel_min = 1;
+            int channel_max = 10;
+
+        public:
+            MAKE_GS(int, channel_min);
+            MAKE_GS(int, channel_max);
 
             /* Live state */
             virtual bool get_enabled() const = 0;

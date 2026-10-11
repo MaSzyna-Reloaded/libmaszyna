@@ -15,9 +15,15 @@ namespace godot {
                 //@TODO: Figure out what load types are really accepted
             };
 
-            MAKE_MEMBER_GS(float, max_load, 0.0);
-            MAKE_MEMBER_GS_NR(LoadType, load_type, LoadType::LOAD_TYPE_NONE);
-            MAKE_MEMBER_GS(float, load_offset, 0.0)
+        private:
+            float max_load = 0.0;
+            LoadType load_type = LoadType::LOAD_TYPE_NONE;
+            float load_offset = 0.0;
+
+        public:
+            MAKE_GS(float, max_load);
+            MAKE_GS_NR(LoadType, load_type);
+            MAKE_GS(float, load_offset);
     };
 } // namespace godot
 

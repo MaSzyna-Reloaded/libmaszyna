@@ -52,16 +52,30 @@ namespace godot {
                 BEARING_TYPE_SLIDE = 0,
                 BEARING_TYPE_ROLL = 1,
             };
-            MAKE_MEMBER_GS(double, powered_wheel_diameter, 0.0);
-            MAKE_MEMBER_GS(double, front_rolling_wheel_diameter, 0.0);
-            MAKE_MEMBER_GS(double, rear_rolling_wheel_diameter, 0.0);
-            MAKE_MEMBER_GS(double, axle_inertial_moment, 0.0);
-            MAKE_MEMBER_GS(double, track_width, 1.435);
-            MAKE_MEMBER_GS(String, axle_arrangement, "");
-            MAKE_MEMBER_GS(double, bogie_axle_spacing, 0.0);
-            MAKE_MEMBER_GS(double, bogie_pivot_spacing, 0.0);
-            MAKE_MEMBER_GS(double, minimum_curve_radius, 0.0);
-            MAKE_MEMBER_GS(int, bearing_type, BEARING_TYPE_ROLL);
+
+        private:
+            double powered_wheel_diameter = 0.0;
+            double front_rolling_wheel_diameter = 0.0;
+            double rear_rolling_wheel_diameter = 0.0;
+            double axle_inertial_moment = 0.0;
+            double track_width = 1.435;
+            String axle_arrangement = "";
+            double bogie_axle_spacing = 0.0;
+            double bogie_pivot_spacing = 0.0;
+            double minimum_curve_radius = 0.0;
+            int bearing_type = BEARING_TYPE_ROLL;
+
+        public:
+            MAKE_GS(double, powered_wheel_diameter);
+            MAKE_GS(double, front_rolling_wheel_diameter);
+            MAKE_GS(double, rear_rolling_wheel_diameter);
+            MAKE_GS(double, axle_inertial_moment);
+            MAKE_GS(double, track_width);
+            MAKE_GS(String, axle_arrangement);
+            MAKE_GS(double, bogie_axle_spacing);
+            MAKE_GS(double, bogie_pivot_spacing);
+            MAKE_GS(double, minimum_curve_radius);
+            MAKE_GS(int, bearing_type);
     };
 } // namespace godot
 

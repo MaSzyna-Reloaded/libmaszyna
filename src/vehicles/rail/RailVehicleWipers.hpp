@@ -42,7 +42,11 @@ namespace godot {
             /* Every wiper stood parked after the last pass */
             bool parked = true;
             int switch_position = 0;
+            double angle = 0.0;
             int default_position = 0;
+            // Number of wipers of the vehicle model (the original counts its animated submodels,
+            // DynObj.cpp:5842), set by the vehicle factory. 0: the highest wiper the list switches on.
+            int wiper_count = 0;
             TypedArray<RailVehicleWiperListItem> positions;
             void _set_switch_position(int p_position);
 
@@ -63,14 +67,12 @@ namespace godot {
             PackedFloat64Array get_sweep_positions() const;
             void switch_increase();
             void switch_decrease();
-            MAKE_MEMBER_GS(double, angle, 0.0);
+            MAKE_GS(double, angle);
             /* The switch stands at the default (Mover.cpp:11942) whenever either is set - an applied
              * configuration leaves it where the driver moved it */
             int get_default_position() const;
             void set_default_position(int p_value);
-            // Number of wipers of the vehicle model (the original counts its animated submodels,
-            // DynObj.cpp:5842), set by the vehicle factory. 0: the highest wiper the list switches on.
-            MAKE_MEMBER_GS(int, wiper_count, 0);
+            MAKE_GS(int, wiper_count);
             TypedArray<RailVehicleWiperListItem> get_positions() const;
             void set_positions(const TypedArray<RailVehicleWiperListItem> &p_value);
     };

@@ -40,18 +40,26 @@ namespace godot {
             void _register_commands() override;
             void _unregister_commands() override;
 
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, heating_source,
-                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleEngine::EngineType, heating_generator_engine, RailVehicleEngine::EngineType::MAIN);
-            MAKE_MEMBER_GS(double, heating_generator_min_rpm, 0.0);
-            MAKE_MEMBER_GS(double, heating_generator_min_voltage, 0.0);
-            MAKE_MEMBER_GS(double, heating_generator_max_rpm, 0.0);
-            MAKE_MEMBER_GS(double, heating_generator_max_voltage, 0.0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerType, heating_power_cable_type,
-                    RailVehicleController::TrainPowerType::POWER_TYPE_ELECTRIC);
-            MAKE_MEMBER_GS(double, heating_max_voltage, 0.0);
+        private:
+            RailVehicleController::TrainPowerSource heating_source =
+                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR;
+            RailVehicleEngine::EngineType heating_generator_engine = RailVehicleEngine::EngineType::MAIN;
+            double heating_generator_min_rpm = 0.0;
+            double heating_generator_min_voltage = 0.0;
+            double heating_generator_max_rpm = 0.0;
+            double heating_generator_max_voltage = 0.0;
+            RailVehicleController::TrainPowerType heating_power_cable_type =
+                    RailVehicleController::TrainPowerType::POWER_TYPE_ELECTRIC;
+            double heating_max_voltage = 0.0;
+
+        public:
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, heating_source);
+            MAKE_GS_NR(RailVehicleEngine::EngineType, heating_generator_engine);
+            MAKE_GS(double, heating_generator_min_rpm);
+            MAKE_GS(double, heating_generator_min_voltage);
+            MAKE_GS(double, heating_generator_max_rpm);
+            MAKE_GS(double, heating_generator_max_voltage);
+            MAKE_GS_NR(RailVehicleController::TrainPowerType, heating_power_cable_type);
+            MAKE_GS(double, heating_max_voltage);
     };
 } // namespace godot

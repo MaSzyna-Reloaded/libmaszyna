@@ -8,9 +8,17 @@ namespace godot {
 
         public:
             static void _bind_methods();
-            MAKE_MEMBER_GS(int, allow, 0);
-            MAKE_MEMBER_GS(int, speed_factor, 1);
-            MAKE_MEMBER_GS(int, min_pressure_factor, 1);
-            MAKE_MEMBER_GS(int, max_pressure_factor, 1);
+
+        private:
+            int allow = 0;
+            int speed_factor = 1;
+            int min_pressure_factor = 1;
+            int max_pressure_factor = 1;
+
+        public:
+            MAKE_GS(int, allow);
+            MAKE_GS(int, speed_factor);
+            MAKE_GS(int, min_pressure_factor);
+            MAKE_GS(int, max_pressure_factor);
     };
 } // namespace godot

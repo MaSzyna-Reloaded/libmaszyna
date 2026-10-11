@@ -14,11 +14,20 @@ namespace godot {
             };
 
             static void _bind_methods();
-            MAKE_MEMBER_GS(int, handle_position, 0);
-            MAKE_MEMBER_GS(double, pipe_pressure, 0.0);
-            MAKE_MEMBER_GS(double, brake_cylinder_pressure, -1.0);
-            MAKE_MEMBER_GS(double, fill_speed, 0.0);
-            MAKE_MEMBER_GS_NR(BrakeType, brake_type, BRAKE_TYPE_PNEUMATIC);
+
+        private:
+            int handle_position = 0;
+            double pipe_pressure = 0.0;
+            double brake_cylinder_pressure = -1.0;
+            double fill_speed = 0.0;
+            BrakeType brake_type = BRAKE_TYPE_PNEUMATIC;
+
+        public:
+            MAKE_GS(int, handle_position);
+            MAKE_GS(double, pipe_pressure);
+            MAKE_GS(double, brake_cylinder_pressure);
+            MAKE_GS(double, fill_speed);
+            MAKE_GS_NR(BrakeType, brake_type);
     };
 } // namespace godot
 VARIANT_ENUM_CAST(RailVehicleBrakePressureTableItem::BrakeType)

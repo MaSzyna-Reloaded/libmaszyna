@@ -176,7 +176,7 @@ Legend:
 
 ### Cosmetic
 
-- [ ] [RC-114](#rc-114) Deprecated `MAKE_MEMBER_GS*` macros
+- [x] [RC-114](#rc-114) `MAKE_MEMBER_GS*` macros switch the section (macros kept as `MAKE_GS`, section left alone)
 - [ ] [RC-115](#rc-115) `macros.hpp` included where unused
 - [ ] [RC-116](#rc-116) Functional casts instead of `static_cast`
 - [ ] [RC-117](#rc-117) State keys with slashes
@@ -238,18 +238,6 @@ Legend:
 
 ## Cosmetic
 
-### RC-114
-
-**Deprecated `MAKE_MEMBER_GS*` macros**
-
-* **Where:** 538 uses in 40 headers. The largest are `src/vehicles/rail/RailVehicleDieselEngine.hpp`
-  (80), `RailVehicleBrake.hpp` (65), `src/legacy/e3d/E3DSubModel.hpp` (30) and
-  `RailVehicleDoors.hpp` (28). Also every rail component header, every `*ListItem`/`*Item`
-  resource, `VehicleController.hpp` and `RailVehicleController.hpp`.
-* **Rule:** `CODE_STYLE.md` "MAKE_* macros ... are deprecated"
-* **Problem:** besides being deprecated, the macros leave the member fields public.
-* **Fix:** explicit declarations, file by file; then delete `src/macros.hpp`.
-
 ### RC-115
 
 **`macros.hpp` included where unused**
@@ -301,12 +289,12 @@ Legend:
 **Privacy sections**
 
 * **Where:**
-  * Empty or dangling sections: `RailVehicleEngine.hpp:159`, `RailVehicleDieselEngine.hpp:202`,
+  * Empty or dangling sections: `RailVehicleEngine.hpp:182`, `RailVehicleDieselEngine.hpp:285`,
     `RailVehicleBuffCoupl.hpp:19`, `VehicleController.hpp:28-29` (`public:` followed at once by
     `private:`)
   * Public members: `RailVehicleEngine.hpp:102-103` (`_bind_methods`, `motor_param_table`)
   * Protected `_register_commands` overrides made public: `RailVehicleSpeedControl.hpp:38`,
-    `RailVehicleHeating.hpp:40`, `RailVehicleSwitches.hpp:81`, `RailVehicleElectricEngine.hpp:79`
+    `RailVehicleHeating.hpp:40`, `RailVehicleSwitches.hpp:95`, `RailVehicleElectricEngine.hpp:97`
   * `VehicleController.hpp:50`: `apply_configuration` is protected but bound publicly
     (`.cpp:41`)
 * **Rule:** `CODE_STYLE.md` "Explicit privacy declarations"

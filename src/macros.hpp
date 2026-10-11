@@ -31,33 +31,13 @@ inline godot::String enum_hint(std::initializer_list<std::pair<const char *, int
     return result;
 }
 /**
- * Macro for generating private members with their setters and getters
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
+ * Getter and setter of a field declared by hand, the getter returning a const reference. Declares
+ * no field and changes no section: the field stands in private:, the macro where the accessors
+ * belong (public:).
+ * @param type Field type
+ * @param name Field name
  */
-#define MAKE_MEMBER_GS(type, name, default_value)                                                                      \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    const type &get_##name() const {                                                                                   \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(const type &value) {                                                                               \
-        name = value;                                                                                                  \
-    }
-/**
- * Macro for generating private members with their setters and getters without any default value
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
- */
-#define MAKE_MEMBER_GS_NO_DEF(type, name)                                                                              \
-private:                                                                                                               \
-    type name;                                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
+#define MAKE_GS(type, name)                                                                                            \
     const type &get_##name() const {                                                                                   \
         return name;                                                                                                   \
     }                                                                                                                  \
@@ -66,35 +46,12 @@ public:                                                                         
     }
 
 /**
- * Macro for generating private members with their setters and getters without a const reference
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
+ * MAKE_GS with the getter returning a copy and the setter taking one - for the types cheap to copy
+ * or shared already (enums, TypedArray, Ref)
+ * @param type Field type
+ * @param name Field name
  */
-#define MAKE_MEMBER_GS_NR(type, name, default_value)                                                                   \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    type get_##name() const {                                                                                          \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(type value) {                                                                                      \
-        name = value;                                                                                                  \
-    }
-
-/**
- * Macro for generating private members with their setters and getters without a const reference
- * and without default value
- * @param type Member type
- * @param name Member name
- */
-
-#define MAKE_MEMBER_GS_NR_NO_DEF(type, name)                                                                           \
-private:                                                                                                               \
-    type name;                                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
+#define MAKE_GS_NR(type, name)                                                                                         \
     type get_##name() const {                                                                                          \
         return name;                                                                                                   \
     }                                                                                                                  \

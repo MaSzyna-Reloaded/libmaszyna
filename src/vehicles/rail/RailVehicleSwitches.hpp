@@ -49,24 +49,38 @@ namespace godot {
         public:
             /* Live state, read straight from the backend - nothing is stored. */
             virtual bool get_sand_active() const = 0;
-            MAKE_MEMBER_GS(bool, pantograph_impulse, false);
-            MAKE_MEMBER_GS(bool, converter_impulse, false);
-            MAKE_MEMBER_GS(bool, motor_connectors_impulse, true);
-            MAKE_MEMBER_GS(int, relay_reset_button_1, 0);
-            MAKE_MEMBER_GS(int, relay_reset_button_2, 0);
-            MAKE_MEMBER_GS(int, relay_reset_button_3, 0);
+
+        private:
+            bool pantograph_impulse = false;
+            bool converter_impulse = false;
+            bool motor_connectors_impulse = true;
+            int relay_reset_button_1 = 0;
+            int relay_reset_button_2 = 0;
+            int relay_reset_button_3 = 0;
             /* A PantographPreset for each position of the cab's selector (PantographPresets=,
                default Mover.cpp:11402) */
-            MAKE_MEMBER_GS(
-                    PackedInt32Array, pantograph_presets,
-                    PackedInt32Array(
-                            {PANTOGRAPH_PRESET_NONE, PANTOGRAPH_PRESET_OWN_END, PANTOGRAPH_PRESET_BOTH,
-                             PANTOGRAPH_PRESET_OTHER_END}));
-            MAKE_MEMBER_GS(int, pantograph_preset_default, 0);
-            MAKE_MEMBER_GS(bool, modern_dimmer, false);
-            MAKE_MEMBER_GS(bool, dimmer_list_cycle, false);
-            MAKE_MEMBER_GS(int, dimmer_list_default_position, 0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleDimmerListItem>, dimmer_list_positions)
+            PackedInt32Array pantograph_presets = PackedInt32Array(
+                    {PANTOGRAPH_PRESET_NONE, PANTOGRAPH_PRESET_OWN_END, PANTOGRAPH_PRESET_BOTH,
+                     PANTOGRAPH_PRESET_OTHER_END});
+            int pantograph_preset_default = 0;
+            bool modern_dimmer = false;
+            bool dimmer_list_cycle = false;
+            int dimmer_list_default_position = 0;
+            TypedArray<RailVehicleDimmerListItem> dimmer_list_positions;
+
+        public:
+            MAKE_GS(bool, pantograph_impulse);
+            MAKE_GS(bool, converter_impulse);
+            MAKE_GS(bool, motor_connectors_impulse);
+            MAKE_GS(int, relay_reset_button_1);
+            MAKE_GS(int, relay_reset_button_2);
+            MAKE_GS(int, relay_reset_button_3);
+            MAKE_GS(PackedInt32Array, pantograph_presets);
+            MAKE_GS(int, pantograph_preset_default);
+            MAKE_GS(bool, modern_dimmer);
+            MAKE_GS(bool, dimmer_list_cycle);
+            MAKE_GS(int, dimmer_list_default_position);
+            MAKE_GS_NR(TypedArray<RailVehicleDimmerListItem>, dimmer_list_positions);
             /* The position of the pantograph selector of the cab at `p_end` (PantsPreset.second) */
             virtual int get_pantograph_preset_position(RailVehicleController::CouplerEnd p_end) const = 0;
             /* The preset that position selects */

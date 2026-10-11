@@ -11,7 +11,13 @@ namespace godot {
 
         public:
             static void _bind_methods();
-            MAKE_MEMBER_GS(double, x, 0.0);
-            MAKE_MEMBER_GS(double, y, 0.0);
+
+        private:
+            double x = 0.0;
+            double y = 0.0;
+
+        public:
+            MAKE_GS(double, x);
+            MAKE_GS(double, y);
     };
 } // namespace godot

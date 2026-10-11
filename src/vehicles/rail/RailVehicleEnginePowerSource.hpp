@@ -129,17 +129,25 @@ namespace godot {
              * short loss (RailVehicleServer::vehicle_collect_current(), DynObj.cpp:3128-3141) */
             virtual void set_collector_voltage(float p_voltage) = 0;
 
+        private:
             /* Power: EnginePower= - the kind of source (LoadFIZ_Power, Mover.cpp:11071) */
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, source_type,
-                    RailVehicleController::POWER_SOURCE_NOT_DEFINED);
+            RailVehicleController::TrainPowerSource source_type = RailVehicleController::POWER_SOURCE_NOT_DEFINED;
             /* Power: of a current collector (LoadFIZ_PowerParamsDecode) */
-            MAKE_MEMBER_GS(int, current_collector_number_of_collectors, 0);
-            MAKE_MEMBER_GS(double, current_collector_max_voltage, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_max_current, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_min_collector_lifting, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_max_collector_lifting, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_sliding_width, 0.0);
+            int current_collector_number_of_collectors = 0;
+            double current_collector_max_voltage = 0.0;
+            double current_collector_max_current = 0.0;
+            double current_collector_min_collector_lifting = 0.0;
+            double current_collector_max_collector_lifting = 0.0;
+            double current_collector_sliding_width = 0.0;
+
+        public:
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, source_type);
+            MAKE_GS(int, current_collector_number_of_collectors);
+            MAKE_GS(double, current_collector_max_voltage);
+            MAKE_GS(double, current_collector_max_current);
+            MAKE_GS(double, current_collector_min_collector_lifting);
+            MAKE_GS(double, current_collector_max_collector_lifting);
+            MAKE_GS(double, current_collector_sliding_width);
 
         private:
             PantographType current_collector_pantograph_type = PANTOGRAPH_TYPE_NONE;
@@ -147,38 +155,56 @@ namespace godot {
         public:
             void set_current_collector_pantograph_type(PantographType p_value);
             PantographType get_current_collector_pantograph_type() const;
-            MAKE_MEMBER_GS(double, current_collector_min_main_switch_voltage, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_min_pantograph_tank_pressure, 0.0);
-            MAKE_MEMBER_GS(double, current_collector_max_pantograph_tank_pressure, 0.0);
-            MAKE_MEMBER_GS(bool, current_collector_overvoltage_relay, false);
-            MAKE_MEMBER_GS(double, current_collector_required_main_switch_voltage, 0.0);
-            MAKE_MEMBER_GS(bool, current_collector_fake_power, false);
-            MAKE_MEMBER_GS(int, current_collector_physical_layout, 0);
-            MAKE_MEMBER_GS(double, transducer_input_voltage, 0.0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, accumulator_recharge_source,
-                    RailVehicleController::POWER_SOURCE_NOT_DEFINED);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerType, power_cable_source, RailVehicleController::POWER_TYPE_NONE);
-            MAKE_MEMBER_GS(double, power_cable_steam_pressure, 0.0);
+
+        private:
+            double current_collector_min_main_switch_voltage = 0.0;
+            double current_collector_min_pantograph_tank_pressure = 0.0;
+            double current_collector_max_pantograph_tank_pressure = 0.0;
+            bool current_collector_overvoltage_relay = false;
+            double current_collector_required_main_switch_voltage = 0.0;
+            bool current_collector_fake_power = false;
+            int current_collector_physical_layout = 0;
+            double transducer_input_voltage = 0.0;
+            RailVehicleController::TrainPowerSource accumulator_recharge_source =
+                    RailVehicleController::POWER_SOURCE_NOT_DEFINED;
+            RailVehicleController::TrainPowerType power_cable_source = RailVehicleController::POWER_TYPE_NONE;
+            double power_cable_steam_pressure = 0.0;
 
             /* Cntrl. of the pantographs (LoadFIZ_Cntrl, Mover.cpp:10909-10946) */
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_pantograph_compressor_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS(bool, cntrl_pantograph_auto_valve, false);
+            RailVehicleController::StartMode cntrl_pantograph_compressor_start_mode =
+                    RailVehicleController::START_MODE_MANUAL;
+            bool cntrl_pantograph_auto_valve = false;
             /* The master valve of the pantographs opens by itself unless the FIZ says otherwise -
              * "there was no pantographs valve" in older vehicles - while each pantograph's own
              * valve is worked by hand */
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_pantographs_valve_start_mode,
-                    RailVehicleController::START_MODE_AUTOMATIC);
-            MAKE_MEMBER_GS(bool, cntrl_pantographs_valve_spring, true);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_pantograph_valve_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS(bool, cntrl_pantograph_valve_spring, true);
-            MAKE_MEMBER_GS(bool, cntrl_pantograph_valve_solenoid, true);
+            RailVehicleController::StartMode cntrl_pantographs_valve_start_mode =
+                    RailVehicleController::START_MODE_AUTOMATIC;
+            bool cntrl_pantographs_valve_spring = true;
+            RailVehicleController::StartMode cntrl_pantograph_valve_start_mode =
+                    RailVehicleController::START_MODE_MANUAL;
+            bool cntrl_pantograph_valve_spring = true;
+            bool cntrl_pantograph_valve_solenoid = true;
+
+        public:
+            MAKE_GS(double, current_collector_min_main_switch_voltage);
+            MAKE_GS(double, current_collector_min_pantograph_tank_pressure);
+            MAKE_GS(double, current_collector_max_pantograph_tank_pressure);
+            MAKE_GS(bool, current_collector_overvoltage_relay);
+            MAKE_GS(double, current_collector_required_main_switch_voltage);
+            MAKE_GS(bool, current_collector_fake_power);
+            MAKE_GS(int, current_collector_physical_layout);
+            MAKE_GS(double, transducer_input_voltage);
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, accumulator_recharge_source);
+            MAKE_GS_NR(RailVehicleController::TrainPowerType, power_cable_source);
+            MAKE_GS(double, power_cable_steam_pressure);
+
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_pantograph_compressor_start_mode);
+            MAKE_GS(bool, cntrl_pantograph_auto_valve);
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_pantographs_valve_start_mode);
+            MAKE_GS(bool, cntrl_pantographs_valve_spring);
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_pantograph_valve_start_mode);
+            MAKE_GS(bool, cntrl_pantograph_valve_spring);
+            MAKE_GS(bool, cntrl_pantograph_valve_solenoid);
     };
 } // namespace godot
 

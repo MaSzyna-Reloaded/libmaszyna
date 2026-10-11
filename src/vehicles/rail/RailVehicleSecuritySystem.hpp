@@ -43,23 +43,44 @@ namespace godot {
             /* The Radio-Stop emergency braking switched on or off from outside the cab (the
              * scenery's `Emergency_brake` command, Mover.cpp:12624-12630) */
             virtual void security_radiostop(bool p_enabled) = 0;
-            MAKE_MEMBER_GS(bool, aware_system_active, false);
-            MAKE_MEMBER_GS(bool, aware_system_cabsignal, false);
-            MAKE_MEMBER_GS(bool, aware_system_separate_acknowledge, false);
-            MAKE_MEMBER_GS(bool, aware_system_sifa, false);
+
+        private:
+            bool aware_system_active = false;
+            bool aware_system_cabsignal = false;
+            bool aware_system_separate_acknowledge = false;
+            bool aware_system_sifa = false;
+
+        public:
+            MAKE_GS(bool, aware_system_active);
+            MAKE_GS(bool, aware_system_cabsignal);
+            MAKE_GS(bool, aware_system_separate_acknowledge);
+            MAKE_GS(bool, aware_system_sifa);
             /* AwareMinSpeed= absent: 10% of the vehicle's Vmax (TSecuritySystem::load, Mover.cpp:247) */
             static constexpr double AWARE_MIN_SPEED_FROM_MAX_VELOCITY = -1.0;
             static constexpr double AWARE_MIN_SPEED_MAX_VELOCITY_SHARE = 0.1;
+
+        private:
             /* TSecuritySystem::load's defaults (MOVER.h:1147-1152, 1173) */
-            MAKE_MEMBER_GS(double, aware_delay, 30.0);
-            MAKE_MEMBER_GS(double, aware_min_speed, AWARE_MIN_SPEED_FROM_MAX_VELOCITY);
-            MAKE_MEMBER_GS(double, emergency_brake_delay, 5.0);
-            MAKE_MEMBER_GS(bool, radio_stop_enabled, false);
-            MAKE_MEMBER_GS(double, sound_signal_delay, 5.0);
-            MAKE_MEMBER_GS(double, shp_magnet_distance, 0.0);
-            MAKE_MEMBER_GS(double, ca_max_hold_time, 1.5);
-            MAKE_MEMBER_GS(bool, cab_dependent, false);
-            MAKE_MEMBER_GS_NR(EmergencySignal, emergency_signal, EmergencySignal::EMERGENCY_SIGNAL_SIREN_HIGH_TONE);
+            double aware_delay = 30.0;
+            double aware_min_speed = AWARE_MIN_SPEED_FROM_MAX_VELOCITY;
+            double emergency_brake_delay = 5.0;
+            bool radio_stop_enabled = false;
+            double sound_signal_delay = 5.0;
+            double shp_magnet_distance = 0.0;
+            double ca_max_hold_time = 1.5;
+            bool cab_dependent = false;
+            EmergencySignal emergency_signal = EmergencySignal::EMERGENCY_SIGNAL_SIREN_HIGH_TONE;
+
+        public:
+            MAKE_GS(double, aware_delay);
+            MAKE_GS(double, aware_min_speed);
+            MAKE_GS(double, emergency_brake_delay);
+            MAKE_GS(bool, radio_stop_enabled);
+            MAKE_GS(double, sound_signal_delay);
+            MAKE_GS(double, shp_magnet_distance);
+            MAKE_GS(double, ca_max_hold_time);
+            MAKE_GS(bool, cab_dependent);
+            MAKE_GS_NR(EmergencySignal, emergency_signal);
     };
 } // namespace godot
 VARIANT_ENUM_CAST(RailVehicleSecuritySystem::EmergencySignal)

@@ -17,9 +17,16 @@ namespace godot {
             };
 
             static void _bind_methods();
-            MAKE_MEMBER_GS(int, throttle_position, 0);
-            MAKE_MEMBER_GS(double, fuel_dose, 0.0);
-            MAKE_MEMBER_GS_NR(ClutchBehavior, clutch_behavior, CLUTCH_BEHAVIOR_NONE);
+
+        private:
+            int throttle_position = 0;
+            double fuel_dose = 0.0;
+            ClutchBehavior clutch_behavior = CLUTCH_BEHAVIOR_NONE;
+
+        public:
+            MAKE_GS(int, throttle_position);
+            MAKE_GS(double, fuel_dose);
+            MAKE_GS_NR(ClutchBehavior, clutch_behavior);
     };
 } // namespace godot
 VARIANT_ENUM_CAST(RailVehicleThrottlePositionItem::ClutchBehavior)

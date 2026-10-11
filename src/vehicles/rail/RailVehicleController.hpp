@@ -241,27 +241,44 @@ namespace godot {
              * kind - a vehicle has two couplers, one per end */
             Ref<VehicleComponent> get_rail_component(RailVehicleComponentType::Type p_type) const;
             TypedArray<VehicleComponent> find_rail_components(RailVehicleComponentType::Type p_type) const;
+
+        private:
             /* The name of the vehicle's type - the original's CHK/MMD name TMoverParameters keeps
              * as TypeName (DynObj.cpp:2019) */
-            MAKE_MEMBER_GS(String, type_name, "");
+            String type_name = "";
             /* What the vehicle carries when the scenery places it, as the `.scn` names it - the
              * amount and the cargo's own name (`loadcount` and `loadtype` of a `dynamic`). The
              * simulation takes both at once, and it reads more than cargo out of them: `pantstate`
              * is how a scenery starts a locomotive with its pantographs already up. */
-            MAKE_MEMBER_GS(String, load_name, "");
-            MAKE_MEMBER_GS(double, load_amount, 0.0);
-            MAKE_MEMBER_GS_NR(TrainType, train_type, TRAIN_TYPE_DEFAULT);
-            MAKE_MEMBER_GS(double, reduced_mass, 0.0);
-            MAKE_MEMBER_GS(double, sand_capacity, 0.0);
-            MAKE_MEMBER_GS(double, heating_power, 0.0);
-            MAKE_MEMBER_GS(double, light_power, 0.0);
+            String load_name = "";
+            double load_amount = 0.0;
+            TrainType train_type = TRAIN_TYPE_DEFAULT;
+            double reduced_mass = 0.0;
+            double sand_capacity = 0.0;
+            double heating_power = 0.0;
+            double light_power = 0.0;
 
             /* Cntrl. (ogolne, przekaznik ziemnozwarciowy/oswietlenie przedzialow/aktywacja kabiny) */
-            MAKE_MEMBER_GS_NR(StartMode, cntrl_ground_relay_start_mode, START_MODE_MANUAL);
+            StartMode cntrl_ground_relay_start_mode = START_MODE_MANUAL;
             /* CompartmentLightsStart= absent: automatic, "legacy behaviour" (Mover.cpp:10984) */
-            MAKE_MEMBER_GS_NR(StartMode, cntrl_compartment_lights_start_mode, START_MODE_AUTOMATIC);
-            MAKE_MEMBER_GS(bool, cntrl_automatic_cab_activation, true);
-            MAKE_MEMBER_GS(int, cntrl_inactive_cab_flag, 0);
+            StartMode cntrl_compartment_lights_start_mode = START_MODE_AUTOMATIC;
+            bool cntrl_automatic_cab_activation = true;
+            int cntrl_inactive_cab_flag = 0;
+
+        public:
+            MAKE_GS(String, type_name);
+            MAKE_GS(String, load_name);
+            MAKE_GS(double, load_amount);
+            MAKE_GS_NR(TrainType, train_type);
+            MAKE_GS(double, reduced_mass);
+            MAKE_GS(double, sand_capacity);
+            MAKE_GS(double, heating_power);
+            MAKE_GS(double, light_power);
+
+            MAKE_GS_NR(StartMode, cntrl_ground_relay_start_mode);
+            MAKE_GS_NR(StartMode, cntrl_compartment_lights_start_mode);
+            MAKE_GS(bool, cntrl_automatic_cab_activation);
+            MAKE_GS(int, cntrl_inactive_cab_flag);
     };
 } // namespace godot
 

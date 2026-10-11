@@ -156,16 +156,18 @@ namespace godot {
              * (VehicleServer::implementation_register()) - the server hands that one the step */
             void set_implementation(const StringName &p_implementation);
             StringName get_implementation() const;
-            MAKE_MEMBER_GS(String, vehicle_id, "");
-            MAKE_MEMBER_GS(double, mass, 0.0);
-            MAKE_MEMBER_GS(double, power, 0.0);
-            MAKE_MEMBER_GS(double, max_velocity, 0.0);
-            MAKE_MEMBER_GS_NR(Category, category, CATEGORY_TRAIN);
-            MAKE_MEMBER_GS(double, dimensions_length, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_height, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_width, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_drag_coefficient, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_floor_height, 0.96);
+
+        private:
+            String vehicle_id = "";
+            double mass = 0.0;
+            double power = 0.0;
+            double max_velocity = 0.0;
+            Category category = CATEGORY_TRAIN;
+            double dimensions_length = 0.0;
+            double dimensions_height = 0.0;
+            double dimensions_width = 0.0;
+            double dimensions_drag_coefficient = 0.0;
+            double dimensions_floor_height = 0.96;
 
             // Mirrors the original engine's scenery-line velocity token (TDynamicObject::Init's
             // `driveractive = (fVel != 0.0)`): a vehicle with initial_velocity == 0.0 is "not
@@ -173,7 +175,21 @@ namespace godot {
             // any non-zero value (scenario authors commonly use 0.1 for a stationary-but-ready
             // vehicle) marks it ready, so CheckLocomotiveParameters() turns the battery on per
             // cntrl_battery_start_mode.
-            MAKE_MEMBER_GS(double, initial_velocity, 0.0);
+            double initial_velocity = 0.0;
+
+        public:
+            MAKE_GS(String, vehicle_id);
+            MAKE_GS(double, mass);
+            MAKE_GS(double, power);
+            MAKE_GS(double, max_velocity);
+            MAKE_GS_NR(Category, category);
+            MAKE_GS(double, dimensions_length);
+            MAKE_GS(double, dimensions_height);
+            MAKE_GS(double, dimensions_width);
+            MAKE_GS(double, dimensions_drag_coefficient);
+            MAKE_GS(double, dimensions_floor_height);
+
+            MAKE_GS(double, initial_velocity);
 
             /* The whole state of this vehicle, by name: this vehicle and every enabled component,
              * composed on each call. A reader asking per frame takes the cached dump instead
