@@ -24,7 +24,7 @@ func before_each() -> void:
 
 
 func _state() -> Dictionary:
-    return VehicleServer.vehicle_get_state(vehicle_rid)
+    return VehicleServer.vehicle_get_controller(vehicle_rid).get_state()
 
 
 func test_the_permitted_side_unfolds_and_the_other_stays_folded() -> void:
