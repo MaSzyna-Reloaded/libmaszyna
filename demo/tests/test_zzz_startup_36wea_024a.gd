@@ -6,4 +6,4 @@ extends MaszynaStartupTest
 
 
 func test_starts_and_moves_off() -> void:
-    await run_startup("startup_36wea-024a.scn", "36WEa-024a", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_36wea-024a.scn", "36wea-024a", Kind.ELECTRIC_MULTIPLE_UNIT)

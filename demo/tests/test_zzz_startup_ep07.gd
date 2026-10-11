@@ -4,4 +4,4 @@ extends MaszynaStartupTest
 
 
 func test_starts_and_moves_off() -> void:
-    await run_startup("ep07.scn", "EP07-424", Kind.ELECTRIC_LOCOMOTIVE)
+    await run_startup("ep07.scn", "ep07-424", Kind.ELECTRIC_LOCOMOTIVE)

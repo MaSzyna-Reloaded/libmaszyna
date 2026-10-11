@@ -71,6 +71,9 @@ namespace godot {
         signalling->connect(
                 SignallingServer::signal_head_aspect_changed_signal,
                 callable_mp(this, &ScenarioScriptServer::_on_signal_head_aspect_changed));
+        signalling->connect(
+                SignallingServer::route_state_changed_signal,
+                callable_mp(this, &ScenarioScriptServer::_on_route_state_changed));
         ScenarioEventServer *events = ScenarioEventServer::get_instance();
         ERR_FAIL_NULL(events);
         events->connect(
@@ -420,17 +423,23 @@ namespace godot {
         _deliver(SIGNAL_ISOLATED_FREED, p_isolated, arguments, p_vehicle);
     }
 
-    void ScenarioScriptServer::_on_switch_active_track_changed(const RID &p_track, const int p_active_track) {
+    void ScenarioScriptServer::_on_switch_active_track_changed(const RID &p_switch, const int p_active_track) {
         ERR_FAIL_INDEX(p_active_track, static_cast<int>(std::size(SWITCH_TRACK_NAMES)));
         Vector<ScriptArgument> arguments;
         arguments.push_back({SWITCH_TRACK_NAMES[p_active_track]});
-        _deliver(SIGNAL_SWITCH_CHANGED, p_track, arguments, RID());
+        _deliver(SIGNAL_SWITCH_CHANGED, p_switch, arguments, RID());
     }
 
     void ScenarioScriptServer::_on_signal_head_aspect_changed(const RID &p_signal_head, const StringName &p_aspect) {
         Vector<ScriptArgument> arguments;
         arguments.push_back({p_aspect});
         _deliver(SIGNAL_SIGNAL_HEAD_ASPECT_CHANGED, p_signal_head, arguments, RID());
+    }
+
+    void ScenarioScriptServer::_on_route_state_changed(const RID &p_route, const int p_state) {
+        Vector<ScriptArgument> arguments;
+        arguments.push_back({ROUTE_STATE_NAMES[p_state]});
+        _deliver(SIGNAL_ROUTE_STATE_CHANGED, p_route, arguments, RID());
     }
 
     void ScenarioScriptServer::_on_event_launched(const RID &p_event, const RID &p_activator) {

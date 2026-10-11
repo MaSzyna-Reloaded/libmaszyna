@@ -1,10 +1,16 @@
 @tool
 extends RefCounted
 
-## String spelling used by the .scn "track" node's environment token, in the same order as
-## Track3D.TrackEnvironment (FLAT, BRIDGE, TUNNEL, MOUNTAINS, CANYON, BANK) - matches the
-## original engine's own environment name list.
-const ENVIRONMENT_NAMES:Array[String] = ["flat", "bridge", "tunnel", "mountains", "canyon", "bank"]
+## The .scn "track" node's environment tokens (Track.cpp:461-477); any other is unknown
+const ENVIRONMENTS:Dictionary[String, TrackServer.TrackEnvironment] = {
+    "flat": TrackServer.ENVIRONMENT_FLAT,
+    "mountains": TrackServer.ENVIRONMENT_MOUNTAINS,
+    "mountain": TrackServer.ENVIRONMENT_MOUNTAINS,
+    "canyon": TrackServer.ENVIRONMENT_CANYON,
+    "tunnel": TrackServer.ENVIRONMENT_TUNNEL,
+    "bridge": TrackServer.ENVIRONMENT_BRIDGE,
+    "bank": TrackServer.ENVIRONMENT_BANK,
+}
 const TrackData = preload("res://addons/libmaszyna/legacy/scenery/maszyna_track_data.gd")
 
 
@@ -93,6 +99,5 @@ func _parse_material(token:String) -> String:
     return "" if name == "none" else name
 
 
-func _parse_environment(token:String) -> int:
-    var index:int = ENVIRONMENT_NAMES.find(token.to_lower())
-    return index if index >= 0 else 0
+func _parse_environment(token:String) -> TrackServer.TrackEnvironment:
+    return ENVIRONMENTS.get(token.to_lower(), TrackServer.ENVIRONMENT_UNKNOWN)

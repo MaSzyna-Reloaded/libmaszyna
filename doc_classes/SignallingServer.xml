@@ -13,6 +13,243 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="route_add_conflict">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				Declares a special exclusion: the two routes may not be set together. It goes both ways.
+			</description>
+		</method>
+		<method name="route_create">
+			<return type="RID" />
+			<description>
+				Creates a route: a definition of a path through a system's area and its state. Add it to a system with [method system_add_route].
+			</description>
+		</method>
+		<method name="route_free">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Frees the route; the routes it conflicted with no longer name it.
+			</description>
+		</method>
+		<method name="route_get_approach_sections" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the sources of the sections before the start signal head whose occupation locks the route.
+			</description>
+		</method>
+		<method name="route_get_conflicts" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the routes the route may not be set together with.
+			</description>
+		</method>
+		<method name="route_get_end_signal_head" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the signal head the route ends at; an invalid RID where it ends at the station's boundary or a W5 sign.
+			</description>
+		</method>
+		<method name="route_get_kind" qualifiers="const">
+			<return type="int" enum="SignallingServer.RouteKind" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns what the route is set for.
+			</description>
+		</method>
+		<method name="route_get_locked_sections" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the sections the route still holds: all of its path and overlap while it is closed or locked, fewer as they are released behind the train.
+			</description>
+		</method>
+		<method name="route_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the name the route is registered under.
+			</description>
+		</method>
+		<method name="route_get_overlap_sections" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the sources of the overlap behind the route's end signal head.
+			</description>
+		</method>
+		<method name="route_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+				Returns the route registered under [param name], or an invalid RID.
+			</description>
+		</method>
+		<method name="route_get_sections" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the sources of the route's path, in the order it is driven.
+			</description>
+		</method>
+		<method name="route_get_start_signal_head" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the signal head the route starts at.
+			</description>
+		</method>
+		<method name="route_get_state" qualifiers="const">
+			<return type="int" enum="SignallingServer.RouteState" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns where the route is between being set and released.
+			</description>
+		</method>
+		<method name="route_get_switch_positions" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the branch each switch of the route has to lie on, as [code]{switch name: TrackServer.SwitchTrack}[/code].
+			</description>
+		</method>
+		<method name="route_get_system" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Returns the system the route belongs to.
+			</description>
+		</method>
+		<method name="route_release_section">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Releases one section the route holds - the train left it - and emits [signal route_section_released]. Called by the route's system's implementation.
+			</description>
+		</method>
+		<method name="route_remove_conflict">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				Removes a special exclusion of the two routes.
+			</description>
+		</method>
+		<method name="route_remove_switch_position">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				Removes the switch of the name from the route.
+			</description>
+		</method>
+		<method name="route_request_cancel">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Asks the implementation of the route's system to cancel the route before the train is let onto it.
+			</description>
+		</method>
+		<method name="route_request_emergency_release">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Asks the implementation of the route's system to release the route at once; the release is to be recorded.
+			</description>
+		</method>
+		<method name="route_request_release">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Asks the implementation of the route's system to release the route by hand, with the delay its kind has.
+			</description>
+		</method>
+		<method name="route_request_set">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<description>
+				Asks the implementation of the route's system to set the route. The implementation checks it, moves the switches and changes the state with [method route_set_state].
+			</description>
+		</method>
+		<method name="route_set_approach_sections">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="sources" type="RID[]" />
+			<description>
+				Sets the sources of the sections before the start signal head whose occupation locks the route (droga zbliżania).
+			</description>
+		</method>
+		<method name="route_set_end_signal_head">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Sets the signal head the route ends at; an invalid RID where it ends at the station's boundary or a W5 sign.
+			</description>
+		</method>
+		<method name="route_set_kind">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="kind" type="int" enum="SignallingServer.RouteKind" />
+			<description>
+				Sets what the route is set for.
+			</description>
+		</method>
+		<method name="route_set_name">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+				Registers the route under [param name].
+			</description>
+		</method>
+		<method name="route_set_overlap_sections">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="sources" type="RID[]" />
+			<description>
+				Sets the sources of the overlap behind the route's end signal head (droga ochronna).
+			</description>
+		</method>
+		<method name="route_set_sections">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="sources" type="RID[]" />
+			<description>
+				Sets the sources of the route's path (droga jazdy), in the order it is driven.
+			</description>
+		</method>
+		<method name="route_set_start_signal_head">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				Sets the signal head the route starts at.
+			</description>
+		</method>
+		<method name="route_set_state">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="state" type="int" enum="SignallingServer.RouteState" />
+			<description>
+				Moves the route to [param state] and emits [signal route_state_changed]. Closing or locking a route that held nothing holds all its path and overlap; going idle lets them go. Called only by the route's system's implementation.
+			</description>
+		</method>
+		<method name="route_set_switch_position">
+			<return type="void" />
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<param index="2" name="switch_track" type="int" enum="TrackServer.SwitchTrack" />
+			<description>
+				Sets the branch the switch of the name ([method TrackServer.switch_get_rid_by_name]) has to lie on for the route.
+			</description>
+		</method>
 		<method name="signal_head_create">
 			<return type="RID" />
 			<param index="0" name="instance" type="RID" />
@@ -199,6 +436,21 @@
 				Registers the source under [param name]; an empty name only unregisters it.
 			</description>
 		</method>
+		<method name="switch_get_system" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="switch" type="StringName" />
+			<description>
+				Returns the system the switch of the name belongs to, or an invalid RID.
+			</description>
+		</method>
+		<method name="system_add_route">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				Adds the route to the system; its implementation learns of it and receives its requests. A route belongs to one system at most.
+			</description>
+		</method>
 		<method name="system_add_signal_head">
 			<return type="void" />
 			<param index="0" name="system" type="RID" />
@@ -213,6 +465,14 @@
 			<param index="1" name="source" type="RID" />
 			<description>
 				Adds the event source to the system and tells the system's implementation. A source that already belongs to a system is refused.
+			</description>
+		</method>
+		<method name="system_add_switch">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				Adds a [TrackServer] switch to the system's interlocking area by its name. It may not exist yet: the system follows it by the name, and its implementation learns when it is created, freed and when it has moved. A switch belongs to one system at most.
 			</description>
 		</method>
 		<method name="system_attach_implementation">
@@ -243,6 +503,13 @@
 				Returns the system's implementation, or [code]null[/code].
 			</description>
 		</method>
+		<method name="system_get_linked_systems" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the systems linked to the system.
+			</description>
+		</method>
 		<method name="system_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="system" type="RID" />
@@ -255,6 +522,13 @@
 			<param index="0" name="name" type="StringName" />
 			<description>
 				Returns the system registered under [param name], or an empty RID.
+			</description>
+		</method>
+		<method name="system_get_routes" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the system's routes.
 			</description>
 		</method>
 		<method name="system_get_signal_heads" qualifiers="const">
@@ -271,6 +545,29 @@
 				Returns the system's sources, in the order they were added.
 			</description>
 		</method>
+		<method name="system_get_switches" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				Returns the names of the system's switches.
+			</description>
+		</method>
+		<method name="system_link">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				Links two neighbouring systems - the stations a line block runs between. The link goes both ways; the systems talk with [method system_send_event].
+			</description>
+		</method>
+		<method name="system_remove_route">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				Removes the route from the system.
+			</description>
+		</method>
 		<method name="system_remove_signal_head">
 			<return type="void" />
 			<param index="0" name="system" type="RID" />
@@ -285,6 +582,14 @@
 			<param index="1" name="source" type="RID" />
 			<description>
 				Takes the source out of the system and tells the system's implementation.
+			</description>
+		</method>
+		<method name="system_remove_switch">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				Removes the switch of the name from the system.
 			</description>
 		</method>
 		<method name="system_send_event">
@@ -304,8 +609,36 @@
 				Registers the system under [param name]; an empty name only unregisters it.
 			</description>
 		</method>
+		<method name="system_unlink">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				Removes the link of the two systems.
+			</description>
+		</method>
 	</methods>
 	<signals>
+		<signal name="route_config_changed">
+			<param index="0" name="route" type="RID" />
+			<description>
+				The route's definition changed - also when a source or signal head it named was freed.
+			</description>
+		</signal>
+		<signal name="route_section_released">
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				The route no longer holds the section.
+			</description>
+		</signal>
+		<signal name="route_state_changed">
+			<param index="0" name="route" type="RID" />
+			<param index="1" name="state" type="int" />
+			<description>
+				The route went to another state.
+			</description>
+		</signal>
 		<signal name="signal_head_aspect_changed">
 			<param index="0" name="signal_head" type="RID" />
 			<param index="1" name="aspect" type="StringName" />
@@ -341,6 +674,13 @@
 				Emitted when the signal head's [param name] is unregistered - on a rename, or when the signal head is freed.
 			</description>
 		</signal>
+		<signal name="system_linked">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				The two systems were linked.
+			</description>
+		</signal>
 		<signal name="system_signal_head_added">
 			<param index="0" name="system" type="RID" />
 			<param index="1" name="signal_head" type="RID" />
@@ -369,6 +709,27 @@
 				Emitted when the source is taken out of the system, also when it is freed.
 			</description>
 		</signal>
+		<signal name="system_switch_added">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				The switch of the name joined the system.
+			</description>
+		</signal>
+		<signal name="system_switch_removed">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				The switch of the name left the system.
+			</description>
+		</signal>
+		<signal name="system_unlinked">
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				The link of the two systems was removed.
+			</description>
+		</signal>
 	</signals>
 	<constants>
 		<constant name="LIGHT_STATE_OFF" value="0" enum="LightState">
@@ -379,6 +740,36 @@
 		</constant>
 		<constant name="LIGHT_STATE_BLINKING" value="2" enum="LightState">
 			The light blinks.
+		</constant>
+		<constant name="SOURCE_POLARITY_NONE" value="0" enum="SourcePolarity">
+			A one-coil sensor: a passage without a direction.
+		</constant>
+		<constant name="SOURCE_POLARITY_POSITIVE" value="1" enum="SourcePolarity">
+			A two-coil sensor: a passage along the track.
+		</constant>
+		<constant name="SOURCE_POLARITY_NEGATIVE" value="2" enum="SourcePolarity">
+			A two-coil sensor: a passage against the track.
+		</constant>
+		<constant name="ROUTE_KIND_TRAIN" value="0" enum="RouteKind">
+			A train route (przebieg pociągowy).
+		</constant>
+		<constant name="ROUTE_KIND_SHUNTING" value="1" enum="RouteKind">
+			A shunting route (przebieg manewrowy).
+		</constant>
+		<constant name="ROUTE_STATE_IDLE" value="0" enum="RouteState">
+			Not set; holds nothing.
+		</constant>
+		<constant name="ROUTE_STATE_SETTING" value="1" enum="RouteState">
+			Its switches are being moved.
+		</constant>
+		<constant name="ROUTE_STATE_CLOSED" value="2" enum="RouteState">
+			Held while its start signal head allows the passage (zamknięcie).
+		</constant>
+		<constant name="ROUTE_STATE_LOCKED" value="3" enum="RouteState">
+			Held until released (utwierdzenie).
+		</constant>
+		<constant name="ROUTE_STATE_RELEASING" value="4" enum="RouteState">
+			Being released with a delay.
 		</constant>
 		<constant name="MAX_LIGHTS" value="8">
 			Lights a signal head can have, as a model of the original engine can ([code]iMaxNumLights[/code]).

@@ -110,11 +110,8 @@ static func build(
     model_rids:Array[RID],
     power_sources:Array[MaszynaPowerSourceData],
 ) -> void:
-    # the tracks and models come with the RIDs they were built as, in their order
-    var tracks_by_name:Dictionary[String, RID] = {}
-    for index:int in tracks.size():
-        if tracks[index].track_name:
-            tracks_by_name[tracks[index].track_name.to_lower()] = track_rids[index]
+    # the tracks and models come with the RIDs they were built as, in their order; a track is found
+    # by its name in TrackServer
     var model_names:Dictionary[String, String] = {}
     var instances_by_name:Dictionary[String, RID] = {}
     for index:int in models.size():
@@ -133,7 +130,7 @@ static func build(
         ScenarioEventServer.memory_set_values(memory, memcell.text, memcell.value1, memcell.value2)
         ScenarioEventServer.memory_set_position(memory, memcell.position)
         if memcell.track:
-            ScenarioEventServer.memory_set_track(memory, tracks_by_name.get(memcell.track, RID()))
+            ScenarioEventServer.memory_set_track(memory, TrackServer.track_get_rid_by_name(memcell.track))
         memories[memcell.name.to_lower()] = memory
         memory_positions[memcell.name.to_lower()] = memcell.position
 
@@ -170,8 +167,9 @@ static func build(
             )
     for block:MaszynaIsolatedData in isolated_sections:
         for track_name:String in block.tracks:
-            if tracks_by_name.has(track_name):
-                TrackServer.isolated_add_track(sections[block.name], tracks_by_name[track_name])
+            var track:RID = TrackServer.track_get_rid_by_name(track_name)
+            if track.is_valid():
+                TrackServer.isolated_add_track(sections[block.name], track)
         for child:String in block.children:
             TrackServer.isolated_set_parent(sections[child], sections[block.name])
 
@@ -243,8 +241,9 @@ static func build(
                 ScenarioEventServer.event_attach_action(rid, action)
             "switch":
                 for target:String in event.targets:
-                    if tracks_by_name.has(target):
-                        targets.append(tracks_by_name[target])
+                    var track:RID = TrackServer.track_get_rid_by_name(target)
+                    if track.is_valid():
+                        targets.append(track)
                 var action:MaszynaLegacySwitchAction = MaszynaLegacySwitchAction.new()
                 action.tracks = targets
                 # the state is 0 or 1 (TTrack::Switch(), Track.cpp:1752)
@@ -252,8 +251,9 @@ static func build(
                 ScenarioEventServer.event_attach_action(rid, action)
             "trackvel":
                 for target:String in event.targets:
-                    if tracks_by_name.has(target):
-                        targets.append(tracks_by_name[target])
+                    var track:RID = TrackServer.track_get_rid_by_name(target)
+                    if track.is_valid():
+                        targets.append(track)
                 var action:MaszynaLegacyTrackVelocityAction = MaszynaLegacyTrackVelocityAction.new()
                 action.tracks = targets
                 action.velocity = float(event.parameters[0])
@@ -387,8 +387,9 @@ static func build(
                 # the event's targets as tracks; one that is no track drops the test (Event.cpp:44-59)
                 var condition_tracks:Array[RID] = []
                 for target:String in event.targets:
-                    if tracks_by_name.has(target):
-                        condition_tracks.append(tracks_by_name[target])
+                    var track:RID = TrackServer.track_get_rid_by_name(target)
+                    if track.is_valid():
+                        condition_tracks.append(track)
                 if condition_tracks.size() == event.targets.size():
                     condition.tracks = condition_tracks
                     condition.track_test = (

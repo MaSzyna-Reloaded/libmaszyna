@@ -5,4 +5,4 @@ extends MaszynaStartupTest
 
 
 func test_starts_and_moves_off() -> void:
-    await run_startup("startup_sn61-02.scn", "SN61-02", Kind.DIESEL_MECHANICAL)
+    await run_startup("startup_sn61-02.scn", "sn61-02", Kind.DIESEL_MECHANICAL)

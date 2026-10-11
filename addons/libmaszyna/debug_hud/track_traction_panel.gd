@@ -68,8 +68,8 @@ func _refresh() -> void:
         _rows["Track length"].text = "%.2f m" % TrackServer.track_get_length(track)
         _rows["Switch"].text = (
             tr("yes, branch %d%s") % [
-                TrackServer.switch_get_active_track(track),
-                tr(" (right)") if TrackServer.switch_is_right(track) else tr(" (left)"),
+                TrackServer.switch_get_active_track(TrackServer.track_get_switch(track)),
+                tr(" (right)") if TrackServer.track_is_switch_right(track) else tr(" (left)"),
             ]
             if TrackServer.track_is_switch(track) else "no"
         )

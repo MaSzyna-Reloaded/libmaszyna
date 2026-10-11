@@ -139,14 +139,15 @@ The command and state names are the vehicle's own - the ones the console and the
 
 | Function | Returns / does |
 |---|---|
-| `find(name)` | the track (or switch) of the name |
+| `find(name)` | the track of the name |
 | `is_occupied(t)`, `vehicles(t)` | |
-| `switch_get(t)`, `switch_set(t, which)` | `"common"` or `"diverging"` |
+| `find_switch(name)` | the switch of the switch track of the name |
+| `switch_get(s)`, `switch_set(s, which)` | `"common"` or `"diverging"` |
 | `isolated_find(name)`, `isolated_is_occupied(i)` | |
 | `on_vehicle_heading_to_start(t, fn)`, `on_vehicle_heading_to_end(t, fn)` | `fn(vehicle)` when a vehicle on the track moves towards its start / end |
 | `on_vehicle_stopped(t, fn)` | `fn(vehicle)` when a vehicle stops on the track |
 | `on_isolated_occupied(i, fn)`, `on_isolated_freed(i, fn)` | `fn(vehicle)` when the first vehicle comes onto the section / the last one leaves |
-| `on_switch_changed(t, fn)` | `fn(which)` when the switch moves |
+| `on_switch_changed(s, fn)` | `fn(which)` when the switch moves |
 
 ### `maszyna.signal` - signals
 
@@ -159,6 +160,11 @@ lighting a head.
 | `find_system(name)` | a signalling system (the scenery's is named after its file) |
 | `send_event(system, event, arguments)` | e.g. `send_event(system, "lights", {signal_head = h, aspect = "S1"})` |
 | `on_aspect_changed(h, fn)` | `fn(aspect)` whenever the head shows another aspect |
+| `find_source(name)` | a source of a system: a sensor, a section |
+| `source_send_event(s, event, arguments)` | a report of the source to its system; a sensor's passage is `source_send_event(s, "impulse", {polarity = p})`, `p` a `SignallingServer.SourcePolarity` (0 none, 1 along the track, 2 against it) |
+| `find_route(name)`, `route_state(r)` | a route, its state: `"idle"`, `"setting"`, `"closed"`, `"locked"`, `"releasing"` |
+| `route_set(r)`, `route_cancel(r)`, `route_release(r)`, `route_emergency_release(r)` | asks the route's system; its implementation decides |
+| `on_route_state_changed(r, fn)` | `fn(state)` whenever the route goes to another state |
 
 ### `maszyna.player` - what the player drives
 
@@ -224,7 +230,7 @@ local track, sim, log = maszyna.track, maszyna.sim, maszyna.log
 -- the switches nearest to the SM42's start track (tor_53)
 local switches = {}
 for _, name in ipairs({ "test_zwr12", "test_zwr07" }) do
-    local found = track.find(name)
+    local found = track.find_switch(name)
     if found then
         table.insert(switches, found)
     else

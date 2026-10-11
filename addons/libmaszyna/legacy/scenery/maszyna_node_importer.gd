@@ -15,13 +15,10 @@ static var sound_importer = preload("res://addons/libmaszyna/legacy/scenery/masz
 func import(p:MaszynaParser, context: MaszynaImporterContext):
     var range_max = float(p.next_token())
     var range_min = float(p.next_token())
-    var name = p.next_token()
-    # "none" is this format's sentinel for "no value given" everywhere (skin, load type, ...),
-    # not a real name - treating it as one makes every "none"-named track/vehicle after the
-    # first collide (TrackServer.track_update() rejects the duplicate and returns early,
-    # silently skipping that track's width/type/AABB setup entirely; a vehicle named "none" is
-    # left out of VehicleServer's name lookup the same way, Names.h:29).
-    if name.to_lower() == "none":
+    # the original reads the node's name in lower case, as every token (cParser::getTokens(),
+    # parser.h:71; simulationstateserializer.cpp:424-431); "none" is no name (Names.h:29)
+    var name = p.next_token().to_lower()
+    if name == "none":
         name = ""
 
     var type = p.next_token().to_lower()

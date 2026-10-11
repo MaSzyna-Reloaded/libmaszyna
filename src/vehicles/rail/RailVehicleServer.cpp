@@ -1154,10 +1154,9 @@ namespace godot {
         placement->moved = true;
         placement->location_stale = true;
         placement->track_is_switch = tracks->track_is_switch(p_track);
-        placement->switch_track =
-                placement->track_is_switch
-                        ? static_cast<TrackServer::SwitchTrack>(tracks->switch_get_active_track(p_track))
-                        : TrackServer::TRACK_COMMON;
+        placement->switch_track = placement->track_is_switch
+                                          ? tracks->switch_get_active_track(tracks->track_get_switch(p_track))
+                                          : TrackServer::TRACK_COMMON;
         placement->track_offset =
                 CLAMP(p_track_offset, 0.0, tracks->track_get_length(p_track, placement->switch_track));
         const double remaining_offset = p_track_offset - placement->track_offset;
@@ -1384,20 +1383,20 @@ namespace godot {
                     movement_sign > 0.0 ? current_length - current_track_offset : current_track_offset;
             int endpoint_index = 0;
             if (current_is_switch) {
-                endpoint_index =
-                        movement_sign > 0.0
-                                ? tracks->switch_get_branch_end_endpoint(current_track, current_switch_track)
-                                : tracks->switch_get_branch_start_endpoint(current_track, current_switch_track);
+                endpoint_index = movement_sign > 0.0
+                                         ? tracks->track_get_branch_end_endpoint(current_track, current_switch_track)
+                                         : tracks->track_get_branch_start_endpoint(current_track, current_switch_track);
                 // Reversing through a switch blade on a non-active branch keeps the branch the
                 // vehicle already occupies and forces the switch back.
-                if (tracks->switch_get_active_track(current_track) != current_switch_track) {
+                const RID current_switch = tracks->track_get_switch(current_track);
+                if (tracks->switch_get_active_track(current_switch) != current_switch_track) {
                     const double requested_distance = MIN(remaining, distance_to_endpoint);
                     const double next_offset_on_track = current_track_offset + (movement_sign * requested_distance);
                     const double blade_boundary_offset =
-                            tracks->switch_get_blade_boundary_offset(current_track, current_switch_track);
+                            tracks->track_get_blade_boundary_offset(current_track, current_switch_track);
                     if (p_force_switch_state && current_track_offset > blade_boundary_offset &&
                         next_offset_on_track <= blade_boundary_offset) {
-                        tracks->switch_set_active_track(current_track, current_switch_track);
+                        tracks->switch_set_active_track(current_switch, current_switch_track);
                     }
                 }
             } else {
@@ -1428,10 +1427,10 @@ namespace godot {
             // The connection endpoint is where the vehicle enters the next track; on a switch it
             // also says which branch it now occupies.
             if (current_is_switch) {
-                current_switch_track = static_cast<TrackServer::SwitchTrack>(
-                        tracks->switch_get_endpoint_branch(current_track, next_endpoint));
+                current_switch_track = tracks->track_get_endpoint_branch(
+                        current_track, static_cast<TrackServer::EndpointIndex>(next_endpoint));
                 const bool entered_at_end =
-                        next_endpoint == tracks->switch_get_branch_end_endpoint(current_track, current_switch_track);
+                        next_endpoint == tracks->track_get_branch_end_endpoint(current_track, current_switch_track);
                 movement_sign = entered_at_end ? -1.0 : 1.0;
             } else {
                 current_switch_track = TrackServer::TRACK_COMMON;
@@ -1729,9 +1728,13 @@ namespace godot {
         if (!tracks->track_find_next(p_track, p_endpoint_index, p_track_out, p_endpoint_out, forced_switch_track)) {
             return false;
         }
-        if (p_force_switch_state && !(forced_switch_track == TrackServer::NO_FORCED_SWITCH_TRACK) &&
-            !(tracks->switch_get_active_track(p_track_out) == forced_switch_track)) {
-            tracks->switch_set_active_track(p_track_out, forced_switch_track);
+        if (!p_force_switch_state || forced_switch_track == TrackServer::NO_FORCED_SWITCH_TRACK) {
+            return true;
+        }
+        const RID entered_switch = tracks->track_get_switch(p_track_out);
+        const auto forced = static_cast<TrackServer::SwitchTrack>(forced_switch_track);
+        if (!(tracks->switch_get_active_track(entered_switch) == forced)) {
+            tracks->switch_set_active_track(entered_switch, forced);
         }
         return true;
     }
@@ -1808,8 +1811,10 @@ namespace godot {
         topology_change_serial = ++track_change_serial;
     }
 
-    void RailVehicleServer::_on_switch_active_track_changed(const RID &p_track, const int p_active_track) {
-        _track_changed(p_track);
+    void RailVehicleServer::_on_switch_active_track_changed(const RID &p_switch, const int p_active_track) {
+        TrackServer *tracks = TrackServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        _track_changed(tracks->switch_get_track(p_switch));
     }
 
     void RailVehicleServer::vehicle_report_position(const RID &p_vehicle) {

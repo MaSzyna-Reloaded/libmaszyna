@@ -5,4 +5,4 @@ extends MaszynaStartupTest
 
 
 func test_starts_and_moves_off() -> void:
-    await run_startup("startup_elf_v1.scn", "EN96-004-A", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_elf_v1.scn", "en96-004-a", Kind.ELECTRIC_MULTIPLE_UNIT)

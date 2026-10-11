@@ -3,7 +3,6 @@
 extends VisualInstance3D
 class_name Track3D
 
-enum TrackEnvironment {FLAT, BRIDGE, TUNNEL, MOUNTAINS, CANYON, BANK}
 enum TrackDamageFlagBit {NONE=0, DESTROYED=128}
 
 var type: TrackServer.TrackType = TrackServer.TRACK_UNKNOWN
@@ -25,7 +24,7 @@ var type: TrackServer.TrackType = TrackServer.TRACK_UNKNOWN
             curve.changed.connect(_mark_dirty)
         _dirty = true
 
-@export var environment:TrackEnvironment = TrackEnvironment.FLAT
+@export var environment:TrackServer.TrackEnvironment = TrackServer.ENVIRONMENT_FLAT
 @export_flags("Destroyed:128") var damage_flag:int = 0
 @export var quality_flag:int
 ## Rail length between joints for the wheel clatter, -1 for none

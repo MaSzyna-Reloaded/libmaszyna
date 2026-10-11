@@ -3,7 +3,7 @@ extends Resource
 class_name MaszynaTrackData
 
 
-@export var type:int # TrackServer.TrackType
+@export var type:TrackServer.TrackType = TrackServer.TRACK_NORMAL
 @export var track_name:String = ""
 @export var curve:TrackCurve
 @export var diverging_curve:TrackCurve
@@ -14,7 +14,7 @@ class_name MaszynaTrackData
 ## Rail length between joints for the wheel clatter, -1 for none
 @export var sound_distance:float = -1.0
 @export var damage_flag:int = 0
-@export var environment:int = 0 # Track3D.TrackEnvironment
+@export var environment:TrackServer.TrackEnvironment = TrackServer.ENVIRONMENT_FLAT
 @export var visible:bool = true
 @export var material1:String = ""
 @export var material2:String = ""

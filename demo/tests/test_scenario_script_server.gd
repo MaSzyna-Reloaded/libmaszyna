@@ -17,6 +17,8 @@ const PLAYER_TRACK:String = "lua_player_test"
 const PLAYER_TRACK_LENGTH:float = 200.0
 ## The power supply's battery [V] - the `battery` command the script sends belongs to it
 const BATTERY_VOLTAGE:float = 110.0
+## The switch track's width [m]
+const SWITCH_TRACK_WIDTH:float = 1.435
 
 
 class RecordingCabin extends ScenarioScriptCabinImplementation:
@@ -36,9 +38,17 @@ class RecordingDriver extends DriverImplementation:
 
 class RecordingSystem extends SignallingImplementation:
     var events:Array = []
+    var route_requests:Array[RID] = []
 
     func _handle_event(_system:RID, event:StringName, arguments:Dictionary) -> void:
         events.append([event, arguments])
+
+    func _handle_source_event(_system:RID, _source:RID, event:StringName, arguments:Dictionary) -> void:
+        events.append([event, arguments])
+
+    func _route_set_requested(_system:RID, route:RID) -> void:
+        route_requests.append(route)
+        SignallingServer.route_set_state(route, SignallingServer.ROUTE_STATE_LOCKED)
 
 
 var _context:RID
@@ -223,6 +233,66 @@ func test_a_signalling_system_gets_the_script_event() -> void:
     assert_eq(recording.events.size(), 1)
     assert_eq(recording.events[0][0], &"lights")
     assert_eq(recording.events[0][1]["aspect"], "S1")
+    SignallingServer.system_free(system)
+
+
+func test_a_script_throws_a_switch_found_by_its_name() -> void:
+    var straight:TrackCurve = TrackCurve.new()
+    straight.p2 = Vector3(10.0, 0.0, 0.0)
+    var diverging:TrackCurve = TrackCurve.new()
+    diverging.p2 = Vector3(10.0, 0.0, 10.0)
+    var track:RID = TrackServer.track_create()
+    TrackServer.track_update_curves(track, straight, diverging)
+    TrackServer.track_update(track, TrackServer.TRACK_SWITCH, "lua_test_switch", SWITCH_TRACK_WIDTH)
+    var source:String = (
+        "local output = maszyna.memory.find('lua_test_output')\n"
+        + "local s = maszyna.track.find_switch('lua_test_switch')\n"
+        + "assert(maszyna.track.find_switch('lua_test_no_switch') == nil)\n"
+        + "maszyna.track.on_switch_changed(s, function(state)\n"
+        + "    maszyna.memory.write(output, state, 0, 0)\n"
+        + "end)\n"
+        + "maszyna.track.switch_set(s, 'diverging')\n"
+        + "assert(maszyna.track.switch_get(s) == 'diverging')"
+    )
+    assert_true(ScenarioScriptServer.context_apply_source(_context, &"switch", source))
+
+    await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "diverging",
+            EVENT_MARGIN, "the switch's movement reported to the script")
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(track)), TrackServer.TRACK_DIVERGING)
+    TrackServer.track_free(track)
+
+
+func test_a_script_reports_a_sensor_and_sets_a_route() -> void:
+    var system:RID = SignallingServer.system_create()
+    var recording:RecordingSystem = RecordingSystem.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    var sensor:RID = SignallingServer.source_create()
+    SignallingServer.source_set_name(sensor, &"lua_test_sensor")
+    SignallingServer.system_add_source(system, sensor)
+    var route:RID = SignallingServer.route_create()
+    SignallingServer.route_set_name(route, &"lua_test_route")
+    SignallingServer.system_add_route(system, route)
+    var source:String = (
+        "local output = maszyna.memory.find('lua_test_output')\n"
+        + "local sensor = maszyna.signal.find_source('lua_test_sensor')\n"
+        + "maszyna.signal.source_send_event(sensor, 'impulse', { polarity = 1 })  -- SOURCE_POLARITY_POSITIVE\n"
+        + "local route = maszyna.signal.find_route('lua_test_route')\n"
+        + "maszyna.signal.on_route_state_changed(route, function(state)\n"
+        + "    maszyna.memory.write(output, state, 0, 0)\n"
+        + "end)\n"
+        + "maszyna.signal.route_set(route)\n"
+        + "assert(maszyna.signal.route_state(route) == 'locked')"
+    )
+    assert_true(ScenarioScriptServer.context_apply_source(_context, &"route", source))
+
+    assert_eq(recording.events.size(), 1)
+    assert_eq(recording.events[0][0], &"impulse")
+    assert_eq(recording.events[0][1]["polarity"], SignallingServer.SOURCE_POLARITY_POSITIVE)
+    assert_eq(recording.route_requests, [route] as Array[RID])
+    await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "locked",
+            EVENT_MARGIN, "the route's state reported to the script")
+    SignallingServer.route_free(route)
+    SignallingServer.source_free(sensor)
     SignallingServer.system_free(system)
 
 

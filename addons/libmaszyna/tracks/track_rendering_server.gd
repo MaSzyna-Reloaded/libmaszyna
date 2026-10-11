@@ -59,7 +59,7 @@ class TrackData:
     var curve1: TrackCurve
     var curve2: TrackCurve
     var width: float = 0.0
-    var switch_common_endpoint_index: int = TrackServer.POINT_NONE
+    var switch_common_endpoint_index: TrackServer.SwitchCommonPoint = TrackServer.POINT_NONE
     var switch_f_offset1: float = 0.0
     var switch_f_offset2: float = 0.0
     var endpoints: PackedVector3Array = PackedVector3Array()
@@ -332,8 +332,10 @@ func _get_track_data(track_rid: RID) -> TrackData:
         track.curve2 = TrackServer.track_get_curve(track_rid, TrackServer.TRACK_DIVERGING)
     track.width = TrackServer.track_get_width(track_rid)
     track.switch_common_endpoint_index = TrackServer.track_get_common_endpoint_index(track_rid)
-    track.switch_f_offset1 = TrackServer.switch_get_f_offset1(track_rid)
-    track.switch_f_offset2 = TrackServer.switch_get_f_offset2(track_rid)
+    var switch_rid: RID = TrackServer.track_get_switch(track_rid)
+    if switch_rid.is_valid():
+        track.switch_f_offset1 = TrackServer.switch_get_f_offset1(switch_rid)
+        track.switch_f_offset2 = TrackServer.switch_get_f_offset2(switch_rid)
     return track
 
 
@@ -441,7 +443,7 @@ func rebuild_track(track_render_rid: RID) -> void:
         var regular_profile: Array = rail_profile.rail
         var blade_profile: Array = rail_profile.blade
         var rail_height: float = abs(float(regular_profile[0][1]))
-        var is_right_switch: bool = TrackServer.switch_is_right(state.track_rid)
+        var is_right_switch: bool = TrackServer.track_is_switch_right(state.track_rid)
         state.switch_is_right = is_right_switch
         # MaSzyna Track.cpp:1367-1453 emits switch rail segments.
         var frog_dist: float = _find_switch_frog_distance(curve1, curve2, track_width)
@@ -735,11 +737,11 @@ func _on_topology_rebuilt() -> void:
 
 ## The blades follow the manager's animation step for every switch, scenery RIDs included -
 ## a scenery has no TrackSwitch3D nodes to forward it.
-func _on_switch_offset_changed(track_rid: RID, _offset: float) -> void:
+func _on_switch_offset_changed(switch_rid: RID, _offset: float) -> void:
     set_switch_blade_offsets(
-        _get_track_render_rid_by_track_rid(track_rid),
-        TrackServer.switch_get_f_offset1(track_rid),
-        TrackServer.switch_get_f_offset2(track_rid)
+        _get_track_render_rid_by_track_rid(TrackServer.switch_get_track(switch_rid)),
+        TrackServer.switch_get_f_offset1(switch_rid),
+        TrackServer.switch_get_f_offset2(switch_rid)
     )
 
 
@@ -844,7 +846,7 @@ func _copy_adjacent_trackbed_material(state: TrackState, visited: Dictionary[RID
 func _get_trackbed_material_sources(track_rid: RID, is_switch: bool) -> Array[RID]:
     var sources: Array[RID] = []
     if is_switch:
-        var neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(
+        var neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(
             track_rid,
             TrackServer.TRACK_COMMON
         )
@@ -889,12 +891,12 @@ func _has_trackbed_profile_options(state: TrackState) -> bool:
 func _build_switch_trackbed_sections(
     state: TrackState,
     track: TrackData,
-    switch_track: int,
+    switch_track: TrackServer.SwitchTrack,
     start_roll: float,
     end_roll: float,
     rail_height: float
 ) -> Array:
-    var neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(state.track_rid, switch_track)
+    var neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(state.track_rid, switch_track)
     var previous_track: TrackData = _get_track_data(neighbors.previous_track_rid) if neighbors.previous_track_rid.is_valid() else TrackData.new()
     var next_track: TrackData = _get_track_data(neighbors.next_track_rid) if neighbors.next_track_rid.is_valid() else TrackData.new()
     var previous_state: TrackState = _get_track_state_by_track_rid(neighbors.previous_track_rid)
@@ -1477,8 +1479,8 @@ func _build_switch_trackbed_mesh(
     var trackbed_indices: PackedInt32Array = PackedInt32Array()
     var curve1: TrackCurve = track.curve1
     var curve2: TrackCurve = track.curve2
-    var primary_sections: Array = _build_switch_trackbed_sections(state, track, 0, curve1.roll1, curve1.roll2, rail_height)
-    var secondary_sections: Array = _build_switch_trackbed_sections(state, track, 1, curve2.roll1, curve2.roll2, rail_height)
+    var primary_sections: Array = _build_switch_trackbed_sections(state, track, TrackServer.TRACK_COMMON, curve1.roll1, curve1.roll2, rail_height)
+    var secondary_sections: Array = _build_switch_trackbed_sections(state, track, TrackServer.TRACK_DIVERGING, curve2.roll1, curve2.roll2, rail_height)
 
     # Port of per-branch loft generation from Track.cpp:3250-3259.
     var primary_chunks: Array = _build_transition_loft_strip_chunks(
