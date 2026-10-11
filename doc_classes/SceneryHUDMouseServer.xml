@@ -55,6 +55,14 @@
 				The pickable under the cursor, an invalid [RID] for none.
 			</description>
 		</method>
+		<method name="vehicle_pickable_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="caption" type="String" />
+			<param index="2" name="vehicle" type="RID" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<signals>
 		<signal name="pickable_hovered">
@@ -67,6 +75,11 @@
 		<signal name="pickable_unhovered">
 			<description>
 				No pickable is under the cursor any more.
+			</description>
+		</signal>
+		<signal name="vehicle_pressed">
+			<param index="0" name="vehicle" type="RID" />
+			<description>
 			</description>
 		</signal>
 	</signals>

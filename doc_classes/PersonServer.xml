@@ -9,6 +9,7 @@
 	<methods>
 		<method name="person_create">
 			<return type="RID" />
+			<param index="0" name="name" type="String" default="&quot;&quot;" />
 			<description>
 			</description>
 		</method>
@@ -24,10 +25,34 @@
 			<description>
 			</description>
 		</method>
+		<method name="person_get_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="person_set_name">
+			<return type="void" />
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<signals>
+		<signal name="person_created">
+			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</signal>
 		<signal name="person_freed">
 			<param index="0" name="person" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="person_name_changed">
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="previous" type="String" />
 			<description>
 			</description>
 		</signal>

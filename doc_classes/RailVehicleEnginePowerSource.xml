@@ -324,6 +324,16 @@
 		</constant>
 		<constant name="PANTOGRAPH_SECOND" value="1" enum="PantographSelector">
 		</constant>
+		<constant name="PANTOGRAPH_TYPE_NONE" value="0" enum="PantographType">
+		</constant>
+		<constant name="PANTOGRAPH_TYPE_AKP_4E" value="1" enum="PantographType">
+		</constant>
+		<constant name="PANTOGRAPH_TYPE_DSAX" value="2" enum="PantographType">
+		</constant>
+		<constant name="PANTOGRAPH_TYPE_EC160_200" value="3" enum="PantographType">
+		</constant>
+		<constant name="PANTOGRAPH_TYPE_WBL85" value="4" enum="PantographType">
+		</constant>
 		<constant name="VALVE_OPERATION_NONE" value="0" enum="ValveOperation">
 		</constant>
 		<constant name="VALVE_OPERATION_ENABLE" value="1" enum="ValveOperation">

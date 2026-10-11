@@ -98,13 +98,10 @@
 		<member name="cloud_cover" type="float" setter="set_cloud_cover" getter="get_cloud_cover" default="0.5">
 			0-1, the weather's; full cover dims the daylight by 0.65 ([code]simulationenvironment.cpp:163[/code]).
 		</member>
-		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;pl&quot;">
-			The language of the game's strings, named as its catalogue in the game's [code]lang/[/code] ([code]"pl"[/code] for [code]lang/pl.po[/code]); [code]"en"[/code] is the original's own strings, untranslated. Kept in the user settings; [MaszynaTranslationServer] loads the catalogue.
-		</member>
 		<member name="latitude" type="float" setter="set_latitude" getter="get_latitude" default="50.271">
 			Where the sun is seen from, decimal degrees north. The original's is a fixed 52 N ([code]sun.cpp:13[/code]).
 		</member>
-		<member name="light_level" type="float" setter="" getter="get_light_level" default="1.0">
+		<member name="light_level" type="float" setter="" getter="get_light_level" default="0.675">
 			How bright the scene is, 0-1: daylight from the refracted altitude of the sun ([code]cSun::move()[/code], [code]refract()[/code], [code]sun.cpp:104-240[/code]), ramped between the project settings [code]maszyna/lights/night_altitude[/code] and [code]day_altitude[/code], dimmed by [member cloud_cover]. Worked out when a minute passes and when anything it depends on is set; [signal light_level_changed] when it moves.
 		</member>
 		<member name="longitude" type="float" setter="set_longitude" getter="get_longitude" default="19.04">
@@ -126,11 +123,6 @@
 		<signal name="date_changed">
 			<description>
 				The date was set, or the clock passed midnight.
-			</description>
-		</signal>
-		<signal name="language_changed">
-			<description>
-				[member language] was set to another language.
 			</description>
 		</signal>
 		<signal name="light_level_changed">

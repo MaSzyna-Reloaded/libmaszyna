@@ -10,7 +10,7 @@
 		<method name="driver_attach_implementation">
 			<return type="void" />
 			<param index="0" name="driver" type="RID" />
-			<param index="1" name="implementation" type="DriverImplementation" />
+			<param index="1" name="implementation" type="StringName" />
 			<description>
 			</description>
 		</method>
@@ -68,6 +68,19 @@
 			<param index="2" name="value1" type="float" />
 			<param index="3" name="value2" type="float" />
 			<param index="4" name="position" type="Vector3" default="Vector3(0, 0, 0)" />
+			<description>
+			</description>
+		</method>
+		<method name="implementation_register">
+			<return type="void" />
+			<param index="0" name="name" type="StringName" />
+			<param index="1" name="implementation" type="DriverImplementation" />
+			<description>
+			</description>
+		</method>
+		<method name="implementation_unregister">
+			<return type="void" />
+			<param index="0" name="name" type="StringName" />
 			<description>
 			</description>
 		</method>

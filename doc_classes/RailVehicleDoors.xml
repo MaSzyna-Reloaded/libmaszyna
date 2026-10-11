@@ -48,6 +48,11 @@
 				The left doors are fully closed.
 			</description>
 		</method>
+		<method name="get_left_door_closed" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="get_left_local_open" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -106,19 +111,19 @@
 		<method name="get_mirror_left_position" qualifiers="const">
 			<return type="float" />
 			<description>
-			How far the left exterior mirrors are unfolded, 0 folded to 1 out. They unfold with the left doors permitted and fold above [member mirror_close_velocity], with no cab active or when [method get_mirrors_forbidden].
+				How far the left exterior mirrors are unfolded, 0 folded to 1 out. They unfold with the left doors permitted and fold above [member mirror_close_velocity], with no cab active or when [method get_mirrors_forbidden].
 			</description>
 		</method>
 		<method name="get_mirror_right_position" qualifiers="const">
 			<return type="float" />
 			<description>
-			How far the right exterior mirrors are unfolded, 0 folded to 1 out. See [method get_mirror_left_position].
+				How far the right exterior mirrors are unfolded, 0 folded to 1 out. See [method get_mirror_left_position].
 			</description>
 		</method>
 		<method name="get_mirrors_forbidden" qualifiers="const">
 			<return type="bool" />
 			<description>
-			The exterior mirrors are kept folded. See [method forbid_mirrors].
+				The exterior mirrors are kept folded. See [method forbid_mirrors].
 			</description>
 		</method>
 		<method name="get_open_control" qualifiers="const">
@@ -141,6 +146,11 @@
 			<return type="bool" />
 			<description>
 				The right doors are fully closed.
+			</description>
+		</method>
+		<method name="get_right_door_closed" qualifiers="const">
+			<return type="bool" />
+			<description>
 			</description>
 		</method>
 		<method name="get_right_local_open" qualifiers="const">

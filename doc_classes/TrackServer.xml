@@ -290,6 +290,17 @@
 			<description>
 			</description>
 		</method>
+		<method name="track_trace_route">
+			<return type="TrackRouteSegment[]" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" />
+			<param index="2" name="branch_from_setting" type="bool" />
+			<param index="3" name="toward_end" type="bool" />
+			<param index="4" name="start" type="float" />
+			<param index="5" name="distance" type="float" />
+			<description>
+			</description>
+		</method>
 		<method name="track_update">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />

@@ -199,16 +199,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_handle_release_flow" qualifiers="const">
-			<return type="float" />
-			<description>
-			</description>
-		</method>
-		<method name="get_handle_timing_reservoir_flow" qualifiers="const">
-			<return type="float" />
-			<description>
-			</description>
-		</method>
 		<method name="get_handle_ep_time_controlled" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -220,8 +210,18 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_handle_release_flow" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
 		<method name="get_handle_time_controlled" qualifiers="const">
 			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_handle_timing_reservoir_flow" qualifiers="const">
+			<return type="float" />
 			<description>
 			</description>
 		</method>

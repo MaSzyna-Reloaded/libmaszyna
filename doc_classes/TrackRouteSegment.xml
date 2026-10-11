@@ -7,6 +7,10 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="branch" type="int" setter="set_branch" getter="get_branch" default="0">
+		</member>
+		<member name="branch_from_setting" type="bool" setter="set_branch_from_setting" getter="get_branch_from_setting" default="false">
+		</member>
 		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
 		</member>
 		<member name="length" type="float" setter="set_length" getter="get_length" default="0.0">
