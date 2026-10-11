@@ -4,8 +4,6 @@
 
 namespace godot {
     namespace {
-        /* The diameter TMoverParameters keeps when the data gives none (MOVER.h:1595) */
-        constexpr double DEFAULT_WHEEL_DIAMETER = 1.0;
         /* LoadFIZ_Wheels: "approximation formula by youby", an arbitrary constant (Mover.cpp:10388) */
         constexpr double AXLE_INERTIA_APPROXIMATION_FACTOR = 472.0;
     } // namespace
@@ -16,22 +14,13 @@ namespace godot {
     void MoverRailVehicleWheels::_apply_configuration() {
         TMoverParameters *p_mover = get_mover();
         ASSERT_MOVER(p_mover);
-        const double resolved_powered_wheel_diameter =
-                get_powered_wheel_diameter() > 0.0 ? get_powered_wheel_diameter() : DEFAULT_WHEEL_DIAMETER;
-        const double resolved_front_rolling_wheel_diameter = get_front_rolling_wheel_diameter() > 0.0
-                                                                     ? get_front_rolling_wheel_diameter()
-                                                                     : resolved_powered_wheel_diameter;
-        const double resolved_rear_rolling_wheel_diameter = get_rear_rolling_wheel_diameter() > 0.0
-                                                                    ? get_rear_rolling_wheel_diameter()
-                                                                    : resolved_powered_wheel_diameter;
-
-        p_mover->WheelDiameter = static_cast<float>(resolved_powered_wheel_diameter);
-        p_mover->WheelDiameterL = static_cast<float>(resolved_front_rolling_wheel_diameter);
+        p_mover->WheelDiameter = static_cast<float>(_get_resolved_powered_wheel_diameter());
+        p_mover->WheelDiameterL = static_cast<float>(_get_resolved_front_rolling_wheel_diameter());
         if (p_mover->WheelDiameterL == 0.0) {
             // original LoadFIZ_Wheels workaround
             p_mover->WheelDiameterL = p_mover->WheelDiameter;
         }
-        p_mover->WheelDiameterT = static_cast<float>(resolved_rear_rolling_wheel_diameter);
+        p_mover->WheelDiameterT = static_cast<float>(_get_resolved_rear_rolling_wheel_diameter());
         if (p_mover->WheelDiameterT == 0.0) {
             // original LoadFIZ_Wheels workaround
             p_mover->WheelDiameterT = p_mover->WheelDiameter;
@@ -55,21 +44,6 @@ namespace godot {
         }
     }
 
-
-    double MoverRailVehicleWheels::get_angle_front_deg() const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? wheel_angle_front_deg : 0.0;
-    }
-
-    double MoverRailVehicleWheels::get_angle_powered_deg() const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? wheel_angle_powered_deg : 0.0;
-    }
-
-    double MoverRailVehicleWheels::get_angle_rear_deg() const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? wheel_angle_rear_deg : 0.0;
-    }
 
     double MoverRailVehicleWheels::get_rotation_speed_rps() const {
         const TMoverParameters *mover = get_mover();
@@ -122,23 +96,5 @@ namespace godot {
         p_config["bearing_type"] = mover->BearingType == 0 ? BEARING_TYPE_SLIDE : BEARING_TYPE_ROLL;
         p_config["axles_powered_count"] = mover->NPoweredAxles;
         p_config["axles_count"] = mover->NAxles;
-    }
-
-    // The wheel angles are the vehicle layer's, not the Mover's: DynObj.cpp:3776-3792
-    // (TDynamicObject::Update, "krecenie kolami"). From the Mover it reads Vel, V, nrot and
-    // WheelDiameterL/T only.
-    void MoverRailVehicleWheels::_do_process_component(const double p_delta) {
-        TMoverParameters *p_mover = get_mover();
-        ASSERT_MOVER(p_mover);
-        if (p_mover->Vel == 0.0) {
-            return;
-        }
-
-        wheel_angle_front_deg += Math::rad_to_deg(p_mover->V * p_delta / p_mover->WheelDiameterL);
-        wheel_angle_front_deg = Math::wrapf(static_cast<real_t>(wheel_angle_front_deg), 0.0, 360.0);
-        wheel_angle_powered_deg += p_mover->nrot * p_delta * 360.0;
-        wheel_angle_powered_deg = Math::wrapf(static_cast<real_t>(wheel_angle_powered_deg), 0.0, 360.0);
-        wheel_angle_rear_deg += Math::rad_to_deg(p_mover->V * p_delta / p_mover->WheelDiameterT);
-        wheel_angle_rear_deg = Math::wrapf(static_cast<real_t>(wheel_angle_rear_deg), 0.0, 360.0);
     }
 } // namespace godot

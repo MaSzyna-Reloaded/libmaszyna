@@ -15,12 +15,29 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            /* The diameter TMoverParameters keeps when the data gives none (MOVER.h:1595) */
+            static constexpr double DEFAULT_WHEEL_DIAMETER = 1.0;
+            /* The wheel turns - the vehicle's, not the simulation's (TDynamicObject::Update,
+             * DynObj.cpp:3776-3792) [deg] */
+            double wheel_angle_front_deg = 0.0;
+            double wheel_angle_powered_deg = 0.0;
+            double wheel_angle_rear_deg = 0.0;
+
+        protected:
+            /* The wheels turned on by a step, from the vehicle's velocity and the powered axles'
+             * revolutions */
+            void _do_process_component(double p_delta) override;
+            /* The diameters the data gives, the powered wheels' for a rolling one it leaves out
+             * (LoadFIZ_Wheels) [m] */
+            double _get_resolved_powered_wheel_diameter() const;
+            double _get_resolved_front_rolling_wheel_diameter() const;
+            double _get_resolved_rear_rolling_wheel_diameter() const;
 
         public:
+            double get_angle_front_deg() const;
+            double get_angle_powered_deg() const;
+            double get_angle_rear_deg() const;
             /* Live state, read straight from the backend - nothing is stored. */
-            virtual double get_angle_front_deg() const = 0;
-            virtual double get_angle_powered_deg() const = 0;
-            virtual double get_angle_rear_deg() const = 0;
             virtual double get_rotation_speed_rps() const = 0;
             virtual double get_rotation_acceleration_rps2() const = 0;
             virtual bool get_slipping() const = 0;
