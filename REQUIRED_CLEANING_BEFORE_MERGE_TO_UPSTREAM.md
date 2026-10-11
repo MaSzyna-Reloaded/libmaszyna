@@ -65,7 +65,7 @@ Legend:
 - [x] [RC-027](#rc-027) Mover member names as public state keys
 - [x] [RC-028](#rc-028) `RailVehicleHorns` includes the vendored Mover
 - [x] [RC-029](#rc-029) `Mover*` classes public and instantiated from GDScript (accepted: the FIZ importer creates them by name)
-- [ ] [RC-030](#rc-030) `Mover*` components hold state the Mover does not have
+- [x] [RC-030](#rc-030) `Mover*` components hold state the Mover does not have
 - [x] [RC-031](#rc-031) Brake backend keeps a rate only the sound needs
 - [ ] [RC-032](#rc-032) Radio component calls up into the vehicle servers
 - [x] [RC-033](#rc-033) `E3DInstanceBackend` and `E3DRenderingServer` include each other
@@ -199,18 +199,6 @@ Legend:
   `"0.05,1,0.05"`.
 * **Fix:** make the default and the range agree.
 
-### RC-030
-
-**`Mover*` components hold state the Mover does not have** ALARM
-
-* **Where:**
-  * `src/legacy/vehicles/MoverRailVehicleWipers.hpp:22-35`: `wipers` ("the vendored Mover has no
-    wipers at all")
-* **Rule:** "if this layer were replaced wholesale, would the field go with it?"
-* **Problem:** replacing the backend would lose vehicle state.
-* **Decision:** move the fields to the `RailVehicle*` interface components (as `TODO.md`'s #184
-  design describes for the wiper positions).
-
 ### RC-032
 
 **Radio component calls up into the vehicle server** ALARM
@@ -309,8 +297,8 @@ Legend:
 **Lazy initialisation re-checked on every call**
 
 * **Where:**
-  * `src/legacy/vehicles/MoverRailVehicleWipers.cpp:29-33` (`switch_initialized`, field
-    `MoverRailVehicleWipers.hpp:37`, checked on every configuration apply)
+  * `src/vehicles/rail/RailVehicleWipers.cpp:46-50` (`switch_initialized`, field
+    `RailVehicleWipers.hpp:45`, checked on every configuration apply)
   * `src/legacy/cabin/PythonScreenServer.cpp:225-259` (the worker thread and the Python host
     are started lazily in `screen_create`, `:226, 256-258`; the reload path `:200-205` relies on it)
 * **Rule:** no `ensure_*` under any name - state is initialised where it is created
@@ -413,8 +401,8 @@ Legend:
 **Headers not self-contained**
 
 * **Where:**
-  * `src/legacy/vehicles/MoverRailVehicleBrake.hpp`, `MoverRailVehicleDoors.hpp`,
-    `MoverRailVehicleWipers.hpp` get `<map>`, `<vector>` and `<string>` only through `MOVER.h:13-17`
+  * `src/legacy/vehicles/MoverRailVehicleBrake.hpp` and `MoverRailVehicleDoors.hpp` get `<map>`,
+    `<vector>` and `<string>` only through `MOVER.h:13-17`
   * `src/logging/GameLog.hpp:15-24` (macros use `UtilityFunctions` without the include)
 * **Rule:** `CODE_STYLE.md` "A header is self-contained"
 
