@@ -209,9 +209,14 @@ Checks:
   go to `logs/headless/` by themselves (the game's `game.gd`, `HEADLESS_LOG_DIRECTORY`)
 * TESTS: a GDScript that fails to **parse** is not reported as failing - GUT ignores it, finds no
   match for `-gselect` and runs the whole directory until the timeout, so a syntax error looks
-  like a hang. Parse-check first:
-  `godot-double --headless --path demo --check-only -s res://tests/<file>.gd` (`--import` does
-  not catch type errors).
+  like a hang. Run it with `-gtest=` (never `-gselect`) and read the log for `Parse Error` and
+  `Compile Error`: the run loads the project's autoloads, so what it reports is real (`--import`
+  does not catch type errors).
+* `--check-only -s <file>.gd` runs **without the project's autoloads**: a script that reaches one
+  (`CabinSystem`, `AudioStreamManager`, `SceneryInstancer`, ...), itself or through a script it
+  depends on, always reports `Identifier not found: <autoload>` and `Failed to compile depended
+  scripts` - noise that says nothing about the script and hides its real errors. Use it only for
+  a script that reaches no autoload; any other is checked by the run above
 
 Before every commit:
 
