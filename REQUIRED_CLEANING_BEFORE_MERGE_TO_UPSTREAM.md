@@ -208,7 +208,6 @@ Legend:
     wipers at all")
   * `MoverRailVehicleWheels.hpp:33-35`: `wheel_angle_*_deg` ("vehicle layer's, not the Mover's")
   * `MoverRailVehicleDoors.hpp:81-82`: `mirror_left_position`
-  * `MoverRailVehicleLighting.hpp:55`: `headlights_dimmed`
   * `MoverRailVehicleMasterController.hpp:36-43`: tachometer, `distance_counter`
 * **Rule:** "if this layer were replaced wholesale, would the field go with it?"
 * **Problem:** replacing the backend would lose vehicle state.
@@ -450,7 +449,7 @@ Legend:
 * **Where:**
   * Polish comments (AGENTS.md asks for English):
     `src/legacy/vehicles/MoverRailVehicleBrake.cpp:592`
-  * `MoverRailVehicleBrake.cpp:214`, `MoverRailVehicleLighting.cpp:410`: refer to
+  * `MoverRailVehicleBrake.cpp:214`, `MoverRailVehicleLighting.cpp:401`: refer to
     `_do_fetch_state_from_mover()`, which no longer exists
   * orphaned or misplaced doc comments: `src/vehicles/base/VehicleController.hpp:107-112`,
     `VehicleController.cpp:152-153`, `src/vehicles/rail/RailVehicleServer.cpp:2130-2131`

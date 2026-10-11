@@ -118,4 +118,13 @@ namespace godot {
         unregister_command("headlights_dim");
         VehicleComponent::_unregister_commands();
     }
+
+    // Original engine: TTrain::OnCommand_headlightsdimenable/disable (Train.cpp:6146-6195)
+    void RailVehicleLighting::headlights_dim(const bool p_enabled) {
+        headlights_dimmed = p_enabled;
+    }
+
+    bool RailVehicleLighting::get_headlights_dimmed() const {
+        return headlights_dimmed;
+    }
 } // namespace godot

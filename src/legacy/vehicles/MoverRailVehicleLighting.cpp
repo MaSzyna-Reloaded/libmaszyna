@@ -310,15 +310,6 @@ namespace godot {
         }
     }
 
-    // Original engine: TTrain::OnCommand_headlightsdimenable/disable (Train.cpp:6146-6195)
-    void MoverRailVehicleLighting::headlights_dim(const bool p_enabled) {
-        headlights_dimmed = p_enabled;
-    }
-
-    bool MoverRailVehicleLighting::get_headlights_dimmed() const {
-        return headlights_dimmed;
-    }
-
     bool MoverRailVehicleLighting::get_any_light_enabled() const {
         const TMoverParameters *mover = get_mover();
         return mover != nullptr &&

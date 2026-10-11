@@ -51,8 +51,6 @@ namespace godot {
             /* the preset that lights both ends of every vehicle (DynObj.cpp:7337) */
             static constexpr int LIGHTS_POSITION_ALL_ENDS = 18;
             TypedArray<RailVehicleLightListItem> light_position_list;
-            /* DynObj's DimHeadlights - the vendored Mover has no dimmer of its own */
-            bool headlights_dimmed = false;
             const std::unordered_map<LightEnd, Maszyna::end> light_end_map = {
                     {LIGHT_END_FRONT, Maszyna::end::front},
                     {LIGHT_END_REAR, Maszyna::end::rear},
@@ -86,8 +84,6 @@ namespace godot {
             void light(const String &p_light, bool p_enabled) override;
             bool light_is_enabled(const String &p_light) const override;
             void light_switch(const String &p_light, bool p_enabled) override;
-            void headlights_dim(bool p_enabled) override;
-            bool get_headlights_dimmed() const override;
             bool get_any_light_enabled() const override;
     };
 } // namespace godot

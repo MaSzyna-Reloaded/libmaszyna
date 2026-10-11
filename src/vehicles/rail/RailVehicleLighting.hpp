@@ -20,6 +20,8 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            /* DynObj's DimHeadlights - the vehicle's, not the simulation's */
+            bool headlights_dimmed = false;
 
         public:
             /* Live state, read straight from the backend - nothing is stored. */
@@ -91,8 +93,8 @@ namespace godot {
             virtual void increase_light_selector_position() = 0;
             virtual void decrease_light_selector_position() = 0;
             /* The headlights dimmer (dimheadlights_sw:, Train.cpp:6125) */
-            virtual void headlights_dim(bool p_enabled) = 0;
-            virtual bool get_headlights_dimmed() const = 0;
+            void headlights_dim(bool p_enabled);
+            bool get_headlights_dimmed() const;
             /* Whether any lamp is lit at either end (iLights[front] != 0 || iLights[rear] != 0) - what
              * an instrument light of the head lights follows (Train.cpp:9570) */
             virtual bool get_any_light_enabled() const = 0;
