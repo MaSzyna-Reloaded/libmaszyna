@@ -24,6 +24,9 @@ namespace godot {
             String coupler_adapter_model = DEFAULT_COUPLER_ADAPTER_MODEL;
             double coupler_adapter_length = DEFAULT_COUPLER_ADAPTER_LENGTH;
             double coupler_adapter_height = DEFAULT_COUPLER_ADAPTER_HEIGHT;
+            /* The model of the adapter fitted to each end, "" without one - the vehicle's, the
+             * neighbour's model it was handed (attach_coupler_adapter(), DynObj.cpp:1754-1789) */
+            String coupler_adapter_fitted_models[2];
 
         protected:
             static void _bind_methods();
@@ -208,11 +211,16 @@ namespace godot {
             /* The adapter taken off an end, uncoupling it first (DynObj.cpp:1791-1810) */
             virtual bool coupler_adapter_remove(const Variant &p_where) = 0;
             /* The model of the adapter fitted to an end, "" without one */
-            virtual String get_coupler_adapter_fitted_model(CouplerEnd p_end) const = 0;
+            String get_coupler_adapter_fitted_model(CouplerEnd p_end) const;
             /* The fitted adapter's length added to the end and its height over the rail [m] */
             virtual double get_coupler_adapter_fitted_length(CouplerEnd p_end) const = 0;
             virtual double get_coupler_adapter_fitted_height(CouplerEnd p_end) const = 0;
 
+        protected:
+            /* By the backend, when it fits an adapter to an end or takes it off ("") */
+            void _set_coupler_adapter_fitted_model(CouplerEnd p_end, const String &p_model);
+
+        public:
             /* coupleradapter: of the MMD - the adapter this vehicle hands a neighbour of another
              * coupler type: its model, its length and its height over the rail [m]; the original's
              * own without the key (DynObj.cpp:1765-1773, 5284-5292) */

@@ -210,7 +210,6 @@ Legend:
   * `MoverRailVehicleDoors.hpp:81-82`: `mirror_left_position`
   * `MoverRailVehicleLighting.hpp:55`: `headlights_dimmed`
   * `MoverRailVehicleMasterController.hpp:36-43`: tachometer, `distance_counter`
-  * `MoverRailVehicleController.hpp:28`: `fitted_adapter_models`
 * **Rule:** "if this layer were replaced wholesale, would the field go with it?"
 * **Problem:** replacing the backend would lose vehicle state.
 * **Decision:** move the fields to the `RailVehicle*` interface components (as `TODO.md`'s #184

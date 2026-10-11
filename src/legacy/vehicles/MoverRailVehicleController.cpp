@@ -367,7 +367,7 @@ namespace godot {
         coupler.adapter_type = TCouplerType::Automatic;
         coupler.adapter_length = length;
         coupler.adapter_height = other->get_coupler_adapter_height();
-        fitted_adapter_models[p_end] = other->get_coupler_adapter_model();
+        _set_coupler_adapter_fitted_model(p_end, other->get_coupler_adapter_model());
         emit_signal(coupler_adapter_attached_signal, p_end);
         return true;
     }
@@ -415,13 +415,9 @@ namespace godot {
         coupler.adapter_type = TCouplerType::NoCoupler;
         coupler.adapter_length = 0.0;
         coupler.adapter_height = 0.0;
-        fitted_adapter_models[end] = String();
+        _set_coupler_adapter_fitted_model(end, String());
         emit_signal(coupler_adapter_removed_signal, end);
         return true;
-    }
-
-    String MoverRailVehicleController::get_coupler_adapter_fitted_model(const CouplerEnd p_end) const {
-        return fitted_adapter_models[p_end];
     }
 
     double MoverRailVehicleController::get_coupler_adapter_fitted_length(const CouplerEnd p_end) const {

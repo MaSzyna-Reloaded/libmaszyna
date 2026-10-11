@@ -273,6 +273,14 @@ namespace godot {
         p_state["compartment_lights_active"] = get_compartment_lights_active();
     }
 
+    void RailVehicleController::_set_coupler_adapter_fitted_model(const CouplerEnd p_end, const String &p_model) {
+        coupler_adapter_fitted_models[p_end] = p_model;
+    }
+
+    String RailVehicleController::get_coupler_adapter_fitted_model(const CouplerEnd p_end) const {
+        return coupler_adapter_fitted_models[p_end];
+    }
+
     void RailVehicleController::set_coupler_adapter_model(const String &p_value) {
         coupler_adapter_model = p_value;
     }

@@ -24,8 +24,6 @@ namespace godot {
              * was created for - the controller's own may change meanwhile. */
             TMoverParameters *mover = nullptr;
             RID mover_vehicle;
-            /* The model of the adapter fitted to each end, "" without one */
-            String fitted_adapter_models[2];
             /* An end fitted with its neighbour's adapter; p_with_room asks for room left for it */
             bool _fit_coupler_adapter(CouplerEnd p_end, bool p_with_room);
             /* The MaszynaMoverVehicleServer the Mover came from, by id: at shutdown it is freed -
@@ -126,7 +124,6 @@ namespace godot {
             bool is_coupler_automatic(CouplerEnd p_end) const override;
             BitField<CouplingFlags> get_coupler_joinable_flags(CouplerEnd p_end) const override;
             bool coupler_adapter_remove(const Variant &p_where) override;
-            String get_coupler_adapter_fitted_model(CouplerEnd p_end) const override;
             double get_coupler_adapter_fitted_length(CouplerEnd p_end) const override;
             double get_coupler_adapter_fitted_height(CouplerEnd p_end) const override;
             Ref<RailVehicleController> get_coupled_controller(CouplerEnd p_end) const override;
