@@ -66,7 +66,7 @@ void fragment() {
         ClassDB::bind_method(D_METHOD("set_resolution_scale", "value"), &PlanarMirror3D::set_resolution_scale);
         ClassDB::bind_method(D_METHOD("get_resolution_scale"), &PlanarMirror3D::get_resolution_scale);
         ADD_PROPERTY(
-                PropertyInfo(Variant::FLOAT, "resolution_scale", PROPERTY_HINT_RANGE, "0.05,1,0.05"),
+                PropertyInfo(Variant::FLOAT, "resolution_scale", PROPERTY_HINT_RANGE, "0.05,2,0.05"),
                 "set_resolution_scale", "get_resolution_scale");
     }
 

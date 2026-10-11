@@ -33,6 +33,9 @@ namespace godot {
             /* The vehicle's exterior model was built - as nodes near the camera, as
              * RenderingServer instances far from it; what dresses its nodes does it again */
             static const char *vehicle_model_built_signal;
+            /* No vehicle within the draw distance waits for its models any more
+             * (builds_get_pending_count() came down to 0) */
+            static const char *builds_finished_signal;
 
             /* maszyna/vehicles/detail_distance [m]: nearer than this a vehicle is drawn as nodes and
              * animated, further it is drawn as RenderingServer instances and holds still */

@@ -207,7 +207,8 @@ namespace godot {
             E3DNodesBackend editable_nodes_backend{true};
             E3DMaterialResolver material_resolver;
 
-            /// Registered instances are built through SceneryStreamingServer under this owner
+            /// Registered instances are built through SceneryStreamingServer under this owner, made
+            /// with the server
             int stream_owner = -1;
             /// ...and the real lights of scenery instances under this one, with a range of their
             /// own: a street lamp is visible from half a kilometre and lights fifteen metres

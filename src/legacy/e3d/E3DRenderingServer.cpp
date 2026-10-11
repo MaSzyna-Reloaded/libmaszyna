@@ -236,6 +236,18 @@ namespace godot {
         streaming->content_set_consumer(
                 SceneryStreamingProvider::CONTENT_MODELS, callable_mp(this, &E3DRenderingServer::_adopt_model),
                 callable_mp(this, &E3DRenderingServer::instance_free));
+        // the streamed scenery's models, their lights and their smoke, each with a range of its own;
+        // owners live as long as the streaming does
+        stream_owner = streaming->owner_create(
+                "models", callable_mp(this, &E3DRenderingServer::_stream_preload),
+                callable_mp(this, &E3DRenderingServer::_stream_build),
+                callable_mp(this, &E3DRenderingServer::_stream_clear));
+        light_stream_owner = streaming->owner_create(
+                "model lights", Callable(), callable_mp(this, &E3DRenderingServer::_light_stream_build),
+                callable_mp(this, &E3DRenderingServer::_light_clear));
+        smoke_stream_owner = streaming->owner_create(
+                "model smoke", Callable(), callable_mp(this, &E3DRenderingServer::_smoke_stream_build),
+                callable_mp(this, &E3DRenderingServer::_smoke_clear));
     }
 
     /// A change of a placement setting places the scenery lights anew - the lit submodels the
@@ -313,7 +325,7 @@ namespace godot {
     /// instance created with its model is its client's to build again
     void E3DRenderingServer::_on_data_reload_requested() {
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
-        if (stream_owner >= 0 && streaming != nullptr) {
+        if (streaming != nullptr) {
             streaming->owner_rebuild(stream_owner);
         }
     }
@@ -743,13 +755,6 @@ namespace godot {
         ERR_FAIL_NULL_V(streaming, RID());
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
         ERR_FAIL_NULL_V(lazy_loader, RID());
-        if (stream_owner < 0) {
-            stream_owner = streaming->owner_create(
-                    "models", callable_mp(this, &E3DRenderingServer::_stream_preload),
-                    callable_mp(this, &E3DRenderingServer::_stream_build),
-                    callable_mp(this, &E3DRenderingServer::_stream_clear));
-        }
-
         const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
         E3DInstanceData &instance = instances[rid];
         instance.instancer = INSTANCER_OPTIMIZED;
@@ -873,11 +878,6 @@ namespace godot {
         // not part of the streamed scenery and may well be moving.
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
         if (instance->stream_rid.is_valid() && streaming != nullptr) {
-            if (light_stream_owner < 0) {
-                light_stream_owner = streaming->owner_create(
-                        "model lights", Callable(), callable_mp(this, &E3DRenderingServer::_light_stream_build),
-                        callable_mp(this, &E3DRenderingServer::_light_clear));
-            }
             const ProjectSettings *settings = ProjectSettings::get_singleton();
             const float distance =
                     settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE);
@@ -1082,11 +1082,6 @@ namespace godot {
             // Anything built directly (a vehicle, an editor model) gets its particles right away -
             // it is not part of the streamed scenery and is usually moving.
             if (p_instance_data.stream_rid.is_valid() && streaming != nullptr) {
-                if (smoke_stream_owner < 0) {
-                    smoke_stream_owner = streaming->owner_create(
-                            "model smoke", Callable(), callable_mp(this, &E3DRenderingServer::_smoke_stream_build),
-                            callable_mp(this, &E3DRenderingServer::_smoke_clear));
-                }
                 const Vector3 position = p_instance_data.transform.xform(placement.offset);
                 smoke.stream_rid = streaming->stream_register(smoke_stream_owner, rid, position, distance);
             } else {

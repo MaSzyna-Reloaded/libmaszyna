@@ -26,8 +26,6 @@ namespace godot {
 
         protected:
             bool enabled = true;
-            bool enabled_changed = false;
-            bool dirty = false;
             /* The vehicle this component belongs to, set when it joins it. A raw pointer with no
              * initialiser used to be safe only because nothing read this component before it
              * joined; a property read does (see FINDINGS.md, 2026-09-22). */
@@ -120,6 +118,5 @@ namespace godot {
             virtual void _fill_config_dictionary(Dictionary &p_config) const;
             Dictionary get_config();
             void emit_config_changed_signal();
-            void mark_dirty();
     };
 } // namespace godot

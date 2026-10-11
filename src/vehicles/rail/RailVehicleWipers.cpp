@@ -43,11 +43,24 @@ namespace godot {
         if (count != wipers.size()) {
             wipers.assign(count, Wiper());
         }
-        if (!switch_initialized) {
-            // Mover.cpp:11942
-            _set_switch_position(get_default_position());
-            switch_initialized = get_positions().size() > 0;
-        }
+    }
+
+    int RailVehicleWipers::get_default_position() const {
+        return default_position;
+    }
+
+    void RailVehicleWipers::set_default_position(const int p_value) {
+        default_position = p_value;
+        _set_switch_position(default_position);
+    }
+
+    TypedArray<RailVehicleWiperListItem> RailVehicleWipers::get_positions() const {
+        return positions;
+    }
+
+    void RailVehicleWipers::set_positions(const TypedArray<RailVehicleWiperListItem> &p_value) {
+        positions = p_value;
+        _set_switch_position(default_position);
     }
 
     void RailVehicleWipers::_set_switch_position(const int p_position) {

@@ -42,7 +42,7 @@ Legend:
 - [x] [RC-014](#rc-014) State keys published before the simulation is ready
 - [x] [RC-015](#rc-015) `VehicleComponent::send_command()` discards the command result
 - [x] [RC-016](#rc-016) Cab control drag signs lost without a mesh
-- [ ] [RC-017](#rc-017) `PlanarMirror3D` default outside its own range
+- [x] [RC-017](#rc-017) `PlanarMirror3D` default outside its own range
 - [x] [RC-018](#rc-018) `get_cache_dir` bound with a default for a missing argument
 - [x] [RC-019](#rc-019) Mover fields written by two components
 - [x] [RC-124](#rc-124) Bare coupler built from `max_velocity` instead of `Ftmax`
@@ -72,9 +72,9 @@ Legend:
 - [x] [RC-034](#rc-034) Driver layer tracks player-controlled vehicles
 - [x] [RC-035](#rc-035) `Cabin3D` keeps a controller path it says it has not got
 - [x] [RC-036](#rc-036) `SimulationServer` holds cache, build and language
-- [ ] [RC-037](#rc-037) `track_get_endpoints()` fills a cache
+- [x] [RC-037](#rc-037) `track_get_endpoints()` fills a cache (accepted: not a problem)
 - [x] [RC-038](#rc-038) `build_get_number()` reads a file and sets a flag
-- [ ] [RC-039](#rc-039) `MaszynaParser::get*()` advance the cursor
+- [x] [RC-039](#rc-039) `MaszynaParser::get*()` advance the cursor (accepted: not a problem)
 - [x] [RC-131](#rc-131) `RailVehicleHorns::get_combined_signal()` returns the Mover's bits
 - [x] [RC-132](#rc-132) `MoverTypes.hpp` - shared Mover translations without an owner
 
@@ -85,12 +85,12 @@ Legend:
 - [x] [RC-042](#rc-042) `force_detail_refresh` "try again next tick" flag
 - [x] [RC-043](#rc-043) `RailVehicle3D` wires nodes inside `_process`
 - [x] [RC-044](#rc-044) Animation bindings resolved twice after reload
-- [ ] [RC-045](#rc-045) Component enable lands a tick late through flags
-- [ ] [RC-046](#rc-046) Lazy `owner_create` inside the streaming build
-- [ ] [RC-047](#rc-047) `build_check_version()` once-guard called "to be sure"
-- [ ] [RC-048](#rc-048) Loading queue waits by sleeping and is polled
-- [ ] [RC-049](#rc-049) `area_is_ready()` has no event and is polled per frame
-- [ ] [RC-050](#rc-050) Lazy initialisation re-checked on every call
+- [x] [RC-045](#rc-045) Component enable lands a tick late through flags
+- [x] [RC-046](#rc-046) Lazy `owner_create` inside the streaming build
+- [x] [RC-047](#rc-047) `build_check_version()` once-guard called "to be sure"
+- [x] [RC-048](#rc-048) Loading queue waits by sleeping and is polled
+- [x] [RC-049](#rc-049) `area_is_ready()` has no event and is polled per frame
+- [x] [RC-050](#rc-050) Lazy initialisation re-checked on every call
 
 ### Per-frame work
 
@@ -188,111 +188,6 @@ Legend:
 
 ---
 
-## Correctness
-
-### RC-017
-
-**`PlanarMirror3D` default outside its own range**
-
-* **Where:** `src/rendering/PlanarMirror3D.hpp:25` vs `.cpp:69`
-* **Problem:** the default `resolution_scale = 2.0` is outside the inspector range
-  `"0.05,1,0.05"`.
-* **Fix:** make the default and the range agree.
-
-### RC-037
-
-**`track_get_endpoints()` fills a cache**
-
-* **Where:** `src/tracks/TrackServer.cpp:833-836` → `_endpoints()` at `:275-288`
-* **Rule:** a getter never changes state
-* **Problem:** the getter lazily fills `cached_endpoints` from a `const` method.
-* **Fix:** build the cache in `_set_curves` (`:352`), which already clears it (`:359`).
-
-### RC-039
-
-**`MaszynaParser::get*()` advance the cursor**
-
-* **Where:** `src/legacy/parsers/maszyna_parser.cpp:104-122` (`get8`, `get_line`), `:36, 40`
-  (`get_tokens`, `get_tokens_until` bound); `maszyna_parser.hpp:52-63`
-* **Rule:** a getter never changes state
-* **Problem:** `get8`, `get_line`, `get_tokens` and `get_tokens_until` advance `cursor`. They mirror
-  `FileAccess.get_8`, but they are `get_*` methods with a side effect.
-* **Decision:** rename them to `read_*`, or accept the `FileAccess` idiom and note it.
-
-## Missing events and wiring
-
-### RC-045
-
-**Component enable lands a tick late through flags**
-
-* **Where:** `src/vehicles/base/VehicleComponent.cpp:203-207` (`set_enabled`), `:139-164`
-  (`process()`), `:11, 135-137` (`mark_dirty`, bound)
-* **Rule:** one road to one effect; no deferral
-* **Problem:** `set_enabled` sets `enabled_changed` and `dirty`, consumed by `process()` on the
-  next tick, so commands and config land a tick late. `mark_dirty` is bound, which gives a
-  second road to `apply_config`.
-* **Fix:** apply at once in the setter's owner operation, and remove the bound `mark_dirty`.
-
-### RC-046
-
-**Lazy `owner_create` inside the streaming build**
-
-* **Where:** `src/legacy/e3d/E3DRenderingServer.cpp:876-880` (in `_light_create`, `:850`),
-  `:1085-1089` (in `_build_instance_smoke_sources`, `:1052`), `:746-751` (in
-  `instance_register`, `:739`)
-* **Rule:** no `ensure_*` under any name; no wiring in a hot path
-* **Problem:** `if (light_stream_owner < 0) { light_stream_owner = streaming->owner_create(...) }`
-  - and the same for `smoke_stream_owner` and `stream_owner` - wires callables into
-  `SceneryStreamingServer` from code that runs inside the per-frame build.
-* **Fix:** create the owners once at server initialisation.
-
-### RC-047
-
-**`build_check_version()` once-guard called "to be sure"**
-
-* **Where:** `src/game_data/GameDataServer.cpp:57-62` (flag `GameDataServer.hpp:29`); callers
-  `demo/demo_3d.gd:9`; in the game (`MaSzyna-Reloaded/maszyna-reloaded`) `game.gd:89`,
-  `startup/startup.gd:15`
-* **Rule:** no `ensure_*`; never do the same thing twice
-* **Problem:** `if (build_version_checked) return false;` - an ensure-style guard that clears
-  caches and writes a setting, called from three scenes.
-* **Fix:** one call at startup by the owner; the scenes stop calling it.
-
-### RC-048
-
-**Loading queue waits by sleeping and is polled**
-
-* **Where:** `src/utils/WorkerTaskQueue.cpp:61-66` (`is_done()`), `:69-96` (`wait()`, the sleep
-  at `:94`); pollers `addons/libmaszyna/scenery/scenery_instancer.gd:530` (loop `:524-533`),
-  `addons/libmaszyna/legacy/vehicle/maszyna_vehicle_profile_manager.gd:117`
-* **Rule:** never work around a missing event
-* **Problem:** `wait()` loops on `OS::delay_usec(100)`, and `is_done()` exists so callers can
-  poll it.
-* **Fix:** a "done" signal, and a condition variable in `wait()`.
-
-### RC-049
-
-**`area_is_ready()` has no event and is polled per frame**
-
-* **Where:** `src/scenery/SceneryStreamingServer.cpp:606-609` (signals `:64-69`); poller
-  `demo/demo_scenery_loading.gd:207` (an `await process_frame` loop in `_build_surroundings`,
-  which also polls `RailVehicleRenderingServer.builds_get_pending_count()`)
-* **Problem:** there is no "area ready" signal - `streaming_builds_finished` is not about an
-  area - so readiness can only be polled.
-* **Fix:** emit a signal when the requested area has been built.
-
-### RC-050
-
-**Lazy initialisation re-checked on every call**
-
-* **Where:**
-  * `src/vehicles/rail/RailVehicleWipers.cpp:46-50` (`switch_initialized`, field
-    `RailVehicleWipers.hpp:45`, checked on every configuration apply)
-  * `src/legacy/cabin/PythonScreenServer.cpp:225-259` (the worker thread and the Python host
-    are started lazily in `screen_create`, `:226, 256-258`; the reload path `:200-205` relies on it)
-* **Rule:** no `ensure_*` under any name - state is initialised where it is created
-* **Fix:** initialise in the constructor or the server's initialisation.
-
 ## Per-frame work
 
 ### RC-062
@@ -338,7 +233,7 @@ Legend:
     `emit_signal("blinking_changed")`, `("beeping_changed")` - no constant exists, the
     `ADD_SIGNAL` in `RailVehicleSecuritySystem.cpp:31-32` uses literals too
   * `src/utils/UserSettings.cpp:133-184`
-  * `src/vehicles/base/VehicleComponent.cpp:132, 159`
+  * `src/vehicles/base/VehicleComponent.cpp:35, 195-196`
 * **Fix:** use the constants, and add one where it is missing.
 
 ## Cosmetic
@@ -347,7 +242,7 @@ Legend:
 
 **Deprecated `MAKE_MEMBER_GS*` macros**
 
-* **Where:** 540 uses in 40 headers. The largest are `src/vehicles/rail/RailVehicleDieselEngine.hpp`
+* **Where:** 538 uses in 40 headers. The largest are `src/vehicles/rail/RailVehicleDieselEngine.hpp`
   (80), `RailVehicleBrake.hpp` (65), `src/legacy/e3d/E3DSubModel.hpp` (30) and
   `RailVehicleDoors.hpp` (28). Also every rail component header, every `*ListItem`/`*Item`
   resource, `VehicleController.hpp` and `RailVehicleController.hpp`.
@@ -367,7 +262,7 @@ Legend:
 
 **Functional casts instead of `static_cast`**
 
-* **Where:** `src/vehicles/rail/RailVehicleRenderingServer.cpp:1001, 1433, 1701`;
+* **Where:** `src/vehicles/rail/RailVehicleRenderingServer.cpp:1003, 1435, 1706`;
   `RailVehicleServer.cpp:341, 1897, 1906-1907`; `src/legacy/e3d/E3DInstanceBackend.cpp:54`;
   `src/legacy/e3d/E3DNodesBackend.cpp:193`
 * **Rule:** `CODE_STYLE.md` "Conversions"

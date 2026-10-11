@@ -1,6 +1,8 @@
 #include "GameDataServer.hpp"
+#include "cache/ResourceCache.hpp"
 #include "utils/UserSettings.hpp"
 
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -24,6 +26,11 @@ namespace godot {
         if (UserSettings *settings = UserSettings::get_instance(); settings != nullptr) {
             settings->connect("game_dir_changed", callable_mp(this, &GameDataServer::data_reload));
         }
+        // a cache on disk outlives the build that wrote it. Not in the editor: it shares the game's
+        // user directory and would stamp it for the game
+        if (!Engine::get_singleton()->is_editor_hint()) {
+            _check_build_version();
+        }
     }
 
     GameDataServer::~GameDataServer() {
@@ -34,7 +41,6 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("cache_clear"), &GameDataServer::cache_clear);
         ClassDB::bind_method(D_METHOD("data_reload"), &GameDataServer::data_reload);
         ClassDB::bind_method(D_METHOD("build_get_number"), &GameDataServer::build_get_number);
-        ClassDB::bind_method(D_METHOD("build_check_version"), &GameDataServer::build_check_version);
         ADD_SIGNAL(MethodInfo(cache_clear_requested_signal));
         ADD_SIGNAL(MethodInfo(data_unload_requested_signal));
         ADD_SIGNAL(MethodInfo(data_reload_requested_signal));
@@ -53,31 +59,28 @@ namespace godot {
         return build_number;
     }
 
-    /// A cache on disk outlives the code that produced it, so a new build starts from clean data.
-    bool GameDataServer::build_check_version() {
-        if (build_version_checked) {
-            return false;
-        }
-        build_version_checked = true;
-
+    /* A cache on disk outlives the code that produced it, so a new build starts from clean data. The
+     * caches are made after this server, by the servers and the autoloads, so their files are
+     * cleared here, not by asking the caches (cache_clear()) - none listens yet, and none holds
+     * anything in memory yet */
+    void GameDataServer::_check_build_version() {
         const String current = build_number;
         if (current.is_empty()) {
-            return false;
+            return;
         }
 
         UserSettings *settings = UserSettings::get_instance();
-        ERR_FAIL_NULL_V(settings, false);
+        ERR_FAIL_NULL(settings);
 
         const String stored = settings->get_setting(BUILD_SECTION, BUILD_NUMBER_KEY, "");
         if (stored == current) {
-            return false;
+            return;
         }
 
         UtilityFunctions::print(
                 "[GameDataServer] Build changed (" + (stored.is_empty() ? String("none") : stored) + " -> " + current +
                 "), clearing cache...");
-        cache_clear();
+        ResourceCache::clear_all();
         settings->save_setting(BUILD_SECTION, BUILD_NUMBER_KEY, current);
-        return true;
     }
 } // namespace godot

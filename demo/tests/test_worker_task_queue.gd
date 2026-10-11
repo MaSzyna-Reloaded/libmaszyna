@@ -4,6 +4,10 @@ extends MaszynaGutTest
 ## give the same result, in the same order, as parsing them in place.
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
+## Real seconds for the announcements to reach the main thread
+const ANNOUNCE_TIMEOUT:float = 2.0
+## How long the gated tasks are held - long enough for every worker to take one
+const GATE_HOLD_MSEC:int = 200
 
 var _previous_game_dir:String = ""
 var _depth_mutex:Mutex = Mutex.new()
@@ -30,6 +34,42 @@ func test_more_tasks_than_workers_return_results_by_id() -> void:
         assert_eq(queue.wait(task_ids[i]), i * 2)
     assert_eq(queue.get_completed_count(), task_count)
     assert_eq(queue.get_submitted_count(), task_count)
+
+
+## Each task is announced once, on the main thread
+func test_every_finished_task_is_announced() -> void:
+    var queue := WorkerTaskQueue.new()
+    var announced:Array[int] = []
+    queue.task_finished.connect(func(task_id:int) -> void: announced.append(task_id))
+    var task_ids:Array[int] = []
+    for i:int in queue.get_worker_count() * 2:
+        task_ids.append(queue.submit(_double.bind(i)))
+    await wait_until(func() -> bool: return announced.size() >= task_ids.size(), ANNOUNCE_TIMEOUT)
+    announced.sort()
+    assert_eq(announced, task_ids)
+
+
+## A task drain() drops is announced as well: whoever awaits it is let go
+func test_a_task_dropped_by_drain_is_announced() -> void:
+    var queue := WorkerTaskQueue.new()
+    var gate := Semaphore.new()
+    var announced:Array[int] = []
+    queue.task_finished.connect(func(task_id:int) -> void: announced.append(task_id))
+    var task_ids:Array[int] = []
+    # every worker held, so the last task stays queued
+    for i:int in queue.get_worker_count() + 1:
+        task_ids.append(queue.submit(_gated.bind(gate)))
+    OS.delay_msec(GATE_HOLD_MSEC)
+    var opener := Thread.new()
+    opener.start(func() -> void:
+        OS.delay_msec(GATE_HOLD_MSEC)
+        gate.post(task_ids.size()))
+    queue.drain()
+    opener.wait_to_finish()
+    await wait_until(func() -> bool: return announced.size() >= task_ids.size(), ANNOUNCE_TIMEOUT)
+    announced.sort()
+    assert_eq(announced, task_ids)
+    assert_eq(queue.get_completed_count(), task_ids.size() - 1, "the queued one never ran")
 
 
 func test_nested_waiting_tasks_do_not_deadlock() -> void:
@@ -97,6 +137,11 @@ func _describe(models:Array[MaszynaModelData]) -> Array:
 
 func _double(value:int) -> int:
     return value * 2
+
+
+func _gated(gate:Semaphore) -> int:
+    gate.wait()
+    return 0
 
 
 ## _double() as a task waiting for a task of its own, counting how deep tasks nest per thread

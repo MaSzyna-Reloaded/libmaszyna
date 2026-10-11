@@ -8,7 +8,6 @@
 namespace godot {
     void VehicleComponent::_bind_methods() {
         ClassDB::bind_method(D_METHOD("emit_config_changed_signal"), &VehicleComponent::emit_config_changed_signal);
-        ClassDB::bind_method(D_METHOD("mark_dirty"), &VehicleComponent::mark_dirty);
         ClassDB::bind_method(D_METHOD("register_command", "command", "callable"), &VehicleComponent::register_command);
         ClassDB::bind_method(D_METHOD("unregister_command", "command"), &VehicleComponent::unregister_command);
         ClassDB::bind_method(D_METHOD("apply_config"), &VehicleComponent::apply_config);
@@ -132,32 +131,9 @@ namespace godot {
         emit_signal("config_changed");
     }
 
-    void VehicleComponent::mark_dirty() {
-        dirty = true;
-    }
-
     void VehicleComponent::process(const double p_delta) {
-        if (dirty) {
-            apply_config();
-        }
-
         if (enabled) {
             _do_process_component(p_delta);
-        }
-
-        if (enabled_changed) {
-            enabled_changed = false;
-            if (enabled && !_commands_registered) {
-                log_debug("Registering commands for component " + get_class());
-                _register_commands();
-                _commands_registered = true;
-            } else if (!enabled && _commands_registered) {
-                log_debug("Unregistering commands for component " + get_class());
-                _unregister_commands();
-                _commands_registered = false;
-            }
-            emit_signal("enable_changed", enabled);
-            emit_signal(enabled ? "component_enabled" : "component_disabled");
         }
     }
 
@@ -186,9 +162,6 @@ namespace godot {
             return;
         }
         _apply_configuration();
-        // what changed is in the backend now - a change before it (the description copied with its
-        // properties) leaves nothing to apply again on the next step
-        dirty = false;
         train_controller_node->emit_config_changed();
     }
 
@@ -200,10 +173,27 @@ namespace godot {
         return result;
     }
 
+    /* Enabled or disabled at once: a component in a vehicle takes or gives up its commands now, and
+     * says so; one not in a vehicle yet takes them when it joins (attach()) */
     void VehicleComponent::set_enabled(const bool p_value) {
-        enabled_changed = (enabled != p_value);
+        if (enabled == p_value) {
+            return;
+        }
         enabled = p_value;
-        dirty = true;
+        if (train_controller_node == nullptr) {
+            return;
+        }
+        if (enabled && !_commands_registered) {
+            log_debug("Registering commands for component " + get_class());
+            _register_commands();
+            _commands_registered = true;
+        } else if (!enabled && _commands_registered) {
+            log_debug("Unregistering commands for component " + get_class());
+            _unregister_commands();
+            _commands_registered = false;
+        }
+        emit_signal("enable_changed", enabled);
+        emit_signal(enabled ? "component_enabled" : "component_disabled");
     }
 
     bool VehicleComponent::get_enabled() {

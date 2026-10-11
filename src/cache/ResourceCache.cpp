@@ -139,7 +139,7 @@ namespace godot {
         return _get_cache_path(p_path);
     }
 
-    void ResourceCache::_clear_cache_dir(String p_path) const {
+    void ResourceCache::_clear_cache_dir(const String &p_path) {
         if (DirAccess::dir_exists_absolute(p_path)) {
             const Ref<DirAccess> dir = DirAccess::open(p_path);
             if (dir.is_valid()) {
@@ -161,6 +161,10 @@ namespace godot {
 
     void ResourceCache::clear() {
         _clear_cache_dir(String(RESOURCE_CACHE_DIR_PREFIX).path_join(cache_dir));
+    }
+
+    void ResourceCache::clear_all() {
+        _clear_cache_dir(RESOURCE_CACHE_DIR_PREFIX);
     }
 
     String ResourceCache::get_cache_dir() const {

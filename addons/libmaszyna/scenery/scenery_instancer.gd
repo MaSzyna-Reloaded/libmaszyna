@@ -519,16 +519,17 @@ static func _instantiate_cached_nodes(packed_scene:PackedScene) -> Array:
     return objects
 
 
-## Runs `task` on a WorkerTaskQueue worker while the main thread keeps drawing frames with
-## the progress reported; its result, null when the load is cancelled (cancel_loading())
+## Runs `task` on a WorkerTaskQueue worker while the main thread keeps drawing frames, the
+## progress reported; its result, null when the load is cancelled (cancel_loading())
 static func _run_on_worker(
     root:MaszynaIncludeNode, task:Callable, progress:float, stage:MaszynaIncludeNode.LoadStage, message:String
 ) -> Variant:
     var queue := WorkerTaskQueue.new()
     _active_queues.append(queue)
     var task_id:int = queue.submit(task)
-    while not queue.is_done(task_id):
-        await _report_progress(root, progress, stage, message)
+    root.load_progress.emit(progress, stage, message)
+    await queue.task_finished
+    _last_report_msec = Time.get_ticks_msec()
     _active_queues.erase(queue)
     return queue.wait(task_id)
 
@@ -696,7 +697,8 @@ func parse_subscene_task(
 
 
 ## Parses root's scenery on WorkerTaskQueue workers (every include is a task), reporting
-## progress every frame: finished tasks / tasks submitted so far.
+## progress as they finish, at most once per FRAME_BUDGET_MSEC: finished tasks / tasks submitted
+## so far.
 func _parse_file_with_progress(
     root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:SceneryTrianglesSink
 ) -> MaszynaImporterContext:
@@ -712,14 +714,18 @@ func _parse_file_with_progress(
     # every include is a task submitted while parsing, so the total grows with the parse; the bar
     # does not go back when it does
     var parsed:float = 0.0
-    while not queue.is_done(task_id):
+    # the root task finishes last: it waits for the includes it submitted
+    while await queue.task_finished != task_id:
+        if Time.get_ticks_msec() - _last_report_msec < FRAME_BUDGET_MSEC:
+            continue
+        _last_report_msec = Time.get_ticks_msec()
         parsed = maxf(parsed, float(queue.get_completed_count()) / float(queue.get_submitted_count()))
         _file_in_parse_mutex.lock()
         var file_in_parse:String = _file_in_parse
         _file_in_parse_mutex.unlock()
         root.load_files_parsed.emit(queue.get_completed_count(), file_in_parse)
-        await _report_progress(
-            root, PARSE_PROGRESS * parsed, MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
+        root.load_progress.emit(
+            PARSE_PROGRESS * parsed, MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
         )
     var context:MaszynaImporterContext = queue.wait(task_id) as MaszynaImporterContext
     _active_queues.erase(queue)

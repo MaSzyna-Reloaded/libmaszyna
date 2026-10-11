@@ -36,6 +36,7 @@
 namespace godot {
     RailVehicleRenderingServer *RailVehicleRenderingServer::singleton = nullptr;
     const char *RailVehicleRenderingServer::vehicle_model_built_signal = "vehicle_model_built";
+    const char *RailVehicleRenderingServer::builds_finished_signal = "builds_finished";
 
     namespace {
         /* Which submodel of the model shows which of the vehicle's lamps, read off the lighting
@@ -309,6 +310,7 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("builds_get_pending_count"), &RailVehicleRenderingServer::builds_get_pending_count);
         ADD_SIGNAL(MethodInfo(vehicle_model_built_signal, PropertyInfo(Variant::RID, "vehicle")));
+        ADD_SIGNAL(MethodInfo(builds_finished_signal));
     }
 
     Node3D *RailVehicleRenderingServer::_node(const Visual &p_visual) {
@@ -1608,6 +1610,9 @@ namespace godot {
         for (int index = 0; index < pending_builds.size(); ++index) {
             if (pending_builds[index].vehicle == p_vehicle) {
                 pending_builds.remove_at(index);
+                if (pending_builds.is_empty()) {
+                    emit_signal(builds_finished_signal);
+                }
                 return;
             }
         }
@@ -1848,12 +1853,16 @@ namespace godot {
 
         // the models of the vehicles that came within the draw distance, the nearest first
         const uint64_t deadline = Time::get_singleton()->get_ticks_msec() + BUILD_BUDGET_MSEC;
+        const bool had_builds = !pending_builds.is_empty();
         while (!pending_builds.is_empty() && Time::get_singleton()->get_ticks_msec() < deadline) {
             const RID vehicle = pending_builds[0].vehicle;
             pending_builds.remove_at(0);
             Visual &visual = vehicles[vehicle];
             visual.build_pending = false;
             _build_models(vehicle, visual);
+        }
+        if (had_builds && pending_builds.is_empty()) {
+            emit_signal(builds_finished_signal);
         }
 
         slow_elapsed += delta;

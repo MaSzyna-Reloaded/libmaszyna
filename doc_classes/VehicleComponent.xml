@@ -73,11 +73,6 @@
 				Logs a warning message. See [GameLog.LogLevel].
 			</description>
 		</method>
-		<method name="mark_dirty">
-			<return type="void" />
-			<description>
-			</description>
-		</method>
 		<method name="register_command">
 			<return type="void" />
 			<param index="0" name="command" type="String" />

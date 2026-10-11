@@ -406,9 +406,9 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * The switch blade is stepped on the wall clock (`TrackServer`, `Time::get_ticks_usec()`), the
   original's on the simulation's delta (`Track.cpp:1944`).
 * **The second configuration pass runs only with the whole vehicle**
-  (`VehicleController::apply_configuration()`): a component applied again alone - `set_enabled`,
-  `mark_dirty`, `add_component` to a running vehicle, the wipers' count from the appearance - does
-  not run `apply_vehicle_config()` (REQUIRED_CLEANING RC-045).
+  (`VehicleController::apply_configuration()`): a component applied again alone - `apply_config()`,
+  `add_component` to a running vehicle, the wipers' count from the appearance - does not run
+  `apply_vehicle_config()`.
 
 ## Rendering
 

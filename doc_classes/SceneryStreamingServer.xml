@@ -29,6 +29,20 @@
 				Returns whether the current camera revision has been scanned and every wanted piece in the camera chunk plus [param chunk_radius] neighbouring chunks has been built. A radius of [code]1[/code] describes the 3×3 starting area used by the demo loading screen; work farther away may still be pending.
 			</description>
 		</method>
+		<method name="area_unwatch">
+			<return type="void" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				Stops one [method area_watch] of the area.
+			</description>
+		</method>
+		<method name="area_watch">
+			<return type="void" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				Has [signal area_ready] emitted for the area of [param chunk_radius] chunks around the camera's, until [method area_unwatch] is called as many times. An area already built is announced too, once the frame's deferred calls run.
+			</description>
+		</method>
 		<method name="chunk_get_rids" qualifiers="const">
 			<return type="RID[]" />
 			<param index="0" name="chunk" type="Vector2i" />
@@ -187,6 +201,12 @@
 		</method>
 	</methods>
 	<signals>
+		<signal name="area_ready">
+			<param index="0" name="chunk_radius" type="int" />
+			<description>
+				A watched area ([method area_watch]) is built around the camera, as [method area_is_ready] would answer. Emitted once per plan of where the camera is: again only after the camera has moved or the content changed.
+			</description>
+		</signal>
 		<signal name="chunk_cleared">
 			<param index="0" name="chunk" type="Vector2i" />
 			<description>

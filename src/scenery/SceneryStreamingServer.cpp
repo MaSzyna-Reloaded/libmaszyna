@@ -17,6 +17,7 @@ namespace godot {
     const char *SceneryStreamingServer::streaming_camera_chunk_changed_signal = "streaming_camera_chunk_changed";
     const char *SceneryStreamingServer::streaming_camera_changed_signal = "streaming_camera_changed";
     const char *SceneryStreamingServer::chunk_cleared_signal = "chunk_cleared";
+    const char *SceneryStreamingServer::area_ready_signal = "area_ready";
 
     void SceneryStreamingServer::_bind_methods() {
         ClassDB::bind_method(
@@ -59,6 +60,9 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("area_get_pending_count", "chunk_radius"), &SceneryStreamingServer::area_get_pending_count,
                 DEFVAL(1));
+        ClassDB::bind_method(D_METHOD("area_watch", "chunk_radius"), &SceneryStreamingServer::area_watch, DEFVAL(1));
+        ClassDB::bind_method(
+                D_METHOD("area_unwatch", "chunk_radius"), &SceneryStreamingServer::area_unwatch, DEFVAL(1));
         ClassDB::bind_method(
                 D_METHOD("streaming_get_streamed_count"), &SceneryStreamingServer::streaming_get_streamed_count);
         ClassDB::bind_method(D_METHOD("streaming_get_statistics"), &SceneryStreamingServer::streaming_get_statistics);
@@ -69,6 +73,7 @@ namespace godot {
         ADD_SIGNAL(MethodInfo(streaming_camera_changed_signal));
         // the last built piece of the chunk cleared as the camera went away
         ADD_SIGNAL(MethodInfo(chunk_cleared_signal, PropertyInfo(Variant::VECTOR2I, "chunk")));
+        ADD_SIGNAL(MethodInfo(area_ready_signal, PropertyInfo(Variant::INT, "chunk_radius")));
     }
 
     SceneryStreamingServer::SceneryStreamingServer() {
@@ -615,6 +620,37 @@ namespace godot {
         return _get_pending_nearby_locked(MAX(0, p_chunk_radius));
     }
 
+    /* An area already built has no streaming tick left to announce it: it is looked at once the
+     * frame's deferred calls run, so whoever awaits area_ready right after this hears it */
+    void SceneryStreamingServer::area_watch(const int p_chunk_radius) {
+        watched_areas[MAX(0, p_chunk_radius)].watchers++;
+        callable_mp(this, &SceneryStreamingServer::_announce_ready_areas).call_deferred();
+    }
+
+    void SceneryStreamingServer::area_unwatch(const int p_chunk_radius) {
+        const HashMap<int, AreaWatch>::Iterator area = watched_areas.find(MAX(0, p_chunk_radius));
+        ERR_FAIL_COND_MSG(area == watched_areas.end(), vformat("Area not watched: %d", p_chunk_radius));
+        if (--area->value.watchers == 0) {
+            watched_areas.remove(area);
+        }
+    }
+
+    void SceneryStreamingServer::_announce_ready_areas() {
+        Vector<int> ready;
+        {
+            MutexLock lock(mutex);
+            for (KeyValue<int, AreaWatch> &area: watched_areas) {
+                if (area.value.announced_revision != target_revision && _is_area_ready_locked(area.key)) {
+                    area.value.announced_revision = target_revision;
+                    ready.push_back(area.key);
+                }
+            }
+        }
+        for (const int chunk_radius: ready) {
+            emit_signal(area_ready_signal, chunk_radius);
+        }
+    }
+
     /// Pieces currently built - what the streaming actually keeps alive
     int SceneryStreamingServer::streaming_get_streamed_count() const {
         MutexLock lock(mutex);
@@ -791,6 +827,7 @@ namespace godot {
             has_work = _has_work_locked();
         }
         _set_building(is_building);
+        _announce_ready_areas();
         if (!has_work) {
             _set_applying(false);
         }

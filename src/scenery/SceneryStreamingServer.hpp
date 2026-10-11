@@ -84,6 +84,9 @@ namespace godot {
             /// The camera the streaming follows was set or cleared (streaming_set_camera())
             static const char *streaming_camera_changed_signal;
             static const char *chunk_cleared_signal;
+            /// A watched area (area_watch()) is built around the camera (chunk_radius: int) - once per
+            /// plan of where the camera is
+            static const char *area_ready_signal;
 
             static SceneryStreamingServer *get_instance() {
                 return Object::cast_to<SceneryStreamingServer>(
@@ -292,6 +295,12 @@ namespace godot {
             int build_rate = 0;     // ...and in the last full second, for the debug window
             uint64_t build_rate_usec = 0;
             int passes = 0; // planning passes finished, so a caller can tell "not started yet"
+            struct AreaWatch {
+                    int watchers = 0;
+                    /// The target_revision it was announced ready at, 0 for none yet
+                    uint64_t announced_revision = 0;
+            };
+            HashMap<int, AreaWatch> watched_areas; // main thread only, by chunk radius
 
             static Vector2i _get_chunk_key(const Vector3 &p_origin);
             static float _get_chunk_distance(const Vector2i &p_key, const Vector3 &p_position);
@@ -311,6 +320,8 @@ namespace godot {
             bool _has_work_locked() const;
             void _apply_plan();
             void _set_building(bool p_building);
+            /// area_ready for every watched area built since the camera's last plan
+            void _announce_ready_areas();
             /// Builds from the back of the queue until the deadline; false once it is reached
             bool _apply_builds(Vector<PendingBuild> &p_builds, uint64_t p_deadline);
             /// Hands each RID back to the consumer of its kind
@@ -378,6 +389,9 @@ namespace godot {
             bool area_is_ready(int p_chunk_radius = 1) const;
             /// Pieces of the chunks within p_chunk_radius of the camera's still to be built
             int area_get_pending_count(int p_chunk_radius = 1) const;
+            /// area_ready is emitted for the area while it is watched - by as many as watch it
+            void area_watch(int p_chunk_radius = 1);
+            void area_unwatch(int p_chunk_radius = 1);
             int streaming_get_streamed_count() const;
             Dictionary streaming_get_statistics() const;
     };

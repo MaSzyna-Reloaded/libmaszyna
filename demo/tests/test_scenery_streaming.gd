@@ -8,6 +8,8 @@ const STREAMING_FRAMES:int = 60
 ## Real seconds to wait for the streaming to look at a moved camera - a few of its watch intervals
 const CAMERA_WATCH_TIMEOUT:float = 1.0
 const CHUNK_SIZE_M:float = 1000.0
+## Real seconds for a watched area to be announced
+const AREA_TIMEOUT:float = 2.0
 
 var _camera:Camera3D
 var _rids:Array[RID] = []
@@ -135,6 +137,43 @@ func test_nearest_chunk_is_built_first_and_neighbourhood_becomes_ready() -> void
     assert_eq(_build_order[0], near_rid, "farther chunk was built before the camera chunk")
     assert_has(_build_order, far_rid, "neighbour chunk was not built")
     assert_true(SceneryStreamingServer.area_is_ready(1), "camera neighbourhood did not become ready")
+
+
+## The area is announced once its chunks are built, not before
+func test_a_watched_area_is_announced_once_built() -> void:
+    SceneryStreamingServer.streaming_set_camera(0)
+    var owner:int = SceneryStreamingServer.owner_create("test", Callable(), _record_build, _record_clear)
+    var far_rid:RID = _stream_register(owner, Vector3(CHUNK_SIZE_M, 0, 0))
+    var near_rid:RID = _stream_register(owner, Vector3.ZERO)
+    var built_when_ready:Array = []
+    var on_ready:Callable = func(chunk_radius:int) -> void: built_when_ready.append([chunk_radius, _build_order.duplicate()])
+    SceneryStreamingServer.area_ready.connect(on_ready)
+    SceneryStreamingServer.area_watch(1)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
+    await wait_until(func() -> bool: return not built_when_ready.is_empty(), AREA_TIMEOUT)
+    await wait_streaming(STREAMING_FRAMES)
+    SceneryStreamingServer.area_unwatch(1)
+    SceneryStreamingServer.area_ready.disconnect(on_ready)
+    assert_eq(built_when_ready.size(), 1, "announced once while the camera stood")
+    assert_eq(built_when_ready[0][0], 1)
+    assert_has(built_when_ready[0][1], near_rid)
+    assert_has(built_when_ready[0][1], far_rid, "announced before the neighbour chunk was built")
+
+
+## An area with nothing to build is announced too, as is the camera's own chunk alone
+func test_an_area_with_nothing_to_build_is_announced() -> void:
+    await wait_streaming(STREAMING_FRAMES)
+    var announced:Array[int] = []
+    var on_ready:Callable = func(chunk_radius:int) -> void: announced.append(chunk_radius)
+    SceneryStreamingServer.area_ready.connect(on_ready)
+    SceneryStreamingServer.area_watch(0)
+    SceneryStreamingServer.area_watch(1)
+    await wait_until(func() -> bool: return announced.size() >= 2, AREA_TIMEOUT)
+    SceneryStreamingServer.area_unwatch(0)
+    SceneryStreamingServer.area_unwatch(1)
+    SceneryStreamingServer.area_ready.disconnect(on_ready)
+    announced.sort()
+    assert_eq(announced, [0, 1] as Array[int])
 
 
 ## The catch-up budget fills the area around a new camera, or one that jumped - never the world a

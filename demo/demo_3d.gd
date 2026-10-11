@@ -7,11 +7,6 @@ var _frame_times_index: int = -1
 var _all_windows_index: int = -1
 
 
-## Before _ready(): the vehicles under this node must not read a cache left by another build
-func _enter_tree() -> void:
-    GameDataServer.build_check_version()
-
-
 func _ready() -> void:
     TrackServer.topology_rebuild()
     %DebugHud.fill_menu(%Diagnostics)

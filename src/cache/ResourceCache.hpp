@@ -23,7 +23,7 @@ namespace godot {
         protected:
             static void _bind_methods();
             String _get_cache_path(const String &p_path) const;
-            void _clear_cache_dir(String p_path) const;
+            static void _clear_cache_dir(const String &p_path);
 
         public:
             static Ref<ResourceCache> create(const String &p_cache_dir);
@@ -35,6 +35,8 @@ namespace godot {
             /* Where an entry is kept, for files a cache entry writes beside it (a scenery's chunks) */
             String get_file_path(const String &p_path) const;
             void clear();
+            /* Every cache's files, whether or not a cache for them was made yet in this session */
+            static void clear_all();
             String get_cache_dir() const;
     };
 } // namespace godot

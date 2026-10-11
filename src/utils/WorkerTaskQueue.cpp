@@ -2,6 +2,8 @@
 #include <godot_cpp/classes/os.hpp>
 
 namespace godot {
+    const char *WorkerTaskQueue::task_finished_signal = "task_finished";
+
     void WorkerTaskQueue::_bind_methods() {
         ClassDB::bind_method(D_METHOD("drain"), &WorkerTaskQueue::drain);
         ClassDB::bind_method(D_METHOD("submit", "task"), &WorkerTaskQueue::submit);
@@ -10,6 +12,8 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_completed_count"), &WorkerTaskQueue::get_completed_count);
         ClassDB::bind_method(D_METHOD("get_submitted_count"), &WorkerTaskQueue::get_submitted_count);
         ClassDB::bind_method(D_METHOD("get_worker_count"), &WorkerTaskQueue::get_worker_count);
+
+        ADD_SIGNAL(MethodInfo(task_finished_signal, PropertyInfo(Variant::INT, "task_id")));
     }
 
     WorkerTaskQueue::WorkerTaskQueue() {
@@ -22,10 +26,18 @@ namespace godot {
     }
 
     void WorkerTaskQueue::drain() {
+        Vector<int> dropped;
         {
             MutexLock lock(mutex);
             exiting = true;
+            // nobody sleeps on a queued task: wait() runs it instead
+            for (const int task_id: pending) {
+                dropped.push_back(task_id);
+            }
             pending.clear();
+        }
+        for (const int task_id: dropped) {
+            callable_mp(this, &WorkerTaskQueue::_emit_task_finished).call_deferred(task_id);
         }
         // a queue that never got a task has no workers to wake, and post(0) is an error
         if (!workers.is_empty()) {
@@ -51,7 +63,9 @@ namespace godot {
         {
             MutexLock lock(mutex);
             task_id = next_id++;
-            tasks[task_id].callable = p_task;
+            Task &task = tasks[task_id];
+            task.callable = p_task;
+            task.finished.instantiate();
             pending.push_back(task_id);
         }
         semaphore->post();
@@ -68,6 +82,7 @@ namespace godot {
     /// Returns the task result and forgets the task; runs the awaited task here if it is queued.
     Variant WorkerTaskQueue::wait(const int p_task_id) {
         while (true) {
+            Ref<Semaphore> finished;
             {
                 MutexLock lock(mutex);
                 /* A task waits here for a task it submitted, and drain() drops what is queued -
@@ -85,13 +100,14 @@ namespace godot {
                     tasks.remove(task);
                     return result;
                 }
+                finished = task->value.finished;
             }
             // Only the awaited task, never an arbitrary queued one: an unrelated task waits for
             // its own tasks on this stack, so a scenery's thousands of includes would nest until
             // the worker thread's stack runs out.
             if (!_run_task(p_task_id)) {
-                // the task runs on another thread
-                OS::get_singleton()->delay_usec(AWAIT_POLL_USEC);
+                // the task runs on another thread: posted once it is done
+                finished->wait();
             }
         }
     }
@@ -140,11 +156,19 @@ namespace godot {
         // last reference to the queue is never released on a worker thread (joining itself)
         p_callable = Callable();
 
-        MutexLock lock(mutex);
-        Task &task = tasks[p_task_id];
-        task.result = result;
-        task.done = true;
-        completed++;
+        {
+            MutexLock lock(mutex);
+            Task &task = tasks[p_task_id];
+            task.result = result;
+            task.done = true;
+            task.finished->post();
+            completed++;
+        }
+        callable_mp(this, &WorkerTaskQueue::_emit_task_finished).call_deferred(p_task_id);
+    }
+
+    void WorkerTaskQueue::_emit_task_finished(const int p_task_id) {
+        emit_signal(task_finished_signal, p_task_id);
     }
 
     void WorkerTaskQueue::_worker_loop() {

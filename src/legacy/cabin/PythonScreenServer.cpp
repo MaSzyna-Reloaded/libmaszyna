@@ -222,6 +222,10 @@ namespace godot {
         worker->wait_to_finish();
     }
 
+    /* The host is started by the first screen, not with the server: it is a process of its own with
+     * a CPython in it, which most sessions - no cab with a Python screen - never need; it starts
+     * in the game directory set by then, not the one at the engine's start. Started once: its
+     * worker stays for the session, a host that failed included, so no call starts it again */
     RID PythonScreenServer::screen_create(const String &p_script_path, const Callable &p_commands_received) {
         if (worker.is_null() && !disabled) {
             const UserSettings *user_settings = UserSettings::get_instance();

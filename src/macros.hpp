@@ -66,26 +66,6 @@ public:                                                                         
     }
 
 /**
- * Macro for generating private synchronized members with their setters and getters. Those members will ALWAYS be
- * synchronized with internal mover
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
- */
-#define MAKE_MEMBER_GS_DIRTY(type, name, default_value)                                                                \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    const type &get_##name() const {                                                                                   \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(const type &value) {                                                                               \
-        name = value;                                                                                                  \
-        dirty = true;                                                                                                  \
-    }
-
-/**
  * Macro for generating private members with their setters and getters without a const reference
  * @param type Member type
  * @param name Member name
