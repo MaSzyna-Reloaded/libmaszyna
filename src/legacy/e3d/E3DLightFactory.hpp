@@ -56,6 +56,14 @@ namespace godot {
         public:
             /// The original renders shadow maps with front faces culled (opengl33renderer.cpp:1634)
             static constexpr const char *LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING = "maszyna/lights/reverse_cull_face";
+            static constexpr const char *VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING =
+                    "maszyna/vehicles/lights/volumetric_fog_energy";
+            static constexpr float DEFAULT_VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY = 4.0;
+            /// A vehicle spotlight fades out between these distances, its shadow sooner - the
+            /// wrapper's own; maszyna/vehicles/detail_distance is set to where the fade ends
+            static constexpr float VEHICLE_LIGHT_FADE_BEGIN = 150.0;
+            static constexpr float VEHICLE_LIGHT_FADE_SHADOW = 100.0;
+            static constexpr float VEHICLE_LIGHT_FADE_LENGTH = 200.0;
 
             /// Walks the model once: pairs every light_onNN with its light_offNN, collects the
             /// SUBMODEL_FREE_SPOTLIGHTs with the light of their nearest "on" ancestor and their

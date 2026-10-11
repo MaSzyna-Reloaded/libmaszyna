@@ -169,6 +169,11 @@
 		</method>
 	</methods>
 	<signals>
+		<signal name="builds_finished">
+			<description>
+				No vehicle within the draw distance waits for its models any more: [method builds_get_pending_count] came down to [code]0[/code].
+			</description>
+		</signal>
 		<signal name="vehicle_model_built">
 			<param index="0" name="vehicle" type="RID" />
 			<description>

@@ -10,7 +10,6 @@ const CAPACITY:float = 100.0
 ## Passengers a second through one open side
 const EXCHANGE_SPEED:float = 5.0
 const BOARDING:float = 10.0
-const PASSENGERS:String = MaszynaLegacyStation.PASSENGERS
 ## Steps a vehicle just built takes to stand ready: its node takes the controller within the
 ## frames, the vehicle its configuration on its first step
 const SETTLE_TICKS:int = 2

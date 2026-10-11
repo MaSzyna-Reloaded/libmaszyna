@@ -2,12 +2,10 @@
 
 [ext_resource type="Script" uid="uid://ccuksauqx4qmn" path="res://examples/mover_demo.gd" id="1_hbfy1"]
 [ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libmaszyna/console/developer_console.tscn" id="2_j25qa"]
-[ext_resource type="PackedScene" uid="uid://br6moafqr8ykn" path="res://hud/panel.tscn" id="3_pdcrj"]
-[ext_resource type="PackedScene" uid="uid://e8tfpu8xl6ps" path="res://hud/mover_gauges.tscn" id="4_4bpxo"]
-[ext_resource type="PackedScene" uid="uid://laujatulc22" path="res://hud/mover_switches.tscn" id="5_vg5os"]
+[ext_resource type="PackedScene" uid="uid://laujatulc22" path="res://addons/libmaszyna/debug_hud/mover_switches.tscn" id="5_vg5os"]
 [ext_resource type="PackedScene" uid="uid://c5hi8nsm1d2hb" path="res://vehicles/sm42/sm_42v_1.tscn" id="6_7bum4"]
 
-[node name="Demo" type="Control"]
+[node name="Demo" type="Control" unique_id=1681155351]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,9 +16,21 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_hbfy1")
 
-[node name="DeveloperConsole" parent="."  instance=ExtResource("2_j25qa")]
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.35, 0.35, 0.35, 1)
 
-[node name="UI" type="VBoxContainer" parent="." ]
+[node name="SimulationRuntime" type="SimulationRuntime" parent="."]
+
+[node name="DeveloperConsole" parent="." unique_id=2032564373 instance=ExtResource("2_j25qa")]
+
+[node name="UI" type="VBoxContainer" parent="." unique_id=1156883465]
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
@@ -64,40 +74,28 @@ size_flags_horizontal = 10
 text = "MaSzyna MOVER TESTER"
 horizontal_alignment = 2
 
-[node name="DebugPanels" type="HFlowContainer" parent="UI" unique_id=1010715474]
+[node name="DebugPanelsScroll" type="ScrollContainer" parent="UI" unique_id=1040995159]
 layout_mode = 2
+size_flags_vertical = 3
+vertical_scroll_mode = 0
 
-[node name="DebugDoor" parent="UI/DebugPanels" unique_id=870149627 instance=ExtResource("3_pdcrj")]
+[node name="DebugPanels" type="HBoxContainer" parent="UI/DebugPanelsScroll" unique_id=1010715474]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="DebugEngine" parent="UI/DebugPanels" unique_id=621506946 instance=ExtResource("3_pdcrj")]
+[node name="MoverSwitchesScroll" type="ScrollContainer" parent="UI" unique_id=496465353]
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="MoverSwitches" parent="UI/MoverSwitchesScroll" unique_id=1293506753 instance=ExtResource("5_vg5os")]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="DebugSecurity" parent="UI/DebugPanels" unique_id=906561771 instance=ExtResource("3_pdcrj")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="DebugBrake" parent="UI/DebugPanels" unique_id=337759493 instance=ExtResource("3_pdcrj")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="DebugTrain" parent="UI/DebugPanels" unique_id=1370637205 instance=ExtResource("3_pdcrj")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Gauges" parent="UI" unique_id=1854622144 instance=ExtResource("4_4bpxo")]
-layout_mode = 2
-train_controller = NodePath("../../SM42")
-
-[node name="MoverSwitches" parent="UI" unique_id=1293506753 instance=ExtResource("5_vg5os")]
-layout_mode = 2
-train_controller = NodePath("../../SM42")
 
 [node name="SM42" parent="." unique_id=851805456 instance=ExtResource("6_7bum4")]
 
-[connection signal="mover_initialized" from="SM42" to="." method="_on_sm_42_mover_initialized"]
+[connection signal="vehicle_changed" from="SM42" to="." method="_on_sm_42_vehicle_changed"]
 
-[editable path="UI/MoverSwitches"]
+[editable path="UI/MoverSwitchesScroll/MoverSwitches"]
 [editable path="SM42"]

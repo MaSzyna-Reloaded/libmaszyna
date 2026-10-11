@@ -1,0 +1,438 @@
+#!/usr/bin/env python3
+"""Generate the libmaszyna class reference for the Jekyll site in docs/.
+
+C++ classes come from doc_classes/*.xml (Godot's class reference format, dumped by
+`make docs`); GDScript classes from the `##` doc comments of every script with a
+`class_name` under addons/libmaszyna. Each class becomes docs/api/<Class>.md, and
+docs/api/index.md lists them all, grouped by namespace. C++ has no namespaces of its own, so a
+class's namespace is the directory of its source: src/<dir> for C++ (the header declaring its
+GDCLASS), addons/libmaszyna/<dir> for GDScript. The two languages are listed apart, each with
+its own namespaces. The pages use docs/_layouts/api.html, whose sidebar lists them from the
+api_* keys of their front matter. The output is generated, not versioned.
+
+Usage: scripts/make-api-docs [output dir, default docs/api]
+"""
+
+import re
+import sys
+import xml.etree.ElementTree as ElementTree
+from dataclasses import dataclass, field
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+XML_DIR = ROOT / "doc_classes"
+SRC_DIR = ROOT / "src"
+GDSCRIPT_DIR = ROOT / "addons" / "libmaszyna"
+GODOT_CLASS_URL = "https://docs.godotengine.org/en/stable/classes/class_{}.html"
+PLUGIN = GDSCRIPT_DIR / "libmaszyna.gd"
+GODOT_API = ROOT / "godot-cpp" / "gdextension" / "extension_api-4-7.json"
+REGISTER_TYPES = ROOT / "src" / "register_types.cpp"
+PROJECT = ROOT / "demo" / "project.godot"
+# the namespace of a class declared at the top of src/ or addons/libmaszyna/
+ROOT_NAMESPACE = "libmaszyna"
+# the namespace of a doc_classes XML whose GDCLASS is found nowhere in src/ (a stale dump)
+UNKNOWN_NAMESPACE = "unknown"
+LANGUAGES = ("C++", "GDScript")
+
+
+@dataclass
+class Member:
+    name: str
+    type: str = ""
+    default: str = ""
+    params: list = field(default_factory=list)  # (name, type, default)
+    qualifiers: str = ""
+    description: str = ""
+    value: str = ""
+    enum: str = ""
+
+
+@dataclass
+class ClassDoc:
+    name: str
+    inherits: str
+    language: str
+    source: str
+    brief: str = ""
+    description: str = ""
+    properties: list = field(default_factory=list)
+    methods: list = field(default_factory=list)
+    signals: list = field(default_factory=list)
+    constants: list = field(default_factory=list)
+    singleton: bool = False
+    namespace: str = ""
+
+
+# ---------------------------------------------------------------- C++ (doc_classes XML)
+
+def _text(node) -> str:
+    return (node.text or "").strip() if node is not None else ""
+
+
+def _params(node) -> list:
+    return [(p.get("name"), p.get("type"), p.get("default", ""))
+            for p in sorted(node.findall("param"), key=lambda p: int(p.get("index", 0)))]
+
+
+def _namespace(directory: Path, source_root: Path) -> str:
+    return directory.relative_to(source_root).as_posix() if directory != source_root else ROOT_NAMESPACE
+
+
+def cpp_namespaces() -> dict:
+    """C++ class name -> namespace, the directory of the header declaring its GDCLASS."""
+    found = {}
+    for path in sorted(SRC_DIR.rglob("*.h*")):
+        for name in re.findall(r"GDCLASS\(\s*(\w+)\s*,", path.read_text(encoding="utf-8", errors="replace")):
+            found[name] = _namespace(path.parent, SRC_DIR)
+    return found
+
+
+def read_xml(path: Path, namespace: str) -> ClassDoc:
+    root = ElementTree.parse(path).getroot()
+    doc = ClassDoc(root.get("name"), root.get("inherits", ""), "C++", f"doc_classes/{path.name}",
+                   _text(root.find("brief_description")), _text(root.find("description")),
+                   namespace=namespace)
+    for node in root.iterfind("members/member"):
+        doc.properties.append(Member(node.get("name"), node.get("type", ""), node.get("default", ""),
+                                     description=(node.text or "").strip()))
+    for node in root.iterfind("methods/method"):
+        returned = node.find("return")
+        doc.methods.append(Member(node.get("name"), returned.get("type") if returned is not None else "void",
+                                  params=_params(node), qualifiers=node.get("qualifiers", ""),
+                                  description=_text(node.find("description"))))
+    for node in root.iterfind("signals/signal"):
+        doc.signals.append(Member(node.get("name"), params=_params(node), description=_text(node.find("description"))))
+    for node in root.iterfind("constants/constant"):
+        doc.constants.append(Member(node.get("name"), value=node.get("value", ""), enum=node.get("enum", ""),
+                                    description=(node.text or "").strip()))
+    return doc
+
+
+# ---------------------------------------------------------------- GDScript (## comments)
+
+DECLARATION = re.compile(
+    r"^(?:@\w+(?:\([^)]*\))?\s+)*(?P<static>static\s+)?(?P<kind>func|signal|var|const|enum)\s+(?P<name>\w+)")
+
+
+def _split_params(text: str) -> list:
+    params, depth, current = [], 0, ""
+    for char in text:
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+        if char == "," and depth == 0:
+            params.append(current)
+            current = ""
+        else:
+            current += char
+    if current.strip():
+        params.append(current)
+    result = []
+    for param in params:
+        name, _, default = param.partition("=")
+        name, _, typed = name.partition(":")
+        result.append((name.strip(), typed.strip() or "Variant", default.strip()))
+    return result
+
+
+def _statement(lines: list, start: int) -> str:
+    """The declaration starting at `start`, joined across lines until its brackets close."""
+    text, depth, index = "", 0, start
+    while index < len(lines):
+        line = lines[index].split("#", 1)[0] if "##" not in lines[index] else lines[index]
+        text += " " + line.strip()
+        depth += line.count("(") + line.count("[") + line.count("{")
+        depth -= line.count(")") + line.count("]") + line.count("}")
+        if depth <= 0:
+            break
+        index += 1
+    return text.strip()
+
+
+def autoloads() -> dict:
+    """Autoload singleton name -> script, as the plugin and the project register them."""
+    found = {}
+    for match in re.finditer(r'add_autoload_singleton\("(\w+)",\s*"res://([^"]+\.gd)"\)', PLUGIN.read_text()):
+        found[match.group(2)] = match.group(1)
+    section = PROJECT.read_text().split("[autoload]", 1)
+    if len(section) > 1:
+        for match in re.finditer(r'^(\w+)="\*?res://(addons/libmaszyna/[^"]+\.gd)"', section[1].split("\n[", 1)[0], re.M):
+            found[match.group(2)] = match.group(1)
+    return found
+
+
+def _is_virtual(lines: list, start: int) -> bool:
+    """Whether the function declared at `start` has `pass` as its only statement."""
+    body = []
+    for line in lines[start + 1:]:
+        if line.strip() and line[0] not in " \t":
+            break
+        if line.strip() and not line.strip().startswith("#"):
+            body.append(line.strip())
+    return body == ["pass"]
+
+
+def read_gdscript(path: Path, singleton_name: str = "") -> ClassDoc | None:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    name, inherits = singleton_name, ""
+    for line in lines:
+        if (match := re.match(r"^class_name\s+(\w+)", line)) and not singleton_name:
+            name = match.group(1)
+        elif match := re.match(r"^extends\s+([\w.\"/]+)", line):
+            inherits = match.group(1).strip('"')
+    if not name:
+        return None
+    doc = ClassDoc(name, inherits, "GDScript", str(path.relative_to(ROOT)), singleton=bool(singleton_name),
+                   namespace=_namespace(path.parent, GDSCRIPT_DIR))
+    pending: list = []
+    class_doc_open = True
+    enum_owner = ""
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if raw.startswith("##"):
+            pending.append(raw[2:].strip())
+            continue
+        if not line or raw.startswith(("class_name", "extends", "@tool", "@icon")):
+            if class_doc_open and pending and not line:
+                doc.description += ("\n" if doc.description else "") + "\n".join(pending)
+                pending = []
+            continue
+        if raw[0] in " \t":  # inside a body
+            pending = []
+            continue
+        class_doc_open = False
+        match = DECLARATION.match(line)
+        if not match:
+            pending = []
+            continue
+        kind, member_name = match.group("kind"), match.group("name")
+        description = "\n".join(pending)
+        pending = []
+        # a leading underscore is private, unless the function is a documented virtual - one whose
+        # body is only `pass`, left for a subclass to override
+        if member_name.startswith("_") and not (kind == "func" and description and _is_virtual(lines, index)):
+            continue
+        statement = _statement(lines, index)
+        if kind == "func":
+            params = statement[statement.find("(") + 1:statement.rfind(")")]
+            returned = re.search(r"->\s*([\w.\[\], ]+)\s*:\s*$", statement)
+            doc.methods.append(Member(member_name, returned.group(1).strip() if returned else "void",
+                                      params=_split_params(params),
+                                      qualifiers="static" if match.group("static") else "",
+                                      description=description))
+        elif kind == "signal":
+            params = statement[statement.find("(") + 1:statement.rfind(")")] if "(" in statement else ""
+            doc.signals.append(Member(member_name, params=_split_params(params), description=description))
+        elif kind == "var":
+            typed = re.search(r"var\s+\w+\s*:\s*([\w.\[\], ]+?)\s*(?:=|:$|$)", statement)
+            default = re.search(r"=\s*(.+?)\s*:?\s*$", statement)
+            doc.properties.append(Member(member_name, typed.group(1) if typed else "Variant",
+                                         default.group(1) if default else "", description=description))
+        elif kind == "const":
+            value = re.search(r"=\s*(.+)$", statement)
+            doc.constants.append(Member(member_name, value=value.group(1).strip() if value else "",
+                                        description=description))
+        elif kind == "enum":
+            body = statement[statement.find("{") + 1:statement.rfind("}")]
+            for position, entry in enumerate(e for e in body.split(",") if e.strip()):
+                entry_name, _, entry_value = entry.partition("=")
+                doc.constants.append(Member(entry_name.strip(), value=entry_value.strip() or str(position),
+                                            enum=member_name, description=description if not position else ""))
+    if class_doc_open and pending:
+        doc.description = "\n".join(pending)
+    # Godot's convention: the first paragraph is the brief description, the rest the description
+    brief, _, rest = doc.description.strip().partition("\n\n")
+    doc.brief, doc.description = brief.strip(), rest.strip()
+    return doc
+
+
+# ---------------------------------------------------------------- Markdown
+
+class Writer:
+    def __init__(self, classes: dict, godot_classes: set):
+        self.classes = classes
+        self.godot_classes = godot_classes
+
+    def type_link(self, name: str) -> str:
+        if not name:
+            return ""
+        base = name[:-2] if name.endswith("[]") else name
+        suffix = "[]" if name.endswith("[]") else ""
+        if base in self.classes:
+            return f"[{base}]({base}.html){suffix}"
+        head = base.split(".")[0]
+        if head in self.classes:
+            return f"[{base}]({head}.html){suffix}"
+        if base in self.godot_classes:
+            return f"[{base}]({GODOT_CLASS_URL.format(base.lower())}){suffix}"
+        return f"{base}{suffix}"
+
+    def member_link(self, reference: str, kind: str, current: str, page: str) -> str:
+        owner, _, member = reference.rpartition(".")
+        owner = owner or current
+        anchor = f"{kind}-{member.lower().replace('_', '-')}"
+        if owner in self.classes:
+            target = "" if owner == page else f"{owner}.html"
+            return f"[`{reference}`]({target}#{anchor})"
+        return f"`{reference}`"
+
+    def bbcode(self, text: str, current: str, page: str = "") -> str:
+        """`current` is the class the text documents, `page` the page it is shown on."""
+        page = page or current
+        if not text:
+            return ""
+        text = "\n".join(line.strip() for line in text.splitlines())
+        text = re.sub(r"\[codeblocks?\]\s*(?:\[gdscript\])?(.*?)(?:\[/gdscript\])?\s*\[/codeblocks?\]",
+                      lambda m: "\n```gdscript\n" + m.group(1).strip() + "\n```\n", text, flags=re.S)
+        text = re.sub(r"\[code\](.*?)\[/code\]", lambda m: "`" + m.group(1) + "`", text, flags=re.S)
+        text = re.sub(r"\[b\](.*?)\[/b\]", r"**\1**", text, flags=re.S)
+        text = re.sub(r"\[i\](.*?)\[/i\]", r"*\1*", text, flags=re.S)
+        text = re.sub(r"\[url=([^\]]+)\](.*?)\[/url\]", r"[\2](\1)", text, flags=re.S)
+        text = text.replace("[br]", "  \n")
+        text = re.sub(r"\[param (\w+)\]", r"`\1`", text)
+        for kind in ("method", "member", "signal", "constant", "enum"):
+            text = re.sub(r"\[%s ([\w.]+)\]" % kind, lambda m, k=kind: self.member_link(m.group(1), k, current, page), text)
+        text = re.sub(r"\[([A-Z]\w*)\]", lambda m: self.type_link(m.group(1)), text)
+        return text
+
+    def signature(self, member: Member) -> str:
+        params = ", ".join(f"{n}: {t}" + (f" = {d}" if d else "") for n, t, d in member.params)
+        return f"{member.name}({params})"
+
+    def page(self, doc: ClassDoc) -> str:
+        out = ["---", "layout: api", f"title: {doc.name}", f'api_language: "{doc.language}"',
+               f"api_language_anchor: {self.language_anchor(doc.language)}",
+               f'api_namespace: "{doc.namespace}"',
+               f"api_namespace_anchor: {self.namespace_anchor(doc.language, doc.namespace)}", "---", ""]
+        chain = [doc.inherits]
+        while chain[-1] in self.classes and self.classes[chain[-1]].inherits:
+            chain.append(self.classes[chain[-1]].inherits)
+        if doc.inherits:
+            out.append("**Inherits:** " + " < ".join(self.type_link(c) for c in chain) + "  ")
+        children = sorted(c.name for c in self.classes.values() if c.inherits == doc.name)
+        if children:
+            out.append("**Inherited by:** " + ", ".join(self.type_link(c) for c in children) + "  ")
+        kind = (" engine singleton" if doc.language == "C++" else " autoload singleton") if doc.singleton else ""
+        out.append(f"**Namespace:** [{doc.namespace}](index.html#{self.namespace_anchor(doc.language, doc.namespace)})  ")
+        out.append(f"**Language:** {doc.language}{kind} - `{doc.source}`")
+        out.append("")
+        if doc.brief:
+            out += [self.bbcode(doc.brief, doc.name), ""]
+        if doc.description:
+            out += ["## Description", "", self.bbcode(doc.description, doc.name), ""]
+        if doc.properties:
+            out += ["## Properties", "", "| Type | Name | Default |", "|---|---|---|"]
+            for prop in doc.properties:
+                default = prop.default.replace("|", "\\|")
+                out.append(f"| {self.type_link(prop.type)} | [{prop.name}](#member-{prop.name.replace('_', '-')}) "
+                           f"| {'`' + default + '`' if default else ''} |")
+            out.append("")
+        if doc.methods:
+            out += ["## Methods", "", "| Returns | Method |", "|---|---|"]
+            for method in doc.methods:
+                params = ", ".join(n for n, _, _ in method.params)
+                out.append(f"| {self.type_link(method.type)} | [{method.name}](#method-{method.name.replace('_', '-')})"
+                           f"({params}) {method.qualifiers} |")
+            out.append("")
+        for title, kind, items in (("Signals", "signal", doc.signals),):
+            if items:
+                out += [f"## {title}", ""]
+                for item in items:
+                    out += [f"### {self.signature(item)}", "{: #" + f"{kind}-{item.name.replace('_', '-')}" + "}", "",
+                            self.bbcode(item.description, doc.name) or "*No description.*", ""]
+        enums = {}
+        for constant in doc.constants:
+            enums.setdefault(constant.enum, []).append(constant)
+        if enums:
+            out += ["## Constants and enumerations", ""]
+            for enum_name, items in enums.items():
+                if enum_name:
+                    out += [f"### enum {enum_name}", "{: #enum-" + enum_name.lower().replace("_", "-") + "}", ""]
+                for item in items:
+                    line = f"* `{item.name} = {item.value}`" + "{: #constant-" + item.name.lower().replace("_", "-") + "}"
+                    description = self.bbcode(item.description, doc.name)
+                    out.append(line + (f" - {description}" if description else ""))
+                out.append("")
+        if doc.properties:
+            out += ["## Property descriptions", ""]
+            for prop in doc.properties:
+                out += [f"### {prop.name}: {self.type_link(prop.type)}",
+                        "{: #member-" + prop.name.replace("_", "-") + "}", "",
+                        self.bbcode(prop.description, doc.name) or "*No description.*", ""]
+        if doc.methods:
+            out += ["## Method descriptions", ""]
+            for method in doc.methods:
+                out += [f"### {self.type_link(method.type)} {self.signature(method)} {method.qualifiers}".rstrip(),
+                        "{: #method-" + method.name.replace("_", "-") + "}", "",
+                        self.bbcode(method.description, doc.name) or "*No description.*", ""]
+        return "\n".join(out) + "\n"
+
+    @staticmethod
+    def language_anchor(language: str) -> str:
+        return language.replace("+", "p").lower()
+
+    @classmethod
+    def namespace_anchor(cls, language: str, namespace: str) -> str:
+        return cls.language_anchor(language) + "-" + re.sub(r"[^a-z0-9]+", "-", namespace.lower())
+
+    def index(self) -> str:
+        out = ["---", "layout: api", "title: API reference", "permalink: /api/", "---", "",
+               "Every class libmaszyna registers (C++) or declares with `class_name` (GDScript), generated from "
+               "`doc_classes/*.xml` and the scripts' `##` doc comments by `scripts/make-api-docs`. A namespace is "
+               "the directory of the class's source: `src/<namespace>` or `addons/libmaszyna/<namespace>`.", "",
+               " - ".join(f"[{language}](#{self.language_anchor(language)})" for language in LANGUAGES), ""]
+        for language in LANGUAGES:
+            namespaces = {}
+            for doc in sorted((d for d in self.classes.values() if d.language == language), key=lambda d: d.name):
+                namespaces.setdefault(doc.namespace, []).append(doc)
+            out += [f"## {language} ({sum(len(docs) for docs in namespaces.values())})",
+                    "{: #" + self.language_anchor(language) + "}", ""]
+            for namespace in sorted(namespaces):
+                out.append(f"* [{namespace}](#{self.namespace_anchor(language, namespace)}) "
+                           f"({len(namespaces[namespace])})")
+            out.append("")
+            for namespace in sorted(namespaces):
+                out += [f"### {namespace}", "{: #" + self.namespace_anchor(language, namespace) + "}", "",
+                        "| Class | Inherits | Summary |", "|---|---|---|"]
+                for doc in namespaces[namespace]:
+                    summary = self.bbcode(doc.brief, doc.name, "index").replace("\n", " ").replace("|", "\\|")
+                    singleton = " *(singleton)*" if doc.singleton else ""
+                    out.append(f"| [{doc.name}]({doc.name}.html){singleton} | {self.type_link(doc.inherits)} "
+                               f"| {summary} |")
+                out.append("")
+        return "\n".join(out) + "\n"
+
+
+def main() -> None:
+    output = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "docs" / "api"
+    classes: dict = {}
+    engine_singletons = set(re.findall(r'register_singleton\("(\w+)"', REGISTER_TYPES.read_text()))
+    namespaces = cpp_namespaces()
+    for path in sorted(XML_DIR.glob("*.xml")):
+        doc = read_xml(path, namespaces.get(path.stem, UNKNOWN_NAMESPACE))
+        doc.singleton = doc.name in engine_singletons
+        classes[doc.name] = doc
+    singletons = autoloads()
+    for path in sorted(GDSCRIPT_DIR.rglob("*.gd")):
+        doc = read_gdscript(path, singletons.get(str(path.relative_to(ROOT)), ""))
+        if doc is not None and doc.name not in classes:
+            classes[doc.name] = doc
+    output.mkdir(parents=True, exist_ok=True)
+    for stale in output.glob("*.md"):
+        stale.unlink()
+    godot_classes = set()
+    if GODOT_API.exists():
+        import json
+        api = json.loads(GODOT_API.read_text())
+        godot_classes = {c["name"] for c in api["classes"] + api["builtin_classes"]} - {"Nil", "bool", "int", "float"}
+    writer = Writer(classes, godot_classes)
+    for doc in classes.values():
+        (output / f"{doc.name}.md").write_text(writer.page(doc), encoding="utf-8")
+    (output / "index.md").write_text(writer.index(), encoding="utf-8")
+    counts = {lang: sum(1 for d in classes.values() if d.language == lang) for lang in LANGUAGES}
+    print(f"{len(classes)} classes ({counts['C++']} C++, {counts['GDScript']} GDScript) -> {output}")
+
+
+if __name__ == "__main__":
+    main()

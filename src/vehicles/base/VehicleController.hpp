@@ -12,10 +12,7 @@
 
 
 namespace godot {
-    class RailVehicleBrake;
     class VehicleComponent;
-    class RailVehicleEngine;
-    class RailVehicleSecuritySystem;
 
 
     /// The vehicle itself: its configuration, its components and the operations that change them,
@@ -28,12 +25,15 @@ namespace godot {
     /// built from a copy of it (VehiclePhysicsNode).
     class VehicleController : public Resource {
             GDCLASS(VehicleController, Resource)
-        public:
+
         private:
             StringName implementation;
             /// Bumped by every step (process_components()) and every command (command_executed());
             /// what tells a cached state dump that it is stale.
             uint64_t state_serial = 0;
+            /// Where the vehicle is in the world, handed down by the server that places it
+            /// (set_world_transform())
+            Transform3D world_transform;
             /// What this vehicle answers to, registered by itself and its components. A vehicle
             /// holds its own commands, so a scenery name shared by two vehicles, or none at all,
             /// leaves every one of them commandable.
@@ -45,9 +45,6 @@ namespace godot {
              * own typed lookup through them (RailVehicleController::get_rail_component()) */
             Ref<VehicleComponent> _get_component_of_type(int p_type) const;
             TypedArray<VehicleComponent> _find_components_of_type(int p_type) const;
-            /// Writes the wrapper's configuration - the vehicle's and every component's - to the
-            /// backend, then announces that the backend carries it.
-            void apply_configuration();
             /* Creates the simulation behind the vehicle and writes its configuration there. */
             virtual void _initialize_simulation() = 0;
             /* The simulation behind the vehicle exists (p_implementation, the
@@ -104,11 +101,9 @@ namespace godot {
             uint64_t get_state_serial() const;
             void register_command(const StringName &p_command, const Callable &p_callable);
             void unregister_command(const StringName &p_command);
-            /* One tick of everything the vehicle is made of, after its physics has moved. The
-             * components have no _process of their own to be driven by a scene tree. */
-            /* Brings the vehicle up: its simulation, its state and the signals whose initial
-             * value listeners expect. Called by whatever owns the vehicle, once it is built -
-             * it used to wait for NOTIFICATION_READY, which a vehicle outside a tree never gets. */
+            /// Writes the wrapper's configuration - the vehicle's and every component's - to the
+            /// backend, then announces that the backend carries it.
+            void apply_configuration();
             /// Whether this vehicle's simulation exists yet. A vehicle is a vehicle from the
             /// moment it is built, but nothing can be coupled to it or read off it until the
             /// backend behind it is there.
@@ -118,9 +113,14 @@ namespace godot {
             /// its simulation - without destroying the vehicle, so every reference to it stays
             /// valid across a rebuild.
             virtual void release();
+            /* Brings the vehicle up: its simulation, its state and the signals whose initial
+             * value listeners expect. Called by whatever owns the vehicle, once it is built -
+             * it used to wait for NOTIFICATION_READY, which a vehicle outside a tree never gets. */
             virtual void initialize();
             /* The reverse: the vehicle gives its commands back and lets go of its handle. */
             void shutdown();
+            /* One tick of everything the vehicle is made of, after its physics has moved. The
+             * components have no _process of their own to be driven by a scene tree. */
             void process_components(double p_delta);
             virtual void update_state();
             /// Straight from the backend, for the per-frame readers that only want this one number
@@ -137,6 +137,9 @@ namespace godot {
             virtual double get_total_distance() const = 0;
             virtual Direction get_direction() const = 0;
             virtual void apply_config() = 0;
+            /// The second pass of apply_configuration(): what depends on the whole vehicle, written
+            /// once every component has applied its own configuration
+            virtual void apply_vehicle_config() {}
             virtual bool is_physics_active() const = 0;
             static void _bind_methods();
             /* This vehicle's handle in VehicleServer, set when the server attaches it - what
@@ -146,20 +149,25 @@ namespace godot {
             void emit_position_changed_if_needed();
             Vector3 get_world_position() const;
             Transform3D get_world_transform() const;
+            /* The vehicle's place in the world - state its owner hands down: only the server
+             * that places the vehicle sets it, where the placement changes */
+            void set_world_transform(const Transform3D &p_transform);
             /* The name of what simulates this vehicle, as registered with VehicleServer
              * (VehicleServer::implementation_register()) - the server hands that one the step */
             void set_implementation(const StringName &p_implementation);
             StringName get_implementation() const;
-            MAKE_MEMBER_GS(String, vehicle_id, "");
-            MAKE_MEMBER_GS(double, mass, 0.0);
-            MAKE_MEMBER_GS(double, power, 0.0);
-            MAKE_MEMBER_GS(double, max_velocity, 0.0);
-            MAKE_MEMBER_GS_NR(Category, category, CATEGORY_TRAIN);
-            MAKE_MEMBER_GS(double, dimensions_length, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_height, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_width, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_drag_coefficient, 0.0);
-            MAKE_MEMBER_GS(double, dimensions_floor_height, 0.96);
+
+        private:
+            String vehicle_id = "";
+            double mass = 0.0;
+            double power = 0.0;
+            double max_velocity = 0.0;
+            Category category = CATEGORY_TRAIN;
+            double dimensions_length = 0.0;
+            double dimensions_height = 0.0;
+            double dimensions_width = 0.0;
+            double dimensions_drag_coefficient = 0.0;
+            double dimensions_floor_height = 0.96;
 
             // Mirrors the original engine's scenery-line velocity token (TDynamicObject::Init's
             // `driveractive = (fVel != 0.0)`): a vehicle with initial_velocity == 0.0 is "not
@@ -167,15 +175,26 @@ namespace godot {
             // any non-zero value (scenario authors commonly use 0.1 for a stationary-but-ready
             // vehicle) marks it ready, so CheckLocomotiveParameters() turns the battery on per
             // cntrl_battery_start_mode.
-            MAKE_MEMBER_GS(double, initial_velocity, 0.0);
+            double initial_velocity = 0.0;
 
-            /* The whole state of this vehicle, by name. Answered by the server that owns the
-             * handle, from its per-vehicle cache, so a reader may call this per frame without
-             * paying for a rebuild each time. */
-            virtual Dictionary get_state() = 0;
-            /* Builds the state dictionary from this vehicle and every enabled component. The one
-             * place that composes it, called by the owner of the cache on a miss. */
-            Dictionary compose_state();
+        public:
+            MAKE_GS(String, vehicle_id);
+            MAKE_GS(double, mass);
+            MAKE_GS(double, power);
+            MAKE_GS(double, max_velocity);
+            MAKE_GS_NR(Category, category);
+            MAKE_GS(double, dimensions_length);
+            MAKE_GS(double, dimensions_height);
+            MAKE_GS(double, dimensions_width);
+            MAKE_GS(double, dimensions_drag_coefficient);
+            MAKE_GS(double, dimensions_floor_height);
+
+            MAKE_GS(double, initial_velocity);
+
+            /* The whole state of this vehicle, by name: this vehicle and every enabled component,
+             * composed on each call. A reader asking per frame takes the cached dump instead
+             * (VehicleServer::vehicle_dump_state()). */
+            Dictionary get_state() const;
 
             /* This vehicle's components, in the order they joined - which is the order of the
              * FIZ sections that built them. They announce themselves rather than being searched
@@ -192,6 +211,8 @@ namespace godot {
              * the vehicle and freed with it. The shape Node::add_child() has, for the same
              * reason: the thing being handed over has no life of its own outside its owner. */
             void add_component(const Ref<VehicleComponent> &p_component);
+            /* Lets a component go: it leaves the vehicle and is no longer ticked nor read with it */
+            void remove_component(const Ref<VehicleComponent> &p_component);
             /* The components as stored configuration: setting them lets go of the ones the vehicle
              * had and takes these in, in their order (add_component()) */
             void set_components(const TypedArray<VehicleComponent> &p_components);
@@ -209,7 +230,11 @@ namespace godot {
             RID rid;
             /* What runs the simulation while it exists (_attach_implementation()) */
             ObjectID implementation_server;
-            Vector3 last_emitted_position = Vector3(1e10, 1e10, 1e10);
+            /* position_changed is emitted once the vehicle has moved this far (m) */
+            static constexpr double POSITION_CHANGED_MIN_DISTANCE = 1.0;
+            /* Far from anywhere, so the first position is always announced */
+            static constexpr real_t UNSET_POSITION = 1e10;
+            Vector3 last_emitted_position = Vector3(UNSET_POSITION, UNSET_POSITION, UNSET_POSITION);
     };
 } // namespace godot
 

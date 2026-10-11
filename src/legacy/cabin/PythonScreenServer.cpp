@@ -1,180 +1,173 @@
 #include "PythonScreenServer.hpp"
 #include "game_data/GameDataServer.hpp"
+#include "legacy/cabin/python_host/PythonHostProtocol.hpp"
 #include "utils/UserSettings.hpp"
 #include <cstdint>
+#include <cstring>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/godot.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
 namespace godot {
     const char *PythonScreenServer::screen_rendered_signal = "screen_rendered";
+    const char *PythonScreenServer::python_runtime_failed_signal = "python_runtime_failed";
     namespace {
-        /// The part of the CPython 2.7 C API the screens need, resolved from the library at run
-        /// time. PyObject stays opaque: references are counted through Py_IncRef/Py_DecRef, which
-        /// 2.7 exports as functions, so no Python header is needed to build the extension.
-        struct PyObject;
-        // names mirror the Python C API symbols resolved below
-        // NOLINTBEGIN(readability-identifier-naming)
-        using Py_ssize_t = intptr_t;
+        using python_host::Reply;
+        using python_host::Value;
 
-        struct PythonApi {
-                int *Py_IgnoreEnvironmentFlag = nullptr;
-                int *Py_DontWriteBytecodeFlag = nullptr;
-                int *Py_NoUserSiteDirectory = nullptr;
-                void (*Py_SetPythonHome)(char *) = nullptr;
-                void (*Py_InitializeEx)(int) = nullptr;
-                void (*Py_Finalize)() = nullptr;
-                int (*PyRun_SimpleStringFlags)(const char *, void *) = nullptr;
-                PyObject *(*PyImport_AddModule)(const char *) = nullptr;
-                PyObject *(*PyObject_GetAttrString)(PyObject *, const char *) = nullptr;
-                int (*PyObject_SetAttrString)(PyObject *, const char *, PyObject *) = nullptr;
-                PyObject *(*PyObject_CallFunction)(PyObject *, char *, ...) = nullptr;
-                PyObject *(*PyObject_CallMethod)(PyObject *, char *, char *, ...) = nullptr;
-                PyObject *(*PyDict_New)() = nullptr;
-                PyObject *(*PyList_New)(Py_ssize_t) = nullptr;
-                int (*PyList_Append)(PyObject *, PyObject *) = nullptr;
-                PyObject *(*Py_BuildValue)(const char *, ...) = nullptr;
-                int (*PyDict_SetItemString)(PyObject *, const char *, PyObject *) = nullptr;
-                PyObject *(*PyBool_FromLong)(long) = nullptr;
-                PyObject *(*PyInt_FromLong)(long) = nullptr;
-                long (*PyInt_AsLong)(PyObject *) = nullptr;
-                PyObject *(*PyFloat_FromDouble)(double) = nullptr;
-                PyObject *(*PyString_FromString)(const char *) = nullptr;
-                char *(*PyString_AsString)(PyObject *) = nullptr;
-                int (*PyString_AsStringAndSize)(PyObject *, char **, Py_ssize_t *) = nullptr;
-                Py_ssize_t (*PySequence_Size)(PyObject *) = nullptr;
-                PyObject *(*PySequence_GetItem)(PyObject *, Py_ssize_t) = nullptr;
-                PyObject *(*PyErr_Occurred)() = nullptr;
-                void (*PyErr_Print)() = nullptr;
-                void (*Py_IncRef)(PyObject *) = nullptr;
-                void (*Py_DecRef)(PyObject *) = nullptr;
-                // NOLINTEND(readability-identifier-naming)
+        /// Bytes of the host's stderr read at a time, once it has ended
+        constexpr int64_t ERRORS_CHUNK_SIZE = 4096;
 
-                /// Loads the library and resolves every symbol; false with an error printed when
-                /// either fails. The library stays loaded for the life of the process - the
-                /// extension modules the scripts import (PIL) keep pointers into it.
-                bool load(const String &p_library_path) {
-#ifdef _WIN32
-                    HMODULE library = LoadLibraryW(reinterpret_cast<LPCWSTR>(p_library_path.utf16().get_data()));
-                    auto resolve = [library](const char *p_name) -> void * {
-                        return reinterpret_cast<void *>(GetProcAddress(library, p_name));
-                    };
-#else
-                    // RTLD_GLOBAL: the extension modules a script imports resolve the interpreter's
-                    // symbols from the global namespace
-                    void *library = dlopen(p_library_path.utf8().get_data(), RTLD_NOW | RTLD_GLOBAL);
-                    auto resolve = [library](const char *p_name) -> void * { return dlsym(library, p_name); };
-#endif
-                    if (library == nullptr) {
-                        UtilityFunctions::push_error(
-                                "PythonScreenServer: cannot load ", p_library_path, " - Python screens stay blank");
-                        return false;
+        /// One request, its fields written in order after the room left for its size and type
+        /// (PythonHostProtocol.hpp)
+        struct RequestWriter {
+                PackedByteArray data;
+
+                explicit RequestWriter(const python_host::Request p_type) {
+                    data.resize(sizeof(uint32_t));
+                    data.push_back(static_cast<uint8_t>(p_type));
+                }
+
+                template<typename T>
+                void put(const T p_value) {
+                    const int64_t offset = data.size();
+                    data.resize(offset + static_cast<int64_t>(sizeof(T)));
+                    memcpy(&data[offset], &p_value, sizeof(T));
+                }
+
+                void put_string(const String &p_text) {
+                    const CharString utf8 = p_text.utf8();
+                    put(static_cast<uint32_t>(utf8.length()));
+                    const int64_t offset = data.size();
+                    data.resize(offset + utf8.length());
+                    if (utf8.length() > 0) {
+                        memcpy(&data[offset], utf8.get_data(), utf8.length());
                     }
-                    bool resolved = true;
-                    auto bind = [&resolve, &resolved](auto &p_function, const char *p_name) {
-                        p_function = reinterpret_cast<std::remove_reference_t<decltype(p_function)>>(resolve(p_name));
-                        if (p_function == nullptr) {
-                            UtilityFunctions::push_error("PythonScreenServer: ", p_name, " missing from the library");
-                            resolved = false;
-                        }
-                    };
-                    bind(Py_IgnoreEnvironmentFlag, "Py_IgnoreEnvironmentFlag");
-                    bind(Py_DontWriteBytecodeFlag, "Py_DontWriteBytecodeFlag");
-                    bind(Py_NoUserSiteDirectory, "Py_NoUserSiteDirectory");
-                    bind(Py_SetPythonHome, "Py_SetPythonHome");
-                    bind(Py_InitializeEx, "Py_InitializeEx");
-                    bind(Py_Finalize, "Py_Finalize");
-                    bind(PyRun_SimpleStringFlags, "PyRun_SimpleStringFlags");
-                    bind(PyImport_AddModule, "PyImport_AddModule");
-                    bind(PyObject_GetAttrString, "PyObject_GetAttrString");
-                    bind(PyObject_SetAttrString, "PyObject_SetAttrString");
-                    bind(PyObject_CallFunction, "PyObject_CallFunction");
-                    bind(PyObject_CallMethod, "PyObject_CallMethod");
-                    bind(PyDict_New, "PyDict_New");
-                    bind(PyList_New, "PyList_New");
-                    bind(PyList_Append, "PyList_Append");
-                    bind(Py_BuildValue, "Py_BuildValue");
-                    bind(PyDict_SetItemString, "PyDict_SetItemString");
-                    bind(PyBool_FromLong, "PyBool_FromLong");
-                    bind(PyInt_FromLong, "PyInt_FromLong");
-                    bind(PyInt_AsLong, "PyInt_AsLong");
-                    bind(PyFloat_FromDouble, "PyFloat_FromDouble");
-                    bind(PyString_FromString, "PyString_FromString");
-                    bind(PyString_AsString, "PyString_AsString");
-                    bind(PyString_AsStringAndSize, "PyString_AsStringAndSize");
-                    bind(PySequence_Size, "PySequence_Size");
-                    bind(PySequence_GetItem, "PySequence_GetItem");
-                    bind(PyErr_Occurred, "PyErr_Occurred");
-                    bind(PyErr_Print, "PyErr_Print");
-                    bind(Py_IncRef, "Py_IncRef");
-                    bind(Py_DecRef, "Py_DecRef");
-                    return resolved;
                 }
 
-                /// Prints the pending exception, if there is one; true when there was
-                bool print_error() const {
-                    if (PyErr_Occurred() == nullptr) {
-                        return false;
-                    }
-                    PyErr_Print();
-                    return true;
-                }
-
-                /// Runs a script file in __main__, the way the original runs every script
-                /// (python_taskqueue::run_file()) - the class it defines lands there
-                bool run_file(PyObject *p_main, const String &p_path) const {
-                    PyObject *path = PyString_FromString(p_path.utf8().get_data());
-                    PyObject_SetAttrString(p_main, "_maszyna_script_path", path);
-                    Py_DecRef(path);
-                    return PyRun_SimpleStringFlags("execfile(_maszyna_script_path)", nullptr) == 0;
-                }
-
-                /// A value of the state as a Python object, with the types the original passes
-                /// (dictionary_source: floats, integers, bools, strings and lists of 2D points);
-                /// nullptr for any other type
-                PyObject *to_object(const Variant &p_value) const {
+                /// A value of the state with the types the original passes (dictionary_source:
+                /// floats, integers, bools, strings and lists of 2D points); false, and nothing
+                /// written, for any other type
+                bool put_value(const Variant &p_value) {
                     switch (p_value.get_type()) {
                         case Variant::BOOL:
-                            return PyBool_FromLong(static_cast<bool>(p_value) ? 1 : 0);
+                            put(static_cast<uint8_t>(Value::BOOL));
+                            put(static_cast<uint8_t>(static_cast<bool>(p_value) ? 1 : 0));
+                            return true;
                         case Variant::INT:
-                            return PyInt_FromLong(static_cast<long>(static_cast<int64_t>(p_value)));
+                            put(static_cast<uint8_t>(Value::INT));
+                            put(static_cast<int64_t>(p_value));
+                            return true;
                         case Variant::FLOAT:
-                            return PyFloat_FromDouble(p_value);
+                            put(static_cast<uint8_t>(Value::FLOAT));
+                            put(static_cast<double>(p_value));
+                            return true;
                         case Variant::STRING:
                         case Variant::STRING_NAME:
-                            return PyString_FromString(String(p_value).utf8().get_data());
+                            put(static_cast<uint8_t>(Value::STRING));
+                            put_string(p_value);
+                            return true;
                         case Variant::VECTOR2: {
                             const Vector2 point = p_value;
-                            return Py_BuildValue("(dd)", static_cast<double>(point.x), static_cast<double>(point.y));
+                            put(static_cast<uint8_t>(Value::POINT));
+                            put(static_cast<double>(point.x));
+                            put(static_cast<double>(point.y));
+                            return true;
                         }
                         case Variant::ARRAY: {
                             const Array values = p_value;
-                            PyObject *list = PyList_New(0);
+                            put(static_cast<uint8_t>(Value::ARRAY));
+                            const int64_t count_offset = data.size();
+                            uint32_t count = 0;
+                            put(count);
                             for (int64_t i = 0; i < values.size(); i++) {
-                                PyObject *item = to_object(values[i]);
-                                if (item != nullptr) {
-                                    PyList_Append(list, item);
-                                    Py_DecRef(item);
-                                }
+                                count += put_value(values[i]) ? 1 : 0;
                             }
-                            return list;
+                            memcpy(&data[count_offset], &count, sizeof(count));
+                            return true;
                         }
                         default:
-                            return nullptr;
+                            return false;
                     }
+                }
+
+                /// The state's keys with a value of a type put_value() takes; the rest is left out
+                void put_state(const Dictionary &p_state) {
+                    const int64_t count_offset = data.size();
+                    uint32_t count = 0;
+                    put(count);
+                    const Array keys = p_state.keys();
+                    for (int64_t i = 0; i < keys.size(); i++) {
+                        const int64_t key_offset = data.size();
+                        put_string(keys[i]);
+                        if (put_value(p_state[keys[i]])) {
+                            count++;
+                        } else {
+                            data.resize(key_offset);
+                        }
+                    }
+                    memcpy(&data[count_offset], &count, sizeof(count));
+                }
+
+                bool send(const Ref<FileAccess> &p_pipe) {
+                    const auto size = static_cast<uint32_t>(data.size() - static_cast<int64_t>(sizeof(uint32_t)));
+                    memcpy(&data[0], &size, sizeof(size));
+                    return p_pipe->store_buffer(data);
                 }
         };
 
-        PythonApi python;
+        /// The fields of one reply, read in order after its type; `valid` turns false on the
+        /// first read past its end
+        struct ReplyReader {
+                const PackedByteArray &data;
+                int64_t offset = 0;
+                bool valid = true;
+
+                template<typename T>
+                T get() {
+                    T value{};
+                    if (offset + static_cast<int64_t>(sizeof(T)) > data.size()) {
+                        valid = false;
+                        return value;
+                    }
+                    memcpy(&value, &data[offset], sizeof(T));
+                    offset += sizeof(T);
+                    return value;
+                }
+
+                PackedByteArray get_bytes() {
+                    const auto size = static_cast<int64_t>(get<uint32_t>());
+                    if (!valid || offset + size > data.size()) {
+                        valid = false;
+                        return {};
+                    }
+                    const PackedByteArray bytes = data.slice(offset, offset + size);
+                    offset += size;
+                    return bytes;
+                }
+
+                String get_string() {
+                    return get_bytes().get_string_from_utf8();
+                }
+        };
+
     } // namespace
+
+    /// Exactly `p_size` bytes of a pipe, fewer when it closes first
+    static PackedByteArray read_exact(const Ref<FileAccess> &p_pipe, const int64_t p_size) {
+        PackedByteArray bytes;
+        while (bytes.size() < p_size) {
+            const PackedByteArray part = p_pipe->get_buffer(p_size - bytes.size());
+            if (part.is_empty()) {
+                break;
+            }
+            bytes.append_array(part);
+        }
+        return bytes;
+    }
 
     void PythonScreenServer::_bind_methods() {
         ClassDB::bind_method(
@@ -183,6 +176,7 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("screen_get_average_color", "screen"), &PythonScreenServer::screen_get_average_color);
         ADD_SIGNAL(MethodInfo(screen_rendered_signal, PropertyInfo(Variant::RID, "screen")));
+        ADD_SIGNAL(MethodInfo(python_runtime_failed_signal, PropertyInfo(Variant::STRING, "message")));
         ClassDB::bind_method(
                 D_METHOD("screen_request_render", "screen", "state"), &PythonScreenServer::screen_request_render);
         ClassDB::bind_method(D_METHOD("screen_free", "screen"), &PythonScreenServer::screen_free);
@@ -200,14 +194,14 @@ namespace godot {
         }
     }
 
-    /// The scripts are the game directory's: the worker moves the interpreter into the new one.
+    /// The scripts are the game directory's: the host moves the interpreter into the new one.
     /// The interpreter itself stays - CPython 2.7 with its extension modules (PIL) is not started
     /// twice in one process - and so does the runtime it was loaded from.
     void PythonScreenServer::_on_data_reload_requested() {
         const UserSettings *user_settings = UserSettings::get_instance();
         ERR_FAIL_NULL(user_settings);
         if (worker.is_null()) {
-            return; // the worker starts in whatever game directory is set when a screen needs it
+            return; // the host starts in whatever game directory is set when a screen needs it
         }
         {
             MutexLock lock(mutex);
@@ -228,26 +222,44 @@ namespace godot {
         worker->wait_to_finish();
     }
 
+    /* The host is started by the first screen, not with the server: it is a process of its own with
+     * a CPython in it, which most sessions - no cab with a Python screen - never need; it starts
+     * in the game directory set by then, not the one at the engine's start. Started once: its
+     * worker stays for the session, a host that failed included, so no call starts it again */
     RID PythonScreenServer::screen_create(const String &p_script_path, const Callable &p_commands_received) {
         if (worker.is_null() && !disabled) {
             const UserSettings *user_settings = UserSettings::get_instance();
             ERR_FAIL_NULL_V(user_settings, RID());
+            OS *os = OS::get_singleton();
             const String game_dir = user_settings->get_maszyna_game_dir();
             String home = ProjectSettings::get_singleton()->get_setting("maszyna/python/home", "");
+            // the home is relative to the game directory, which the host starts in, as the original
+            // gives it (PyInt.cpp:233); the library is a path, which Windows does not search for
 #ifdef _WIN32
-            // PyInt.cpp:233 - the 64-bit Windows runtime ships in the game directory
-            home = home.is_empty() ? game_dir.path_join("python64") : home;
+            // the 64-bit Windows runtime ships in the game directory
+            home = home.is_empty() ? String("python64") : home;
             const String library = game_dir.path_join("python27.dll");
 #else
             // the original's linuxpython64 (PyInt.cpp:238) is only a virtualenv over the system's
             // libpython, without PIL - the wrapper's own runtime has a directory of its own
-            home = home.is_empty() ? game_dir.path_join("python2.7") : home;
+            home = home.is_empty() ? String("python2.7") : home;
             const String library = home.path_join("lib/libpython2.7.so.1.0");
 #endif
-            // in the game's log: a runtime that fails to start ends the process without a message
-            UtilityFunctions::print("[PythonScreen] starting the interpreter: ", library, ", home ", home);
+            // an exported game has the host next to its executable (the [dependencies] of
+            // libmaszyna.gdextension), the project next to this library
+            String library_path;
+            gdextension_interface::get_library_path(gdextension_interface::library, library_path._native_ptr());
+            const String host_dir =
+                    os->has_feature("template")
+                            ? os->get_executable_path().get_base_dir()
+                            : ProjectSettings::get_singleton()->globalize_path(library_path.get_base_dir());
+            const String host = host_dir.path_join(MASZYNA_PYTHON_HOST_FILE);
+            UtilityFunctions::print(
+                    "[PythonScreen] starting the host: ", host, ", game directory ", game_dir, ", home ", home,
+                    ", library ", library);
             worker.instantiate();
-            worker->start(callable_mp(this, &PythonScreenServer::_worker_loop).bind(library, home, game_dir));
+            worker->start(callable_mp(this, &PythonScreenServer::_worker_loop)
+                                  .bind(host, PackedStringArray({game_dir, home, library})));
         }
         Ref<Image> blank = Image::create_empty(1, 1, false, Image::FORMAT_RGBA8);
         const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
@@ -275,6 +287,9 @@ namespace godot {
         }
         {
             MutexLock lock(mutex);
+            if (host_failed) {
+                return; // reported once, when the host ended
+            }
             bool replaced = false;
             for (Request &request: requests) {
                 if (request.screen == p_screen) {
@@ -334,91 +349,100 @@ namespace godot {
         }
     }
 
-    void PythonScreenServer::_worker_loop(const String &p_library, const String &p_home, const String &p_game_dir) {
-        const bool loaded = python.load(p_library);
-        // Py_SetPythonHome keeps the pointer, so the buffer lives as long as the interpreter
-        CharString home = p_home.utf8();
-        PyObject *main = nullptr;
-        HashMap<String, PyObject *> renderers;
-        if (loaded) {
-            // the player's own Python installation must not leak in, and nothing is written
-            // into the game directory (the scripts' .pyc would land next to them)
-            *python.Py_IgnoreEnvironmentFlag = 1;
-            *python.Py_DontWriteBytecodeFlag = 1;
-            *python.Py_NoUserSiteDirectory = 1;
-            python.Py_SetPythonHome(home.ptrw());
-            python.Py_InitializeEx(0);
-            UtilityFunctions::print("[PythonScreen] interpreter started");
-            main = python.PyImport_AddModule("__main__");
-            // the data is made on Windows, whose file names ignore letter case, and the scripts
-            // name files as they please ("WS_gotowosc.png" for ws_gotowosc.png): a path that is
-            // not there as written is looked for letter case aside, one directory at a time -
-            // for open(), which PIL opens images with, and os.path.isfile(), which the scripts
-            // look for them with
-            python.PyRun_SimpleStringFlags(
-                    "import os, __builtin__\n"
-                    "_maszyna_exists = os.path.exists\n"
-                    "def _maszyna_find_path(path):\n"
-                    "    if not isinstance(path, basestring) or _maszyna_exists(path):\n"
-                    "        return path\n"
-                    "    parts = os.path.normpath(path).split(os.sep)\n"
-                    "    current = '.' if parts[0] else os.sep\n"
-                    "    for part in parts:\n"
-                    "        if not part:\n"
-                    "            continue\n"
-                    "        candidate = os.path.join(current, part)\n"
-                    "        if not _maszyna_exists(candidate):\n"
-                    "            try:\n"
-                    "                names = [name for name in os.listdir(current) if name.lower() == part.lower()]\n"
-                    "            except OSError:\n"
-                    "                return path\n"
-                    "            if not names:\n"
-                    "                return path\n"
-                    "            candidate = os.path.join(current, names[0])\n"
-                    "        current = candidate\n"
-                    "    return current\n"
-                    "_maszyna_open = __builtin__.open\n"
-                    "__builtin__.open = lambda name, *args, **kwargs: _maszyna_open(_maszyna_find_path(name), *args, "
-                    "**kwargs)\n"
-                    "_maszyna_isfile = os.path.isfile\n"
-                    "os.path.isfile = lambda path: _maszyna_isfile(_maszyna_find_path(path))\n",
-                    nullptr);
-        }
-        // The scripts open "./fonts/..." and "./textures/..." and import "from scripts", all
-        // relative to the game directory, which the original is always started in. Entering
-        // another one forgets the scripts' instances and the modules imported from the last one.
-        const auto enter_game_dir = [&](const String &p_entered) {
-            for (const KeyValue<String, PyObject *> &renderer: renderers) {
-                if (renderer.value != nullptr) {
-                    python.Py_DecRef(renderer.value);
+    void PythonScreenServer::_announce_failure(const String &p_message) {
+        emit_signal(python_runtime_failed_signal, p_message);
+    }
+
+    void PythonScreenServer::_worker_loop(const String &p_host, const PackedStringArray &p_arguments) {
+        OS *os = OS::get_singleton();
+        const Dictionary process = os->execute_with_pipe(p_host, p_arguments);
+        const Ref<FileAccess> pipe = process.get("stdio", Variant());
+        const Ref<FileAccess> errors = process.get("stderr", Variant());
+        const int64_t pid = process.get("pid", -1);
+
+        // Reads the host's replies to one request up to its last: the lines it logs on the way,
+        // then DONE or the FRAME of a render, which is published. False when the host has ended -
+        // or speaks out of turn, and is ended so that its stderr can be read to the end
+        const auto receive = [&]() -> bool {
+            while (true) {
+                const PackedByteArray size_field = read_exact(pipe, sizeof(uint32_t));
+                if (size_field.size() < static_cast<int64_t>(sizeof(uint32_t))) {
+                    return false;
+                }
+                uint32_t size = 0;
+                memcpy(&size, size_field.ptr(), sizeof(size));
+                const PackedByteArray message = read_exact(pipe, size);
+                if (size == 0 || message.size() < size) {
+                    return false;
+                }
+                ReplyReader reader{message};
+                switch (static_cast<Reply>(reader.get<uint8_t>())) {
+                    case Reply::LOG:
+                        UtilityFunctions::print("[PythonScreen] ", reader.get_string().strip_edges());
+                        break;
+                    case Reply::DONE:
+                        return true;
+                    case Reply::FRAME: {
+                        const RID screen =
+                                UtilityFunctions::rid_from_int64(static_cast<int64_t>(reader.get<uint64_t>()));
+                        const auto width = reader.get<int32_t>();
+                        const auto height = reader.get<int32_t>();
+                        const PackedByteArray pixels = reader.get_bytes();
+                        PackedStringArray commands;
+                        const auto count = reader.get<uint32_t>();
+                        for (uint32_t i = 0; i < count && reader.valid; i++) {
+                            commands.push_back(reader.get_string());
+                        }
+                        if (!reader.valid) {
+                            os->kill(static_cast<int32_t>(pid));
+                            return false;
+                        }
+                        if (!pixels.is_empty() || !commands.is_empty()) {
+                            callable_mp(this, &PythonScreenServer::_publish)
+                                    .call_deferred(screen, width, height, pixels, commands);
+                        }
+                        return true;
+                    }
+                    default:
+                        os->kill(static_cast<int32_t>(pid));
+                        return false;
                 }
             }
-            renderers.clear();
-            PyObject *game_dir = python.PyString_FromString(p_entered.utf8().get_data());
-            python.PyObject_SetAttrString(main, "_maszyna_game_dir", game_dir);
-            python.Py_DecRef(game_dir);
-            python.PyRun_SimpleStringFlags(
-                    "import os, sys\n"
-                    "_maszyna_left_dir = globals().get('_maszyna_entered_dir')\n"
-                    "if _maszyna_left_dir:\n"
-                    "    if _maszyna_left_dir in sys.path:\n"
-                    "        sys.path.remove(_maszyna_left_dir)\n"
-                    "    for _maszyna_name, _maszyna_module in list(sys.modules.items()):\n"
-                    "        _maszyna_file = getattr(_maszyna_module, '__file__', None)\n"
-                    "        if _maszyna_file and os.path.abspath(_maszyna_file).startswith(_maszyna_left_dir):\n"
-                    "            del sys.modules[_maszyna_name]\n"
-                    "_maszyna_entered_dir = _maszyna_game_dir\n"
-                    "os.chdir(_maszyna_game_dir)\n"
-                    "sys.path.insert(0, _maszyna_game_dir)\n",
-                    nullptr);
-            // the base class of nearly every screen; a script that does not derive from it
-            // still runs when it is missing
-            python.run_file(main, p_entered.path_join("python/local/abstractscreenrenderer.py"));
         };
-        if (main != nullptr) {
-            enter_game_dir(p_game_dir);
-        }
 
+        // The host has ended: what it printed on its way out (a Python fatal error, the runtime
+        // file it did not find) and its exit code go to the log, and the game hears of it once.
+        // The screens stay blank; the host is not restarted.
+        const auto fail = [&]() {
+            PackedByteArray output;
+            while (errors.is_valid()) {
+                const PackedByteArray part = errors->get_buffer(ERRORS_CHUNK_SIZE);
+                if (part.is_empty()) {
+                    break;
+                }
+                output.append_array(part);
+            }
+            // -1 while the process is still on its way out; on Windows a crash is an NTSTATUS
+            // (0xC0000005 an access violation) and abort() is 3
+            const int64_t exit_code = pid >= 0 ? os->get_process_exit_code(static_cast<int32_t>(pid)) : -1;
+            const String message = pipe.is_null() ? "cannot start " + p_host
+                                                  : vformat("the Python host ended with exit code %d (0x%x): %s",
+                                                            exit_code, static_cast<uint32_t>(exit_code),
+                                                            output.get_string_from_utf8().strip_edges());
+            UtilityFunctions::push_error("[PythonScreen] ", message, " - Python screens stay blank");
+            {
+                MutexLock lock(mutex);
+                host_failed = true;
+                requests.clear();
+            }
+            callable_mp(this, &PythonScreenServer::_announce_failure).call_deferred(message);
+        };
+
+        // the host's first reply says the interpreter has started in the game directory
+        bool running = pipe.is_valid() && receive();
+        if (!running) {
+            fail();
+        }
         while (true) {
             semaphore->wait();
             while (true) {
@@ -427,15 +451,7 @@ namespace godot {
                 {
                     MutexLock lock(mutex);
                     if (exiting) {
-                        if (loaded) {
-                            for (const KeyValue<String, PyObject *> &renderer: renderers) {
-                                if (renderer.value != nullptr) {
-                                    python.Py_DecRef(renderer.value);
-                                }
-                            }
-                            python.Py_Finalize();
-                        }
-                        return;
+                        return; // the pipe closes with it, and the host ends on its own
                     }
                     entering = entering_game_dir;
                     entering_game_dir = String();
@@ -447,113 +463,22 @@ namespace godot {
                         requests.pop_front();
                     }
                 }
-                if (main == nullptr) {
-                    continue; // no interpreter; the error has been printed once already
+                if (!running) {
+                    continue; // no host; the failure has been reported once already
                 }
                 if (!entering.is_empty()) {
-                    enter_game_dir(entering);
-                    continue;
+                    RequestWriter message(python_host::Request::ENTER_GAME_DIR);
+                    message.put_string(entering);
+                    running = message.send(pipe) && receive();
+                } else {
+                    RequestWriter message(python_host::Request::RENDER);
+                    message.put(static_cast<uint64_t>(request.screen.get_id()));
+                    message.put_string(request.script_path);
+                    message.put_state(request.state);
+                    running = message.send(pipe) && receive();
                 }
-
-                // python_taskqueue::fetch_renderer() - one instance per script, failures cached
-                // as well so a broken script is not re-run on every update
-                PyObject **cached = renderers.getptr(request.script_path);
-                if (cached == nullptr) {
-                    PyObject *renderer = nullptr;
-                    if (python.run_file(main, request.script_path + ".py")) {
-                        const String class_name = request.script_path.get_file();
-                        PyObject *renderer_class = python.PyObject_GetAttrString(main, class_name.utf8().get_data());
-                        if (renderer_class != nullptr) {
-                            renderer = python.PyObject_CallFunction(
-                                    renderer_class, const_cast<char *>("(s)"),
-                                    (request.script_path.get_base_dir() + "/").utf8().get_data());
-                            python.Py_DecRef(renderer_class);
-                        }
-                        if (renderer != nullptr) {
-                            PyObject *result = python.PyObject_CallMethod(
-                                    renderer, const_cast<char *>("manul_set_format"), const_cast<char *>("(s)"),
-                                    "RGBA");
-                            if (result != nullptr) {
-                                python.Py_DecRef(result);
-                            }
-                        }
-                        python.print_error();
-                    }
-                    cached = &renderers.insert(request.script_path, renderer)->value;
-                }
-                PyObject *renderer = *cached;
-                if (renderer == nullptr) {
-                    continue;
-                }
-
-                PyObject *state = python.PyDict_New();
-                const Array keys = request.state.keys();
-                for (int64_t i = 0; i < keys.size(); i++) {
-                    PyObject *item = python.to_object(request.state[keys[i]]);
-                    if (item != nullptr) {
-                        python.PyDict_SetItemString(state, String(keys[i]).utf8().get_data(), item);
-                        python.Py_DecRef(item);
-                    }
-                }
-                PyObject *output = python.PyObject_CallMethod(
-                        renderer, const_cast<char *>("render"), const_cast<char *>("(O)"), state);
-                python.Py_DecRef(state);
-                int width = 0;
-                int height = 0;
-                PackedByteArray pixels;
-                if (output != nullptr) {
-                    PyObject *width_object =
-                            python.PyObject_CallMethod(renderer, const_cast<char *>("get_width"), nullptr);
-                    PyObject *height_object =
-                            python.PyObject_CallMethod(renderer, const_cast<char *>("get_height"), nullptr);
-                    char *buffer = nullptr;
-                    Py_ssize_t size = 0;
-                    if (width_object != nullptr && height_object != nullptr &&
-                        python.PyString_AsStringAndSize(output, &buffer, &size) == 0) {
-                        width = static_cast<int>(python.PyInt_AsLong(width_object));
-                        height = static_cast<int>(python.PyInt_AsLong(height_object));
-                        const int64_t expected = static_cast<int64_t>(width) * height * BYTES_PER_PIXEL;
-                        if (width > 0 && height > 0 && size >= expected) {
-                            pixels.resize(expected);
-                            memcpy(pixels.ptrw(), buffer, expected);
-                        } else {
-                            UtilityFunctions::push_error(
-                                    "PythonScreenServer: ", request.script_path, " returned ",
-                                    static_cast<int64_t>(size), " bytes for ", width, "x", height);
-                        }
-                    }
-                    if (width_object != nullptr) {
-                        python.Py_DecRef(width_object);
-                    }
-                    if (height_object != nullptr) {
-                        python.Py_DecRef(height_object);
-                    }
-                    python.Py_DecRef(output);
-                }
-                python.print_error();
-
-                PackedStringArray commands;
-                PyObject *command_list =
-                        python.PyObject_CallMethod(renderer, const_cast<char *>("getCommands"), nullptr);
-                if (command_list != nullptr) {
-                    const Py_ssize_t count = python.PySequence_Size(command_list);
-                    for (Py_ssize_t i = 0; i < count; i++) {
-                        PyObject *command = python.PySequence_GetItem(command_list, i);
-                        const char *text = command != nullptr ? python.PyString_AsString(command) : nullptr;
-                        if (text != nullptr) {
-                            commands.push_back(String::utf8(text));
-                        }
-                        if (command != nullptr) {
-                            python.Py_DecRef(command);
-                        }
-                    }
-                    python.Py_DecRef(command_list);
-                }
-                python.print_error();
-
-                if (!pixels.is_empty() || !commands.is_empty()) {
-                    callable_mp(this, &PythonScreenServer::_publish)
-                            .call_deferred(request.screen, width, height, pixels, commands);
+                if (!running) {
+                    fail();
                 }
             }
         }

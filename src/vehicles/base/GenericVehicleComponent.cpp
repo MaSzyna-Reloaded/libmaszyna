@@ -7,7 +7,8 @@ namespace godot {
     /* Where the modder's script actually lives: on the proxy node when one authored this
      * component, on the component itself when a script extends it directly. */
     Object *GenericVehicleComponent::script_target() {
-        return script_owner != nullptr ? static_cast<Object *>(script_owner) : static_cast<Object *>(this);
+        Object *owner = ObjectDB::get_instance(script_owner);
+        return owner != nullptr ? owner : static_cast<Object *>(this);
     }
 
     void GenericVehicleComponent::_bind_methods() {
@@ -17,7 +18,7 @@ namespace godot {
         BIND_VIRTUAL_METHOD(GenericVehicleComponent, _get_component_config, 1);
     }
 
-    void GenericVehicleComponent::set_script_owner(Node *p_owner) {
+    void GenericVehicleComponent::set_script_owner(const ObjectID &p_owner) {
         script_owner = p_owner;
     }
 

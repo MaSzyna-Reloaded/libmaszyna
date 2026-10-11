@@ -139,6 +139,7 @@ static func build(
 
     # the scenery's sounds, made audible only while the scenario runs (MaszynaLegacyScenario)
     root._scenery_sounds = MaszynaLegacyScenerySounds.new(sounds)
+    root._scenery_radio = SceneryVirtualRadio.new()
 
     # the isolated sections, named by a track's `isolated`, an `isolated` block or an `area`
     var sections:Dictionary[String, RID] = {}
@@ -282,6 +283,7 @@ static func build(
                 action.position = event.origin + Vector3(
                     float(event.parameters[0]), float(event.parameters[1]), float(event.parameters[2])
                 )
+                action.radio = root._scenery_radio
                 ScenarioEventServer.event_attach_action(rid, action)
                 ScenarioEventServer.event_set_passive(
                         rid, action.command in PASSIVE_PUT_COMMANDS or action.command.begins_with(PASSENGER_STOP_POINT))
@@ -295,6 +297,7 @@ static func build(
                     if memory_positions.has(target):
                         action.position = memory_positions[target]
                         break
+                action.radio = root._scenery_radio
                 ScenarioEventServer.event_attach_action(rid, action)
                 ScenarioEventServer.event_set_passive(
                         rid, ScenarioEventServer.memory_get_text(action.source) in PASSIVE_GET_COMMANDS)
@@ -310,6 +313,7 @@ static func build(
                         sound_names.append(target)
                 var action:MaszynaLegacySoundAction = MaszynaLegacySoundAction.new()
                 action.scenery_sounds = root._scenery_sounds
+                action.radio = root._scenery_radio
                 action.targets = sound_names
                 action.mode = SOUND_MODES[sound_mode]
                 # the optional radio channel it is a message on (Event.cpp:1382-1386)

@@ -29,6 +29,20 @@
 				Returns whether the current camera revision has been scanned and every wanted piece in the camera chunk plus [param chunk_radius] neighbouring chunks has been built. A radius of [code]1[/code] describes the 3×3 starting area used by the demo loading screen; work farther away may still be pending.
 			</description>
 		</method>
+		<method name="area_unwatch">
+			<return type="void" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				Stops one [method area_watch] of the area.
+			</description>
+		</method>
+		<method name="area_watch">
+			<return type="void" />
+			<param index="0" name="chunk_radius" type="int" default="1" />
+			<description>
+				Has [signal area_ready] emitted for the area of [param chunk_radius] chunks around the camera's, until [method area_unwatch] is called as many times. An area already built is announced too, once the frame's deferred calls run.
+			</description>
+		</method>
 		<method name="chunk_get_rids" qualifiers="const">
 			<return type="RID[]" />
 			<param index="0" name="chunk" type="Vector2i" />
@@ -77,6 +91,13 @@
 			<param index="1" name="scenario" type="RID" />
 			<description>
 				Registers [param provider], whose content goes into [param scenario], and returns its handle for [method provider_free]. Its cells ([method SceneryStreamingProvider.get_chunk_cells]), their overhang and its kinds are asked for once, here: a provider's map does not change. From then on a cell is asked for ([method SceneryStreamingProvider.chunk_load], on the worker threads) as the camera comes within the draw distance plus the cell's overhang of it - 500[code] [/code]m ahead with the low prefetch budget - and let go one chunk past that.
+			</description>
+		</method>
+		<method name="provider_set_scenario">
+			<return type="void" />
+			<param index="0" name="provider" type="RID" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
 			</description>
 		</method>
 		<method name="stream_free">
@@ -166,9 +187,9 @@
 		</method>
 		<method name="streaming_set_camera">
 			<return type="void" />
-			<param index="0" name="camera" type="Camera3D" />
+			<param index="0" name="camera_id" type="int" />
 			<description>
-				Camera the streaming follows; without one nothing is ever built. Passing [code]null[/code] stops the streaming, leaving whatever is built in place. In game this is the player's camera, in the editor the camera of the 3D view.
+				The [Camera3D], by instance id, the streaming follows; without one nothing is ever built. Passing [code]0[/code] stops the streaming, leaving whatever is built in place. In game this is the player's camera, in the editor the camera of the 3D view.
 			</description>
 		</method>
 		<method name="streaming_set_enabled">
@@ -180,6 +201,12 @@
 		</method>
 	</methods>
 	<signals>
+		<signal name="area_ready">
+			<param index="0" name="chunk_radius" type="int" />
+			<description>
+				A watched area ([method area_watch]) is built around the camera, as [method area_is_ready] would answer. Emitted once per plan of where the camera is: again only after the camera has moved or the content changed.
+			</description>
+		</signal>
 		<signal name="chunk_cleared">
 			<param index="0" name="chunk" type="Vector2i" />
 			<description>

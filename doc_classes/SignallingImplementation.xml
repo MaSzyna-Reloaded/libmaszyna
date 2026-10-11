@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignallingImplementation" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Interface of a signalling system's behaviour: its state machine, implemented in C++ or GDScript.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_handle_event" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="event" type="StringName" />
+			<param index="2" name="arguments" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="_handle_source_event" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<param index="2" name="event" type="StringName" />
+			<param index="3" name="arguments" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="_signal_head_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_signal_head_aspect_changed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<param index="2" name="aspect" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="_signal_head_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_source_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_source_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_system_attached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_system_detached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

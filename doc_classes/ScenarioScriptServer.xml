@@ -20,10 +20,10 @@
 				Frees what [param unit] made before, then runs [param source] as that unit. Returns [code]false[/code] when it failed; the error is logged and reported by [signal script_error].
 			</description>
 		</method>
-		<method name="context_attach_cabin_delegate">
+		<method name="context_attach_cabin_implementation">
 			<return type="void" />
 			<param index="0" name="context" type="RID" />
-			<param index="1" name="cabin" type="ScenarioScriptCabinDelegate" />
+			<param index="1" name="cabin" type="ScenarioScriptCabinImplementation" />
 			<description>
 				Gives the context's scripts their way to the cabs ([code]maszyna.cabin[/code]).
 			</description>
@@ -51,8 +51,8 @@
 				Frees the context with everything its scripts made.
 			</description>
 		</method>
-		<method name="context_get_cabin_delegate" qualifiers="const">
-			<return type="ScenarioScriptCabinDelegate" />
+		<method name="context_get_cabin_implementation" qualifiers="const">
+			<return type="ScenarioScriptCabinImplementation" />
 			<param index="0" name="context" type="RID" />
 			<description>
 			</description>

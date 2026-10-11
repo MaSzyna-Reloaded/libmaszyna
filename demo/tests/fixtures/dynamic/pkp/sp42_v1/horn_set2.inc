@@ -1,0 +1,3 @@
+horn1: { soundbegin: 20786_6da_2161_horn_1_1.wav soundmain: 20786_6da_2161_horn_1_2.wav soundend: 20786_6da_2161_horn_1_3.wav range: 1000 }
+horn2: { soundbegin: 20786_6da_2161_horn_2_1.wav soundmain: 20786_6da_2161_horn_2_2.wav soundend: 20786_6da_2161_horn_2_3.wav range: 1000 }
+horn3: { soundbegin: 14745_sm42_klakson_start.wav soundmain: 14745_sm42_klakson_trwa.wav soundend: 14745_sm42_klakson_stop.wav range: 100 }

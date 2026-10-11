@@ -9,6 +9,7 @@
 #include "vehicles/rail/RailVehicleWheels.hpp"
 
 #include "logging/GameLog.hpp"
+#include "radio/RadioServer.hpp"
 #include "traction/TractionServer.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -33,8 +34,8 @@ namespace godot {
     const char *RailVehicleServer::vehicle_heading_to_track_start_signal = "vehicle_heading_to_track_start";
     const char *RailVehicleServer::vehicle_heading_to_track_end_signal = "vehicle_heading_to_track_end";
     const char *RailVehicleServer::vehicle_stopped_on_track_signal = "vehicle_stopped_on_track";
-    const char *RailVehicleServer::vehicle_radio_called_signal = "vehicle_radio_called";
     const char *RailVehicleServer::vehicle_emergency_signal_received_signal = "vehicle_emergency_signal_received";
+    const char *RailVehicleServer::vehicle_pantograph_contact_lost_signal = "vehicle_pantograph_contact_lost";
 
     RailVehicleServer::RailVehicleServer() {
         ProjectSettings *settings = ProjectSettings::get_singleton();
@@ -52,6 +53,9 @@ namespace godot {
         vehicle_server->connect(
                 VehicleServer::vehicle_configured_signal,
                 callable_mp(this, &RailVehicleServer::_on_vehicle_configured));
+        vehicle_server->connect(
+                VehicleServer::vehicle_config_changed_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_config_changed));
         // who drives from which cabin is the controller's occupied cab
         vehicle_server->connect(
                 VehicleServer::cabin_person_entered_signal,
@@ -123,6 +127,9 @@ namespace godot {
                 D_METHOD("person_change_cabin", "person", "direction"), &RailVehicleServer::person_change_cabin);
         BIND_ENUM_CONSTANT(CABIN_CHANGE_FORWARD);
         BIND_ENUM_CONSTANT(CABIN_CHANGE_BACKWARD);
+        BIND_ENUM_CONSTANT(PANTOGRAPH_CONTACT_LOSS_NOT_REACHING);
+        BIND_ENUM_CONSTANT(PANTOGRAPH_CONTACT_LOSS_NO_WIRE);
+        BIND_ENUM_CONSTANT(PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE);
         ClassDB::bind_method(
                 D_METHOD("person_move_to_rear_cabin", "person"), &RailVehicleServer::person_move_to_rear_cabin);
         ClassDB::bind_method(
@@ -171,14 +178,6 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_find_pantograph_carrier", "vehicle"),
                 &RailVehicleServer::vehicle_find_pantograph_carrier);
-        ClassDB::bind_method(
-                D_METHOD("vehicle_emergency_signal_send", "vehicle"),
-                &RailVehicleServer::vehicle_emergency_signal_send);
-        ClassDB::bind_method(D_METHOD("emergency_signal_send", "position"), &RailVehicleServer::emergency_signal_send);
-        ClassDB::bind_method(D_METHOD("vehicle_radio_call", "vehicle", "call"), &RailVehicleServer::vehicle_radio_call);
-        ADD_SIGNAL(MethodInfo(
-                vehicle_radio_called_signal, PropertyInfo(Variant::RID, "vehicle"), PropertyInfo(Variant::INT, "call"),
-                PropertyInfo(Variant::VECTOR3, "position")));
 
         ClassDB::bind_method(
                 D_METHOD("vehicle_set_track", "vehicle", "track", "track_offset", "track_direction"),
@@ -232,6 +231,9 @@ namespace godot {
                 D_METHOD("vehicle_get_transform_at_distance", "vehicle", "distance"),
                 &RailVehicleServer::vehicle_get_transform_at_distance);
         ClassDB::bind_method(
+                D_METHOD("vehicle_get_bogie_transform", "vehicle", "bogie"),
+                &RailVehicleServer::vehicle_get_bogie_transform);
+        ClassDB::bind_method(
                 D_METHOD("vehicle_get_track_position", "vehicle"), &RailVehicleServer::vehicle_get_track_position);
         ClassDB::bind_method(
                 D_METHOD("vehicle_trace_route", "vehicle", "direction", "distance"),
@@ -243,6 +245,13 @@ namespace godot {
                 D_METHOD("vehicle_get_curve", "vehicle", "bogie_pivot_spacing"), &RailVehicleServer::vehicle_get_curve);
 
         ADD_SIGNAL(MethodInfo(vehicle_emergency_signal_received_signal, PropertyInfo(Variant::RID, "vehicle")));
+        ADD_SIGNAL(MethodInfo(
+                vehicle_pantograph_contact_lost_signal, PropertyInfo(Variant::RID, "vehicle"),
+                PropertyInfo(Variant::INT, "pantograph"),
+                PropertyInfo(
+                        Variant::INT, "cause", PROPERTY_HINT_NONE, "",
+                        PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM,
+                        "RailVehicleServer.PantographContactLoss")));
         ADD_SIGNAL(MethodInfo(vehicle_trainset_changed_signal, PropertyInfo(Variant::RID, "vehicle")));
         ADD_SIGNAL(MethodInfo(
                 vehicle_driver_cabin_changed_signal, PropertyInfo(Variant::RID, "vehicle"),
@@ -329,7 +338,8 @@ namespace godot {
         }
         const String name = tracks->track_get_name(track);
         return vformat(
-                "%s at %.2f m", name.is_empty() ? String("(unnamed track)") : name, double(position.get("along", 0.0)));
+                "%s at %.2f m", name.is_empty() ? String("(unnamed track)") : name,
+                static_cast<double>(position.get("along", 0.0)));
     }
 
     Dictionary RailVehicleServer::_find_pantograph_wire(
@@ -494,6 +504,10 @@ namespace godot {
             return;
         }
         _disconnect_relays(p_vehicle, *placement);
+        _disconnect_radio(p_vehicle, *placement);
+        if (Vector<RID> *listed = track_vehicles.getptr(placement->indexed_track); listed != nullptr) {
+            listed->erase(p_vehicle);
+        }
         const RID reported_track = placement->reported_track;
         _track_changed(placement->track);
         vehicles.erase(p_vehicle);
@@ -653,6 +667,9 @@ namespace godot {
     }
 
     void RailVehicleServer::_on_vehicle_configured(const RID &p_vehicle) {
+        if (VehiclePlacement *placement = vehicles.getptr(p_vehicle); placement != nullptr) {
+            _connect_radio(p_vehicle, *placement);
+        }
         Vector<RID> pending;
         for (const KeyValue<RID, Trainset> &trainset: trainsets) {
             if (!trainset.value.placement_pending) {
@@ -670,33 +687,100 @@ namespace godot {
         }
     }
 
-    void RailVehicleServer::vehicle_emergency_signal_send(const RID &p_vehicle) {
-        const VehiclePlacement *sender = vehicles.getptr(p_vehicle);
-        ERR_FAIL_NULL(sender);
-        emergency_signal_send(_placement_transform(*sender).origin);
+    Ref<RailVehicleRadio> RailVehicleServer::_get_radio(const VehiclePlacement &p_placement) const {
+        return Ref<RailVehicleRadio>(
+                Object::cast_to<RailVehicleRadio>(ObjectDB::get_instance(p_placement.radio_component_id)));
     }
 
-    void RailVehicleServer::emergency_signal_send(const Vector3 &p_position) {
-        const TrackServer *tracks = TrackServer::get_instance();
-        ERR_FAIL_NULL(tracks);
-        for (const KeyValue<RID, VehiclePlacement> &entry: vehicles) {
-            RailVehicleController *controller = _get_controller(entry.value);
-            // a vehicle not standing on a track is nowhere the signal reaches
-            if (controller == nullptr || !tracks->track_exists(entry.value.track) ||
-                _placement_transform(entry.value).origin.distance_to(p_position) > RADIO_STOP_RANGE) {
-                continue;
-            }
-            if (const Ref<RailVehicleRadio> radio = controller->get_component(VehicleComponentType::COMPONENT_RADIO);
-                radio.is_valid() && radio->radio_stop_receive()) {
-                emit_signal(vehicle_emergency_signal_received_signal, entry.key);
-            }
+    void RailVehicleServer::_connect_radio(const RID &p_vehicle, VehiclePlacement &p_placement) {
+        const RailVehicleController *controller = _get_controller(p_placement);
+        const Ref<RailVehicleRadio> radio = controller != nullptr
+                                                    ? controller->get_component(VehicleComponentType::COMPONENT_RADIO)
+                                                    : Ref<VehicleComponent>();
+        if (radio.is_null() || ObjectID(radio->get_instance_id()) == p_placement.radio_component_id) {
+            return;
+        }
+        _disconnect_radio(p_vehicle, p_placement);
+        p_placement.radio_component_id = ObjectID(radio->get_instance_id());
+        radio->connect(
+                RailVehicleRadio::radio_stop_sent_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_radio_stop_sent).bind(p_vehicle));
+        radio->connect(
+                RailVehicleRadio::radio_call_sent_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_radio_call_sent).bind(p_vehicle));
+        // a radio of the ether for as long as the vehicle has it, powered or not: one switched on
+        // mid-message hears the rest of it, as the original's cab plays every message muted until
+        // the radio is on (TTrain::radio_message(), Train.cpp:11010-11029) - the component sends
+        // only when powered, and the cab plays only what a powered radio tuned to it hears
+        if (RadioServer *radios = RadioServer::get_instance(); radios != nullptr) {
+            p_placement.radio = radios->radio_create();
+            radios->radio_set_vehicle(p_placement.radio, p_vehicle);
+            radios->radio_set_receive_callback(
+                    p_placement.radio,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_received).bind(p_vehicle));
         }
     }
 
-    void RailVehicleServer::vehicle_radio_call(const RID &p_vehicle, const RailVehicleRadio::RadioCall p_call) {
-        const VehiclePlacement *sender = vehicles.getptr(p_vehicle);
-        ERR_FAIL_NULL(sender);
-        emit_signal(vehicle_radio_called_signal, p_vehicle, p_call, _placement_transform(*sender).origin);
+    void RailVehicleServer::_disconnect_radio(const RID &p_vehicle, VehiclePlacement &p_placement) {
+        if (RadioServer *radios = RadioServer::get_instance(); radios != nullptr && p_placement.radio.is_valid()) {
+            radios->radio_free(p_placement.radio);
+        }
+        p_placement.radio = RID();
+        if (const Ref<RailVehicleRadio> radio = _get_radio(p_placement); radio.is_valid()) {
+            radio->disconnect(
+                    RailVehicleRadio::radio_stop_sent_signal,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_stop_sent).bind(p_vehicle));
+            radio->disconnect(
+                    RailVehicleRadio::radio_call_sent_signal,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_call_sent).bind(p_vehicle));
+        }
+        p_placement.radio_component_id = ObjectID();
+    }
+
+    // Radio-Stop reaches every vehicle within reach, the sender itself included
+    // (basic_region::RadioStop, scene.cpp:1269) - the ether keeps a radio from hearing itself, so the
+    // sender is handed its own
+    void RailVehicleServer::_on_vehicle_radio_stop_sent(const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        RadioServer *radios = RadioServer::get_instance();
+        if (placement == nullptr || radios == nullptr || !placement->radio.is_valid()) {
+            return;
+        }
+        radios->radio_transmit(
+                placement->radio, RadioServer::CHANNEL_ALL, RadioServer::RADIO_STOP_REACH,
+                RadioServer::KIND_RADIO_STOP);
+        _on_vehicle_radio_received(
+                RadioServer::KIND_RADIO_STOP, RadioServer::CHANNEL_ALL, Variant(), Vector3(), p_vehicle);
+    }
+
+    // A call goes out on the radio's channel, as far as anybody listens (Event.cpp:2255-2268)
+    void RailVehicleServer::_on_vehicle_radio_call_sent(const int64_t p_call, const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        RadioServer *radios = RadioServer::get_instance();
+        const Ref<RailVehicleRadio> radio = placement != nullptr ? _get_radio(*placement) : Ref<RailVehicleRadio>();
+        if (radios == nullptr || radio.is_null() || !placement->radio.is_valid()) {
+            return;
+        }
+        radios->radio_transmit(placement->radio, radio->get_channel(), 0.0, RadioServer::KIND_CALL, p_call);
+    }
+
+    // What the vehicle's radio heard is handed down to it, with whether somebody drives the vehicle
+    void RailVehicleServer::_on_vehicle_radio_received(
+            const int64_t p_kind, const int64_t p_channel, const Variant &p_payload, const Vector3 & /* p_position */,
+            const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        const VehicleServer *vehicle_server = VehicleServer::get_instance();
+        const Ref<RailVehicleRadio> radio = placement != nullptr ? _get_radio(*placement) : Ref<RailVehicleRadio>();
+        if (vehicle_server == nullptr || radio.is_null()) {
+            return;
+        }
+        const bool driven =
+                vehicle_server->vehicle_has_person_role(p_vehicle, VehiclePersonRole::VEHICLE_PERSON_ROLE_DRIVER);
+        if (radio->radio_receive(
+                    static_cast<RadioServer::Kind>(p_kind), static_cast<int>(p_channel), p_payload, driven) &&
+            p_kind == RadioServer::KIND_RADIO_STOP) {
+            emit_signal(vehicle_emergency_signal_received_signal, p_vehicle);
+        }
     }
 
     TypedArray<RID> RailVehicleServer::vehicle_get_coupled(
@@ -870,10 +954,12 @@ namespace godot {
             return;
         }
         _disconnect_relays(p_vehicle, *placement);
+        _disconnect_radio(p_vehicle, *placement);
         placement->controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
         // the scans that found it hold the previous controller
         _track_changed(placement->track);
         _connect_relays(p_vehicle, *placement);
+        _place_body(*placement);
         // a newly bound controller takes the rail values before its simulation starts
         // (VehicleServer::vehicle_bind_controller() tells this before starting it)
         if (RailVehicleController *controller = _get_controller(*placement); controller != nullptr) {
@@ -883,6 +969,14 @@ namespace godot {
             controller->emit_position_changed_if_needed();
         }
         _hand_driver_cabin_kind(p_vehicle);
+    }
+
+    /* The bogie pivot spacing is the wheels' configuration, and the body hangs between the
+     * pivots */
+    void RailVehicleServer::_on_vehicle_config_changed(const RID &p_vehicle) {
+        if (VehiclePlacement *placement = vehicles.getptr(p_vehicle); placement != nullptr) {
+            _place_body(*placement);
+        }
     }
 
     void RailVehicleServer::_connect_relays(const RID &p_vehicle, const VehiclePlacement &p_placement) {
@@ -1059,7 +1153,6 @@ namespace godot {
         placement->track_direction = p_track_direction;
         placement->moved = true;
         placement->location_stale = true;
-        placement->body_transform_valid = false;
         placement->track_is_switch = tracks->track_is_switch(p_track);
         placement->switch_track =
                 placement->track_is_switch
@@ -1070,7 +1163,9 @@ namespace godot {
         const double remaining_offset = p_track_offset - placement->track_offset;
         const double direction_sign = p_track_direction == TrackServer::DIRECTION_NORMAL ? -1.0 : 1.0;
         _move_placement(*placement, remaining_offset * direction_sign, false);
+        _place_body(*placement);
         _track_changed(placement->track);
+        _note_track_move(p_vehicle, *placement);
         placement->placement_unreported = false;
         emit_signal(vehicle_placed_signal, p_vehicle);
     }
@@ -1083,7 +1178,9 @@ namespace godot {
         }
         _track_changed(placement->track);
         _move_placement(*placement, p_distance, true);
+        _place_body(*placement);
         _track_changed(placement->track);
+        _note_track_move(p_vehicle, *placement);
         if (RailVehicleController *controller = _get_controller(*placement); controller != nullptr) {
             controller->emit_position_changed_if_needed();
         }
@@ -1354,7 +1451,6 @@ namespace godot {
         p_placement.track_offset = current_track_offset;
         p_placement.track_direction = current_track_direction;
         p_placement.switch_track = current_switch_track;
-        p_placement.body_transform_valid = false;
         if (diagnostics && p_force_switch_state) {
             _check_movement(p_placement, start_point, Math::abs(p_distance) - remaining);
         }
@@ -1385,44 +1481,63 @@ namespace godot {
      * original reads the running shape too (DynObj.cpp:2950-2970). The track sampled under the
      * vehicle's centre is the same thing only on straight track; on a curve it differs, and on a
      * switch it differs most. One of them has to be the answer, and it is this one. */
-    Transform3D RailVehicleServer::vehicle_get_transform(const RID &p_vehicle) {
-        VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+    Transform3D RailVehicleServer::vehicle_get_transform(const RID &p_vehicle) const {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         const TrackServer *tracks = TrackServer::get_instance();
         if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
             return Transform3D();
         }
-        if (placement->body_transform_valid) {
-            return placement->body_transform;
-        }
-        placement->body_transform = _compose_body_transform(*placement, p_vehicle);
-        placement->body_transform_valid = true;
         return placement->body_transform;
     }
 
-    Transform3D RailVehicleServer::_compose_body_transform(VehiclePlacement &p_placement, const RID &p_vehicle) {
-        const RailVehicleController *controller = _get_controller(p_placement);
+    /* Composed once where the placement changes, and handed down to the controller as the
+     * vehicle's world transform - the state its owner hands down, as the driver cabin kind. */
+    void RailVehicleServer::_place_body(VehiclePlacement &p_placement) {
+        const TrackServer *tracks = TrackServer::get_instance();
+        RailVehicleController *controller = _get_controller(p_placement);
         const Ref<RailVehicleWheels> wheels =
                 controller != nullptr ? controller->get_component(VehicleComponentType::COMPONENT_WHEELS)
                                       : Ref<VehicleComponent>();
         const double spacing = wheels.is_valid() ? wheels->get_bogie_pivot_spacing() : 0.0;
-        if (spacing <= 0.0) {
+        const bool on_track = tracks != nullptr && tracks->track_exists(p_placement.track);
+        Transform3D body;
+        if (on_track) {
             // no bogies to be carried by: the track under the vehicle's own centre is all there is
-            return _placement_transform(p_placement);
+            body = _placement_transform(p_placement);
         }
-        /* The offset is rear-relative, the same sign RailVehicleWheels::get_bogie_transform() uses -
-         * getting it wrong flips the vehicle the moment it moves. */
-        const Transform3D front = _placement_transform(_sample_placement(p_placement, -0.5 * spacing));
-        const Transform3D rear = _placement_transform(_sample_placement(p_placement, 0.5 * spacing));
-        Vector3 body_forward = front.origin - rear.origin;
-        if (body_forward.is_zero_approx()) {
-            return _placement_transform(p_placement);
+        p_placement.bogie_transforms[RailVehicleWheels::BOGIE_FRONT] = body;
+        p_placement.bogie_transforms[RailVehicleWheels::BOGIE_REAR] = body;
+        if (on_track && spacing > 0.0) {
+            /* The track-offset distance is rear-relative (see vehicle_process_movement()), so a
+             * positive distance samples toward the vehicle's rear - the sign is deliberate and was
+             * confirmed live: getting it wrong flips the whole vehicle the moment it starts moving
+             * (test_rail_vehicle_idle_orientation_regression.gd). */
+            const Transform3D front = _placement_transform(_sample_placement(p_placement, -0.5 * spacing));
+            const Transform3D rear = _placement_transform(_sample_placement(p_placement, 0.5 * spacing));
+            p_placement.bogie_transforms[RailVehicleWheels::BOGIE_FRONT] = front;
+            p_placement.bogie_transforms[RailVehicleWheels::BOGIE_REAR] = rear;
+            Vector3 body_forward = front.origin - rear.origin;
+            if (!body_forward.is_zero_approx()) {
+                body_forward.normalize();
+                const Vector3 average_up = (front.basis.get_column(1) + rear.basis.get_column(1)).normalized();
+                const Vector3 z_axis = -body_forward;
+                const Vector3 x_axis = average_up.cross(z_axis).normalized();
+                const Vector3 y_axis = z_axis.cross(x_axis).normalized();
+                body = Transform3D(Basis(x_axis, y_axis, z_axis).orthonormalized(), (front.origin + rear.origin) * 0.5);
+            }
         }
-        body_forward.normalize();
-        const Vector3 average_up = (front.basis.get_column(1) + rear.basis.get_column(1)).normalized();
-        const Vector3 z_axis = -body_forward;
-        const Vector3 x_axis = average_up.cross(z_axis).normalized();
-        const Vector3 y_axis = z_axis.cross(x_axis).normalized();
-        return Transform3D(Basis(x_axis, y_axis, z_axis).orthonormalized(), (front.origin + rear.origin) * 0.5);
+        p_placement.body_transform = body;
+        if (controller != nullptr) {
+            controller->set_world_transform(body);
+        }
+    }
+
+    Transform3D
+    RailVehicleServer::vehicle_get_bogie_transform(const RID &p_vehicle, const RailVehicleWheels::Bogie p_bogie) const {
+        // the bogie comes from scripts as a bare int
+        ERR_FAIL_INDEX_V(p_bogie, 2, Transform3D());
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        return placement != nullptr ? placement->bogie_transforms[p_bogie] : Transform3D();
     }
 
     Transform3D RailVehicleServer::vehicle_get_transform_at_distance(const RID &p_vehicle, const double p_distance) {
@@ -1445,9 +1560,8 @@ namespace godot {
     Transform3D RailVehicleServer::_placement_transform(const VehiclePlacement &p_placement) const {
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL_V(tracks, Transform3D());
-        const Ref<Resource> curve_data = tracks->track_get_curve(p_placement.track, p_placement.switch_track);
         const Ref<Curve3D> curve = tracks->track_get_domain_curve(p_placement.track, p_placement.switch_track);
-        if (curve_data.is_null() || curve.is_null()) {
+        if (curve.is_null()) {
             return Transform3D();
         }
 
@@ -1466,23 +1580,23 @@ namespace godot {
         }
         Vector3 forward = curve->sample_baked(static_cast<real_t>(next_offset), false) -
                           curve->sample_baked(static_cast<real_t>(previous_offset), false);
-        if (forward.length_squared() <= 0.000001) {
+        if (forward.length_squared() <= HEADING_MIN_LENGTH_SQUARED) {
             forward = Vector3(0.0, 0.0, -1.0);
         } else {
             forward = forward.normalized();
         }
 
         Vector3 reference_up(0.0, 1.0, 0.0);
-        if (Math::abs(forward.dot(reference_up)) > 0.999) {
+        if (Math::abs(forward.dot(reference_up)) > UP_PARALLEL_DOT_LIMIT) {
             reference_up = Vector3(1.0, 0.0, 0.0);
         }
 
         const Vector3 z_axis = -forward;
         const Vector3 x_axis = reference_up.cross(z_axis).normalized();
         const Vector3 y_axis = z_axis.cross(x_axis).normalized();
-        const double roll1 = curve_data->get("roll1");
-        const double roll2 = curve_data->get("roll2");
-        const double roll = length <= 0.0 ? roll1 : Math::lerp(roll1, roll2, CLAMP(safe_offset / length, 0.0, 1.0));
+        const Vector2 rolls = tracks->track_get_roll(p_placement.track, p_placement.switch_track);
+        const double roll =
+                length <= 0.0 ? rolls.x : Math::lerp(rolls.x, rolls.y, CLAMP(safe_offset / length, 0.0, 1.0));
         Transform3D track_transform(
                 Basis(x_axis, y_axis, z_axis)
                         .orthonormalized()
@@ -1501,14 +1615,14 @@ namespace godot {
     double RailVehicleServer::_placement_roll(const VehiclePlacement &p_placement) const {
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL_V(tracks, 0.0);
-        const Ref<Resource> curve_data = tracks->track_get_curve(p_placement.track, p_placement.switch_track);
         const double length = tracks->track_get_length(p_placement.track, p_placement.switch_track);
-        if (curve_data.is_null() || length <= 0.0) {
+        if (length <= 0.0) {
             return 0.0;
         }
-        const double roll1 = curve_data->get("roll1");
-        const double roll2 = curve_data->get("roll2");
-        return Math::lerp(roll1, roll2, CLAMP(p_placement.track_offset / length, 0.0, 1.0));
+        const Vector2 rolls = tracks->track_get_roll(p_placement.track, p_placement.switch_track);
+        return Math::lerp(
+                static_cast<double>(rolls.x), static_cast<double>(rolls.y),
+                CLAMP(p_placement.track_offset / length, 0.0, 1.0));
     }
 
     Dictionary RailVehicleServer::vehicle_get_track_position(const RID &p_vehicle) const {
@@ -1651,20 +1765,36 @@ namespace godot {
         }
         _track_changed(placement->track);
         _move_placement(*placement, distance, true);
+        _place_body(*placement);
         _track_changed(placement->track);
+        _note_track_move(p_vehicle, *placement);
     }
 
-    void RailVehicleServer::neighbour_index_rebuild() {
-        track_vehicles.clear();
-        // every rail vehicle is a neighbour to be found, whatever implementation steps it
-        for (KeyValue<RID, VehiclePlacement> &item: vehicles) {
-            track_vehicles[item.value.track].push_back(item.key);
-            // a scan made since it entered the track could not find it there yet
-            if (item.value.indexed_track != item.value.track) {
-                _track_changed(item.value.indexed_track);
-                _track_changed(item.value.track);
-                item.value.indexed_track = item.value.track;
+    /* Only the vehicles that changed track since the last update move in the index, at the same
+     * moment of the step as ever: once, before any vehicle looks for its neighbours */
+    void RailVehicleServer::neighbour_index_update() {
+        for (const RID &vehicle: track_moved_vehicles) {
+            VehiclePlacement *placement = vehicles.getptr(vehicle);
+            if (placement == nullptr || placement->indexed_track == placement->track) {
+                continue;
             }
+            if (Vector<RID> *listed = track_vehicles.getptr(placement->indexed_track); listed != nullptr) {
+                listed->erase(vehicle);
+            }
+            if (placement->track.is_valid()) {
+                track_vehicles[placement->track].push_back(vehicle);
+            }
+            // a scan made since it entered the track could not find it there yet
+            _track_changed(placement->indexed_track);
+            _track_changed(placement->track);
+            placement->indexed_track = placement->track;
+        }
+        track_moved_vehicles.clear();
+    }
+
+    void RailVehicleServer::_note_track_move(const RID &p_vehicle, const VehiclePlacement &p_placement) {
+        if (!(p_placement.track == p_placement.indexed_track)) {
+            track_moved_vehicles.push_back(p_vehicle);
         }
     }
 
@@ -1750,7 +1880,7 @@ namespace godot {
                 }
                 // a lowered pantograph comes down whatever the wire (DynObj.cpp:3775), nothing searched
                 const double gap = active[pantograph]
-                                           ? double(_find_pantograph_wire(
+                                           ? static_cast<double>(_find_pantograph_wire(
                                                      p_vehicle, collector, pantograph, frame, half_width)["height"]) -
                                                      collector.height
                                            : Math::INF;
@@ -1759,8 +1889,8 @@ namespace godot {
             const double assumed_voltage =
                     MAX(Math::abs(power_source->get_collector_pantograph_first_voltage()),
                         Math::abs(power_source->get_collector_pantograph_second_voltage()));
-            const int collecting = int(active[0] && powered->pantographs[0].reaches_wire) +
-                                   int(active[1] && powered->pantographs[1].reaches_wire);
+            const int collecting = static_cast<int>(active[0] && powered->pantographs[0].reaches_wire) +
+                                   static_cast<int>(active[1] && powered->pantographs[1].reaches_wire);
             // a car with no engine of its own (31WE B and C) draws nothing through its own pantographs
             const Ref<RailVehicleEngine> engine = controller->get_component(VehicleComponentType::COMPONENT_ENGINE);
             const double current = collecting > 0 && engine.is_valid() ? engine->get_current0() / collecting : 0.0;
@@ -1774,6 +1904,11 @@ namespace godot {
                     UtilityFunctions::push_warning(vformat(
                             "Lost contact: %s pantograph %d is not reaching the wire - %s",
                             vehicle_server->vehicle_get_name(p_vehicle), pantograph, _track_position_text(p_vehicle)));
+                    // one announcement a loss: the arm short of a wire found, or no wire over it
+                    emit_signal(
+                            vehicle_pantograph_contact_lost_signal, p_vehicle, pantograph,
+                            collector.wire.is_valid() ? PANTOGRAPH_CONTACT_LOSS_NOT_REACHING
+                                                      : PANTOGRAPH_CONTACT_LOSS_NO_WIRE);
                 }
                 collector.touching = active[pantograph] && collector.reaches_wire;
                 double voltage = 0.0;
@@ -1785,6 +1920,7 @@ namespace godot {
                 if (TractionServer *traction = TractionServer::get_instance();
                     collector.touching && wire.is_valid() && traction != nullptr) {
                     voltage = traction->wire_get_voltage(wire, assumed_voltage, current);
+                    traction->wire_draw_current(wire, assumed_voltage, current);
                     /* A span overhead that carries nothing is another defect than a hole in the
                      * wiring - the network behind it has no source, or the resistance never
                      * reached it - and the two look the same from the cab, as a dead line. */
@@ -1793,6 +1929,9 @@ namespace godot {
                                 vformat("Dead traction: %s has a wire under pantograph %d carrying no voltage - %s, %v",
                                         vehicle_server->vehicle_get_name(p_vehicle), pantograph,
                                         _track_position_text(p_vehicle), frame.xform(collector.position)));
+                        emit_signal(
+                                vehicle_pantograph_contact_lost_signal, p_vehicle, pantograph,
+                                PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE);
                     }
                     collector.powered = !Math::is_zero_approx(voltage);
                 }
@@ -2053,8 +2192,6 @@ namespace godot {
         return kind != nullptr ? *kind : RailVehicleCabinKind::RAIL_VEHICLE_CABIN_NONE;
     }
 
-    /* Decided again on every change of the occupancy (_update_driver_cabin()), and answered from
-     * what was decided */
     /* The original has one driver to a vehicle; with more, the vehicle keeps answering to the one
      * it has while that one drives it - a driver sitting down in another cab takes nothing over -
      * and when it is gone, to the driver of the cab switched on, else the first of its cabins */
@@ -2086,6 +2223,8 @@ namespace godot {
         return Ref<VehiclePerson>(drivers[0])->get_person();
     }
 
+    /* Decided again on every change of the occupancy (_update_driver_cabin()), and answered from
+     * what was decided */
     RID RailVehicleServer::vehicle_get_driver_cabin(const RID &p_vehicle) const {
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         return placement != nullptr ? placement->driver_cabin : RID();

@@ -54,7 +54,7 @@ Checks: "bugprone-*,
   -*-unnecessary-value-param"
 WarningsAsErrors: "*"
 HeaderFilterRegex: 'src/.*'
-ExcludeHeaderFilterRegex: '(^|.*/)(maszyna|gen|godot-cpp)/'
+ExcludeHeaderFilterRegex: '(^|.*/)(maszyna-mover|gen|godot-cpp)/'
 RemovedArgs:
   - '-fno-gnu-unique'
 CheckOptions:

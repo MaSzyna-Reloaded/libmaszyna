@@ -75,8 +75,8 @@ What actually splits that gap:
 | `Performance.TIME_PROCESS` | all `_process` callbacks |
 | `Performance.TIME_PHYSICS_PROCESS` | all `_physics_process` callbacks |
 | Editor profiler → Script Functions | per-function time **and call counts** |
-| `demo/hud/frame_time_panel.gd` | the above in-game, plus physics steps per frame |
-| `demo/hud/scenery_streaming_panel.gd` | streaming backlog, builds/s, budget in use |
+| `addons/libmaszyna/debug_hud/frame_time_panel.gd` | the above in-game, plus physics steps per frame |
+| `addons/libmaszyna/scenery/scenery_streaming_panel.gd` | streaming backlog, builds/s, budget in use |
 
 **Call counts matter more than times.** The single biggest win in this codebase
 was found by noticing `_physics_process` had `Calls: 8` - Godot was running

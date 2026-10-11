@@ -4,6 +4,7 @@
 #include "resources/ResourceLazyLoader.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
 #include "simulation/SimulationServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include <godot_cpp/classes/gpu_particles3d.hpp>
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -38,7 +39,8 @@ namespace godot {
                         "force_alpha_submodel_paths", "max_texture_size"),
                 &E3DRenderingServer::instance_set_options);
         ClassDB::bind_method(
-                D_METHOD("instance_attach_node", "instance", "node"), &E3DRenderingServer::instance_attach_node);
+                D_METHOD("instance_attach_object_instance_id", "instance", "id"),
+                &E3DRenderingServer::instance_attach_object_instance_id);
         ClassDB::bind_method(
                 D_METHOD("instance_get_attached_node", "instance"), &E3DRenderingServer::instance_get_attached_node);
         ClassDB::bind_method(D_METHOD("smoke_rebuild"), &E3DRenderingServer::smoke_rebuild);
@@ -215,7 +217,7 @@ namespace godot {
 
     /// What is read from the game's data is read again when the data is (GameDataServer), and what
     /// the settings shape is built again when they change
-    E3DRenderingServer::E3DRenderingServer() {
+    E3DRenderingServer::E3DRenderingServer() : time(Time::get_singleton()) {
         light_placement_settings = read_settings(LIGHT_PLACEMENT_SETTING_NAMES);
         light_build_settings = read_settings(LIGHT_BUILD_SETTING_NAMES);
         smoke_settings = read_settings(SMOKE_SETTING_NAMES);
@@ -234,6 +236,18 @@ namespace godot {
         streaming->content_set_consumer(
                 SceneryStreamingProvider::CONTENT_MODELS, callable_mp(this, &E3DRenderingServer::_adopt_model),
                 callable_mp(this, &E3DRenderingServer::instance_free));
+        // the streamed scenery's models, their lights and their smoke, each with a range of its own;
+        // owners live as long as the streaming does
+        stream_owner = streaming->owner_create(
+                "models", callable_mp(this, &E3DRenderingServer::_stream_preload),
+                callable_mp(this, &E3DRenderingServer::_stream_build),
+                callable_mp(this, &E3DRenderingServer::_stream_clear));
+        light_stream_owner = streaming->owner_create(
+                "model lights", Callable(), callable_mp(this, &E3DRenderingServer::_light_stream_build),
+                callable_mp(this, &E3DRenderingServer::_light_clear));
+        smoke_stream_owner = streaming->owner_create(
+                "model smoke", Callable(), callable_mp(this, &E3DRenderingServer::_smoke_stream_build),
+                callable_mp(this, &E3DRenderingServer::_smoke_clear));
     }
 
     /// A change of a placement setting places the scenery lights anew - the lit submodels the
@@ -311,7 +325,7 @@ namespace godot {
     /// instance created with its model is its client's to build again
     void E3DRenderingServer::_on_data_reload_requested() {
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
-        if (stream_owner >= 0 && streaming != nullptr) {
+        if (streaming != nullptr) {
             streaming->owner_rebuild(stream_owner);
         }
     }
@@ -371,8 +385,14 @@ namespace godot {
         }
     }
 
-    /// Creates an empty instance; set it up with instance_set_*() and instance_attach_node(),
-    /// then call instance_build().
+    void E3DRenderingServer::_update_visibility_if_built(E3DInstanceData &p_instance) {
+        if (p_instance.built) {
+            _get_backend(p_instance).update_visibility(p_instance);
+        }
+    }
+
+    /// Creates an empty instance; set it up with instance_set_*() and
+    /// instance_attach_object_instance_id(), then call instance_build().
     ///
     /// The kind is given here rather than through a setter because it cannot be changed once the
     /// instance is built: the smoke density it selects is baked into every emitter - its process
@@ -402,6 +422,7 @@ namespace godot {
         // being torn down.
         const E3DInstanceData data = *found;
         instances.erase(p_instance);
+        built_instances.erase(p_instance);
 
         if (data.stream_rid.is_valid()) {
             if (SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance(); streaming != nullptr) {
@@ -455,8 +476,11 @@ namespace godot {
         instance->model_lights = E3DLightFactory::discover(instance->model, instance->model_filename);
         _resolve_lights(*instance);
         instance->built = true;
+        built_instances.insert(p_instance);
         backend.build(*instance, material_resolver);
-        // the model may be a new one after streaming, so the animated submodels are found again
+        // the model may be a new one after streaming, so the animated submodels are found again -
+        // and the poses kept by the old ones' pointers go
+        instance->submodel_poses.clear();
         for (KeyValue<String, E3DInstanceData::SubmodelAnimation> &animation: instance->submodel_animations) {
             animation.value.submodel = _find_submodel(instance->model->get_submodels(), animation.key);
         }
@@ -481,12 +505,12 @@ namespace godot {
         _rebuild_if_built(*instance);
     }
 
-    /// NODES/EDITABLE_NODES build their node tree under [param p_node]; OPTIMIZED instances
-    /// report it as their owner (e.g. for picking in the editor).
-    void E3DRenderingServer::instance_attach_node(const RID &p_instance, Node3D *p_node) {
+    /// NODES/EDITABLE_NODES build their node tree under the Node3D of [param p_id]; OPTIMIZED
+    /// instances report it as their owner (e.g. for picking in the editor). 0 detaches it.
+    void E3DRenderingServer::instance_attach_object_instance_id(const RID &p_instance, const uint64_t p_id) {
         E3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
-        instance->node_id = p_node != nullptr ? ObjectID(p_node->get_instance_id()) : ObjectID();
+        instance->node_id = ObjectID(p_id);
         _rebuild_if_built(*instance);
     }
 
@@ -546,7 +570,7 @@ namespace godot {
         E3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
         instance->visible = p_visible;
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
         _update_instance_smoke(*instance);
     }
 
@@ -601,7 +625,7 @@ namespace godot {
         ERR_FAIL_NULL(instance);
         instance->lights_override = p_lights_state.duplicate();
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// Light name -> dimmed: a dimmed light shows its "_xon" submodel instead of "_on" when it has
@@ -613,7 +637,7 @@ namespace godot {
         ERR_FAIL_NULL(instance);
         instance->lights_dimmed = p_lights_dimmed.duplicate();
         instance->lights_dimmed_multiplier = p_multiplier;
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The `lights` list of a scenery model node, by light index: `lights 3` means light 0 is
@@ -633,7 +657,7 @@ namespace godot {
         }
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// One light by index, what `LightSet()` does for a `lights` event (AnimModel.cpp:664-670).
@@ -653,7 +677,7 @@ namespace godot {
         declaration.phase = 0.0;
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The pick pass draws only opaque submodels (opengl33renderer.cpp:1208 Render_cab(..., Alpha =
@@ -703,7 +727,7 @@ namespace godot {
         declaration.phase = p_phase;
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The `lightcolors` list of a scenery model node, in the same order. It overrides the colour
@@ -725,8 +749,9 @@ namespace godot {
         material_resolver.set_callable(p_material_resolver);
     }
 
-    /// Registers a scenery model placement for streaming: nothing is loaded or built until the
-    /// streaming camera comes within its visibility range of the chunk it falls into. A range of
+    /// Registers a scenery model placement for streaming: nothing is built until the streaming
+    /// camera comes within its visibility range of the chunk it falls into, and with lazy loading
+    /// nothing is loaded until then either (ResourceLazyLoader). A range of
     /// 0 (a scenery node that declares none) means the global draw distance - see
     /// SceneryStreamingServer.
     RID E3DRenderingServer::instance_register(
@@ -736,13 +761,6 @@ namespace godot {
         ERR_FAIL_NULL_V(streaming, RID());
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
         ERR_FAIL_NULL_V(lazy_loader, RID());
-        if (stream_owner < 0) {
-            stream_owner = streaming->owner_create(
-                    "models", callable_mp(this, &E3DRenderingServer::_stream_preload),
-                    callable_mp(this, &E3DRenderingServer::_stream_build),
-                    callable_mp(this, &E3DRenderingServer::_stream_clear));
-        }
-
         const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
         E3DInstanceData &instance = instances[rid];
         instance.instancer = INSTANCER_OPTIMIZED;
@@ -781,7 +799,8 @@ namespace godot {
 
     /// Not memoized here: a model kept for the whole session is what filled the memory of a large
     /// scenery. The loader's own cache (ResourceLoader's) shares a model while anything holds it,
-    /// and a streamed placement holds it through ResourceLazyLoader only while it is built.
+    /// and a streamed placement holds it through ResourceLazyLoader - with lazy loading only while
+    /// it is built.
     Ref<E3DModel> E3DRenderingServer::model_load(const String &p_data_path, const String &p_model_filename) {
         Callable loader;
         {
@@ -832,6 +851,7 @@ namespace godot {
         _clear_instance_smoke_sources(*instance);
         _get_backend(*instance).clear(*instance);
         instance->built = false;
+        built_instances.erase(p_instance);
         instance->model.unref();
         if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
             lazy_loader->resource_release(_get_stream_model(p_instance));
@@ -864,11 +884,6 @@ namespace godot {
         // not part of the streamed scenery and may well be moving.
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
         if (instance->stream_rid.is_valid() && streaming != nullptr) {
-            if (light_stream_owner < 0) {
-                light_stream_owner = streaming->owner_create(
-                        "model lights", Callable(), callable_mp(this, &E3DRenderingServer::_light_stream_build),
-                        callable_mp(this, &E3DRenderingServer::_light_clear));
-            }
             const ProjectSettings *settings = ProjectSettings::get_singleton();
             const float distance =
                     settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE);
@@ -937,7 +952,8 @@ namespace godot {
             const float distance =
                     settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE);
             rs->light_set_distance_fade(
-                    light->light, true, distance, SCENERY_LIGHT_SHADOW_FADE_DISTANCE, distance * 0.25f);
+                    light->light, true, distance, SCENERY_LIGHT_SHADOW_FADE_DISTANCE,
+                    distance * SCENERY_LIGHT_FADE_LENGTH_SHARE);
         }
 
         light->light_instance = rs->instance_create();
@@ -1061,9 +1077,7 @@ namespace godot {
         for (const E3DSmokeSourcePlacement &placement: placements) {
             const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
             SmokeObject &smoke = smoke_objects[rid];
-            if (dynamic_instance) {
-                smoke_order.push_back(rid);
-            }
+            smoke.dynamic = dynamic_instance;
             smoke.owner = p_instance;
             smoke.template_name = placement.template_name;
             smoke.offset = placement.offset;
@@ -1074,19 +1088,11 @@ namespace godot {
             // Anything built directly (a vehicle, an editor model) gets its particles right away -
             // it is not part of the streamed scenery and is usually moving.
             if (p_instance_data.stream_rid.is_valid() && streaming != nullptr) {
-                if (smoke_stream_owner < 0) {
-                    smoke_stream_owner = streaming->owner_create(
-                            "model smoke", Callable(), callable_mp(this, &E3DRenderingServer::_smoke_stream_build),
-                            callable_mp(this, &E3DRenderingServer::_smoke_clear));
-                }
                 const Vector3 position = p_instance_data.transform.xform(placement.offset);
                 smoke.stream_rid = streaming->stream_register(smoke_stream_owner, rid, position, distance);
             } else {
                 _smoke_build(rid);
             }
-        }
-        if (!smoke_order.is_empty()) {
-            _set_smoke_processing(true);
         }
     }
 
@@ -1108,6 +1114,24 @@ namespace godot {
         p_smoke.transform = _smoke_transform(p_instance_data, p_smoke);
         p_smoke.visible = p_instance_data.visible;
         rs->instance_set_transform(p_smoke.particles_instance, p_smoke.transform);
+        _refresh_smoke_order(p_smoke);
+    }
+
+    void E3DRenderingServer::_refresh_smoke_order(SmokeObject &p_smoke) {
+        const bool spawning =
+                p_smoke.dynamic && p_smoke.visible && p_smoke.particles.is_valid() && p_smoke.intensity > 0.0;
+        if (spawning == p_smoke.ordered) {
+            return;
+        }
+        p_smoke.ordered = spawning;
+        if (spawning) {
+            // it spawns from now on, not for the time it stood idle
+            p_smoke.last_spawn_usec = time->get_ticks_usec();
+            smoke_order.push_back(&p_smoke);
+        } else {
+            smoke_order.erase(&p_smoke);
+        }
+        _set_smoke_processing(!smoke_order.is_empty());
     }
 
     void E3DRenderingServer::_apply_smoke_wind(const SmokeObject &p_smoke) const {
@@ -1174,9 +1198,8 @@ namespace godot {
         rs->instance_set_base(smoke->particles_instance, smoke->particles);
         rs->instance_set_scenario(smoke->particles_instance, instance->scenario);
         rs->instance_set_visible(smoke->particles_instance, instance->visible);
-        _apply_smoke_placement(*instance, *smoke);
-        smoke->last_spawn_usec = Time::get_singleton()->get_ticks_usec();
         smoke->streamed_in = true;
+        _apply_smoke_placement(*instance, *smoke);
     }
 
     /// The build callback of the smoke stream; separate from _smoke_build() only because
@@ -1204,6 +1227,7 @@ namespace godot {
             rs->free_rid(smoke->particles);
             smoke->particles = RID();
         }
+        _refresh_smoke_order(*smoke);
     }
 
     void E3DRenderingServer::_clear_instance_smoke_sources(E3DInstanceData &p_instance_data) {
@@ -1216,14 +1240,11 @@ namespace godot {
             if (smoke->stream_rid.is_valid() && streaming != nullptr) {
                 streaming->stream_free(smoke->stream_rid);
             }
+            // out of smoke_order with its particles, before its element goes
             _smoke_clear(smoke_rid);
             smoke_objects.erase(smoke_rid);
-            smoke_order.erase(smoke_rid);
         }
         p_instance_data.smoke_objects.clear();
-        if (smoke_order.is_empty()) {
-            _set_smoke_processing(false);
-        }
     }
 
     /// Follows the instance: a moving vehicle spawns from where it is now, an invisible one
@@ -1251,6 +1272,7 @@ namespace godot {
         for (const RID &smoke_rid: instance->smoke_objects) {
             if (SmokeObject *smoke = smoke_objects.getptr(smoke_rid); smoke != nullptr) {
                 smoke->intensity = p_intensity;
+                _refresh_smoke_order(*smoke);
             }
         }
     }
@@ -1265,15 +1287,13 @@ namespace godot {
         if (size == 0) {
             return;
         }
-        const uint64_t now = Time::get_singleton()->get_ticks_usec();
+        const uint64_t now = time->get_ticks_usec();
         const int visited = MIN(size, MAX_SMOKE_SOURCES_PER_FRAME);
         for (int i = 0; i < visited; i++) {
             if (smoke_cursor >= size) {
                 smoke_cursor = 0;
             }
-            if (SmokeObject *smoke = smoke_objects.getptr(smoke_order[smoke_cursor]); smoke != nullptr) {
-                _process_smoke_source(*smoke, now);
-            }
+            _process_smoke_source(*smoke_order[smoke_cursor], now);
             smoke_cursor++;
         }
     }
@@ -1302,7 +1322,7 @@ namespace godot {
         if (size == 0) {
             return;
         }
-        light_clock = static_cast<double>(Time::get_singleton()->get_ticks_usec()) / USEC_PER_SECOND;
+        light_clock = static_cast<double>(time->get_ticks_usec()) / LibMaszynaUnits::USEC_PER_SECOND;
         const int visited = MIN(size, MAX_BLINKING_INSTANCES_PER_FRAME);
         for (int i = 0; i < visited; i++) {
             if (blinking_cursor >= size) {
@@ -1317,7 +1337,7 @@ namespace godot {
                 if (declaration.value.mode == LIGHT_MODE_BLINK &&
                     _is_light_on(declaration.value) != declaration.value.blink_on) {
                     _resolve_lights(*instance);
-                    _update_if_built(*instance);
+                    _update_visibility_if_built(*instance);
                     break;
                 }
             }
@@ -1351,7 +1371,7 @@ namespace godot {
         }
         light_processing = p_processing;
         if (p_processing) {
-            light_clock = static_cast<double>(Time::get_singleton()->get_ticks_usec()) / USEC_PER_SECOND;
+            light_clock = static_cast<double>(time->get_ticks_usec()) / LibMaszynaUnits::USEC_PER_SECOND;
             tree->connect("process_frame", callable_mp(this, &E3DRenderingServer::_process_lights));
             return;
         }
@@ -1386,6 +1406,10 @@ namespace godot {
         }
         if (!animating_instances.has(p_instance)) {
             animating_instances.push_back(p_instance);
+            // advanced by the whole slice at the next pass - the slice its event runs in, if that
+            // pass has not come yet - as the original moves an animation in the frame its event
+            // fires (TAnimContainer::UpdateModel())
+            p_instance_data.animation_pass = animation_pass;
         }
         _set_animation_processing(true);
     }
@@ -1408,27 +1432,33 @@ namespace godot {
 
     /// TSubModel::RaAnimation() at_RotateXYZ (Model3d.cpp:1145-1152): the offset, then the angles
     /// about x, y and z, on top of the submodel's own transform; a client's pose on top of that
+    /// Written over in place, not rebuilt: an entry stays from the build on (instance_build()
+    /// clears them), and a settings pose takes its animation from the animation itself
     void E3DRenderingServer::_pose_submodels(E3DInstanceData &p_instance) {
-        p_instance.submodel_poses.clear();
         for (const KeyValue<String, E3DInstanceData::SubmodelAnimation> &animation: p_instance.submodel_animations) {
-            if (animation.value.submodel == nullptr) {
-                continue;
+            if (animation.value.submodel != nullptr) {
+                p_instance.submodel_poses[animation.value.submodel] = _animation_pose(animation.value);
             }
-            const Vector3 &angles = animation.value.angles;
-            const Basis rotation = Basis(Vector3(1.0, 0.0, 0.0), Math::deg_to_rad(angles.x)) *
-                                   Basis(Vector3(0.0, 1.0, 0.0), Math::deg_to_rad(angles.y)) *
-                                   Basis(Vector3(0.0, 0.0, 1.0), Math::deg_to_rad(angles.z));
-            p_instance.submodel_poses[animation.value.submodel] = Transform3D(rotation, animation.value.offset);
         }
         for (const KeyValue<String, E3DInstanceData::SubmodelSettings> &settings: p_instance.submodel_settings) {
             if (settings.value.submodel == nullptr || !settings.value.posed) {
                 continue;
             }
-            const Transform3D *animated = p_instance.submodel_poses.getptr(settings.value.submodel);
+            const E3DInstanceData::SubmodelAnimation *animation = p_instance.submodel_animations.getptr(settings.key);
             p_instance.submodel_poses[settings.value.submodel] =
-                    animated != nullptr ? *animated * settings.value.pose : settings.value.pose;
+                    animation != nullptr && animation->submodel != nullptr
+                            ? _animation_pose(*animation) * settings.value.pose
+                            : settings.value.pose;
         }
         _get_backend(p_instance).apply_poses(p_instance);
+    }
+
+    Transform3D E3DRenderingServer::_animation_pose(const E3DInstanceData::SubmodelAnimation &p_animation) {
+        const Vector3 &angles = p_animation.angles;
+        const Basis rotation = Basis(Vector3(1.0, 0.0, 0.0), Math::deg_to_rad(angles.x)) *
+                               Basis(Vector3(0.0, 1.0, 0.0), Math::deg_to_rad(angles.y)) *
+                               Basis(Vector3(0.0, 0.0, 1.0), Math::deg_to_rad(angles.z));
+        return Transform3D(rotation, p_animation.offset);
     }
 
     /// What a new build is given of what was set on it before: the client's submodel settings
@@ -1511,7 +1541,7 @@ namespace godot {
         settings.hidden = !p_visible;
         if (instance->built) {
             _resolve_submodel_settings(*instance);
-            _get_backend(*instance).update(*instance);
+            _get_backend(*instance).update_visibility(*instance);
         }
     }
 
@@ -1653,6 +1683,7 @@ namespace godot {
             _clear_instance_smoke_sources(*instance);
             _get_backend(*instance).clear(*instance);
             instance->built = false;
+            built_instances.erase(p_instance);
         }
         instance->instancer = p_instancer;
         if (built) {
@@ -1676,16 +1707,30 @@ namespace godot {
     /// the speed, the offset moves along the straight line to its own. A model out of range keeps
     /// moving, so it is where it should be when it comes back.
     void E3DRenderingServer::_process_animations(const double p_seconds) {
-        for (int index = static_cast<int>(animating_instances.size() - 1); index >= 0; index--) {
-            const RID instance_rid = animating_instances[index];
+        const SimulationServer *simulation = SimulationServer::get_instance();
+        ERR_FAIL_NULL(simulation);
+        const double now = simulation->simulation_get_time();
+        animation_pass++;
+        const int visits = MIN(static_cast<int>(animating_instances.size()), MAX_ANIMATED_INSTANCES_PER_SLICE);
+        for (int visit = 0; visit < visits && !animating_instances.is_empty(); visit++) {
+            if (animation_cursor >= animating_instances.size()) {
+                animation_cursor = 0;
+            }
+            const RID instance_rid = animating_instances[animation_cursor];
             E3DInstanceData *instance = instances.getptr(instance_rid);
             bool moving = false;
-            PackedStringArray finished;
+            finished_animations.clear();
             if (instance != nullptr) {
+                // the slice itself, not a difference of two clock readings, which loses the last
+                // bit of a step and lets an arrival slip by a tick
+                const double seconds =
+                        instance->animation_pass + 1 == animation_pass ? p_seconds : now - instance->animation_time;
+                instance->animation_pass = animation_pass;
+                instance->animation_time = now;
                 for (KeyValue<String, E3DInstanceData::SubmodelAnimation> &item: instance->submodel_animations) {
                     E3DInstanceData::SubmodelAnimation &animation = item.value;
                     if (animation.rotate_speed != 0.0) {
-                        const double step = Math::abs(animation.rotate_speed) * p_seconds;
+                        const double step = Math::abs(animation.rotate_speed) * seconds;
                         for (int axis = Vector3::AXIS_X; axis <= Vector3::AXIS_Z; axis++) {
                             const double difference = animation.target_angles[axis] - animation.angles[axis];
                             animation.angles[axis] =
@@ -1695,18 +1740,18 @@ namespace godot {
                         }
                         if (animation.angles == animation.target_angles) {
                             animation.rotate_speed = 0.0;
-                            finished.push_back(item.key);
+                            finished_animations.push_back(item.key);
                         } else {
                             moving = true;
                         }
                     }
                     if (animation.translate_speed != 0.0) {
                         const Vector3 difference = animation.target_offset - animation.offset;
-                        const double step = Math::abs(animation.translate_speed) * p_seconds;
+                        const double step = Math::abs(animation.translate_speed) * seconds;
                         if (difference.length() <= MAX(step, ANIMATION_TRANSLATION_EPSILON)) {
                             animation.offset = animation.target_offset;
                             animation.translate_speed = 0.0;
-                            finished.push_back(item.key);
+                            finished_animations.push_back(item.key);
                         } else {
                             animation.offset += difference.normalized() * static_cast<real_t>(step);
                             moving = true;
@@ -1717,11 +1762,13 @@ namespace godot {
                     _pose_submodels(*instance);
                 }
             }
-            if (!moving) {
-                animating_instances.remove_at(index);
+            if (moving) {
+                animation_cursor++;
+            } else {
+                animating_instances.remove_at(animation_cursor);
             }
             // after the list is settled: a listener may start another animation
-            for (const String &submodel: finished) {
+            for (const String &submodel: finished_animations) {
                 emit_signal(instance_submodel_animation_finished_signal, instance_rid, submodel);
             }
         }
@@ -1748,11 +1795,9 @@ namespace godot {
 
     /// One emitter's share of a frame. Fractional particles are carried over, so a rate below one
     /// per second still spawns - the original accumulates the same way (particles.cpp:162).
+    /// Only an emitter in smoke_order: visible, built and spawning (_refresh_smoke_order())
     void E3DRenderingServer::_process_smoke_source(SmokeObject &p_smoke, const uint64_t p_now) {
-        if (!p_smoke.visible || !p_smoke.particles.is_valid()) {
-            return;
-        }
-        const double delta = static_cast<double>(p_now - p_smoke.last_spawn_usec) / 1000000.0;
+        const double delta = static_cast<double>(p_now - p_smoke.last_spawn_usec) / LibMaszynaUnits::USEC_PER_SECOND;
         p_smoke.last_spawn_usec = p_now;
         p_smoke.spawn_backlog =
                 static_cast<float>(p_smoke.spawn_backlog + (p_smoke.spawn_rate * p_smoke.intensity * delta));
@@ -1824,7 +1869,7 @@ namespace godot {
         if (E3DInstanceData *instance = instances.getptr(light->owner); instance != nullptr) {
             instance->lights_override[light->light_name] = true;
             _resolve_lights(*instance);
-            _update_if_built(*instance);
+            _update_visibility_if_built(*instance);
         }
     }
 
@@ -1836,7 +1881,7 @@ namespace godot {
         if (E3DInstanceData *instance = instances.getptr(light->owner); instance != nullptr) {
             instance->lights_override[light->light_name] = false;
             _resolve_lights(*instance);
-            _update_if_built(*instance);
+            _update_visibility_if_built(*instance);
         }
     }
 
@@ -1899,15 +1944,18 @@ namespace godot {
         }
     }
 
+    /// Only the built instances: one built later is resolved against the time and the light of
+    /// that moment (instance_build())
     void E3DRenderingServer::_resolve_all_lights() {
-        for (KeyValue<RID, E3DInstanceData> &item: instances) {
-            if (item.value.light_declarations.is_empty()) {
+        for (const RID &rid: built_instances) {
+            E3DInstanceData *instance = instances.getptr(rid);
+            if (instance == nullptr || instance->light_declarations.is_empty()) {
                 continue; // nothing automatic to decide
             }
-            const Dictionary previous = item.value.lights_state;
-            _resolve_lights(item.value);
-            if (!(previous == item.value.lights_state)) {
-                _update_if_built(item.value);
+            const Dictionary previous = instance->lights_state;
+            _resolve_lights(*instance);
+            if (!(previous == instance->lights_state)) {
+                _update_visibility_if_built(*instance);
             }
         }
     }

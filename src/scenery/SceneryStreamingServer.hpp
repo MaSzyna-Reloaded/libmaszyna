@@ -2,10 +2,10 @@
 
 #include "scenery/SceneryStreamingProvider.hpp"
 #include "utils/WorkerTaskQueue.hpp"
-#include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/classes/semaphore.hpp>
 #include <godot_cpp/classes/thread.hpp>
 #include <godot_cpp/core/math.hpp>
@@ -56,6 +56,9 @@ namespace godot {
             static constexpr uint64_t INTERVAL_MSEC = 250;
             /// ...or as soon as the camera has moved this far
             static constexpr float CAMERA_STEP_M = 50.0;
+            /// The camera, the anchor and the content are looked at this often [s]; only the work
+            /// a plan leaves - building, clearing - runs every frame, and only while there is some
+            static constexpr double WATCH_INTERVAL_SEC = 0.1;
             /// Time spent building and clearing per frame once the streaming has caught up
             static constexpr uint64_t BUDGET_MSEC = 4;
             /// ...and while an area is filled - a new camera, or one that jumped: filling a scenery
@@ -63,8 +66,6 @@ namespace godot {
             /// (the backlog only drains at frame rate times budget). Never while driving through the
             /// world: there a frame on time beats the world appearing a little sooner.
             static constexpr uint64_t CATCHUP_BUDGET_MSEC = 16;
-            static constexpr uint64_t USEC_PER_MSEC = 1000;
-            static constexpr uint64_t USEC_PER_SECOND = 1000000;
             /// Backlog above which the catch-up budget is used
             static constexpr int CATCHUP_BACKLOG = 64;
             /// Pieces cleared before the memory they held is given back to the system, once the
@@ -83,6 +84,9 @@ namespace godot {
             /// The camera the streaming follows was set or cleared (streaming_set_camera())
             static const char *streaming_camera_changed_signal;
             static const char *chunk_cleared_signal;
+            /// A watched area (area_watch()) is built around the camera (chunk_radius: int) - once per
+            /// plan of where the camera is
+            static const char *area_ready_signal;
 
             static SceneryStreamingServer *get_instance() {
                 return Object::cast_to<SceneryStreamingServer>(
@@ -131,7 +135,7 @@ namespace godot {
             };
 
             struct Chunk {
-                    Vector<Entry> entries; // sorted by range_end, descending
+                    Vector<Entry> entries; // sorted by range_end, descending; freed ones until sorted
                     int built_count = 0;
                     bool dirty = false; // entries registered or unregistered since the last sort
             };
@@ -228,7 +232,13 @@ namespace godot {
 
             Vector<Owner> owners;
             HashMap<Vector2i, Chunk> chunks;
-            HashMap<RID, Vector2i> entry_chunks;
+            /// Where a piece's entry is: its chunk, and its index in the chunk's entries - set where
+            /// the entry is added and where the chunk is sorted, so an entry is found without a scan
+            struct EntryLocation {
+                    Vector2i chunk;
+                    int index = 0;
+            };
+            HashMap<RID, EntryLocation> entry_locations;
             Vector3 camera_position;
             float draw_distance = DEFAULT_DRAW_DISTANCE_M;
 
@@ -248,7 +258,11 @@ namespace godot {
             int pending_build_count = 0;
             /// --verbose: every piece's preload, build and clear in the log, to find a crash by the last
             const bool verbose = OS::get_singleton()->is_stdout_verbose();
-            bool building = false;               // main thread only: pending_build_count > 0, as last announced
+            bool building = false; // main thread only: pending_build_count > 0, as last announced
+            /// Main thread only: the next look at the camera (_watch_camera()), while there is one
+            Ref<SceneTreeTimer> watch_timer;
+            /// Main thread only: _process_streaming() is connected to process_frame - while there is work
+            bool applying = false;
             Vector<PendingBuild> planned_builds; // published by the worker
             Vector<PendingClear> planned_clears;
             /// Taken over by the main thread; builds are ordered farthest first and taken from the
@@ -281,10 +295,16 @@ namespace godot {
             int build_rate = 0;     // ...and in the last full second, for the debug window
             uint64_t build_rate_usec = 0;
             int passes = 0; // planning passes finished, so a caller can tell "not started yet"
+            struct AreaWatch {
+                    int watchers = 0;
+                    /// The target_revision it was announced ready at, 0 for none yet
+                    uint64_t announced_revision = 0;
+            };
+            HashMap<int, AreaWatch> watched_areas; // main thread only, by chunk radius
 
             static Vector2i _get_chunk_key(const Vector3 &p_origin);
             static float _get_chunk_distance(const Vector2i &p_key, const Vector3 &p_position);
-            void _sort_chunk(Chunk &p_chunk) const;
+            void _sort_chunk(Chunk &p_chunk);
             Entry *_get_entry(const RID &p_stream_rid);
             bool _plan(uint64_t p_revision, const Vector3 &p_camera_position);
             void _drop_freed_work();
@@ -293,9 +313,15 @@ namespace godot {
             int _get_pending_nearby_locked(int p_chunk_radius) const;
             void _request_plan(const Vector3 &p_position);
             void _worker_loop();
+            void _watch_camera();
             void _process_streaming();
+            void _set_applying(bool p_applying);
+            /// A plan is being made or its work waits to be applied. Must be called with the mutex held.
+            bool _has_work_locked() const;
             void _apply_plan();
             void _set_building(bool p_building);
+            /// area_ready for every watched area built since the camera's last plan
+            void _announce_ready_areas();
             /// Builds from the back of the queue until the deadline; false once it is reached
             bool _apply_builds(Vector<PendingBuild> &p_builds, uint64_t p_deadline);
             /// Hands each RID back to the consumer of its kind
@@ -344,7 +370,7 @@ namespace godot {
             void streaming_set_enabled(bool p_enabled);
             bool streaming_is_enabled() const;
 
-            void streaming_set_camera(Camera3D *p_camera);
+            void streaming_set_camera(uint64_t p_camera_id);
             /* Where the anchor is: its chunk is kept built - never cleared, its pieces built with
              * the prefetch budget while out of the camera's range - wherever the camera goes and
              * however far it is. Said again as the anchor moves; none after streaming_clear_anchor() */
@@ -363,6 +389,9 @@ namespace godot {
             bool area_is_ready(int p_chunk_radius = 1) const;
             /// Pieces of the chunks within p_chunk_radius of the camera's still to be built
             int area_get_pending_count(int p_chunk_radius = 1) const;
+            /// area_ready is emitted for the area while it is watched - by as many as watch it
+            void area_watch(int p_chunk_radius = 1);
+            void area_unwatch(int p_chunk_radius = 1);
             int streaming_get_streamed_count() const;
             Dictionary streaming_get_statistics() const;
     };

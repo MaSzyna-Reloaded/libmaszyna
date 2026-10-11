@@ -152,7 +152,7 @@ func test_powered_vehicle_without_inverter_count_does_not_turn_forces_into_nan()
 
     assert_true(driven.get_state()["main_switch_enabled"], "the line breaker should be closed")
     assert_false(is_nan(float(driven.get_state()["velocity"])), "velocity should not be NaN")
-    assert_false(is_nan(float(driven.get_state()["Ft"])), "traction force should not be NaN")
+    assert_false(is_nan(float(driven.get_state()["tractive_force"])), "traction force should not be NaN")
 
 
 func test_the_state_carries_each_inverter():
@@ -178,7 +178,7 @@ func test_driven_induction_motor_pulls_once_the_controller_moves():
         _feed_wire(power_source)
         await step(1)
 
-    assert_gt(float(driven.get_state()["Ft"]), 0.0, "a driven induction motor should pull with the controller up")
+    assert_gt(float(driven.get_state()["tractive_force"]), 0.0, "a driven induction motor should pull with the controller up")
 
 
 func test_apply_power_uses_canonical_current_collector_properties():

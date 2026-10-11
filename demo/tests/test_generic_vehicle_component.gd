@@ -65,3 +65,24 @@ func test_a_disabled_component_neither_ticks_nor_publishes() -> void:
     await step(SETTLE_TICKS)
     assert_eq(_probe.process_calls, before, "a disabled component is not ticked")
     assert_false(VehicleServer.vehicle_get_controller(_vehicle.get_vehicle_rid()).get_state().has("probe_process_calls"), "nor does it publish state")
+
+
+## A freed component node takes its component out of the vehicle: left in, it was still ticked
+## and read, and called back into the freed node (REQUIRED_CLEANING RC-123).
+func test_a_freed_component_node_leaves_the_vehicle() -> void:
+    var controller: VehicleController = VehicleServer.vehicle_get_controller(_vehicle.get_vehicle_rid())
+    var count: int = controller.get_components().size()
+    _probe.free()
+    _probe = null
+    await step(SETTLE_TICKS)
+    assert_eq(controller.get_components().size(), count - 1, "the component left the vehicle")
+    assert_false(controller.get_state().has("probe_process_calls"), "nor is it read into the dump")
+
+
+## Taken out of the tree and put back ("Edit FIZ"), the node leaves one component, not two.
+func test_a_component_node_put_back_is_one_component() -> void:
+    var controller: VehicleController = VehicleServer.vehicle_get_controller(_vehicle.get_vehicle_rid())
+    var count: int = controller.get_components().size()
+    _vehicle.remove_child(_probe)
+    _vehicle.add_child(_probe)
+    assert_eq(controller.get_components().size(), count, "the component was replaced, not doubled")

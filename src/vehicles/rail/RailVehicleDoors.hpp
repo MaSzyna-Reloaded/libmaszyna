@@ -20,10 +20,16 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            /* dMirrorMoveL/dMirrorMoveR of the original (DynObj.h) - the vehicle's, not the
+             * simulation's: 0 folded .. 1 out */
+            double mirror_left_position = 0.0;
+            double mirror_right_position = 0.0;
 
         protected:
             void _register_commands() override;
             void _unregister_commands() override;
+            /* The mirrors moved on by a step - called by the backend from its own step */
+            void _process_mirrors(double p_delta);
 
         public:
             /* Live state, read straight from the backend - nothing is stored. */
@@ -75,7 +81,7 @@ namespace godot {
                 VOLTAGE_0,
                 VOLTAGE_12,
                 VOLTAGE_24,
-                VOLTAGE_112,
+                VOLTAGE_110,
             };
             enum Type {
                 TYPE_SHIFT,
@@ -105,42 +111,72 @@ namespace godot {
             virtual void next_permit_preset() = 0;
             virtual void previous_permit_preset() = 0;
             /* The cab mirrors (DynObj.cpp:4207-4236): how far each side is unfolded, 0 folded .. 1 out */
-            virtual double get_mirror_left_position() const = 0;
-            virtual double get_mirror_right_position() const = 0;
+            double get_mirror_left_position() const;
+            double get_mirror_right_position() const;
             /* The mirrors are kept folded (MirrorForbidden, the cab's mirrors_sw: - Train.cpp:7726) */
             virtual bool get_mirrors_forbidden() const = 0;
             virtual void forbid_mirrors(bool p_state) = 0;
 
         private:
-            MAKE_MEMBER_GS_NR(Type, type, Type::TYPE_ROTATE);
-            MAKE_MEMBER_GS_NR(Controls, open_method, Controls::CONTROLS_PASSENGER);
-            MAKE_MEMBER_GS_NR(Controls, close_method, Controls::CONTROLS_PASSENGER);
-            MAKE_MEMBER_GS(float, open_time, -1.0f);
-            MAKE_MEMBER_GS(float, open_speed, 1.0f);
-            MAKE_MEMBER_GS(float, close_speed, 1.0f);
+            Type type = Type::TYPE_ROTATE;
+            Controls open_method = Controls::CONTROLS_PASSENGER;
+            Controls close_method = Controls::CONTROLS_PASSENGER;
+            float open_time = -1.0f;
+            float open_speed = 1.0f;
+            float close_speed = 1.0f;
             /* DoorMaxShiftL/R=, DoorMaxShiftPlug= absent: no movement (range, range_out, MOVER.h:1434-1435) */
-            MAKE_MEMBER_GS(float, max_shift, 0.0f);
-            MAKE_MEMBER_GS_NR(Voltage, voltage, Voltage::VOLTAGE_AUTO);
-            MAKE_MEMBER_GS(bool, close_warning, false);
-            MAKE_MEMBER_GS(bool, close_auto_close_warning, false);
-            MAKE_MEMBER_GS(float, close_delay, 0.0f);
-            MAKE_MEMBER_GS(float, open_delay, 0.0f);
-            MAKE_MEMBER_GS(float, open_with_permit, -1.0f);
-            MAKE_MEMBER_GS(bool, has_lock, false);
-            MAKE_MEMBER_GS(float, max_shift_plug, 0.0f);
-            MAKE_MEMBER_GS_NO_DEF(Array, permit_list);
-            MAKE_MEMBER_GS(int, permit_default, 1);
-            MAKE_MEMBER_GS(bool, close_auto_close_remote, false);
-            MAKE_MEMBER_GS(float, close_auto_close_velocity, -1.0f);
-            MAKE_MEMBER_GS(double, platform_max_speed, 0.0);
-            MAKE_MEMBER_GS(float, platform_max_shift, 0.0f);
-            MAKE_MEMBER_GS(float, platform_speed, 0.5f);
-            MAKE_MEMBER_GS(double, mirror_max_shift, 90.0);
-            MAKE_MEMBER_GS(double, mirror_close_velocity, 5.0);
-            MAKE_MEMBER_GS(bool, permit_required, false);
-            MAKE_MEMBER_GS_NR(PermitLight, permit_light_blinking, PermitLight::PERMIT_LIGHT_CONTINUOUS);
-            MAKE_MEMBER_GS_NR(PlatformType, platform_type, PlatformType::PLATFORM_TYPE_ROTATE);
-            MAKE_MEMBER_GS_NR(Side, side, Side::SIDE_LEFT);
+            float max_shift = 0.0f;
+            Voltage voltage = Voltage::VOLTAGE_AUTO;
+            bool close_warning = false;
+            bool close_auto_close_warning = false;
+            float close_delay = 0.0f;
+            float open_delay = 0.0f;
+            float open_with_permit = -1.0f;
+            bool has_lock = false;
+            float max_shift_plug = 0.0f;
+            Array permit_list;
+            int permit_default = 1;
+            bool close_auto_close_remote = false;
+            float close_auto_close_velocity = -1.0f;
+            double platform_max_speed = 0.0;
+            float platform_max_shift = 0.0f;
+            float platform_speed = 0.5f;
+            double mirror_max_shift = 90.0;
+            double mirror_close_velocity = 5.0;
+            bool permit_required = false;
+            PermitLight permit_light_blinking = PermitLight::PERMIT_LIGHT_CONTINUOUS;
+            PlatformType platform_type = PlatformType::PLATFORM_TYPE_ROTATE;
+            Side side = Side::SIDE_LEFT;
+
+        public:
+            MAKE_GS_NR(Type, type);
+            MAKE_GS_NR(Controls, open_method);
+            MAKE_GS_NR(Controls, close_method);
+            MAKE_GS(float, open_time);
+            MAKE_GS(float, open_speed);
+            MAKE_GS(float, close_speed);
+            MAKE_GS(float, max_shift);
+            MAKE_GS_NR(Voltage, voltage);
+            MAKE_GS(bool, close_warning);
+            MAKE_GS(bool, close_auto_close_warning);
+            MAKE_GS(float, close_delay);
+            MAKE_GS(float, open_delay);
+            MAKE_GS(float, open_with_permit);
+            MAKE_GS(bool, has_lock);
+            MAKE_GS(float, max_shift_plug);
+            MAKE_GS(Array, permit_list);
+            MAKE_GS(int, permit_default);
+            MAKE_GS(bool, close_auto_close_remote);
+            MAKE_GS(float, close_auto_close_velocity);
+            MAKE_GS(double, platform_max_speed);
+            MAKE_GS(float, platform_max_shift);
+            MAKE_GS(float, platform_speed);
+            MAKE_GS(double, mirror_max_shift);
+            MAKE_GS(double, mirror_close_velocity);
+            MAKE_GS(bool, permit_required);
+            MAKE_GS_NR(PermitLight, permit_light_blinking);
+            MAKE_GS_NR(PlatformType, platform_type);
+            MAKE_GS_NR(Side, side);
     };
 } // namespace godot
 

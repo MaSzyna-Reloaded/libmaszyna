@@ -90,6 +90,9 @@ var _vehicle_rids:Array[RID] = []
 ## scenery's `lua` scripts and its sounds
 var _scenario_scripts:Array[String] = []
 var _scenery_sounds:MaszynaLegacyScenerySounds = null
+## The scenery's own radio, what its events say on the radio is transmitted from - one a scenery,
+## gone with it
+var _scenery_radio:SceneryVirtualRadio = null
 
 ## Initial loading (autoload) is deferred to the first _process.
 func _ready() -> void:
@@ -234,6 +237,7 @@ func _clear_content(budget_msec:int = 0) -> void:
     unloading.emit()
     _scenario_scripts.clear()
     _scenery_sounds = null
+    _scenery_radio = null
     process_mode = Node.PROCESS_MODE_DISABLED
     VehicleServer.stepping_set_enabled(false)
     # Streaming builds content on process_frame, and the freeing below yields a frame for its

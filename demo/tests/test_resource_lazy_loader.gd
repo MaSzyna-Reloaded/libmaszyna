@@ -1,20 +1,25 @@
 extends MaszynaGutTest
 
-## ResourceLazyLoader: a resource is loaded when it is wanted, shared by its key, held while it is
-## held and let go once nobody holds it.
+## ResourceLazyLoader: a resource is shared by its key. With lazy loading it is loaded when it is
+## wanted, held while it is held and let go once nobody holds it; without it, it is loaded when it is
+## registered and kept until its last registration is freed.
 
 var _loads:int = 0
 var _rids:Array[RID] = []
+var _previous_lazy_loading:bool = false
 
 
 func before_each() -> void:
     _loads = 0
+    _previous_lazy_loading = ResourceLazyLoader.lazy_loading
+    ResourceLazyLoader.lazy_loading = true
 
 
 func after_each() -> void:
     for rid:RID in _rids:
         ResourceLazyLoader.resource_free(rid)
     _rids.clear()
+    ResourceLazyLoader.lazy_loading = _previous_lazy_loading
 
 
 func test_one_key_is_one_resource() -> void:
@@ -65,6 +70,33 @@ func test_data_reload_lets_go_of_held_resources() -> void:
     assert_false(ResourceLazyLoader.resource_is_resident(rid), "held over the data reload")
     assert_not_same(ResourceLazyLoader.resource_load(rid), before, "the old data was handed out again")
     ResourceLazyLoader.resource_release(rid)
+
+
+func test_without_lazy_loading_a_resource_is_loaded_when_registered() -> void:
+    ResourceLazyLoader.lazy_loading = false
+    var rid:RID = _register("test/eager")
+    _register("test/eager")
+    assert_true(ResourceLazyLoader.resource_is_resident(rid), "not loaded by its registration")
+    assert_eq(_loads, 1, "loaded again by a second registration")
+
+
+func test_without_lazy_loading_a_released_resource_is_kept() -> void:
+    ResourceLazyLoader.lazy_loading = false
+    var rid:RID = _register("test/eager_kept")
+    var loaded:Resource = ResourceLazyLoader.resource_load(rid)
+    assert_same(_hold(rid), loaded, "the resource loaded at registration was not the one held")
+    ResourceLazyLoader.resource_release(rid)
+    assert_true(ResourceLazyLoader.resource_is_resident(rid), "let go after the last release")
+    assert_eq(_loads, 1, "loaded again after the release")
+
+
+func test_without_lazy_loading_the_last_registration_lets_go() -> void:
+    ResourceLazyLoader.lazy_loading = false
+    var rid:RID = ResourceLazyLoader.resource_register("test/eager_freed", _load)
+    ResourceLazyLoader.resource_free(rid)
+    var again:RID = _register("test/eager_freed")
+    assert_eq(_loads, 2, "kept after its last registration was freed")
+    assert_true(ResourceLazyLoader.resource_is_resident(again), "not loaded by its new registration")
 
 
 func _register(key:String) -> RID:

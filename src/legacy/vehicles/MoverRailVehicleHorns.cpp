@@ -1,5 +1,6 @@
 #include "MoverRailVehicleHorns.hpp"
 #include "legacy/maszyna-mover/utilities.h"
+#include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
 
 namespace godot {
@@ -10,9 +11,9 @@ namespace godot {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {
-            mover->WarningSignal |= 1;
+            mover->WarningSignal |= MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_LOW;
         } else {
-            mover->WarningSignal &= ~1;
+            mover->WarningSignal &= ~MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_LOW;
         }
     }
 
@@ -20,9 +21,9 @@ namespace godot {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {
-            mover->WarningSignal |= 2;
+            mover->WarningSignal |= MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_HIGH;
         } else {
-            mover->WarningSignal &= ~2;
+            mover->WarningSignal &= ~MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_HIGH;
         }
     }
 
@@ -30,31 +31,34 @@ namespace godot {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {
-            mover->WarningSignal |= 4;
+            mover->WarningSignal |= MaszynaMoverVehicleServer::WARNING_SIGNAL_WHISTLE;
         } else {
-            mover->WarningSignal &= ~4;
+            mover->WarningSignal &= ~MaszynaMoverVehicleServer::WARNING_SIGNAL_WHISTLE;
         }
     }
 
 
     bool MoverRailVehicleHorns::get_low_pressed() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(mover->WarningSignal, 1) : false;
+        return mover != nullptr ? TestFlag(mover->WarningSignal, MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_LOW)
+                                : false;
     }
 
     bool MoverRailVehicleHorns::get_high_pressed() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(mover->WarningSignal, 2) : false;
+        return mover != nullptr ? TestFlag(mover->WarningSignal, MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_HIGH)
+                                : false;
     }
 
     bool MoverRailVehicleHorns::get_whistle_pressed() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(mover->WarningSignal, 4) : false;
+        return mover != nullptr ? TestFlag(mover->WarningSignal, MaszynaMoverVehicleServer::WARNING_SIGNAL_WHISTLE)
+                                : false;
     }
 
     // The combination is the vehicle layer's, not the Mover's: DynObj.cpp:4884-4891. From the
     // Mover it reads Vel, AlarmChainFlag, EmergencyBrakeWarningSignal and WarningSignal.
-    int MoverRailVehicleHorns::get_combined_signal() const {
+    int MoverRailVehicleHorns::_get_combined_signal() const {
         const TMoverParameters *mover = get_mover();
         if (mover == nullptr) {
             return 0;
@@ -66,17 +70,20 @@ namespace godot {
 
     bool MoverRailVehicleHorns::get_low_active() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(get_combined_signal(), 1) : false;
+        return mover != nullptr ? TestFlag(_get_combined_signal(), MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_LOW)
+                                : false;
     }
 
     bool MoverRailVehicleHorns::get_high_active() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(get_combined_signal(), 2) : false;
+        return mover != nullptr ? TestFlag(_get_combined_signal(), MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_HIGH)
+                                : false;
     }
 
     bool MoverRailVehicleHorns::get_whistle_active() const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? TestFlag(get_combined_signal(), 4) : false;
+        return mover != nullptr ? TestFlag(_get_combined_signal(), MaszynaMoverVehicleServer::WARNING_SIGNAL_WHISTLE)
+                                : false;
     }
 
     int MoverRailVehicleHorns::get_horn() const {
@@ -84,10 +91,10 @@ namespace godot {
         if (mover == nullptr) {
             return 0;
         }
-        if (TestFlag(mover->WarningSignal, 1)) {
+        if (TestFlag(mover->WarningSignal, MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_LOW)) {
             return 1;
         }
-        return TestFlag(mover->WarningSignal, 2) ? -1 : 0;
+        return TestFlag(mover->WarningSignal, MaszynaMoverVehicleServer::WARNING_SIGNAL_HORN_HIGH) ? -1 : 0;
     }
 
     void MoverRailVehicleHorns::_fill_state_dictionary(Dictionary &p_state) const {

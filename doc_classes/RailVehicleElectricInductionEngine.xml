@@ -9,6 +9,28 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_field_current" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_force_full" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_force_max" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_motor_voltage" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="braking_decay_start_velocity" type="float" setter="set_braking_decay_start_velocity" getter="get_braking_decay_start_velocity" default="0.0">
 			[code]Engine:Vh1[/code]

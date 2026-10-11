@@ -128,12 +128,10 @@ func _process_tool(_delta):
         _current_rotation = _target_mesh_rotation
         _current_position = _target_mesh_position
         _setup_phase = false
-    elif animation_speed <= 0.0:
-        _current_rotation = _target_mesh_rotation
-        _current_position = _target_mesh_position
     else:
-        _current_rotation = _current_rotation.lerp(_target_mesh_rotation, _delta * animation_speed)
-        _current_position = _current_position.lerp(_target_mesh_position, _delta * animation_speed)
+        var weight:float = friction_weight(_delta, animation_speed)
+        _current_rotation = _current_rotation.lerp(_target_mesh_rotation, weight)
+        _current_position = _current_position.lerp(_target_mesh_position, weight)
 
     if not is_instance_valid(_mesh):
         return

@@ -43,10 +43,25 @@ func test_a_disabled_radio_leaves_no_command_behind() -> void:
             vehicle, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio
     assert_true(VehicleServer.vehicle_has_command(vehicle, "radio_call1"), "the radio's call is a command")
     radio.enabled = false
-    # a component's enabling lands on its vehicle's next step (RC-045)
-    await step(1)
     for command:String in ["radio", "radio_call1", "radio_call3"]:
         assert_false(VehicleServer.vehicle_has_command(vehicle, command), "%s gone with the radio" % command)
+
+
+## A component enabled again takes its commands back at once, and says so
+func test_an_enabled_component_takes_its_commands_at_once() -> void:
+    var description:VehicleController = MoverRailVehicleController.new()
+    description.add_component(MoverRailVehicleRadio.new())
+    var vehicle:RID = build_vehicle("RadioEnableTest", description).get_rid()
+    var radio:RailVehicleRadio = VehicleServer.vehicle_component_get(
+            vehicle, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio
+    radio.enabled = false
+    watch_signals(radio)
+    radio.enabled = true
+    assert_true(VehicleServer.vehicle_has_command(vehicle, "radio_call1"), "the call is a command again")
+    assert_signal_emitted_with_parameters(radio, "enable_changed", [true])
+    assert_signal_emitted(radio, "component_enabled")
+    radio.enabled = true
+    assert_signal_emit_count(radio, "enable_changed", 1, "nothing changed, nothing said")
 
 
 ## RC-019: the master controller's position is the driver's; configuring the universal controller

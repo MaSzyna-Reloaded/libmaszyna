@@ -58,17 +58,32 @@ namespace godot {
             /// Traction.cpp:107-110 - a span declaring 0.01 Ohm/km (the old default) gets 0.075
             static constexpr double LEGACY_RESISTIVITY = 0.01;
             static constexpr double DEFAULT_RESISTIVITY = 0.075;
-            /// Traction.cpp:112 - the data gives Ohm/km, the network works in Ohm/m
-            static constexpr double OHM_PER_KM_TO_OHM_PER_M = 0.001;
+            /* TTraction::iLast bits (Traction.h:31): the span ends its section (Traction.cpp:400),
+             * or is the second to last (Traction.cpp:404). */
+            static constexpr int LAST_SPAN = 0x1;
+            static constexpr int SECOND_LAST_SPAN = 0x2;
             /* Either flag of TTraction::iLast sends the pantograph back to an area search
              * (DynObj.cpp:8747). */
-            static constexpr int LAST_SPAN_FLAGS = 0x3;
+            static constexpr int LAST_SPAN_FLAGS = LAST_SPAN | SECOND_LAST_SPAN;
+            /* How far a span's box in the spatial index reaches past its ends - the wrapper's own,
+             * the original searches whole scene cells */
+            static constexpr double WIRE_AABB_MARGIN = 5.0;
+            /* The network's leakage, so an unloaded network is never an open circuit
+             * (TractionPower.h:58-59, TractionPower.cpp:112-113) */
+            static constexpr double LEAKAGE_ADMITTANCE = 1e-10;
+            /* Below it a load still counts as present: the fuse timer waits for it to go
+             * (TractionPower.cpp:122) */
+            static constexpr double FUSE_LOAD_RESISTANCE = 100.0;
+            /* A recuperating network raises the substation's voltage (TractionPower.cpp:128) */
+            static constexpr double RECUPERATION_VOLTAGE_FACTOR = 1.083;
+            /* The resistance a span assumes with no current drawn (Traction.cpp:483-486) */
+            static constexpr double NO_LOAD_RESISTANCE = 10000.0;
             /* How far from a section's open end the powered span it hangs beside may lie - the
              * bounding radius of one scene cell the original searches (scene.h:221,
              * 0.5 * sqrt(2) * EU07_CELLSIZE 250). */
             static constexpr double SECTION_END_SEARCH_RADIUS = 176.78;
 
-            /// Mirrors TTractionPowerSource's own members.
+            /// Mirrors TTractionPowerSource's own members and their defaults (TractionPower.h:48-59).
             struct PowerSource {
                     String name;
                     double nominal_voltage = 0.0;
@@ -87,23 +102,28 @@ namespace godot {
                     bool is_section = false;
 
                     double total_current = 0.0;
-                    double total_admittance = 1e-10;
-                    double total_previous_admittance = 1e-10;
-                    double output_voltage = 0.0;
+                    double total_admittance = LEAKAGE_ADMITTANCE;
+                    double total_previous_admittance = LEAKAGE_ADMITTANCE;
                     bool fast_fuse = false;
                     bool slow_fuse = false;
                     double fuse_timer = 0.0;
                     int fuse_counter = 0;
-                    /// Whether any load asked for current since the last tick - see tick().
-                    bool loaded = false;
 
                     bool fuse() const {
                         return fast_fuse || slow_fuse;
                     }
                     /// Port of TTractionPowerSource::Update(dt).
                     void tick(double p_delta);
-                    /// Port of TTractionPowerSource::CurrentGet(res).
-                    double current_get(double p_resistance);
+                    /* What the source puts out by the load of the previous tick - the part of
+                     * TTractionPowerSource::CurrentGet(res) both halves below share */
+                    double output_current() const;
+                    /* The current a load of p_resistance takes - the reading half of
+                     * TTractionPowerSource::CurrentGet(res) (TractionPower.cpp:117) */
+                    double current_get(double p_resistance) const;
+                    /* A load of p_resistance drawn in this tick, counted by the next one - the
+                     * writing half of CurrentGet(res): the admittance added, and a fuse waiting
+                     * for the load to go (TractionPower.cpp:119-130) */
+                    void draw(double p_resistance);
             };
 
             struct Wire {
@@ -144,7 +164,17 @@ namespace godot {
             int64_t next_wire_id = 0;
             Ref<SpatialIndex> spatial_index;
 
-            void _on_process_frame();
+            /* A source feeding a span and the resistance it sees */
+            struct Feed {
+                    RID source;
+                    double resistance = 0.0;
+            };
+
+            void _on_simulation_advanced(double p_seconds);
+            /* The span's feeds for a load of p_resistance on it, into p_feeds; returns how many */
+            int _wire_feeds(const Wire &p_wire, double p_resistance, Feed (&p_feeds)[2]) const;
+            /* The load the vehicle stands for, by its previous reading (Traction.cpp:483-486) */
+            static double _load_resistance(double p_assumed_voltage, double p_current);
             void _resolve_power_sources();
             void _connect_wires();
             /// Port of TTraction::WhereIs() over every span, once the chain is built.
@@ -164,7 +194,6 @@ namespace godot {
 
         public:
             TractionServer();
-            ~TractionServer() override;
 
             RID power_source_create();
             void power_source_set_params(
@@ -195,10 +224,15 @@ namespace godot {
              * scenery load, after every wire and source of that load exists. */
             void network_build();
 
-            /* Port of TTraction::VoltageGet(u, i). `p_assumed_voltage` is the vehicle's own
+            /* Port of TTraction::VoltageGet(u, i), the reading half: the voltage on the span for
+             * the sources' load of the previous tick. `p_assumed_voltage` is the vehicle's own
              * previous reading, used only to derive an equivalent load resistance - the same
              * relaxation the original uses - and `p_current` the instantaneous draw. */
-            double wire_get_voltage(const RID &p_wire, double p_assumed_voltage, double p_current);
+            double wire_get_voltage(const RID &p_wire, double p_assumed_voltage, double p_current) const;
+            /* The other half of TTraction::VoltageGet(u, i): the load drawn from the span in this
+             * tick, which the sources feeding it count on their next tick. Called once per
+             * collector per step, with the same arguments as wire_get_voltage(). */
+            void wire_draw_current(const RID &p_wire, double p_assumed_voltage, double p_current);
 
             /* Which wire span passes above a point, as {rid, height}. `height` is INF when no
              * wire is found - the original's own "no wire in reach" (scene.cpp resets

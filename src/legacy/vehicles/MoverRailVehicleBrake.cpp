@@ -1,5 +1,6 @@
 #include "MoverRailVehicleBrake.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "utils/utils.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/rail/RailVehicleBrake.hpp"
@@ -9,8 +10,15 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
-    /* The data gives masses in tonnes, the Mover takes kilograms (Mover.cpp:10774) */
-    static constexpr double KILOGRAMS_PER_TONNE = 1000.0;
+    namespace {
+        /* LoadFIZ_Brake (Mover.cpp:10394-10475) */
+        /* A pressure below it means the data gives none (Mover.cpp:10416, 10423) */
+        constexpr double MIN_BRAKE_PRESSURE = 0.01;
+        /* The control pipe starts slightly off its nominal pressure (Mover.cpp:10469) */
+        constexpr double DEFAULT_CONTROL_PIPE_PRESSURE = 5.0;
+        constexpr double CONTROL_PIPE_PRESSURE_JITTER = 0.001;
+        constexpr double CONTROL_PIPE_PRESSURE_JITTER_RANGE = 10.0;
+    } // namespace
 
     void MoverRailVehicleBrake::_bind_methods() {}
 
@@ -94,6 +102,12 @@ namespace godot {
     void MoverRailVehicleBrake::local_brake_set(const double p_level) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER_BRAKE(mover);
+        // the original's independentbrakeset does not check (Train.cpp:1826), but it comes only from a
+        // cab's localbrake: gauge; the keys go through independentbrakeincrease, refused on a vehicle
+        // whose local brake is the hand wheel (Train.cpp:1724) - here the keys hold the handle by "set"
+        if (mover->LocalBrake == TLocalBrake::ManualBrake) {
+            return;
+        }
         // LocalBrakePosA is already normalized 0..1 in the mover (unlike the main brake's
         // arbitrary Handle-position units), so no range conversion is needed here.
         mover->LocalBrakePosA = CLAMP(p_level, 0.0, 1.0);
@@ -102,6 +116,10 @@ namespace godot {
     void MoverRailVehicleBrake::local_brake_increase() {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER_BRAKE(mover);
+        // no independent brake on a vehicle whose local brake is the hand wheel (Train.cpp:1724)
+        if (mover->LocalBrake == TLocalBrake::ManualBrake) {
+            return;
+        }
         // One notch per call, mirroring this wrapper's main_controller_increase(step=1)
         // convention for a single cab-click/command invocation.
         mover->IncLocalBrakeLevel(1);
@@ -193,7 +211,7 @@ namespace godot {
             return;
         }
         // Hardware/setup facts - change only when the vehicle's brake config is (re)applied, not
-        // every tick, so they belong here rather than in _do_fetch_state_from_mover. Read from
+        // every tick, so they belong here rather than in _fill_state_dictionary(). Read from
         // RailVehicleBrake's own already-bound properties (the authoring source of truth) rather than
         // re-deriving from mover internals a second time.
         p_config["brake_ep_enabled"] = mover->BrakeSystem == TBrakeSystem::ElectroPneumatic;
@@ -217,7 +235,7 @@ namespace godot {
         p_config["brake_local_handle_available"] = get_cntrl_local_brake_handle_type() != BRAKE_HANDLE_TYPE_NO_HANDLE;
         p_config["brake_max_cylinder_pressure"] = get_max_cylinder_pressure();
         p_config["brake_max_control_pressure"] =
-                get_max_aux_pressure() >= 0.01 ? get_max_aux_pressure() : get_max_cylinder_pressure();
+                get_max_aux_pressure() >= MIN_BRAKE_PRESSURE ? get_max_aux_pressure() : get_max_cylinder_pressure();
 
         if (mover->Handle == nullptr) {
             return;
@@ -550,7 +568,8 @@ namespace godot {
         p_mover->BrakeDelays = get_cntrl_brake_delays();                           // BrakeDelays
         // MaxBPMass, in tonnes in the data and only then in kilograms (Mover.cpp:10771-10775)
         if (get_cntrl_max_brake_pressure_mass() > 0.0) {
-            p_mover->MBPM = get_cntrl_max_brake_pressure_mass() * KILOGRAMS_PER_TONNE;
+            p_mover->MBPM =
+                    get_cntrl_max_brake_pressure_mass() * LibMaszynaUnits::KILOGRAMS_PER_TONNE; // Mover.cpp:10774
         }
         p_mover->BrakeOpModes = get_cntrl_brake_op_modes();                                      // BrakeOpModes
         p_mover->BrakeHandle = brake_handle_type_map.at(get_cntrl_brake_handle_type());          // BrakeHandle
@@ -569,8 +588,8 @@ namespace godot {
         p_mover->SpringBrakeCutsOffDrive = get_cntrl_spring_brake_cuts_off_drive();
         p_mover->SpringBrakeDriveEmergencyVel = get_cntrl_spring_brake_drive_emergency_velocity();
 
-        /* FIXME: BrakeValve nie jest tylko enumem, jesli w FIZ wpisze sie nieznany symbol zawierający ESt, to EXE
-         * ustawi BrakeValve=ESt3. Powinien to ogarnąć importer FIZ
+        /* FIXME: BrakeValve is not just an enum: an unknown symbol containing ESt in the FIZ makes the
+         * EXE set BrakeValve=ESt3. The FIZ importer should take care of it
          *
          * Whoever thought making BrakeValve half-enum, half-parser-voodoo was a good idea
          * condemned everyone else to cargo-cult their bugs. Thanks a lot, dear original MaSzyna code authors.
@@ -584,20 +603,22 @@ namespace godot {
                 brake_valve_to_subsystem_map.find(p_mover->BrakeValve);
         p_mover->BrakeSubsystem = it != brake_valve_to_subsystem_map.end() ? it->second : TBrakeSubSystem::ss_None;
 
-        p_mover->NBpA = CLAMP<int, int, int>(get_friction_elements_per_axle(), 0, 4);
+        p_mover->NBpA = get_friction_elements_per_axle();
         p_mover->MaxBrakeForce = get_brake_force_max();
         p_mover->BrakeValveSize = get_est_valve_size();
-        p_mover->TrackBrakeForce = get_brake_force_traction() * 1000.0;
+        p_mover->TrackBrakeForce =
+                get_brake_force_traction() * LibMaszynaUnits::NEWTONS_PER_KILONEWTON; // Mover.cpp:10405
         p_mover->MaxBrakePress[3] = get_max_cylinder_pressure();
         if (get_max_cylinder_pressure() > 0.0) {
             p_mover->BrakeCylNo = get_cylinder_count();
 
             if (get_cylinder_count() > 0) {
-                p_mover->MaxBrakePress[0] =
-                        get_max_aux_pressure() < 0.01 ? get_max_cylinder_pressure() : get_max_aux_pressure();
+                p_mover->MaxBrakePress[0] = get_max_aux_pressure() < MIN_BRAKE_PRESSURE ? get_max_cylinder_pressure()
+                                                                                        : get_max_aux_pressure();
                 p_mover->MaxBrakePress[1] = get_max_tare_pressure();
                 p_mover->MaxBrakePress[2] = get_max_medium_pressure();
-                p_mover->MaxBrakePress[4] = get_max_antislip_pressure() < 0.01 ? 0.0 : get_max_antislip_pressure();
+                p_mover->MaxBrakePress[4] =
+                        get_max_antislip_pressure() < MIN_BRAKE_PRESSURE ? 0.0 : get_max_antislip_pressure();
 
                 p_mover->BrakeCylRadius = get_cylinder_radius();
                 p_mover->BrakeCylDist = get_cylinder_distance();
@@ -609,7 +630,8 @@ namespace godot {
                 p_mover->BrakeCylMult[1] = get_cylinder_gear_ratio_low();
                 p_mover->BrakeCylMult[2] = get_cylinder_gear_ratio_high();
 
-                p_mover->P2FTrans = 100 * M_PI * std::pow(get_cylinder_radius(), 2);
+                // Mover.cpp:10438 - kN/bar
+                p_mover->P2FTrans = LibMaszynaUnits::KILOPASCALS_PER_BAR * M_PI * std::pow(get_cylinder_radius(), 2);
 
                 p_mover->LoadFlag = (get_cylinder_gear_ratio_low() > 0.0 || get_max_tare_pressure() > 0.0) ? 1 : 0;
 
@@ -625,10 +647,16 @@ namespace godot {
             p_mover->P2FTrans = 0;
         }
 
+        // Mover.cpp:10469-10471 - the control pipe starts slightly off its nominal pressure, unless
+        // the FIZ gives HiPP (pipe_pressure_max 0 means it does not), and the high pressure is that
         p_mover->CntrlPipePress =
-                5 + (0.001 * (UtilityFunctions::randf_range(0.0, 10.0) - UtilityFunctions::randf_range(0.0, 10.0)));
-        /* PipePress i HighPipePress musza byc skopiowane */
-        p_mover->HighPipePress = get_pipe_pressure_max();
+                get_pipe_pressure_max() > 0.0
+                        ? get_pipe_pressure_max()
+                        : DEFAULT_CONTROL_PIPE_PRESSURE +
+                                  (CONTROL_PIPE_PRESSURE_JITTER *
+                                   (UtilityFunctions::randf_range(0.0, CONTROL_PIPE_PRESSURE_JITTER_RANGE) -
+                                    UtilityFunctions::randf_range(0.0, CONTROL_PIPE_PRESSURE_JITTER_RANGE)));
+        p_mover->HighPipePress = p_mover->CntrlPipePress;
         p_mover->LowPipePress = get_pipe_pressure_min();
         // Mover.cpp:10474 - LoadFIZ derives it; the time-controlled handles of the AI steer by it
         p_mover->DeltaPipePress = p_mover->HighPipePress - p_mover->LowPipePress;

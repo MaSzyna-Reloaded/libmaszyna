@@ -66,3 +66,24 @@ func test_fiz_pantograph_presets_map_to_the_enum():
     assert_eq(parsed.pantograph_presets, PackedInt32Array([
             RailVehicleSwitches.PANTOGRAPH_PRESET_NONE, RailVehicleSwitches.PANTOGRAPH_PRESET_BOTH,
             RailVehicleSwitches.PANTOGRAPH_PRESET_OWN_END]))
+
+
+# The cab's open motor connectors button springs back unless the vehicle's is a toggle
+# (StLinSwitchType, Train.cpp:5045)
+func test_config_says_whether_the_motor_connectors_button_is_impulse():
+    assert_true(train.get_config()["motor_connectors_switch_impulse"])
+    switches.motor_connectors_impulse = false
+    await wait_idle_frames(2)
+    assert_false(train.get_config()["motor_connectors_switch_impulse"])
+
+
+# Train.cpp:5045 - every MotorConnectors= value but "toggle" is an impulse button
+func test_fiz_motor_connectors_is_impulse_unless_toggle():
+    var cases:Dictionary[String, bool] = {"Toggle": false, "impulse": true, "push": true}
+    for value:String in cases:
+        var parser:MaszynaParser = MaszynaParser.new()
+        parser.initialize(("MotorConnectors=%s" % value).to_utf8_buffer())
+        var context:FizImportContext = FizImportContext.new()
+        FizTrainSwitchesParser.new().parse(parser, context, "Switches:")
+        var parsed:RailVehicleSwitches = context.get_part("RailVehicleSwitches")
+        assert_eq(parsed.motor_connectors_impulse, cases[value], value)

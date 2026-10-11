@@ -1,5 +1,5 @@
 #include "PlayerServer.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverServer.hpp"
 #include "person/PersonServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -17,7 +17,7 @@ namespace godot {
     static void trainset_drivers_take_control(const RID &p_vehicle) {
         const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
         VehicleServer *vehicles = VehicleServer::get_instance();
-        const DriverSystem *drivers = DriverSystem::get_instance();
+        const DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(rail_vehicles);
         ERR_FAIL_NULL(vehicles);
         ERR_FAIL_NULL(drivers);
@@ -142,7 +142,7 @@ namespace godot {
      * out: one driver to a vehicle (TController::MoveTo(), Driver.cpp:5864-5880) */
     void PlayerServer::_on_cabin_person_moved(const RID &p_person, const RID &p_cabin, const RID & /* p_previous */) {
         VehicleServer *vehicles = VehicleServer::get_instance();
-        const DriverSystem *drivers = DriverSystem::get_instance();
+        const DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(vehicles);
         ERR_FAIL_NULL(drivers);
         const RID entered = vehicles->cabin_get_vehicle(p_cabin);
@@ -244,7 +244,7 @@ namespace godot {
      * driver off first so that one already driving starts over */
     void PlayerServer::player_hand_over_vehicle() {
         VehicleServer *vehicles = VehicleServer::get_instance();
-        const DriverSystem *drivers = DriverSystem::get_instance();
+        const DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(vehicles);
         ERR_FAIL_NULL(drivers);
         const RID driver = drivers->vehicle_get_driver(vehicle);

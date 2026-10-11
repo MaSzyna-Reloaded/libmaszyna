@@ -28,13 +28,22 @@ namespace godot {
             TypedArray<RailVehicleWWListItem> wwlist;
 
             /* Engine: (Kont.), przekladnia elektryczna */
-            MAKE_MEMBER_GS(bool, generator_voltage_flat, false);
-            MAKE_MEMBER_GS(double, hyperbolic_speed, 1.0);
-            MAKE_MEMBER_GS(double, additional_speed, 1.0);
-            MAKE_MEMBER_GS(double, power_correction_ratio, 1.0);
-            MAKE_MEMBER_GS(int, shunt_relay_type, 0);
-            MAKE_MEMBER_GS(bool, shunt_mode_allowed, false);
-            MAKE_MEMBER_GS(double, heating_rpm, 0.0);
+            bool generator_voltage_flat = false;
+            double hyperbolic_speed = 1.0;
+            double additional_speed = 1.0;
+            double power_correction_ratio = 1.0;
+            int shunt_relay_type = 0;
+            bool shunt_mode_allowed = false;
+            double heating_rpm = 0.0;
+
+        public:
+            MAKE_GS(bool, generator_voltage_flat);
+            MAKE_GS(double, hyperbolic_speed);
+            MAKE_GS(double, additional_speed);
+            MAKE_GS(double, power_correction_ratio);
+            MAKE_GS(int, shunt_relay_type);
+            MAKE_GS(bool, shunt_mode_allowed);
+            MAKE_GS(double, heating_rpm);
 
         protected:
             /* The traction motors driven by the generator, installed by the implementation that owns them */

@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://rdng3voouw47"
+path="res://.godot/imported/tem2-234.fiz-7919e2acfc6b2b8e5dbea8cdc99a4347.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/tem2u_v2/tem2-234.fiz"
+dest_files=["res://.godot/imported/tem2-234.fiz-7919e2acfc6b2b8e5dbea8cdc99a4347.res"]
+
+[params]
+

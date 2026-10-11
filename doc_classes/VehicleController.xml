@@ -90,10 +90,10 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_state">
+		<method name="get_state" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-				Everything this vehicle reports about itself, by name: its own values and those of every enabled component, in one flat dictionary. Answered from the per-vehicle cache in [VehicleServer], which is rebuilt when the simulation steps or a command runs against the vehicle, so reading it every frame costs a lookup rather than composing it again. A reader after a single value is better served by that value's component, see [method VehicleServer.vehicle_component_get].
+				Everything this vehicle reports about itself, by name: its own values and those of every enabled component, in one flat dictionary, composed on each call. A reader every frame takes the cached [method VehicleServer.vehicle_dump_state] instead; a reader after a single value is better served by that value's component, see [method VehicleServer.vehicle_component_get].
 			</description>
 		</method>
 		<method name="get_state_serial" qualifiers="const">
@@ -148,6 +148,13 @@
 			<param index="1" name="callable" type="Callable" />
 			<description>
 				Registers a command this vehicle answers to. A command registered twice is an error.
+			</description>
+		</method>
+		<method name="remove_component">
+			<return type="void" />
+			<param index="0" name="component" type="VehicleComponent" />
+			<description>
+				Lets [param component] go: it leaves the vehicle and is no longer processed with it nor read into its state and configuration. What a proxy node does when it leaves the tree.
 			</description>
 		</method>
 		<method name="send_command">

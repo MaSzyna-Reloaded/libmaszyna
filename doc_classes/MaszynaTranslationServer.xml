@@ -24,6 +24,10 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;en&quot;">
+		</member>
+	</members>
 	<signals>
 		<signal name="translation_languages_changed">
 			<description>

@@ -23,6 +23,7 @@ namespace godot {
             void _apply_configuration() override;
 
         public:
+            void apply_vehicle_config() override;
             void _fill_state_dictionary(Dictionary &p_state) const override;
             bool get_active() const override;
             double get_desired_velocity() const override;

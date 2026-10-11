@@ -199,16 +199,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_handle_release_flow" qualifiers="const">
-			<return type="float" />
-			<description>
-			</description>
-		</method>
-		<method name="get_handle_timing_reservoir_flow" qualifiers="const">
-			<return type="float" />
-			<description>
-			</description>
-		</method>
 		<method name="get_handle_ep_time_controlled" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -220,8 +210,18 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_handle_release_flow" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
 		<method name="get_handle_time_controlled" qualifiers="const">
 			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_handle_timing_reservoir_flow" qualifiers="const">
+			<return type="float" />
 			<description>
 			</description>
 		</method>
@@ -523,8 +523,8 @@
 		<member name="max_tare_pressure" type="float" setter="set_max_tare_pressure" getter="get_max_tare_pressure" default="0.0">
 			Maximum brake cylinder pressure at tare (an empty) load in bar.
 		</member>
-		<member name="pipe_pressure_max" type="float" setter="set_pipe_pressure_max" getter="get_pipe_pressure_max" default="5.0">
-			Nominal high (charged) main pipe pressure in bar.
+		<member name="pipe_pressure_max" type="float" setter="set_pipe_pressure_max" getter="get_pipe_pressure_max" default="0.0">
+			Nominal high (charged) main pipe pressure in bar ([code]Brake.HiPP[/code]). 0 when the FIZ gives none: the control pipe then starts at 5 bar with a small random error, as in the original.
 		</member>
 		<member name="pipe_pressure_min" type="float" setter="set_pipe_pressure_min" getter="get_pipe_pressure_min" default="3.5">
 			Nominal low (reduced) main pipe pressure in bar.

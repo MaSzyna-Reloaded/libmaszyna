@@ -76,10 +76,10 @@ func test_whoever_drove_the_vehicle_entered_rides_along() -> void:
 
 func test_the_player_goes_along_into_the_next_vehicle_with_its_driver() -> void:
     _couple(RailVehicleController.COUPLER_END_FRONT, GANGWAY)
-    DriverSystem.driver_attach_delegate(driver, DriverDelegate.new())
+    attach_driver_implementation(driver, DriverImplementation.new())
     var other:RID = PersonServer.person_create()
     RailVehicleServer.person_enter_rear_cabin(other, second, DRIVER)
-    DriverSystem.driver_attach_delegate(other, DriverDelegate.new())
+    attach_driver_implementation(other, DriverImplementation.new())
     PlayerServer.player_take_over_vehicle(first)
     var player:RID = PlayerServer.player_get_person()
     RailVehicleServer.person_move_to_rear_cabin(player)
@@ -89,6 +89,6 @@ func test_the_player_goes_along_into_the_next_vehicle_with_its_driver() -> void:
 
     assert_eq(PlayerServer.player_get_vehicle(), second, "the player is in the vehicle entered")
     assert_signal_emitted_with_parameters(PlayerServer, "player_vehicle_changed", [second, first])
-    assert_eq(DriverSystem.vehicle_get_driver(second), driver, "its driver came along")
+    assert_eq(DriverServer.vehicle_get_driver(second), driver, "its driver came along")
     assert_false(VehicleServer.person_get_vehicle(other).is_valid(), "the one there got out")
     PersonServer.person_free(other)

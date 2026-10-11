@@ -135,10 +135,9 @@ func _process_tool(delta):
         _current_rotation = _target_mesh_rotation
         _sounded_value = value
     else:
-        # Gauge.cpp:364-375 - no friction, or a step longer than half of it, sets it outright
-        var weight:float = delta * animation_speed if animation_speed > 0.0 else 1.0
-        _current_rotation = _current_rotation.lerp(_target_mesh_rotation, minf(weight, 1.0))
-        _current_position = _current_position.lerp(_target_mesh_position, minf(weight, 1.0))
+        var weight:float = friction_weight(delta, animation_speed)
+        _current_rotation = _current_rotation.lerp(_target_mesh_rotation, weight)
+        _current_position = _current_position.lerp(_target_mesh_position, weight)
 
     if not _setup_phase and not value == _sounded_value:
         _play_sound(_sounded_value)

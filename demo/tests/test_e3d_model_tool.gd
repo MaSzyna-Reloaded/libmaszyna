@@ -4,7 +4,7 @@ var tool: Node
 
 
 func before_each() -> void:
-    tool = load("res://addons/libmaszyna/e3d/e3d_model_tool.gd").new()
+    tool = load("res://addons/libmaszyna/legacy/e3d/e3d_model_tool.gd").new()
     add_child_autoqfree(tool)
 
 

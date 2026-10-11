@@ -20,13 +20,24 @@ namespace godot {
 
         public:
             enum LoadUnit { LOAD_UNIT_TONS, LOAD_UNIT_PIECES };
-            MAKE_MEMBER_GS_NR(LoadUnit, load_unit, LoadUnit::LOAD_UNIT_TONS);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<String>, accepted_loads);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<float>, minimum_load_offsets)
-            MAKE_MEMBER_GS(float, max_load, 0.0f);
-            MAKE_MEMBER_GS(double, overload_factor, 0.0f);
-            MAKE_MEMBER_GS(float, load_speed, 0.0f);
-            MAKE_MEMBER_GS(float, unload_speed, 0.0f);
+
+        private:
+            LoadUnit load_unit = LoadUnit::LOAD_UNIT_TONS;
+            TypedArray<String> accepted_loads;
+            TypedArray<float> minimum_load_offsets;
+            float max_load = 0.0f;
+            double overload_factor = 0.0f;
+            float load_speed = 0.0f;
+            float unload_speed = 0.0f;
+
+        public:
+            MAKE_GS_NR(LoadUnit, load_unit);
+            MAKE_GS_NR(TypedArray<String>, accepted_loads);
+            MAKE_GS_NR(TypedArray<float>, minimum_load_offsets);
+            MAKE_GS(float, max_load);
+            MAKE_GS(double, overload_factor);
+            MAKE_GS(float, load_speed);
+            MAKE_GS(float, unload_speed);
             virtual void set_load_list(const TypedArray<RailVehicleLoadListItem> &p_load_list) = 0;
             virtual TypedArray<RailVehicleLoadListItem> get_load_list() = 0;
 

@@ -1,7 +1,7 @@
 #include "MoverDriveUnit.hpp"
 #include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
-#include "legacy/vehicles/MoverTypes.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleEngine.hpp"
@@ -62,7 +62,7 @@ namespace godot {
 
     double MoverDriveUnit::get_circuit_nmax_rpm() const {
         TMoverParameters *p_mover = owner.get_mover();
-        return p_mover != nullptr ? p_mover->nmax * 60.0 : 0.0;
+        return p_mover != nullptr ? p_mover->nmax * LibMaszynaUnits::SECONDS_PER_MINUTE : 0.0;
     }
 
     int MoverDriveUnit::get_damage() const {
@@ -117,7 +117,7 @@ namespace godot {
 
     void MoverDriveUnit::apply_configuration(const RailVehicleEngine *p_engine) const {
         TMoverParameters *p_mover = owner.get_mover();
-        p_mover->EngineType = mover_engine_type(p_engine->get_type());
+        p_mover->EngineType = MaszynaMoverVehicleServer::engine_type_to_mover(p_engine->get_type());
 
         p_mover->Transmision.NToothM = p_engine->get_transmission_gear_teeth_motor();
         p_mover->Transmision.NToothW = p_engine->get_transmission_gear_teeth_wheel();
@@ -136,7 +136,7 @@ namespace godot {
             fan.speed = static_cast<float>(p_engine->get_motor_blowers_speed());
             fan.sustain_time = static_cast<float>(p_engine->get_motor_blowers_sustain_time());
             fan.min_start_velocity = static_cast<float>(p_engine->get_motor_blowers_start_velocity());
-            fan.start_type = mover_start_mode(p_engine->get_motor_blowers_start_mode());
+            fan.start_type = MaszynaMoverVehicleServer::start_mode_to_mover(p_engine->get_motor_blowers_start_mode());
         }
 
         p_mover->EIMCtrlAdditionalZeros = p_engine->get_cntrl_eim_control_additional_zeros();

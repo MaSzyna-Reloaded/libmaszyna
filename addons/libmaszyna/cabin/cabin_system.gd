@@ -19,6 +19,13 @@ signal vehicle_command_received(vehicle_rid:RID, command:String, p1:Variant, p2:
 ## The vehicle has a cab scene to show now (vehicle_set_cabin_scene()) - one its builder hands over
 ## after the vehicle has its simulation, and may already be driven
 signal vehicle_cabin_scene_changed(vehicle_rid:RID)
+## The interior of a vehicle's cab was built and is shown now - in the tree and drawn
+## (cabin_show(), vehicle_get_cabin()); once per interior, showing another cab of the vehicle
+## rebuilds the same one. Only the player's cab is ever shown, so what hangs on it (a rain
+## exclusion volume) exists once - never emit this for a cab scene merely set
+## (vehicle_set_cabin_scene()): one volume per vehicle of a scenery was a quarter of the frame
+## (docs/findings-archive.md, 2026-10-03 hundreds of vehicles)
+signal vehicle_cabin_built(vehicle_rid:RID)
 ## The light of a cabin shines at another level (cabin_set_light_level())
 signal cabin_light_level_changed(cabin:RID, level:float)
 ## The instrument light of a cabin came on or went out (cabin_set_instrument_light_enabled())
@@ -27,10 +34,6 @@ signal cabin_instrument_light_changed(cabin:RID, enabled:bool)
 signal cabin_dashboard_light_changed(cabin:RID, enabled:bool)
 ## The timetable light of a cabin came on or went out (cabin_set_timetable_light_enabled())
 signal cabin_timetable_light_changed(cabin:RID, enabled:bool)
-## A radio message sent from `position`: heard on the radio of the player's cab tuned to
-## `channel`, within `reach` [m] of it when that is positive (simulation::radio_message(),
-## simulation.cpp:506); `transcript` is what it says, null when unknown
-signal radio_message_sent(message:SfxEvent, transcript:Transcript, channel:int, position:Vector3, reach:float)
 
 ## Manipulations a control can report (Train.cpp OnCommand_* press/release/repeat/set events).
 const ACTIONS:Array[StringName] = [&"increase", &"decrease", &"hold", &"release", &"toggle", &"set"]
@@ -193,10 +196,10 @@ func cabin_show(cabin_rid:RID, parent:Node) -> Cabin3D:
         return null
     _cabins[vehicle_rid] = cabin.get_instance_id()
     parent.add_child(cabin)
-    # a cabin holds the handles of its cabin and of the vehicle it sits in and takes everything else
+    # a cabin holds the handle of its cabin, its vehicle comes with it, and takes everything else
     # from here - told once it is in the tree, because building its interior puts nodes there
     cabin.set_cabin(cabin_rid)
-    cabin.set_vehicle_rid(vehicle_rid)
+    vehicle_cabin_built.emit(vehicle_rid)
     return cabin
 
 
@@ -329,13 +332,6 @@ func act(cabin:RID, control_id:StringName, action:StringName, value:Variant = nu
 
 func get_control(cabin:RID, control_id:StringName) -> Variant:
     return get_cabin_state(cabin).get_value(control_id)
-
-
-## A scenery's radio message, to the cab radio of whoever listens (radio_message_sent)
-func send_radio_message(
-    message:SfxEvent, transcript:Transcript, channel:int, position:Vector3, reach:float
-) -> void:
-    radio_message_sent.emit(message, transcript, channel, position, reach)
 
 
 func get_state(cabin:RID) -> Dictionary:

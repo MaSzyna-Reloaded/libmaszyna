@@ -57,8 +57,6 @@ namespace godot {
                 ISOLATED_EVENT_MAX,
             };
 
-            static constexpr double MINUTES_PER_HOUR = 60.0;
-
             static const char *event_queued_signal;
             static const char *event_launched_signal;
             static const char *event_dequeued_signal;
@@ -172,8 +170,9 @@ namespace godot {
             /* A launcher of a radius is in reach of the camera (basic_cell::update_events(),
              * scene.cpp:126-139); a negative radius is everywhere */
             static bool _in_reach(const LauncherData &p_launcher);
-            void _on_vehicle_radio_called(
-                    const RID &p_vehicle, RailVehicleRadio::RadioCall p_call, const Vector3 &p_position);
+            void _on_radio_transmitted(
+                    int64_t p_kind, int64_t p_channel, const Variant &p_payload, const Vector3 &p_position,
+                    double p_reach);
             void _on_vehicle_heading_to_track_start(const RID &p_vehicle, const RID &p_track);
             void _on_vehicle_heading_to_track_end(const RID &p_vehicle, const RID &p_track);
             void _on_vehicle_stopped_on_track(const RID &p_vehicle, const RID &p_track);

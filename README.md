@@ -224,6 +224,19 @@ To check or fix a single file, use `./scripts/style-check <path>` and `./scripts
 #### CI
 Clang-tidy checks are performed on CI. Those will fail automatically and publish results if any warning/error is found
 
+CI uses no Docker Hub image. The double precision Godot comes from the release
+`godot-<version>-double` (`ci/fetch-godot.sh`), and the Linux release library is built in the
+Linux SDK image `ghcr.io/maszyna-reloaded/linux-sdk`, which CI pulls. The image is tagged by the
+hash of `ci/docker/linux-sdk/Dockerfile`, so a changed Dockerfile is a new tag that is not on
+ghcr.io yet - CI then builds the image on every run. After changing the Dockerfile, build and
+publish the image yourself (a `gh` token with the `write:packages` scope:
+`gh auth refresh -h github.com -s write:packages`):
+
+```bash
+gh auth token | docker login ghcr.io -u <github user> --password-stdin
+make linux-sdk-image-push
+```
+
 ### Testing
 
 #### Testing locally

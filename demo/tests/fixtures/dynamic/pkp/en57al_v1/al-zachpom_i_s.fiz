@@ -1,0 +1,44 @@
+# prametry hamulca dla SPKS: youBy
+Param. Category=train M=51000 Mred=8000 Vmax=120 PWR=1000 SandCap=1 Type=ezt
+// note: maxload includes standing passengers, seat count is 80
+Load: MaxLoad=115 LoadQ=pieces LoadAccepted=Passengers,Pantstate OverLoadFactor=2 LoadSpeed=1 UnLoadSpeed=2
+// rodzaj (train,auto,ship), masa [kg], Vmax [km/h], moc [kW] 
+Dimensions: L=22.2 H=4.12 W=2.96 Cx=0.1
+// dlugosc ze zderzakami, wysokosc, szerokosc [m], wspolcz. oporu aerodynam.
+Wheels: D=1.0 AIM=2000 Tw=1.435 Axle=Bo'Bo' Ad=2.7 Bd=15.87 Rmin=80 BearingType=Roll
+// srednica kol napednych, moment bezwladosci [kgm^2], szerokosc, uklad i rozstaw osi, rozstaw czopow, min. promien skretu [m]
+Brake: BrakeValve=EStED NBpA=4 MBF=85.0 MaxBP=4.4 MaxLBP=4.4 BCN=2 BCR=0.178 BCD=0.110 BCM=7.32 HiPP=5 LoPP=3.5 Vv=0.1 MinCP=6.0 MaxCP=8.0 CompressorSpeed=0.0 TareMaxBP=3.7 BVV=100 BM=P10-Bg BCS=1.5 BSA=0.00 BRE=0.9
+// ilosc elementow ciernych na os, max sila docisku ham. recznego [kN], max. cisnienie w cyl., 
+// cylindry: ilosc, promien, skok roboczy, mnoznik przekladni,
+// cisnienie nominalne w przew. glownym [MPa], opcjonalnie dane dotyczace sprezarki i zbiornika glownego
+Doors: OpenCtrl=Mixed CloseCtrl=DriverCtrl OpenSpeed=0.19 CloseSpeed=0.19 DoorCloseDelay=2.27 DoorMaxShiftL=0.58 DoorMaxShiftR=0.58 DoorOpenMethod=Plug DoorBlocked=Yes DoorMaxShiftPlug=0.035 DoorNeedPermit=Yes DoorStayOpen=5.0 DoorAutoCloseVel=10.0
+BuffCoupl. CType=Automatic kB=19200 DmaxB=0.05 FmaxB=740 kC=6800 DmaxC=0.15 FmaxC=780 beta=0.58 AllowedFlag=-119 PowerFlag=1792
+// urzadzenia zderzno-cieglowe, sily w kN (uwaga - sprezystosc kB to 2*sprezystosc pojedynczego zderzaka!)
+Cntrl. LocBrakeHandle=FD1 LocalBrake=PneumaticBrake BrakeSystem=ElectroPneumatic MaxBPMass=67 BCPN=2 BDelay1=15 BDelay2=4 ASB=Manual DynamicBrake=Passive MCPN=10 SCPN=1 SpeedCtrlATOF=1 EIMCtrlAddZeros=Yes AutoRelay=Yes IniCDelay=0.1 SCDelay=0.8 MainInitTime=10 ConverterStart=Automatic ConverterStartDelay=10 MotorBlowersStart=Converter PantCompressorStart=Mixed CompartmentLightsStart=Manual
+-1 0.5 	0.0	6  ElectroPneumatic 
+ 0 -1	-1	0  ElectroPneumatic
+ 1 -1   0.35	4  ElectroPneumatic
+ 2 -1   0.35	4  ElectroPneumatic
+
+Blending: MED_Vmax=120 MED_Vmin=120 MED_Vref=120 MED_amax=0.84 MED_EPVC=No MED_Ncor=No
+
+Circuit: ImaxHi=500
+
+SpeedControl: SpeedCtrl=Yes OverrideManual=No InitPwr=1.0 MaxPwrVel=-1 StartVel=-1 VelStep=10 PwrStep=0.00 MinPwr=1.0 MaxPwr=1.0 MinVel=0 MaxVel=120 Offset=-0.1 kPpos=0.2 kPneg=0.4 kIpos=0.00 kIneg=0.00 BrakeIntervention=No  SpeedCtrlATOF=1
+
+Security: AwareSystem=Active,CabSignal AwareDelay=60 SoundSignalDelay=5 MaxHoldTime=1.0 EmergencyBrakeDelay=6 RadioStop=Yes 
+Light: Light=Generator LGeneratorEngine=ElectricSeriesMotor LMaxVoltage=110 LMaxCurrent=155  
+Clima: Heating=Main HPowerTrans=ElectricPower HMaxVoltage=3000
+Power: EnginePower=CurrentCollector CollectorsNo=2 MaxVoltage=4500 OverVoltProt=4500 MinV=2000 InsetV=2000 MaxCurrent=1200 MinH=0.38 MaxH=2.4 CSW=1.4 PhysicalLayout=3
+Switches: Pantograph=impulse Converter=impulse
+# prametry silnika EMIT LKa 450X6 + oryginalna przekładnia
+Engine: EngineType=ElectricInductionMotor Trans=19:70 dfic=521 dfmax=0.815 p=3 cfu=46.8 cim=21.4 icif=0.687 Uzmax=2340 Uzh=2340 DU=20 InvNo=2 I0=20 fcfu=46.8 F0=125 a1=0 Pmax=1800 Fh=85 Ph=1180 Vh0=2 Vh1=15 Imax=644 abed=0 edep=1.15 eimclf=Yes MotorBlowersSpeed=-120 MotorBlowersSustainTime=300 MotorBlowersStartVelocity=0.1
+
+ffList: Size=5
+0    0.5
+24    1.0
+35    1.0
+42    1.3
+42    1.3
+74    2.3
+endff

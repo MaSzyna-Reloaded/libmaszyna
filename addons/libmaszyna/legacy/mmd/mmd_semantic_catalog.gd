@@ -279,19 +279,18 @@ static func _ensure_built() -> void:
             "config_max_property": "",
             "mesh_path_field": "mesh_path",
         },
-        # Confirmed against Train.cpp:3947-4008 (OnCommand_motorconnectorsopen/close) and
-        # Train.cpp:10054 ("stlinoff_bt:" -> ggStLinOffButton) - "_bt" (button) not "_sw", so this
-        # is a persistent state toggle rather than a momentary press like fuse_bt above (matches
-        # compressor_sw/converter_sw's monostable:false shape, sending the CabinButton's own
-        # flipped `pushed` state as the command's bool argument).
+        # The open motor connectors button (Train.cpp:10054 "stlinoff_bt:" -> ggStLinOffButton):
+        # held down it opens them, released it closes them again, unless the vehicle's button is a
+        # toggle (Switches: MotorConnectors=toggle, OnCommand_motorconnectorsopen, Train.cpp:5025-5055)
         "stlinoff_bt": {
             # OnCommand_motorconnectorsopen/close refuse it without the gauge (Train.cpp:5015, 5062)
             "requires_gauge": true,
             # the original's handler acts on mvControlled
             "target": CabinState.Target.CONTROLLED,
             "widget_class": CabinButton,
+            "monostable_from_config": "motor_connectors_switch_impulse",
             "fixed_fields": {
-                "monostable": false,
+                "monostable": true,
                 "command": "motor_connectors_open",
                 "state_property": "motor_connectors_open",
             },

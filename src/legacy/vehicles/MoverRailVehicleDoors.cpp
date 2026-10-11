@@ -220,29 +220,7 @@ namespace godot {
         left_closed = left_door.is_closed;
         right_open = right_door.is_open;
         right_closed = right_door.is_closed;
-
-        // DynObj.cpp:4207-4236: the mirrors fold above MirrorVelClose, with no cab active or when
-        // forbidden, and unfold on the side whose doors are permitted to open - a full travel per
-        // second. The original folds them with no cab active whatever its InactiveCabFlag says.
-        if (p_mover->Vel > p_mover->MirrorVelClose || p_mover->CabActive == 0 || p_mover->MirrorForbidden) {
-            mirror_left_position = std::max(0.0, mirror_left_position - p_delta);
-            mirror_right_position = std::max(0.0, mirror_right_position - p_delta);
-            return;
-        }
-        if (p_mover->Doors.instances[side::left].open_permit) {
-            mirror_left_position = std::min(1.0, mirror_left_position + p_delta);
-        }
-        if (p_mover->Doors.instances[side::right].open_permit) {
-            mirror_right_position = std::min(1.0, mirror_right_position + p_delta);
-        }
-    }
-
-    double MoverRailVehicleDoors::get_mirror_left_position() const {
-        return mirror_left_position;
-    }
-
-    double MoverRailVehicleDoors::get_mirror_right_position() const {
-        return mirror_right_position;
+        _process_mirrors(p_delta);
     }
 
     bool MoverRailVehicleDoors::get_mirrors_forbidden() const {
@@ -384,7 +362,8 @@ namespace godot {
         if (voltage_map.find(get_voltage()) != voltage_map.end()) {
             p_mover->Doors.voltage = voltage_map.at(get_voltage());
         } else {
-            p_mover->Doors.voltage = remote_control ? 24 : 0;
+            // Mover.cpp:10599 - remote-controlled doors run on 24 V by default
+            p_mover->Doors.voltage = voltage_map.at(remote_control ? VOLTAGE_24 : VOLTAGE_0);
         }
         p_mover->Doors.step_rate = get_platform_speed();
         p_mover->Doors.step_range = get_platform_max_shift();
@@ -393,8 +372,6 @@ namespace godot {
             p_mover->Doors.step_type = door_platform_type_map.at(get_platform_type());
         }
 
-        p_mover->MirrorMaxShift = get_mirror_max_shift();
-        p_mover->MirrorVelClose = get_mirror_close_velocity();
         p_mover->DoorsOpenWithPermitAfter = get_open_with_permit();
         p_mover->DoorsPermitLightBlinking = get_permit_light_blinking();
     }

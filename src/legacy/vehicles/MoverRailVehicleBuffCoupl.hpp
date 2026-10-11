@@ -18,6 +18,7 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            TCoupling *_get_coupling(TMoverParameters *p_mover) const;
 
         protected:
             void _apply_configuration() override;
@@ -25,6 +26,7 @@ namespace godot {
             void _fill_state_dictionary(Dictionary &p_state) const override;
 
         public:
+            void apply_vehicle_config() override;
             bool is_coupled(RailVehicleController::CouplerEnd p_end) const override;
             bool is_brake_hose_connected(RailVehicleController::CouplerEnd p_end) const override;
             bool is_main_hose_connected(RailVehicleController::CouplerEnd p_end) const override;

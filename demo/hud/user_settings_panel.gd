@@ -10,20 +10,18 @@ func _ready() -> void:
 
 
 func _input(event):
-    if event.is_action_pressed("ui_cancel"):
+    if event.is_action_pressed("menu_back", false, true):
         visible = not visible
 
 
+## The game's data is read again by GameDataServer itself
 func _on_gamedir_changed():
     _auto_user_settings_visibility()
-    E3DModelManager.clear_cache()
-    MaterialManager.clear_cache()
-    _reload_all_models()
+    GameDataServer.cache_clear()
 
 
 func _auto_user_settings_visibility():
-    var game_dir = UserSettings.get_maszyna_game_dir()
-    visible = not game_dir or FileAccess.file_exists(game_dir)
+    visible = not UserSettings.is_maszyna_game_dir_valid()
 
 
 func _update_render_settings():
@@ -51,5 +49,4 @@ func _reload_all_models():
 
 
 func _on_visibility_changed() -> void:
-    var game_dir = UserSettings.get_maszyna_game_dir()
-    $VBoxContainer/GameDirNotSet.visible = not game_dir or FileAccess.file_exists(game_dir)
+    $VBoxContainer/GameDirNotSet.visible = not UserSettings.is_maszyna_game_dir_valid()

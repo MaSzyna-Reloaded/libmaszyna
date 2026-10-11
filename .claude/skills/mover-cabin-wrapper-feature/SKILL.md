@@ -282,7 +282,7 @@ continuous, as FV4a is in the original (`Train.cpp:1960`).
   the whole suite (`AGENTS.md`, Checks).
 - A throwaway headless probe (`-s probe.gd` in the scratchpad) that adds scenes must do it in
   `_initialize()`, not `_init()` - before the tree runs, `_ready()` has not happened yet.
-- A headless `--import` or test run rewrites `demo/hud/mover_switches_general.tscn` (adds
+- A headless `--import` or test run rewrites `addons/libmaszyna/debug_hud/mover_switches_general.tscn` (adds
   `unique_id`s); revert it with `git checkout` - it is not part of the change.
 - A new command needs no test of its own unless the operator asks for one. Do not report a fix
   as done from reading the wiring alone, though: confirm that the command reaches the Mover and

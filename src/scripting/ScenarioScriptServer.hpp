@@ -1,5 +1,5 @@
 #pragma once
-#include "ScenarioScriptCabinDelegate.hpp"
+#include "ScenarioScriptCabinImplementation.hpp"
 #include "ScriptRuntime.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
@@ -109,7 +109,7 @@ namespace godot {
             struct Context {
                     /// Null in a build without a runtime
                     ScriptRuntime *runtime = nullptr;
-                    Ref<ScenarioScriptCabinDelegate> cabin;
+                    Ref<ScenarioScriptCabinImplementation> cabin;
                     Vector<RID> hooks;
                     /// The unit whose code is running, which owns what it makes
                     StringName active_unit;
@@ -166,8 +166,9 @@ namespace godot {
             String context_check_source(const RID &p_context, const StringName &p_unit, const String &p_source);
             /// Frees what the unit made, then runs the code as the unit; false when it failed
             bool context_apply_source(const RID &p_context, const StringName &p_unit, const String &p_source);
-            void context_attach_cabin_delegate(const RID &p_context, const Ref<ScenarioScriptCabinDelegate> &p_cabin);
-            Ref<ScenarioScriptCabinDelegate> context_get_cabin_delegate(const RID &p_context) const;
+            void context_attach_cabin_implementation(
+                    const RID &p_context, const Ref<ScenarioScriptCabinImplementation> &p_cabin);
+            Ref<ScenarioScriptCabinImplementation> context_get_cabin_implementation(const RID &p_context) const;
 
             // What the runtimes call for the scripts; what they make belongs to the running unit
 

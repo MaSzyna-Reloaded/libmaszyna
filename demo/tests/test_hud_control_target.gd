@@ -7,8 +7,8 @@ extends MaszynaGutTest
 
 const CAB_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6ba.fiz"
 const MOTOR_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
-const SWITCH:PackedScene = preload("res://hud/switch.tscn")
-const BUTTON:PackedScene = preload("res://hud/button.tscn")
+const SWITCH:PackedScene = preload("res://addons/libmaszyna/debug_hud/switch.tscn")
+const BUTTON:PackedScene = preload("res://addons/libmaszyna/debug_hud/button.tscn")
 
 var cab_car:RID
 var motor_car:RID

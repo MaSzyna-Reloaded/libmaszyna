@@ -1,0 +1,26 @@
+/* Hi-fi cab 1 of a fabricated vehicle (demo/tests/fixtures/dynamic/test/synthetic_v1). Written in
+   the 3ds Max frame: X negated, Y and Z swapped on load - a +Y offset is the vehicle's front (+Z) */
+Parent: none
+Type: Mesh
+Name: kabina
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 0 0 0
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 100
+Map: none
+MaxDistance: -1
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 0 1
+NumVerts: 3
+1
+-0.5 0 0	0 0
+0.5 0 0	1 0
+0 0 1	0 1

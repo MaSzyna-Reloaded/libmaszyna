@@ -22,7 +22,9 @@ namespace godot {
         game_data->connect(
                 GameDataServer::data_reload_requested_signal,
                 callable_mp(this, &MaszynaTranslationServer::_on_data_reload_requested));
-        language = UserSettings::get_instance()->get_setting(LANGUAGE_SECTION, LANGUAGE_KEY, DEFAULT_LANGUAGE);
+        const UserSettings *settings = UserSettings::get_instance();
+        ERR_FAIL_NULL(settings);
+        language = settings->get_setting(LANGUAGE_SECTION, LANGUAGE_KEY, DEFAULT_LANGUAGE);
         _on_data_reload_requested();
     }
 
@@ -43,9 +45,11 @@ namespace godot {
     }
 
     void MaszynaTranslationServer::_on_data_reload_requested() {
+        const UserSettings *settings = UserSettings::get_instance();
+        ERR_FAIL_NULL(settings);
         languages.clear();
         languages.push_back(DEFAULT_LANGUAGE);
-        const String lang_dir = UserSettings::get_instance()->get_maszyna_game_dir().path_join("lang");
+        const String lang_dir = settings->get_maszyna_game_dir().path_join("lang");
         // a game directory without translations is English alone
         const PackedStringArray files =
                 DirAccess::dir_exists_absolute(lang_dir) ? DirAccess::get_files_at(lang_dir) : PackedStringArray();
@@ -60,10 +64,10 @@ namespace godot {
     }
 
     void MaszynaTranslationServer::_on_language_changed() {
+        const UserSettings *settings = UserSettings::get_instance();
+        ERR_FAIL_NULL(settings);
         // locale::init(), translation.cpp:18 - "lang/" + Global.asLang + ".po"
-        translation_load(
-                UserSettings::get_instance()->get_maszyna_game_dir().path_join("lang").path_join(
-                        language + String(".po")));
+        translation_load(settings->get_maszyna_game_dir().path_join("lang").path_join(language + String(".po")));
     }
 
     PackedStringArray MaszynaTranslationServer::translation_get_languages() const {
@@ -74,8 +78,10 @@ namespace godot {
         if (language == p_language) {
             return;
         }
+        UserSettings *settings = UserSettings::get_instance();
+        ERR_FAIL_NULL(settings);
         language = p_language;
-        UserSettings::get_instance()->save_setting(LANGUAGE_SECTION, LANGUAGE_KEY, language);
+        settings->save_setting(LANGUAGE_SECTION, LANGUAGE_KEY, language);
         _on_language_changed();
     }
 

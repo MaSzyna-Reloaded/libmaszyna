@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DriverImplementation" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_control_taken" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_driver_attached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_driver_detached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_seconds_until_departure" qualifiers="virtual const">
+			<return type="float" />
+			<param index="0" name="driver" type="RID" />
+			<param index="1" name="hours" type="float" />
+			<description>
+				The seconds from [param hours] (the time of day) to the departure from the station the driver's train stands at or has just left, 0 where it only passes ([code]seconds_until_departure()[/code], [code]mtable.cpp:184-190[/code]); [code]NAN[/code] for a driver without a timetable ([method DriverServer.vehicle_get_seconds_until_departure]).
+			</description>
+		</method>
+		<method name="_get_state" qualifiers="virtual const">
+			<return type="Dictionary" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+				What the driver keeps - its orders and what they asked for, in the implementation's own keys ([method DriverServer.driver_get_state]); empty for an implementation that shows nothing.
+			</description>
+		</method>
+		<method name="_get_timetable_state" qualifiers="virtual const">
+			<return type="Dictionary" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+				The driver's timetable and how far it got through it: [code]timetable[/code] ([Timetable] or [code]null[/code]), [code]station_index[/code] (the entry it drives to next), [code]station_start[/code] (the entry shown as the station it stands at or has just left), [code]latency[/code] (minutes early on arriving at the last station, negative when late), [code]delay[/code] (minutes late at the station reached last, early when negative: its arrival as it arrives, its departure once the train has driven clear of it), [code]arrived[/code] (it has reached the next station and not gone on from it yet). Empty for an implementation that follows no timetable. An implementation reports a change with [method DriverServer.driver_report_timetable_changed].
+			</description>
+		</method>
+		<method name="_handle_command" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="driver" type="RID" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="value1" type="float" />
+			<param index="3" name="value2" type="float" />
+			<param index="4" name="position" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="_update" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="driver" type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

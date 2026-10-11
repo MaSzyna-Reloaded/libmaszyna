@@ -25,7 +25,7 @@ func start(scenery:MaszynaIncludeNode, progressed:Callable = Callable()) -> void
     print("[ScenarioStart] creating the script context")
     _script_context = ScenarioScriptServer.context_create(
             UserSettings.get_maszyna_game_dir().path_join(SCRIPTS_DIRECTORY))
-    ScenarioScriptServer.context_attach_cabin_delegate(_script_context, CabinScriptDelegate.new())
+    ScenarioScriptServer.context_attach_cabin_implementation(_script_context, CabinScriptImplementation.new())
     for script_path:String in scenery.get_scenario_scripts():
         print("[ScenarioStart] running script %s" % script_path)
         ScenarioScriptServer.context_run_file(_script_context, script_path)

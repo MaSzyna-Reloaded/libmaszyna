@@ -19,7 +19,7 @@ const PLAYER_TRACK_LENGTH:float = 200.0
 const BATTERY_VOLTAGE:float = 110.0
 
 
-class RecordingCabin extends ScenarioScriptCabinDelegate:
+class RecordingCabin extends ScenarioScriptCabinImplementation:
     var acts:Array = []
 
     func _act(cabin:RID, control_id:StringName, action:StringName, value:Variant) -> Variant:
@@ -27,14 +27,14 @@ class RecordingCabin extends ScenarioScriptCabinDelegate:
         return true
 
 
-class RecordingDriver extends DriverDelegate:
+class RecordingDriver extends DriverImplementation:
     var commands:Array = []
 
     func _handle_command(_driver:RID, command:String, value1:float, value2:float, _position:Vector3) -> void:
         commands.append([command, value1, value2])
 
 
-class RecordingSystem extends SignallingSystemDelegate:
+class RecordingSystem extends SignallingImplementation:
     var events:Array = []
 
     func _handle_event(_system:RID, event:StringName, arguments:Dictionary) -> void:
@@ -188,7 +188,7 @@ func test_a_vehicle_takes_commands_and_reports_them() -> void:
             "LuaTestTrain", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
     controller.add_component(build_power_supply(BATTERY_VOLTAGE))
     var recording:RecordingDriver = RecordingDriver.new()
-    DriverSystem.driver_attach_delegate(get_vehicle_driver(controller.get_rid()), recording)
+    attach_driver_implementation(get_vehicle_driver(controller.get_rid()), recording)
     var source:String = (
         "local output = maszyna.memory.find('lua_test_output')\n"
         + "local v = maszyna.vehicle.find('LuaTestTrain')\n"
@@ -212,7 +212,7 @@ func test_a_vehicle_takes_commands_and_reports_them() -> void:
 func test_a_signalling_system_gets_the_script_event() -> void:
     var system:RID = SignallingServer.system_create()
     var recording:RecordingSystem = RecordingSystem.new()
-    SignallingServer.system_attach_delegate(system, recording)
+    SignallingServer.system_attach_implementation(system, recording)
     SignallingServer.system_set_name(system, &"lua_test_system")
     var source:String = (
         "local system = maszyna.signal.find_system('lua_test_system')\n"
@@ -226,9 +226,9 @@ func test_a_signalling_system_gets_the_script_event() -> void:
     SignallingServer.system_free(system)
 
 
-func test_the_cabs_are_reached_through_the_delegate() -> void:
+func test_the_cabs_are_reached_through_the_implementation() -> void:
     var cabin:RecordingCabin = RecordingCabin.new()
-    ScenarioScriptServer.context_attach_cabin_delegate(_context, cabin)
+    ScenarioScriptServer.context_attach_cabin_implementation(_context, cabin)
     var controller:VehicleController = build_vehicle(
             "LuaTestCab", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_REAR)
     var source:String = (

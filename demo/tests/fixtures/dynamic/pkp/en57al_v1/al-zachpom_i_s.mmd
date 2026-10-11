@@ -1,0 +1,183 @@
+//model pojazdu i definicje podmodeli:
+models: main/al-zachpom_i_s.t3d
+animations: 4 4 0 0 2 2 -1
+lowpolyinterior: lowpoly/al-zachpom_i_s-lowpoly
+loads: 
+{
+passengers: loads/al-zachpom_i_s_passengers
+}
+//ruchome czesci (animations)
+//krecace sie kola (o srednicy jak w *.chk)
+animwheelprefix: wheel0
+animdoorprefix: door0
+//patyki
+animpantrd1prefix: pantrd1_pant0
+animpantrg1prefix: pantrg1_pant0
+animpantrd2prefix: pantrd2_pant0
+animpantrg2prefix: pantrg2_pant0
+animpantslprefix: slizg_pant0
+pantfactors: 0 0 0.06986 0.06986
+// aktualnie mozna jeszcze animrodprefix, animpendulumprefix, 
+endmodels
+
+
+locations:
+ doors: -4.52 both 4.52 both end
+ bogies: -7.935 7.935 end
+ tractionmotors: -7.992 7.992 end
+endlocations
+
+
+sounds:
+curve: {
+ amplitudefactor: 1.35
+ amplitudeoffset: 1.35
+ range: 100
+ crossfade: 75
+ sound1: 697_104e_curve_1.wav
+ sound20: 697_en57-skrzypi.wav
+ sound40: curve_en57-1.wav
+ sound60: curve_en57.wav
+sound80: silence1.wav }
+wheel_clatter: 35 -9.28 20786_en57_wheel_5.wav -6.58 20786_en57_wheel_6.wav 6.58 20786_en57_wheel_7.wav 9.28 20786_en57_wheel_8.wav end
+//silniki - dźwięk podstawowy
+tractionmotor: { //710 hz/110 km/h
+ amplitudeoffset: 0.3
+ amplitudefactor: 1.0
+ frequencyfactor: 0.308
+ range: 65
+ crossfade: 90
+ placement: external
+ sound1: silence1.wav pitch1: 1
+ sound40: en57_motor_40.wav pitch40: 40
+ sound70: en57_motor_70.wav pitch70: 70
+ sound160: en57_motor_160.wav pitch160: 160
+ sound300: en57_motor_300.wav pitch300: 300
+ sound465: en57_motor_465.wav pitch465: 465
+ sound600: en57_motor_600.wav pitch600: 600
+ sound6000: silence1.wav pitch6000: 6000 }
+//silniki - brzęczenie w środku silnikowego
+engine: { 
+ amplitudeoffset: 0.0
+ amplitudefactor: 5.0
+ frequencyfactor: 0.308
+ range: 55
+ crossfade: 90
+ placement: internal
+ sound1: silence1.wav pitch1: 1
+ sound45: silence1.wav pitch45: 60
+ sound50: en57_motor_52b.wav pitch50: 65
+ sound60: en57_motor_52b.wav pitch60: 65
+ sound70: silence1.wav pitch70: 70 }
+tractionacmotor: {
+ placement: external
+ pitchvariation: 0
+ range: 75
+ amplitudefactor: 0.7
+ amplitudeoffset: 0.0
+ frequencyfactor: 1
+ frequencyoffset: 0 
+ crossfade: 75
+ sound1: silence1.wav pitch1: 0.01
+ sound60: 36wea_f603.wav pitch60: 0.603
+ sound100: 36wea_f1000.wav pitch100: 1
+ sound130: 36wea_f1300.wav pitch130: 1.3
+ sound131: 36wea_f800_2faza.wav pitch131: 1.31
+ sound200: 36wea_f1300.wav pitch200: 2.0
+ sound270: silence1.wav  pitch270: 2.7 }
+include brake_external.inc end
+include brakesound_external.inc end
+derail: derail.wav 200
+converter: { soundbegin: 26284_en57alc_converter-start.wav soundmain: 26284_en57alc_converter-trwa.wav soundend: 26284_en57alc_converter-stop.wav range: 60 placement: external offset: [ -0.5, 0.56, -2.5 ] }
+battery: { soundbegin: 26284_en57alc_battery_s-start.wav soundmain: 26284_en57alc_battery_s-trwa.wav soundend: 26284_en57alc_battery_s-stop.wav range: 35 placement: engine offset: [ 1.0, 2.2, 2.3 ] }
+motorblower: { soundset: [ 2193_en57ak_vent1.wav|2193_en57ak_vent2.wav|2193_en57ak_vent3.wav, 26284_en57alc_motorblower-start.wav|26284_en57alc_motorblower-trwa.wav|26284_en57alc_motorblower-stop.wav, 26284_en57fps_motorblower-start.wav|26284_en57fps_motorblower-trwa.wav|26284_en57fps_motorblower-stop.wav ] range: 50 placement: external }
+small-compressor: s-compressor-start.wav,s-compressor.wav,s-compressor-stop.wav 20
+pantographup: 24150_eu07_pantograf_dosieci.flac
+pantographdown: pantdown.wav
+dooropen: { soundmain: 22657_en57al_door_open.wav placement: external }
+doorclose: { soundmain: 24014_en57al-doorclose.wav placement: external }
+heater: { soundbegin: 26284_en57fps_ogrzewanie-start.wav soundmain: 26284_en57fps_ogrzewanie-trwa.wav soundend: 26284_en57fps_ogrzewanie-stop.wav soundproofing: [ 0.15 1.0 0.15 1.0 1.0 1.0 ] }
+outernoise: {
+ range: 130
+ crossfade: 85
+ sound0: silence1.wav pitch0: 35
+ sound35: 697_en57_outernoise_35.wav pitch35: 35
+ sound80: 697_en57_outernoise_80.wav pitch80: 40
+ sound200: 697_en57_outernoise_80.wav pitch200: 80 }
+unloading: 24150_en57_pasazery.flac
+loading: 24150_en57_pasazery.flac
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+sand: 20786_es64x4_sand_1.wav 20786_es64x4_sand_2.wav 20786_es64x4_sand_3.wav 25
+brakecylinderinc: { soundbegin: 26284_ipsz_pneumat_hamowanie-start.wav soundmain: 26284_ipsz_pneumat_hamowanie-trwa.wav soundend: 26284_ipsz_pneumat_hamowanie-stop.wav range: 15 placement: external soundproofing: [ 0.1 0.3 0.1 1.0 1.0 1.0 ]  }
+brakecylinderdec: { soundbegin: 26284_ipsz_pneumat_luzowanie-start.wav soundmain: 26284_ipsz_pneumat_luzowanie-trwa.wav soundend: 26284_ipsz_pneumat_luzowanie-stop.wav range: 15 placement: external soundproofing: [ 0.1 0.3 0.1 1.0 1.0 1.0 ] }
+unbrake: { soundbegin: 26284_ipsz_popelnianie_od_0-start.wav soundmain: 26284_ipsz_popelnianie_od_0-trwa.wav soundend: silence1.wav range: 10 placement: external soundproofing: [ 0.1 0.3 0.1 1.0 1.0 1.0 ] }
+epbrakeinc: { soundbegin: 26284_ipsz_ep_hamowanie.wav soundmain: silence1.wav soundend: silence1.wav range: 30 placement: external soundproofing: [ 0.1 0.3 0.1 1.0 1.0 1.0 ] }
+epbrakedec: { soundbegin: 26284_ipsz_ep_luzowanie.wav soundmain: silence1.wav soundend: silence1.wav range: 30 placement: external soundproofing: [ 0.1 0.3 0.1 1.0 1.0 1.0 ] }
+   near_stop: sip/zblizamy_sie_do_stacji.wav
+ stop: sip/stacja.wav 
+ next_stop: sip/nastepna_stacja.wav 
+ destination: sip/stacja_docelowa.wav
+ soundproofing: [ 0.1 0.2 0.1 0.0 0.0 0.0 ]
+}
+endsounds
+
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+//to jest sekcja odnoszaca sie do wnetrza pojazdu w ktorym jestesmy (odpowiednik dawnego pliku internal.mmd)
+
+// dzwieki:
+linebreakerclose: { soundmain: 26284_en57alc_ws_styczniki.wav placement: external range: 15 pitchvariation: 0 }
+pneumaticrelay: pneumaticrelay.wav
+pneumaticswitch: en71_stycznik_2.wav
+couplerattach: [ couplerattach.wav 697_hak_zakladanie.wav ]
+couplerdetach: 24150_pg_otwarcie_kurka.wav 
+couplerstretch: { soundmain: [ en57_tarcie_gum_2.wav en57_tarcie_gum.wav ] placement: internal }
+bufferclamp: en57_bufferclamp.wav
+include brakesound_internal.inc end
+slipperysound: brake-slipp.wav 2.0 0.2  //normalized: AM/Vmax
+airsound: { soundmain: 26284_en57al_hamowanie_pn.wav amplitudefactor: 2000.0 amplitudeoffset: 0.1 offset: [ -0.9, 1.4 , 7.90 ] pitchvariation: 0 range: 40  }
+airsound2: { soundmain: 26284_en57al_luzowanie_pn.wav amplitudefactor: 2000.0 amplitudeoffset: 0.1 offset: [ -0.9, 1.4 , 7.90 ] pitchvariation: 0 range: 40 }
+localbrakesound:  silence1.wav 0.0 -1.0
+localbrakesound2: silence1.wav 0.0 -1.0
+runningnoise: {
+ range: -1
+ amplitudefactor: 0.4
+ amplitudeoffset: 0.0
+ crossfade: 95
+ sound0: silence1.wav
+ sound10: 697_en57al_runningnoise-10.wav 
+ sound40: 697_en57al_runningnoise-40.wav 
+ sound60: 697_en57al_runningnoise-60.wav 
+ sound80: 697_en57al_runningnoise-80.wav 
+ sound100: 697_en57al_runningnoise-100.wav 
+ sound120: 697_en57al_runningnoise-120.wav 
+ sound200: 697_en57al_runningnoise-120.wav }
+
+mechspring: 210      0.08 0.371 0.29 0.03 0.15  0.02   0.01
+// wyzerowac 3,4,5 parametr aby nie trzeslo
+// wyzerowac ostatnie dwa parametry aby kamera sie nie kiwala
+
+cab1definition:   //rozmiary kabiny po ktorej mozna chodzic
+-1.2 1.1 3.5
+ 1.2 1.1 10.0 
+driver1pos:       // pozycja poczatkowa 
+0.0 2.8 8.0
+cab1model: lowpoly/al-zachpom_i_s-lowpoly
+
+cab0definition:
+ -1.2 1.1 -5.5
+  1.2 1.1  5.5
+driver0pos:
+0.0 2.8 0.0
+cab0model: lowpoly/al-zachpom_i_s-lowpoly
+
+cab2definition: 
+ -1.2 1.1 -10.0
+  1.2 1.1  -3.5 
+driver2pos: 
+0.0 2.8 -8.0
+cab2model: lowpoly/al-zachpom_i_s-lowpoly
+
+pydestinationsign: { scripts/led_en57_n_4 parameters: kod_e=IC&kod_p=TLK&kod_o=R&margin1=15 instance: name }
+destinationsignbackground: make:scripts/led_en57_n_1?dummy=1&margin1=15

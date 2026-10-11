@@ -1,6 +1,7 @@
 #pragma once
 #include <godot_cpp/classes/node3d.hpp>
-#include <godot_cpp/variant/node_path.hpp>
+#include <godot_cpp/core/math.hpp>
+#include <godot_cpp/variant/rid.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 
@@ -27,14 +28,25 @@ namespace godot {
             static void _bind_methods();
 
             /* Original engine: the shake is integrated at a fixed step so it does not depend on
-             * the frame rate; the accumulator carries the remainder between frames. */
+             * the frame rate; the accumulator carries the remainder between frames
+             * (drivermode.h:113 m_secondaryupdaterate) */
             static constexpr double SHAKE_STEP = 1.0 / 50.0;
+            /* Spring.h:33 restLen */
             static constexpr double SPRING_REST_LENGTH = 0.01;
+            /* TDynamicObject::update_shake (DynObj.cpp:8048-8136) */
+            static constexpr double ENGINE_SHAKE_ANGLE_MULTIPLIER = 4.0; // DynObj.cpp:8069
+            static constexpr double SHAKE_FORCE_GAIN = 1.25;             // DynObj.cpp:8111
+            static constexpr double SHAKE_FORCE_ATTENUATION = 0.85;      // DynObj.cpp:8124
+            static constexpr double SHAKE_VELOCITY_DAMPING = 100.0;      // DynObj.cpp:8126
+            static constexpr double SHAKE_JOLT_SCALE_DIVISOR = 200.0;    // DynObj.cpp:8126
+            static constexpr double SHAKE_MAX_VELOCITY = 150.0;          // DynObj.cpp:8102 [km/h]
+            static constexpr double SHAKE_JOLT_MIN_VELOCITY = 25.0;      // DynObj.cpp:8113 [km/h]
+            static constexpr double SHAKE_JOLT_DIVISOR = 4.0;            // DynObj.cpp:8117
 
-            /// The RailVehicleServer handle of the vehicle this cab sits in
+            /// The vehicle of `cabin` (VehicleServer::cabin_get_vehicle()), taken when the cabin is set
             RID vehicle_rid;
             bool cabin_ready = false;
-            double engine_angle = Math::PI * 0.5;
+            double engine_angle = Math::PI * 0.5; // MOVER.h:2207 eAngle
             Vector3 shake_velocity;
             Vector3 shake_offset;
             double shake_accumulator = 0.0;
@@ -42,7 +54,6 @@ namespace godot {
             RID cabin;
             bool has_cab_model = true;
             bool cab_window_open = false;
-            NodePath controller_path;
             Vector3 camera_bound_min;
             Vector3 camera_bound_max;
             bool camera_bound_enabled = false;
@@ -51,10 +62,11 @@ namespace godot {
              * (driverNangle:, Train.cpp:10529-10538; drivermode.cpp:1225-1226) */
             Vector2 driver_view_angle;
 
-            double shake_spring_stiffness = 125.0;
-            double shake_spring_damping = 0.002;
+            double shake_spring_stiffness = 125.0; // DynObj.cpp:2340 ShakeSpring.Init()
+            double shake_spring_damping = 0.002;   // Spring.h:29 nKd
+            /* BaseShake and EngineShake defaults (DynObj.h:837-846) */
             Vector3 shake_jolt_scale = Vector3(0.2, 0.2, 0.1);
-            double shake_jolt_limit = 0.15;
+            double shake_jolt_limit = 2.0;
             Vector2 shake_angle_scale = Vector2(0.05, 0.1);
             double engine_shake_scale = 2.0;
             double engine_shake_fade_in_rpm = 90.0;
@@ -62,7 +74,10 @@ namespace godot {
             double engine_shake_fade_out_rpm = 600.0;
             double engine_shake_fade_out_factor = 0.5;
 
+            Vector3 _compute_spring_force(const Vector3 &p_position) const;
             void _process_engine_shake(double p_delta);
+            void _refresh_shake();
+            void _on_vehicle_changed(const RID &p_vehicle);
             /* The cab's elements are GDScript nodes this class only hosts, so the name is handed
              * down by a named call - the one case `CODE_STYLE.md` allows. */
             void _propagate_vehicle_rid(Node *p_node) const;
@@ -75,9 +90,8 @@ namespace godot {
             // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method): Godot's GDCLASS dispatches to this name
             void _notification(int p_what);
 
-            /// The vehicle this cab sits in, by name. There is deliberately no path to a
-            /// controller here.
-            void set_vehicle_rid(const RID &p_vehicle_rid);
+            /// The vehicle this cab sits in, by name - the vehicle of its cabin (set_cabin()). There
+            /// is deliberately no path to a controller here.
             RID get_vehicle_rid() const;
 
             Transform3D get_camera_transform() const;
@@ -88,15 +102,14 @@ namespace godot {
              * cab2 = 0, machine room = 1, cab1 = 2 - and an open window is 3. */
             int get_sound_listener_context() const;
 
-            /* The VehicleServer cabin this interior is of - set by whoever builds it */
+            /* The VehicleServer cabin this interior is of - set by whoever builds it; its vehicle
+             * comes with it */
             void set_cabin(const RID &p_cabin);
             RID get_cabin() const;
             void set_has_cab_model(bool p_has_cab_model);
             bool get_has_cab_model() const;
             void set_cab_window_open(bool p_open);
             bool get_cab_window_open() const;
-            void set_controller_path(const NodePath &p_path);
-            NodePath get_controller_path() const;
             void set_camera_bound_min(const Vector3 &p_min);
             Vector3 get_camera_bound_min() const;
             void set_camera_bound_max(const Vector3 &p_max);

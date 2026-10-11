@@ -7,6 +7,7 @@
 #include "legacy/scenario/MaszynaLegacyLuaEventsModule.hpp"
 #include "logging/GameLogger.hpp"
 #include "lualib.h"
+#include "utils/LibMaszynaUnits.hpp"
 #include <cstdlib>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -250,13 +251,12 @@ namespace godot {
     /// collectgarbage("count") only - the script does not run the collector
     int LuaScriptContext::_collect_garbage(lua_State *p_state) {
         static constexpr const char *COUNT_OPTION = "count";
-        static constexpr double BYTES_PER_KILOBYTE = 1024.0;
         const String option = luaL_optstring(p_state, 1, COUNT_OPTION);
         luaL_argcheck(p_state, option == COUNT_OPTION, 1, "only \"count\" is available");
         // lua_gc is the Lua C API's vararg call
         const int kilobytes = lua_gc(p_state, LUA_GCCOUNT); // NOLINT(cppcoreguidelines-pro-type-vararg)
         const int bytes = lua_gc(p_state, LUA_GCCOUNTB);    // NOLINT(cppcoreguidelines-pro-type-vararg)
-        lua_pushnumber(p_state, kilobytes + (bytes / BYTES_PER_KILOBYTE));
+        lua_pushnumber(p_state, kilobytes + (static_cast<double>(bytes) / LibMaszynaUnits::BYTES_PER_KILOBYTE));
         return 1;
     }
 

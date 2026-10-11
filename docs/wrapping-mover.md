@@ -211,6 +211,13 @@ follow the same logic, defaults included. It runs when the vehicle's simulation 
 (`VehicleController::simulation_configured_signal`), when a component joins a vehicle that is already running, and
 after `mark_dirty()`. Every run is announced with the vehicle's `config_changed` signal.
 
+`VehicleController::apply_configuration()` configures a vehicle in two passes. The first is every
+`_apply_configuration()` - the controller's own `apply_config()`, then each component's, in the order of the FIZ
+sections - and writes only what the component owns alone. The second is `apply_vehicle_config()`, run once all of
+them are done: it writes what depends on another component (a bare coupler on the engine's maximum tractive force,
+the speed control on the engine's kind), read from that component's properties. A value of another component is
+never read in `_apply_configuration()`: there it depends on whether its section came first.
+
 > NOTE: In the legacy game `LoadFIZ_*` logic was called just once while loading the scenery, so the state of a vehicle
 > was always clean. MaSzyna Reloaded allows to re-configure vehicles at runtime, but the original Mover can produce
 > unexpected results in such cases. A some "resetting" or re-initializing logic may be necessary to add here.
@@ -641,16 +648,16 @@ Known quirks are listed in `MASZYNA_ORIGINAL_QUIRKS.md`.
 
 The original engine updates everything within one simulation step: producers (e.g. `TTractionPowerSource::Update()`)
 and their consumers (e.g. pantographs calling `TTraction::VoltageGet()` from `TDynamicObject`) always run in the same
-step. In this wrapper `MaszynaMoverVehicleServer::stepping_advance()` runs the vehicles once per rendered frame (`process_frame`), like
-the original, but the servers they consume are stepped on their own: `TractionServer` ticks its power sources from
-`process_frame` too, and a load asks for voltage whenever its vehicle's step reaches it. Nothing guarantees that every
-producer step has a consumer.
+step, the producers first (`simulation.cpp:115-116`). This wrapper keeps that order: `TractionServer` ticks its power
+sources on `SimulationServer`'s `simulation_advanced`, connected before `VehicleServer`, so every slice ticks the
+sources and then steps the vehicles that draw from them (`wire_draw_current()`) and read their voltage
+(`wire_get_voltage()`).
 
-Ported per-step state must therefore tolerate steps without any consumer. Real case: `TractionServer`'s power
-source reset its accumulated load (admittance) every tick; a tick without any pantograph asking left it at
-"no load", the next `current_get()` returned 0 V, Mover's `NoVoltRelay` saw a loss of voltage and tripped the line
-breaker - randomly while driving and every time the player left the cabin. Fixed by keeping the previous load when
-nobody asked since the last tick (`TractionServer::PowerSource::tick()`).
+A producer ticked on another beat than its consumers breaks ported per-step state. Real case: `TractionServer` once
+ticked from `process_frame` while the loads asked from the vehicle step; a tick without any pantograph asking left the
+source at "no load", the next query returned 0 V, Mover's `NoVoltRelay` saw a loss of voltage and tripped the line
+breaker - randomly while driving and every time the player left the cabin. Keeping the previous load covered it; the
+fix is the order above.
 
 Related pitfall: port the original's exact comparisons literally (`x != 0.0` as `not x == 0.0`), not with
 `is_zero_approx()` - its tolerance (1e-5) swallowed the tiny non-zero value the port used as a "no load" floor and

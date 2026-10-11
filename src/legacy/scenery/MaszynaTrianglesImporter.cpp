@@ -15,9 +15,9 @@ namespace godot {
 
     /// The triangles go to the sink at once, in world space - nothing of the node is kept here
     bool MaszynaTrianglesImporter::import_triangles(
-            MaszynaParser *p_parser, const Vector3 &p_rotate, const Vector3 &p_origin,
+            const Ref<MaszynaParser> &p_parser, const Vector3 &p_rotate, const Vector3 &p_origin,
             const Ref<SceneryTrianglesSink> &p_sink, const float p_range_min, const float p_range_max) {
-        if (p_parser == nullptr || p_sink.is_null()) {
+        if (p_parser.is_null() || p_sink.is_null()) {
             return false;
         }
 

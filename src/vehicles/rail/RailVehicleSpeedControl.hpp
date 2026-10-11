@@ -35,34 +35,63 @@ namespace godot {
             virtual void speed_control_button(int p_button) = 0;
             /* The speed set outright [km/h], as a driver's order (RunCommand("SpeedCntrl"), Mover.cpp:12695) */
             virtual void speed_control_set(double p_velocity) = 0;
+
+        protected:
             void _register_commands() override;
             void _unregister_commands() override;
-            MAKE_MEMBER_GS(bool, speed_control_enabled, false);
+
+        private:
+            bool speed_control_enabled = false;
             /* LoadFIZ_SpeedControl's defaults (MOVER.h:1257-1286, 1933-1934) */
-            MAKE_MEMBER_GS(double, delay, 2.0);
-            MAKE_MEMBER_GS(bool, impulse_lever, false);
-            MAKE_MEMBER_GS(int, disables_on, 0);
-            MAKE_MEMBER_GS(
-                    PackedFloat64Array, preset_speeds,
-                    PackedFloat64Array({30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0}));
-            MAKE_MEMBER_GS(bool, override_manual_power, true);
-            MAKE_MEMBER_GS(double, initial_power, 1.0);
-            MAKE_MEMBER_GS(double, full_power_velocity, -1.0);
-            MAKE_MEMBER_GS(double, start_velocity, -1.0);
-            MAKE_MEMBER_GS(double, velocity_step, 5.0);
-            MAKE_MEMBER_GS(double, power_step, 0.1);
-            MAKE_MEMBER_GS(double, min_power, 0.0);
-            MAKE_MEMBER_GS(double, max_power, 1.0);
-            MAKE_MEMBER_GS(double, min_velocity, 0.0);
-            MAKE_MEMBER_GS(double, max_velocity, 120.0);
-            MAKE_MEMBER_GS(double, offset, -0.5);
-            MAKE_MEMBER_GS(double, proportional_gain_positive, 0.5);
-            MAKE_MEMBER_GS(double, proportional_gain_negative, 0.5);
-            MAKE_MEMBER_GS(double, integral_gain_positive, 0.0);
-            MAKE_MEMBER_GS(double, integral_gain_negative, 0.0);
-            MAKE_MEMBER_GS(bool, brake_intervention, false);
-            MAKE_MEMBER_GS(double, brake_intervention_max_velocity, 30.0);
-            MAKE_MEMBER_GS(double, power_up_speed, 1000.0);
-            MAKE_MEMBER_GS(double, power_down_speed, 1000.0);
+            double delay = 2.0;
+            bool impulse_lever = false;
+            int disables_on = 0;
+            PackedFloat64Array preset_speeds =
+                    PackedFloat64Array({30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0});
+            bool override_manual_power = true;
+            double initial_power = 1.0;
+            double full_power_velocity = -1.0;
+            double start_velocity = -1.0;
+            double velocity_step = 5.0;
+            double power_step = 0.1;
+            double min_power = 0.0;
+            double max_power = 1.0;
+            double min_velocity = 0.0;
+            double max_velocity = 120.0;
+            double offset = -0.5;
+            double proportional_gain_positive = 0.5;
+            double proportional_gain_negative = 0.5;
+            double integral_gain_positive = 0.0;
+            double integral_gain_negative = 0.0;
+            bool brake_intervention = false;
+            double brake_intervention_max_velocity = 30.0;
+            double power_up_speed = 1000.0;
+            double power_down_speed = 1000.0;
+
+        public:
+            MAKE_GS(bool, speed_control_enabled);
+            MAKE_GS(double, delay);
+            MAKE_GS(bool, impulse_lever);
+            MAKE_GS(int, disables_on);
+            MAKE_GS(PackedFloat64Array, preset_speeds);
+            MAKE_GS(bool, override_manual_power);
+            MAKE_GS(double, initial_power);
+            MAKE_GS(double, full_power_velocity);
+            MAKE_GS(double, start_velocity);
+            MAKE_GS(double, velocity_step);
+            MAKE_GS(double, power_step);
+            MAKE_GS(double, min_power);
+            MAKE_GS(double, max_power);
+            MAKE_GS(double, min_velocity);
+            MAKE_GS(double, max_velocity);
+            MAKE_GS(double, offset);
+            MAKE_GS(double, proportional_gain_positive);
+            MAKE_GS(double, proportional_gain_negative);
+            MAKE_GS(double, integral_gain_positive);
+            MAKE_GS(double, integral_gain_negative);
+            MAKE_GS(bool, brake_intervention);
+            MAKE_GS(double, brake_intervention_max_velocity);
+            MAKE_GS(double, power_up_speed);
+            MAKE_GS(double, power_down_speed);
     };
 } // namespace godot

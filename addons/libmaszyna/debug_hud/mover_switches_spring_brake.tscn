@@ -1,0 +1,92 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_spring_brake.gd" id="1_spring"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="2_button"]
+[ext_resource type="PackedScene" uid="uid://c4f4ti7sfn87w" path="res://addons/libmaszyna/debug_hud/light.tscn" id="4_light"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/vertical_gauge.tscn" id="9_vgauge"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="SpringBrake" type="VBoxContainer"]
+script = ExtResource("1_spring")
+
+[node name="Activation" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Activate" parent="Activation" instance=ExtResource("2_button")]
+layout_mode = 2
+text = "On"
+command = "set_spring_brake_active"
+command_argument = "true"
+convert_argument_to_bool = true
+
+[node name="Deactivate" parent="Activation" instance=ExtResource("2_button")]
+layout_mode = 2
+text = "Off"
+command = "set_spring_brake_active"
+command_argument = "false"
+convert_argument_to_bool = true
+
+[node name="ShutOff" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Enable" parent="ShutOff" instance=ExtResource("2_button")]
+layout_mode = 2
+text = "Enable"
+command = "set_spring_brake_enabled"
+command_argument = "true"
+convert_argument_to_bool = true
+
+[node name="Disable" parent="ShutOff" instance=ExtResource("2_button")]
+layout_mode = 2
+text = "Disable"
+command = "set_spring_brake_enabled"
+command_argument = "false"
+convert_argument_to_bool = true
+
+[node name="Release" parent="." instance=ExtResource("2_button")]
+layout_mode = 2
+text = "Release rod"
+command = "spring_brake_release"
+
+[node name="Lights" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="EnabledLight" parent="Lights" instance=ExtResource("4_light")]
+unique_name_in_owner = true
+layout_mode = 2
+color_active = Color(0, 0.679688, 0.090271, 1)
+label = "Enabled"
+
+[node name="ActiveLight" parent="Lights" instance=ExtResource("4_light")]
+unique_name_in_owner = true
+layout_mode = 2
+color_active = Color(0, 0.679688, 0.090271, 1)
+label = "Active"
+
+[node name="BrakingLight" parent="Lights" instance=ExtResource("4_light")]
+unique_name_in_owner = true
+layout_mode = 2
+color_active = Color(0, 0.679688, 0.090271, 1)
+label = "Braking"
+
+[node name="Gauges" type="HFlowContainer" parent="."]
+layout_mode = 2
+
+[node name="CylinderPressure" parent="Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 10.0
+unit = "bar"
+decimals = 2
+label = "Cylinder"
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

@@ -1,6 +1,6 @@
+#include "E3DInstanceTypes.hpp"
 #include "E3DLightFactory.hpp"
 #include "E3DNodesBackend.hpp"
-#include "E3DRenderingServer.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -12,7 +12,7 @@ namespace godot {
 
     void E3DNodesBackend::build(E3DInstanceData &p_instance, E3DMaterialResolver &p_material_resolver) {
         Node3D *target = Object::cast_to<Node3D>(ObjectDB::get_instance(p_instance.node_id));
-        ERR_FAIL_NULL_MSG(target, "NODES instancer requires a node attached with instance_attach_node()");
+        ERR_FAIL_NULL_MSG(target, "NODES instancer requires a node attached with instance_attach_object_instance_id()");
 
         // which submodels belong to which light was found by E3DLightFactory, not here
         HashMap<E3DSubModel *, LightRole> light_roles;
@@ -30,7 +30,7 @@ namespace godot {
 
         _add_submodels(
                 p_instance, target, target, p_instance.model->get_submodels(), Transform3D(), light_roles, String(),
-                _get_force_alpha_submodels(p_instance), E3DRenderingServer::TRANSLUCENCY_CUTOUT, p_material_resolver);
+                _get_force_alpha_submodels(p_instance), E3DInstanceTypes::TRANSLUCENCY_CUTOUT, p_material_resolver);
         update(p_instance);
     }
 
@@ -82,7 +82,7 @@ namespace godot {
         return hit;
     }
 
-    void E3DNodesBackend::update(const E3DInstanceData &p_instance) {
+    void E3DNodesBackend::update(E3DInstanceData &p_instance) {
         const Array light_names = p_instance.lights_state.keys();
         for (int i = 0; i < light_names.size(); i++) {
             const String light_name = light_names[i];
@@ -182,7 +182,7 @@ namespace godot {
             const Transform3D model_transform = p_parent_transform * submodel->get_transform();
             const int translucency = _submodel_translucency(
                     p_instance, submodel.ptr(), p_force_alpha_submodels, p_parent_translucency,
-                    E3DRenderingServer::TRANSLUCENCY_BLENDED);
+                    E3DInstanceTypes::TRANSLUCENCY_BLENDED);
             if (GeometryInstance3D *geometry = Object::cast_to<GeometryInstance3D>(child); geometry != nullptr) {
                 Ref<Material> material = p_material_resolver.resolve(p_instance, submodel.ptr(), translucency);
                 // the instance drives its self-illumination (instance_set_emission_energy(),
@@ -190,7 +190,7 @@ namespace godot {
                 // rather than the materials every instance shares
                 if (const Ref<ShaderMaterial> shader_material = material;
                     (p_instance.emission_energy >= 0.0 || p_instance.submodel_emission) && shader_material.is_valid() &&
-                    bool(shader_material->get_shader_parameter("emission_enabled"))) {
+                    static_cast<bool>(shader_material->get_shader_parameter("emission_enabled"))) {
                     const Ref<ShaderMaterial> own = shader_material->duplicate();
                     p_instance.emissive_materials.push_back({own, submodel.ptr()});
                     material = own;
@@ -233,8 +233,8 @@ namespace godot {
                 }
                 // the point (and the glare) the original draws where the light is
                 // (opengl33renderer.cpp:4375-4500); it goes on and off with the spotlight node
-                const Ref<Material> point_material = p_material_resolver.resolve(
-                        p_instance, submodel.ptr(), E3DRenderingServer::TRANSLUCENCY_CUTOUT);
+                const Ref<Material> point_material =
+                        p_material_resolver.resolve(p_instance, submodel.ptr(), E3DInstanceTypes::TRANSLUCENCY_CUTOUT);
                 if (point_material.is_valid()) {
                     MeshInstance3D *point = memnew(MeshInstance3D);
                     point->set_mesh(point_mesh);
@@ -286,14 +286,16 @@ namespace godot {
                 spotlight->set_color(color);
                 spotlight->set_param(
                         Light3D::PARAM_VOLUMETRIC_FOG_ENERGY,
-                        settings->get_setting("maszyna/vehicles/lights_volumetric_fog_energy", 4.0));
+                        settings->get_setting(
+                                E3DLightFactory::VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING,
+                                E3DLightFactory::DEFAULT_VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY));
                 spotlight->set_shadow(true);
                 spotlight->set_shadow_reverse_cull_face(
                         settings->get_setting(E3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING, false));
                 spotlight->set_enable_distance_fade(true);
-                spotlight->set_distance_fade_begin(150.0);
-                spotlight->set_distance_fade_shadow(100.0);
-                spotlight->set_distance_fade_length(200.0);
+                spotlight->set_distance_fade_begin(E3DLightFactory::VEHICLE_LIGHT_FADE_BEGIN);
+                spotlight->set_distance_fade_shadow(E3DLightFactory::VEHICLE_LIGHT_FADE_SHADOW);
+                spotlight->set_distance_fade_length(E3DLightFactory::VEHICLE_LIGHT_FADE_LENGTH);
                 spotlight->set_param(Light3D::PARAM_RANGE, p_submodel->get_light_range());
                 spotlight->set_param(Light3D::PARAM_SPOT_ANGLE, p_submodel->get_light_angle());
                 node = spotlight;

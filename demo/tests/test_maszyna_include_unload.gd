@@ -37,7 +37,7 @@ func after_each() -> void:
     for stream_rid:RID in _stream_rids:
         SceneryStreamingServer.stream_free(stream_rid)
     _stream_rids.clear()
-    SceneryStreamingServer.streaming_set_camera(null)
+    SceneryStreamingServer.streaming_set_camera(0)
     UserSettings.save_maszyna_game_dir(_previous_game_dir)
 
 
@@ -46,7 +46,7 @@ func after_each() -> void:
 func test_a_reload_in_place_joins_the_preloads_in_flight() -> void:
     var owner:int = SceneryStreamingServer.owner_create("unload_test", _slow_preload, _ignore_build, _ignore_clear)
     _stream_rids.append(SceneryStreamingServer.stream_register(owner, rid_from_int64(20000), Vector3.ZERO, 0.0))
-    SceneryStreamingServer.streaming_set_camera(_camera)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
     for frame:int in STREAMING_FRAMES:
         if _get_preloads_started() > 0:
             break

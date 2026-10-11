@@ -56,7 +56,7 @@ func _ready() -> void:
     rich_label.anchor_bottom = 0.5
     rich_label.add_theme_stylebox_override("normal", style)
     control.add_child(rich_label)
-    rich_label.append_text("Development console.\n")
+    rich_label.append_text(tr("Development console.") + "\n")
     line_edit.anchor_top = 0.5
     line_edit.anchor_right = 1.0
     line_edit.anchor_bottom = 0.5
@@ -78,9 +78,10 @@ func _ready() -> void:
 
 func _input(event : InputEvent) -> void:
     if (event is InputEventKey):
-        if (event.get_physical_keycode_with_modifiers() == KEY_QUOTELEFT): # ~ key.
-            if (event.pressed):
-                toggle_console()
+        # ~ key, the project's action; it also stands as the shortcut of the HUD's menu entry, which
+        # never sees the key - it is taken here first
+        if (event.is_action_pressed(&"console_toggle", false, true)):
+            toggle_console()
             get_tree().get_root().set_input_as_handled()
         elif (event.physical_keycode == KEY_QUOTELEFT and event.is_command_or_control_pressed()): # Toggles console size or opens big console.
             if (event.pressed):
@@ -272,6 +273,36 @@ func parse_line_input(text : String) -> PackedStringArray:
     return out_array
 
 
+const _FALSE_TOKENS := ["false", "no", "off", "0"]
+
+## Console arguments are always plain text tokens - converted explicitly here rather than
+## relying on Godot's own String->Variant call coercion, since that coercion is inconsistent:
+## numeric strings ("5", "0.5") do convert correctly when calling a bound method that expects
+## an int/float, but boolean strings do NOT - any non-empty string (including the literal text
+## "false") coerces to true, making it impossible to type a command that turns something off.
+## Every other token (including "true"/"yes"/"1") already coerces to true on its own, so only
+## the false case needs explicit handling. "0" is safe to include even for commands that take
+## an actual integer argument (e.g. main_controller_increase's step) - Godot's own bool->int
+## Variant coercion maps false back to 0, so the end result is identical either way.
+##
+## Numeric tokens are still converted explicitly (rather than left as strings for Godot's own
+## coercion to handle) so the int/float distinction is preserved: "5" becomes an int and "0.5"
+## a float, matching whichever the target command's parameter actually expects, instead of
+## collapsing every number to float.
+func _coerce_argument_tokens(arguments : PackedStringArray) -> Array:
+    var result : Array = []
+    for arg : String in arguments:
+        if arg.to_lower() in _FALSE_TOKENS:
+            result.append(false)
+        elif arg.is_valid_int():
+            result.append(arg.to_int())
+        elif arg.is_valid_float():
+            result.append(arg.to_float())
+        else:
+            result.append(arg)
+    return result
+
+
 func on_text_entered(new_text : String) -> void:
     scroll_to_bottom()
     reset_autocomplete()
@@ -279,7 +310,7 @@ func on_text_entered(new_text : String) -> void:
 
 
 
-    if not new_text.strip_edges().is_empty():
+    if new_text.strip_edges():
         add_input_history(new_text)
         print_line("[i]> " + new_text + "[/i]")
         var text_split := parse_line_input(new_text)
@@ -289,18 +320,18 @@ func on_text_entered(new_text : String) -> void:
             var arguments := text_split.slice(1)
 
             if arguments.size() < console_commands[text_command].required:
-                print_line("[color=light_coral]	ERROR:[/color] Too few arguments! Required < %d >" % console_commands[text_command].required)
+                print_line("[color=light_coral]	ERROR:[/color] " + tr("Too few arguments! Required < %d >") % console_commands[text_command].required)
                 return
             elif arguments.size() > console_commands[text_command].arguments.size():
-                print_line("[color=light_coral]	ERROR:[/color] Too many arguments! < %d > Max" % console_commands[text_command].arguments.size())
+                print_line("[color=light_coral]	ERROR:[/color] " + tr("Too many arguments! < %d > Max") % console_commands[text_command].arguments.size())
                 return
 
             # Functions fail to call if passed the incorrect number of arguments, so fill out with blank strings.
 
-            console_commands[text_command].function.callv(arguments)
+            console_commands[text_command].function.callv(_coerce_argument_tokens(arguments))
         else:
             console_unknown_command.emit(text_command)
-            print_line("[color=light_coral]	ERROR:[/color] Command not found.")
+            print_line("[color=light_coral]	ERROR:[/color] " + tr("Command not found."))
 
     await get_tree().process_frame
     _restore_line_edit_focus()
@@ -350,7 +381,7 @@ func commands_list() -> void:
 
     for command in commands:
         var arguments_string := ""
-        var description : String = console_commands[command].description
+        var description : String = tr(console_commands[command].description)
         for i in range(console_commands[command].arguments.size()):
             if i < console_commands[command].required:
                 arguments_string += "  [color=cornflower_blue]<" + console_commands[command].arguments[i] + ">[/color]"

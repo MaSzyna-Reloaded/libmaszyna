@@ -22,8 +22,8 @@ func test_windows_separators_are_normalized_without_changing_case() -> void:
     assert_eq(MaszynaDataPath.resolve(FIXTURES, "Mixed\\Asset.txt"), "Mixed/Asset.txt")
 
 
-func test_any_other_difference_in_case_matches_each_part_of_the_path() -> void:
+func test_any_other_difference_in_case_keeps_the_spelling_from_the_data() -> void:
     if OS.get_name() == "Windows":
         pending("Windows resolves the original spelling case-insensitively")
         return
-    assert_eq(MaszynaDataPath.resolve(FIXTURES, "mixed/ASSET.txt"), "Mixed/Asset.txt")
+    assert_eq(MaszynaDataPath.resolve(FIXTURES, "mixed/ASSET.txt"), "mixed/ASSET.txt")

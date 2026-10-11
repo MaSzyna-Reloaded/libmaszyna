@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehiclePhysicsNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_build_controller" qualifiers="virtual const">
+			<return type="VehicleController" />
+			<description>
+				The controller a node that was given none builds its vehicle from, as it enters the tree - once, before anything can see the vehicle.
+			</description>
+		</method>
+		<method name="add_component">
+			<return type="void" />
+			<param index="0" name="component" type="VehicleComponent" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vehicle_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="controller" type="VehicleController" setter="set_controller" getter="get_controller">
+			The vehicle's configuration, a VehicleController its simulation is built from a copy of; a new one rebuilds the vehicle. The running copy is the vehicle's ([method VehicleServer.vehicle_get_controller]).
+		</member>
+		<member name="initial_velocity" type="float" setter="set_initial_velocity" getter="get_initial_velocity" default="0.0">
+		</member>
+		<member name="vehicle_id" type="String" setter="set_vehicle_id" getter="get_vehicle_id" default="&quot;&quot;">
+		</member>
+	</members>
+	<signals>
+		<signal name="vehicle_changed">
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

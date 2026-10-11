@@ -15,13 +15,23 @@
 [ext_resource type="Script" uid="uid://do35jm13yiccm" path="res://addons/libmaszyna/traction/traction_3d.gd" id="24_6m450"]
 [ext_resource type="Script" uid="uid://dotmfqnin31lo" path="res://addons/libmaszyna/traction/traction_line.gd" id="25_jchga"]
 [ext_resource type="Script" uid="uid://duaegoh4xg84s" path="res://addons/libmaszyna/tracks/track_switch_3d.gd" id="25_track_switch"]
-[ext_resource type="Material" uid="uid://bokq2xuaxcfw8" path="res://materials/impuls_head_display.tres" id="28_tdoik"]
 [ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
-[ext_resource type="SignallingSystemDelegate" path="res://signalling/demo_block_delegate.tres" id="demo_block_delegate"]
-[ext_resource type="PackedScene" path="res://hud/game_hud.tscn" id="game_hud_scene"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
+[ext_resource type="SignallingImplementation" path="res://signalling/demo_block_implementation.tres" id="demo_block_implementation"]
 [ext_resource type="Resource" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
-[ext_resource type="Script" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="scenery_streamer"]
 [ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
+[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="scenery_streamer"]
+
+[sub_resource type="ProceduralSkyMaterial" id="DemoSkyMaterial"]
+
+[sub_resource type="Sky" id="DemoSky"]
+sky_material = SubResource("DemoSkyMaterial")
+
+[sub_resource type="Environment" id="DemoEnvironment"]
+background_mode = 2
+sky = SubResource("DemoSky")
+tonemap_mode = 4
+tonemap_agx_contrast = 1.0
 
 [sub_resource type="Resource" id="TrackCurve_common"]
 script = ExtResource("22_track_curve")
@@ -103,7 +113,16 @@ script = ExtResource("1_ut343")
 
 [node name="DebugMenuFPS" parent="." unique_id=28357571 instance=ExtResource("2_qg2pq")]
 
-[node name="GameHud" parent="." unique_id=194798435 instance=ExtResource("game_hud_scene")]
+[node name="DiagnosticsBar" type="MenuBar" parent="." unique_id=1447103033]
+offset_right = 120.0
+offset_bottom = 31.0
+
+[node name="Diagnostics" type="PopupMenu" parent="DiagnosticsBar" unique_id=1149420873]
+unique_name_in_owner = true
+title = "Diagnostics"
+
+[node name="DebugHud" parent="." unique_id=194798435 instance=ExtResource("debug_hud_scene")]
+unique_name_in_owner = true
 
 [node name="DeveloperConsole" parent="." unique_id=495569075 instance=ExtResource("2_ig825")]
 visible = null
@@ -111,16 +130,23 @@ visible = null
 [node name="UserSettingsPanel" parent="." unique_id=1798306963 instance=ExtResource("12_eihw1")]
 
 [node name="MaszynaEnvironmentNode" type="Node" parent="." unique_id=1464463242]
+unique_name_in_owner = true
 script = ExtResource("2_py6pt")
 current_time = 10.0
 timezone_offset = 2
-tonemap_agx_contrast = 1.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1419385403]
+environment = SubResource("DemoEnvironment")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=912604814]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 50, 0)
+shadow_enabled = true
 
 [node name="Player" parent="." unique_id=423486079 instance=ExtResource("13_nxmm0")]
 transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, -18.508982, 1.959, 168.0919)
 sfx_bank = ExtResource("player_sfx_bank")
 
-[node name="SceneryStreamer" type="Node" parent="." node_paths=PackedStringArray("camera")]
+[node name="SceneryStreamer" type="Node" parent="." unique_id=197017765 node_paths=PackedStringArray("camera")]
 script = ExtResource("scenery_streamer")
 active = true
 camera = NodePath("../Player/FreeCamera3D")
@@ -129,50 +155,46 @@ camera = NodePath("../Player/FreeCamera3D")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)
 script = ExtResource("9_ss847")
 start_track_name = "diverging2"
-start_track_offset = 149.24
+start_track_offset = 126.44
 couplings = Array[int]([255, 255, 255])
 velocity = 20.0
 metadata/_custom_type_script = "uid://onxj3ocy4jip"
 
-[node name="Impuls-024a" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=300782032]
-head_display_material = ExtResource("28_tdoik")
-transform = Transform3D(-1, 0, 1.2779545607196068e-16, 0, 1, 0, -1.2779545607196068e-16, 0, -1, -11.923031099999998, 0.6616861199999999, 38.14975780000001)
+[node name="31we-a_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=146660532]
+start_track_name = "diverging2"
+start_track_offset = 106.79557626267051
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, 15.349757799999997)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
-file_name = "36wea-a_kd"
-skin = "36wea-019a"
-vehicle_id = "impuls-a"
-metadata/_custom_type_script = "uid://djd17om24oh3s"
+file_name = "31we-a_zachpom"
+skin = "ED78-019A"
 
-[node name="Impuls-024b" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1161615865]
-head_display_material = ExtResource("28_tdoik")
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, 19.659757800000012)
+[node name="31we-b_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=602076295]
+start_track_name = "diverging2"
+start_track_offset = 95.08864329912599
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -3.1402421999999985)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
-file_name = "31wea-b_kd"
-skin = "36wea-019b,1|36wea-019b,2|36wea-019b,3|36wea-019c,4"
-vehicle_id = "impuls-b"
-metadata/_custom_type_script = "uid://djd17om24oh3s"
+file_name = "31we-b_zachpom"
+skin = "ED78-019B"
 
-[node name="Impuls-024c" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1550835407]
-head_display_material = ExtResource("28_tdoik")
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, 3.739757800000011)
+[node name="31we-c_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=706861861]
+start_track_name = "diverging2"
+start_track_offset = 82.48086381410256
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -19.0602422)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
-file_name = "31wea-c_kd"
-skin = "36wea-019b,1|36wea-019c,2|36wea-019c,3|36wea-019c,4"
-vehicle_id = "impuls-c"
-metadata/_custom_type_script = "uid://djd17om24oh3s"
+file_name = "31we-c_zachpom"
+skin = "ED78-019C"
 
-[node name="Impuls-024d" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1037242744]
-head_display_material = ExtResource("28_tdoik")
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -14.750242199999997)
+[node name="31we-d_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1002100989]
+start_track_name = "diverging2"
+start_track_offset = 62.21919697198823
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, -37.55024220000001)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
-file_name = "31wea-d_kd"
-skin = "36wea-019a,1|36wea-019a,2|36wea-019a,3|36wea-019a,4"
-vehicle_id = "impuls-d"
-metadata/_custom_type_script = "uid://djd17om24oh3s"
+file_name = "31we-d_zachpom"
+skin = "ED78-019D"
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=1495808372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)
@@ -1393,13 +1415,14 @@ kind = ExtResource("sbl_3_kind")
 aspect = &"S1"
 
 [node name="DemoBlock" type="SignallingSystemNode" parent="." unique_id=1340977105]
-delegate = ExtResource("demo_block_delegate")
+implementation = ExtResource("demo_block_implementation")
 signal_head_names = PackedStringArray("demo_sbl")
 
 [node name="AspectCycle" type="Timer" parent="." unique_id=517233640]
 wait_time = 5.0
 autostart = true
 
+[connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="." method="_on_diagnostics_menu_index_pressed"]
+[connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="DebugHud" method="menu_index_pressed"]
 [connection signal="camera_changed" from="Player" to="SceneryStreamer" method="set_camera"]
-
 [connection signal="timeout" from="AspectCycle" to="DemoBlock" method="send_event" binds= [&"next"]]

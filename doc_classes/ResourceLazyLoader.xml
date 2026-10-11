@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		Holds the resources needed only while something near the camera uses them - a scenery's models, its terrain - so their memory, RAM and the VRAM of a mesh or a texture, goes back once nothing holds them. A resource is registered under a key with the [Callable] that loads it; one key is one resource, shared by everybody who registers it. [method resource_load] loads a copy, [method resource_hold] holds it, [method resource_release] lets it go. A copy not held is not shared: each load loads it anew. Everything held is let go when the game's data is unloaded ([signal GameDataServer.data_unload_requested]). Thread-safe.
+		With [member lazy_loading] a resource is loaded when it is wanted and let go once nobody holds it. Without it - the default - it is loaded when its key is registered first and kept until its last registration is freed; holding and releasing it then only says who builds from it.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -60,4 +61,9 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="lazy_loading" type="bool" setter="set_lazy_loading" getter="get_lazy_loading" default="false">
+			Read when the loader is created from the project setting [code]maszyna/resources/lazy_loading[/code], and [code]true[/code] whatever it says with the [code]--enable-lazy-loading[/code] command-line switch. A change takes effect on the keys registered after it; a key registered already keeps its mode.
+		</member>
+	</members>
 </class>

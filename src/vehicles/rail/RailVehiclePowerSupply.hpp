@@ -54,15 +54,18 @@ namespace godot {
 
             void _fill_state_dictionary(Dictionary &p_state) const override;
 
+        private:
             /* Light: LMaxVoltage - the nominal battery voltage (LoadFIZ_Light) */
-            MAKE_MEMBER_GS(double, battery_voltage, 0.0);
+            double battery_voltage = 0.0;
             /* Cntrl. BatteryStart=, ConverterStart=, ConverterStartDelay= (LoadFIZ_Cntrl) */
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_battery_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_converter_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS(double, cntrl_converter_start_delay, 0.0);
+            RailVehicleController::StartMode cntrl_battery_start_mode = RailVehicleController::START_MODE_MANUAL;
+            RailVehicleController::StartMode cntrl_converter_start_mode = RailVehicleController::START_MODE_MANUAL;
+            double cntrl_converter_start_delay = 0.0;
+
+        public:
+            MAKE_GS(double, battery_voltage);
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_battery_start_mode);
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_converter_start_mode);
+            MAKE_GS(double, cntrl_converter_start_delay);
     };
 } // namespace godot

@@ -184,38 +184,62 @@ func _has_no_model(vehicle:RID) -> bool:
 
 ## A vehicle beyond the streaming's draw distance is not drawn at all: its models are built when the
 ## camera comes within it and freed when the camera goes beyond it again - a scenery's hundreds of
-## vehicles all built at load spent it on vehicles nobody saw
+## vehicles all built at load spent it on vehicles nobody saw. With lazy loading its model file is
+## loaded only for the build
 func test_a_vehicle_is_built_only_within_the_draw_distance() -> void:
+    await _drive_camera_past_a_vehicle(true, "rendering_draw_distance")
+
+
+## Without lazy loading the model file is loaded with the vehicle and kept; only the models built
+## from it follow the draw distance
+func test_a_vehicle_loads_its_model_at_once_without_lazy_loading() -> void:
+    await _drive_camera_past_a_vehicle(false, "rendering_eager")
+
+
+func _drive_camera_past_a_vehicle(lazy_loading:bool, vehicle_id:String) -> void:
+    var previous_lazy_loading:bool = ResourceLazyLoader.lazy_loading
+    ResourceLazyLoader.lazy_loading = lazy_loading
     var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
     var camera:Camera3D = add_child_autoqfree(Camera3D.new())
     var far:Vector3 = Vector3(BEYOND_DRAW_DISTANCE * SceneryStreamingServer.streaming_get_draw_distance(), 0.0, 0.0)
     camera.global_position = far
-    SceneryStreamingServer.streaming_set_camera(camera)
+    SceneryStreamingServer.streaming_set_camera(camera.get_instance_id())
     var vehicle:MaszynaRailVehicle3D = MaszynaRailVehicle3D.new()
     vehicle.data_path = "dynamic/test/synthetic_v1"
     vehicle.file_name = "synthetic"
-    vehicle.vehicle_id = "rendering_draw_distance"
+    vehicle.vehicle_id = vehicle_id
     add_child(vehicle)
     await vehicle.vehicle_built
     await wait_idle_frames(SETTLE_FRAMES)
     var rid:RID = vehicle.get_rid()
+    var appearance:RailVehicleAppearance = RailVehicleRenderingServer.vehicle_get_appearance(rid)
+    # the same key is the same resource; this registration only lets the test look at it
+    var model_resource:RID = ResourceLazyLoader.resource_register(
+            appearance.data_path.path_join(appearance.model_filename), Callable())
 
     assert_true(VehicleServer.vehicle_is_simulation_ready(rid), "simulated wherever the camera is")
     assert_false(_has_model(rid), "beyond the draw distance it has no model")
+    assert_eq(ResourceLazyLoader.resource_is_resident(model_resource), not lazy_loading,
+            "its model file loaded beyond the draw distance")
 
     camera.global_position = vehicle.global_position
     await wait_until(_has_model.bind(rid), MODELS_TIMEOUT)
     assert_true(_has_model(rid), "within the draw distance its model is built")
+    assert_true(ResourceLazyLoader.resource_is_resident(model_resource), "built without holding its model file")
 
     camera.global_position = far
     await wait_until(_has_no_model.bind(rid), MODELS_TIMEOUT)
     assert_false(_has_model(rid), "beyond it again its model is freed")
+    assert_eq(ResourceLazyLoader.resource_is_resident(model_resource), not lazy_loading,
+            "its model file kept beyond the draw distance")
 
-    SceneryStreamingServer.streaming_set_camera(null)
+    ResourceLazyLoader.resource_free(model_resource)
+    SceneryStreamingServer.streaming_set_camera(0)
     # the vehicle goes before the game directory it was read from
     vehicle.free()
     UserSettings.save_maszyna_game_dir(previous_game_dir)
+    ResourceLazyLoader.lazy_loading = previous_lazy_loading
 
 
 func test_a_rebuilt_model_is_announced() -> void:

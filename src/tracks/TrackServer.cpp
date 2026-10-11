@@ -1,4 +1,5 @@
 #include "TrackServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "utils/Names.hpp"
 
 #include <godot_cpp/classes/project_settings.hpp>
@@ -96,6 +97,8 @@ namespace godot {
                 D_METHOD("track_get_common_endpoint_index", "track"), &TrackServer::track_get_common_endpoint_index);
         ClassDB::bind_method(
                 D_METHOD("track_get_curve", "track", "branch"), &TrackServer::track_get_curve, DEFVAL(TRACK_COMMON));
+        ClassDB::bind_method(
+                D_METHOD("track_get_roll", "track", "branch"), &TrackServer::track_get_roll, DEFVAL(TRACK_COMMON));
         ClassDB::bind_method(
                 D_METHOD("track_get_domain_curve", "track", "branch"), &TrackServer::track_get_domain_curve,
                 DEFVAL(TRACK_COMMON));
@@ -466,7 +469,7 @@ namespace godot {
     // MaSzyna Track.cpp:1933-1955 animates domain offset.
     void TrackServer::_process_switches() {
         const uint64_t now = Time::get_singleton()->get_ticks_usec();
-        const double delta = static_cast<double>(now - last_switch_step_usec) / 1000000.0;
+        const double delta = static_cast<double>(now - last_switch_step_usec) / LibMaszynaUnits::USEC_PER_SECOND;
         last_switch_step_usec = now;
         for (int index = static_cast<int>(moving_switches.size()) - 1; index >= 0; --index) {
             const RID track_rid = moving_switches[index];
@@ -476,8 +479,9 @@ namespace godot {
                 continue;
             }
             const double remaining = track->switch_desired_offset - track->switch_f_offset;
-            const double step = track->switch_offset_speed * delta;
-            if (Math::abs(remaining) <= step || track->switch_offset_speed <= 0.0) {
+            // Track.cpp:1944 - the blade moves at a constant speed
+            const double step = SWITCH_OFFSET_SPEED * delta;
+            if (Math::abs(remaining) <= step) {
                 _set_switch_f_offset(*track, track->switch_desired_offset);
                 moving_switches.remove_at(index);
                 emit_signal(switch_movement_finished_signal, track_rid, track->active_track);
@@ -848,6 +852,16 @@ namespace godot {
         return track->curve1;
     }
 
+    Vector2 TrackServer::track_get_roll(const RID &p_track, const int p_branch) const {
+        const TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr) {
+            return Vector2();
+        }
+        const CurvePoints &points =
+                p_branch == TRACK_DIVERGING && track->curve2.is_valid() ? track->points2 : track->points1;
+        return Vector2(static_cast<real_t>(points.roll1), static_cast<real_t>(points.roll2));
+    }
+
     Ref<Curve3D> TrackServer::track_get_domain_curve(const RID &p_track, const int p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
@@ -1193,16 +1207,11 @@ namespace godot {
 
         moving_switches.erase(p_track);
 
-        const double remaining = Math::abs(track->switch_desired_offset - track->switch_f_offset);
-        const double full_distance = SWITCH_MAX_OFFSET + (track->switch_f_offset_delay * 2.0);
-        if (remaining <= 0.0 || full_distance <= 0.0) {
+        if (track->switch_desired_offset == track->switch_f_offset) {
             _set_switch_f_offset(*track, track->switch_desired_offset);
             emit_signal(switch_movement_finished_signal, p_track, p_active_track);
             return;
         }
-        // the whole range in SWITCH_FULL_DURATION, so a shorter move simply takes proportionally
-        // less time - the constant speed the Tween's duration used to express
-        track->switch_offset_speed = full_distance / SWITCH_FULL_DURATION;
         moving_switches.push_back(p_track);
         last_switch_step_usec = Time::get_singleton()->get_ticks_usec();
         _set_switch_processing(true);

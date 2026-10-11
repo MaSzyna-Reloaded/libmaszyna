@@ -10,9 +10,13 @@ var _previous_game_dir:String = ""
 var _cache_dir:String = "user://cache".path_join(SceneryInstancer.CACHE_DIRECTORY)
 var _existing_files:PackedStringArray = []
 var _existing_directories:PackedStringArray = []
+var _previous_lazy_loading:bool = false
 
 
 func before_each() -> void:
+    # the terrain is streamed from its chunk files, loaded when wanted
+    _previous_lazy_loading = ResourceLazyLoader.lazy_loading
+    ResourceLazyLoader.lazy_loading = true
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
     _existing_files = _list_cache_files()
@@ -30,6 +34,7 @@ func after_each() -> void:
             DirAccess.remove_absolute(_cache_dir.path_join(directory).path_join(file))
         DirAccess.remove_absolute(_cache_dir.path_join(directory))
     UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    ResourceLazyLoader.lazy_loading = _previous_lazy_loading
 
 
 func test_subscenes_are_cached_per_origin_and_match_in_place_parsing() -> void:

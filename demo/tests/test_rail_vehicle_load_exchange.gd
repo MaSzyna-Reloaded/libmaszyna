@@ -7,7 +7,6 @@ extends MaszynaGutTest
 const MAX_LOAD:float = 100.0
 ## Passengers a second through one open side
 const EXCHANGE_SPEED:float = 5.0
-const PASSENGERS:String = MaszynaLegacyStation.PASSENGERS
 const BOARDING:float = 20.0
 ## Both sides are served twice as fast as one (DynObj.cpp:2848)
 const BOTH_SIDES:float = 2.0

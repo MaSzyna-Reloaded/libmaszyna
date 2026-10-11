@@ -8,6 +8,7 @@
 #include "vehicles/rail/RailVehicleEnginePowerSource.hpp"
 #include "vehicles/rail/RailVehicleLoad.hpp"
 #include "vehicles/rail/RailVehicleRadio.hpp"
+#include "vehicles/rail/RailVehicleWheels.hpp"
 
 #include "RailVehicleNeighbour.hpp"
 #include "tracks/TrackServer.hpp"
@@ -56,6 +57,14 @@ namespace godot {
                 TRAINSET_TYPE_CARGO,
                 TRAINSET_TYPE_MIXED,
             };
+            /* Why a raised pantograph lost its line voltage: its arm does not reach the wire found
+             * (DynObj.cpp:3784), there is no wire over it (scene.cpp:112, "Bad traction" when it
+             * had one), or the wire over it carries nothing */
+            enum PantographContactLoss {
+                PANTOGRAPH_CONTACT_LOSS_NOT_REACHING,
+                PANTOGRAPH_CONTACT_LOSS_NO_WIRE,
+                PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE,
+            };
 
             static RailVehicleServer *get_instance() {
                 return Object::cast_to<RailVehicleServer>(Engine::get_singleton()->get_singleton("RailVehicleServer"));
@@ -80,10 +89,12 @@ namespace godot {
                 HEADING_TO_START,
                 HEADING_TO_END,
             };
-            /* How far a Radio-Stop carries (m) - basic_region::RadioStop, scene.cpp:1271 */
-            static constexpr double RADIO_STOP_RANGE = 2000.0;
             /* How far ahead and behind the transform samples the curve to find its heading (m) */
             static constexpr double HEADING_SAMPLE_DISTANCE = 0.1;
+            /* Below it the sampled heading is no direction at all */
+            static constexpr double HEADING_MIN_LENGTH_SQUARED = 0.000001;
+            /* Above it the heading is too close to vertical to build the basis on the up axis */
+            static constexpr double UP_PARALLEL_DOT_LIMIT = 0.999;
             /* Beyond this the track is straight as far as the running shape is concerned (m) */
             static constexpr double CURVE_RADIUS_LIMIT = 15000.0;
 
@@ -172,11 +183,17 @@ namespace godot {
                     bool location_stale = true;
                     /* Moved since vehicle_placement_changed last said so */
                     bool placement_unreported = true;
-                    /* The body's transform and whether it still describes the placement above. A
-                     * parked vehicle is asked for it every frame by everything that draws it or
+                    /* The body's transform, composed where the placement changes (_place_body()).
+                     * A parked vehicle is asked for it every frame by everything that draws it or
                      * listens from it, and composing it samples the track twice. */
                     Transform3D body_transform;
-                    bool body_transform_valid = false;
+                    /* The vehicle's radio component whose signals are relayed, and its radio in
+                     * RadioServer */
+                    ObjectID radio_component_id;
+                    RID radio;
+                    /* Where the bogies sit (RailVehicleWheels::BOGIE_FRONT, BOGIE_REAR), sampled
+                     * with the body above and handed out with it */
+                    Transform3D bogie_transforms[2];
                     /* Per end: the neighbour was already reported as none, so reporting it again
                      * says nothing */
                     bool neighbour_cleared[2] = {false, false};
@@ -229,12 +246,17 @@ namespace godot {
             };
             HashMap<RID, Trainset> trainsets;
             void _on_vehicle_configured(const RID &p_vehicle);
+            void _on_vehicle_config_changed(const RID &p_vehicle);
             bool diagnostics = false;
             /// The diagnostics follow their setting
             void _on_project_settings_changed();
-            /* The rail vehicles on each track, rebuilt once a step (neighbour_index_rebuild()),
-             * kept as a member so the step allocates nothing per frame */
+            /* The rail vehicles on each track, updated once a step (neighbour_index_update()) for
+             * those that changed track since (track_moved_vehicles) */
             HashMap<RID, Vector<RID>> track_vehicles;
+            LocalVector<RID> track_moved_vehicles;
+            /* The vehicle is on another track than it is indexed under: it moves in the index at
+             * the next neighbour_index_update() */
+            void _note_track_move(const RID &p_vehicle, const VehiclePlacement &p_placement);
             /* Counts every change a neighbour scan depends on; each track keeps the count of its
              * last change - a vehicle moving on it, entering or leaving it, its switch set - and a
              * change of the track network as a whole stales every scan */
@@ -257,6 +279,17 @@ namespace godot {
             void _connect_relays(const RID &p_vehicle, const VehiclePlacement &p_placement);
             void _disconnect_relays(const RID &p_vehicle, const VehiclePlacement &p_placement);
             void _on_vehicle_controller_changed(const RID &p_vehicle);
+            /* The vehicle's radio, wired once its components are configured: a radio of RadioServer
+             * for as long as the vehicle has it, what it sends is transmitted from it, and what it
+             * hears is handed down to it */
+            void _connect_radio(const RID &p_vehicle, VehiclePlacement &p_placement);
+            void _disconnect_radio(const RID &p_vehicle, VehiclePlacement &p_placement);
+            void _on_vehicle_radio_stop_sent(const RID &p_vehicle);
+            void _on_vehicle_radio_call_sent(int64_t p_call, const RID &p_vehicle);
+            void _on_vehicle_radio_received(
+                    int64_t p_kind, int64_t p_channel, const Variant &p_payload, const Vector3 &p_position,
+                    const RID &p_vehicle);
+            Ref<RailVehicleRadio> _get_radio(const VehiclePlacement &p_placement) const;
             /* Who sits where changed in a cabin: the vehicle's controller is handed the kind of
              * cabin its driver sits in, and a vehicle somebody now drives wakes */
             void _on_cabin_person_entered(const RID &p_cabin, const RID &p_person, VehiclePersonRole::Role p_role);
@@ -288,7 +321,9 @@ namespace godot {
             RailVehicleLoad *_get_load(const RID &p_vehicle) const;
             void _move_placement(VehiclePlacement &p_placement, double p_distance, bool p_force_switch_state);
             VehiclePlacement _sample_placement(const VehiclePlacement &p_placement, double p_distance);
-            Transform3D _compose_body_transform(VehiclePlacement &p_placement, const RID &p_vehicle);
+            /* Where the vehicle's body is, for the placement as it now is: into the placement and
+             * to its controller */
+            void _place_body(VehiclePlacement &p_placement);
             Transform3D _placement_transform(const VehiclePlacement &p_placement) const;
             double _placement_roll(const VehiclePlacement &p_placement) const;
             bool _motion_connection(
@@ -337,10 +372,12 @@ namespace godot {
             static const char *vehicle_heading_to_track_start_signal;
             static const char *vehicle_heading_to_track_end_signal;
             static const char *vehicle_stopped_on_track_signal;
-            static const char *vehicle_radio_called_signal;
             /* A Radio-Stop reached the vehicle and braked it (TDynamicObject::RadioStop,
              * DynObj.cpp:7229) */
             static const char *vehicle_emergency_signal_received_signal;
+            /* A raised pantograph of the vehicle lost its line voltage (vehicle, pantograph: 0 or 1,
+             * cause: PantographContactLoss) - on the change, as the warnings report it */
+            static const char *vehicle_pantograph_contact_lost_signal;
 
             RailVehicleServer();
 
@@ -457,14 +494,6 @@ namespace godot {
              * one fed by a current collector, of the unit first, then of the vehicles under control;
              * an invalid RID when there is none */
             RID vehicle_find_pantograph_carrier(const RID &p_vehicle) const;
-            /* Radio-Stop sent from this vehicle reaches every vehicle within RADIO_STOP_RANGE of it,
-             * itself included (basic_region::RadioStop, scene.cpp:1269) */
-            void vehicle_emergency_signal_send(const RID &p_vehicle);
-            /* A Radio-Stop sent from a place rather than a vehicle - a scenery's `Emergency_brake` -
-             * heard by every vehicle within RADIO_STOP_RANGE */
-            void emergency_signal_send(const Vector3 &p_position);
-            /* The vehicle's radio sent a call from where it stands (Event.cpp:2255-2268 listens) */
-            void vehicle_radio_call(const RID &p_vehicle, RailVehicleRadio::RadioCall p_call);
 
 
             void vehicle_set_track(
@@ -519,7 +548,7 @@ namespace godot {
              * implementation that steps its vehicles in its own phases (MaszynaMoverVehicleServer). */
             /* Which vehicle stands on which track, for this step's neighbour scans: once a step,
              * before any vehicle looks for its neighbours */
-            void neighbour_index_rebuild();
+            void neighbour_index_update();
             /* The vehicle moved since its position was last announced: announce it */
             void vehicle_report_position(const RID &p_vehicle);
             /* Hands the simulated vehicle its location on the route, where it has moved */
@@ -536,7 +565,7 @@ namespace godot {
             /* The vehicle moved since its placement was last announced: announce it, so nothing
              * draws it a frame late */
             void vehicle_report_placement(const RID &p_vehicle);
-            Transform3D vehicle_get_transform(const RID &p_vehicle);
+            Transform3D vehicle_get_transform(const RID &p_vehicle) const;
             /* A pantograph as it is built: where it stands in the vehicle's own space, the arms'
              * lengths, the horizontal offset between their ends, their angles lowered and the slider's
              * height over its pivot (TAnimPant). Given by whoever draws the vehicle; a model rebuilt
@@ -552,6 +581,10 @@ namespace godot {
             Vector2 vehicle_get_pantograph_raise(
                     const RID &p_vehicle, RailVehicleEnginePowerSource::PantographSelector p_pantograph) const;
             Transform3D vehicle_get_transform_at_distance(const RID &p_vehicle, double p_distance);
+            /* Where a bogie sits on the track: sampled with the body where the placement changes,
+             * at half the wheels' pivot spacing to each side; a vehicle whose pivot spacing is
+             * unknown yet has both bogies at its centre, which is what the caller sees. */
+            Transform3D vehicle_get_bogie_transform(const RID &p_vehicle, RailVehicleWheels::Bogie p_bogie) const;
             /* Track under the vehicle and its centre along that track, measured towards its front */
             Dictionary vehicle_get_track_position(const RID &p_vehicle) const;
             /* The tracks ahead of the vehicle the way p_direction leads - +1 towards its front, as
@@ -572,3 +605,4 @@ namespace godot {
 
 VARIANT_ENUM_CAST(RailVehicleServer::CabinChange);
 VARIANT_ENUM_CAST(RailVehicleServer::TrainsetType);
+VARIANT_ENUM_CAST(RailVehicleServer::PantographContactLoss);

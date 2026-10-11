@@ -6,16 +6,16 @@
 
 namespace godot {
     /// The cab layer of this script's context; raises an error when none was attached
-    static Ref<ScenarioScriptCabinDelegate> cabin(lua_State *p_state) {
-        const Ref<ScenarioScriptCabinDelegate> delegate =
-                LuaModules::server<ScenarioScriptServer>(p_state)->context_get_cabin_delegate(
+    static Ref<ScenarioScriptCabinImplementation> cabin(lua_State *p_state) {
+        const Ref<ScenarioScriptCabinImplementation> implementation =
+                LuaModules::server<ScenarioScriptServer>(p_state)->context_get_cabin_implementation(
                         LuaScriptContext::from_state(p_state)->get_rid());
-        if (delegate.is_null()) {
+        if (implementation.is_null()) {
             // luaL_error is the Lua C API's vararg error call
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
             luaL_error(p_state, "no cabs are available to scripts here");
         }
-        return delegate;
+        return implementation;
     }
 
     /// act(cabin, control_id, action, value) - manipulates a control of the cabin as the

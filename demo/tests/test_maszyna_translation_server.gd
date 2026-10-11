@@ -41,9 +41,8 @@ func test_game_translation_wins_over_the_wrappers() -> void:
 
 
 func test_wrapper_strings_the_game_lacks_are_translated() -> void:
-    # addons/libmaszyna/translations and demo/translations
+    # addons/libmaszyna/translations
     assert_eq(TranslationServer.translate("cutoff"), "odcięcie")
-    assert_eq(TranslationServer.translate("Trainset"), "Skład")
 
 
 func test_unknown_msgid_stays_as_it_is() -> void:

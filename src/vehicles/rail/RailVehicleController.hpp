@@ -24,6 +24,9 @@ namespace godot {
             String coupler_adapter_model = DEFAULT_COUPLER_ADAPTER_MODEL;
             double coupler_adapter_length = DEFAULT_COUPLER_ADAPTER_LENGTH;
             double coupler_adapter_height = DEFAULT_COUPLER_ADAPTER_HEIGHT;
+            /* The model of the adapter fitted to each end, "" without one - the vehicle's, the
+             * neighbour's model it was handed (attach_coupler_adapter(), DynObj.cpp:1754-1789) */
+            String coupler_adapter_fitted_models[2];
 
         protected:
             static void _bind_methods();
@@ -131,18 +134,18 @@ namespace godot {
             static const char *coupler_adapter_attached_signal;
             static const char *coupler_adapter_removed_signal;
 
-            virtual void cab_activation(bool p_enabled) const = 0;
+            virtual void cab_activation(bool p_enabled) = 0;
             /* The compartment lights switched on, or their "off" switch (CompartmentLightsSwitch(),
              * CompartmentLightsSwitchOff()) */
-            virtual void compartment_lights(bool p_enabled) const = 0;
-            virtual void compartment_lights_switch_off(bool p_enabled) const = 0;
-            virtual void cab_activation_auto() const = 0;
+            virtual void compartment_lights(bool p_enabled) = 0;
+            virtual void compartment_lights_switch_off(bool p_enabled) = 0;
+            virtual void cab_activation_auto() = 0;
             /* The cab switched off as the vehicle switches it off by itself, when the FIZ lets it
              * (CabDeactivisationAuto(), Train.cpp:10336) */
-            virtual void cab_deactivation_auto() const = 0;
+            virtual void cab_deactivation_auto() = 0;
             /* The controls a cab change leaves at rest - the brake handle at its neutral, the
              * controllers at zero (TMoverParameters::ChangeCab(), Mover.cpp:735-749) */
-            virtual void cab_controls_reset() const = 0;
+            virtual void cab_controls_reset() = 0;
             /* The kind of cabin its driver sits in, handed down by RailVehicleServer whenever it
              * changes - C++ only and unbound: who sits where is VehicleServer's to tell */
             virtual void set_driver_cabin_kind(RailVehicleCabinKind::Kind p_kind);
@@ -153,20 +156,24 @@ namespace godot {
             /* Its driver went over to another vehicle: the cab switched off, the brake handle at its
              * neutral, the controllers at zero (TTrain::MoveToVehicle(), Train.cpp:10950-10954) -
              * command cabin_leave, sent by RailVehicleServer::person_change_cabin() */
-            virtual void cabin_leave() const = 0;
+            virtual void cabin_leave() = 0;
             /* A driver came over from another vehicle: the pipe pressure limit taken from the pipe,
              * the cab switched on (Train.cpp:10976-10977) - command cabin_enter, as cabin_leave() */
-            virtual void cabin_enter() const = 0;
+            virtual void cabin_enter() = 0;
             /* The main circuit's ground relay reset (maincircuitgroundreset, RelayReset(), Mover.cpp:6653) */
-            virtual void ground_relay_reset() const = 0;
+            virtual void ground_relay_reset() = 0;
             /* The anti-slip brake pressed (antislip, AntiSlippingButton()) */
-            virtual void antislip() const = 0;
-            virtual void main_controller_increase(int p_step = 1) const = 0;
-            virtual void main_controller_decrease(int p_step = 1) const = 0;
-            virtual void second_controller_increase(int p_step = 1) const = 0;
-            virtual void second_controller_decrease(int p_step = 1) const = 0;
-            virtual void direction_increase() const = 0;
-            virtual void direction_decrease() const = 0;
+            virtual void antislip() = 0;
+            virtual void main_controller_increase(int p_step = 1) = 0;
+            virtual void main_controller_decrease(int p_step = 1) = 0;
+            /* The master controller put at a position at once, as the original's driver sets
+             * MainCtrlPos of an EIM controller (Driver.cpp:3771-3816, 4284-4290): no step, so the
+             * relay time a step restarts goes on (CheckEIMIC(), Mover.cpp) */
+            virtual void main_controller_set_position(int p_position) = 0;
+            virtual void second_controller_increase(int p_step = 1) = 0;
+            virtual void second_controller_decrease(int p_step = 1) = 0;
+            virtual void direction_increase() = 0;
+            virtual void direction_decrease() = 0;
             virtual double process_movement(double p_delta) = 0;
             virtual void update_location() = 0;
             /* The vehicle nearest beyond p_end, p_track_distance [m] center to center along the
@@ -204,11 +211,16 @@ namespace godot {
             /* The adapter taken off an end, uncoupling it first (DynObj.cpp:1791-1810) */
             virtual bool coupler_adapter_remove(const Variant &p_where) = 0;
             /* The model of the adapter fitted to an end, "" without one */
-            virtual String get_coupler_adapter_fitted_model(CouplerEnd p_end) const = 0;
+            String get_coupler_adapter_fitted_model(CouplerEnd p_end) const;
             /* The fitted adapter's length added to the end and its height over the rail [m] */
             virtual double get_coupler_adapter_fitted_length(CouplerEnd p_end) const = 0;
             virtual double get_coupler_adapter_fitted_height(CouplerEnd p_end) const = 0;
 
+        protected:
+            /* By the backend, when it fits an adapter to an end or takes it off ("") */
+            void _set_coupler_adapter_fitted_model(CouplerEnd p_end, const String &p_model);
+
+        public:
             /* coupleradapter: of the MMD - the adapter this vehicle hands a neighbour of another
              * coupler type: its model, its length and its height over the rail [m]; the original's
              * own without the key (DynObj.cpp:1765-1773, 5284-5292) */
@@ -229,34 +241,44 @@ namespace godot {
              * kind - a vehicle has two couplers, one per end */
             Ref<VehicleComponent> get_rail_component(RailVehicleComponentType::Type p_type) const;
             TypedArray<VehicleComponent> find_rail_components(RailVehicleComponentType::Type p_type) const;
-            /* Answered from VehicleServer's per-vehicle cache, which is keyed on the state
-             * serial (a step or a command), so a reader per frame costs a lookup rather
-             * than a rebuild of the whole dictionary. A controller the server does not hold - the
-             * throwaway one the FIZ builder saves as a description - has no state to give
-             * and answers an empty dictionary. */
-            Dictionary get_state() override;
 
+        private:
             /* The name of the vehicle's type - the original's CHK/MMD name TMoverParameters keeps
              * as TypeName (DynObj.cpp:2019) */
-            MAKE_MEMBER_GS(String, type_name, "");
+            String type_name = "";
             /* What the vehicle carries when the scenery places it, as the `.scn` names it - the
              * amount and the cargo's own name (`loadcount` and `loadtype` of a `dynamic`). The
              * simulation takes both at once, and it reads more than cargo out of them: `pantstate`
              * is how a scenery starts a locomotive with its pantographs already up. */
-            MAKE_MEMBER_GS(String, load_name, "");
-            MAKE_MEMBER_GS(double, load_amount, 0.0);
-            MAKE_MEMBER_GS_NR(TrainType, train_type, TRAIN_TYPE_DEFAULT);
-            MAKE_MEMBER_GS(double, reduced_mass, 0.0);
-            MAKE_MEMBER_GS(double, sand_capacity, 0.0);
-            MAKE_MEMBER_GS(double, heating_power, 0.0);
-            MAKE_MEMBER_GS(double, light_power, 0.0);
+            String load_name = "";
+            double load_amount = 0.0;
+            TrainType train_type = TRAIN_TYPE_DEFAULT;
+            double reduced_mass = 0.0;
+            double sand_capacity = 0.0;
+            double heating_power = 0.0;
+            double light_power = 0.0;
 
             /* Cntrl. (ogolne, przekaznik ziemnozwarciowy/oswietlenie przedzialow/aktywacja kabiny) */
-            MAKE_MEMBER_GS_NR(StartMode, cntrl_ground_relay_start_mode, START_MODE_MANUAL);
+            StartMode cntrl_ground_relay_start_mode = START_MODE_MANUAL;
             /* CompartmentLightsStart= absent: automatic, "legacy behaviour" (Mover.cpp:10984) */
-            MAKE_MEMBER_GS_NR(StartMode, cntrl_compartment_lights_start_mode, START_MODE_AUTOMATIC);
-            MAKE_MEMBER_GS(bool, cntrl_automatic_cab_activation, true);
-            MAKE_MEMBER_GS(int, cntrl_inactive_cab_flag, 0);
+            StartMode cntrl_compartment_lights_start_mode = START_MODE_AUTOMATIC;
+            bool cntrl_automatic_cab_activation = true;
+            int cntrl_inactive_cab_flag = 0;
+
+        public:
+            MAKE_GS(String, type_name);
+            MAKE_GS(String, load_name);
+            MAKE_GS(double, load_amount);
+            MAKE_GS_NR(TrainType, train_type);
+            MAKE_GS(double, reduced_mass);
+            MAKE_GS(double, sand_capacity);
+            MAKE_GS(double, heating_power);
+            MAKE_GS(double, light_power);
+
+            MAKE_GS_NR(StartMode, cntrl_ground_relay_start_mode);
+            MAKE_GS_NR(StartMode, cntrl_compartment_lights_start_mode);
+            MAKE_GS(bool, cntrl_automatic_cab_activation);
+            MAKE_GS(int, cntrl_inactive_cab_flag);
     };
 } // namespace godot
 

@@ -17,14 +17,21 @@ namespace godot {
             }
 
         private:
+            /* Below this the vehicle counts as standing, and the alarm chain does not sound
+             * the emergency signal (DynObj.cpp:4888, the same 0.5 m/s the original compares against) */
+            static constexpr double HORN_EMERGENCY_MIN_SPEED = 0.5;
+
             static void _bind_methods();
+            /* DynObj.cpp's per-frame horn combination: while moving with the alarm chain
+             * pulled, the emergency signal overrides the manually commanded one - in the Mover's
+             * WarningSignal bits */
+            int _get_combined_signal() const;
 
         public:
             void _fill_state_dictionary(Dictionary &p_state) const override;
             bool get_low_pressed() const override;
             bool get_high_pressed() const override;
             bool get_whistle_pressed() const override;
-            int get_combined_signal() const override;
             bool get_low_active() const override;
             bool get_high_active() const override;
             bool get_whistle_active() const override;

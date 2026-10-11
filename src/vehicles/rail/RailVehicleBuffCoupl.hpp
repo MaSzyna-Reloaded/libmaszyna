@@ -16,7 +16,6 @@ namespace godot {
         private:
             static void _bind_methods();
 
-        protected:
         public:
             enum CouplerType {
                 COUPLER_TYPE_AUTOMATIC,
@@ -26,25 +25,42 @@ namespace godot {
                 COUPLER_TYPE_ARTICULATED
             };
             enum BufferLocation { BUFFER_LOCATION_FRONT, BUFFER_LOCATION_BACK, BUFFER_LOCATION_BOTH };
-            MAKE_MEMBER_GS(double, buffer_stiffness_k, 1.0);
-            MAKE_MEMBER_GS(double, buffer_max_compression_tolerance, 0.1);
-            MAKE_MEMBER_GS(double, buffer_max_tension_tolerance, 1000.0);
-            MAKE_MEMBER_GS(double, coupler_stiffness_k, 1.0);
-            MAKE_MEMBER_GS(double, coupler_max_compression_tolerance, 0.1);
-            MAKE_MEMBER_GS(double, coupler_max_tension_tolerance, 1000.0);
-            MAKE_MEMBER_GS(double, damping_beta, 0.0);
+
+        private:
+            double buffer_stiffness_k = 1.0;
+            double buffer_max_compression_tolerance = 0.1;
+            double buffer_max_tension_tolerance = 1000.0;
+            double coupler_stiffness_k = 1.0;
+            double coupler_max_compression_tolerance = 0.1;
+            double coupler_max_tension_tolerance = 1000.0;
+            double damping_beta = 0.0;
             // masks of RailVehicleController::CouplingFlags
-            MAKE_MEMBER_GS(int, allowed_flag, 0);
-            MAKE_MEMBER_GS(int, automatic_flag, 0);
+            int allowed_flag = 0;
+            int automatic_flag = 0;
             // TCoupling::PowerFlag (MOVER.h:773): 24V and 110V pass unless the FIZ says otherwise
-            MAKE_MEMBER_GS(
-                    int, power_flag,
-                    RailVehicleController::COUPLING_FLAG_POWER_24V | RailVehicleController::COUPLING_FLAG_POWER_110V);
+            int power_flag =
+                    RailVehicleController::COUPLING_FLAG_POWER_24V | RailVehicleController::COUPLING_FLAG_POWER_110V;
             // TCoupling::PowerCoupling (MOVER.h:774): the coupling power passes by
-            MAKE_MEMBER_GS(int, power_coupling, RailVehicleController::COUPLING_FLAG_PERMANENT);
-            MAKE_MEMBER_GS(String, control_type, "");
-            MAKE_MEMBER_GS_NR(CouplerType, coupler_type, CouplerType::COUPLER_TYPE_AUTOMATIC);
-            MAKE_MEMBER_GS_NR(BufferLocation, buffer_location, BufferLocation::BUFFER_LOCATION_FRONT);
+            int power_coupling = RailVehicleController::COUPLING_FLAG_PERMANENT;
+            String control_type = "";
+            CouplerType coupler_type = CouplerType::COUPLER_TYPE_AUTOMATIC;
+            BufferLocation buffer_location = BufferLocation::BUFFER_LOCATION_FRONT;
+
+        public:
+            MAKE_GS(double, buffer_stiffness_k);
+            MAKE_GS(double, buffer_max_compression_tolerance);
+            MAKE_GS(double, buffer_max_tension_tolerance);
+            MAKE_GS(double, coupler_stiffness_k);
+            MAKE_GS(double, coupler_max_compression_tolerance);
+            MAKE_GS(double, coupler_max_tension_tolerance);
+            MAKE_GS(double, damping_beta);
+            MAKE_GS(int, allowed_flag);
+            MAKE_GS(int, automatic_flag);
+            MAKE_GS(int, power_flag);
+            MAKE_GS(int, power_coupling);
+            MAKE_GS(String, control_type);
+            MAKE_GS_NR(CouplerType, coupler_type);
+            MAKE_GS_NR(BufferLocation, buffer_location);
             /* What is attached at an end. The coupler owns the coupling, so it answers for it -
              * a consumer picking a submodel to show has no business reading the simulation. */
             virtual bool is_coupled(RailVehicleController::CouplerEnd p_end) const = 0;

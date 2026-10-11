@@ -114,8 +114,9 @@ func get_profile_coupling_width(data_path:String, file_name:String) -> float:
 ## Runs task on a queue worker while the main thread keeps drawing
 func _run_in_queue(task:Callable) -> Variant:
     var task_id:int = _queue.submit(task)
-    while not _queue.is_done(task_id):
-        await get_tree().process_frame
+    # the queue is shared: other renders' tasks finish on it too
+    while await _queue.task_finished != task_id:
+        pass
     return _queue.wait(task_id)
 
 

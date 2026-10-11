@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bjwh7qxjc4pog"
+path="res://.godot/imported/wmb10.fiz-7b4d2dc1a38731cb03b504f9c62051e1.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/wmb10_v1/wmb10.fiz"
+dest_files=["res://.godot/imported/wmb10.fiz-7b4d2dc1a38731cb03b504f9c62051e1.res"]
+
+[params]
+

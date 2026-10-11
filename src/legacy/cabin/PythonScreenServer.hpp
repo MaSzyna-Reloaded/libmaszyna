@@ -1,5 +1,6 @@
 #pragma once
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/os.hpp>
@@ -20,11 +21,13 @@ namespace godot {
     /// update hands it a dictionary of the train state, `render()` returns an RGBA buffer and
     /// `getCommands()` the commands the screen sends back to the train (PyInt.cpp:23-224).
     ///
-    /// CPython 2.7 is loaded at run time from `maszyna/python/home`, so the extension runs
-    /// without it - the screens then stay blank and one error says why. The interpreter lives
-    /// entirely on one worker thread: it is initialised, used and finalised there, which is all
-    /// the locking the GIL needs. Screens of the same script share one instance of its class,
-    /// as in the original (python_taskqueue::fetch_renderer()).
+    /// CPython 2.7 runs in a process of its own, maszyna-python-host (python_host/main.cpp), which
+    /// loads the game directory's runtime (`maszyna/python/home`) the way the original does. Nothing
+    /// the runtime does can end the game: when the host ends - a fatal Python error, a crash in an
+    /// extension module, a runtime that is missing - what it printed and its exit code go to the
+    /// log, `python_runtime_failed` is emitted once and the screens stay blank. One worker thread
+    /// talks to the host (PythonHostProtocol.hpp), a request at a time. Screens of the same script
+    /// share one instance of its class, as in the original (python_taskqueue::fetch_renderer()).
     class PythonScreenServer : public Object {
             GDCLASS(PythonScreenServer, Object)
 
@@ -35,6 +38,8 @@ namespace godot {
             static constexpr int AVERAGE_COLOR_SAMPLES = 16;
             /// A frame was drawn onto the screen's texture (screen: RID)
             static const char *screen_rendered_signal;
+            /// The Python host has ended and the screens stay blank (message: why, for the player)
+            static const char *python_runtime_failed_signal;
             /// Command-line switch: no Python runtime is loaded and the screens stay blank
             static constexpr const char *ARG_NO_PYTHON = "--no-python";
 
@@ -70,9 +75,12 @@ namespace godot {
             /// The game directory the worker moves the interpreter into, empty when it stays
             String entering_game_dir;
             bool exiting = false;
+            /// The host has ended; no more requests are taken
+            bool host_failed = false;
 
             void _on_data_reload_requested();
-            void _worker_loop(const String &p_library, const String &p_home, const String &p_game_dir);
+            void _announce_failure(const String &p_message);
+            void _worker_loop(const String &p_host, const PackedStringArray &p_arguments);
             void _publish(
                     const RID &p_screen, int p_width, int p_height, const PackedByteArray &p_pixels,
                     const PackedStringArray &p_commands);
@@ -82,8 +90,8 @@ namespace godot {
 
         public:
             PythonScreenServer();
-            /// Joins the worker, which finalises the interpreter on its way out. The worker never
-            /// calls into a script of the project, so this is late enough (unlike the scenery
+            /// Joins the worker, whose pipe closes with it - the host then ends on its own. The worker
+            /// never calls into a script of the project, so this is late enough (unlike the scenery
             /// workers in FINDINGS.md, 2026-09-24)
             ~PythonScreenServer() override;
 

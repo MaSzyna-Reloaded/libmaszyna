@@ -1,0 +1,2 @@
+horn1: { soundbegin: 20786_horn_ep07_1036_1.wav soundmain: 20786_horn_ep07_1036_2.wav soundend: 20786_horn_ep07_1036_3.wav range: 1000 offset: [ (p1), 3.80 , (p2) ] }
+horn2: { soundbegin: 20786_horn_ep07_1036_4.wav soundmain: 20786_horn_ep07_1036_5.wav soundend: 20786_horn_ep07_1036_6.wav range: 1000 offset: [ (p3), 3.80 , (p4) ] }

@@ -1,6 +1,7 @@
 #include "MaszynaMoverVehicleServer.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
+#include <map>
 
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/math.hpp>
@@ -81,34 +82,22 @@ namespace godot {
      * fixed tick the same step ran several times per frame to catch up and the vehicles juddered.
      * The vehicles are handed their new placement at the end of this rather than pulling it
      * themselves on their own beat. */
-    void MaszynaMoverVehicleServer::stepping_advance(const Vector<RID> &p_vehicles, const double p_delta) {
+    /* p_controllers are this implementation's own - MoverRailVehicleController is the one class
+     * that names it (MoverRailVehicleController.cpp:45) - hence the unchecked cast; every vehicle
+     * is attached to the rail before its controller is bound (RailVehiclePhysicsNode::
+     * _prepare_vehicle()) */
+    void MaszynaMoverVehicleServer::stepping_advance(
+            const Vector<RID> &p_vehicles, const Vector<Ref<VehicleController>> &p_controllers, const double p_delta) {
         RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
-        const VehicleServer *vehicle_server = VehicleServer::get_instance();
         ERR_FAIL_NULL(rail_vehicles);
-        ERR_FAIL_NULL(vehicle_server);
         if (p_delta <= 0.0) {
             return;
         }
-        stepped_vehicles.clear();
-        stepped_controllers.clear();
-        for (const RID &vehicle_rid: p_vehicles) {
-            // only a vehicle on the rail is stepped - one not attached there has nowhere to move
-            const Ref<RailVehicleController> controller = Object::cast_to<RailVehicleController>(
-                    ObjectDB::get_instance(ObjectID(vehicle_server->vehicle_get_controller_instance_id(vehicle_rid))));
-            if (controller.is_null() || !rail_vehicles->vehicle_is_attached(vehicle_rid)) {
-                continue;
-            }
-            stepped_vehicles.push_back(vehicle_rid);
-            stepped_controllers.push_back(controller);
-        }
-        if (stepped_vehicles.is_empty()) {
-            return;
-        }
 
-        for (const RID &vehicle_rid: stepped_vehicles) {
+        for (const RID &vehicle_rid: p_vehicles) {
             rail_vehicles->vehicle_report_position(vehicle_rid);
         }
-        rail_vehicles->neighbour_index_rebuild();
+        rail_vehicles->neighbour_index_update();
 
         // the whole frame, in steps no longer than PHYSICS_STEP; the clock caps the frame
         // (drivermode.cpp:193-206)
@@ -136,20 +125,22 @@ namespace godot {
             // (vendored) is left as it is. The cost: the locations and the neighbour scan run per
             // sub-step, not per frame - at 60 fps the same as before, on a slow frame up to
             // MAX_FRAME_TIME / PHYSICS_STEP times.
-            for (const RID &vehicle_rid: stepped_vehicles) {
+            for (const RID &vehicle_rid: p_vehicles) {
                 rail_vehicles->vehicle_update_location(vehicle_rid);
             }
-            for (const RID &vehicle_rid: stepped_vehicles) {
+            for (const RID &vehicle_rid: p_vehicles) {
                 rail_vehicles->vehicle_update_neighbours(vehicle_rid);
             }
             // the original computes the forces of every vehicle before moving any of them, so
             // coupled vehicles see a consistent state (DynObj.cpp:8199-8205)
-            for (const Ref<RailVehicleController> &controller: stepped_controllers) {
-                controller->compute_forces(sub_step);
+            for (const Ref<VehicleController> &controller: p_controllers) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+                static_cast<RailVehicleController *>(controller.ptr())->compute_forces(sub_step);
             }
             const bool full_movement = iteration == iterations - 1;
-            for (int index = 0; index < stepped_vehicles.size(); ++index) {
-                const Ref<RailVehicleController> &controller = stepped_controllers[index];
+            for (int index = 0; index < p_vehicles.size(); ++index) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+                RailVehicleController *controller = static_cast<RailVehicleController *>(p_controllers[index].ptr());
                 if (!controller->is_physics_active()) {
                     continue;
                 }
@@ -159,40 +150,113 @@ namespace godot {
                 } else {
                     controller->compute_fast_movement(sub_step);
                 }
-                rail_vehicles->vehicle_process_movement(stepped_vehicles[index], sub_step);
+                rail_vehicles->vehicle_process_movement(p_vehicles[index], sub_step);
             }
         }
 
-        for (int index = 0; index < stepped_vehicles.size(); ++index) {
-            const Ref<RailVehicleController> &controller = stepped_controllers[index];
+        for (int index = 0; index < p_vehicles.size(); ++index) {
+            VehicleController *controller = p_controllers[index].ptr();
             if (controller->is_physics_active()) {
                 controller->update_state();
             }
-            rail_vehicles->vehicle_collect_current(stepped_vehicles[index], p_delta);
+            rail_vehicles->vehicle_collect_current(p_vehicles[index], p_delta);
             controller->process_components(p_delta);
-            rail_vehicles->vehicle_report_track_heading(stepped_vehicles[index]);
+            rail_vehicles->vehicle_report_track_heading(p_vehicles[index]);
         }
         if (diagnostics) {
-            _check_velocity_jumps(p_delta);
+            _check_velocity_jumps(p_vehicles, p_controllers, p_delta);
         }
 
-        for (const RID &vehicle_rid: stepped_vehicles) {
+        for (const RID &vehicle_rid: p_vehicles) {
             rail_vehicles->vehicle_report_placement(vehicle_rid);
         }
     }
 
-    void MaszynaMoverVehicleServer::_check_velocity_jumps(const double p_delta) {
-        for (int index = 0; index < stepped_vehicles.size(); ++index) {
-            const Ref<RailVehicleController> &controller = stepped_controllers[index];
+    void MaszynaMoverVehicleServer::_check_velocity_jumps(
+            const Vector<RID> &p_vehicles, const Vector<Ref<VehicleController>> &p_controllers, const double p_delta) {
+        for (int index = 0; index < p_vehicles.size(); ++index) {
+            const VehicleController *controller = p_controllers[index].ptr();
             const double velocity = controller->get_velocity();
-            const double *previous = diagnostics_velocity.getptr(stepped_vehicles[index]);
+            const double *previous = diagnostics_velocity.getptr(p_vehicles[index]);
             const double acceleration = (velocity - (previous != nullptr ? *previous : velocity)) / p_delta;
-            diagnostics_velocity[stepped_vehicles[index]] = velocity;
+            diagnostics_velocity[p_vehicles[index]] = velocity;
             if (Math::abs(acceleration) > DIAGNOSTICS_MAX_ACCELERATION) {
                 UtilityFunctions::push_error(
                         vformat("MaszynaMoverVehicleServer: %s kicked, dV/dt=%.2f m/s^2 at V=%.2f m/s",
                                 controller->get_vehicle_id(), acceleration, velocity));
             }
         }
+    }
+
+    Maszyna::start_t MaszynaMoverVehicleServer::start_mode_to_mover(const RailVehicleController::StartMode p_mode) {
+        static const std::map<RailVehicleController::StartMode, Maszyna::start_t> map = {
+                {RailVehicleController::START_MODE_DISABLED, Maszyna::start_t::disabled},
+                {RailVehicleController::START_MODE_MANUAL, Maszyna::start_t::manual},
+                {RailVehicleController::START_MODE_AUTOMATIC, Maszyna::start_t::automatic},
+                {RailVehicleController::START_MODE_MANUAL_WITH_AUTO_FALLBACK, Maszyna::start_t::manualwithautofallback},
+                {RailVehicleController::START_MODE_CONVERTER, Maszyna::start_t::converter},
+                {RailVehicleController::START_MODE_BATTERY, Maszyna::start_t::battery},
+                {RailVehicleController::START_MODE_DIRECTION, Maszyna::start_t::direction},
+        };
+        return map.at(p_mode);
+    }
+
+    Maszyna::TEngineType MaszynaMoverVehicleServer::engine_type_to_mover(const RailVehicleEngine::EngineType p_type) {
+        static const std::map<RailVehicleEngine::EngineType, Maszyna::TEngineType> map = {
+                {RailVehicleEngine::NONE, Maszyna::TEngineType::None},
+                {RailVehicleEngine::DUMB, Maszyna::TEngineType::Dumb},
+                {RailVehicleEngine::WHEELS_DRIVEN, Maszyna::TEngineType::WheelsDriven},
+                {RailVehicleEngine::ELECTRIC_SERIES_MOTOR, Maszyna::TEngineType::ElectricSeriesMotor},
+                {RailVehicleEngine::ELECTRIC_INDUCTION_MOTOR, Maszyna::TEngineType::ElectricInductionMotor},
+                {RailVehicleEngine::DIESEL, Maszyna::TEngineType::DieselEngine},
+                {RailVehicleEngine::STEAM, Maszyna::TEngineType::SteamEngine},
+                {RailVehicleEngine::DIESEL_ELECTRIC, Maszyna::TEngineType::DieselElectric},
+                {RailVehicleEngine::MAIN, Maszyna::TEngineType::Main},
+        };
+        return map.at(p_type);
+    }
+
+    Maszyna::TPowerSource
+    MaszynaMoverVehicleServer::power_source_to_mover(const RailVehicleController::TrainPowerSource p_source) {
+        static const std::map<RailVehicleController::TrainPowerSource, Maszyna::TPowerSource> map = {
+                {RailVehicleController::POWER_SOURCE_NOT_DEFINED, Maszyna::TPowerSource::NotDefined},
+                {RailVehicleController::POWER_SOURCE_INTERNAL, Maszyna::TPowerSource::InternalSource},
+                {RailVehicleController::POWER_SOURCE_TRANSDUCER, Maszyna::TPowerSource::Transducer},
+                {RailVehicleController::POWER_SOURCE_GENERATOR, Maszyna::TPowerSource::Generator},
+                {RailVehicleController::POWER_SOURCE_ACCUMULATOR, Maszyna::TPowerSource::Accumulator},
+                {RailVehicleController::POWER_SOURCE_CURRENTCOLLECTOR, Maszyna::TPowerSource::CurrentCollector},
+                {RailVehicleController::POWER_SOURCE_POWERCABLE, Maszyna::TPowerSource::PowerCable},
+                {RailVehicleController::POWER_SOURCE_HEATER, Maszyna::TPowerSource::Heater},
+                {RailVehicleController::POWER_SOURCE_MAIN, Maszyna::TPowerSource::Main},
+        };
+        return map.at(p_source);
+    }
+
+    RailVehicleController::TrainPowerSource
+    MaszynaMoverVehicleServer::power_source_from_mover(const Maszyna::TPowerSource p_source) {
+        static const std::map<Maszyna::TPowerSource, RailVehicleController::TrainPowerSource> map = {
+                {Maszyna::TPowerSource::NotDefined, RailVehicleController::POWER_SOURCE_NOT_DEFINED},
+                {Maszyna::TPowerSource::InternalSource, RailVehicleController::POWER_SOURCE_INTERNAL},
+                {Maszyna::TPowerSource::Transducer, RailVehicleController::POWER_SOURCE_TRANSDUCER},
+                {Maszyna::TPowerSource::Generator, RailVehicleController::POWER_SOURCE_GENERATOR},
+                {Maszyna::TPowerSource::Accumulator, RailVehicleController::POWER_SOURCE_ACCUMULATOR},
+                {Maszyna::TPowerSource::CurrentCollector, RailVehicleController::POWER_SOURCE_CURRENTCOLLECTOR},
+                {Maszyna::TPowerSource::PowerCable, RailVehicleController::POWER_SOURCE_POWERCABLE},
+                {Maszyna::TPowerSource::Heater, RailVehicleController::POWER_SOURCE_HEATER},
+                {Maszyna::TPowerSource::Main, RailVehicleController::POWER_SOURCE_MAIN},
+        };
+        return map.at(p_source);
+    }
+
+    Maszyna::TPowerType
+    MaszynaMoverVehicleServer::power_type_to_mover(const RailVehicleController::TrainPowerType p_type) {
+        static const std::map<RailVehicleController::TrainPowerType, Maszyna::TPowerType> map = {
+                {RailVehicleController::POWER_TYPE_NONE, Maszyna::TPowerType::NoPower},
+                {RailVehicleController::POWER_TYPE_BIO, Maszyna::TPowerType::BioPower},
+                {RailVehicleController::POWER_TYPE_MECH, Maszyna::TPowerType::MechPower},
+                {RailVehicleController::POWER_TYPE_ELECTRIC, Maszyna::TPowerType::ElectricPower},
+                {RailVehicleController::POWER_TYPE_STEAM, Maszyna::TPowerType::SteamPower},
+        };
+        return map.at(p_type);
     }
 } // namespace godot

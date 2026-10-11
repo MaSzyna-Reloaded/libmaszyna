@@ -30,3 +30,15 @@ func test_the_rear_cab_lights_its_own_end_switched_off():
     assert_false(state["lights/front_headlight_right_enabled"], "not the front end's")
     assert_true(state["lights/front_headlight_left_enabled"], "the far end's left lamp")
     assert_false(state["lights/rear_headlight_left_enabled"], "not its own end's")
+
+
+## The headlights dimmer (dimheadlights_sw:, Train.cpp:6146-6195) is the vehicle's: it holds what it
+## was switched to, whichever simulation runs the vehicle
+func test_the_headlights_dimmer_holds_what_it_was_switched_to():
+    assert_false(train.get_state()["headlights_dimmed"], "not dimmed at first")
+
+    train.send_command("headlights_dim", true)
+    assert_true(train.get_state()["headlights_dimmed"])
+
+    train.send_command("headlights_dim", false)
+    assert_false(train.get_state()["headlights_dimmed"])

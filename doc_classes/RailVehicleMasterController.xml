@@ -103,5 +103,8 @@
 		<member name="step_down_delay" type="float" setter="set_step_down_delay" getter="get_step_down_delay" default="0.0">
 			[code]Cntrl.SCDDelay[/code] [s]; the FIZ importer gives it [member step_delay] when absent.
 		</member>
+		<member name="tachometer_max_speed" type="float" setter="set_tachometer_max_speed" getter="get_tachometer_max_speed" default="0.0">
+			[code]Cntrl.MaxTachoSpeed[/code] [km/h]: the top of the speed recorder's dial. 0 takes the vehicle's maximum velocity plus 5%.
+		</member>
 	</members>
 </class>

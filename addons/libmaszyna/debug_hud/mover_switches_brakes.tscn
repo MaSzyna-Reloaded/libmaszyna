@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://bn0vwl5vjwu45"]
+
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="1_jn0wr"]
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_brakes.gd" id="1_jocun"]
+[ext_resource type="PackedScene" uid="uid://ddag4vhhuox0t" path="res://addons/libmaszyna/debug_hud/knob.tscn" id="2_jocun"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="3_igujr"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/vertical_gauge.tscn" id="9_vgauge"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="Brakes" type="VBoxContainer" unique_id=207886123]
+script = ExtResource("1_jocun")
+
+[node name="EPFuse" parent="." unique_id=1082526957 instance=ExtResource("1_jn0wr")]
+layout_mode = 2
+label = "EP Fuse"
+state_property = "dcemued/ep_fuse"
+command = "switch_ep_fuse"
+
+[node name="EPLevel" parent="." unique_id=83122987 instance=ExtResource("2_jocun")]
+layout_mode = 2
+label = "EP Level"
+step = 0.05
+state_property = "dcemued/ep_force"
+command = "set_ep_brake_force"
+
+[node name="Positions" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Drive" parent="Positions" unique_id=191279438 instance=ExtResource("3_igujr")]
+layout_mode = 2
+text = "Drive"
+command = "brake_level_set_position"
+command_argument = "drive"
+
+[node name="Full" parent="Positions" unique_id=1418971577 instance=ExtResource("3_igujr")]
+layout_mode = 2
+text = "Full"
+command = "brake_level_set_position"
+command_argument = "full"
+
+[node name="Emergency" parent="Positions" unique_id=540816179 instance=ExtResource("3_igujr")]
+layout_mode = 2
+text = "Emergency"
+command = "brake_level_set_position"
+command_argument = "emergency"
+
+[node name="Level" parent="." unique_id=483395087 instance=ExtResource("2_jocun")]
+layout_mode = 2
+label = "Level"
+step = 0.05
+state_property = "brake_controller_position_normalized"
+command = "brake_level_set"
+
+[node name="BrakeLevel" type="SpinBox" parent="." unique_id=322118226]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Releaser" parent="." unique_id=1663730868 instance=ExtResource("1_jn0wr")]
+layout_mode = 2
+label = "Releaser"
+type = 1
+command = "brake_releaser"
+
+[node name="Gauges" type="HFlowContainer" parent="."]
+layout_mode = 2
+
+[node name="BrakePipePressure" parent="Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 10.0
+unit = "bar"
+decimals = 2
+label = "Pipe"
+
+[node name="BrakeCylinderPressure" parent="Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 6.0
+unit = "bar"
+decimals = 2
+label = "Cylinder"
+
+[node name="LocalBrake" parent="Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.0
+max_value = 1.0
+decimals = 2
+label = "Local brake"
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

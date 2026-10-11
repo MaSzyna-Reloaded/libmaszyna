@@ -20,7 +20,7 @@ namespace godot {
             void set_callable(const Callable &p_callable);
             /* Every material is resolved again */
             void clear();
-            /* p_translucency: E3DRenderingServer::Translucency */
+            /* p_translucency: E3DInstanceTypes::Translucency */
             Ref<Material> resolve(const E3DInstanceData &p_instance, E3DSubModel *p_submodel, int p_translucency);
     };
 } // namespace godot

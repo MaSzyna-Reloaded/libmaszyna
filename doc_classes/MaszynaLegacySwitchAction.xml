@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacySwitchAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="active_track" type="int" setter="set_active_track" getter="get_active_track" enum="TrackServer.SwitchTrack" default="0">
+		</member>
+		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
+		</member>
+	</members>
+</class>

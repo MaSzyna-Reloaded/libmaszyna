@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bph14ol6dob7u"
+path="res://.godot/imported/akm_ex_czoper_rb_base.fiz-8bd52644526539ef281961b999599c78.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/en57km_v1/akm_ex_czoper_rb_base.fiz"
+dest_files=["res://.godot/imported/akm_ex_czoper_rb_base.fiz-8bd52644526539ef281961b999599c78.res"]
+
+[params]
+

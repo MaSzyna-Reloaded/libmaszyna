@@ -147,6 +147,7 @@ func test_a_loaded_span_a_kilometre_from_the_substation_keeps_its_voltage() -> v
     var voltage:float = SUBSTATION_VOLTAGE
     for i in 30:
         voltage = TractionServer.wire_get_voltage(far, voltage, LOAD_CURRENT)
-        await wait_idle_frames(1)
+        TractionServer.wire_draw_current(far, voltage, LOAD_CURRENT)
+        await step(1)
 
     assert_gt(voltage, MIN_VOLTAGE_UNDER_LOAD, "a kilometre of wire should cost tens of volts, not the line")

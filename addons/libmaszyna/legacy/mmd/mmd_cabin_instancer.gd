@@ -1353,8 +1353,8 @@ static func _apply_animation_shape(
                         "Label '%s' has a non-zero MMD offset (%s) which the reused cabin widgets cannot represent - ignored" % [descriptor.label, descriptor.offset],
                         cab_number, descriptor.label, descriptor.submodel_name))
 
-    # TGauge::Update() (Gauge.cpp:364-375): value += dt * (target - value) / friction, and no friction
-    # sets it outright - the widgets' lerp(delta * animation_speed), 0 for at once
+    # TGauge::Update() (Gauge.cpp:364-376): value += dt * (target - value) / friction, no friction or a
+    # step of half of it or more sets it outright - BaseCabinTool3D.friction_weight(), 0 for at once
     if "animation_speed" in widget:
         widget.set("animation_speed", 1.0 / descriptor.friction if descriptor.friction > 0.0 else 0.0)
 

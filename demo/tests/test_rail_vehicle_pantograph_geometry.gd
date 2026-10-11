@@ -163,11 +163,9 @@ func test_a_vehicle_without_pantograph_arms_publishes_no_position() -> void:
             "a vehicle whose model carries no pantograph has nothing to publish")
 
 
-## FINDINGS.md 2026-09-29: entering the cab of a running 3E/1-42 rebuilt its model, and the arms
-## taken again from the model's rest pose came down - the vehicle lost its voltage and its line
-## breaker opened. How far a pantograph is raised is the vehicle's own state (RailVehicleServer),
-## and a model rebuilt to draw it keeps it.
-func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
+## A vehicle with one pantograph, standing under a powered wire on its track, with the pantograph
+## raised until it reaches the wire (or MAX_RAISE_STEPS run out); its controller
+func _raise_pantograph_at_wire(vehicle_name:String) -> VehicleController:
     var track:RID = TrackServer.track_create()
     _tracks.append(track)
     var curve:TrackCurve = TrackCurve.new()
@@ -191,7 +189,7 @@ func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
     model.type_name = "test"
     model.add_component(build_power_supply(110.0))
     model.power = ENGINE_POWER
-    physics_node = build_vehicle_node("test_pantograph_rebuilt", model, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    physics_node = build_vehicle_node(vehicle_name, model, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
     engine = MoverRailVehicleElectricSeriesEngine.new()
     var power_source:RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
@@ -223,6 +221,15 @@ func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
         VehicleServer.stepping_advance(STEP)
         if _front_voltage(controller) > POWERED_VOLTAGE:
             break
+    return controller
+
+
+## FINDINGS.md 2026-09-29: entering the cab of a running 3E/1-42 rebuilt its model, and the arms
+## taken again from the model's rest pose came down - the vehicle lost its voltage and its line
+## breaker opened. How far a pantograph is raised is the vehicle's own state (RailVehicleServer),
+## and a model rebuilt to draw it keeps it.
+func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
+    var controller:VehicleController = await _raise_pantograph_at_wire("test_pantograph_rebuilt")
     assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "the raised pantograph reaches the wire")
 
     # the model rebuilt: new arm nodes, at rest, as a model loaded again puts them
@@ -233,13 +240,33 @@ func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
 
     # FINDINGS.md 2026-09-29: the wire gone for less than the original's 0.2 s - the arm catching up
     # at a switch - is held and does not trip the line breaker; for longer it is not
-    TractionServer.wire_free(wire)
+    TractionServer.wire_free(_wires[0])
     _wires.clear()
     TractionServer.network_build()
     VehicleServer.stepping_advance(SHORT_LOSS)
     assert_gt(_vehicle_voltage(controller), POWERED_VOLTAGE, "a short loss keeps the vehicle's voltage")
     VehicleServer.stepping_advance(LONG_LOSS)
     assert_eq(_vehicle_voltage(controller), 0.0, "a longer one does not")
+
+
+## The pantograph losing its wire is announced with the cause, beside the warning (Bad traction,
+## scene.cpp:112) - what the game logs to place a main switch trip (#308, reports#16)
+func test_a_pantograph_losing_its_wire_announces_the_loss() -> void:
+    var controller:VehicleController = await _raise_pantograph_at_wire("test_pantograph_contact_lost")
+    assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "the raised pantograph reaches the wire")
+    var losses:Array = []
+    var record:Callable = func(lost:RID, pantograph:int, cause:RailVehicleServer.PantographContactLoss) -> void:
+        losses.append([lost, pantograph, cause])
+    RailVehicleServer.vehicle_pantograph_contact_lost.connect(record)
+
+    TractionServer.wire_free(_wires[0])
+    _wires.clear()
+    TractionServer.network_build()
+    VehicleServer.stepping_advance(STEP)
+
+    RailVehicleServer.vehicle_pantograph_contact_lost.disconnect(record)
+    assert_eq(losses, [[controller.get_rid(), 0, RailVehicleServer.PANTOGRAPH_CONTACT_LOSS_NO_WIRE]],
+            "the loss of the wire under the front pantograph, once")
 
 
 func _vehicle_voltage(controller:VehicleController) -> float:

@@ -1,0 +1,146 @@
+models: 6bs_pr.t3d#
+animations: 4 4 0 0 2 2 -1
+animwheelprefix: wheel0
+animdoorprefix: door0
+animpantrd1prefix: ramiedolne1_pant0
+animpantrd2prefix: ramiedolne2_pant0
+animpantrg1prefix: ramiegorne1_pant0
+animpantrg2prefix: ramiegorne2_pant0
+animpantslprefix: slizg_pant0
+pantfactors: -7.897 7.893 4.382 0.01
+lowpolyinterior: 6bs_lowpoly
+loads: {
+passengers: 6bs_passengers
+}
+endmodels
+
+locations:
+ doors: -4.49 both 4.32 both end
+ bogies: -7.992 7.992 end
+ tractionmotors: -7.992 7.992 end
+endlocations
+
+sounds:
+curve: {
+ amplitudefactor: 1.35
+ amplitudeoffset: 1.35
+ range: 100
+ crossfade: 75
+ placement: custom
+ sound1: 697_104e_curve_1.wav
+ sound20: 697_en57-skrzypi.wav
+ sound40: curve_en57-1.wav
+ sound60: curve_en57.wav
+ sound80: silence1.wav }
+include engine_en57.inc end
+include brake_external.inc end
+include stukoty_rb.inc end
+include brakesound_external.inc end
+derail: derail.wav 200
+small-compressor: s-compressor-start.wav,s-compressor.wav,s-compressor-stop.wav 20
+converter: { soundmain: en57-przetw_statyczna.wav range: 35 placement: external offset: [-0.5,0.56,-2.5]}
+pantographup: { soundmain: 24150_eu07_pantograf_dosieci.flac }
+pantographdown: pantdown.wav
+departuresignal: { soundset: [ 26284_en57-986_buczek-start.wav|26284_en57-986_buczek-trwa.wav|26284_en57-986_buczek-stop.wav, 20786_en57_departure_buzzer_1.wav|20786_en57_departure_buzzer_2.wav|20786_en57_departure_buzzer_3.wav, 697_en57-door-signal-1.wav|697_en57-door-signal-2.wav|697_en57-door-signal-3.wav, 20786_door_signal_1_en71-016.wav|20786_door_signal_2_en71-026.wav|20786_door_signal_3_en71-026.wav, 4625_en57_905_signal_start.wav|4625_en57_905_signal.wav|4625_en57_905_signal_stop.wav, 4625_en57_1027_signal_start.wav|4625_en57_1027_signal.wav|4625_en57_1027_signal_stop.wav, 4625_en57_1805_signal_start.wav|4625_en57_1805_signal.wav|4625_en57_1805_signal_stop.wav, 4625_en57_1039_signal_start.wav|4625_en57_1039_signal.wav|4625_en57_1039_signal_stop.wav, 4625_en57_920_signal_start.wav|4625_en57_920_signal.wav|4625_en57_920_signal_stop.wav, 697_en57_door_buczek_start.wav|697_en57_door_buczek_trwa.wav|697_en57_door_buczek_end.wav, 20439_653-signal_start.wav|20439_653-signal_trwa.wav|20439_653-signal_stop.wav ] range: 25 placement: external pitchvariation: 0 }
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+dooropen: { soundmain: 26284_spot_door_open_v2.wav placement: external }
+doorclose: { soundmain: 26284_spot_door_close_v2.wav placement: external }
+doorlock: { soundmain: door_blocked_1.wav placement: engine soundproofing: [ 0.3 0.8 0.3 0.1 0.1 0.1 ] }
+doorunlock: { soundmain: door_blocked_2.wav placement: engine soundproofing: [ 0.3 0.8 0.3 0.1 0.1 0.1 ] }
+outernoise: {
+ range: 130
+ crossfade: 85
+ sound0: silence1.wav pitch0: 35
+ sound35: 697_en57_outernoise_35.wav pitch35: 35
+ sound80: 697_en57_outernoise_80.wav pitch80: 40
+ sound200: 697_en57_outernoise_80.wav pitch200: 80 }
+unloading: 24150_en57_pasazery.flac
+loading: 24150_en57_pasazery.flac
+brakecylinderinc: { soundproofing: [ 0.04 0.25 0.04 0.64 0.64 0.64 ]
+ sound1: 2193_en57-brakecyl-begin
+ sound2: 2193_en57-brakecyl-low pitch2: 1.1
+ sound5: 2193_en57-brakecyl-low pitch5: 1.0
+ sound6: 2193_en57-brakecyl-high pitch6: 1.0
+ sound9: 2193_en57-brakecyl-high pitch9: 0.9 }
+ unbrake: { soundbegin: 697_en57-luz-start.wav soundmain: 697_en57-luz-trwa.wav soundend: 697_en57-luz-koniec.wav soundproofing: [ 0.0001 0.25 0.0001 0.64 0.64 0.64 ] }
+endsounds
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+relay: { sound0: 2193_en57-stycznik_lin-wyl.wav sound1: 2193_en57-stycznik_lin-zal.wav sound3: 2193_en57-wal_poz-np.wav sound5: 2193_en57-wal_poz-np.wav sound7: 2193_en57-wal_poz-np.wav sound9: 2193_en57-wal_poz-np.wav sound11: 2193_en57-wal_poz-np.wav sound13: 2193_en57-wal_poz-np.wav sound15: 2193_en57-wal_poz-np.wav sound17: 2193_en57-wal_poz-np.wav sound2: 2193_en57-wal_poz-p.wav sound4: 2193_en57-wal_poz-p.wav sound6: 2193_en57-wal_poz-p.wav sound8: 2193_en57-wal_poz-p.wav sound10: 2193_en57-wal_poz-p.wav sound12: 2193_en57-wal_poz-p.wav sound14: 2193_en57-wal_poz-p.wav sound16: 2193_en57-wal_poz-p.wav sound18: 2193_en57-wal_poz-p.wav sounddec: 2193_en57-wal_poz-np.wav }
+shuntfield: { sound1: 2193_en57-wal_poz-p.wav sound2: 2193_en57-wal_poz-np.wav sound3: 2193_en57-wal_poz-p.wav }
+pneumaticrelay: pneumaticrelay.wav
+couplerattach: 24150_en57_scharfenberg_zapiecie.flac
+couplerdetach: 24150_pg_otwarcie_kurka.wav
+couplerstretch: { soundmain: [ en57_tarcie_gum_2.wav en57_tarcie_gum.wav ] placement: internal }
+bufferclamp: en57_bufferclamp.wav
+startjolt: { soundmain: [ 697_en57_szarpniecie.wav 697_en57_szarpniecie-2.wav en57_startjoint_891.flac en57_startjoint_928.flac ] placement: general }
+
+include brakesound_internal.inc end
+slipperysound: brake-slipp.wav 2.0 0.2 
+airsound: [1007]fvel6_brake_1.wav 5 -0.01 
+airsound2: [1007]fvel6_unbrake_15db_1.wav 5 -0.01 
+airsound3: 697_en57_hiss.wav 5 -0.01 
+runningnoise: {
+ range: -1
+ amplitudefactor: 0.9
+ amplitudeoffset: 0.45
+ crossfade: 95
+ sound0: silence1.wav pitch0: 90
+ sound10: mod-akm_runningnoise_20.wav pitch10: 90
+ sound20: mod-akm_runningnoise_20.wav pitch20: 90
+ sound30: mod-akm_runningnoise_30.wav pitch30: 90
+ sound40: mod-akm_runningnoise_40a.wav pitch40: 90
+ sound50: mod-akm_runningnoise_50a.wav pitch50: 90
+ sound60: mod-akm_runningnoise_60a.wav pitch60: 90
+ sound70: mod-akm_runningnoise_70a.wav pitch70: 90
+ sound80: mod-akm_runningnoise_80a.wav pitch80: 90
+ sound90: mod-akm_runningnoise_90a.wav pitch90: 90
+ sound110: mod-akm_runningnoise_115a.wav pitch110: 110
+ sound200: mod-akm_runningnoise_115a.wav pitch200: 150 }
+ 
+ huntingnoise: {
+ range: -1
+ amplitudefactor: 0.3
+ crossfade: 90
+ sound75: silence1.wav pitch70: 70
+ sound85: 697_en57_runningnoise_80_wezykuje.wav pitch85: 85
+ sound100: 697_en57_runningnoise_100_wezykuje.wav pitch100: 100
+ sound200: 697_en57_runningnoise_100_wezykuje.wav pitch200: 200 }
+ 
+huntingspring: 1.5 1.75 85 100
+
+mechspring: 100 0.02 0.2 0.2 0.03 0.15 0.02 0.01
+soundproofing:
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ -1 -1 -1 -1 -1 -1
+ 0.5 1.0 0.5 0.65 0.65 0.65
+
+cab1definition: 
+ -1.2 1.1  4.00
+  1.2 1.1 10.25 
+driver1pos: 
+0.0 2.8 8.0
+//cab1model: 6bs_lowpoly
+
+cab0definition:
+-1.2 1.1 2.25
+-0.8 1.1 4.75
+driver0angle:
+165 0
+driver0pos:
+-1.0 2.8 4.5
+//cab0model: 6bs_lowpoly
+
+cab2definition: 
+ -1.2 1.1 -10.25
+  1.2 1.1  -5.50 
+driver2pos: 
+0.0 2.8 -8.5
+//cab2model: 6bs_lowpoly
+
+pydestinationsign: { scripts/led_en57_n_1 parameters: kod_e=IC&kod_p=TLK&kod_o=R instance: name }
+destinationsignbackground: make:scripts/led_en57_n_1?dummy=1

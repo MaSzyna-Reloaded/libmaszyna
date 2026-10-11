@@ -1,0 +1,91 @@
+models: dl2.t3d
+animations: 2 0 0 0 0 0 -1
+lowpolyinterior: dl2_interior.t3d
+animwheelprefix: wheel0
+endmodels
+
+sounds:
+wheel_clatter: 50 -1 { soundmain: [ dr2_wheelclatter1.flac dr2_wheelclatter2.flac dr2_wheelclatter3.flac dr2_wheelclatter4.flac ] } 1 { soundmain: [ dr2_wheelclatter1.flac dr2_wheelclatter2.flac dr2_wheelclatter3.flac dr2_wheelclatter4.flac ] } end
+curve: silence1.wav 0
+engine: {  range: 150 amplitudefactor: 1.2 amplitudeoffset: 1  crossfade: 95 placement: general
+sound120: suzuki_1000.wav pitch120: 10
+sound1000: suzuki_1000.wav pitch1000: 10
+sound2000: suzuki_2000.wav pitch2000: 20
+sound3000: suzuki_3000.wav pitch3000: 30
+sound4000: suzuki_4000.wav pitch4000: 40
+sound4500: suzuki_4500.wav pitch4500: 45
+sound10000: suzuki_4500.wav pitch10000: 45
+soundend: suzuki_zgaszenie.wav
+}
+outernoise: { range: 50 amplitudefactor: 0.2 amplitudeoffset: 1 frequencyfactor: 1.2 frequencyoffset: 0 crossfade: 75
+sound0: silence1.wav pitch0: 1
+sound1: dr2_runningnoise1.flac pitch1: 1
+sound10: dr2_runningnoise4.flac pitch10: 1.4
+sound15: dr2_runningnoise5.flac pitch15: 1.6
+sound20: dr2_runningnoise6.flac pitch20: 1.8
+sound25: dr2_runningnoise7.flac pitch25: 2
+sound50: dr2_runningnoise7.flac pitch50: 3
+sound500: dr2_runningnoise7.flac pitch500: 5
+ }
+derail: derail.wav 200
+endsounds 
+
+internaldata:
+tachoclock: silence1.wav
+switch: switch.wav
+ignition: suzuki_rozruch.wav
+buzzer: cisza.wav
+tachoclock: cisza.wav
+relay: cisza.wav
+brakesound: brake.wav 0.1 0 0.2 0.9   
+slipperysound: brake-slipp.wav 1.0 0.2  
+runningnoise: runningnoise.wav 1.0 0.0 1.0 0.2
+runningnoise: { range: 50 amplitudefactor: 0.2 amplitudeoffset: 1 frequencyfactor: 1.2 frequencyoffset: 0 crossfade: 75
+sound0: silence1.wav pitch0: 1
+sound1: dr2_runningnoise1.flac pitch1: 1
+sound10: dr2_runningnoise4.flac pitch10: 1.4
+sound15: dr2_runningnoise5.flac pitch15: 1.6
+sound20: dr2_runningnoise6.flac pitch20: 1.8
+sound25: dr2_runningnoise7.flac pitch25: 2
+sound50: dr2_runningnoise7.flac pitch50: 3
+sound500: dr2_runningnoise7.flac pitch500: 5
+}
+
+mechspring: 150 0.02 0.45 0.3 0.03 0.75 0.07 0.01
+enginespring: 2 600 0.3 3500 0.1
+soundproofing:
+ // listener: rear cab, engine, front cab, window, attached camera, free camera
+ 1.0 1.0 1.0 1.0 0.8 0.8 // internal
+ 1.0 1.0 1.0 1.0 0.8 0.8 // engine
+ 1.0 1.0 1.0 1.0 1.0 1.0 // external
+ 0.8 0.8 0.8 0.8 0.8 1.0 // external ambient
+ 1.0 1.0 1.0 1.0 1.0 1.0 // custom
+
+cab1definition:   
+-0.59 0.07 -0.34 0.59 0.07 0.408
+driver1pos:
+0.32 1.4 -0.17
+cab1model: dl2_interior.t3d 
+
+mainctrl: manetka rot 0.0125 0.0 0.15
+scndctrl: { biegi rot -0.04 0.0 0.15 type: pushtoggle }
+manualbrake: handbreak rot 0.0015 0 0.05
+//main_sw: stacyjka3 rot -0.07 0 0.15
+lights_sw: stacyjka rot -0.14 0 0.15
+battery_sw: stacyjka1 rot -0.07 0 0.15
+dimheadlights_sw: stacyjka2 rot 0.07 0 0.15
+main_on_bt: { rozrusznik rot 0.175 0 0.05 type: impulse }
+engageratio: sprzeglo rot 0.105 -0.105 0.05
+dirkey: nawrotnik rot -0.019 0 0.15
+tachometern: ws_tacho rot -0.004629 0.006944 0.05
+distcounter: lowpolyinterior dgt 1 00085 0
+
+cab2definition:
+-0.2 0.4 -0.1 0.2 0.4 0.1
+driver2pos:
+0.32 1.4 -0.17
+
+cab0definition:
+-0.2 0.4 -0.1 0.2 0.4 0.1
+driver0pos:
+0.32 1.4 -0.17

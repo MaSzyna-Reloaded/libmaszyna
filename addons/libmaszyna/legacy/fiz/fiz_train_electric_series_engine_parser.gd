@@ -111,7 +111,7 @@ func _parse_rlist_header(kv: Dictionary, context: FizImportContext) -> void:
         "yes": node.resistor_fan_type = RailVehicleElectricSeriesEngine.FAN_TYPE_YES
     if vent_str == "automatic" or vent_str == "yes":
         if kv.has("RVentnmax"):
-            node.resistor_fan_max_rpm = FizLineUtil.get_float(kv, "RVentnmax") / 60.0
+            node.resistor_fan_max_rpm = FizLineUtil.get_float(kv, "RVentnmax") / LibMaszynaUnits.SECONDS_PER_MINUTE
         if kv.has("RVentCutOff"):
             node.resistor_fan_cutoff_resistance = FizLineUtil.get_float(kv, "RVentCutOff")
     if kv.has("RVentMinI"):

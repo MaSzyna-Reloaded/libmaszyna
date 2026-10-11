@@ -16,7 +16,7 @@ layout: home
 of a port of [MaSzyna Train Simulator](https://eu07.pl).
 
 Resposibilities of the core:
-* Implementation of High-Level APIs in core systems like **TrainSystem**,
+* Implementation of High-Level APIs in core systems like **RailVehicleServer**, **CabinSystem**,
   **Logging**, **EventSystem**.
 * **Physics systems**, like [bridge to the original train physics system (aka MOVER)](wrapping-mover)
 * Loaders, importers and exportes for legacy file formats: **E3D**,
@@ -28,7 +28,9 @@ Resposibilities of the core:
 ## Important topics
 
 * [Overall architecture](architecture)
+* [API reference](api/) - every class of libmaszyna, C++ and GDScript
 * [Wrapping the original MaSzyna physics](wrapping-mover)
+* [Lua scenario scripts](lua-scripting) - the scripting API for sceneries, with examples
 
 ## Knowledge base
 

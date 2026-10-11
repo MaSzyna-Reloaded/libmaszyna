@@ -100,7 +100,8 @@ IF (DEFINED GODOTCPP_PLATFORM AND NOT CMAKE_SYSTEM_NAME)
 ENDIF ()
 
 SET(LIBNAME "libmaszyna" CACHE STRING "The name of the library")
-SET(GODOT_PROJECT_DIR "demo" CACHE STRING "The directory of a Godot project folder")
+SET(GODOT_PROJECT_DIR "demo" CACHE STRING "The directory of a Godot project folder - relative to this one, or absolute (a game using libmaszyna as a submodule builds into its own project)")
+GET_FILENAME_COMPONENT(GODOT_PROJECT_PATH "${GODOT_PROJECT_DIR}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 SET(IS_DEBUG_BUILD)
 
 FIND_PACKAGE(Python3 3.4 REQUIRED)
@@ -129,6 +130,8 @@ IF (MSVC)
 ENDIF ()
 
 FILE(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.hpp")
+# maszyna-python-host is a program of its own (below), not a part of the library
+LIST(FILTER SRC_FILES EXCLUDE REGEX "src/legacy/cabin/python_host/main\\.cpp$")
 
 # Scenario scripts (ScenarioScriptServer) run on Lua, the vendor/lua submodule. Without it the
 # server stays, and refuses every script as the original's build without Lua does
@@ -166,8 +169,6 @@ IF (DOC_XML)
 ENDIF ()
 
 TARGET_LINK_LIBRARIES(${LIBNAME} godot-cpp)
-# PythonScreenServer loads CPython at run time (dlopen)
-TARGET_LINK_LIBRARIES(${LIBNAME} ${CMAKE_DL_LIBS})
 
 IF (LIBMASZYNA_LUA)
     # The core and the libraries a scenario script may use - not the interpreters, the test
@@ -207,7 +208,7 @@ SET_TARGET_PROPERTIES(${LIBNAME}
         PROPERTIES
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
-        RUNTIME_OUTPUT_DIRECTORY "$<1:${PROJECT_SOURCE_DIR}/demo/bin/libmaszyna/${GODOTCPP_PLATFORM}>"
+        RUNTIME_OUTPUT_DIRECTORY "$<1:${GODOT_PROJECT_PATH}/bin/libmaszyna/${GODOTCPP_PLATFORM}>"
         PREFIX ""
         OUTPUT_NAME "${LIBNAME}"
 )
@@ -270,9 +271,34 @@ IF (GODOTCPP_TARGET STREQUAL "template_debug")
 ENDIF ()
 
 SET(_OUTPUT_NAME "${LIBNAME}${DEBUG_SUFFIX}${ARCH_SUFFIX}")
-SET(GODOT_PROJECT_BINARY_DIR "${PROJECT_SOURCE_DIR}/${GODOT_PROJECT_DIR}/bin/libmaszyna/${GODOTCPP_PLATFORM}")
+SET(GODOT_PROJECT_BINARY_DIR "${GODOT_PROJECT_PATH}/bin/libmaszyna/${GODOTCPP_PLATFORM}")
 
 SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES OUTPUT_NAME "${_OUTPUT_NAME}" LIBRARY_OUTPUT_DIRECTORY "${GODOT_PROJECT_BINARY_DIR}")
+
+# PythonScreenServer runs CPython in maszyna-python-host, a program next to the library (and next
+# to an exported game's executable, [dependencies] of libmaszyna.gdextension): whatever the runtime
+# does ends that process, never the game. It has no Godot in it; it loads CPython at run time.
+# A platform without it (Android, iOS) names none, and the screens stay blank with the error said.
+IF (CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux|Darwin)$")
+    ADD_EXECUTABLE(maszyna-python-host src/legacy/cabin/python_host/main.cpp)
+    SET_TARGET_PROPERTIES(maszyna-python-host PROPERTIES
+            OUTPUT_NAME "maszyna-python-host${ARCH_SUFFIX}"
+            RUNTIME_OUTPUT_DIRECTORY "${GODOT_PROJECT_BINARY_DIR}"
+    )
+    TARGET_LINK_LIBRARIES(maszyna-python-host ${CMAKE_DL_LIBS})
+    IF (WIN32)
+        # CommandLineToArgvW - the arguments in UTF-16, whatever the code page
+        TARGET_LINK_LIBRARIES(maszyna-python-host shell32)
+    ENDIF ()
+    IF (MINGW)
+        # no MinGW runtime DLLs beside the game, as for the library below
+        TARGET_LINK_OPTIONS(maszyna-python-host PRIVATE -static-libgcc -static-libstdc++ -static)
+    ENDIF ()
+    ADD_DEPENDENCIES(${LIBNAME} maszyna-python-host)
+    TARGET_COMPILE_DEFINITIONS(${LIBNAME} PRIVATE "MASZYNA_PYTHON_HOST_FILE=\"$<TARGET_FILE_NAME:maszyna-python-host>\"")
+ELSE ()
+    TARGET_COMPILE_DEFINITIONS(${LIBNAME} PRIVATE "MASZYNA_PYTHON_HOST_FILE=\"\"")
+ENDIF ()
 
 # For multi-config generators (like Visual Studio), ensure output directory doesn't have a config subfolder
 GET_PROPERTY(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -284,17 +310,20 @@ IF (IS_MULTI_CONFIG)
                 RUNTIME_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}"
                 ARCHIVE_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}"
         )
+        IF (TARGET maszyna-python-host)
+            SET_TARGET_PROPERTIES(maszyna-python-host PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${CONFIG} "${GODOT_PROJECT_BINARY_DIR}")
+        ENDIF ()
     ENDFOREACH ()
 ENDIF ()
 
-SET(ADDONS_DEMO_DIR "${PROJECT_SOURCE_DIR}/${GODOT_PROJECT_DIR}/addons")
+SET(ADDONS_DEMO_DIR "${GODOT_PROJECT_PATH}/addons")
 ADD_CUSTOM_COMMAND(TARGET ${LIBNAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${ADDONS_DEMO_DIR}"
 )
 
 SET(SRC_ADDON_LIBMASZYNA "${PROJECT_SOURCE_DIR}/addons/libmaszyna")
 SET(DST_ADDON_LIBMASZYNA "${ADDONS_DEMO_DIR}/libmaszyna")
-MESSAGE(NOTICE "Copying/linking addons and submodules to demo/addons...")
+MESSAGE(NOTICE "Copying/linking addons and submodules to ${ADDONS_DEMO_DIR}...")
 IF (UNIX)
     # On UNIX: prefer symlinks; if destination already a symlink, do nothing.
     IF (NOT IS_SYMLINK "${DST_ADDON_LIBMASZYNA}")

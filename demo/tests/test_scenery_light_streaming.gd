@@ -24,7 +24,7 @@ func before_each() -> void:
     _camera = Camera3D.new()
     add_child_autoqfree(_camera)
     _camera.global_position = Vector3.ZERO
-    SceneryStreamingServer.streaming_set_camera(_camera)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
     E3DRenderingServer.model_set_loader(_load_model)
 
 
@@ -32,8 +32,8 @@ func after_each() -> void:
     if _instance.is_valid():
         E3DRenderingServer.instance_free(_instance)
         _instance = RID()
-    SceneryStreamingServer.streaming_set_camera(null)
-    E3DRenderingServer.model_set_loader(Callable())
+    SceneryStreamingServer.streaming_set_camera(0)
+    E3DRenderingServer.model_set_loader(E3DModelManager.load_model)
     E3DRenderingServer.environment_set_time(MIDDAY)
     E3DRenderingServer.environment_set_light_level(DAY_LIGHT_LEVEL)
 

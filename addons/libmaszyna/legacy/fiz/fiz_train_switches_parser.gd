@@ -48,7 +48,8 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
     if kv.has("Converter"):
         node.converter_impulse = FizLineUtil.get_string(kv, "Converter").to_lower() == "impulse"
     if kv.has("MotorConnectors"):
-        node.motor_connectors_impulse = FizLineUtil.get_string(kv, "MotorConnectors").to_lower() == "impulse"
+        # every value but "toggle" is an impulse button (Train.cpp:5045)
+        node.motor_connectors_impulse = not FizLineUtil.get_string(kv, "MotorConnectors").to_lower() == "toggle"
     if kv.has("RelayResetButton1"):
         node.relay_reset_button_1 = FizLineUtil.get_int(kv, "RelayResetButton1")
     if kv.has("RelayResetButton2"):

@@ -1,9 +1,10 @@
 extends MaszynaGutTest
 
 ## The cab radio (CabinRadio3D) as TTrain's (Train.cpp:10227-10262, 11010-11029): every message in
-## reach plays, muted until the radio is on, powered and on its channel; tuning in mid-message makes
-## it heard, switching off mutes it; messages overlap; the Radio-Stop alarm loops while the radio is
-## on and its Radio-Stop set, and the lamps of the message and of the Radio-Stop follow.
+## reach plays, muted until the radio is on, powered and on its channel; switching on or tuning in
+## mid-message makes it heard, switching off mutes it; messages overlap; the Radio-Stop alarm loops
+## while the radio is on and its Radio-Stop set, and the lamps of the message and of the Radio-Stop
+## follow.
 
 const LOOP_PATH:String = "res://tests/fixtures/dynamic/test/animated_v1/test_loop.ogg"
 const CHANNEL:int = 3
@@ -30,8 +31,8 @@ func _event(event_name:StringName) -> SfxEvent:
     return event
 
 
-## The locomotive stands on a track: a Radio-Stop is a broadcast it hears from where it stands
-## (RailVehicleServer.vehicle_emergency_signal_send())
+## The locomotive stands on a track: a Radio-Stop it sends it hears itself, as every vehicle in
+## reach (basic_region::RadioStop, scene.cpp:1269)
 func before_each() -> void:
     track = build_track(TRACK, TRACK_LENGTH)
     var physics_node:VehiclePhysicsNode = build_vehicle_node("TestCabinRadio",
@@ -62,7 +63,8 @@ func _message_played() -> bool:
 
 
 func _send(channel:int) -> void:
-    CabinSystem.send_radio_message(_event(&"message"), null, channel, Vector3.ZERO, 0.0)
+    SceneryVirtualRadio.new().transmit(Vector3.ZERO, channel, 0.0, RadioServer.KIND_MESSAGE,
+            {"sound": _event(&"message"), "transcript": null})
     await step(2)
 
 
@@ -84,6 +86,16 @@ func test_a_message_off_the_channel_is_heard_once_tuned_in() -> void:
     assert_true(_message_played(), "heard once tuned in mid-message")
 
 
+func test_a_message_is_heard_once_the_radio_is_switched_on_mid_message() -> void:
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", false)
+    await _tune(CHANNEL)
+    await _send(CHANNEL)
+    assert_false(_message_played(), "playing muted with the radio off")
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
+    await step(2)
+    assert_true(_message_played(), "heard once switched on mid-message")
+
+
 func test_switching_the_radio_off_mutes_a_message() -> void:
     VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
     await _tune(CHANNEL)
@@ -95,6 +107,8 @@ func test_switching_the_radio_off_mutes_a_message() -> void:
 
 
 func test_messages_overlap() -> void:
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
+    await step(2)
     var before:int = _players()
     await _send(CHANNEL)
     await _send(CHANNEL)

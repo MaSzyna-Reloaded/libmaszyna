@@ -251,6 +251,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="vehicle_get_position" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Where the vehicle is in the world, as whichever server places it set it.
+			</description>
+		</method>
 		<method name="vehicle_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="String" />

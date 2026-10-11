@@ -35,4 +35,4 @@ func parse_hhmm_to_float(value: String) -> float:
     if h == 24 and m != 0:
         return NAN
 
-    return float(h) + float(m) / 60.0
+    return float(h) + float(m) / LibMaszynaUnits.MINUTES_PER_HOUR

@@ -402,6 +402,21 @@ A pointer that crosses a public boundary makes every caller responsible for a li
 create, and the resulting dangle surfaces far from the code that caused it. Pointers stay inside
 one class.
 
+Two shapes are not this rule's business. A `RefCounted` is passed as a `Ref<T>` - it carries its
+lifetime with it. And an exported node property (`PROPERTY_HINT_NODE_TYPE`, as
+`SignalHeadNode.model`) stays a `Node`: Godot saves it as a `NodePath` and the inspector picks it,
+which an `ObjectID` cannot do - the class keeps it as an `ObjectID` inside.
+
+**A stored pointer is judged by what it points at, not by being one.** A pointer that only crosses
+a call costs nothing; one kept in a member is a defect when its target may die first. Allowed is
+only what outlives the holder by construction: its **owner**, which clears the pointer when it
+releases (`VehicleComponent::train_controller_node` - a `Ref` back would be a cycle), its
+**parent** in the tree, cleared on `EXIT_TREE` (`PlanarMirror3D::glass`), its own **children**, a
+**singleton**, a non-Object **backend** (`TMoverParameters *`). Anything else - a sibling, a
+cousin, another vehicle's part, a node handed in from outside - is held by its `ObjectID`, a
+vehicle by its RID. `GenericVehicleComponent` kept its script's node as a pointer, and a freed
+node was called from the next tick.
+
 ### Never work around a missing event
 
 A value that is not there yet is an ordering defect, and the
@@ -590,12 +605,14 @@ For dev logging, use and only Godot's built-in methods.
 For in-game logging, use a `GameLogger` of `GameLog`, as Python's `logging`: a logger by its id
 (`GameLog.get_logger("game")`, `"ai"`, `"gameplay"`, `"scenario"`), kept in a member where a
 script logs more than once (`var _log: GameLogger = GameLog.get_logger("ai")`, then
-`_log.debug(...)`). A line goes at once - nothing is kept in memory - to the handlers registered
-for the logger's id (`GameLog.create_handler()`, a `GameLogHandler` with its `min_level`, e.g.
-`GameLogFileHandler`) and to `GameLog.message_logged`, which the HUD's Logs window shows, a tab per
-logger. The game sets up the log files (`demo_scenery_loading.gd`); a handler may be registered
-for an id whose logger does not exist yet. Nothing goes to the Godot's console nor to the developer
-console (`~`).
+`_log.debug(...)`). There is no hierarchy of loggers. A line goes at once - nothing is kept in
+memory - to the logger's handlers. `GameLog` only manages: a handler (a `GameLogHandler` with its
+`min_level`, e.g. `GameLogFileHandler`) is registered by name (`GameLog.register_handler()`) and
+assigned to loggers by name (`GameLog.assign_handler()`), and `GameLog` attaches it to them - one
+handler may serve many loggers, and either may come first. The logger calls its handlers itself
+and knows nothing of `GameLog`. The game sets up the log files (its `game.gd`); the HUD's Logs
+window is a handler of its own, a tab per logger, following `logger_created` and
+`logger_removing`. Nothing goes to the Godot's console nor to the developer console (`~`).
 
 `GameLog.get_logger()` is **the one getter that changes state**, a deliberate exception to "A
 getter never changes state": it creates a logger missing yet (and emits `logger_created`), as
@@ -609,7 +626,7 @@ This project has a sound system - the vendored `gnd-sfx` addon (`SfxBank` / `Sfx
 How a bank is built:
 
 1. One `SfxBank` resource per screen or subsystem, saved next to the assets it uses
-   (e.g. `demo/startup/ui_sounds.tres`).
+   (e.g. the game's `startup/ui_sounds.tres`).
 2. **Events are named after what happened, not after the sample or the widget**:
    `load_scenery`, `back_button`, `list_item_click`, `list_item_hover`, `apply_skin`. Code says
    `_ui_sounds.play(&"list_item_click")` and never learns which file that is - swapping the
@@ -741,7 +758,9 @@ the logic into a separate class) instead of reaching into internals.
 
 ### MAKE_* macros
 
-* MAKE_* macros / macros.hpp are deprecated. Use straight and readable declarations.  
+* A macro never changes the section it stands in. A field with plain accessors is declared by hand in `private:`;
+  `MAKE_GS(type, name)` (getter returning a const reference) or `MAKE_GS_NR(type, name)` (getter returning a copy)
+  in `public:` generates its getter and setter.
 
 ### Random generation
 

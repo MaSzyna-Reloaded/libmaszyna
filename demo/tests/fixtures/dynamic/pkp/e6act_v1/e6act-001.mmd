@@ -1,0 +1,224 @@
+//model pojazdu i definicje podmodeli:
+models: pudlo_e6act-001.t3d
+animations: 6 0 0 4 2 2 -1
+lowpolyinterior: lowpoly_e6act-001.t3d
+animwheelprefix: wheel0
+animpantrd1prefix: RamieDolne1_pant0
+animpantrg1prefix: RamieGorne1_pant0
+animpantrd2prefix: RamieDolne2_pant0
+animpantrg2prefix: RamieGorne2_pant0
+animpantslprefix: slizg_pant0
+pantfactors: -3.319 3.381 4.429 0.18
+endmodels
+
+locations:
+ tractionmotors: -5.16 4.84 end
+ bogies: -5.16 5.17 end
+ 
+endlocations
+sounds:
+wheel_clatter: 55 -7.124 20786_es64x4_wheel_1.wav -5.212 20786_es64x4_wheel_2.wav -3.291 20786_es64x4_wheel_1.wav 3.291 20786_es64x4_wheel_3.wav 5.212 20786_es64x4_wheel_4.wav 7.124 20786_es64x4_wheel_3.wav end
+curve: {
+ amplitudefactor: 1.35
+ amplitudeoffset: 1.35
+ range: 100
+ crossfade: 75
+ sound1: 697_104e_curve_1.wav
+ sound20: 20786_104e_curve_2.wav
+ sound25: 20786_104e_curve_3.wav
+ sound30: 20786_104e_curve_2.wav
+ sound35: 20786_104e_curve_1.wav
+ sound50: 104e_3]curve.wav
+ sound80: silence1.wav }
+tractionmotor: { 
+ range: 120
+ amplitudefactor: 1.0
+ amplitudeoffset: 0.6
+ frequencyfactor: 0.332
+ frequencyoffset: 0.0
+ placement: external
+ crossfade: 80
+ sound1: silence1.wav pitch1: 1
+ sound70: dragon1_p210x3.wav pitch70: 70
+ sound102: dragon1_p205x2.wav pitch102: 102
+ sound145: dragon1_p145x1.wav pitch145: 145
+ sound195: dragon1_p195x1.wav pitch195: 195
+ sound250: dragon1_p250x1.wav pitch250: 250
+ sound350: dragon1_p350x1.wav pitch350: 350
+ sound525: dragon1_p525x1.wav pitch525: 525
+ sound1050: dragon1_p1050x1_z_525.wav pitch1050: 1050
+}
+tractionacmotor: {
+ range: 100
+ soundproofing: [ 0.16 0.25 0.16 1 1 1 ]
+  pitchvariation: 0
+ amplitudefactor: 1.0
+ amplitudeoffset: 0.0
+ frequencyfactor: 1.0
+ frequencyoffset: 0.0
+ placement: external
+ crossfade: 80
+ sound49: dragon1_f490.wav pitch49: 7.4
+ sound74: dragon1_f740.wav pitch74: 7.4
+ sound120: dragon1_f480_f1200.wav pitch120: 7.4
+ sound240: silence1.wav pitch240: 7.4
+ }
+brake: {
+ amplitudefactor: 1.3
+ amplitudeoffset: 0.85 
+ range: 130
+ crossfade: 85
+ sound1: 1007_elf_brake-stop.wav
+ sound5: 1007_elf_brake-5.wav
+ sound16: silence1.wav
+ sound20: silence1.wav }
+derail: derail.wav 60
+horn1: dragon_horn_low-1.wav dragon_horn_low-2.wav dragon_horn_low-3.wav 1000
+horn2: dragon_horn_high-1.wav dragon_horn_high-2.wav dragon_horn_high-3.wav 1000
+horn3: traxx_dual_horn-01.wav traxx_dual_horn-02.wav traxx_dual_horn-03.wav 1000
+small-compressor: s-compressor-start.wav s-compressor.wav s-compressor-stop.wav 35
+compressor: { soundbegin: 20786_e6act_compressor_1.wav  soundmain: 20786_e6act_compressor_2.wav soundend: 20786_e6act_compressor_3.wav placement: engine range: 70 }
+converter: { soundbegin: 697_e6act_went_start.wav soundmain: 697_e6act_went.wav soundend: 697_e6act_went_stop.wav placement: engine range: 80 }
+sand: 20786_es64x4_sand_1.wav 20786_es64x4_sand_2.wav 20786_es64x4_sand_3.wav 25
+releaser: 20786_es64f4_releaser_1.wav 20786_es64f4_releaser_2.wav 20786_es64f4_releaser_3.wav 35 
+battery: { soundbegin: 20786_36wea_battory-start.wav soundmain: 20786_36wea_battory-trwa.wav soundend: 20786_36wea_battory-stop.wav placement: internal range: -1 soundproofing: [ 0.04 0.1 0.04 0 0 0 ] }
+pantographup: { soundmain: 20786_es64x4_pantup.wav placement: engine range: 30 }
+pantographdown: { soundmain: 20786_es64x4_pantdown.wav placement: engine range: 40 }
+unbrake: { soundbegin: 24150_e6act_luzowanie_pomocniczy_1.wav soundmain: 24150_e6act_luzowanie_pomocniczy_2.wav soundend: 24150_e6act_luzowanie_pomocniczy_3.wav placement: internal range: 15 }
+outernoise: { range: 150 soundmain: runningnoise.wav }
+emergencybrake: { soundbegin: 20786_et22_emergency_brake_1 soundmain: 20786_et22_emergency_brake_2 soundend: 20786_et22_emergency_brake_3 placement: internal offset: [1.1, 1.6, -6.1] }
+endsounds
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+buzzer: 20786_203e_buzzer.wav 
+tachoclock: silence1.wav
+//switch: 20786_104e_switch_lights.wav
+relay: silence1.wav
+pneumaticrelay: 20786__eu44_pneumatic_relay.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+brakesound: silence1.wav 1.0 0.0 0.2 0.9
+slipperysound: brake-slipp.wav 2.0 0.2  
+airsound3: [9629]traxx-hamulec-bezpieczenstwa.wav 0.25 -0.01
+runningnoise: {
+sound0: silence1.wav pitch0: 0.5
+sound10: 24150_impuls_runningnoise_20.flac pitch10: 0.8
+sound20: 24150_impuls_runningnoise_20.flac pitch20: 1
+sound80: 24150_impuls_runningnoise_80.flac pitch80: 1
+sound100: 24150_impuls_runningnoise_100.flac pitch100: 1
+sound120: 24150_impuls_runningnoise_120.flac pitch120: 1
+sound190: 24150_impuls_runningnoise_120.flac pitch190: 1.58
+crossfade: 75 placement: internal amplitudefactor: 0.6 range: -1 }
+radiostop: 26284_koliber_rs_sygnal.wav
+
+mechspring: 100      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+
+cab1definition:
+-1.75 1.5 7.41 1.75 1.5 8.79 
+driver1pos:
+0.013 3.22 7.526
+driver1sitpos:   
+-0.64 3.05 8.079
+cab1model: kab_smoka001_a.t3d
+
+cab2definition:
+-1.75 1.5 -8.43 1.75 1.5 -7.23 
+driver2pos:
+0.13 3.22 -7.526
+driver2sitpos:
+0.64 3.05 -8.079
+cab2model: kab_smoka001_b.t3d
+
+mainctrl: { nastaw_jazdy rot 0.023 0.0 0.1 soundinc: 24150_e6act_nastawnik_0_up.flac sounddec: 20786_traxx_little_silence.wav sound2: 24150_e6act_nastawnik.flac sound3: 20786_traxx_little_silence.wav sound4: 24150_e6act_nastawnik.flac sound5: 20786_traxx_little_silence.wav  sound6: 24150_e6act_nastawnik.flac sound7: 20786_traxx_little_silence.wav  sound8: 24150_e6act_nastawnik.flac sound9: 20786_traxx_little_silence.wav   sound10: 24150_e6act_nastawnik.flac sound0: 24150_e6act_nastawnik_0_down.flac }
+scndctrl: { nastaw_predkosci rot 0.0208 0.0 0.1 soundinc: 20786_traxx_little_silence.wav sounddec: 20786_traxx_little_silence.wav sound12: 20786_traxx_control_inc.wav sound0: 20786_traxx__control_dec.wav }
+dirkey: { nawrot rot 0.0917 0.0 0.1 soundinc: 20786_es64f4_reverser.wav sounddec: 20786_es64f4_reverser.wav }
+brakectrl: { hamulec_zespol rot -0.0247 0.0 0.1 sound-1: 24150_e6act_hamulec_fala.flac sound0: 24150_e6act_hamulec_neutral.flac sound1: 24150_e6act_hamulec_zabek.flac sound2: 24150_e6act_hamulec_zabek.flac sound3: 24150_e6act_hamulec_zabek.flac }
+localbrake: { wajcha_ham rot -0.008 0.0 0.1 soundinc: 20786_traxx_little_silence.wav sounddec: 20786_traxx_little_silence.wav sound10: 20786_traxx_control_inc.wav sound0: 20786_traxx__control_dec.wav }
+main_sw: { sw-wyl_szyb rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+security_reset_bt: { cashp mov -0.011 0 0.1 soundinc: 20786_ep09_grzyb_2_on.wav sounddec: 20786_ep09_grzyb_2_of.wav }
+universalbrake2_bt: { luz_lok mov -0.009 0 0.1 soundinc: 20786_ep09_grzyb_1_on.wav sounddec: 20786_ep09_grzyb_2_of.wav }
+compressor_sw: { sw_sprez_pom rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+pantfront_sw: { sw-pant_przod rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+pantrear_sw: { sw-pant_tyl rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+pantalloff_sw: { awarop_pant1 mov -0.009 0 0.1 type: toggle soundinc: 26284_36wea_pantall_on.wav sounddec: 26284_36wea_pantall_off.wav }
+lights_sw: { sw_ref1 rot 0.125 -0.375 0.1 soundinc: 20786_104e_switch_lights.wav sounddec: 20786_104e_switch_lights_3.wav }
+dimheadlights_sw: { sw-przyc_refl_wsz rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+cablight_sw: { sw-osw_kab1 mov -0.006 0 0.1 soundinc: 20786_104e_switch_lights.wav sounddec: 20786_104e_switch_lights__2.wav }
+cablightdim_sw: { sw-przyciem_kab rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+instrumentlight_sw: { sw_podsw_pulpitu rot 0.125 0 0.1 soundinc: 20786_switch_pakietowy_7.wav sounddec: 20786_switch_pakietowy_8.wav }
+horn_bt: { syrena rot 0.025 0.0 0.04 soundinc: 20786_203e_switch_horn_pom_high_2_on.wav sounddec: 20786_203e_switch_horn_pom_high_2_of.wav }
+alarmchain: { ham_awar rot 0.25 0 0.1 soundinc: [1007]fvel6_brake_1.wav sounddec: 20786_189_unbrake.wav }
+springbraketoggle_bt: { sw-ham_post rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+universalbrake1_bt: { sw-wyrownanie_cisnienia rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+cabactivation_sw: { klucz_proby rot 0.09 0.0 0.100 soundinc: 26284_sa13x_pokretlo_hamulec_zespolony_1.wav sounddec: 26284_sa13x_pokretlo_hamulec_zespolony_2.wav }
+whistle_bt: { pedal_syrena mov -0.004 0 0.2 soundinc: 20786_189_sifa_pedal_v2_on.wav sounddec: 20786_189_sifa_pedal_v2_of.wav }
+sand_bt: { pedal_piasek mov -0.004 0 0.2 soundinc: 20786_189_sifa_pedal_v2_on.wav sounddec: 20786_189_sifa_pedal_v2_of.wav }
+
+
+universal1: { sw-grzanie_szyby rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+universal4: { sw-alarm rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+universal5: { sw-przyc_refl_p rot 0.13 0 0.1 soundinc: 20786_et22_switch_5.wav sounddec: 20786_et22_switch_3.wav }
+universal6: { sw-spryskiwacz mov -0.003 0 0.1 soundinc: 26284_36wea_button1_on.wav sounddec: 26284_36wea_button1_off.wav }
+universal7: { sw-wycieraczka rot 0.125 0 0.1 soundinc: 20786_switch_pakietowy_7.wav sounddec: 20786_switch_pakietowy_8.wav }
+universal8: { roleta mov -0.25 0 0.3 soundinc: [1007]roleta_dol2.wav sounddec: [1007]roleta_gora2.wav }
+
+radiochannelprev_sw: { klawisz_4 rot 0 0 0 soundinc: 26284_koliber_klik_v2.wav }
+radiochannelnext_sw: { klawisz_6 rot 0 0 0 soundinc: 26284_koliber_klik_v2.wav }
+radiovolumeprev_sw: { klawisz_8 rot 0 0 0 soundinc: 26284_koliber_klik_v2.wav }
+radiovolumenext_sw: { klawisz_2 rot 0 0 0 soundinc: 26284_koliber_klik_v2.wav }
+radiostop_sw: { radiostop_off mov -0.001 0 0 soundinc: 24150_koliber_rs_wcisniecie.wav sounddec: 24150_koliber_rs_puszczenie.wav }
+radio_sw: { klawisz_potw rot 0 0 0 soundinc: 26284_koliber_klik_v2.wav sounddec: silence1.wav }
+radiocall3_sw: { klawisz_zew3 rot 0 0 0 soundinc: 26284_koliber_zew3.wav sounddec: silence1.wav }
+
+brakepress: cyl_w1_knob rot 0.744 0 0
+brakepress: cyl_w1_knob_lit rot 0.744 0 0
+brakepressb: cyl_w2_knob rot 0.744 0 0
+brakepressb: cyl_w2_knob_lit rot 0.744 0 0
+pipepress: pg_knob rot 0.62 0 0
+pipepress: pg_knob_lit rot 0.62 0 0
+compressor: zg_knob rot 0.62 0 0
+compressor: zg_knob_lit rot 0.62 0 0
+limpipepress: p_ster_knob rot 0.62 0 0
+limpipepress: p_ster_knob_lit rot 0.62 0 0
+springbrakepress: ham_post_knob rot 0.62 0 0
+springbrakepress: ham_post_knob_lit rot 0.62 0 0
+clock: analog 
+
+universal0: { okladka rot -0.5 0 0.1 soundinc: [ ksiazka_otw1.wav ksiazka_otw2.wav ksiazka_otw3.wav ] sounddec: [ ksiazka_zamk1.wav ksiazka_zamk2.wav ksiazka_zamk3.wav ] } 
+
+
+i-security_aware: ca
+i-security_cabsignal: shp
+i-instrumentlight: mano
+i-cablight: lampy_sufit
+i-radio: { radio soundinc: [ 26284_koliber_zalaczenie_v2.wav 26284_koliber_zalaczenie_v3.wav ] sounddec: 26284_koliber_wylaczenie_v2.wav }     
+i-radiostop: radiostop
+
+pyscreen: wyswietlacz dragon_renderer
+pyscreen: { scripts/ksiazka_wozu target: okladka parameters: pk_days=0&pk_dist=15000 }
+cab0definition:
+-0.3 1.5 -6.7 0.3 1.5 6.7
+driver0pos:
+0.0 3.0 0.1
+cab0model: maszynownia.t3d
+
+brakeprofile_sw: { raczka_nastawiacza rot -0.11 0.11 0.1 soundinc: 20786_et22_kurek_odciecia-ukladu_pneumatycznego.wav sounddec: 20786_et22_kurek_odciecia-ukladu_pneumatycznego.wav }
+batteryon_sw: { wlaczenie_baterii mov -0.005 0 0.1 soundinc: 20786_203e_button_ws_2_on.wav sounddec: 20786_203e_button_ws_2_of.wav }
+batteryoff_sw: { wylaczenie_baterii mov -0.005 0 0.1 soundinc: 20786_203e_button_ws_2_on.wav sounddec: 20786_203e_button_ws_2_of.wav }
+lvoltage: wolto_nn rot -0.00067 0 0.3
+i-battery: bateria
+
+
+
+

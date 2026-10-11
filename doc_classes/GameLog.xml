@@ -10,22 +10,24 @@
 		_log.debug("SetVelocity 40")
 		GameLog.get_logger("game").error("Failed to load route")
 		[/codeblock]
-		A line goes at once - nothing is kept in memory - to the handlers registered for the logger's id ([method create_handler]) and to [signal message_logged]. A handler may be registered for an id whose logger does not exist yet:
+		There is no hierarchy of loggers. A line goes at once - nothing is kept in memory - to the logger's handlers. GameLog only manages: a handler is registered by name ([method register_handler]) and assigned to loggers by name ([method assign_handler]), and GameLog attaches it to them. One handler may serve many loggers, and the handler, the logger and the assignment may come in any order:
 		[codeblock]
-		var handler: GameLogFileHandler = GameLogFileHandler.open("user://logs/ai.log")
-		GameLog.create_handler("ai", handler)
+		var handler: GameLogFileHandler = GameLogFileHandler.open("user://logs/gameplay.log")
+		GameLog.register_handler("gameplay.log", handler)
+		GameLog.assign_handler("gameplay", "gameplay.log")
+		GameLog.assign_handler("scenario", "gameplay.log")
 		[/codeblock]
 		The logger "game", of the game's own messages, is made with the log.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="create_handler">
+		<method name="assign_handler">
 			<return type="void" />
 			<param index="0" name="logger_id" type="String" />
-			<param index="1" name="handler" type="GameLogHandler" />
+			<param index="1" name="handler_name" type="String" />
 			<description>
-				Registers [param handler] for the lines of the logger [param logger_id], which may not exist yet.
+				Assigns the handler [param handler_name] to the logger [param logger_id]. It is attached to the logger at once when both exist, else when the second of them comes.
 			</description>
 		</method>
 		<method name="create_logger">
@@ -48,21 +50,34 @@
 				The ids of the loggers, in the order they were created.
 			</description>
 		</method>
-		<method name="log">
+		<method name="register_handler">
 			<return type="void" />
-			<param index="0" name="logger_id" type="String" />
-			<param index="1" name="loglevel" type="int" enum="GameLog.LogLevel" />
-			<param index="2" name="line" type="String" />
-			<description>
-				Logs [param line] at [param loglevel] to the logger [param logger_id] - a shortcut of [code]get_logger(logger_id).log(loglevel, line)[/code].
-			</description>
-		</method>
-		<method name="remove_handler">
-			<return type="void" />
-			<param index="0" name="logger_id" type="String" />
+			<param index="0" name="handler_name" type="String" />
 			<param index="1" name="handler" type="GameLogHandler" />
 			<description>
-				Unregisters [param handler] from the logger [param logger_id].
+				Registers [param handler] by [param handler_name] and attaches it to the loggers it is assigned to. An error when the name is taken.
+			</description>
+		</method>
+		<method name="remove_logger">
+			<return type="void" />
+			<param index="0" name="logger_id" type="String" />
+			<description>
+				Removes the logger [param logger_id]: [signal logger_removing] is emitted first, then its handlers are detached - a script keeping it logs to nobody. Its assignments stay for a logger of the same id created later.
+			</description>
+		</method>
+		<method name="unassign_handler">
+			<return type="void" />
+			<param index="0" name="logger_id" type="String" />
+			<param index="1" name="handler_name" type="String" />
+			<description>
+				Takes the handler [param handler_name] off the logger [param logger_id].
+			</description>
+		</method>
+		<method name="unregister_handler">
+			<return type="void" />
+			<param index="0" name="handler_name" type="String" />
+			<description>
+				Detaches the handler [param handler_name] from every logger and forgets it; its assignments stay.
 			</description>
 		</method>
 	</methods>
@@ -73,12 +88,10 @@
 				Emitted when a logger is created.
 			</description>
 		</signal>
-		<signal name="message_logged">
+		<signal name="logger_removing">
 			<param index="0" name="logger_id" type="String" />
-			<param index="1" name="loglevel" type="int" />
-			<param index="2" name="line" type="String" />
 			<description>
-				Emitted for every line of every logger, after its handlers.
+				Emitted when a logger is about to be removed ([method remove_logger]), while it still has its handlers.
 			</description>
 		</signal>
 	</signals>

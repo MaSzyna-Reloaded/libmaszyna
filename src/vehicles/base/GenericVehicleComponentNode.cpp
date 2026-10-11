@@ -1,5 +1,6 @@
 #include "GenericVehicleComponentNode.hpp"
 #include "VehiclePhysicsNode.hpp"
+#include "VehicleServer.hpp"
 #include <godot_cpp/classes/engine.hpp>
 
 namespace godot {
@@ -22,25 +23,31 @@ namespace godot {
             case NOTIFICATION_ENTER_TREE: {
                 // the vehicle is whatever this node sits under - that is the whole point of it
                 Node *parent = get_parent();
-                VehiclePhysicsNode *vehicle = nullptr;
-                while (parent != nullptr && vehicle == nullptr) {
-                    vehicle = Object::cast_to<VehiclePhysicsNode>(parent);
+                VehiclePhysicsNode *vehicle_node = nullptr;
+                while (parent != nullptr && vehicle_node == nullptr) {
+                    vehicle_node = Object::cast_to<VehiclePhysicsNode>(parent);
                     parent = parent->get_parent();
                 }
-                if (vehicle == nullptr) {
+                if (vehicle_node == nullptr) {
                     ERR_PRINT("GenericVehicleComponentNode has no VehiclePhysicsNode above it.");
                     return;
                 }
                 component.instantiate();
-                component->set_script_owner(this);
-                vehicle->add_component(component);
+                component->set_script_owner(ObjectID(get_instance_id()));
+                vehicle_node->add_component(component);
+                vehicle = vehicle_node->get_vehicle_rid();
             } break;
-            case NOTIFICATION_EXIT_TREE:
-            case NOTIFICATION_PREDELETE: {
-                if (component.is_valid()) {
-                    component->detach();
-                    component.unref();
+            case NOTIFICATION_EXIT_TREE: {
+                // out of the vehicle, not only detached: a component left in it is still ticked
+                // and read, and calls back into this node after it is freed
+                const VehicleServer *server = VehicleServer::get_instance();
+                const Ref<VehicleController> controller =
+                        server != nullptr ? server->vehicle_get_controller(vehicle) : Ref<VehicleController>();
+                if (controller.is_valid() && component.is_valid()) {
+                    controller->remove_component(component);
                 }
+                component.unref();
+                vehicle = RID();
             } break;
             default:;
         }

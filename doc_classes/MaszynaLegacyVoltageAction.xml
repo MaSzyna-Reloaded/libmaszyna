@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyVoltageAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="power_sources" type="RID[]" setter="set_power_sources" getter="get_power_sources" default="[]">
+		</member>
+		<member name="voltage" type="float" setter="set_voltage" getter="get_voltage" default="0.0">
+		</member>
+	</members>
+</class>
