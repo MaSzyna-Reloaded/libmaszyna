@@ -13,12 +13,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="emergency_signal_send">
-			<return type="void" />
-			<param index="0" name="position" type="Vector3" />
-			<description>
-			</description>
-		</method>
 		<method name="load_add">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
@@ -257,12 +251,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="vehicle_emergency_signal_send">
-			<return type="void" />
-			<param index="0" name="vehicle" type="RID" />
-			<description>
-			</description>
-		</method>
 		<method name="vehicle_find_pantograph_carrier" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
@@ -474,13 +462,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="vehicle_radio_call">
-			<return type="void" />
-			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
-			<description>
-			</description>
-		</method>
 		<method name="vehicle_rear_cabin_has_person_role" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="vehicle" type="RID" />
@@ -611,13 +592,6 @@
 			<param index="0" name="vehicle" type="RID" />
 			<description>
 				The vehicle is somewhere else on the route - once a step it moved in, or once a deliberate move.
-			</description>
-		</signal>
-		<signal name="vehicle_radio_called">
-			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="call" type="int" />
-			<param index="2" name="position" type="Vector3" />
-			<description>
 			</description>
 		</signal>
 		<signal name="vehicle_stopped_on_track">

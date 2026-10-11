@@ -235,6 +235,8 @@ namespace godot {
              * business. Everything else is read from the component that owns it. */
             double vehicle_get_velocity(const RID &p_vehicle) const;
             double vehicle_get_speed(const RID &p_vehicle) const;
+            /* Where the vehicle is in the world, as whichever server places it set it */
+            Vector3 vehicle_get_position(const RID &p_vehicle) const;
             /* The component of a kind, as a typed object - the shape
              * PhysicsServer3D::body_get_direct_state() has: a live view on the vehicle, valid
              * while the vehicle is. A per-frame reader takes it once and reads its properties. */

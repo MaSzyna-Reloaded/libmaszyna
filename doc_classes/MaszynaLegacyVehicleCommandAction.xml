@@ -11,6 +11,8 @@
 		</member>
 		<member name="position" type="Vector3" setter="set_position" getter="get_position" default="Vector3(0, 0, 0)">
 		</member>
+		<member name="radio" type="SceneryVirtualRadio" setter="set_radio" getter="get_radio">
+		</member>
 		<member name="source" type="RID" setter="set_source" getter="get_source" default="RID()">
 		</member>
 		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">

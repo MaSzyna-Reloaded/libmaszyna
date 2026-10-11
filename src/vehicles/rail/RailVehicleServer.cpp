@@ -9,6 +9,7 @@
 #include "vehicles/rail/RailVehicleWheels.hpp"
 
 #include "logging/GameLog.hpp"
+#include "radio/RadioServer.hpp"
 #include "traction/TractionServer.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -33,7 +34,6 @@ namespace godot {
     const char *RailVehicleServer::vehicle_heading_to_track_start_signal = "vehicle_heading_to_track_start";
     const char *RailVehicleServer::vehicle_heading_to_track_end_signal = "vehicle_heading_to_track_end";
     const char *RailVehicleServer::vehicle_stopped_on_track_signal = "vehicle_stopped_on_track";
-    const char *RailVehicleServer::vehicle_radio_called_signal = "vehicle_radio_called";
     const char *RailVehicleServer::vehicle_emergency_signal_received_signal = "vehicle_emergency_signal_received";
     const char *RailVehicleServer::vehicle_pantograph_contact_lost_signal = "vehicle_pantograph_contact_lost";
 
@@ -178,14 +178,6 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_find_pantograph_carrier", "vehicle"),
                 &RailVehicleServer::vehicle_find_pantograph_carrier);
-        ClassDB::bind_method(
-                D_METHOD("vehicle_emergency_signal_send", "vehicle"),
-                &RailVehicleServer::vehicle_emergency_signal_send);
-        ClassDB::bind_method(D_METHOD("emergency_signal_send", "position"), &RailVehicleServer::emergency_signal_send);
-        ClassDB::bind_method(D_METHOD("vehicle_radio_call", "vehicle", "call"), &RailVehicleServer::vehicle_radio_call);
-        ADD_SIGNAL(MethodInfo(
-                vehicle_radio_called_signal, PropertyInfo(Variant::RID, "vehicle"), PropertyInfo(Variant::INT, "call"),
-                PropertyInfo(Variant::VECTOR3, "position")));
 
         ClassDB::bind_method(
                 D_METHOD("vehicle_set_track", "vehicle", "track", "track_offset", "track_direction"),
@@ -511,6 +503,7 @@ namespace godot {
             return;
         }
         _disconnect_relays(p_vehicle, *placement);
+        _disconnect_radio(p_vehicle, *placement);
         if (Vector<RID> *listed = track_vehicles.getptr(placement->indexed_track); listed != nullptr) {
             listed->erase(p_vehicle);
         }
@@ -673,6 +666,9 @@ namespace godot {
     }
 
     void RailVehicleServer::_on_vehicle_configured(const RID &p_vehicle) {
+        if (VehiclePlacement *placement = vehicles.getptr(p_vehicle); placement != nullptr) {
+            _connect_radio(p_vehicle, *placement);
+        }
         Vector<RID> pending;
         for (const KeyValue<RID, Trainset> &trainset: trainsets) {
             if (!trainset.value.placement_pending) {
@@ -690,33 +686,100 @@ namespace godot {
         }
     }
 
-    void RailVehicleServer::vehicle_emergency_signal_send(const RID &p_vehicle) {
-        const VehiclePlacement *sender = vehicles.getptr(p_vehicle);
-        ERR_FAIL_NULL(sender);
-        emergency_signal_send(_placement_transform(*sender).origin);
+    Ref<RailVehicleRadio> RailVehicleServer::_get_radio(const VehiclePlacement &p_placement) const {
+        return Ref<RailVehicleRadio>(
+                Object::cast_to<RailVehicleRadio>(ObjectDB::get_instance(p_placement.radio_component_id)));
     }
 
-    void RailVehicleServer::emergency_signal_send(const Vector3 &p_position) {
-        const TrackServer *tracks = TrackServer::get_instance();
-        ERR_FAIL_NULL(tracks);
-        for (const KeyValue<RID, VehiclePlacement> &entry: vehicles) {
-            RailVehicleController *controller = _get_controller(entry.value);
-            // a vehicle not standing on a track is nowhere the signal reaches
-            if (controller == nullptr || !tracks->track_exists(entry.value.track) ||
-                _placement_transform(entry.value).origin.distance_to(p_position) > RADIO_STOP_RANGE) {
-                continue;
-            }
-            if (const Ref<RailVehicleRadio> radio = controller->get_component(VehicleComponentType::COMPONENT_RADIO);
-                radio.is_valid() && radio->radio_stop_receive()) {
-                emit_signal(vehicle_emergency_signal_received_signal, entry.key);
-            }
+    void RailVehicleServer::_connect_radio(const RID &p_vehicle, VehiclePlacement &p_placement) {
+        const RailVehicleController *controller = _get_controller(p_placement);
+        const Ref<RailVehicleRadio> radio = controller != nullptr
+                                                    ? controller->get_component(VehicleComponentType::COMPONENT_RADIO)
+                                                    : Ref<VehicleComponent>();
+        if (radio.is_null() || ObjectID(radio->get_instance_id()) == p_placement.radio_component_id) {
+            return;
+        }
+        _disconnect_radio(p_vehicle, p_placement);
+        p_placement.radio_component_id = ObjectID(radio->get_instance_id());
+        radio->connect(
+                RailVehicleRadio::radio_stop_sent_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_radio_stop_sent).bind(p_vehicle));
+        radio->connect(
+                RailVehicleRadio::radio_call_sent_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_radio_call_sent).bind(p_vehicle));
+        // a radio of the ether for as long as the vehicle has it, powered or not: one switched on
+        // mid-message hears the rest of it, as the original's cab plays every message muted until
+        // the radio is on (TTrain::radio_message(), Train.cpp:11010-11029) - the component sends
+        // only when powered, and the cab plays only what a powered radio tuned to it hears
+        if (RadioServer *radios = RadioServer::get_instance(); radios != nullptr) {
+            p_placement.radio = radios->radio_create();
+            radios->radio_set_vehicle(p_placement.radio, p_vehicle);
+            radios->radio_set_receive_callback(
+                    p_placement.radio,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_received).bind(p_vehicle));
         }
     }
 
-    void RailVehicleServer::vehicle_radio_call(const RID &p_vehicle, const RailVehicleRadio::RadioCall p_call) {
-        const VehiclePlacement *sender = vehicles.getptr(p_vehicle);
-        ERR_FAIL_NULL(sender);
-        emit_signal(vehicle_radio_called_signal, p_vehicle, p_call, _placement_transform(*sender).origin);
+    void RailVehicleServer::_disconnect_radio(const RID &p_vehicle, VehiclePlacement &p_placement) {
+        if (RadioServer *radios = RadioServer::get_instance(); radios != nullptr && p_placement.radio.is_valid()) {
+            radios->radio_free(p_placement.radio);
+        }
+        p_placement.radio = RID();
+        if (const Ref<RailVehicleRadio> radio = _get_radio(p_placement); radio.is_valid()) {
+            radio->disconnect(
+                    RailVehicleRadio::radio_stop_sent_signal,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_stop_sent).bind(p_vehicle));
+            radio->disconnect(
+                    RailVehicleRadio::radio_call_sent_signal,
+                    callable_mp(this, &RailVehicleServer::_on_vehicle_radio_call_sent).bind(p_vehicle));
+        }
+        p_placement.radio_component_id = ObjectID();
+    }
+
+    // Radio-Stop reaches every vehicle within reach, the sender itself included
+    // (basic_region::RadioStop, scene.cpp:1269) - the ether keeps a radio from hearing itself, so the
+    // sender is handed its own
+    void RailVehicleServer::_on_vehicle_radio_stop_sent(const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        RadioServer *radios = RadioServer::get_instance();
+        if (placement == nullptr || radios == nullptr || !placement->radio.is_valid()) {
+            return;
+        }
+        radios->radio_transmit(
+                placement->radio, RadioServer::CHANNEL_ALL, RadioServer::RADIO_STOP_REACH,
+                RadioServer::KIND_RADIO_STOP);
+        _on_vehicle_radio_received(
+                RadioServer::KIND_RADIO_STOP, RadioServer::CHANNEL_ALL, Variant(), Vector3(), p_vehicle);
+    }
+
+    // A call goes out on the radio's channel, as far as anybody listens (Event.cpp:2255-2268)
+    void RailVehicleServer::_on_vehicle_radio_call_sent(const int64_t p_call, const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        RadioServer *radios = RadioServer::get_instance();
+        const Ref<RailVehicleRadio> radio = placement != nullptr ? _get_radio(*placement) : Ref<RailVehicleRadio>();
+        if (radios == nullptr || radio.is_null() || !placement->radio.is_valid()) {
+            return;
+        }
+        radios->radio_transmit(placement->radio, radio->get_channel(), 0.0, RadioServer::KIND_CALL, p_call);
+    }
+
+    // What the vehicle's radio heard is handed down to it, with whether somebody drives the vehicle
+    void RailVehicleServer::_on_vehicle_radio_received(
+            const int64_t p_kind, const int64_t p_channel, const Variant &p_payload, const Vector3 & /* p_position */,
+            const RID &p_vehicle) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        const VehicleServer *vehicle_server = VehicleServer::get_instance();
+        const Ref<RailVehicleRadio> radio = placement != nullptr ? _get_radio(*placement) : Ref<RailVehicleRadio>();
+        if (vehicle_server == nullptr || radio.is_null()) {
+            return;
+        }
+        const bool driven =
+                vehicle_server->vehicle_has_person_role(p_vehicle, VehiclePersonRole::VEHICLE_PERSON_ROLE_DRIVER);
+        if (radio->radio_receive(
+                    static_cast<RadioServer::Kind>(p_kind), static_cast<int>(p_channel), p_payload, driven) &&
+            p_kind == RadioServer::KIND_RADIO_STOP) {
+            emit_signal(vehicle_emergency_signal_received_signal, p_vehicle);
+        }
     }
 
     TypedArray<RID> RailVehicleServer::vehicle_get_coupled(
@@ -890,6 +953,7 @@ namespace godot {
             return;
         }
         _disconnect_relays(p_vehicle, *placement);
+        _disconnect_radio(p_vehicle, *placement);
         placement->controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
         // the scans that found it hold the previous controller
         _track_changed(placement->track);

@@ -208,7 +208,8 @@ func test_a_radio_call_fires_the_launchers_listening_in_range() -> void:
         ScenarioEventServer.launcher_set_radius(launcher, 100.0)
         launchers.append(launcher)
 
-    RailVehicleServer.vehicle_radio_called.emit(RID(), RailVehicleRadio.RADIO_CALL3, Vector3(10, 0, 0))
+    var radio:SceneryVirtualRadio = SceneryVirtualRadio.new()
+    radio.transmit(Vector3(10, 0, 0), 1, 0.0, RadioServer.KIND_CALL, RailVehicleRadio.RADIO_CALL3)
 
     assert_true(ScenarioEventServer.event_is_queued(near), "call 3 within 100 m")
     assert_false(ScenarioEventServer.event_is_queued(far), "out of range")

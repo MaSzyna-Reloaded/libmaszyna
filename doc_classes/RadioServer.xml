@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RadioServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The radio ether: what a radio transmits, every other radio within reach hears.
+	</brief_description>
+	<description>
+		A radio is registered here, a transmitter and a receiver at once - a vehicle's ([method radio_set_vehicle]: its position is the vehicle's at the moment of a transmission) or one standing at a place ([method radio_set_position]). Whether it is on is its owner's to answer: it sends only when it can and plays only what it can hear, so one switched on mid-message hears the rest. Whoever transmits has a radio. A transmission goes to every other radio within its reach, whatever it is tuned to: the receiver compares the channel itself, so a message tuned to midway is still heard (TTrain::radio_message(), Train.cpp:11010-11029).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="radio_create">
+			<return type="RID" />
+			<description>
+				A new radio, at no place and hearing nothing until it is told.
+			</description>
+		</method>
+		<method name="radio_free">
+			<return type="void" />
+			<param index="0" name="radio" type="RID" />
+			<description>
+				The radio switched off: it neither hears nor transmits any more.
+			</description>
+		</method>
+		<method name="radio_set_position">
+			<return type="void" />
+			<param index="0" name="radio" type="RID" />
+			<param index="1" name="position" type="Vector3" />
+			<description>
+				A radio standing at a place.
+			</description>
+		</method>
+		<method name="radio_set_receive_callback">
+			<return type="void" />
+			<param index="0" name="radio" type="RID" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+				What the radio does with what it hears: [code]callback(kind: Kind, channel: int, payload: Variant, position: Vector3)[/code]. A radio without one only transmits.
+			</description>
+		</method>
+		<method name="radio_set_vehicle">
+			<return type="void" />
+			<param index="0" name="radio" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+				A radio in a vehicle of any kind, wherever the vehicle is ([method VehicleServer.vehicle_get_position]).
+			</description>
+		</method>
+		<method name="radio_transmit">
+			<return type="void" />
+			<param index="0" name="radio" type="RID" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="reach" type="float" />
+			<param index="3" name="kind" type="int" enum="RadioServer.Kind" />
+			<param index="4" name="payload" type="Variant" default="null" />
+			<description>
+				From where the radio is, on [param channel], to every other radio within [param reach] metres - everywhere when it is not positive. [param payload] is what [param kind] carries: [code]{sound: SfxEvent, transcript: Transcript}[/code] for a message, a [enum RailVehicleRadio.RadioCall] for a call, nothing for Radio-Stop.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="transmitted">
+			<param index="0" name="kind" type="int" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="payload" type="Variant" />
+			<param index="3" name="position" type="Vector3" />
+			<param index="4" name="reach" type="float" />
+			<description>
+				Something was transmitted - for whoever follows the ether without being a radio, such as the scenario.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="KIND_MESSAGE" value="0" enum="Kind">
+			A spoken message.
+		</constant>
+		<constant name="KIND_CALL" value="1" enum="Kind">
+			A radio call to the dispatcher.
+		</constant>
+		<constant name="KIND_RADIO_STOP" value="2" enum="Kind">
+			Radio-Stop: every driven train within reach brakes in emergency.
+		</constant>
+		<constant name="CHANNEL_ALL" value="-1">
+			Heard on every channel - Radio-Stop.
+		</constant>
+		<constant name="RADIO_STOP_REACH" value="2000">
+			How far Radio-Stop reaches [m] (basic_region::RadioStop, scene.cpp:1271).
+		</constant>
+	</constants>
+</class>

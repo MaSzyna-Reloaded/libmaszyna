@@ -3,6 +3,9 @@
 namespace godot {
     const char *RailVehicleRadio::radio_toggled_signal = "radio_toggled";
     const char *RailVehicleRadio::channel_changed_signal = "channel_changed";
+    const char *RailVehicleRadio::radio_stop_sent_signal = "radio_stop_sent";
+    const char *RailVehicleRadio::radio_call_sent_signal = "radio_call_sent";
+    const char *RailVehicleRadio::transmission_received_signal = "transmission_received";
 
     void RailVehicleRadio::_bind_methods() {
         BIND_PROPERTY(RailVehicleRadio, Variant::INT, channel_min, "channel");
@@ -18,6 +21,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("radio_call", "pressed", "call"), &RailVehicleRadio::radio_call);
         BIND_ENUM_CONSTANT(RADIO_CALL1);
         BIND_ENUM_CONSTANT(RADIO_CALL3);
+        BIND_CONSTANT(CHANNEL_NO_CALLS);
 
         ClassDB::bind_method(D_METHOD("get_enabled"), &RailVehicleRadio::get_enabled);
         ClassDB::bind_method(D_METHOD("get_powered"), &RailVehicleRadio::get_powered);
@@ -25,8 +29,13 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_channel"), &RailVehicleRadio::get_channel);
         ClassDB::bind_method(D_METHOD("get_volume"), &RailVehicleRadio::get_volume);
 
-        ADD_SIGNAL(MethodInfo(radio_toggled_signal, PropertyInfo(Variant::BOOL, "enabled")));
+        ADD_SIGNAL(MethodInfo(radio_toggled_signal, PropertyInfo(Variant::BOOL, "powered")));
         ADD_SIGNAL(MethodInfo(channel_changed_signal, PropertyInfo(Variant::INT, "channel")));
+        ADD_SIGNAL(MethodInfo(radio_stop_sent_signal));
+        ADD_SIGNAL(MethodInfo(radio_call_sent_signal, PropertyInfo(Variant::INT, "call")));
+        ADD_SIGNAL(MethodInfo(
+                transmission_received_signal, PropertyInfo(Variant::INT, "kind"), PropertyInfo(Variant::INT, "channel"),
+                PropertyInfo(Variant::NIL, "payload")));
     }
 
     int RailVehicleRadio::get_channel() const {
@@ -62,6 +71,27 @@ namespace godot {
 
     void RailVehicleRadio::volume_decrease(const int p_step) {
         volume = Math::clamp(volume - (VOLUME_STEP * (p_step > 0 ? p_step : 1)), 0.0, 1.0);
+    }
+
+    void RailVehicleRadio::radio_stop(const bool p_pressed) {
+        if (p_pressed && get_powered()) {
+            emit_signal(radio_stop_sent_signal);
+        }
+    }
+
+    void RailVehicleRadio::radio_call(const bool p_pressed, const RadioCall p_call) {
+        if (p_pressed && get_powered() && get_channel() != CHANNEL_NO_CALLS) {
+            emit_signal(radio_call_sent_signal, p_call);
+        }
+    }
+
+    bool RailVehicleRadio::radio_receive(
+            const RadioServer::Kind p_kind, const int p_channel, const Variant &p_payload, const bool p_driven) {
+        if (p_kind == RadioServer::KIND_RADIO_STOP) {
+            return _radio_stop_receive(p_driven);
+        }
+        emit_signal(transmission_received_signal, p_kind, p_channel, p_payload);
+        return false;
     }
 
     void RailVehicleRadio::_fill_state_dictionary(Dictionary &p_state) const {

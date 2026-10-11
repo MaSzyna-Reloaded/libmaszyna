@@ -1,12 +1,17 @@
 #pragma once
 #include "macros.hpp"
+#include "radio/RadioServer.hpp"
 #include "vehicles/rail/RailVehicleComponent.hpp"
 
 namespace godot {
     /* The vehicle's train radio - the public contract, with no backend in it. The channel and
      * the volume are the cab radio's own settings (TTrain's iRadioChannel and m_radiovolume in
      * the original, Train.h:918); whether the radio is on, powered, and what a Radio-Stop does
-     * to the vehicle are the backend's to answer. */
+     * to the vehicle are the backend's to answer.
+     *
+     * It knows no server: what it sends it announces (radio_stop_sent, radio_call_sent), and the
+     * vehicle's owner transmits it from the vehicle's radio in RadioServer; what that radio hears
+     * the owner hands down (radio_receive()). */
     class RailVehicleRadio : public RailVehicleComponent {
             GDCLASS(RailVehicleRadio, RailVehicleComponent);
 
@@ -24,8 +29,16 @@ namespace godot {
             /* On this channel the radio sends no calls (Train.cpp:8211, 8228) */
             static constexpr int CHANNEL_NO_CALLS = 10;
 
+            /// The radio came on or went off - powered, not only switched on (powered: bool)
             static const char *radio_toggled_signal;
             static const char *channel_changed_signal;
+            /// radiostop_sw pressed on a powered radio: Radio-Stop to be transmitted
+            static const char *radio_stop_sent_signal;
+            /// A call to be transmitted on the radio's channel (call: RadioCall)
+            static const char *radio_call_sent_signal;
+            /// What the radio heard, Radio-Stop aside - a message for the cab to play
+            /// (kind: RadioServer.Kind, channel: int, payload: Variant)
+            static const char *transmission_received_signal;
 
             /* Original engine: Global.DefaultRadioVolume (Globals.h:181) */
             static constexpr double VOLUME_DEFAULT = 0.75;
@@ -41,6 +54,9 @@ namespace godot {
             static void _bind_methods();
             void _register_commands() override;
             void _unregister_commands() override;
+            /* A Radio-Stop heard reached the vehicle (TDynamicObject::RadioStop, DynObj.cpp:7229);
+             * true when it braked the vehicle */
+            virtual bool _radio_stop_receive(bool p_driven) = 0;
 
         public:
             // the original hardcodes 1..10 for every vehicle (OnCommand_radiochannelset:
@@ -63,14 +79,16 @@ namespace godot {
             void channel_decrease(int p_step = 1);
             void volume_increase(int p_step = 1);
             void volume_decrease(int p_step = 1);
-            /* radiostop_sw: pressed sends Radio-Stop to every vehicle in range (Train.cpp:8149) */
-            virtual void radio_stop(bool p_pressed) = 0;
-            /* A Radio-Stop sent by a vehicle in range reached this one (TDynamicObject::RadioStop,
-             * DynObj.cpp:7229); true when it braked the vehicle */
-            virtual bool radio_stop_receive() = 0;
-            /* radiocall1_sw:/radiocall3_sw: pressed sends the call to whatever listens in range
+            /* radiostop_sw: pressed sends Radio-Stop to every vehicle in range - on the press, and
+             * only from a powered radio (TTrain::OnCommand_radiostopsend, Train.cpp:8149) */
+            void radio_stop(bool p_pressed);
+            /* radiocall1_sw:/radiocall3_sw: pressed sends the call to whatever listens in range - on
+             * the press, from a powered radio on any channel but the one without calls
              * (TTrain::OnCommand_radiocall1send/3send, Train.cpp:8209-8236) */
-            virtual void radio_call(bool p_pressed, RadioCall p_call) = 0;
+            void radio_call(bool p_pressed, RadioCall p_call);
+            /* What the vehicle's radio heard, handed down by the vehicle's owner with whether
+             * somebody drives the vehicle; true when a Radio-Stop braked it */
+            bool radio_receive(RadioServer::Kind p_kind, int p_channel, const Variant &p_payload, bool p_driven);
 
             void _fill_state_dictionary(Dictionary &p_state) const override;
     };

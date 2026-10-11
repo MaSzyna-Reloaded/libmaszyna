@@ -64,6 +64,8 @@
 #include "person/PersonServer.hpp"
 #include "player/PlayerCameraServer.hpp"
 #include "player/PlayerServer.hpp"
+#include "radio/RadioServer.hpp"
+#include "radio/SceneryVirtualRadio.hpp"
 #include "register_types.h"
 #include "rendering/PlanarMirror3D.hpp"
 #include "resources/ResourceLazyLoader.hpp"
@@ -191,6 +193,7 @@ ScenarioScriptServer *scenario_script_server_singleton = nullptr;
 DriverServer *driver_server_singleton = nullptr;
 PlayerServer *player_server_singleton = nullptr;
 StationServer *station_server_singleton = nullptr;
+RadioServer *radio_server_singleton = nullptr;
 PlayerCameraServer *player_camera_server_singleton = nullptr;
 HUDServer *hud_server_singleton = nullptr;
 Ref<E3DResourceFormatLoader> e3d_resource_format_loader;
@@ -254,6 +257,8 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_VIRTUAL_CLASS(ScenarioScriptCabinImplementation);
         GDREGISTER_CLASS(PlayerServer);
         GDREGISTER_CLASS(StationServer);
+        GDREGISTER_CLASS(RadioServer);
+        GDREGISTER_CLASS(SceneryVirtualRadio);
         GDREGISTER_CLASS(PlayerCameraServer);
         GDREGISTER_CLASS(HUDServer);
         GDREGISTER_INTERNAL_CLASS(ScenarioScriptAction);
@@ -406,6 +411,10 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         // after PersonServer is registered: the constructor follows its freed persons
         vehicle_server_singleton = memnew(VehicleServer);
         Engine::get_singleton()->register_singleton("VehicleServer", vehicle_server_singleton); // 9
+        // after VehicleServer: a radio in a vehicle is where the vehicle is; before the servers that
+        // wire radios or follow the ether
+        radio_server_singleton = memnew(RadioServer);
+        Engine::get_singleton()->register_singleton("RadioServer", radio_server_singleton); // 9a
         // after VehicleServer is registered: the constructor follows the vehicles' lifetime
         rail_vehicle_server_singleton = memnew(RailVehicleServer);
         Engine::get_singleton()->register_singleton("RailVehicleServer", rail_vehicle_server_singleton); // 10
@@ -586,6 +595,14 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
     if (rail_vehicle_server_singleton != nullptr) {
         memdelete(rail_vehicle_server_singleton);
         rail_vehicle_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("RadioServer")) {
+        Engine::get_singleton()->unregister_singleton("RadioServer"); // 9a
+    }
+    if (radio_server_singleton != nullptr) {
+        memdelete(radio_server_singleton);
+        radio_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("VehicleServer")) {

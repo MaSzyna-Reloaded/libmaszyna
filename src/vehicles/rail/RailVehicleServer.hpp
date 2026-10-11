@@ -89,8 +89,6 @@ namespace godot {
                 HEADING_TO_START,
                 HEADING_TO_END,
             };
-            /* How far a Radio-Stop carries (m) - basic_region::RadioStop, scene.cpp:1271 */
-            static constexpr double RADIO_STOP_RANGE = 2000.0;
             /* How far ahead and behind the transform samples the curve to find its heading (m) */
             static constexpr double HEADING_SAMPLE_DISTANCE = 0.1;
             /* Below it the sampled heading is no direction at all */
@@ -189,6 +187,10 @@ namespace godot {
                      * A parked vehicle is asked for it every frame by everything that draws it or
                      * listens from it, and composing it samples the track twice. */
                     Transform3D body_transform;
+                    /* The vehicle's radio component whose signals are relayed, and its radio in
+                     * RadioServer */
+                    ObjectID radio_component_id;
+                    RID radio;
                     /* Where the bogies sit (RailVehicleWheels::BOGIE_FRONT, BOGIE_REAR), sampled
                      * with the body above and handed out with it */
                     Transform3D bogie_transforms[2];
@@ -277,6 +279,17 @@ namespace godot {
             void _connect_relays(const RID &p_vehicle, const VehiclePlacement &p_placement);
             void _disconnect_relays(const RID &p_vehicle, const VehiclePlacement &p_placement);
             void _on_vehicle_controller_changed(const RID &p_vehicle);
+            /* The vehicle's radio, wired once its components are configured: a radio of RadioServer
+             * for as long as the vehicle has it, what it sends is transmitted from it, and what it
+             * hears is handed down to it */
+            void _connect_radio(const RID &p_vehicle, VehiclePlacement &p_placement);
+            void _disconnect_radio(const RID &p_vehicle, VehiclePlacement &p_placement);
+            void _on_vehicle_radio_stop_sent(const RID &p_vehicle);
+            void _on_vehicle_radio_call_sent(int64_t p_call, const RID &p_vehicle);
+            void _on_vehicle_radio_received(
+                    int64_t p_kind, int64_t p_channel, const Variant &p_payload, const Vector3 &p_position,
+                    const RID &p_vehicle);
+            Ref<RailVehicleRadio> _get_radio(const VehiclePlacement &p_placement) const;
             /* Who sits where changed in a cabin: the vehicle's controller is handed the kind of
              * cabin its driver sits in, and a vehicle somebody now drives wakes */
             void _on_cabin_person_entered(const RID &p_cabin, const RID &p_person, VehiclePersonRole::Role p_role);
@@ -359,7 +372,6 @@ namespace godot {
             static const char *vehicle_heading_to_track_start_signal;
             static const char *vehicle_heading_to_track_end_signal;
             static const char *vehicle_stopped_on_track_signal;
-            static const char *vehicle_radio_called_signal;
             /* A Radio-Stop reached the vehicle and braked it (TDynamicObject::RadioStop,
              * DynObj.cpp:7229) */
             static const char *vehicle_emergency_signal_received_signal;
@@ -482,14 +494,6 @@ namespace godot {
              * one fed by a current collector, of the unit first, then of the vehicles under control;
              * an invalid RID when there is none */
             RID vehicle_find_pantograph_carrier(const RID &p_vehicle) const;
-            /* Radio-Stop sent from this vehicle reaches every vehicle within RADIO_STOP_RANGE of it,
-             * itself included (basic_region::RadioStop, scene.cpp:1269) */
-            void vehicle_emergency_signal_send(const RID &p_vehicle);
-            /* A Radio-Stop sent from a place rather than a vehicle - a scenery's `Emergency_brake` -
-             * heard by every vehicle within RADIO_STOP_RANGE */
-            void emergency_signal_send(const Vector3 &p_position);
-            /* The vehicle's radio sent a call from where it stands (Event.cpp:2255-2268 listens) */
-            void vehicle_radio_call(const RID &p_vehicle, RailVehicleRadio::RadioCall p_call);
 
 
             void vehicle_set_track(

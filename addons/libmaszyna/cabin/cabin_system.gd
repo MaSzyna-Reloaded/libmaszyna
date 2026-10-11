@@ -34,10 +34,6 @@ signal cabin_instrument_light_changed(cabin:RID, enabled:bool)
 signal cabin_dashboard_light_changed(cabin:RID, enabled:bool)
 ## The timetable light of a cabin came on or went out (cabin_set_timetable_light_enabled())
 signal cabin_timetable_light_changed(cabin:RID, enabled:bool)
-## A radio message sent from `position`: heard on the radio of the player's cab tuned to
-## `channel`, within `reach` [m] of it when that is positive (simulation::radio_message(),
-## simulation.cpp:506); `transcript` is what it says, null when unknown
-signal radio_message_sent(message:SfxEvent, transcript:Transcript, channel:int, position:Vector3, reach:float)
 
 ## Manipulations a control can report (Train.cpp OnCommand_* press/release/repeat/set events).
 const ACTIONS:Array[StringName] = [&"increase", &"decrease", &"hold", &"release", &"toggle", &"set"]
@@ -336,13 +332,6 @@ func act(cabin:RID, control_id:StringName, action:StringName, value:Variant = nu
 
 func get_control(cabin:RID, control_id:StringName) -> Variant:
     return get_cabin_state(cabin).get_value(control_id)
-
-
-## A scenery's radio message, to the cab radio of whoever listens (radio_message_sent)
-func send_radio_message(
-    message:SfxEvent, transcript:Transcript, channel:int, position:Vector3, reach:float
-) -> void:
-    radio_message_sent.emit(message, transcript, channel, position, reach)
 
 
 func get_state(cabin:RID) -> Dictionary:

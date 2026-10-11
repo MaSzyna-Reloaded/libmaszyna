@@ -1,4 +1,5 @@
 #pragma once
+#include "radio/SceneryVirtualRadio.hpp"
 #include "scenario/ScenarioEventAction.hpp"
 
 namespace godot {
@@ -21,6 +22,8 @@ namespace godot {
             double value2 = 0.0;
             RID source;
             Vector3 position;
+            /// The scenery's radio `Emergency_brake` transmits Radio-Stop on
+            Ref<SceneryVirtualRadio> radio;
 
         protected:
             static void _bind_methods();
@@ -41,5 +44,7 @@ namespace godot {
             /// Where the event stands: `putvalues` x y z, the memory's position for `getvalues`
             void set_position(const Vector3 &p_position);
             Vector3 get_position() const;
+            void set_radio(const Ref<SceneryVirtualRadio> &p_radio);
+            Ref<SceneryVirtualRadio> get_radio() const;
     };
 } // namespace godot

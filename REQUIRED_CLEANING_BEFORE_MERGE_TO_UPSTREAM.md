@@ -67,7 +67,7 @@ Legend:
 - [x] [RC-029](#rc-029) `Mover*` classes public and instantiated from GDScript (accepted: the FIZ importer creates them by name)
 - [x] [RC-030](#rc-030) `Mover*` components hold state the Mover does not have
 - [x] [RC-031](#rc-031) Brake backend keeps a rate only the sound needs
-- [ ] [RC-032](#rc-032) Radio component calls up into the vehicle servers
+- [x] [RC-032](#rc-032) Radio component calls up into the vehicle servers
 - [x] [RC-033](#rc-033) `E3DInstanceBackend` and `E3DRenderingServer` include each other
 - [x] [RC-034](#rc-034) Driver layer tracks player-controlled vehicles
 - [x] [RC-035](#rc-035) `Cabin3D` keeps a controller path it says it has not got
@@ -198,17 +198,6 @@ Legend:
 * **Problem:** the default `resolution_scale = 2.0` is outside the inspector range
   `"0.05,1,0.05"`.
 * **Fix:** make the default and the range agree.
-
-### RC-032
-
-**Radio component calls up into the vehicle server** ALARM
-
-* **Where:** `src/legacy/vehicles/MoverRailVehicleRadio.cpp:40-47, 51-59, 67`
-* **Problem:** a component (lower layer) calls the servers that own vehicles: `radio_stop` calls
-  `vehicle_emergency_signal_send()` (`:40-47`), `radio_call` calls `vehicle_radio_call()`
-  (`:51-59`), and `:67` asks `VehicleServer::vehicle_has_person_role()`.
-* **Decision:** the component emits events, and the server, or whoever cares, reacts; what it
-  needs to know of the occupancy is handed down by the owner.
 
 ### RC-037
 
@@ -379,7 +368,7 @@ Legend:
 **Functional casts instead of `static_cast`**
 
 * **Where:** `src/vehicles/rail/RailVehicleRenderingServer.cpp:1001, 1433, 1701`;
-  `RailVehicleServer.cpp:349, 1818, 1827-1828`; `src/legacy/e3d/E3DInstanceBackend.cpp:54`;
+  `RailVehicleServer.cpp:341, 1897, 1906-1907`; `src/legacy/e3d/E3DInstanceBackend.cpp:54`;
   `src/legacy/e3d/E3DNodesBackend.cpp:193`
 * **Rule:** `CODE_STYLE.md` "Conversions"
 
@@ -437,7 +426,7 @@ Legend:
   * `MoverRailVehicleBrake.cpp:214`, `MoverRailVehicleLighting.cpp:401`: refer to
     `_do_fetch_state_from_mover()`, which no longer exists
   * orphaned or misplaced doc comments: `src/vehicles/base/VehicleController.hpp:107-112`,
-    `VehicleController.cpp:152-153`, `src/vehicles/rail/RailVehicleServer.cpp:2130-2131`
+    `VehicleController.cpp:152-153`, `src/vehicles/rail/RailVehicleServer.cpp:2209-2210`
 
 ### RC-122
 

@@ -139,7 +139,7 @@ func sound_is_playing(sound_rid:RID) -> bool:
     return state and (_player.is_playing(state.play_event.name) or _player.is_playing(state.loop_event.name))
 
 
-## The event a radio message plays (CabinSystem.send_radio_message())
+## The event a radio message plays (MaszynaLegacySoundAction, SceneryVirtualRadio)
 func sound_get_play_event(sound_rid:RID) -> SfxEvent:
     var state:SoundState = _sounds.get(sound_rid)
     return state.play_event if state else null
