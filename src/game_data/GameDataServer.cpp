@@ -24,7 +24,7 @@ namespace godot {
         UtilityFunctions::print(
                 "[GameDataServer] Build ", build_number.is_empty() ? String("none (unbuilt checkout)") : build_number);
         if (UserSettings *settings = UserSettings::get_instance(); settings != nullptr) {
-            settings->connect("game_dir_changed", callable_mp(this, &GameDataServer::data_reload));
+            settings->connect(UserSettings::game_dir_changed_signal, callable_mp(this, &GameDataServer::data_reload));
         }
         // a cache on disk outlives the build that wrote it. Not in the editor: it shares the game's
         // user directory and would stamp it for the game

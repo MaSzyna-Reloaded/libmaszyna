@@ -27,7 +27,7 @@ namespace godot {
 
     void RailVehicleHeating::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("heating", Callable(this, "heating"));
+        register_command("heating", callable_mp(this, &RailVehicleHeating::heating));
     }
 
     void RailVehicleHeating::_unregister_commands() {

@@ -211,7 +211,7 @@ namespace godot {
             return;
         }
         // Hardware/setup facts - change only when the vehicle's brake config is (re)applied, not
-        // every tick, so they belong here rather than in _do_fetch_state_from_mover. Read from
+        // every tick, so they belong here rather than in _fill_state_dictionary(). Read from
         // RailVehicleBrake's own already-bound properties (the authoring source of truth) rather than
         // re-deriving from mover internals a second time.
         p_config["brake_ep_enabled"] = mover->BrakeSystem == TBrakeSystem::ElectroPneumatic;
@@ -588,8 +588,8 @@ namespace godot {
         p_mover->SpringBrakeCutsOffDrive = get_cntrl_spring_brake_cuts_off_drive();
         p_mover->SpringBrakeDriveEmergencyVel = get_cntrl_spring_brake_drive_emergency_velocity();
 
-        /* FIXME: BrakeValve nie jest tylko enumem, jesli w FIZ wpisze sie nieznany symbol zawierający ESt, to EXE
-         * ustawi BrakeValve=ESt3. Powinien to ogarnąć importer FIZ
+        /* FIXME: BrakeValve is not just an enum: an unknown symbol containing ESt in the FIZ makes the
+         * EXE set BrakeValve=ESt3. The FIZ importer should take care of it
          *
          * Whoever thought making BrakeValve half-enum, half-parser-voodoo was a good idea
          * condemned everyone else to cargo-cult their bugs. Thanks a lot, dear original MaSzyna code authors.

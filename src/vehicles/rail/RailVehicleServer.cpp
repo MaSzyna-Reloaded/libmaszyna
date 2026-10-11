@@ -338,7 +338,8 @@ namespace godot {
         }
         const String name = tracks->track_get_name(track);
         return vformat(
-                "%s at %.2f m", name.is_empty() ? String("(unnamed track)") : name, double(position.get("along", 0.0)));
+                "%s at %.2f m", name.is_empty() ? String("(unnamed track)") : name,
+                static_cast<double>(position.get("along", 0.0)));
     }
 
     Dictionary RailVehicleServer::_find_pantograph_wire(
@@ -1879,7 +1880,7 @@ namespace godot {
                 }
                 // a lowered pantograph comes down whatever the wire (DynObj.cpp:3775), nothing searched
                 const double gap = active[pantograph]
-                                           ? double(_find_pantograph_wire(
+                                           ? static_cast<double>(_find_pantograph_wire(
                                                      p_vehicle, collector, pantograph, frame, half_width)["height"]) -
                                                      collector.height
                                            : Math::INF;
@@ -1888,8 +1889,8 @@ namespace godot {
             const double assumed_voltage =
                     MAX(Math::abs(power_source->get_collector_pantograph_first_voltage()),
                         Math::abs(power_source->get_collector_pantograph_second_voltage()));
-            const int collecting = int(active[0] && powered->pantographs[0].reaches_wire) +
-                                   int(active[1] && powered->pantographs[1].reaches_wire);
+            const int collecting = static_cast<int>(active[0] && powered->pantographs[0].reaches_wire) +
+                                   static_cast<int>(active[1] && powered->pantographs[1].reaches_wire);
             // a car with no engine of its own (31WE B and C) draws nothing through its own pantographs
             const Ref<RailVehicleEngine> engine = controller->get_component(VehicleComponentType::COMPONENT_ENGINE);
             const double current = collecting > 0 && engine.is_valid() ? engine->get_current0() / collecting : 0.0;
@@ -2191,8 +2192,6 @@ namespace godot {
         return kind != nullptr ? *kind : RailVehicleCabinKind::RAIL_VEHICLE_CABIN_NONE;
     }
 
-    /* Decided again on every change of the occupancy (_update_driver_cabin()), and answered from
-     * what was decided */
     /* The original has one driver to a vehicle; with more, the vehicle keeps answering to the one
      * it has while that one drives it - a driver sitting down in another cab takes nothing over -
      * and when it is gone, to the driver of the cab switched on, else the first of its cabins */
@@ -2224,6 +2223,8 @@ namespace godot {
         return Ref<VehiclePerson>(drivers[0])->get_person();
     }
 
+    /* Decided again on every change of the occupancy (_update_driver_cabin()), and answered from
+     * what was decided */
     RID RailVehicleServer::vehicle_get_driver_cabin(const RID &p_vehicle) const {
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         return placement != nullptr ? placement->driver_cabin : RID();

@@ -94,10 +94,10 @@ namespace godot {
             MAKE_GS_NR(RailVehicleController::StartMode, cntrl_main_switch_start_mode);
 
             void converter_fuse_reset();
-            void _register_commands() override;
-            void _unregister_commands() override;
 
         protected:
+            void _register_commands() override;
+            void _unregister_commands() override;
             void _apply_configuration() override;
     };
 } // namespace godot

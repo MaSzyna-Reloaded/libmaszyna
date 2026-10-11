@@ -99,11 +99,11 @@ namespace godot {
             bool get_motor_blowers_enabled(RailVehicleController::CouplerEnd p_end) const;
             bool get_motor_blowers_disabled(RailVehicleController::CouplerEnd p_end) const;
             bool get_motor_blowers_active(RailVehicleController::CouplerEnd p_end) const;
-            static void _bind_methods();
-            TypedArray<RailVehicleMotorParameter> motor_param_table;
 
         private:
-            /* Engine: (wspolne pola dla wszystkich typow napedu) */
+            static void _bind_methods();
+            TypedArray<RailVehicleMotorParameter> motor_param_table;
+            /* Engine: (the fields every kind of drive has) */
             int transmission_gear_teeth_motor = 0;
             int transmission_gear_teeth_wheel = 0;
             double transmission_efficiency = 1.0;
@@ -124,7 +124,7 @@ namespace godot {
             int inverters_count = 0;
             RailVehicleController::StartMode motor_blowers_start_mode = RailVehicleController::START_MODE_MANUAL;
 
-            /* Cntrl. (wspolne pola sterowania nastawnikiem i rozrusznikiem) */
+            /* Cntrl. (the fields of the master controller and the starter every engine has) */
             bool cntrl_eim_control_additional_zeros = false;
             bool cntrl_eim_control_emergency = false;
             EimControlType cntrl_eim_control_type = EIM_CONTROL_TYPE_0;
@@ -178,8 +178,6 @@ namespace godot {
             void _fill_config_dictionary(Dictionary &p_config) const override;
             void _register_commands() override;
             void _unregister_commands() override;
-
-        public:
     };
 } // namespace godot
 

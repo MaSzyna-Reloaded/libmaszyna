@@ -102,11 +102,15 @@ namespace godot {
 
 
     void RailVehicleLighting::_register_commands() {
-        register_command("increase_light_selector_position", Callable(this, "increase_light_selector_position"));
-        register_command("decrease_light_selector_position", Callable(this, "decrease_light_selector_position"));
-        register_command("light", Callable(this, "light"));
-        register_command("light_switch", Callable(this, "light_switch"));
-        register_command("headlights_dim", Callable(this, "headlights_dim"));
+        register_command(
+                "increase_light_selector_position",
+                callable_mp(this, &RailVehicleLighting::increase_light_selector_position));
+        register_command(
+                "decrease_light_selector_position",
+                callable_mp(this, &RailVehicleLighting::decrease_light_selector_position));
+        register_command("light", callable_mp(this, &RailVehicleLighting::light));
+        register_command("light_switch", callable_mp(this, &RailVehicleLighting::light_switch));
+        register_command("headlights_dim", callable_mp(this, &RailVehicleLighting::headlights_dim));
         VehicleComponent::_register_commands();
     }
 

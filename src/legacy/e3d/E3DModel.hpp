@@ -6,7 +6,6 @@
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
-#include <macros.hpp>
 
 namespace godot {
     class E3DModel : public Resource {

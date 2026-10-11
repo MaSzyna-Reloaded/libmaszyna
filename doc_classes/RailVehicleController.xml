@@ -9,51 +9,51 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="antislip" qualifiers="const">
+		<method name="antislip">
 			<return type="void" />
 			<description>
 			</description>
 		</method>
-		<method name="cab_activation" qualifiers="const">
+		<method name="cab_activation">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
-		<method name="cab_activation_auto" qualifiers="const">
+		<method name="cab_activation_auto">
 			<return type="void" />
 			<description>
 			</description>
 		</method>
-		<method name="cab_controls_reset" qualifiers="const">
+		<method name="cab_controls_reset">
 			<return type="void" />
 			<description>
 			</description>
 		</method>
-		<method name="cab_deactivation_auto" qualifiers="const">
+		<method name="cab_deactivation_auto">
 			<return type="void" />
 			<description>
 			</description>
 		</method>
-		<method name="cabin_enter" qualifiers="const">
+		<method name="cabin_enter">
 			<return type="void" />
 			<description>
 				A driver came over from another vehicle through a gangway: the cab switched on. Command [code]cabin_enter[/code], sent by [method RailVehicleServer.person_change_cabin].
 			</description>
 		</method>
-		<method name="cabin_leave" qualifiers="const">
+		<method name="cabin_leave">
 			<return type="void" />
 			<description>
 				Its driver went over to another vehicle through a gangway: the cab switched off, the brake handle at its neutral, the controllers at zero. Command [code]cabin_leave[/code], sent by [method RailVehicleServer.person_change_cabin].
 			</description>
 		</method>
-		<method name="compartment_lights" qualifiers="const">
+		<method name="compartment_lights">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
-		<method name="compartment_lights_switch_off" qualifiers="const">
+		<method name="compartment_lights_switch_off">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
@@ -119,13 +119,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="direction_decrease" qualifiers="const">
+		<method name="direction_decrease">
 			<return type="void" />
 			<description>
 				Increase direction by one step
 			</description>
 		</method>
-		<method name="direction_increase" qualifiers="const">
+		<method name="direction_increase">
 			<return type="void" />
 			<description>
 				Decrease direction by one step
@@ -213,7 +213,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="ground_relay_reset" qualifiers="const">
+		<method name="ground_relay_reset">
 			<return type="void" />
 			<description>
 			</description>
@@ -238,21 +238,21 @@
 				Whether an end couples as an automatic coupler, its adapter's or its own (TCoupling::type()).
 			</description>
 		</method>
-		<method name="main_controller_decrease" qualifiers="const">
+		<method name="main_controller_decrease">
 			<return type="void" />
 			<param index="0" name="step" type="int" default="1" />
 			<description>
 				Decrease main controller position
 			</description>
 		</method>
-		<method name="main_controller_increase" qualifiers="const">
+		<method name="main_controller_increase">
 			<return type="void" />
 			<param index="0" name="step" type="int" default="1" />
 			<description>
 				Increase main controller position
 			</description>
 		</method>
-		<method name="main_controller_set_position" qualifiers="const">
+		<method name="main_controller_set_position">
 			<return type="void" />
 			<param index="0" name="position" type="int" />
 			<description>
@@ -272,13 +272,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="second_controller_decrease" qualifiers="const">
+		<method name="second_controller_decrease">
 			<return type="void" />
 			<param index="0" name="step" type="int" default="1" />
 			<description>
 			</description>
 		</method>
-		<method name="second_controller_increase" qualifiers="const">
+		<method name="second_controller_increase">
 			<return type="void" />
 			<param index="0" name="step" type="int" default="1" />
 			<description>

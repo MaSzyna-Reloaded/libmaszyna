@@ -46,8 +46,9 @@ namespace godot {
     }
 
     void RailVehicleElectroPneumaticDynamicBrake::_register_commands() {
-        register_command("set_ep_brake_force", Callable(this, "set_ep_brake_force"));
-        register_command("switch_ep_fuse", Callable(this, "switch_ep_fuse"));
+        register_command(
+                "set_ep_brake_force", callable_mp(this, &RailVehicleElectroPneumaticDynamicBrake::set_ep_brake_force));
+        register_command("switch_ep_fuse", callable_mp(this, &RailVehicleElectroPneumaticDynamicBrake::switch_ep_fuse));
         VehicleComponent::_register_commands();
     }
 

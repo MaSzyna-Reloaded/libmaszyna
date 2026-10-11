@@ -17,6 +17,10 @@ namespace godot {
             GDCLASS(VehicleComponent, Resource)
         public:
             static void _bind_methods();
+            static const char *config_changed_signal;
+            static const char *enable_changed_signal;
+            static const char *component_enabled_signal;
+            static const char *component_disabled_signal;
 
         private:
             bool _commands_registered = false;

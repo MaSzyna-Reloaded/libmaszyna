@@ -92,8 +92,10 @@ namespace godot {
 
     void RailVehicleDieselElectricEngine::_register_commands() {
         RailVehicleDieselEngine::_register_commands();
-        register_command("fuse_reset", Callable(this, "fuse_reset"));
-        register_command("motor_connectors_open", Callable(this, "set_motor_connectors_open"));
+        register_command("fuse_reset", callable_mp(this, &RailVehicleDieselElectricEngine::fuse_reset));
+        register_command(
+                "motor_connectors_open",
+                callable_mp(this, &RailVehicleDieselElectricEngine::set_motor_connectors_open));
     }
 
     void RailVehicleDieselElectricEngine::_unregister_commands() {

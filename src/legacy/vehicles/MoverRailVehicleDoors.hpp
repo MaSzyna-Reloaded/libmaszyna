@@ -2,6 +2,7 @@
 #include "legacy/maszyna-mover/McZapkie/MOVER.h"
 #include "legacy/vehicles/MoverComponent.hpp"
 #include "vehicles/rail/RailVehicleDoors.hpp"
+#include <map>
 
 namespace godot {
     /* RailVehicleDoors on the vendored Mover - the only class here that knows TMoverParameters. */

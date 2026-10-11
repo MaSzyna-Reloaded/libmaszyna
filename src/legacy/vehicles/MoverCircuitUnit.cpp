@@ -87,7 +87,7 @@ namespace godot {
 
     void MoverCircuitUnit::apply_configuration(const RailVehicleElectricEngine *p_engine) const {
         TMoverParameters *p_mover = owner.get_mover();
-        /* Circuit: (elektryczny obwod napedowy), tylko pojazdy elektryczne i spalinowo-elektryczne */
+        /* Circuit: (the electric traction circuit), electric and diesel-electric vehicles only */
         p_mover->CircuitRes = p_engine->get_circuit_resistance();
         p_mover->ImaxLo = p_engine->get_circuit_imax_low();
         p_mover->ImaxHi = p_engine->get_circuit_imax_high();

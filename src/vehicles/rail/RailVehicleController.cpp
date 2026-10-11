@@ -211,27 +211,35 @@ namespace godot {
     }
 
     void RailVehicleController::_register_commands() {
-        register_command("cab_deactivation_auto", Callable(this, "cab_deactivation_auto"));
-        register_command("cab_controls_reset", Callable(this, "cab_controls_reset"));
-        register_command("cabin_leave", Callable(this, "cabin_leave"));
-        register_command("cabin_enter", Callable(this, "cabin_enter"));
-        register_command("ground_relay_reset", Callable(this, "ground_relay_reset"));
-        register_command("antislip", Callable(this, "antislip"));
-        register_command("cab_activation", Callable(this, "cab_activation"));
-        register_command("compartment_lights", Callable(this, "compartment_lights"));
-        register_command("compartment_lights_switch_off", Callable(this, "compartment_lights_switch_off"));
-        register_command("cab_activation_auto", Callable(this, "cab_activation_auto"));
-        register_command("main_controller_increase", Callable(this, "main_controller_increase"));
-        register_command("main_controller_decrease", Callable(this, "main_controller_decrease"));
-        register_command("main_controller_set_position", Callable(this, "main_controller_set_position"));
-        register_command("second_controller_increase", Callable(this, "second_controller_increase"));
-        register_command("second_controller_decrease", Callable(this, "second_controller_decrease"));
-        register_command("direction_increase", Callable(this, "direction_increase"));
-        register_command("direction_decrease", Callable(this, "direction_decrease"));
-        register_command("coupler_connect", Callable(this, "coupler_connect"));
-        register_command("coupler_disconnect", Callable(this, "coupler_disconnect"));
-        register_command("coupler_adapter_attach", Callable(this, "coupler_adapter_attach"));
-        register_command("coupler_adapter_remove", Callable(this, "coupler_adapter_remove"));
+        register_command("cab_deactivation_auto", callable_mp(this, &RailVehicleController::cab_deactivation_auto));
+        register_command("cab_controls_reset", callable_mp(this, &RailVehicleController::cab_controls_reset));
+        register_command("cabin_leave", callable_mp(this, &RailVehicleController::cabin_leave));
+        register_command("cabin_enter", callable_mp(this, &RailVehicleController::cabin_enter));
+        register_command("ground_relay_reset", callable_mp(this, &RailVehicleController::ground_relay_reset));
+        register_command("antislip", callable_mp(this, &RailVehicleController::antislip));
+        register_command("cab_activation", callable_mp(this, &RailVehicleController::cab_activation));
+        register_command("compartment_lights", callable_mp(this, &RailVehicleController::compartment_lights));
+        register_command(
+                "compartment_lights_switch_off",
+                callable_mp(this, &RailVehicleController::compartment_lights_switch_off));
+        register_command("cab_activation_auto", callable_mp(this, &RailVehicleController::cab_activation_auto));
+        register_command(
+                "main_controller_increase", callable_mp(this, &RailVehicleController::main_controller_increase));
+        register_command(
+                "main_controller_decrease", callable_mp(this, &RailVehicleController::main_controller_decrease));
+        register_command(
+                "main_controller_set_position",
+                callable_mp(this, &RailVehicleController::main_controller_set_position));
+        register_command(
+                "second_controller_increase", callable_mp(this, &RailVehicleController::second_controller_increase));
+        register_command(
+                "second_controller_decrease", callable_mp(this, &RailVehicleController::second_controller_decrease));
+        register_command("direction_increase", callable_mp(this, &RailVehicleController::direction_increase));
+        register_command("direction_decrease", callable_mp(this, &RailVehicleController::direction_decrease));
+        register_command("coupler_connect", callable_mp(this, &RailVehicleController::coupler_connect));
+        register_command("coupler_disconnect", callable_mp(this, &RailVehicleController::coupler_disconnect));
+        register_command("coupler_adapter_attach", callable_mp(this, &RailVehicleController::coupler_adapter_attach));
+        register_command("coupler_adapter_remove", callable_mp(this, &RailVehicleController::coupler_adapter_remove));
     }
 
     void RailVehicleController::_unregister_commands() {

@@ -338,25 +338,27 @@ namespace godot {
     }
 
     void RailVehicleBrake::_register_commands() {
-        register_command("brake_releaser", Callable(this, "brake_releaser"));
-        register_command("consist_releaser", Callable(this, "consist_releaser"));
-        register_command("compressor", Callable(this, "compressor"));
-        register_command("brake_level_set", Callable(this, "brake_level_set"));
-        register_command("brake_level_set_position", Callable(this, "brake_level_set_position"));
-        register_command("brake_level_increase", Callable(this, "brake_level_increase"));
-        register_command("brake_level_decrease", Callable(this, "brake_level_decrease"));
-        register_command("local_brake_set", Callable(this, "local_brake_set"));
-        register_command("local_brake_increase", Callable(this, "local_brake_increase"));
-        register_command("local_brake_decrease", Callable(this, "local_brake_decrease"));
-        register_command("manual_brake_increase", Callable(this, "manual_brake_increase"));
-        register_command("manual_brake_decrease", Callable(this, "manual_brake_decrease"));
-        register_command("auto_rewident", Callable(this, "auto_rewident"));
-        register_command("brake_operation_mode_increase", Callable(this, "brake_operation_mode_increase"));
-        register_command("brake_operation_mode_decrease", Callable(this, "brake_operation_mode_decrease"));
-        register_command("ep_brake", Callable(this, "ep_brake"));
-        register_command("brake_level_charging", Callable(this, "brake_level_charging"));
-        register_command("alarm_chain", Callable(this, "alarm_chain"));
-        register_command("universal_brake_button", Callable(this, "universal_brake_button"));
+        register_command("brake_releaser", callable_mp(this, &RailVehicleBrake::brake_releaser));
+        register_command("consist_releaser", callable_mp(this, &RailVehicleBrake::consist_releaser));
+        register_command("compressor", callable_mp(this, &RailVehicleBrake::compressor));
+        register_command("brake_level_set", callable_mp(this, &RailVehicleBrake::brake_level_set));
+        register_command("brake_level_set_position", callable_mp(this, &RailVehicleBrake::brake_level_set_position));
+        register_command("brake_level_increase", callable_mp(this, &RailVehicleBrake::brake_level_increase));
+        register_command("brake_level_decrease", callable_mp(this, &RailVehicleBrake::brake_level_decrease));
+        register_command("local_brake_set", callable_mp(this, &RailVehicleBrake::local_brake_set));
+        register_command("local_brake_increase", callable_mp(this, &RailVehicleBrake::local_brake_increase));
+        register_command("local_brake_decrease", callable_mp(this, &RailVehicleBrake::local_brake_decrease));
+        register_command("manual_brake_increase", callable_mp(this, &RailVehicleBrake::manual_brake_increase));
+        register_command("manual_brake_decrease", callable_mp(this, &RailVehicleBrake::manual_brake_decrease));
+        register_command("auto_rewident", callable_mp(this, &RailVehicleBrake::auto_rewident));
+        register_command(
+                "brake_operation_mode_increase", callable_mp(this, &RailVehicleBrake::brake_operation_mode_increase));
+        register_command(
+                "brake_operation_mode_decrease", callable_mp(this, &RailVehicleBrake::brake_operation_mode_decrease));
+        register_command("ep_brake", callable_mp(this, &RailVehicleBrake::ep_brake));
+        register_command("brake_level_charging", callable_mp(this, &RailVehicleBrake::brake_level_charging));
+        register_command("alarm_chain", callable_mp(this, &RailVehicleBrake::alarm_chain));
+        register_command("universal_brake_button", callable_mp(this, &RailVehicleBrake::universal_brake_button));
     }
 
     void RailVehicleBrake::_unregister_commands() {

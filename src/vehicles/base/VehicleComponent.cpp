@@ -6,6 +6,10 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    const char *VehicleComponent::config_changed_signal = "config_changed";
+    const char *VehicleComponent::enable_changed_signal = "enable_changed";
+    const char *VehicleComponent::component_enabled_signal = "component_enabled";
+    const char *VehicleComponent::component_disabled_signal = "component_disabled";
     void VehicleComponent::_bind_methods() {
         ClassDB::bind_method(D_METHOD("emit_config_changed_signal"), &VehicleComponent::emit_config_changed_signal);
         ClassDB::bind_method(D_METHOD("register_command", "command", "callable"), &VehicleComponent::register_command);
@@ -30,10 +34,10 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_enabled"), &VehicleComponent::get_enabled);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "get_enabled");
 
-        ADD_SIGNAL(MethodInfo("config_changed"));
-        ADD_SIGNAL(MethodInfo("enable_changed", PropertyInfo(Variant::BOOL, "enabled")));
-        ADD_SIGNAL(MethodInfo("component_enabled"));
-        ADD_SIGNAL(MethodInfo("component_disabled"));
+        ADD_SIGNAL(MethodInfo(config_changed_signal));
+        ADD_SIGNAL(MethodInfo(enable_changed_signal, PropertyInfo(Variant::BOOL, "enabled")));
+        ADD_SIGNAL(MethodInfo(component_enabled_signal));
+        ADD_SIGNAL(MethodInfo(component_disabled_signal));
     }
 
     int VehicleComponent::get_component_type() const {
@@ -128,7 +132,7 @@ namespace godot {
     }
 
     void VehicleComponent::emit_config_changed_signal() {
-        emit_signal("config_changed");
+        emit_signal(config_changed_signal);
     }
 
     void VehicleComponent::process(const double p_delta) {
@@ -192,8 +196,8 @@ namespace godot {
             _unregister_commands();
             _commands_registered = false;
         }
-        emit_signal("enable_changed", enabled);
-        emit_signal(enabled ? "component_enabled" : "component_disabled");
+        emit_signal(enable_changed_signal, enabled);
+        emit_signal(enabled ? component_enabled_signal : component_disabled_signal);
     }
 
     bool VehicleComponent::get_enabled() {

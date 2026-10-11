@@ -190,7 +190,7 @@ namespace godot {
                 // rather than the materials every instance shares
                 if (const Ref<ShaderMaterial> shader_material = material;
                     (p_instance.emission_energy >= 0.0 || p_instance.submodel_emission) && shader_material.is_valid() &&
-                    bool(shader_material->get_shader_parameter("emission_enabled"))) {
+                    static_cast<bool>(shader_material->get_shader_parameter("emission_enabled"))) {
                     const Ref<ShaderMaterial> own = shader_material->duplicate();
                     p_instance.emissive_materials.push_back({own, submodel.ptr()});
                     material = own;

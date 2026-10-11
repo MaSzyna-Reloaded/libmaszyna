@@ -394,16 +394,16 @@ namespace godot {
 
     void RailVehicleDieselEngine::_register_commands() {
         RailVehicleEngine::_register_commands();
-        register_command("oil_pump", Callable(this, "oil_pump"));
-        register_command("fuel_pump", Callable(this, "fuel_pump"));
-        register_command("oil_pump_switch_off", Callable(this, "oil_pump_switch_off"));
-        register_command("fuel_pump_switch_off", Callable(this, "fuel_pump_switch_off"));
-        register_command("water_pump", Callable(this, "water_pump"));
-        register_command("water_pump_switch_off", Callable(this, "water_pump_switch_off"));
-        register_command("water_pump_breaker", Callable(this, "water_pump_breaker"));
-        register_command("water_heater", Callable(this, "water_heater"));
-        register_command("water_heater_breaker", Callable(this, "water_heater_breaker"));
-        register_command("water_circuits_link", Callable(this, "water_circuits_link"));
+        register_command("oil_pump", callable_mp(this, &RailVehicleDieselEngine::oil_pump));
+        register_command("fuel_pump", callable_mp(this, &RailVehicleDieselEngine::fuel_pump));
+        register_command("oil_pump_switch_off", callable_mp(this, &RailVehicleDieselEngine::oil_pump_switch_off));
+        register_command("fuel_pump_switch_off", callable_mp(this, &RailVehicleDieselEngine::fuel_pump_switch_off));
+        register_command("water_pump", callable_mp(this, &RailVehicleDieselEngine::water_pump));
+        register_command("water_pump_switch_off", callable_mp(this, &RailVehicleDieselEngine::water_pump_switch_off));
+        register_command("water_pump_breaker", callable_mp(this, &RailVehicleDieselEngine::water_pump_breaker));
+        register_command("water_heater", callable_mp(this, &RailVehicleDieselEngine::water_heater));
+        register_command("water_heater_breaker", callable_mp(this, &RailVehicleDieselEngine::water_heater_breaker));
+        register_command("water_circuits_link", callable_mp(this, &RailVehicleDieselEngine::water_circuits_link));
     }
 
     void RailVehicleDieselEngine::_unregister_commands() {

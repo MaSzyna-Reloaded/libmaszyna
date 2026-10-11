@@ -282,7 +282,6 @@ namespace godot {
             MAKE_GS(double, cooling_heater_max_temperature);
             MAKE_GS(double, cooling_nominal_power);
 
-        private:
         protected:
             EngineType get_type() const override;
             void _apply_configuration() override;

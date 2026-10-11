@@ -51,7 +51,7 @@ namespace godot {
             const E3DInstanceData &p_instance, const String &p_light_name, const LightPart p_part,
             const bool p_has_xon) {
         const bool enabled = p_instance.lights_state.get(p_light_name, false);
-        const bool dimmed = p_has_xon && bool(p_instance.lights_dimmed.get(p_light_name, false));
+        const bool dimmed = p_has_xon && static_cast<bool>(p_instance.lights_dimmed.get(p_light_name, false));
         switch (p_part) {
             case LIGHT_PART_ON:
                 return enabled && !dimmed;

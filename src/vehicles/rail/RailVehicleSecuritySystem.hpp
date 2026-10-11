@@ -8,6 +8,10 @@ namespace godot {
             GDCLASS(RailVehicleSecuritySystem, RailVehicleComponent)
 
         public:
+            /* The alerter's lamp blinking, its buzzer sounding (state: bool) */
+            static const char *blinking_changed_signal;
+            static const char *beeping_changed_signal;
+
             int get_component_type() const override {
                 return RailVehicleComponentType::COMPONENT_SECURITY;
             }

@@ -79,7 +79,9 @@ namespace godot {
 
     void RailVehicleMasterController::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("distance_counter_activate", Callable(this, "distance_counter_activate"));
+        register_command(
+                "distance_counter_activate",
+                callable_mp(this, &RailVehicleMasterController::distance_counter_activate));
     }
 
     void RailVehicleMasterController::_unregister_commands() {

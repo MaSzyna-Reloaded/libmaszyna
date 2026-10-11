@@ -25,7 +25,7 @@ namespace godot {
     /// built from a copy of it (VehiclePhysicsNode).
     class VehicleController : public Resource {
             GDCLASS(VehicleController, Resource)
-        public:
+
         private:
             StringName implementation;
             /// Bumped by every step (process_components()) and every command (command_executed());
@@ -45,9 +45,6 @@ namespace godot {
              * own typed lookup through them (RailVehicleController::get_rail_component()) */
             Ref<VehicleComponent> _get_component_of_type(int p_type) const;
             TypedArray<VehicleComponent> _find_components_of_type(int p_type) const;
-            /// Writes the wrapper's configuration - the vehicle's and every component's - to the
-            /// backend, then announces that the backend carries it.
-            void apply_configuration();
             /* Creates the simulation behind the vehicle and writes its configuration there. */
             virtual void _initialize_simulation() = 0;
             /* The simulation behind the vehicle exists (p_implementation, the
@@ -104,11 +101,9 @@ namespace godot {
             uint64_t get_state_serial() const;
             void register_command(const StringName &p_command, const Callable &p_callable);
             void unregister_command(const StringName &p_command);
-            /* One tick of everything the vehicle is made of, after its physics has moved. The
-             * components have no _process of their own to be driven by a scene tree. */
-            /* Brings the vehicle up: its simulation, its state and the signals whose initial
-             * value listeners expect. Called by whatever owns the vehicle, once it is built -
-             * it used to wait for NOTIFICATION_READY, which a vehicle outside a tree never gets. */
+            /// Writes the wrapper's configuration - the vehicle's and every component's - to the
+            /// backend, then announces that the backend carries it.
+            void apply_configuration();
             /// Whether this vehicle's simulation exists yet. A vehicle is a vehicle from the
             /// moment it is built, but nothing can be coupled to it or read off it until the
             /// backend behind it is there.
@@ -118,9 +113,14 @@ namespace godot {
             /// its simulation - without destroying the vehicle, so every reference to it stays
             /// valid across a rebuild.
             virtual void release();
+            /* Brings the vehicle up: its simulation, its state and the signals whose initial
+             * value listeners expect. Called by whatever owns the vehicle, once it is built -
+             * it used to wait for NOTIFICATION_READY, which a vehicle outside a tree never gets. */
             virtual void initialize();
             /* The reverse: the vehicle gives its commands back and lets go of its handle. */
             void shutdown();
+            /* One tick of everything the vehicle is made of, after its physics has moved. The
+             * components have no _process of their own to be driven by a scene tree. */
             void process_components(double p_delta);
             virtual void update_state();
             /// Straight from the backend, for the per-frame readers that only want this one number

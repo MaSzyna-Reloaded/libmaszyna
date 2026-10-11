@@ -229,13 +229,20 @@ namespace godot {
 
     void RailVehicleEnginePowerSource::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("pantographs_valve", Callable(this, "pantographs_valve"));
-        register_command("pantographs_valve_operate", Callable(this, "pantographs_valve_operate"));
-        register_command("pantographs_drop_all", Callable(this, "pantographs_drop_all"));
-        register_command("pantograph_compressor", Callable(this, "pantograph_compressor"));
-        register_command("pantograph_compressor_valve", Callable(this, "pantograph_compressor_valve"));
-        register_command("pantograph", Callable(this, "pantograph"));
-        register_command("pantograph_valve_operate", Callable(this, "pantograph_valve_operate"));
+        register_command("pantographs_valve", callable_mp(this, &RailVehicleEnginePowerSource::pantographs_valve));
+        register_command(
+                "pantographs_valve_operate",
+                callable_mp(this, &RailVehicleEnginePowerSource::pantographs_valve_operate));
+        register_command(
+                "pantographs_drop_all", callable_mp(this, &RailVehicleEnginePowerSource::pantographs_drop_all));
+        register_command(
+                "pantograph_compressor", callable_mp(this, &RailVehicleEnginePowerSource::pantograph_compressor));
+        register_command(
+                "pantograph_compressor_valve",
+                callable_mp(this, &RailVehicleEnginePowerSource::pantograph_compressor_valve));
+        register_command("pantograph", callable_mp(this, &RailVehicleEnginePowerSource::pantograph));
+        register_command(
+                "pantograph_valve_operate", callable_mp(this, &RailVehicleEnginePowerSource::pantograph_valve_operate));
     }
 
     void RailVehicleEnginePowerSource::_unregister_commands() {

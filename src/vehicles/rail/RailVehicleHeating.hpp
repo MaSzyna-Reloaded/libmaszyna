@@ -37,6 +37,7 @@ namespace godot {
              * HeatingSwitch(State) - "trainheating_sw:"/ggTrainHeatingButton (Train.cpp:10116). */
             virtual void heating(bool p_enabled) = 0;
 
+        protected:
             void _register_commands() override;
             void _unregister_commands() override;
 

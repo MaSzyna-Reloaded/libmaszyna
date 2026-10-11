@@ -45,6 +45,8 @@ namespace godot {
 
         protected:
             void _fill_config_dictionary(Dictionary &p_config) const override;
+            void _register_commands() override;
+            void _unregister_commands() override;
 
         public:
             /* Live state, read straight from the backend - nothing is stored. */
@@ -92,8 +94,6 @@ namespace godot {
             /* Moves the selector of the cab at `p_end` by one position, within the presets */
             virtual void next_pantograph_preset(RailVehicleController::CouplerEnd p_end) = 0;
             virtual void previous_pantograph_preset(RailVehicleController::CouplerEnd p_end) = 0;
-            void _register_commands() override;
-            void _unregister_commands() override;
     };
 } // namespace godot
 

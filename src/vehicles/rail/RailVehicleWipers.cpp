@@ -16,8 +16,8 @@ namespace godot {
     }
 
     void RailVehicleWipers::_register_commands() {
-        register_command("wipers_switch_increase", Callable(this, "switch_increase"));
-        register_command("wipers_switch_decrease", Callable(this, "switch_decrease"));
+        register_command("wipers_switch_increase", callable_mp(this, &RailVehicleWipers::switch_increase));
+        register_command("wipers_switch_decrease", callable_mp(this, &RailVehicleWipers::switch_decrease));
     }
 
     void RailVehicleWipers::_unregister_commands() {

@@ -11,6 +11,9 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    const char *UserSettings::config_changed_signal = "config_changed";
+    const char *UserSettings::setting_changed_signal = "setting_changed";
+    const char *UserSettings::game_dir_changed_signal = "game_dir_changed";
 
     /// Directories the original's data always has - eu07.exe is not one of them, a copy may come
     /// without it
@@ -73,10 +76,11 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("is_maszyna_game_dir_valid"), &UserSettings::is_maszyna_game_dir_valid);
         ClassDB::bind_method(D_METHOD("find_maszyna_game_dirs"), &UserSettings::find_maszyna_game_dirs);
 
-        ADD_SIGNAL(MethodInfo("config_changed"));
+        ADD_SIGNAL(MethodInfo(config_changed_signal));
         ADD_SIGNAL(MethodInfo(
-                "setting_changed", PropertyInfo(Variant::STRING, "section"), PropertyInfo(Variant::STRING, "key")));
-        ADD_SIGNAL(MethodInfo("game_dir_changed"));
+                setting_changed_signal, PropertyInfo(Variant::STRING, "section"),
+                PropertyInfo(Variant::STRING, "key")));
+        ADD_SIGNAL(MethodInfo(game_dir_changed_signal));
     }
 
     void UserSettings::_apply_defaults() {
@@ -130,9 +134,9 @@ namespace godot {
         }
         saved_text = config->encode_to_text();
 
-        emit_signal("config_changed");
+        emit_signal(config_changed_signal);
         if (game_dir != previous_game_dir) {
-            emit_signal("game_dir_changed");
+            emit_signal(game_dir_changed_signal);
         }
     }
 
@@ -155,11 +159,11 @@ namespace godot {
         if (is_game_dir) {
             _update_game_dir();
         }
-        emit_signal("setting_changed", p_section, p_key);
-        emit_signal("config_changed");
+        emit_signal(setting_changed_signal, p_section, p_key);
+        emit_signal(config_changed_signal);
 
         if (is_game_dir) {
-            emit_signal("game_dir_changed");
+            emit_signal(game_dir_changed_signal);
         }
     }
 
@@ -178,10 +182,10 @@ namespace godot {
             ProjectSettings::get_singleton()->set_setting(p_key, project_values[p_key]);
             project_values.erase(p_key);
         }
-        emit_signal("setting_changed", p_section, p_key);
-        emit_signal("config_changed");
+        emit_signal(setting_changed_signal, p_section, p_key);
+        emit_signal(config_changed_signal);
         if (p_section == MASZYNA_GAMEDIR_SECTION && p_key == MASZYNA_GAMEDIR_KEY) {
-            emit_signal("game_dir_changed");
+            emit_signal(game_dir_changed_signal);
         }
     }
 

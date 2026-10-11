@@ -49,12 +49,16 @@ namespace godot {
     }
 
     void RailVehicleSpeedControl::_register_commands() {
-        register_command("speed_control_increase", Callable(this, "speed_control_increase"));
-        register_command("speed_control_decrease", Callable(this, "speed_control_decrease"));
-        register_command("speed_control_power_increase", Callable(this, "speed_control_power_increase"));
-        register_command("speed_control_power_decrease", Callable(this, "speed_control_power_decrease"));
-        register_command("speed_control_button", Callable(this, "speed_control_button"));
-        register_command("speed_control_set", Callable(this, "speed_control_set"));
+        register_command("speed_control_increase", callable_mp(this, &RailVehicleSpeedControl::speed_control_increase));
+        register_command("speed_control_decrease", callable_mp(this, &RailVehicleSpeedControl::speed_control_decrease));
+        register_command(
+                "speed_control_power_increase",
+                callable_mp(this, &RailVehicleSpeedControl::speed_control_power_increase));
+        register_command(
+                "speed_control_power_decrease",
+                callable_mp(this, &RailVehicleSpeedControl::speed_control_power_decrease));
+        register_command("speed_control_button", callable_mp(this, &RailVehicleSpeedControl::speed_control_button));
+        register_command("speed_control_set", callable_mp(this, &RailVehicleSpeedControl::speed_control_set));
     }
 
     void RailVehicleSpeedControl::_unregister_commands() {

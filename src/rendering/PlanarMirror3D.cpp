@@ -128,6 +128,7 @@ void fragment() {
                 camera = memnew(Camera3D);
                 viewport->add_child(camera);
                 camera->set_current(true);
+                camera->set_keep_aspect_mode(Camera3D::KEEP_HEIGHT);
                 Ref<Shader> shader;
                 shader.instantiate();
                 shader->set_code(MIRROR_SHADER);
@@ -195,7 +196,6 @@ void fragment() {
             return;
         }
         camera->set_global_transform(Transform3D(Basis::looking_at(view, up), mirrored_origin));
-        camera->set_keep_aspect_mode(Camera3D::KEEP_HEIGHT);
         camera->set_fov(fov);
         // whatever is nearer than the glass stands behind it
         camera->set_near(MAX(eye->get_near(), glass_distance - radius));
@@ -217,8 +217,8 @@ void fragment() {
             viewport->set_size(Vector2i(side, side));
         }
         material->set_shader_parameter(
-                "mirror_view_projection", Projection(camera->get_camera_projection()) *
-                                                  Projection(camera->get_global_transform().affine_inverse()));
+                view_projection_parameter, Projection(camera->get_camera_projection()) *
+                                                   Projection(camera->get_global_transform().affine_inverse()));
         if (viewport->get_update_mode() == SubViewport::UPDATE_ALWAYS) {
             return;
         }
@@ -245,11 +245,14 @@ void fragment() {
         _set_rendering(true);
     }
 
+    /// Only on a change: a mirror out of view is told so every frame
     void PlanarMirror3D::_set_rendering(const bool p_rendering) {
-        if (viewport != nullptr) {
-            viewport->set_update_mode(p_rendering ? SubViewport::UPDATE_ALWAYS : SubViewport::UPDATE_DISABLED);
-            material->set_shader_parameter("reflecting", p_rendering);
+        const SubViewport::UpdateMode mode = p_rendering ? SubViewport::UPDATE_ALWAYS : SubViewport::UPDATE_DISABLED;
+        if (viewport == nullptr || viewport->get_update_mode() == mode) {
+            return;
         }
+        viewport->set_update_mode(mode);
+        material->set_shader_parameter(reflecting_parameter, p_rendering);
     }
 
     void PlanarMirror3D::set_max_distance(const double p_value) {

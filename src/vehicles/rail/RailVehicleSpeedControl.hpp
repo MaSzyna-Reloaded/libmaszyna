@@ -35,6 +35,8 @@ namespace godot {
             virtual void speed_control_button(int p_button) = 0;
             /* The speed set outright [km/h], as a driver's order (RunCommand("SpeedCntrl"), Mover.cpp:12695) */
             virtual void speed_control_set(double p_velocity) = 0;
+
+        protected:
             void _register_commands() override;
             void _unregister_commands() override;
 

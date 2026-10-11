@@ -134,18 +134,18 @@ namespace godot {
             static const char *coupler_adapter_attached_signal;
             static const char *coupler_adapter_removed_signal;
 
-            virtual void cab_activation(bool p_enabled) const = 0;
+            virtual void cab_activation(bool p_enabled) = 0;
             /* The compartment lights switched on, or their "off" switch (CompartmentLightsSwitch(),
              * CompartmentLightsSwitchOff()) */
-            virtual void compartment_lights(bool p_enabled) const = 0;
-            virtual void compartment_lights_switch_off(bool p_enabled) const = 0;
-            virtual void cab_activation_auto() const = 0;
+            virtual void compartment_lights(bool p_enabled) = 0;
+            virtual void compartment_lights_switch_off(bool p_enabled) = 0;
+            virtual void cab_activation_auto() = 0;
             /* The cab switched off as the vehicle switches it off by itself, when the FIZ lets it
              * (CabDeactivisationAuto(), Train.cpp:10336) */
-            virtual void cab_deactivation_auto() const = 0;
+            virtual void cab_deactivation_auto() = 0;
             /* The controls a cab change leaves at rest - the brake handle at its neutral, the
              * controllers at zero (TMoverParameters::ChangeCab(), Mover.cpp:735-749) */
-            virtual void cab_controls_reset() const = 0;
+            virtual void cab_controls_reset() = 0;
             /* The kind of cabin its driver sits in, handed down by RailVehicleServer whenever it
              * changes - C++ only and unbound: who sits where is VehicleServer's to tell */
             virtual void set_driver_cabin_kind(RailVehicleCabinKind::Kind p_kind);
@@ -156,24 +156,24 @@ namespace godot {
             /* Its driver went over to another vehicle: the cab switched off, the brake handle at its
              * neutral, the controllers at zero (TTrain::MoveToVehicle(), Train.cpp:10950-10954) -
              * command cabin_leave, sent by RailVehicleServer::person_change_cabin() */
-            virtual void cabin_leave() const = 0;
+            virtual void cabin_leave() = 0;
             /* A driver came over from another vehicle: the pipe pressure limit taken from the pipe,
              * the cab switched on (Train.cpp:10976-10977) - command cabin_enter, as cabin_leave() */
-            virtual void cabin_enter() const = 0;
+            virtual void cabin_enter() = 0;
             /* The main circuit's ground relay reset (maincircuitgroundreset, RelayReset(), Mover.cpp:6653) */
-            virtual void ground_relay_reset() const = 0;
+            virtual void ground_relay_reset() = 0;
             /* The anti-slip brake pressed (antislip, AntiSlippingButton()) */
-            virtual void antislip() const = 0;
-            virtual void main_controller_increase(int p_step = 1) const = 0;
-            virtual void main_controller_decrease(int p_step = 1) const = 0;
+            virtual void antislip() = 0;
+            virtual void main_controller_increase(int p_step = 1) = 0;
+            virtual void main_controller_decrease(int p_step = 1) = 0;
             /* The master controller put at a position at once, as the original's driver sets
              * MainCtrlPos of an EIM controller (Driver.cpp:3771-3816, 4284-4290): no step, so the
              * relay time a step restarts goes on (CheckEIMIC(), Mover.cpp) */
-            virtual void main_controller_set_position(int p_position) const = 0;
-            virtual void second_controller_increase(int p_step = 1) const = 0;
-            virtual void second_controller_decrease(int p_step = 1) const = 0;
-            virtual void direction_increase() const = 0;
-            virtual void direction_decrease() const = 0;
+            virtual void main_controller_set_position(int p_position) = 0;
+            virtual void second_controller_increase(int p_step = 1) = 0;
+            virtual void second_controller_decrease(int p_step = 1) = 0;
+            virtual void direction_increase() = 0;
+            virtual void direction_decrease() = 0;
             virtual double process_movement(double p_delta) = 0;
             virtual void update_location() = 0;
             /* The vehicle nearest beyond p_end, p_track_distance [m] center to center along the

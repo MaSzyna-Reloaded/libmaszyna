@@ -1,4 +1,5 @@
 #include "E3DModel.hpp"
+#include "macros.hpp"
 
 namespace godot {
     E3DModel::~E3DModel() {

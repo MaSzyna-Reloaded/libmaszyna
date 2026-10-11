@@ -1000,7 +1000,7 @@ namespace godot {
             const int index = p_pantograph == RailVehicleEnginePowerSource::PANTOGRAPH_FIRST ? 0 : 1;
             if (slider_height == 0.0) {
                 // the MMD's place along is the model's own, the vehicle frame turns it (DynObj.cpp:5605-5614)
-                position.z = model_transform.basis.xform(Vector3(0.0, 0.0, real_t(factors[index]))).z;
+                position.z = model_transform.basis.xform(Vector3(0.0, 0.0, static_cast<real_t>(factors[index]))).z;
                 slider_height = factors[PANTOGRAPH_FACTOR_HEIGHTS + index];
             }
             if (position.y == 0.0) {
@@ -1432,7 +1432,7 @@ namespace godot {
                 continue;
             }
             const bool enabled = (lighting.ptr()->*binding.is_enabled)();
-            if (bool(p_visual.lights[binding.light_name]) != enabled) {
+            if (static_cast<bool>(p_visual.lights[binding.light_name]) != enabled) {
                 p_visual.lights[binding.light_name] = enabled;
                 changed = true;
             }
@@ -1703,7 +1703,7 @@ namespace godot {
                 if (String(accepted[index]).to_lower() == cargo) {
                     const double max_load = load->get_max_load();
                     const double fill = max_load > 0.0 ? CLAMP(vehicle->get_load_amount() / max_load, 0.0, 1.0) : 0.0;
-                    p_visual.load_height = Math::lerp(double(offsets[index]), 0.0, fill);
+                    p_visual.load_height = Math::lerp(static_cast<double>(offsets[index]), 0.0, fill);
                     break;
                 }
             }

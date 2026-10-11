@@ -40,6 +40,10 @@ namespace godot {
             static void _bind_methods();
 
         public:
+            static const char *config_changed_signal;
+            static const char *setting_changed_signal;
+            static const char *game_dir_changed_signal;
+
             UserSettings();
 
             static UserSettings *get_instance() {

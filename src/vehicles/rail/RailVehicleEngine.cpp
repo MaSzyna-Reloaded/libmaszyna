@@ -283,18 +283,22 @@ namespace godot {
     }
 
     void RailVehicleEngine::_register_commands() {
-        register_command("main_switch", Callable(this, "main_switch"));
-        register_command("motor_overload_relay_threshold", Callable(this, "motor_overload_relay_threshold"));
+        register_command("main_switch", callable_mp(this, &RailVehicleEngine::main_switch));
         register_command(
-                "motor_blowers_front", Callable(this, "motor_blowers").bind(RailVehicleController::COUPLER_END_FRONT));
+                "motor_overload_relay_threshold",
+                callable_mp(this, &RailVehicleEngine::motor_overload_relay_threshold));
         register_command(
-                "motor_blowers_rear", Callable(this, "motor_blowers").bind(RailVehicleController::COUPLER_END_REAR));
+                "motor_blowers_front",
+                callable_mp(this, &RailVehicleEngine::motor_blowers).bind(RailVehicleController::COUPLER_END_FRONT));
         register_command(
-                "motor_blowers_front_switch_off",
-                Callable(this, "motor_blowers_switch_off").bind(RailVehicleController::COUPLER_END_FRONT));
+                "motor_blowers_rear",
+                callable_mp(this, &RailVehicleEngine::motor_blowers).bind(RailVehicleController::COUPLER_END_REAR));
         register_command(
-                "motor_blowers_rear_switch_off",
-                Callable(this, "motor_blowers_switch_off").bind(RailVehicleController::COUPLER_END_REAR));
+                "motor_blowers_front_switch_off", callable_mp(this, &RailVehicleEngine::motor_blowers_switch_off)
+                                                          .bind(RailVehicleController::COUPLER_END_FRONT));
+        register_command(
+                "motor_blowers_rear_switch_off", callable_mp(this, &RailVehicleEngine::motor_blowers_switch_off)
+                                                         .bind(RailVehicleController::COUPLER_END_REAR));
     }
 
     void RailVehicleEngine::_unregister_commands() {

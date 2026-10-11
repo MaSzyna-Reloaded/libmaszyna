@@ -107,15 +107,15 @@ namespace godot {
 
     void RailVehicleRadio::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("radio", Callable(this, "radio"));
-        register_command("radio_channel_set", Callable(this, "channel_set"));
-        register_command("radio_channel_increase", Callable(this, "channel_increase"));
-        register_command("radio_channel_decrease", Callable(this, "channel_decrease"));
-        register_command("radio_volume_increase", Callable(this, "volume_increase"));
-        register_command("radio_volume_decrease", Callable(this, "volume_decrease"));
-        register_command("radio_stop", Callable(this, "radio_stop"));
-        register_command("radio_call1", Callable(this, "radio_call").bind(RADIO_CALL1));
-        register_command("radio_call3", Callable(this, "radio_call").bind(RADIO_CALL3));
+        register_command("radio", callable_mp(this, &RailVehicleRadio::radio));
+        register_command("radio_channel_set", callable_mp(this, &RailVehicleRadio::channel_set));
+        register_command("radio_channel_increase", callable_mp(this, &RailVehicleRadio::channel_increase));
+        register_command("radio_channel_decrease", callable_mp(this, &RailVehicleRadio::channel_decrease));
+        register_command("radio_volume_increase", callable_mp(this, &RailVehicleRadio::volume_increase));
+        register_command("radio_volume_decrease", callable_mp(this, &RailVehicleRadio::volume_decrease));
+        register_command("radio_stop", callable_mp(this, &RailVehicleRadio::radio_stop));
+        register_command("radio_call1", callable_mp(this, &RailVehicleRadio::radio_call).bind(RADIO_CALL1));
+        register_command("radio_call3", callable_mp(this, &RailVehicleRadio::radio_call).bind(RADIO_CALL3));
     }
 
     void RailVehicleRadio::_unregister_commands() {

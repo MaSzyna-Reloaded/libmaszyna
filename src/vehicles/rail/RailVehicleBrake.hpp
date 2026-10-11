@@ -242,13 +242,13 @@ namespace godot {
 
         private:
             TrainBrakeValve valve_type = BRAKE_VALVE_NO_VALVE;
-
-        public:
-            MAKE_GS_NR(TrainBrakeValve, valve_type);
             /* BrakeValve= as the data writes it (BrakeValveParams): an ESt3's relays are read off it -
              * "PZZ" takes the independent brake's pressure, "AL2", "-s216", "-ED" (TNESt3::SetSize(),
              * Oerlikon_ESt.cpp) */
             String valve_parameters;
+
+        public:
+            MAKE_GS_NR(TrainBrakeValve, valve_type);
             void set_valve_parameters(const String &p_valve_parameters);
             String get_valve_parameters() const;
 
@@ -353,7 +353,7 @@ namespace godot {
             int universal_brake_button_3 = 0;
             TypedArray<RailVehicleBrakePressureTableItem> brake_pressure_table;
             TypedArray<RailVehicleCompressorListItem> compressor_list;
-            /* Cntrl. (czesc dotyczaca hamulca) */
+            /* Cntrl. (the brake's part) */
             /* BrakeSystem= absent: Individual (Mover.cpp:10726) */
             BrakeSystemType cntrl_brake_system = BRAKE_SYSTEM_INDIVIDUAL;
             /* LoadFIZ_Cntrl's defaults (MOVER.h:1612-1630, 1696, 2045): no handle, no delays - a

@@ -16,7 +16,6 @@ namespace godot {
         private:
             static void _bind_methods();
 
-        protected:
         public:
             enum CouplerType {
                 COUPLER_TYPE_AUTOMATIC,

@@ -1,7 +1,6 @@
 #include "MoverRailVehicleSecuritySystem.hpp"
 #include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
-#include "macros.hpp"
 #include <godot_cpp/classes/gd_extension.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -18,11 +17,11 @@ namespace godot {
         ASSERT_MOVER(p_mover);
         if (const bool blinking = p_mover->SecuritySystem.is_blinking(); previous_blinking != blinking) {
             previous_blinking = blinking;
-            emit_signal("blinking_changed", blinking);
+            emit_signal(blinking_changed_signal, blinking);
         }
         if (const bool beeping = p_mover->SecuritySystem.is_beeping(); previous_beeping != beeping) {
             previous_beeping = beeping;
-            emit_signal("beeping_changed", beeping);
+            emit_signal(beeping_changed_signal, beeping);
         }
     }
 

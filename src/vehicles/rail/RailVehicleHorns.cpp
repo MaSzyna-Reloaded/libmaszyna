@@ -16,9 +16,9 @@ namespace godot {
     }
 
     void RailVehicleHorns::_register_commands() {
-        register_command("horn_low", Callable(this, "set_horn_low"));
-        register_command("horn_high", Callable(this, "set_horn_high"));
-        register_command("whistle", Callable(this, "set_whistle"));
+        register_command("horn_low", callable_mp(this, &RailVehicleHorns::set_horn_low));
+        register_command("horn_high", callable_mp(this, &RailVehicleHorns::set_horn_high));
+        register_command("whistle", callable_mp(this, &RailVehicleHorns::set_whistle));
     }
 
     void RailVehicleHorns::_unregister_commands() {

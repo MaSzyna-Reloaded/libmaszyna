@@ -47,10 +47,11 @@ namespace godot {
 
     void RailVehicleSwitches::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("sand", Callable(this, "sand"));
-        register_command("universal_relay_reset", Callable(this, "universal_relay_reset"));
-        register_command("pantograph_next_preset", Callable(this, "next_pantograph_preset"));
-        register_command("pantograph_previous_preset", Callable(this, "previous_pantograph_preset"));
+        register_command("sand", callable_mp(this, &RailVehicleSwitches::sand));
+        register_command("universal_relay_reset", callable_mp(this, &RailVehicleSwitches::universal_relay_reset));
+        register_command("pantograph_next_preset", callable_mp(this, &RailVehicleSwitches::next_pantograph_preset));
+        register_command(
+                "pantograph_previous_preset", callable_mp(this, &RailVehicleSwitches::previous_pantograph_preset));
     }
 
     void RailVehicleSwitches::_unregister_commands() {

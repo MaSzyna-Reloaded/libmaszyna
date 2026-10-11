@@ -110,7 +110,7 @@ Legend:
 - [x] [RC-064](#rc-064) Scenery streaming entry found by linear scan
 - [x] [RC-065](#rc-065) `TractionServer` ticks forever
 - [x] [RC-066](#rc-066) `Cabin3D` processes forever
-- [ ] [RC-067](#rc-067) `PlanarMirror3D` sets shader parameters every frame
+- [x] [RC-067](#rc-067) `PlanarMirror3D` sets shader parameters every frame
 - [x] [RC-068](#rc-068) `SimulationServer::get_instance()` looked up per frame
 - [x] [RC-069](#rc-069) Wipers ticked while parked
 
@@ -128,8 +128,8 @@ Legend:
 ### Calls by name
 
 - [x] [RC-077](#rc-077) GDScript `E3DModelInstance` calls without the required comment ✔
-- [ ] [RC-078](#rc-078) Commands registered with `Callable(this, "name")`
-- [ ] [RC-079](#rc-079) Signal names as literals despite constants
+- [x] [RC-078](#rc-078) Commands registered with `Callable(this, "name")`
+- [x] [RC-079](#rc-079) Signal names as literals despite constants
 
 ### Magic numbers
 
@@ -177,13 +177,13 @@ Legend:
 ### Cosmetic
 
 - [x] [RC-114](#rc-114) `MAKE_MEMBER_GS*` macros switch the section (macros kept as `MAKE_GS`, section left alone)
-- [ ] [RC-115](#rc-115) `macros.hpp` included where unused
-- [ ] [RC-116](#rc-116) Functional casts instead of `static_cast`
+- [x] [RC-115](#rc-115) `macros.hpp` included where unused
+- [x] [RC-116](#rc-116) Functional casts instead of `static_cast`
 - [ ] [RC-117](#rc-117) State keys with slashes
-- [ ] [RC-118](#rc-118) Headers not self-contained
-- [ ] [RC-119](#rc-119) `using namespace godot;` in a header
-- [ ] [RC-120](#rc-120) Privacy sections
-- [ ] [RC-121](#rc-121) Stale, orphaned and non-English comments
+- [x] [RC-118](#rc-118) Headers not self-contained
+- [x] [RC-119](#rc-119) `using namespace godot;` in a header
+- [x] [RC-120](#rc-120) Privacy sections
+- [x] [RC-121](#rc-121) Stale, orphaned and non-English comments
 - [ ] [RC-122](#rc-122) Commands named `set_*` without a property
 
 ---
@@ -199,61 +199,8 @@ Legend:
   on each call - reached from blink edges in `_process_lights` and from `_resolve_all_lights`.
 * **Fix:** keep the map as a member and update only what changed.
 
-### RC-067
-
-**`PlanarMirror3D` sets shader parameters every frame**
-
-* **Where:** `src/rendering/PlanarMirror3D.cpp:198, 218, 248-252`
-* **Problem:**
-  * Out of view, `_set_rendering(false)` calls `set_shader_parameter("reflecting")` every
-    frame.
-  * In view, it calls `set_keep_aspect_mode()` (a constant) and builds the string-named
-    `"mirror_view_projection"` every frame.
-* **Fix:** set on change only, with the constant set once and a cached `StringName`.
-
-## Calls by name
-
-### RC-078
-
-**Commands registered with `Callable(this, "name")`**
-
-* **Where:** 122 sites in 20 files - every `_register_commands`, the largest
-  `src/vehicles/rail/RailVehicleController.cpp` (20), `RailVehicleBrake.cpp` (19) and
-  `RailVehicleDoors.cpp` (13)
-* **Rule:** call a method, do not name it
-* **Problem:** the class is known, so a rename or typo silently yields a callable to nothing.
-* **Fix:** `callable_mp(this, &Class::method)`.
-
-### RC-079
-
-**Signal names as literals despite constants**
-
-* **Where:**
-  * `src/legacy/vehicles/MoverRailVehicleSecuritySystem.cpp:21, 25`:
-    `emit_signal("blinking_changed")`, `("beeping_changed")` - no constant exists, the
-    `ADD_SIGNAL` in `RailVehicleSecuritySystem.cpp:31-32` uses literals too
-  * `src/utils/UserSettings.cpp:133-184`
-  * `src/vehicles/base/VehicleComponent.cpp:35, 195-196`
-* **Fix:** use the constants, and add one where it is missing.
 
 ## Cosmetic
-
-### RC-115
-
-**`macros.hpp` included where unused**
-
-* **Where:** `src/legacy/vehicles/MoverRailVehicleSecuritySystem.cpp:4` (only `ASSERT_MOVER` is
-  used, which comes from `MoverBackend.hpp`); `src/legacy/e3d/E3DModel.hpp:9` (only the `.cpp`
-  uses `BIND_PROPERTY`)
-
-### RC-116
-
-**Functional casts instead of `static_cast`**
-
-* **Where:** `src/vehicles/rail/RailVehicleRenderingServer.cpp:1003, 1435, 1706`;
-  `RailVehicleServer.cpp:341, 1897, 1906-1907`; `src/legacy/e3d/E3DInstanceBackend.cpp:54`;
-  `src/legacy/e3d/E3DNodesBackend.cpp:193`
-* **Rule:** `CODE_STYLE.md` "Conversions"
 
 ### RC-117
 
@@ -268,57 +215,14 @@ Legend:
 * **Decision:** whether state keys follow the property rule; renaming them touches the GDScript
   readers.
 
-### RC-118
-
-**Headers not self-contained**
-
-* **Where:**
-  * `src/legacy/vehicles/MoverRailVehicleBrake.hpp` and `MoverRailVehicleDoors.hpp` get `<map>`,
-    `<vector>` and `<string>` only through `MOVER.h:13-17`
-  * `src/logging/GameLog.hpp:15-24` (macros use `UtilityFunctions` without the include)
-* **Rule:** `CODE_STYLE.md` "A header is self-contained"
-
-### RC-119
-
-**`using namespace godot;` in a header**
-
-* **Where:** `src/register_types.h:6`
-
-### RC-120
-
-**Privacy sections**
-
-* **Where:**
-  * Empty or dangling sections: `RailVehicleEngine.hpp:182`, `RailVehicleDieselEngine.hpp:285`,
-    `RailVehicleBuffCoupl.hpp:19`, `VehicleController.hpp:28-29` (`public:` followed at once by
-    `private:`)
-  * Public members: `RailVehicleEngine.hpp:102-103` (`_bind_methods`, `motor_param_table`)
-  * Protected `_register_commands` overrides made public: `RailVehicleSpeedControl.hpp:38`,
-    `RailVehicleHeating.hpp:40`, `RailVehicleSwitches.hpp:95`, `RailVehicleElectricEngine.hpp:97`
-  * `VehicleController.hpp:50`: `apply_configuration` is protected but bound publicly
-    (`.cpp:41`)
-* **Rule:** `CODE_STYLE.md` "Explicit privacy declarations"
-
-### RC-121
-
-**Stale, orphaned and non-English comments**
-
-* **Where:**
-  * Polish comments (AGENTS.md asks for English):
-    `src/legacy/vehicles/MoverRailVehicleBrake.cpp:592`
-  * `MoverRailVehicleBrake.cpp:214`, `MoverRailVehicleLighting.cpp:401`: refer to
-    `_do_fetch_state_from_mover()`, which no longer exists
-  * orphaned or misplaced doc comments: `src/vehicles/base/VehicleController.hpp:107-112`,
-    `VehicleController.cpp:152-153`, `src/vehicles/rail/RailVehicleServer.cpp:2209-2210`
-
 ### RC-122
 
 **Commands named `set_*` without a property**
 
 * **Where:**
-  * `src/vehicles/rail/RailVehicleSpringBrake.cpp:34-35`: commands
+  * `src/vehicles/rail/RailVehicleSpringBrake.cpp:34-37`: commands
     `set_spring_brake_active/enabled`
-  * `RailVehicleElectroPneumaticDynamicBrake.cpp:49`: command `set_ep_brake_force`
+  * `RailVehicleElectroPneumaticDynamicBrake.cpp:49-50`: command `set_ep_brake_force`
   * `RailVehicleHorns.cpp:19-21`: the commands `horn_low`, `horn_high` and `whistle` dispatch to
     methods named `set_*`
 * **Rule:** `CODE_STYLE.md` "Godot properties" - `set_<property>` is reserved for property

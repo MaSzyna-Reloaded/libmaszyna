@@ -121,19 +121,21 @@ namespace godot {
     }
 
     void RailVehicleDoors::_register_commands() {
-        register_command("doors_next_permit_preset", Callable(this, "next_permit_preset"));
-        register_command("doors_previous_permit_preset", Callable(this, "previous_permit_preset"));
-        register_command("doors_permit_step", Callable(this, "permit_step"));
-        register_command("doors_left_permit", Callable(this, "permit_doors").bind(SIDE_LEFT));
-        register_command("doors_right_permit", Callable(this, "permit_doors").bind(SIDE_RIGHT));
-        register_command("doors_left", Callable(this, "operate_doors").bind(SIDE_LEFT));
-        register_command("doors_right", Callable(this, "operate_doors").bind(SIDE_RIGHT));
-        register_command("doors_left_local", Callable(this, "operate_doors_locally").bind(SIDE_LEFT));
-        register_command("doors_right_local", Callable(this, "operate_doors_locally").bind(SIDE_RIGHT));
-        register_command("doors_lock", Callable(this, "door_lock"));
-        register_command("doors_remote_control", Callable(this, "door_remote_control"));
-        register_command("doors_departure_signal", Callable(this, "signal_departure"));
-        register_command("mirrors_forbid", Callable(this, "forbid_mirrors"));
+        register_command("doors_next_permit_preset", callable_mp(this, &RailVehicleDoors::next_permit_preset));
+        register_command("doors_previous_permit_preset", callable_mp(this, &RailVehicleDoors::previous_permit_preset));
+        register_command("doors_permit_step", callable_mp(this, &RailVehicleDoors::permit_step));
+        register_command("doors_left_permit", callable_mp(this, &RailVehicleDoors::permit_doors).bind(SIDE_LEFT));
+        register_command("doors_right_permit", callable_mp(this, &RailVehicleDoors::permit_doors).bind(SIDE_RIGHT));
+        register_command("doors_left", callable_mp(this, &RailVehicleDoors::operate_doors).bind(SIDE_LEFT));
+        register_command("doors_right", callable_mp(this, &RailVehicleDoors::operate_doors).bind(SIDE_RIGHT));
+        register_command(
+                "doors_left_local", callable_mp(this, &RailVehicleDoors::operate_doors_locally).bind(SIDE_LEFT));
+        register_command(
+                "doors_right_local", callable_mp(this, &RailVehicleDoors::operate_doors_locally).bind(SIDE_RIGHT));
+        register_command("doors_lock", callable_mp(this, &RailVehicleDoors::door_lock));
+        register_command("doors_remote_control", callable_mp(this, &RailVehicleDoors::door_remote_control));
+        register_command("doors_departure_signal", callable_mp(this, &RailVehicleDoors::signal_departure));
+        register_command("mirrors_forbid", callable_mp(this, &RailVehicleDoors::forbid_mirrors));
     }
 
     void RailVehicleDoors::_unregister_commands() {

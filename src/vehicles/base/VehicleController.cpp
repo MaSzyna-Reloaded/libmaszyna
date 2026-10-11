@@ -147,8 +147,6 @@ namespace godot {
         emit_signal(simulation_configured_signal);
     }
 
-    /* Registering the vehicle's name and its own commands, where the vehicle comes into being -
-     * it used to wait for NOTIFICATION_ENTER_TREE, which a vehicle outside a tree never gets. */
     /* A vehicle that is rebuilt keeps its identity - every reference taken to it stays valid -
      * so what it holds is handed back by name rather than by destroying the vehicle. */
     void VehicleController::release() {

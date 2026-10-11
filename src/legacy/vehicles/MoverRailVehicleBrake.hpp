@@ -2,6 +2,8 @@
 #include "legacy/maszyna-mover/McZapkie/MOVER.h"
 #include "legacy/vehicles/MoverComponent.hpp"
 #include "vehicles/rail/RailVehicleBrake.hpp"
+#include <string>
+#include <unordered_map>
 
 namespace godot {
     /* RailVehicleBrake on the vendored Mover - the only class here that knows TMoverParameters. */

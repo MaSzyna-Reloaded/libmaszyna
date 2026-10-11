@@ -398,8 +398,8 @@ namespace godot {
     // upperlight_sw:/leftlight_sw:/rightlight_sw:/leftend_sw:/rightend_sw: (p_light without a
     // "rear" prefix) toggle the end of the cab the driver sits in (Train->cab_to_end(),
     // _active_end()); rearupperlight_sw:/etc. (p_light with a "rear" prefix, stripped
-    // here) toggle the opposite end - see this class's own _do_fetch_state_from_mover() for the
-    // matching active_end/opposite_end state this mirrors. NOTE: a real nuance from the original
+    // here) toggle the opposite end - the same ends the light getters and _fill_state_dictionary()
+    // read (_active_end()/_opposite_end()). NOTE: a real nuance from the original
     // is deliberately NOT reproduced here - OnCommand_headlightenableleft also clears the
     // matching redmarker when the vehicle has no separate *end_sw: declared (a 3-way switch
     // subsuming the marker light), which would require cross-widget awareness this catalog-driven
