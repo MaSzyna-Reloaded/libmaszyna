@@ -1,7 +1,6 @@
 #include "MoverRailVehicleMasterController.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
 #include <cmath>
-#include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
     void MoverRailVehicleMasterController::_bind_methods() {}
@@ -44,56 +43,6 @@ namespace godot {
         RailVehicleMasterController::_fill_state_dictionary(p_state);
         p_state["master_controller_position"] =
                 mover->CoupledCtrl ? mover->MainCtrlPos + mover->ScndCtrlPos : mover->MainCtrlPos;
-    }
-
-    void MoverRailVehicleMasterController::_do_process_component(const double p_delta) {
-        TMoverParameters *mover = get_mover();
-        if (mover == nullptr) {
-            return;
-        }
-        // Original engine: TTrain::Update() Hasler block (Train.cpp:8580-8611) and its tachoclock
-        // sound gate (Train.cpp:10091-10103).
-        tachometer_velocity = std::min(
-                std::abs(TACHOMETER_WHEEL_SPEED_FACTOR * mover->WheelDiameter * mover->nrot),
-                get_tachometer_max_speed() != 0.0 ? get_tachometer_max_speed()
-                                                  : mover->Vmax * TACHOMETER_MAX_SPEED_FACTOR);
-
-        // the needle jumps once per simulation second, with a small random error; below walking
-        // speed it swings at random and stays where it was when the vehicle stops (Train.cpp:8594-8597)
-        const double previous_second = std::floor(tachometer_time);
-        tachometer_time += p_delta;
-        if (std::floor(tachometer_time) != previous_second) {
-            if (tachometer_velocity >= TACHOMETER_MOVING_VELOCITY) {
-                tachometer_velocity_jump =
-                        tachometer_velocity +
-                        ((TACHOMETER_JUMP_OFFSET - UtilityFunctions::randf_range(0.0, TACHOMETER_JUMP_RANDOM_RANGE) +
-                          UtilityFunctions::randf_range(0.0, TACHOMETER_JUMP_RANDOM_RANGE)) *
-                         TACHOMETER_JUMP_SCALE);
-            } else if (tachometer_velocity > TACHOMETER_MIN_VELOCITY) {
-                tachometer_velocity_jump = UtilityFunctions::randf_range(0.0, TACHOMETER_SWING_RANGE);
-            }
-        }
-
-        // ticking starts ~1 s after moving off and fades out slowly after stopping
-        if (tachometer_velocity > TACHOMETER_MIN_VELOCITY) {
-            tachometer_count =
-                    std::min(MAX_TACHOMETER_COUNT, tachometer_count + (p_delta * TACHOMETER_COUNT_RISE_RATE));
-        } else if (tachometer_count > 0.0) {
-            tachometer_count = std::max(0.0, tachometer_count - (p_delta * TACHOMETER_COUNT_FALL_RATE));
-        }
-        if (tachometer_count >= MAX_TACHOMETER_COUNT) {
-            tachometer_clock_active = true;
-        } else if (tachometer_count < TACHOMETER_CLOCK_STOP_COUNT) {
-            tachometer_clock_active = false;
-        }
-
-        // TTrain::add_distance (Train.cpp:10309) - counted towards the occupied cab, and switched
-        // off for good whenever the low voltage goes
-        if (distance_counter >= 0.0 && (mover->Power24vIsAvailable || mover->Power110vIsAvailable)) {
-            distance_counter += mover->V * p_delta * mover->CabOccupied;
-        } else {
-            distance_counter = DISTANCE_COUNTER_OFF;
-        }
     }
 
     int MoverRailVehicleMasterController::get_main_position() const {
@@ -147,29 +96,28 @@ namespace godot {
         return mover != nullptr ? mover->IsCabMaster() : false;
     }
 
-    double MoverRailVehicleMasterController::get_tachometer_speed() const {
-        return get_mover() != nullptr ? tachometer_velocity : 0.0;
+    double MoverRailVehicleMasterController::_get_powered_wheel_diameter() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->WheelDiameter : 0.0;
     }
 
-    double MoverRailVehicleMasterController::get_tachometer_speed_jump() const {
-        return get_mover() != nullptr ? tachometer_velocity_jump : 0.0;
+    double MoverRailVehicleMasterController::_get_powered_axle_revolutions() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->nrot : 0.0;
     }
 
-    double MoverRailVehicleMasterController::get_tachometer_clock_speed() const {
-        if (get_mover() == nullptr || !tachometer_clock_active) {
-            return 0.0;
-        }
-        return tachometer_velocity;
+    double MoverRailVehicleMasterController::_get_max_velocity() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->Vmax : 0.0;
     }
 
-    double MoverRailVehicleMasterController::get_distance_counter() const {
-        return distance_counter;
+    bool MoverRailVehicleMasterController::_get_low_voltage_available() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr && (mover->Power24vIsAvailable || mover->Power110vIsAvailable);
     }
 
-    // Original engine: TTrain::OnCommand_distancecounteractivate (Train.cpp:1552), single-press form
-    void MoverRailVehicleMasterController::distance_counter_activate(const bool p_pressed) {
-        if (p_pressed) {
-            distance_counter = 0.0;
-        }
+    int MoverRailVehicleMasterController::_get_occupied_cab() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->CabOccupied : 0;
     }
 } // namespace godot

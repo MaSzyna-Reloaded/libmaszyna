@@ -19,32 +19,14 @@ namespace godot {
         private:
             static void _bind_methods();
 
-            /* Hasler speed recorder: TTrain::Update() (Train.cpp:8580-8611) and its sound gate
-             * (Train.cpp:10091-10103) */
-            static constexpr double MAX_TACHOMETER_COUNT = 3.0;            // Train.cpp:8581 maxtacho
-            static constexpr double TACHOMETER_WHEEL_SPEED_FACTOR = 11.31; // Train.cpp:8588
-            static constexpr double TACHOMETER_MAX_SPEED_FACTOR = 1.05;    // Train.cpp:8583
-            static constexpr double TACHOMETER_MIN_VELOCITY = 1.0;         // Train.cpp:8602
-            static constexpr double TACHOMETER_MOVING_VELOCITY = 5.0;      // Train.cpp:8594
-            static constexpr double TACHOMETER_SWING_RANGE = 4.0;          // Train.cpp:8597
-            static constexpr double TACHOMETER_JUMP_OFFSET = 2.0;          // Train.cpp:8595
-            static constexpr double TACHOMETER_JUMP_RANDOM_RANGE = 3.0;    // Train.cpp:8595
-            static constexpr double TACHOMETER_JUMP_SCALE = 0.5;           // Train.cpp:8595
-            static constexpr double TACHOMETER_COUNT_RISE_RATE = 3.0;      // Train.cpp:8605
-            static constexpr double TACHOMETER_COUNT_FALL_RATE = 0.66;     // Train.cpp:8610
-            static constexpr double TACHOMETER_CLOCK_STOP_COUNT = 1.0;     // Train.cpp:10100
-            double tachometer_velocity = 0.0;
-            double tachometer_velocity_jump = 0.0;
-            double tachometer_count = 0.0;
-            double tachometer_time = 0.0;
-            bool tachometer_clock_active = false;
-            /* TTrain::m_distancecounter (Train.h:904) - metres since activation, -1 while off */
-            static constexpr double DISTANCE_COUNTER_OFF = -1.0;
-            double distance_counter = DISTANCE_COUNTER_OFF;
 
         protected:
             void _apply_configuration() override;
-            void _do_process_component(double p_delta) override;
+            double _get_powered_wheel_diameter() const override;
+            double _get_powered_axle_revolutions() const override;
+            double _get_max_velocity() const override;
+            bool _get_low_voltage_available() const override;
+            int _get_occupied_cab() const override;
             void _fill_config_dictionary(Dictionary &p_config) const override;
             void _fill_state_dictionary(Dictionary &p_state) const override;
 
@@ -58,10 +40,5 @@ namespace godot {
             int get_main_no_power_position() const override;
             int get_cabin() const override;
             bool get_cabin_controleable() const override;
-            double get_tachometer_speed() const override;
-            double get_tachometer_speed_jump() const override;
-            double get_tachometer_clock_speed() const override;
-            double get_distance_counter() const override;
-            void distance_counter_activate(bool p_pressed) override;
     };
 } // namespace godot

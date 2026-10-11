@@ -206,7 +206,6 @@ Legend:
 * **Where:**
   * `src/legacy/vehicles/MoverRailVehicleWipers.hpp:22-35`: `wipers` ("the vendored Mover has no
     wipers at all")
-  * `MoverRailVehicleMasterController.hpp:36-43`: tachometer, `distance_counter`
 * **Rule:** "if this layer were replaced wholesale, would the field go with it?"
 * **Problem:** replacing the backend would lose vehicle state.
 * **Decision:** move the fields to the `RailVehicle*` interface components (as `TODO.md`'s #184
