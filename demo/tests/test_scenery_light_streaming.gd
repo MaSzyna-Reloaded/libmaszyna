@@ -33,7 +33,7 @@ func after_each() -> void:
         E3DRenderingServer.instance_free(_instance)
         _instance = RID()
     SceneryStreamingServer.streaming_set_camera(0)
-    E3DRenderingServer.model_set_loader(Callable())
+    E3DRenderingServer.model_set_loader(E3DModelManager.load_model)
     E3DRenderingServer.environment_set_time(MIDDAY)
     E3DRenderingServer.environment_set_light_level(DAY_LIGHT_LEVEL)
 
