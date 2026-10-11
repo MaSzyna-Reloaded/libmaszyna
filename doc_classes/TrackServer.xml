@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="TrackServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Track geometry, switches, isolated sections and the track graph, by RID.
 	</brief_description>
 	<description>
+		A track is geometry: one curve, or two for a switch. A track of [constant TRACK_SWITCH] type gets a switch of its own - a RID of its own holding the branch it is set to and its blade movement (TTrack::SwitchExtension, Track.cpp) - created and freed with the type ([signal switch_created], [signal switch_freed]). The tracks' endpoints are paired into a graph ([method topology_rebuild]) that [method track_get_next] and [method track_trace_route] follow, the switches as they are set. Tracks are grouped into isolated sections whose occupancy is reported as one.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,35 +14,41 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
+				Adds [param track] to the isolated section; its vehicles count towards the section's occupancy (TIsolated, Track.cpp:90-170).
 			</description>
 		</method>
 		<method name="isolated_create">
 			<return type="RID" />
 			<description>
+				Creates an isolated section: a group of tracks whose occupancy is reported as one.
 			</description>
 		</method>
 		<method name="isolated_free">
 			<return type="void" />
 			<param index="0" name="isolated" type="RID" />
 			<description>
+				Frees the isolated section; its tracks stay.
 			</description>
 		</method>
 		<method name="isolated_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="isolated" type="RID" />
 			<description>
+				Returns the name the isolated section is registered under.
 			</description>
 		</method>
 		<method name="isolated_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				Returns the isolated section registered under [param name], or an invalid RID when there is none.
 			</description>
 		</method>
 		<method name="isolated_is_occupied" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="isolated" type="RID" />
 			<description>
+				Returns [code]true[/code] while any vehicle stands on a track of the section or of its child sections.
 			</description>
 		</method>
 		<method name="isolated_set_name">
@@ -48,6 +56,7 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="name" type="StringName" />
 			<description>
+				Registers the isolated section under [param name].
 			</description>
 		</method>
 		<method name="isolated_set_parent">
@@ -55,194 +64,230 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="parent" type="RID" />
 			<description>
+				Makes the section part of [param parent] (an [code]area[/code]): the parent is occupied while this section is.
 			</description>
 		</method>
 		<method name="switch_get_active_track" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="track" type="RID" />
+			<return type="int" enum="TrackServer.SwitchTrack" />
+			<param index="0" name="switch" type="RID" />
 			<description>
-			</description>
-		</method>
-		<method name="switch_get_blade_boundary_offset" qualifiers="const">
-			<return type="float" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="switch_get_branch_end_endpoint" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="switch_get_branch_start_endpoint" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="switch_get_common_endpoints" qualifiers="const">
-			<return type="PackedInt32Array" />
-			<param index="0" name="track" type="RID" />
-			<description>
-			</description>
-		</method>
-		<method name="switch_get_endpoint_branch" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="endpoint_index" type="int" />
-			<description>
+				Returns the branch the switch is set to.
 			</description>
 		</method>
 		<method name="switch_get_f_offset1" qualifiers="const">
 			<return type="float" />
-			<param index="0" name="track" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<description>
+				Returns the first blade's offset [m], clamped to [member switch_max_offset] (Track.cpp:1933-1941). Read by the blade animation.
 			</description>
 		</method>
 		<method name="switch_get_f_offset2" qualifiers="const">
 			<return type="float" />
-			<param index="0" name="track" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<description>
+				Returns the second blade's offset [m], never below 0 (Track.cpp:1933-1941). Read by the blade animation.
 			</description>
 		</method>
-		<method name="switch_is_right" qualifiers="const">
-			<return type="bool" />
-			<param index="0" name="track" type="RID" />
+		<method name="switch_get_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="switch" type="RID" />
 			<description>
+				Returns the name of the switch: the name of its track.
+			</description>
+		</method>
+		<method name="switch_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns the switch of the switch track registered under [param name], or an invalid RID when there is no such track or it is not a switch.
+			</description>
+		</method>
+		<method name="switch_get_track" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="switch" type="RID" />
+			<description>
+				Returns the track the switch belongs to.
 			</description>
 		</method>
 		<method name="switch_set_active_track">
 			<return type="void" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="active_track" type="int" />
+			<param index="0" name="switch" type="RID" />
+			<param index="1" name="active_track" type="int" enum="TrackServer.SwitchTrack" />
 			<description>
-			</description>
-		</method>
-		<method name="switch_track_get_length" qualifiers="const">
-			<return type="float" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="switch_track" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="switch_track_get_neighbors">
-			<return type="TrackBranchNeighbors" />
-			<param index="0" name="track" type="RID" />
-			<param index="1" name="switch_track" type="int" />
-			<description>
+				Sets the switch to [param active_track]: emits [signal switch_active_track_changed] and [signal switch_movement_started], then moves the blades at the original's speed (Track.cpp:1743-1755, 1944) and emits [signal switch_movement_finished] when they are in place - at once when they already are.
 			</description>
 		</method>
 		<method name="topology_get_summary">
 			<return type="Dictionary" />
 			<description>
+				Returns statistics of the track graph: [code]graphs[/code] (id, number of tracks and switches, total length of each connected graph) and the number of orphaned tracks.
 			</description>
 		</method>
 		<method name="topology_rebuild">
 			<return type="void" />
 			<description>
+				Pairs the endpoints of all tracks again and rebuilds the connected graphs; emits [signal topology_rebuilt].
 			</description>
 		</method>
 		<method name="track_create">
 			<return type="RID" />
 			<description>
+				Creates an empty track. Give it curves with [method track_update_curves] and a type with [method track_update].
 			</description>
 		</method>
 		<method name="track_exists" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns [code]true[/code] when [param track] is a track of this server.
 			</description>
 		</method>
 		<method name="track_free">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Frees the track, its switch first ([signal switch_freed]), and removes it from its isolated sections and the topology.
+			</description>
+		</method>
+		<method name="track_get_blade_boundary_offset" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" />
+			<description>
+				Returns how far along [param branch] [m] the switch blade reaches, measured from the common end (Track.cpp:1371 bladelength).
+			</description>
+		</method>
+		<method name="track_get_branch_end_endpoint" qualifiers="const">
+			<return type="int" enum="TrackServer.EndpointIndex" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" />
+			<description>
+				Returns the endpoint at the end of [param branch] of a two-curve track.
+			</description>
+		</method>
+		<method name="track_get_branch_neighbors">
+			<return type="TrackBranchNeighbors" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" />
+			<description>
+				Returns the tracks connected to the start and to the end of [param branch], where each end has exactly one connection.
+			</description>
+		</method>
+		<method name="track_get_branch_start_endpoint" qualifiers="const">
+			<return type="int" enum="TrackServer.EndpointIndex" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" />
+			<description>
+				Returns the endpoint at the start of [param branch] of a two-curve track.
 			</description>
 		</method>
 		<method name="track_get_common_endpoint_index" qualifiers="const">
-			<return type="int" />
+			<return type="int" enum="TrackServer.SwitchCommonPoint" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns which end of the first curve the two curves of a switch track share, [constant POINT_NONE] when they share none.
+			</description>
+		</method>
+		<method name="track_get_common_endpoints" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				Returns the [enum EndpointIndex] values of the endpoints the two curves share.
 			</description>
 		</method>
 		<method name="track_get_curve" qualifiers="const">
 			<return type="Resource" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" default="0" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" default="0" />
 			<description>
+				Returns the curve resource of [param branch]; the first curve where the track has no second one.
 			</description>
 		</method>
 		<method name="track_get_domain_curve" qualifiers="const">
 			<return type="Curve3D" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" default="0" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" default="0" />
 			<description>
+				Returns the baked [Curve3D] of [param branch] the vehicles follow, its ends lifted by the curve's roll (Segment.cpp:84).
+			</description>
+		</method>
+		<method name="track_get_endpoint_branch" qualifiers="const">
+			<return type="int" enum="TrackServer.SwitchTrack" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="endpoint_index" type="int" enum="TrackServer.EndpointIndex" />
+			<description>
+				Returns the branch the endpoint belongs to.
 			</description>
 		</method>
 		<method name="track_get_endpoint_connections">
 			<return type="TrackEndpointRef[]" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="endpoint_index" type="int" />
+			<param index="1" name="endpoint_index" type="int" enum="TrackServer.EndpointIndex" />
 			<description>
+				Returns the endpoints of other tracks that meet [param track] at [param endpoint_index].
 			</description>
 		</method>
 		<method name="track_get_endpoints">
 			<return type="PackedVector3Array" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the endpoints of the track's curves, in [enum EndpointIndex] order.
 			</description>
 		</method>
 		<method name="track_get_environment" qualifiers="const">
-			<return type="int" />
+			<return type="int" enum="TrackServer.TrackEnvironment" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns what surrounds the track, for its running sounds.
 			</description>
 		</method>
 		<method name="track_get_length" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="switch_track" type="int" default="0" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" default="0" />
 			<description>
+				Returns the length [m] of [param branch] of a switch track, the first curve's length for any other track.
 			</description>
 		</method>
 		<method name="track_get_name" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the track's own name, also when another track took the lookup by it over.
 			</description>
 		</method>
 		<method name="track_get_next">
 			<return type="TrackEndpointRef" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="endpoint_index" type="int" />
+			<param index="1" name="endpoint_index" type="int" enum="TrackServer.EndpointIndex" />
 			<description>
+				Returns the endpoint of the track a movement leaving [param track] at [param endpoint_index] continues onto, following the switches as they are set; [code]null[/code] at an open or ambiguous node.
 			</description>
 		</method>
 		<method name="track_get_quality_flag" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the track's quality flag (TTrack::iQualityFlag, Track.cpp:455).
 			</description>
 		</method>
 		<method name="track_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="String" />
 			<description>
+				Returns the track registered under [param name] - the last one given it (basic_table::insert(), Names.h:40-49) - or an invalid RID.
 			</description>
 		</method>
 		<method name="track_get_rids" qualifiers="const">
 			<return type="RID[]" />
 			<description>
+				Returns all tracks.
 			</description>
 		</method>
 		<method name="track_get_roll" qualifiers="const">
 			<return type="Vector2" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" default="0" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" default="0" />
 			<description>
 				The roll of the branch's curve at its start (x) and its end (y), in degrees, as read out of the curve resource when it was set.
 			</description>
@@ -251,36 +296,56 @@
 			<return type="float" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the rail length between joints [m] for the wheel clatter, negative for none.
+			</description>
+		</method>
+		<method name="track_get_switch" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				Returns the switch of a [constant TRACK_SWITCH] track, an invalid RID for any other.
 			</description>
 		</method>
 		<method name="track_get_vehicles" qualifiers="const">
 			<return type="RID[]" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the vehicles standing on the track, as [RailVehicleServer] reports them.
 			</description>
 		</method>
 		<method name="track_get_velocity" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the track's speed limit [km/h], negative for none.
 			</description>
 		</method>
 		<method name="track_get_width" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns the track's gauge [m].
 			</description>
 		</method>
 		<method name="track_is_occupied" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns [code]true[/code] while a vehicle stands on the track.
 			</description>
 		</method>
 		<method name="track_is_switch" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Returns [code]true[/code] for a [constant TRACK_SWITCH] track.
+			</description>
+		</method>
+		<method name="track_is_switch_right" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				Returns [code]true[/code] when the diverging branch of the switch track turns right, seen from the common end.
 			</description>
 		</method>
 		<method name="track_set_velocity">
@@ -288,26 +353,29 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="velocity" type="float" />
 			<description>
+				Sets the track's speed limit [km/h], negative for none (TTrack::VelocitySet(), a [code]trackvel[/code] event).
 			</description>
 		</method>
 		<method name="track_trace_route">
 			<return type="TrackRouteSegment[]" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="branch" type="int" />
+			<param index="1" name="branch" type="int" enum="TrackServer.SwitchTrack" />
 			<param index="2" name="branch_from_setting" type="bool" />
 			<param index="3" name="toward_end" type="bool" />
 			<param index="4" name="start" type="float" />
 			<param index="5" name="distance" type="float" />
 			<description>
+				Returns the tracks a movement goes over from [param track] on [param branch], toward its end or its start, entered [param start] [m] from where the distance is measured, until [param distance] [m]. The first segment is [param track] itself, the last is marked [code]line_end[/code] when nothing follows it; a switch entered from its common end follows its setting ([code]branch_from_setting[/code]).
 			</description>
 		</method>
 		<method name="track_update">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
-			<param index="1" name="type" type="int" />
+			<param index="1" name="type" type="int" enum="TrackServer.TrackType" />
 			<param index="2" name="name" type="String" />
 			<param index="3" name="width" type="float" />
 			<description>
+				Sets the track's type, name and gauge [m]. Becoming [constant TRACK_SWITCH] creates the track's switch ([signal switch_created]), leaving it frees the switch ([signal switch_freed]). A name already taken moves to this track; an empty name takes the track's name away.
 			</description>
 		</method>
 		<method name="track_update_curves">
@@ -316,15 +384,17 @@
 			<param index="1" name="curve1" type="Resource" />
 			<param index="2" name="curve2" type="Resource" />
 			<description>
+				Sets the track's curves ([code]TrackCurve[/code] resources), the second one for a switch's diverging branch, and computes its lengths and switch geometry.
 			</description>
 		</method>
 		<method name="track_update_properties">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="quality_flag" type="int" />
-			<param index="2" name="environment" type="int" />
+			<param index="2" name="environment" type="int" enum="TrackServer.TrackEnvironment" />
 			<param index="3" name="sound_distance" type="float" />
 			<description>
+				Sets what the running sounds read of the track (Track.cpp:449).
 			</description>
 		</method>
 		<method name="track_vehicle_entered">
@@ -332,6 +402,7 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				Reports that [param vehicle] came onto the track - called by [RailVehicleServer], the new track first (TrkFoll.cpp:88-91).
 			</description>
 		</method>
 		<method name="track_vehicle_left">
@@ -339,23 +410,29 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				Reports that [param vehicle] left the track.
 			</description>
 		</method>
 		<method name="tracks_find_in_aabb" qualifiers="const">
 			<return type="RID[]" />
 			<param index="0" name="aabb" type="Rect2" />
 			<description>
+				Returns the tracks whose extent intersects [param aabb], given on the XZ plane.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="is_topology_changed" type="bool" setter="" getter="get_is_topology_changed">
+			[code]true[/code] from a change of the topology until the next [method topology_rebuild].
 		</member>
 		<member name="rail_height" type="float" setter="" getter="get_rail_height">
+			The rail height [m] the tracks are sampled with (Track.cpp:555).
 		</member>
 		<member name="switch_max_offset" type="float" setter="" getter="get_switch_max_offset">
+			The largest switch blade offset [m] (Track.cpp:33 fMaxOffset).
 		</member>
 		<member name="switch_offset_delay" type="float" setter="" getter="get_switch_offset_delay">
+			The blade travel [m] before a switch's blades start moving (Track.h:68 fOffsetDelay).
 		</member>
 	</members>
 	<signals>
@@ -363,114 +440,184 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				The last vehicle left the isolated section ([code]:free[/code]).
 			</description>
 		</signal>
 		<signal name="isolated_occupied">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				The first vehicle came onto the isolated section ([code]:busy[/code]).
 			</description>
 		</signal>
 		<signal name="isolated_vehicle_entered">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				A vehicle came onto the isolated section ([code]:inc[/code]).
 			</description>
 		</signal>
 		<signal name="isolated_vehicle_left">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
+				A vehicle left the isolated section ([code]:dec[/code]).
 			</description>
 		</signal>
 		<signal name="switch_active_track_changed">
-			<param index="0" name="track_rid" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<param index="1" name="active_track" type="int" />
 			<description>
+				The switch was set to another branch; its blades start moving.
+			</description>
+		</signal>
+		<signal name="switch_created">
+			<param index="0" name="switch" type="RID" />
+			<description>
+				A track became a [constant TRACK_SWITCH] track and got this switch.
+			</description>
+		</signal>
+		<signal name="switch_freed">
+			<param index="0" name="switch" type="RID" />
+			<param index="1" name="name" type="String" />
+			<description>
+				The switch track became another type or was freed; [param name] is the name its track had.
 			</description>
 		</signal>
 		<signal name="switch_movement_finished">
-			<param index="0" name="track_rid" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<param index="1" name="active_track" type="int" />
 			<description>
+				The switch's blades came to lie on [param active_track].
 			</description>
 		</signal>
 		<signal name="switch_movement_started">
-			<param index="0" name="track_rid" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<param index="1" name="from_track" type="int" />
 			<param index="2" name="to_track" type="int" />
 			<description>
+				The switch's blades start moving from [param from_track] to [param to_track].
 			</description>
 		</signal>
 		<signal name="switch_offset_changed">
-			<param index="0" name="track_rid" type="RID" />
+			<param index="0" name="switch" type="RID" />
 			<param index="1" name="offset" type="float" />
 			<description>
+				The switch's blades moved; read the offsets with [method switch_get_f_offset1] and [method switch_get_f_offset2].
 			</description>
 		</signal>
 		<signal name="topology_changed">
 			<description>
+				A track was created or freed, or a connected endpoint moved; [method topology_rebuild] is due.
 			</description>
 		</signal>
 		<signal name="topology_rebuilt">
 			<description>
+				[method topology_rebuild] finished.
 			</description>
 		</signal>
 		<signal name="tracks_changed">
 			<description>
+				A track was created, updated or freed.
 			</description>
 		</signal>
 	</signals>
 	<constants>
 		<constant name="TRACK_COMMON" value="0" enum="SwitchTrack">
+			The main branch of a switch, the only branch of any other track.
 		</constant>
 		<constant name="TRACK_DIVERGING" value="1" enum="SwitchTrack">
+			The diverging branch of a switch.
 		</constant>
 		<constant name="POINT_NONE" value="-1" enum="SwitchCommonPoint">
+			The two curves share no end.
 		</constant>
 		<constant name="POINT_P1" value="0" enum="SwitchCommonPoint">
+			The two curves share the first curve's start.
 		</constant>
 		<constant name="POINT_P2" value="1" enum="SwitchCommonPoint">
+			The two curves share the first curve's end.
 		</constant>
 		<constant name="CURVE1_P1" value="0" enum="EndpointIndex">
+			The start of the first curve.
 		</constant>
 		<constant name="CURVE1_P2" value="1" enum="EndpointIndex">
+			The end of the first curve.
 		</constant>
 		<constant name="CURVE2_P1" value="2" enum="EndpointIndex">
+			The start of the second curve.
 		</constant>
 		<constant name="CURVE2_P2" value="3" enum="EndpointIndex">
+			The end of the second curve.
 		</constant>
 		<constant name="TRACK_UNKNOWN" value="-1" enum="TrackType">
+			No type given yet.
 		</constant>
 		<constant name="TRACK_NORMAL" value="0" enum="TrackType">
+			A railway track.
 		</constant>
 		<constant name="TRACK_SWITCH" value="1" enum="TrackType">
+			A railway switch: two curves, and a switch of its own ([method track_get_switch]).
 		</constant>
 		<constant name="TRACK_ROAD" value="2" enum="TrackType">
+			A road.
 		</constant>
 		<constant name="TRACK_CROSS" value="3" enum="TrackType">
+			A road crossing; it connects to roads.
 		</constant>
 		<constant name="TRACK_RIVER" value="4" enum="TrackType">
+			A river.
 		</constant>
 		<constant name="TRACK_TRIBUTARY" value="5" enum="TrackType">
+			A river's tributary.
 		</constant>
 		<constant name="TRACK_TURN" value="6" enum="TrackType">
+			A railway track of the turning kind; nothing builds it yet.
 		</constant>
 		<constant name="TRACK_TABLE" value="7" enum="TrackType">
+			A railway table track; nothing builds it yet.
+		</constant>
+		<constant name="ENVIRONMENT_UNKNOWN" value="-1" enum="TrackEnvironment">
+			An environment the scenery names but the original does not know (Track.cpp:474-477).
+		</constant>
+		<constant name="ENVIRONMENT_FLAT" value="0" enum="TrackEnvironment">
+			Open, flat ground.
+		</constant>
+		<constant name="ENVIRONMENT_MOUNTAINS" value="1" enum="TrackEnvironment">
+			Mountains.
+		</constant>
+		<constant name="ENVIRONMENT_CANYON" value="2" enum="TrackEnvironment">
+			A canyon.
+		</constant>
+		<constant name="ENVIRONMENT_TUNNEL" value="3" enum="TrackEnvironment">
+			A tunnel.
+		</constant>
+		<constant name="ENVIRONMENT_BRIDGE" value="4" enum="TrackEnvironment">
+			A bridge.
+		</constant>
+		<constant name="ENVIRONMENT_BANK" value="5" enum="TrackEnvironment">
+			An embankment.
 		</constant>
 		<constant name="GROUP_NONE" value="0" enum="TrackTypeGroup">
+			Connects to nothing.
 		</constant>
 		<constant name="GROUP_RAIL" value="1" enum="TrackTypeGroup">
+			Railway tracks, switches, turning and table tracks, which connect to each other.
 		</constant>
 		<constant name="GROUP_ROAD" value="2" enum="TrackTypeGroup">
+			Roads and road crossings.
 		</constant>
 		<constant name="GROUP_WATER" value="3" enum="TrackTypeGroup">
+			Rivers and tributaries.
 		</constant>
 		<constant name="DIRECTION_NORMAL" value="0" enum="Direction">
+			Along the track, from its start to its end.
 		</constant>
 		<constant name="DIRECTION_REVERSED" value="1" enum="Direction">
+			Against the track, from its end to its start.
 		</constant>
 		<constant name="INVALID_NODE_ID" value="-1">
+			No topology node.
 		</constant>
 	</constants>
 </class>

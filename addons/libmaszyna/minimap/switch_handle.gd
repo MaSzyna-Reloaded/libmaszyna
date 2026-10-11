@@ -1,7 +1,7 @@
 @tool
 extends Control
 
-var track_rid: RID
+var switch_rid: RID
 var viewer: Control
 var _hovering: bool = false
 
@@ -31,17 +31,17 @@ func _gui_input(event: InputEvent) -> void:
             accept_event()
 
 func _toggle_switch() -> void:
-    var active_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(track_rid)
+    var active_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(switch_rid)
     var new_active_track:TrackServer.SwitchTrack = (
         TrackServer.TRACK_COMMON
         if active_track == TrackServer.TRACK_DIVERGING
         else TrackServer.TRACK_DIVERGING
     )
-    TrackServer.switch_set_active_track(track_rid, new_active_track)
+    TrackServer.switch_set_active_track(switch_rid, new_active_track)
     viewer.queue_redraw()
 
 func _get_tooltip(_at_position: Vector2) -> String:
-    var active_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(track_rid)
-    var name: String = TrackServer.track_get_name(track_rid)
+    var active_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(switch_rid)
+    var name: String = TrackServer.switch_get_name(switch_rid)
     var state_str:String = "Straight" if active_track == TrackServer.TRACK_COMMON else "Diverging"
     return "Switch: %s\nState: %s" % [name or "unnamed", state_str]

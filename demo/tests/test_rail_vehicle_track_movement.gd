@@ -253,7 +253,7 @@ func test_move_on_track_uses_switch_common_route() -> void:
     )
     _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)))
     _register_track(_curve(Vector3(10.0, 0.0, 10.0), Vector3(20.0, 0.0, 20.0)))
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 8.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -279,7 +279,7 @@ func test_move_on_track_uses_switch_diverging_route() -> void:
     )
     _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)))
     _register_track(_curve(Vector3(10.0, 0.0, 10.0), Vector3(20.0, 0.0, 20.0)))
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 8.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -303,7 +303,7 @@ func test_move_on_track_forces_switch_diverging_when_entering_from_diverging_bra
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var start_offset: float = 12.0
     var move_distance: float = 5.0
@@ -314,7 +314,7 @@ func test_move_on_track_forces_switch_diverging_when_entering_from_diverging_bra
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), move_distance)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_DIVERGING)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
     _assert_vector_eq(
         controller.get_world_position(),
         _track_position(
@@ -337,7 +337,7 @@ func test_move_on_track_does_not_force_switch_before_entering_from_diverging_tra
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 14.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -345,7 +345,7 @@ func test_move_on_track_does_not_force_switch_before_entering_from_diverging_tra
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.1)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
 
 func test_move_on_track_does_not_force_switch_when_approaching_diverging_endpoint() -> void:
@@ -360,7 +360,7 @@ func test_move_on_track_does_not_force_switch_when_approaching_diverging_endpoin
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle(
         "start",
@@ -371,7 +371,7 @@ func test_move_on_track_does_not_force_switch_when_approaching_diverging_endpoin
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.05)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
 
 func test_move_on_track_forces_switch_common_when_entering_from_straight_branch() -> void:
@@ -386,7 +386,7 @@ func test_move_on_track_forces_switch_common_when_entering_from_straight_branch(
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 8.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -394,7 +394,7 @@ func test_move_on_track_forces_switch_common_when_entering_from_straight_branch(
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
         controller.get_world_position(),
         _track_position(switch_rid, TrackServer.track_get_length(switch_rid) - 3.0),
@@ -414,7 +414,7 @@ func test_switch_change_does_not_move_vehicle_already_on_switch() -> void:
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 8.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -423,9 +423,9 @@ func test_switch_change_does_not_move_vehicle_already_on_switch() -> void:
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
     var position_before_switch_change: Vector3 = controller.get_world_position()
 
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
         controller.get_world_position(),
         position_before_switch_change,
@@ -450,7 +450,7 @@ func test_switch_change_then_reverse_keeps_vehicle_on_occupied_diverging_branch(
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle("start", 8.0)
     var vehicle: RailVehicle3D = fixture["vehicle"]
@@ -458,10 +458,10 @@ func test_switch_change_then_reverse_keeps_vehicle_on_occupied_diverging_branch(
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
 
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
     RailVehicleServer.vehicle_move(vehicle.get_rid(), -1.0)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
         controller.get_world_position(),
         _switch_track_position(switch_rid, 2.0, TrackServer.TRACK_DIVERGING),
@@ -486,7 +486,7 @@ func test_reversing_from_diverging_track_forces_switch_at_blade_boundary() -> vo
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
         TrackServer.TRACK_SWITCH
     )
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     TrackServer.topology_rebuild()
     var start_length: float = TrackServer.track_get_length(start_rid)
     var boundary_margin: float = 0.02
@@ -498,23 +498,23 @@ func test_reversing_from_diverging_track_forces_switch_at_blade_boundary() -> vo
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.01)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_COMMON)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.02)
 
-    assert_eq(TrackServer.switch_get_active_track(switch_rid), TrackServer.TRACK_DIVERGING)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
 
 
 func test_move_on_track_forces_demo3d_second_switch_when_entering_from_diverging2() -> void:
     var topology: Dictionary = _register_demo3d_track_topology()
     var second_switch_rid: RID = topology["second_switch_rid"]
-    TrackServer.switch_set_active_track(second_switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(second_switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle(
         "diverging2",
@@ -525,15 +525,15 @@ func test_move_on_track_forces_demo3d_second_switch_when_entering_from_diverging
 
     RailVehicleServer.vehicle_move(vehicle.get_rid(), 2.0)
 
-    assert_eq(TrackServer.switch_get_active_track(second_switch_rid), TrackServer.TRACK_DIVERGING)
+    assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(second_switch_rid)), TrackServer.TRACK_DIVERGING)
 
 
 func test_move_on_track_continues_after_entering_demo3d_second_switch() -> void:
     var topology: Dictionary = _register_demo3d_track_topology()
     var first_switch_rid: RID = topology["first_switch_rid"]
     var second_switch_rid: RID = topology["second_switch_rid"]
-    TrackServer.switch_set_active_track(first_switch_rid, TrackServer.TRACK_DIVERGING)
-    TrackServer.switch_set_active_track(second_switch_rid, TrackServer.TRACK_COMMON)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(first_switch_rid), TrackServer.TRACK_DIVERGING)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(second_switch_rid), TrackServer.TRACK_COMMON)
     TrackServer.topology_rebuild()
     var fixture: Dictionary = await _create_vehicle(
         "start",
@@ -657,7 +657,7 @@ func _create_vehicle_node() -> VehiclePhysicsNode:
 func _register_track(
     curve1: TrackCurve,
     curve2: TrackCurve = null,
-    type: int = TrackServer.TRACK_NORMAL,
+    type: TrackServer.TrackType = TrackServer.TRACK_NORMAL,
     name: String = "",
 ) -> RID:
     var track_rid: RID = TrackServer.track_create()
@@ -766,11 +766,13 @@ func _track_position(track_rid: RID, offset: float) -> Vector3:
     return transform.origin
 
 
-func _switch_track_position(track_rid: RID, offset: float, switch_track: int) -> Vector3:
-    var previous_active_track: int = TrackServer.switch_get_active_track(track_rid)
-    TrackServer.switch_set_active_track(track_rid, switch_track)
+func _switch_track_position(track_rid: RID, offset: float, switch_track: TrackServer.SwitchTrack) -> Vector3:
+    var previous_active_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(
+        TrackServer.track_get_switch(track_rid)
+    )
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(track_rid), switch_track)
     var position: Vector3 = _track_position(track_rid, offset)
-    TrackServer.switch_set_active_track(track_rid, previous_active_track)
+    TrackServer.switch_set_active_track(TrackServer.track_get_switch(track_rid), previous_active_track)
     return position
 
 func _vehicle_forward(vehicle: RailVehicle3D) -> Vector3:

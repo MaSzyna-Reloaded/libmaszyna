@@ -20,13 +20,13 @@ const CAB_CHANGE_SECONDS:float = 1.0
 
 
 func test_starts_and_moves_off() -> void:
-    await run_startup("startup_en57-636ra.scn", "EN57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_en57-636ra.scn", "en57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
 
 
 ## MaxBPMass=52 with TareMaxBP=2.5: an empty 34 t car's cylinders stop at the empty-car pressure, not
 ## at MaxBP=4 (MBPM, Mover.cpp:10771; TEStEP2::PLC(), hamulce.cpp:1264) - at 4 bar its wheels locked
 func test_empty_trailer_brakes_at_its_empty_car_pressure() -> void:
-    await run_startup("startup_en57-636ra.scn", "EN57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_en57-636ra.scn", "en57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
     VehicleServer.vehicle_send_command(occupied, "brake_level_set", EP_BRAKE_LEVEL)
     await step(ticks(BRAKE_FILL_SECONDS))
     var brake:RailVehicleBrake = _brake(occupied)
@@ -38,7 +38,7 @@ func test_empty_trailer_brakes_at_its_empty_car_pressure() -> void:
 ## A key press moves an FVel6 a position - the EP brake applies from position 1 (TFVel6::GetPF(),
 ## hamulce.cpp:4310) - where an FV4a moves while the key is held (Train.cpp:1960-1966)
 func test_a_key_press_steps_the_brake_handle_a_position() -> void:
-    await run_startup("startup_en57-636ra.scn", "EN57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_en57-636ra.scn", "en57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
     var brake:RailVehicleBrake = _brake(occupied)
     assert_eq(brake.handle_movement, RailVehicleBrake.BRAKE_HANDLE_MOVEMENT_STEPPED, "an FVel6 steps")
     var before:float = brake.get_controller_position()
@@ -53,12 +53,12 @@ func test_a_key_press_steps_the_brake_handle_a_position() -> void:
 ## Sign(0) sending it back (utilities.h:48) - so the reverser is at neutral again and the master
 ## controller of an EMU refuses (IncMainCtrl(), Mover.cpp:2390) until it is set: as the original
 func test_the_controller_works_once_the_reverser_is_set_after_a_walk() -> void:
-    await run_startup("startup_en57-636ra.scn", "EN57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
+    await run_startup("startup_en57-636ra.scn", "en57-636ra", Kind.ELECTRIC_MULTIPLE_UNIT)
     var master:RailVehicleMasterController = _master(powered)
     while master.get_main_position() > 0:
         await key_tap(&"main_controller_decrease")
-    await _walk_to_cab(&"cabin_next", "EN57-636rb", true)
-    await _walk_to_cab(&"cabin_previous", "EN57-636ra", false)
+    await _walk_to_cab(&"cabin_next", "en57-636rb", true)
+    await _walk_to_cab(&"cabin_previous", "en57-636ra", false)
     assert_eq(VehicleServer.vehicle_get_controller(powered).get_direction(), 0, "the reverser at neutral after the walk")
     await key_tap(&"main_controller_increase")
     assert_eq(master.get_main_position(), 0, "the master controller refuses with no direction")

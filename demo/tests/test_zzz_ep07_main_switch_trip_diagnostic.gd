@@ -55,7 +55,7 @@ func _find_train_controller(vehicle_name:String) -> VehicleController:
 
 
 func test_ep07_main_switch_stays_closed_while_advancing_controller() -> void:
-    var controller:VehicleController = _find_train_controller("EP07-424")
+    var controller:VehicleController = _find_train_controller("ep07-424")
     assert_not_null(controller, "EP07-424 should exist somewhere under the loaded scenery")
     if not controller:
         return

@@ -115,6 +115,7 @@ func clear() -> void:
 
 ## A vehicle on a switch stands on its active track (RailVehicleServer.vehicle_set_track())
 func _get_curve(track:RID) -> Curve3D:
-    var branch:int = TrackServer.switch_get_active_track(track) if TrackServer.track_is_switch(track) \
-            else TrackServer.TRACK_COMMON
+    var branch:TrackServer.SwitchTrack = (
+            TrackServer.switch_get_active_track(TrackServer.track_get_switch(track))
+            if TrackServer.track_is_switch(track) else TrackServer.TRACK_COMMON)
     return TrackServer.track_get_domain_curve(track, branch)

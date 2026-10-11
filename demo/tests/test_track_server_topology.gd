@@ -1,5 +1,8 @@
 extends MaszynaGutTest
 
+## The tracks' width [m]
+const TRACK_WIDTH: float = 1.435
+
 var created_tracks: Array[RID] = []
 var topology_change_count: int = 0
 
@@ -45,8 +48,8 @@ func test_switch_branch_neighbors_with_common_start() -> void:
     var diverging_next_rid: RID = _register_track(_curve(Vector3(10.0, 0.0, 10.0), Vector3(20.0, 0.0, 20.0)))
     TrackServer.topology_rebuild()
 
-    var main_neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(switch_rid, TrackServer.TRACK_COMMON)
-    var diverging_neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(switch_rid, TrackServer.TRACK_DIVERGING)
+    var main_neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(switch_rid, TrackServer.TRACK_COMMON)
+    var diverging_neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(switch_rid, TrackServer.TRACK_DIVERGING)
 
     assert_eq(TrackServer.track_get_common_endpoint_index(switch_rid), TrackServer.POINT_P1)
     assert_eq(main_neighbors.previous_track_rid, previous_rid)
@@ -70,8 +73,8 @@ func test_switch_branch_neighbors_with_common_end() -> void:
     var next_rid: RID = _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(30.0, 0.0, 0.0)))
     TrackServer.topology_rebuild()
 
-    var main_neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(switch_rid, TrackServer.TRACK_COMMON)
-    var diverging_neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(switch_rid, TrackServer.TRACK_DIVERGING)
+    var main_neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(switch_rid, TrackServer.TRACK_COMMON)
+    var diverging_neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(switch_rid, TrackServer.TRACK_DIVERGING)
 
     assert_eq(TrackServer.track_get_common_endpoint_index(switch_rid), TrackServer.POINT_P2)
     assert_eq(main_neighbors.previous_track_rid, main_previous_rid)
@@ -93,19 +96,19 @@ func test_switch_metadata_getters_return_precomputed_values() -> void:
         TrackServer.TRACK_SWITCH
     )
 
-    var common_endpoints: PackedInt32Array = TrackServer.switch_get_common_endpoints(switch_rid)
+    var common_endpoints: PackedInt32Array = TrackServer.track_get_common_endpoints(switch_rid)
 
     assert_eq(common_endpoints, PackedInt32Array([TrackServer.CURVE1_P1, TrackServer.CURVE2_P1]))
     assert_eq(
-        TrackServer.switch_get_branch_start_endpoint(switch_rid, TrackServer.TRACK_COMMON),
+        TrackServer.track_get_branch_start_endpoint(switch_rid, TrackServer.TRACK_COMMON),
         TrackServer.CURVE1_P1
     )
     assert_eq(
-        TrackServer.switch_get_branch_end_endpoint(switch_rid, TrackServer.TRACK_DIVERGING),
+        TrackServer.track_get_branch_end_endpoint(switch_rid, TrackServer.TRACK_DIVERGING),
         TrackServer.CURVE2_P2
     )
     assert_eq(
-        TrackServer.switch_get_endpoint_branch(switch_rid, TrackServer.CURVE2_P2),
+        TrackServer.track_get_endpoint_branch(switch_rid, TrackServer.CURVE2_P2),
         TrackServer.TRACK_DIVERGING
     )
     assert_eq(TrackServer.track_get_curve(switch_rid, TrackServer.TRACK_COMMON), common_curve)
@@ -117,7 +120,7 @@ func test_switch_metadata_getters_return_precomputed_values() -> void:
         ).get_baked_length(),
         TrackServer.track_get_length(switch_rid, TrackServer.TRACK_DIVERGING)
     )
-    assert_true(TrackServer.switch_get_blade_boundary_offset(switch_rid, TrackServer.TRACK_COMMON) > 0.0)
+    assert_true(TrackServer.track_get_blade_boundary_offset(switch_rid, TrackServer.TRACK_COMMON) > 0.0)
 
 
 func test_switch_common_node_does_not_report_own_branch_as_connection() -> void:
@@ -205,6 +208,52 @@ func test_rebuild_topology_preserves_connections() -> void:
     assert_eq(second_connections[0].track_rid, first_rid)
 
 
+func test_a_switch_track_has_a_switch_while_it_is_a_switch() -> void:
+    var straight: TrackCurve = _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0))
+    var diverging: TrackCurve = _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0))
+    watch_signals(TrackServer)
+    var track_rid: RID = _register_track(straight, diverging, TrackServer.TRACK_SWITCH)
+    var switch_rid: RID = TrackServer.track_get_switch(track_rid)
+    assert_eq(TrackServer.switch_get_track(switch_rid), track_rid)
+
+    TrackServer.track_update(track_rid, TrackServer.TRACK_SWITCH, "", TRACK_WIDTH)
+    assert_eq(TrackServer.track_get_switch(track_rid), switch_rid, "the same type again keeps the switch")
+    TrackServer.switch_set_active_track(switch_rid, TrackServer.TRACK_DIVERGING)
+    TrackServer.track_update(track_rid, TrackServer.TRACK_NORMAL, "", TRACK_WIDTH)
+
+    assert_true(switch_rid.is_valid())
+    assert_ne(switch_rid, track_rid, "a switch is never taken for a track")
+    assert_signal_emitted_with_parameters(TrackServer, "switch_created", [switch_rid])
+    assert_signal_emitted_with_parameters(TrackServer, "switch_freed", [switch_rid, ""])
+    assert_false(TrackServer.track_get_switch(track_rid).is_valid(), "another type has no switch")
+    TrackServer.track_update(track_rid, TrackServer.TRACK_SWITCH, "", TRACK_WIDTH)
+    var recreated: RID = TrackServer.track_get_switch(track_rid)
+    assert_ne(recreated, switch_rid, "a switch track again gets a switch of its own")
+    assert_eq(TrackServer.switch_get_active_track(recreated), TrackServer.TRACK_COMMON)
+    TrackServer.track_free(track_rid)
+    created_tracks.erase(track_rid)
+    assert_signal_emitted_with_parameters(TrackServer, "switch_freed", [recreated, ""])
+
+
+func test_a_track_keeps_its_name_and_a_duplicate_takes_the_lookup_over() -> void:
+    var first_rid: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)))
+    var second_rid: RID = _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)))
+
+    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "test_named", TRACK_WIDTH)
+    TrackServer.track_update(second_rid, TrackServer.TRACK_NORMAL, "test_named", TRACK_WIDTH)
+    assert_eq(TrackServer.track_get_rid_by_name("test_named"), second_rid, "the last track given a name has it")
+    assert_eq(TrackServer.track_get_name(first_rid), "test_named", "a duplicate keeps its own name")
+    TrackServer.track_free(second_rid)
+    created_tracks.erase(second_rid)
+    assert_false(TrackServer.track_get_rid_by_name("test_named").is_valid())
+
+    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "test_renamed", TRACK_WIDTH)
+    assert_eq(TrackServer.track_get_rid_by_name("test_renamed"), first_rid)
+    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "", TRACK_WIDTH)
+    assert_eq(TrackServer.track_get_name(first_rid), "")
+    assert_false(TrackServer.track_get_rid_by_name("test_renamed").is_valid(), "an empty name takes it away")
+
+
 func test_register_track_marks_topology_changed() -> void:
     TrackServer.topology_rebuild()
     topology_change_count = 0
@@ -244,7 +293,7 @@ func test_connected_endpoint_change_marks_topology_changed() -> void:
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(11.0, 0.0, 0.0)),
         null
     )
-    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "", 1.435)
+    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "", TRACK_WIDTH)
 
     TrackServer.topology_changed.disconnect(_on_topology_changed)
     var connections: Array[TrackEndpointRef] = TrackServer.track_get_endpoint_connections(
@@ -269,7 +318,7 @@ func test_unconnected_endpoint_change_does_not_mark_topology_changed() -> void:
         _curve(Vector3(-1.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)),
         null
     )
-    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "", 1.435)
+    TrackServer.track_update(first_rid, TrackServer.TRACK_NORMAL, "", TRACK_WIDTH)
 
     TrackServer.topology_changed.disconnect(_on_topology_changed)
     var connections: Array[TrackEndpointRef] = TrackServer.track_get_endpoint_connections(
@@ -423,7 +472,7 @@ func test_get_tracks_in_aabb_updates_track_position() -> void:
         _curve(Vector3(1000.0, 0.0, 0.0), Vector3(1010.0, 0.0, 0.0)),
         null
     )
-    TrackServer.track_update(track_rid, TrackServer.TRACK_NORMAL, "", 1.435)
+    TrackServer.track_update(track_rid, TrackServer.TRACK_NORMAL, "", TRACK_WIDTH)
 
     assert_eq(TrackServer.tracks_find_in_aabb(Rect2(Vector2(-10.0, -10.0), Vector2(30.0, 20.0))), [])
     assert_eq(TrackServer.tracks_find_in_aabb(Rect2(Vector2(990.0, -10.0), Vector2(30.0, 20.0))), [track_rid])
@@ -475,12 +524,12 @@ func test_connected_track_topology_has_no_orphaned_tracks() -> void:
 func _register_track(
     curve1: TrackCurve,
     curve2: TrackCurve = null,
-    type: int = TrackServer.TRACK_NORMAL,
+    type: TrackServer.TrackType = TrackServer.TRACK_NORMAL,
 ) -> RID:
     var track_rid: RID = TrackServer.track_create()
     created_tracks.append(track_rid)
     TrackServer.track_update_curves(track_rid, curve1, curve2)
-    TrackServer.track_update(track_rid, type, "", 1.435)
+    TrackServer.track_update(track_rid, type, "", TRACK_WIDTH)
     return track_rid
 
 

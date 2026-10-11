@@ -27,7 +27,7 @@ func before_each():
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
     player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
-    player.start_vehicle_id = "EP07-424"
+    player.start_vehicle_id = "ep07-424"
     add_child(player)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
@@ -36,7 +36,7 @@ func before_each():
     # the scenery is announced once its vehicles are built and its drivers given their AI
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
-    vehicle_rid = VehicleServer.vehicle_get_rid_by_name("EP07-424")
+    vehicle_rid = VehicleServer.vehicle_get_rid_by_name("ep07-424")
 
 
 func after_each():

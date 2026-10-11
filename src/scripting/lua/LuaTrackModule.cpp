@@ -1,7 +1,6 @@
 #include "LuaHandle.hpp"
 #include "LuaModules.hpp"
 #include "tracks/TrackServer.hpp"
-#include <iterator>
 
 namespace godot {
     /// SWITCH_TRACK_NAMES with the terminator luaL_checkoption wants
@@ -38,22 +37,30 @@ namespace godot {
         return 1;
     }
 
-    /// switch_get(t) - "common" or "diverging"
-    static int track_switch_get(lua_State *p_state) {
-        const RID track = LuaHandle::check(p_state, 1, ScriptHandleKind::TRACK);
-        const int active = LuaModules::server<TrackServer>(p_state)->switch_get_active_track(track);
-        luaL_argcheck(
-                p_state, active >= 0 && active < static_cast<int>(std::size(ScenarioScriptServer::SWITCH_TRACK_NAMES)),
-                1, "not a switch");
-        lua_pushstring(p_state, ScenarioScriptServer::SWITCH_TRACK_NAMES[active]);
+    /// find_switch(name) - the switch of the switch track of the name, nil when there is none
+    static int track_find_switch(lua_State *p_state) {
+        const String name = String::utf8(luaL_checkstring(p_state, 1));
+        LuaHandle::push(
+                p_state, LuaModules::server<TrackServer>(p_state)->switch_get_rid_by_name(name),
+                ScriptHandleKind::SWITCH);
         return 1;
     }
 
-    /// switch_set(t, "common" | "diverging") - throws the switch
+    /// switch_get(s) - "common" or "diverging"
+    static int track_switch_get(lua_State *p_state) {
+        const RID track_switch = LuaHandle::check(p_state, 1, ScriptHandleKind::SWITCH);
+        lua_pushstring(
+                p_state, ScenarioScriptServer::SWITCH_TRACK_NAMES[LuaModules::server<TrackServer>(p_state)
+                                                                          ->switch_get_active_track(track_switch)]);
+        return 1;
+    }
+
+    /// switch_set(s, "common" | "diverging") - throws the switch
     static int track_switch_set(lua_State *p_state) {
-        const RID track = LuaHandle::check(p_state, 1, ScriptHandleKind::TRACK);
-        const int active = luaL_checkoption(p_state, 2, nullptr, SWITCH_TRACK_OPTIONS);
-        LuaModules::server<TrackServer>(p_state)->switch_set_active_track(track, active);
+        const RID track_switch = LuaHandle::check(p_state, 1, ScriptHandleKind::SWITCH);
+        const auto active =
+                static_cast<TrackServer::SwitchTrack>(luaL_checkoption(p_state, 2, nullptr, SWITCH_TRACK_OPTIONS));
+        LuaModules::server<TrackServer>(p_state)->switch_set_active_track(track_switch, active);
         return 0;
     }
 
@@ -102,15 +109,16 @@ namespace godot {
         return LuaModules::subscribe(p_state, ScenarioScriptServer::SIGNAL_ISOLATED_FREED, ScriptHandleKind::ISOLATED);
     }
 
-    /// on_switch_changed(t, fn) - fn("common" | "diverging") when the switch moves
+    /// on_switch_changed(s, fn) - fn("common" | "diverging") when the switch moves
     static int track_on_switch_changed(lua_State *p_state) {
-        return LuaModules::subscribe(p_state, ScenarioScriptServer::SIGNAL_SWITCH_CHANGED, ScriptHandleKind::TRACK);
+        return LuaModules::subscribe(p_state, ScenarioScriptServer::SIGNAL_SWITCH_CHANGED, ScriptHandleKind::SWITCH);
     }
 
     const luaL_Reg LuaModules::TRACK[] = {
             {"find", track_find},
             {"is_occupied", track_is_occupied},
             {"vehicles", track_vehicles},
+            {"find_switch", track_find_switch},
             {"switch_get", track_switch_get},
             {"switch_set", track_switch_set},
             {"isolated_find", track_isolated_find},

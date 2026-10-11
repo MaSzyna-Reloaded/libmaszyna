@@ -265,7 +265,7 @@ namespace godot {
             HashMap<RID, uint64_t> track_change_serials;
             void _track_changed(const RID &p_track);
             void _on_topology_changed();
-            void _on_switch_active_track_changed(const RID &p_track, int p_active_track);
+            void _on_switch_active_track_changed(const RID &p_switch, int p_active_track);
 
             RailVehicleController *_get_controller(const VehiclePlacement &p_placement) const;
             /* Whether p_answers(doors, side) holds for a vehicle coupled to p_vehicle by its

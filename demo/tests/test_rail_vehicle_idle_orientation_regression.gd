@@ -146,7 +146,7 @@ func _create_vehicle_node() -> VehiclePhysicsNode:
 func _register_track(
     curve1:TrackCurve,
     curve2:TrackCurve = null,
-    type:int = TrackServer.TRACK_NORMAL,
+    type: TrackServer.TrackType = TrackServer.TRACK_NORMAL,
     name:String = "",
 ) -> RID:
     var track_rid:RID = TrackServer.track_create()

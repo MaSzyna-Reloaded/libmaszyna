@@ -99,7 +99,7 @@ func test_branch_ends_connect_to_the_expected_connector() -> void:
 
 func test_only_the_switch_point_is_a_common_endpoint() -> void:
     for name: String in switches:
-        var common_endpoints: PackedInt32Array = TrackServer.switch_get_common_endpoints(switches[name])
+        var common_endpoints: PackedInt32Array = TrackServer.track_get_common_endpoints(switches[name])
         assert_eq(common_endpoints.size(), 2, "switch %s" % name)
         assert_true(common_endpoints.has(TrackServer.CURVE1_P1), "switch %s" % name)
         assert_true(common_endpoints.has(TrackServer.CURVE2_P1), "switch %s" % name)
@@ -111,7 +111,7 @@ func test_both_branches_report_their_connector_as_a_neighbor() -> void:
         var connector_rid: RID = connectors[connector_index]
         for side: int in [0, 2]:
             var branch: TrackServer.SwitchTrack = connector[side + 1] as TrackServer.SwitchTrack
-            var neighbors: TrackBranchNeighbors = TrackServer.switch_track_get_neighbors(
+            var neighbors: TrackBranchNeighbors = TrackServer.track_get_branch_neighbors(
                 switches[connector[side]],
                 branch
             )
@@ -121,7 +121,7 @@ func test_both_branches_report_their_connector_as_a_neighbor() -> void:
 func _register_track(
     curve1: TrackCurve,
     curve2: TrackCurve = null,
-    type: int = TrackServer.TRACK_NORMAL,
+    type: TrackServer.TrackType = TrackServer.TRACK_NORMAL,
 ) -> RID:
     var track_rid: RID = TrackServer.track_create()
     created_tracks.append(track_rid)

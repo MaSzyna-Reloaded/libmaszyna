@@ -33,7 +33,7 @@ func after_each():
 
 
 func test_ep07_pantograph_draws_wire_voltage_from_td_scn() -> void:
-    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name("EP07-424")
+    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name("ep07-424")
     assert_true(VehicleServer.vehicle_is_simulation_ready(vehicle), "EP07-424 should be simulated once the scenery is loaded")
     if not VehicleServer.vehicle_is_simulation_ready(vehicle):
         return

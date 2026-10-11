@@ -25,7 +25,7 @@ static var firstinit_importer = preload("res://addons/libmaszyna/legacy/scenery/
 static var isolated_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_lua_importer.gd").new()
-const CACHE_FORMAT_VERSION:int = 41
+const CACHE_FORMAT_VERSION:int = 42
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -814,8 +814,6 @@ static func _build_track(track_data:MaszynaTrackData, world_3d:World3D) -> Dicti
     TrackServer.track_update(track_rid, track_data.type, track_data.track_name, track_data.width)
     TrackServer.track_update_properties(
             track_rid, track_data.quality_flag, track_data.environment, track_data.sound_distance)
-    if track_data.type == TrackServer.TRACK_SWITCH:
-        TrackServer.switch_set_active_track(track_rid, TrackServer.TRACK_COMMON)
     # the speed limit a `trackvel` event changes (Track.cpp:851-858)
     TrackServer.track_set_velocity(track_rid, float(track_data.parameters.get("velocity", -1.0)))
 
