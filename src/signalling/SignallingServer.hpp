@@ -1,6 +1,7 @@
 #pragma once
 #include "SignalHeadKind.hpp"
 #include "SignallingImplementation.hpp"
+#include "tracks/TrackServer.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -24,8 +25,39 @@ namespace godot {
                 LIGHT_STATE_BLINKING,
             };
 
+            /// The direction a sensor reports a passage in: a one-coil sensor has none, a two-coil one
+            /// tells along the track from against it
+            enum SourcePolarity {
+                SOURCE_POLARITY_NONE,
+                SOURCE_POLARITY_POSITIVE,
+                SOURCE_POLARITY_NEGATIVE,
+            };
+
+            /// What a route is set for
+            enum RouteKind {
+                ROUTE_KIND_TRAIN,
+                ROUTE_KIND_SHUNTING,
+            };
+
+            /// Where a route is between being set and released; only its system's implementation moves it
+            enum RouteState {
+                /// Not set
+                ROUTE_STATE_IDLE,
+                /// Its switches are being moved
+                ROUTE_STATE_SETTING,
+                /// Held while its start signal head allows the passage (zamknięcie)
+                ROUTE_STATE_CLOSED,
+                /// Held until released (utwierdzenie)
+                ROUTE_STATE_LOCKED,
+                /// Being released with a delay
+                ROUTE_STATE_RELEASING,
+            };
+
             /// iMaxNumLights, AnimModel.h:23
             static constexpr int MAX_LIGHTS = 8;
+            /// A sensor's passage, sent with source_send_event(): {SOURCE_POLARITY_ARGUMENT: SourcePolarity}
+            static constexpr const char *SOURCE_IMPULSE_EVENT = "impulse";
+            static constexpr const char *SOURCE_POLARITY_ARGUMENT = "polarity";
 
             static const char *signal_head_registered_signal;
             static const char *signal_head_unregistered_signal;
@@ -36,9 +68,18 @@ namespace godot {
             static const char *system_signal_head_removed_signal;
             static const char *system_source_added_signal;
             static const char *system_source_removed_signal;
+            static const char *system_switch_added_signal;
+            static const char *system_switch_removed_signal;
+            static const char *system_linked_signal;
+            static const char *system_unlinked_signal;
+            static const char *route_state_changed_signal;
+            static const char *route_section_released_signal;
+            static const char *route_config_changed_signal;
 
             /// The PROPERTY_HINT_ENUM string of LightState
             static String light_state_hint();
+            /// The PROPERTY_HINT_ENUM string of RouteState
+            static String route_state_hint();
 
             static SignallingServer *get_instance() {
                 return Object::cast_to<SignallingServer>(Engine::get_singleton()->get_singleton("SignallingServer"));
@@ -60,16 +101,42 @@ namespace godot {
                     RID system;
             };
 
+            struct RouteData {
+                    StringName name;
+                    RID system;
+                    RouteKind kind = ROUTE_KIND_TRAIN;
+                    RID start_signal_head;
+                    /// None where the route ends at the station's boundary or a W5 sign
+                    RID end_signal_head;
+                    /// Sources of the route's sections: the path, the overlap behind its end, the approach
+                    Vector<RID> sections;
+                    Vector<RID> overlap_sections;
+                    Vector<RID> approach_sections;
+                    /// The track each switch of the route, by its name, has to lie on
+                    HashMap<StringName, TrackServer::SwitchTrack> switch_positions;
+                    Vector<RID> conflicts;
+                    RouteState state = ROUTE_STATE_IDLE;
+                    /// The sections still held, released one by one behind the train
+                    Vector<RID> locked_sections;
+            };
+
             struct SystemData {
                     StringName name;
                     Ref<SignallingImplementation> implementation;
                     Vector<RID> signal_heads;
                     Vector<RID> sources;
+                    /// TrackServer's switches by name, resolved when used
+                    Vector<StringName> switch_names;
+                    Vector<RID> linked_systems;
+                    Vector<RID> routes;
             };
 
             HashMap<RID, SignalHeadData> signal_heads;
             HashMap<RID, SourceData> sources;
             HashMap<RID, SystemData> systems;
+            HashMap<RID, RouteData> routes;
+            HashMap<StringName, RID> systems_by_switch_name;
+            HashMap<StringName, RID> routes_by_name;
             HashMap<StringName, RID> signal_heads_by_name;
             HashMap<StringName, RID> sources_by_name;
             HashMap<StringName, RID> systems_by_name;
@@ -78,6 +145,15 @@ namespace godot {
             void _on_instance_freed(const RID &p_instance);
             void _on_instance_built(const RID &p_instance);
             void _set_light_state(const RID &p_signal_head, SignalHeadData &p_data, int p_light, LightState p_state);
+            void _on_switch_movement_finished(const RID &p_switch, int p_active_track);
+            void _on_switch_created(const RID &p_switch);
+            void _on_switch_freed(const RID &p_switch, const String &p_name);
+            /// The implementation of the system the switch of the name belongs to, null when none
+            Ref<SignallingImplementation> _switch_implementation(const StringName &p_switch, RID &p_r_system) const;
+            /// Drops the element from the definition of every route that names it
+            void _forget_in_routes(const RID &p_element);
+            /// The implementation of the route's system, null when it has none
+            Ref<SignallingImplementation> _route_implementation(const RID &p_route) const;
 
         protected:
             static void _bind_methods();
@@ -124,6 +200,21 @@ namespace godot {
             void system_remove_source(const RID &p_system, const RID &p_source);
             TypedArray<RID> system_get_sources(const RID &p_system) const;
             void system_send_event(const RID &p_system, const StringName &p_event, const Dictionary &p_arguments);
+            /// A TrackServer switch of the system's interlocking area, by its name
+            /// (TrackServer.switch_get_rid_by_name()); it belongs to one system at most and may not
+            /// exist yet. Its movements and its coming and going reach the system's implementation.
+            void system_add_switch(const RID &p_system, const StringName &p_switch);
+            void system_remove_switch(const RID &p_system, const StringName &p_switch);
+            PackedStringArray system_get_switches(const RID &p_system) const;
+            RID switch_get_system(const StringName &p_switch) const;
+            /// Neighbouring systems (the stations a line block runs between); the link goes both ways
+            void system_link(const RID &p_system, const RID &p_other);
+            void system_unlink(const RID &p_system, const RID &p_other);
+            TypedArray<RID> system_get_linked_systems(const RID &p_system) const;
+            /// A route belongs to one system at most - the one whose implementation sets it
+            void system_add_route(const RID &p_system, const RID &p_route);
+            void system_remove_route(const RID &p_system, const RID &p_route);
+            TypedArray<RID> system_get_routes(const RID &p_system) const;
 
             RID source_create();
             void source_free(const RID &p_source);
@@ -132,7 +223,53 @@ namespace godot {
             RID source_get_rid_by_name(const StringName &p_name) const;
             RID source_get_system(const RID &p_source) const;
             void source_send_event(const RID &p_source, const StringName &p_event, const Dictionary &p_arguments);
+
+            RID route_create();
+            void route_free(const RID &p_route);
+            void route_set_name(const RID &p_route, const StringName &p_name);
+            StringName route_get_name(const RID &p_route) const;
+            RID route_get_rid_by_name(const StringName &p_name) const;
+            RID route_get_system(const RID &p_route) const;
+            void route_set_kind(const RID &p_route, RouteKind p_kind);
+            RouteKind route_get_kind(const RID &p_route) const;
+            void route_set_start_signal_head(const RID &p_route, const RID &p_signal_head);
+            RID route_get_start_signal_head(const RID &p_route) const;
+            void route_set_end_signal_head(const RID &p_route, const RID &p_signal_head);
+            RID route_get_end_signal_head(const RID &p_route) const;
+            /// The sources of the route's path, in the order it is driven
+            void route_set_sections(const RID &p_route, const TypedArray<RID> &p_sources);
+            TypedArray<RID> route_get_sections(const RID &p_route) const;
+            /// The sources of the overlap behind the route's end signal head
+            void route_set_overlap_sections(const RID &p_route, const TypedArray<RID> &p_sources);
+            TypedArray<RID> route_get_overlap_sections(const RID &p_route) const;
+            /// The sources before the start signal head whose occupation locks the route
+            void route_set_approach_sections(const RID &p_route, const TypedArray<RID> &p_sources);
+            TypedArray<RID> route_get_approach_sections(const RID &p_route) const;
+            /// The track the switch of the name has to lie on for the route
+            void route_set_switch_position(
+                    const RID &p_route, const StringName &p_switch, TrackServer::SwitchTrack p_switch_track);
+            void route_remove_switch_position(const RID &p_route, const StringName &p_switch);
+            /// switch name -> TrackServer::SwitchTrack
+            Dictionary route_get_switch_positions(const RID &p_route) const;
+            /// A special exclusion: the routes may not be set together; it goes both ways
+            void route_add_conflict(const RID &p_route, const RID &p_other);
+            void route_remove_conflict(const RID &p_route, const RID &p_other);
+            TypedArray<RID> route_get_conflicts(const RID &p_route) const;
+            /// Called by the route's system's implementation
+            void route_set_state(const RID &p_route, RouteState p_state);
+            RouteState route_get_state(const RID &p_route) const;
+            /// The train left the section: the route no longer holds it
+            void route_release_section(const RID &p_route, const RID &p_source);
+            TypedArray<RID> route_get_locked_sections(const RID &p_route) const;
+            /// Requests handed to the implementation of the route's system, which decides
+            void route_request_set(const RID &p_route);
+            void route_request_cancel(const RID &p_route);
+            void route_request_release(const RID &p_route);
+            void route_request_emergency_release(const RID &p_route);
     };
 } // namespace godot
 
 VARIANT_ENUM_CAST(SignallingServer::LightState)
+VARIANT_ENUM_CAST(SignallingServer::SourcePolarity)
+VARIANT_ENUM_CAST(SignallingServer::RouteKind)
+VARIANT_ENUM_CAST(SignallingServer::RouteState)

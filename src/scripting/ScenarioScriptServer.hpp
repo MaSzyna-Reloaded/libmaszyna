@@ -52,6 +52,8 @@ namespace godot {
                 SIGNAL_SWITCH_CHANGED,
                 /// The signal head shows another aspect (target: the head)
                 SIGNAL_SIGNAL_HEAD_ASPECT_CHANGED,
+                /// The route went to another state (target: the route)
+                SIGNAL_ROUTE_STATE_CHANGED,
                 /// The event ran (target: the event)
                 SIGNAL_EVENT_LAUNCHED,
                 /// The memory's values changed (target: the memory)
@@ -67,6 +69,8 @@ namespace godot {
 
             /// The tracks of a switch, as a script names them (TrackServer::SwitchTrack)
             static constexpr const char *SWITCH_TRACK_NAMES[] = {"common", "diverging"};
+            /// The states of a route, as a script names them (SignallingServer::RouteState)
+            static constexpr const char *ROUTE_STATE_NAMES[] = {"idle", "setting", "closed", "locked", "releasing"};
             /// No function of the script
             static constexpr int64_t NO_FUNCTION = -1;
             /// What a context says when the build has no runtime (simulationstateserializer.cpp:355)
@@ -142,8 +146,9 @@ namespace godot {
             void _on_vehicle_stopped_on_track(const RID &p_vehicle, const RID &p_track);
             void _on_isolated_occupied(const RID &p_isolated, const RID &p_vehicle);
             void _on_isolated_freed(const RID &p_isolated, const RID &p_vehicle);
-            void _on_switch_active_track_changed(const RID &p_track, int p_active_track);
+            void _on_switch_active_track_changed(const RID &p_switch, int p_active_track);
             void _on_signal_head_aspect_changed(const RID &p_signal_head, const StringName &p_aspect);
+            void _on_route_state_changed(const RID &p_route, int p_state);
             void _on_event_launched(const RID &p_event, const RID &p_activator);
             void _on_memory_values_changed(const RID &p_memory);
             void _on_cabin_control_changed(

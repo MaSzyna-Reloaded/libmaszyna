@@ -13,9 +13,12 @@ namespace godot {
         EVENT,
         MEMORY,
         TRACK,
+        SWITCH,
         ISOLATED,
         SIGNAL_HEAD,
         SIGNALLING_SYSTEM,
+        SIGNALLING_SOURCE,
+        SIGNALLING_ROUTE,
         SUBSCRIPTION,
     };
 

@@ -73,7 +73,7 @@ func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> v
     add_child(scenery)
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
-    var template:RID = VehicleServer.vehicle_get_rid_by_name("EP07-424")
+    var template:RID = VehicleServer.vehicle_get_rid_by_name("ep07-424")
     assert_true(template.is_valid(), "EP07-424 should be a vehicle of the loaded scenery")
     if not template.is_valid():
         return

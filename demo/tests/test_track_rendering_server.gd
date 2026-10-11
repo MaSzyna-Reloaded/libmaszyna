@@ -45,7 +45,7 @@ func test_switch_is_right_returns_true_for_right_switch() -> void:
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "right switch should register in TrackServer")
-    assert_true(TrackServer.switch_is_right(track_rid))
+    assert_true(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_false_for_left_switch() -> void:
@@ -65,7 +65,7 @@ func test_switch_is_right_returns_false_for_left_switch() -> void:
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "left switch should register in TrackServer")
-    assert_false(TrackServer.switch_is_right(track_rid))
+    assert_false(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_true_for_smoothed_demo3d_right_switch() -> void:
@@ -85,7 +85,7 @@ func test_switch_is_right_returns_true_for_smoothed_demo3d_right_switch() -> voi
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "smoothed right switch should register in TrackServer")
-    assert_true(TrackServer.switch_is_right(track_rid))
+    assert_true(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_false_for_smoothed_demo3d_left_switch() -> void:
@@ -105,7 +105,7 @@ func test_switch_is_right_returns_false_for_smoothed_demo3d_left_switch() -> voi
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "smoothed left switch should register in TrackServer")
-    assert_false(TrackServer.switch_is_right(track_rid))
+    assert_false(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_true_for_right_switch_with_common_end() -> void:
@@ -123,7 +123,7 @@ func test_switch_is_right_returns_true_for_right_switch_with_common_end() -> voi
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "right switch with common end should register in TrackServer")
-    assert_true(TrackServer.switch_is_right(track_rid))
+    assert_true(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_false_for_left_switch_with_common_end() -> void:
@@ -141,7 +141,7 @@ func test_switch_is_right_returns_false_for_left_switch_with_common_end() -> voi
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "left switch with common end should register in TrackServer")
-    assert_false(TrackServer.switch_is_right(track_rid))
+    assert_false(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_switch_is_right_returns_false_for_demo3d_left_switch() -> void:
@@ -161,7 +161,7 @@ func test_switch_is_right_returns_false_for_demo3d_left_switch() -> void:
     var track_rid: RID = TrackServer.track_get_rid_by_name(track.track_name)
 
     assert_true(track_rid.is_valid(), "demo3d left switch should register in TrackServer")
-    assert_false(TrackServer.switch_is_right(track_rid))
+    assert_false(TrackServer.track_is_switch_right(track_rid))
 
 
 func test_get_unique_endpoint_connection_returns_null_for_ambiguous_connections() -> void:

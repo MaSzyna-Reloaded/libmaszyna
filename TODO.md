@@ -543,6 +543,18 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 ## Signalling (#296)
 
 * **The isolated sections become the system's sources** (`SignallingServer.system_add_source`).
+* **Routes (USRK przebiegi)**: the server holds routes, switches, links and the sensor impulse
+  (`SignallingServer.route_*`); no implementation sets a route yet. Left out: flank protection
+  and switches set additionally (a table by switch, not by route), conditional switches, variant
+  routes, through routes, a route ending toward a linked system, release delays on the simulation
+  clock, a switch locked while its route holds it (TrackServer moves any switch), the scenery
+  data the routes come from.
+* **Signal heads by name in SignallingServer**: a system holds its switches by name and resolves
+  them when used; its signal heads are still attached by RID, and `SignallingSystemNode` keeps
+  `signal_head_names` and re-attaches them itself (state in an editor proxy). Move the names and
+  the re-attaching into the server, as for switches.
+* **Sensor detection**: point sensors on a track (one-coil, two-coil with polarity) and axle
+  counter sections feeding the system's sources; occupancy counted by axles.
 * **The logical aspect for trains**: a signalling implementation has only the lights, nothing it shows
   reaches a train (the driver reads the memcells).
 * **`ls_Dark`/`ls_Home` from a `lights` event** (value 3, 24 times): no light following the

@@ -92,24 +92,25 @@ func _sync_switch_handles() -> void:
     for rid: RID in current_rids:
         if TrackServer.track_is_switch(rid):
             if not _switch_handles.has(rid):
-                var sh: Control = _create_switch_handle(rid)
+                var sh: Control = _create_switch_handle()
                 add_child(sh)
                 _switch_handles[rid] = sh
             var sh: Control = _switch_handles[rid]
+            # the track's switch now - a track that changed type has another one
+            sh.switch_rid = TrackServer.track_get_switch(rid)
             var common_idx: int = TrackServer.track_get_common_endpoint_index(rid)
             var endpoints: PackedVector3Array = TrackServer.track_get_endpoints(rid)
             if not common_idx == TrackServer.POINT_NONE and common_idx < endpoints.size():
                 sh.position = _world_to_view_centered(endpoints[common_idx], cam.pos, cam.rot) - sh.size * 0.5
                 sh.visible = true
-                sh.modulate = Color.WHITE if TrackServer.switch_get_active_track(rid) == TrackServer.TRACK_COMMON else Color.GRAY
+                sh.modulate = Color.WHITE if TrackServer.switch_get_active_track(sh.switch_rid) == TrackServer.TRACK_COMMON else Color.GRAY
             else:
                 sh.visible = false
         elif _switch_handles.has(rid):
             _switch_handles[rid].visible = false
 
-func _create_switch_handle(rid: RID) -> Control:
+func _create_switch_handle() -> Control:
     var h:Control = TRACK_SWITCH_HANDLE_SCRIPT.new()
-    h.track_rid = rid
     h.viewer = self
     h.size = Vector2(15, 15)
     h.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -139,7 +140,11 @@ func _draw() -> void:
         var is_switch: bool = TrackServer.track_is_switch(rid)
         var curve1: TrackCurve = TrackServer.track_get_curve(rid, TrackServer.TRACK_COMMON)
         var curve2: TrackCurve = TrackServer.track_get_curve(rid, TrackServer.TRACK_DIVERGING)
-        var switch_track: TrackServer.SwitchTrack = TrackServer.switch_get_active_track(rid)
+        var switch_track: TrackServer.SwitchTrack = (
+            TrackServer.switch_get_active_track(TrackServer.track_get_switch(rid))
+            if is_switch
+            else TrackServer.TRACK_COMMON
+        )
         var track_name: String = TrackServer.track_get_name(rid)
 
         _draw_track_curves(curve1, curve2, switch_track, is_switch, cam.pos, cam.rot)

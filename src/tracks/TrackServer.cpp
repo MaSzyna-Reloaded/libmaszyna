@@ -1,3 +1,4 @@
+#include "../macros.hpp"
 #include "TrackServer.hpp"
 #include "utils/LibMaszynaUnits.hpp"
 #include "utils/Names.hpp"
@@ -13,6 +14,8 @@ namespace godot {
     const char *TrackServer::switch_offset_changed_signal = "switch_offset_changed";
     const char *TrackServer::switch_movement_started_signal = "switch_movement_started";
     const char *TrackServer::switch_movement_finished_signal = "switch_movement_finished";
+    const char *TrackServer::switch_created_signal = "switch_created";
+    const char *TrackServer::switch_freed_signal = "switch_freed";
     const char *TrackServer::tracks_changed_signal = "tracks_changed";
     const char *TrackServer::topology_rebuilt_signal = "topology_rebuilt";
     const char *TrackServer::topology_changed_signal = "topology_changed";
@@ -21,7 +24,7 @@ namespace godot {
     const char *TrackServer::isolated_vehicle_entered_signal = "isolated_vehicle_entered";
     const char *TrackServer::isolated_vehicle_left_signal = "isolated_vehicle_left";
 
-    double TrackServer::TrackSegment::get_length(const int p_switch_track) const {
+    double TrackServer::TrackSegment::get_length(const SwitchTrack p_switch_track) const {
         if (p_switch_track == TRACK_DIVERGING && curve2.is_valid()) {
             return length2;
         }
@@ -61,10 +64,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("track_free", "track"), &TrackServer::track_free);
         ClassDB::bind_method(D_METHOD("track_get_rid_by_name", "name"), &TrackServer::track_get_rid_by_name);
         ClassDB::bind_method(
-                D_METHOD("track_get_length", "track", "switch_track"), &TrackServer::track_get_length,
-                DEFVAL(TRACK_COMMON));
-        ClassDB::bind_method(
-                D_METHOD("switch_track_get_length", "track", "switch_track"), &TrackServer::switch_track_get_length);
+                D_METHOD("track_get_length", "track", "branch"), &TrackServer::track_get_length, DEFVAL(TRACK_COMMON));
         ClassDB::bind_method(
                 D_METHOD("track_update_curves", "track", "curve1", "curve2"), &TrackServer::track_update_curves);
         ClassDB::bind_method(D_METHOD("track_update", "track", "type", "name", "width"), &TrackServer::track_update);
@@ -102,29 +102,27 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("track_get_domain_curve", "track", "branch"), &TrackServer::track_get_domain_curve,
                 DEFVAL(TRACK_COMMON));
+        ClassDB::bind_method(D_METHOD("track_get_common_endpoints", "track"), &TrackServer::track_get_common_endpoints);
         ClassDB::bind_method(
-                D_METHOD("switch_get_common_endpoints", "track"), &TrackServer::switch_get_common_endpoints);
+                D_METHOD("track_get_branch_start_endpoint", "track", "branch"),
+                &TrackServer::track_get_branch_start_endpoint);
         ClassDB::bind_method(
-                D_METHOD("switch_get_branch_start_endpoint", "track", "branch"),
-                &TrackServer::switch_get_branch_start_endpoint);
+                D_METHOD("track_get_branch_end_endpoint", "track", "branch"),
+                &TrackServer::track_get_branch_end_endpoint);
         ClassDB::bind_method(
-                D_METHOD("switch_get_branch_end_endpoint", "track", "branch"),
-                &TrackServer::switch_get_branch_end_endpoint);
+                D_METHOD("track_get_endpoint_branch", "track", "endpoint_index"),
+                &TrackServer::track_get_endpoint_branch);
         ClassDB::bind_method(
-                D_METHOD("switch_get_endpoint_branch", "track", "endpoint_index"),
-                &TrackServer::switch_get_endpoint_branch);
-        ClassDB::bind_method(
-                D_METHOD("switch_get_blade_boundary_offset", "track", "branch"),
-                &TrackServer::switch_get_blade_boundary_offset);
-        ClassDB::bind_method(D_METHOD("switch_get_f_offset1", "track"), &TrackServer::switch_get_f_offset1);
-        ClassDB::bind_method(D_METHOD("switch_get_f_offset2", "track"), &TrackServer::switch_get_f_offset2);
+                D_METHOD("track_get_blade_boundary_offset", "track", "branch"),
+                &TrackServer::track_get_blade_boundary_offset);
+        ClassDB::bind_method(D_METHOD("switch_get_f_offset1", "switch"), &TrackServer::switch_get_f_offset1);
+        ClassDB::bind_method(D_METHOD("switch_get_f_offset2", "switch"), &TrackServer::switch_get_f_offset2);
         ClassDB::bind_method(D_METHOD("tracks_find_in_aabb", "aabb"), &TrackServer::tracks_find_in_aabb);
         ClassDB::bind_method(
                 D_METHOD("track_get_endpoint_connections", "track", "endpoint_index"),
                 &TrackServer::track_get_endpoint_connections);
         ClassDB::bind_method(
-                D_METHOD("switch_track_get_neighbors", "track", "switch_track"),
-                &TrackServer::switch_track_get_neighbors);
+                D_METHOD("track_get_branch_neighbors", "track", "branch"), &TrackServer::track_get_branch_neighbors);
         ClassDB::bind_method(D_METHOD("track_get_next", "track", "endpoint_index"), &TrackServer::track_get_next);
         ClassDB::bind_method(
                 D_METHOD(
@@ -132,11 +130,15 @@ namespace godot {
                         "distance"),
                 &TrackServer::track_trace_route);
         ClassDB::bind_method(D_METHOD("track_is_switch", "track"), &TrackServer::track_is_switch);
-        ClassDB::bind_method(D_METHOD("switch_is_right", "track"), &TrackServer::switch_is_right);
-        ClassDB::bind_method(D_METHOD("switch_get_active_track", "track"), &TrackServer::switch_get_active_track);
+        ClassDB::bind_method(D_METHOD("track_is_switch_right", "track"), &TrackServer::track_is_switch_right);
         ClassDB::bind_method(D_METHOD("track_get_name", "track"), &TrackServer::track_get_name);
+        ClassDB::bind_method(D_METHOD("track_get_switch", "track"), &TrackServer::track_get_switch);
+        ClassDB::bind_method(D_METHOD("switch_get_track", "switch"), &TrackServer::switch_get_track);
+        ClassDB::bind_method(D_METHOD("switch_get_rid_by_name", "name"), &TrackServer::switch_get_rid_by_name);
+        ClassDB::bind_method(D_METHOD("switch_get_name", "switch"), &TrackServer::switch_get_name);
+        ClassDB::bind_method(D_METHOD("switch_get_active_track", "switch"), &TrackServer::switch_get_active_track);
         ClassDB::bind_method(
-                D_METHOD("switch_set_active_track", "track", "active_track"), &TrackServer::switch_set_active_track);
+                D_METHOD("switch_set_active_track", "switch", "active_track"), &TrackServer::switch_set_active_track);
         ClassDB::bind_method(D_METHOD("topology_get_summary"), &TrackServer::topology_get_summary);
         ClassDB::bind_method(D_METHOD("topology_rebuild"), &TrackServer::topology_rebuild);
 
@@ -175,6 +177,13 @@ namespace godot {
         BIND_ENUM_CONSTANT(TRACK_TRIBUTARY);
         BIND_ENUM_CONSTANT(TRACK_TURN);
         BIND_ENUM_CONSTANT(TRACK_TABLE);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_UNKNOWN);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_FLAT);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_MOUNTAINS);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_CANYON);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_TUNNEL);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_BRIDGE);
+        BIND_ENUM_CONSTANT(ENVIRONMENT_BANK);
         BIND_ENUM_CONSTANT(GROUP_NONE);
         BIND_ENUM_CONSTANT(GROUP_RAIL);
         BIND_ENUM_CONSTANT(GROUP_ROAD);
@@ -183,18 +192,23 @@ namespace godot {
         BIND_ENUM_CONSTANT(DIRECTION_REVERSED);
         BIND_CONSTANT(INVALID_NODE_ID);
 
+        const String switch_track_hint = enum_hint({{"Common", TRACK_COMMON}, {"Diverging", TRACK_DIVERGING}});
         ADD_SIGNAL(MethodInfo(
-                switch_active_track_changed_signal, PropertyInfo(Variant::RID, "track_rid"),
-                PropertyInfo(Variant::INT, "active_track")));
+                switch_active_track_changed_signal, PropertyInfo(Variant::RID, "switch"),
+                PropertyInfo(Variant::INT, "active_track", PROPERTY_HINT_ENUM, switch_track_hint)));
         ADD_SIGNAL(MethodInfo(
-                switch_offset_changed_signal, PropertyInfo(Variant::RID, "track_rid"),
+                switch_offset_changed_signal, PropertyInfo(Variant::RID, "switch"),
                 PropertyInfo(Variant::FLOAT, "offset")));
         ADD_SIGNAL(MethodInfo(
-                switch_movement_started_signal, PropertyInfo(Variant::RID, "track_rid"),
-                PropertyInfo(Variant::INT, "from_track"), PropertyInfo(Variant::INT, "to_track")));
+                switch_movement_started_signal, PropertyInfo(Variant::RID, "switch"),
+                PropertyInfo(Variant::INT, "from_track", PROPERTY_HINT_ENUM, switch_track_hint),
+                PropertyInfo(Variant::INT, "to_track", PROPERTY_HINT_ENUM, switch_track_hint)));
         ADD_SIGNAL(MethodInfo(
-                switch_movement_finished_signal, PropertyInfo(Variant::RID, "track_rid"),
-                PropertyInfo(Variant::INT, "active_track")));
+                switch_movement_finished_signal, PropertyInfo(Variant::RID, "switch"),
+                PropertyInfo(Variant::INT, "active_track", PROPERTY_HINT_ENUM, switch_track_hint)));
+        ADD_SIGNAL(MethodInfo(switch_created_signal, PropertyInfo(Variant::RID, "switch")));
+        ADD_SIGNAL(MethodInfo(
+                switch_freed_signal, PropertyInfo(Variant::RID, "switch"), PropertyInfo(Variant::STRING, "name")));
         ADD_SIGNAL(MethodInfo(tracks_changed_signal));
         ADD_SIGNAL(MethodInfo(topology_rebuilt_signal));
         ADD_SIGNAL(MethodInfo(topology_changed_signal));
@@ -441,11 +455,19 @@ namespace godot {
     }
 
     // MaSzyna Track.cpp:1933-1941 clamps blade offsets.
-    void TrackServer::_set_switch_f_offset(TrackSegment &p_track, const double p_value) {
-        p_track.switch_f_offset = p_value;
-        p_track.switch_f_offset1 = MIN(p_value, SWITCH_MAX_OFFSET);
-        p_track.switch_f_offset2 = MAX(p_value, 0.0);
-        emit_signal(switch_offset_changed_signal, p_track.track_rid, p_value);
+    void TrackServer::_set_switch_f_offset(const RID &p_switch, SwitchData &p_data, const double p_value) {
+        p_data.f_offset = p_value;
+        p_data.f_offset1 = MIN(p_value, SWITCH_MAX_OFFSET);
+        p_data.f_offset2 = MAX(p_value, 0.0);
+        emit_signal(switch_offset_changed_signal, p_switch, p_value);
+    }
+
+    void TrackServer::_free_switch(TrackSegment &p_track) {
+        const RID freed = p_track.switch_rid;
+        switches.erase(freed);
+        moving_switches.erase(freed);
+        p_track.switch_rid = RID();
+        emit_signal(switch_freed_signal, freed, p_track.name);
     }
 
     /// The blade animation runs only while a switch is actually moving - the same shape as
@@ -471,23 +493,24 @@ namespace godot {
         const uint64_t now = Time::get_singleton()->get_ticks_usec();
         const double delta = static_cast<double>(now - last_switch_step_usec) / LibMaszynaUnits::USEC_PER_SECOND;
         last_switch_step_usec = now;
-        for (int index = static_cast<int>(moving_switches.size()) - 1; index >= 0; --index) {
-            const RID track_rid = moving_switches[index];
-            TrackSegment *track = tracks.getptr(track_rid);
-            if (track == nullptr) {
-                moving_switches.remove_at(index);
+        // copied: a listener may free a switch, which leaves moving_switches (_free_switch())
+        const Vector<RID> moving = moving_switches;
+        for (const RID &switch_rid: moving) {
+            SwitchData *data = switches.getptr(switch_rid);
+            if (data == nullptr) {
                 continue;
             }
-            const double remaining = track->switch_desired_offset - track->switch_f_offset;
+            const double remaining = data->desired_offset - data->f_offset;
             // Track.cpp:1944 - the blade moves at a constant speed
             const double step = SWITCH_OFFSET_SPEED * delta;
             if (Math::abs(remaining) <= step) {
-                _set_switch_f_offset(*track, track->switch_desired_offset);
-                moving_switches.remove_at(index);
-                emit_signal(switch_movement_finished_signal, track_rid, track->active_track);
+                const SwitchTrack active_track = data->active_track;
+                _set_switch_f_offset(switch_rid, *data, data->desired_offset);
+                moving_switches.erase(switch_rid);
+                emit_signal(switch_movement_finished_signal, switch_rid, active_track);
                 continue;
             }
-            _set_switch_f_offset(*track, track->switch_f_offset + (remaining > 0.0 ? step : -step));
+            _set_switch_f_offset(switch_rid, *data, data->f_offset + (remaining > 0.0 ? step : -step));
         }
         if (moving_switches.is_empty()) {
             _set_switch_processing(false);
@@ -506,18 +529,19 @@ namespace godot {
     }
 
     void TrackServer::track_free(const RID &p_track) {
-        if (!tracks.has(p_track)) {
+        TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr) {
             return;
         }
-        moving_switches.erase(p_track);
-        for (const KeyValue<String, RID> &named: named_tracks) {
-            if (named.value == p_track) {
-                named_tracks.erase(named.key);
-                break;
-            }
+        if (track->switch_rid.is_valid()) {
+            _free_switch(*track);
+            track = tracks.getptr(p_track); // a listener may have rehashed the table
+        }
+        if (const RID *indexed = named_tracks.getptr(track->name); indexed != nullptr && *indexed == p_track) {
+            named_tracks.erase(track->name);
         }
         spatial_index->remove(p_track);
-        for (const RID &isolated: tracks.getptr(p_track)->isolated) {
+        for (const RID &isolated: track->isolated) {
             if (IsolatedData *section = isolated_sections.getptr(isolated); section != nullptr) {
                 section->tracks.erase(p_track);
             }
@@ -533,20 +557,15 @@ namespace godot {
         return track_rid != nullptr ? *track_rid : RID();
     }
 
-    double TrackServer::track_get_length(const RID &p_track, const int p_switch_track) const {
+    double TrackServer::track_get_length(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return 0.0;
         }
         if (track->type == TRACK_SWITCH) {
-            return track->get_length(p_switch_track);
+            return track->get_length(p_branch);
         }
         return track->get_length(TRACK_COMMON);
-    }
-
-    double TrackServer::switch_track_get_length(const RID &p_track, const int p_switch_track) const {
-        const TrackSegment *track = tracks.getptr(p_track);
-        return track != nullptr ? track->get_length(p_switch_track) : 0.0;
     }
 
     void
@@ -604,33 +623,25 @@ namespace godot {
         }
     }
 
-    void TrackServer::track_update(const RID &p_track, const int p_type, const String &p_name, const double p_width) {
+    void
+    TrackServer::track_update(const RID &p_track, const TrackType p_type, const String &p_name, const double p_width) {
         TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return;
         }
-        // Looking a track up by its RID is a linear scan over every named track - only worth
-        // paying for when this update actually carries a name that might replace a previous one.
-        // Most real scenery tracks are unnamed, so the common case stays O(1).
-        if (!p_name.is_empty()) {
-            for (const KeyValue<String, RID> &named: named_tracks) {
-                if (named.value == p_track && named.key != p_name) {
-                    named_tracks.erase(named.key);
-                    break;
-                }
+        if (track->name != p_name) {
+            if (const RID *indexed = named_tracks.getptr(track->name); indexed != nullptr && *indexed == p_track) {
+                named_tracks.erase(track->name);
             }
-            // A duplicate name only means by-name lookup resolves to whichever track claimed it
-            // first - it must not stop this track from getting its own width/type/AABB configured
-            // below.
-            const RID *existing = named_tracks.getptr(p_name);
-            if (existing != nullptr && *existing != p_track) {
-                UtilityFunctions::push_error("Named track already exists: " + p_name);
-            } else {
-                named_tracks.insert(p_name, p_track);
+            track->name = p_name;
+            if (!p_name.is_empty()) {
+                // a duplicate takes the name over (basic_table::insert(), Names.h:40-49)
+                named_tracks[p_name] = p_track;
             }
         }
 
         const double previous_width = track->width;
+        const bool was_switch = track->type == TRACK_SWITCH;
         track->type = p_type;
         track->width = p_width;
         if (!Math::is_equal_approx(previous_width, p_width)) {
@@ -648,12 +659,23 @@ namespace godot {
             spatial_index->remove(p_track);
             spatial_index->add(p_track, track->aabb);
         }
+        if (!was_switch && p_type == TRACK_SWITCH) {
+            ++next_track_id; // the tracks' own ids, so that a switch is never taken for a track
+            track->switch_rid = UtilityFunctions::rid_from_int64(next_track_id);
+            SwitchData data;
+            data.track = p_track;
+            switches.insert(track->switch_rid, data);
+            emit_signal(switch_created_signal, track->switch_rid);
+        } else if (was_switch && !(p_type == TRACK_SWITCH)) {
+            _free_switch(*track);
+        }
         emit_signal(tracks_changed_signal);
     }
 
     // Track properties read by the running sounds (Track.cpp:449).
     void TrackServer::track_update_properties(
-            const RID &p_track, const int p_quality_flag, const int p_environment, const double p_sound_distance) {
+            const RID &p_track, const int p_quality_flag, const TrackEnvironment p_environment,
+            const double p_sound_distance) {
         TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return;
@@ -685,9 +707,9 @@ namespace godot {
         return track != nullptr ? track->quality_flag : 0;
     }
 
-    int TrackServer::track_get_environment(const RID &p_track) const {
+    TrackServer::TrackEnvironment TrackServer::track_get_environment(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
-        return track != nullptr ? track->environment : 0;
+        return track != nullptr ? track->environment : ENVIRONMENT_UNKNOWN;
     }
 
     double TrackServer::track_get_sound_distance(const RID &p_track) const {
@@ -835,12 +857,12 @@ namespace godot {
         return track != nullptr ? _endpoints(*track) : PackedVector3Array();
     }
 
-    int TrackServer::track_get_common_endpoint_index(const RID &p_track) const {
+    TrackServer::SwitchCommonPoint TrackServer::track_get_common_endpoint_index(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
         return track != nullptr ? track->switch_common_endpoint_index : POINT_NONE;
     }
 
-    Ref<Resource> TrackServer::track_get_curve(const RID &p_track, const int p_branch) const {
+    Ref<Resource> TrackServer::track_get_curve(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             UtilityFunctions::push_error("Track RID is not valid");
@@ -852,7 +874,7 @@ namespace godot {
         return track->curve1;
     }
 
-    Vector2 TrackServer::track_get_roll(const RID &p_track, const int p_branch) const {
+    Vector2 TrackServer::track_get_roll(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return Vector2();
@@ -862,7 +884,7 @@ namespace godot {
         return Vector2(static_cast<real_t>(points.roll1), static_cast<real_t>(points.roll2));
     }
 
-    Ref<Curve3D> TrackServer::track_get_domain_curve(const RID &p_track, const int p_branch) const {
+    Ref<Curve3D> TrackServer::track_get_domain_curve(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             UtilityFunctions::push_error("Track RID is not valid");
@@ -874,39 +896,42 @@ namespace godot {
         return track->domain_curve1;
     }
 
-    PackedInt32Array TrackServer::switch_get_common_endpoints(const RID &p_track) const {
+    PackedInt32Array TrackServer::track_get_common_endpoints(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
         return track != nullptr ? track->switch_common_endpoints : PackedInt32Array();
     }
 
-    int TrackServer::switch_get_branch_start_endpoint(const RID &p_track, const int p_branch) const {
+    TrackServer::EndpointIndex
+    TrackServer::track_get_branch_start_endpoint(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track != nullptr && p_branch >= 0 && p_branch <= TRACK_DIVERGING &&
             track->switch_branch_start_endpoints[p_branch] >= 0) {
-            return track->switch_branch_start_endpoints[p_branch];
+            return static_cast<EndpointIndex>(track->switch_branch_start_endpoints[p_branch]);
         }
         return CURVE1_P1;
     }
 
-    int TrackServer::switch_get_branch_end_endpoint(const RID &p_track, const int p_branch) const {
+    TrackServer::EndpointIndex
+    TrackServer::track_get_branch_end_endpoint(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track != nullptr && p_branch >= 0 && p_branch <= TRACK_DIVERGING &&
             track->switch_branch_end_endpoints[p_branch] >= 0) {
-            return track->switch_branch_end_endpoints[p_branch];
+            return static_cast<EndpointIndex>(track->switch_branch_end_endpoints[p_branch]);
         }
         return CURVE1_P2;
     }
 
-    int TrackServer::switch_get_endpoint_branch(const RID &p_track, const int p_endpoint_index) const {
+    TrackServer::SwitchTrack
+    TrackServer::track_get_endpoint_branch(const RID &p_track, const EndpointIndex p_endpoint_index) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track != nullptr && p_endpoint_index >= 0 && p_endpoint_index <= CURVE2_P2 &&
             track->switch_endpoint_branches[p_endpoint_index] >= 0) {
-            return track->switch_endpoint_branches[p_endpoint_index];
+            return static_cast<SwitchTrack>(track->switch_endpoint_branches[p_endpoint_index]);
         }
         return TRACK_COMMON;
     }
 
-    double TrackServer::switch_get_blade_boundary_offset(const RID &p_track, const int p_branch) const {
+    double TrackServer::track_get_blade_boundary_offset(const RID &p_track, const SwitchTrack p_branch) const {
         const TrackSegment *track = tracks.getptr(p_track);
         if (track != nullptr && p_branch >= 0 && p_branch <= TRACK_DIVERGING) {
             return track->switch_blade_boundary_offsets[p_branch];
@@ -914,22 +939,12 @@ namespace godot {
         return 0.0;
     }
 
-    double TrackServer::switch_get_f_offset1(const RID &p_track) const {
-        const TrackSegment *track = tracks.getptr(p_track);
-        return track != nullptr ? track->switch_f_offset1 : 0.0;
-    }
-
-    double TrackServer::switch_get_f_offset2(const RID &p_track) const {
-        const TrackSegment *track = tracks.getptr(p_track);
-        return track != nullptr ? track->switch_f_offset2 : 0.0;
-    }
-
     TypedArray<RID> TrackServer::tracks_find_in_aabb(const Rect2 &p_aabb) const {
         return spatial_index->query(p_aabb);
     }
 
     TypedArray<TrackEndpointRef>
-    TrackServer::track_get_endpoint_connections(const RID &p_track, const int p_endpoint_index) {
+    TrackServer::track_get_endpoint_connections(const RID &p_track, const EndpointIndex p_endpoint_index) {
         TypedArray<TrackEndpointRef> result;
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr || p_endpoint_index < 0 || p_endpoint_index > CURVE2_P2) {
@@ -964,19 +979,19 @@ namespace godot {
         return result;
     }
 
-    Ref<TrackBranchNeighbors> TrackServer::switch_track_get_neighbors(const RID &p_track, const int p_switch_track) {
+    Ref<TrackBranchNeighbors> TrackServer::track_get_branch_neighbors(const RID &p_track, const SwitchTrack p_branch) {
         Ref<TrackBranchNeighbors> neighbors;
         neighbors.instantiate();
         const TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr || track->switch_common_endpoint_index == POINT_NONE) {
             return neighbors;
         }
-        if (p_switch_track == TRACK_DIVERGING && track->curve2.is_null()) {
+        if (p_branch == TRACK_DIVERGING && track->curve2.is_null()) {
             return neighbors;
         }
 
-        const int previous_endpoint_index = p_switch_track == TRACK_DIVERGING ? CURVE2_P1 : CURVE1_P1;
-        const int next_endpoint_index = p_switch_track == TRACK_DIVERGING ? CURVE2_P2 : CURVE1_P2;
+        const EndpointIndex previous_endpoint_index = p_branch == TRACK_DIVERGING ? CURVE2_P1 : CURVE1_P1;
+        const EndpointIndex next_endpoint_index = p_branch == TRACK_DIVERGING ? CURVE2_P2 : CURVE1_P2;
 
         const TypedArray<TrackEndpointRef> previous_connections =
                 track_get_endpoint_connections(p_track, previous_endpoint_index);
@@ -999,14 +1014,14 @@ namespace godot {
      * switch branch it forces when it enters a switch from a branch side (NO_FORCED_SWITCH_TRACK
      * otherwise); false when the node is open or ambiguous. Nothing is changed. */
     TypedArray<TrackRouteSegment> TrackServer::track_trace_route(
-            const RID &p_track, const int p_branch, const bool p_branch_from_setting, const bool p_toward_end,
+            const RID &p_track, const SwitchTrack p_branch, const bool p_branch_from_setting, const bool p_toward_end,
             const double p_start, const double p_distance) {
         TypedArray<TrackRouteSegment> route;
         if (!track_exists(p_track)) {
             return route;
         }
         RID track = p_track;
-        int branch = p_branch;
+        SwitchTrack branch = p_branch;
         bool branch_from_setting = p_branch_from_setting;
         bool is_switch = track_is_switch(track);
         double movement_sign = p_toward_end ? 1.0 : -1.0;
@@ -1028,10 +1043,10 @@ namespace godot {
             if (covered >= p_distance) {
                 break;
             }
-            int endpoint_index = 0;
+            EndpointIndex endpoint_index = CURVE1_P1;
             if (is_switch) {
-                endpoint_index = movement_sign > 0.0 ? switch_get_branch_end_endpoint(track, branch)
-                                                     : switch_get_branch_start_endpoint(track, branch);
+                endpoint_index = movement_sign > 0.0 ? track_get_branch_end_endpoint(track, branch)
+                                                     : track_get_branch_start_endpoint(track, branch);
             } else {
                 endpoint_index = movement_sign > 0.0 ? CURVE1_P2 : CURVE1_P1;
             }
@@ -1049,8 +1064,10 @@ namespace godot {
             if (is_switch) {
                 // the branch it would be forced onto, or the one the node leads to - the setting
                 branch_from_setting = forced_switch_track == NO_FORCED_SWITCH_TRACK;
-                branch = branch_from_setting ? switch_get_endpoint_branch(track, next_endpoint) : forced_switch_track;
-                movement_sign = next_endpoint == switch_get_branch_end_endpoint(track, branch) ? -1.0 : 1.0;
+                branch = branch_from_setting
+                                 ? track_get_endpoint_branch(track, static_cast<EndpointIndex>(next_endpoint))
+                                 : static_cast<SwitchTrack>(forced_switch_track);
+                movement_sign = next_endpoint == track_get_branch_end_endpoint(track, branch) ? -1.0 : 1.0;
             } else {
                 movement_sign = next_endpoint == CURVE1_P2 ? -1.0 : 1.0;
             }
@@ -1067,7 +1084,8 @@ namespace godot {
         if (!track_exists(p_track)) {
             return false;
         }
-        const TypedArray<TrackEndpointRef> connections = track_get_endpoint_connections(p_track, p_endpoint_index);
+        const TypedArray<TrackEndpointRef> connections =
+                track_get_endpoint_connections(p_track, static_cast<EndpointIndex>(p_endpoint_index));
 
         bool has_unique = false;
         RID unique_track;
@@ -1082,19 +1100,20 @@ namespace godot {
             int candidate_forced_switch_track = TrackServer::TRACK_COMMON;
             bool has_candidate_forced_switch_track = false;
 
-            if (track_is_switch(candidate_track)) {
-                const PackedInt32Array common_endpoints = switch_get_common_endpoints(candidate_track);
+            const RID candidate_switch = track_get_switch(candidate_track);
+            if (candidate_switch.is_valid()) {
+                const PackedInt32Array common_endpoints = track_get_common_endpoints(candidate_track);
                 if (common_endpoints.has(raw->get_endpoint_index())) {
                     // Entering from the common point follows whichever branch is active; remap the
                     // shared endpoint to the active branch endpoint at the same physical point.
-                    const int active_track = switch_get_active_track(candidate_track);
-                    const int branch_start = switch_get_branch_start_endpoint(candidate_track, active_track);
+                    const SwitchTrack active_track = switch_get_active_track(candidate_switch);
+                    const EndpointIndex branch_start = track_get_branch_start_endpoint(candidate_track, active_track);
                     candidate_endpoint = common_endpoints.has(branch_start)
                                                  ? branch_start
-                                                 : switch_get_branch_end_endpoint(candidate_track, active_track);
+                                                 : track_get_branch_end_endpoint(candidate_track, active_track);
                 } else {
-                    candidate_forced_switch_track =
-                            switch_get_endpoint_branch(candidate_track, raw->get_endpoint_index());
+                    candidate_forced_switch_track = track_get_endpoint_branch(
+                            candidate_track, static_cast<EndpointIndex>(raw->get_endpoint_index()));
                     has_candidate_forced_switch_track = true;
                 }
             }
@@ -1102,11 +1121,11 @@ namespace godot {
             // Discard endpoints that cannot be used for motion on the selected route. Branch-side
             // switch entry is allowed because it will force that branch.
             bool is_motion_accessible = false;
-            if (track_is_switch(candidate_track)) {
-                const int active_track = switch_get_active_track(candidate_track);
+            if (candidate_switch.is_valid()) {
+                const SwitchTrack active_track = switch_get_active_track(candidate_switch);
                 is_motion_accessible =
-                        candidate_endpoint == switch_get_branch_start_endpoint(candidate_track, active_track) ||
-                        candidate_endpoint == switch_get_branch_end_endpoint(candidate_track, active_track);
+                        candidate_endpoint == track_get_branch_start_endpoint(candidate_track, active_track) ||
+                        candidate_endpoint == track_get_branch_end_endpoint(candidate_track, active_track);
             } else {
                 is_motion_accessible =
                         candidate_endpoint == TrackServer::CURVE1_P1 || candidate_endpoint == TrackServer::CURVE1_P2;
@@ -1144,7 +1163,7 @@ namespace godot {
         return true;
     }
 
-    Ref<TrackEndpointRef> TrackServer::track_get_next(const RID &p_track, const int p_endpoint_index) {
+    Ref<TrackEndpointRef> TrackServer::track_get_next(const RID &p_track, const EndpointIndex p_endpoint_index) {
         RID next_track;
         int next_endpoint = 0;
         int forced_switch_track = NO_FORCED_SWITCH_TRACK;
@@ -1163,56 +1182,82 @@ namespace godot {
         return track != nullptr && track->type == TRACK_SWITCH;
     }
 
-    bool TrackServer::switch_is_right(const RID &p_track) const {
+    bool TrackServer::track_is_switch_right(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
         return track != nullptr && track->type == TRACK_SWITCH && track->switch_is_right;
     }
 
-    int TrackServer::switch_get_active_track(const RID &p_track) const {
+    String TrackServer::track_get_name(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
-        if (track == nullptr) {
-            UtilityFunctions::push_error("Track RID is not valid");
-            return TRACK_COMMON;
-        }
-        return track->active_track;
+        ERR_FAIL_NULL_V_MSG(track, String(), "Track RID is not valid");
+        return track->name;
     }
 
-    String TrackServer::track_get_name(const RID &p_track) const {
-        if (!tracks.has(p_track)) {
-            UtilityFunctions::push_error("Track RID is not valid");
-            return String();
-        }
-        for (const KeyValue<String, RID> &named: named_tracks) {
-            if (named.value == p_track) {
-                return named.key;
-            }
-        }
-        return String();
+    RID TrackServer::track_get_switch(const RID &p_track) const {
+        const TrackSegment *track = tracks.getptr(p_track);
+        return track != nullptr ? track->switch_rid : RID();
+    }
+
+    RID TrackServer::switch_get_track(const RID &p_switch) const {
+        const SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL_V(data, RID());
+        return data->track;
+    }
+
+    RID TrackServer::switch_get_rid_by_name(const String &p_name) const {
+        return track_get_switch(track_get_rid_by_name(p_name));
+    }
+
+    String TrackServer::switch_get_name(const RID &p_switch) const {
+        const SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL_V(data, String());
+        return tracks.getptr(data->track)->name;
+    }
+
+    TrackServer::SwitchTrack TrackServer::switch_get_active_track(const RID &p_switch) const {
+        const SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL_V(data, TRACK_COMMON);
+        return data->active_track;
+    }
+
+    double TrackServer::switch_get_f_offset1(const RID &p_switch) const {
+        const SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL_V(data, 0.0);
+        return data->f_offset1;
+    }
+
+    double TrackServer::switch_get_f_offset2(const RID &p_switch) const {
+        const SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL_V(data, 0.0);
+        return data->f_offset2;
     }
 
     // MaSzyna Track.cpp:1743-1755 sets desired switch offset.
-    void TrackServer::switch_set_active_track(const RID &p_track, const int p_active_track) {
-        TrackSegment *track = tracks.getptr(p_track);
-        if (track == nullptr || track->active_track == p_active_track) {
+    void TrackServer::switch_set_active_track(const RID &p_switch, const SwitchTrack p_active_track) {
+        SwitchData *data = switches.getptr(p_switch);
+        ERR_FAIL_NULL(data);
+        if (data->active_track == p_active_track) {
             return;
         }
-        const int from_track = track->active_track;
-        track->active_track = p_active_track;
-        track->switch_desired_offset = p_active_track == TRACK_DIVERGING
-                                               ? SWITCH_MAX_OFFSET + track->switch_f_offset_delay
-                                               : -track->switch_f_offset_delay;
+        const SwitchTrack from_track = data->active_track;
+        data->active_track = p_active_track;
+        data->desired_offset =
+                p_active_track == TRACK_DIVERGING ? SWITCH_MAX_OFFSET + data->f_offset_delay : -data->f_offset_delay;
+        const bool in_place = data->desired_offset == data->f_offset;
 
-        emit_signal(switch_active_track_changed_signal, p_track, track->active_track);
-        emit_signal(switch_movement_started_signal, p_track, from_track, p_active_track);
+        emit_signal(switch_active_track_changed_signal, p_switch, p_active_track);
+        emit_signal(switch_movement_started_signal, p_switch, from_track, p_active_track);
 
-        moving_switches.erase(p_track);
+        moving_switches.erase(p_switch);
 
-        if (track->switch_desired_offset == track->switch_f_offset) {
-            _set_switch_f_offset(*track, track->switch_desired_offset);
-            emit_signal(switch_movement_finished_signal, p_track, p_active_track);
+        if (in_place) {
+            data = switches.getptr(p_switch); // a listener may have rehashed the table
+            ERR_FAIL_NULL(data);
+            _set_switch_f_offset(p_switch, *data, data->desired_offset);
+            emit_signal(switch_movement_finished_signal, p_switch, p_active_track);
             return;
         }
-        moving_switches.push_back(p_track);
+        moving_switches.push_back(p_switch);
         last_switch_step_usec = Time::get_singleton()->get_ticks_usec();
         _set_switch_processing(true);
     }

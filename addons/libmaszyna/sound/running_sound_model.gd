@@ -11,9 +11,6 @@ class_name RunningSoundModel
 enum Action {STOP, LOOP, ONE_SHOT}
 
 const GRAVITY:float = 9.81
-## Track3D.TrackEnvironment
-const _ENVIRONMENT_BRIDGE:int = 1
-const _ENVIRONMENT_TUNNEL:int = 2
 
 ## {"event": StringName, "source": MmdSoundSourceDefinition}; a chunked wheel clatter axle has no
 ## event of its own but one one-shot event per chunk in "chunk_events", in sorted_chunks() order
@@ -296,8 +293,8 @@ func _wheel_clatter(
         return
     var volume:float = quality_volume
     match TrackServer.track_get_environment(track_rid):
-        _ENVIRONMENT_TUNNEL: volume *= 1.1
-        _ENVIRONMENT_BRIDGE: volume *= 1.2
+        TrackServer.ENVIRONMENT_TUNNEL: volume *= 1.1
+        TrackServer.ENVIRONMENT_BRIDGE: volume *= 1.2
     if not _is_combined(source):
         results[event_name] = {
             "action": Action.ONE_SHOT,

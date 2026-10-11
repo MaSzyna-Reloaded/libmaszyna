@@ -22,8 +22,9 @@ namespace godot {
     void MaszynaLegacySwitchAction::run(const RID &p_event, const RID &p_activator) {
         TrackServer *track_server = TrackServer::get_instance();
         ERR_FAIL_NULL(track_server);
+        // the switch of each track is taken now: a track that changed type since has another one
         for (int i = 0; i < tracks.size(); i++) {
-            track_server->switch_set_active_track(tracks[i], active_track);
+            track_server->switch_set_active_track(track_server->track_get_switch(tracks[i]), active_track);
         }
     }
 

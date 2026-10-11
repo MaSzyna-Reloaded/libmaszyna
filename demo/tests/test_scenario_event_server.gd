@@ -17,6 +17,8 @@ const FAST_SPEED:float = 1000.0
 const MAX_FRAME_DELTA:float = 0.25
 ## The delay of an event queued to run after two of no delay [s]
 const LATE_DELAY:float = 0.2
+## The width the scenery gives its tracks here [m]
+const SCENERY_TRACK_WIDTH:float = 1.435
 ## `departuredelay`: an event of this delay [s] and this departure delay [s], queued by a train that
 ## departs this many seconds from now; run times compared within this [s]
 const EVENT_DELAY:float = 5.0
@@ -382,7 +384,8 @@ func test_scenery_memcells_and_value_events() -> void:
         + "event copy_cell copyvalues 0 cell2 cell1 2 endevent",
         []
     )
-    var cell1:RID = ScenarioEventServer.memory_get_rid_by_name(&"Cell1")
+    # the node's name is read in lower case, as the original reads it (cParser::getTokens())
+    var cell1:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell1")
     var cell2:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell2")
     assert_eq(ScenarioEventServer.memory_get_text(cell1), "Start")
 
@@ -717,6 +720,8 @@ func _build_scenery(
     var scenery_tracks:Array[MaszynaTrackData] = []
     var track_rids:Array[RID] = []
     for track_name:String in tracks:
+        # the scenery names its tracks in TrackServer, where the events find them
+        TrackServer.track_update(tracks[track_name], TrackServer.TRACK_NORMAL, track_name, SCENERY_TRACK_WIDTH)
         var track_data:MaszynaTrackData = MaszynaTrackData.new()
         track_data.track_name = track_name
         scenery_tracks.append(track_data)

@@ -18,6 +18,221 @@ class RecordingImplementation extends SignallingImplementation:
             SignallingServer.signal_head_light_enable(signal_head, 0)
 
 
+## Records what the server hands an interlocking implementation, as [call, system, element, ...]
+class InterlockingRecording extends SignallingImplementation:
+    var calls: Array = []
+
+    func _handle_source_event(system: RID, source: RID, event: StringName, arguments: Dictionary) -> void:
+        calls.append([&"source_event", system, source, event, arguments])
+
+    func _switch_added(system: RID, switch_name: StringName) -> void:
+        calls.append([&"switch_added", system, switch_name])
+
+    func _switch_removed(system: RID, switch_name: StringName) -> void:
+        calls.append([&"switch_removed", system, switch_name])
+
+    func _switch_created(system: RID, switch_name: StringName) -> void:
+        calls.append([&"switch_created", system, switch_name])
+
+    func _switch_freed(system: RID, switch_name: StringName) -> void:
+        calls.append([&"switch_freed", system, switch_name])
+
+    func _switch_movement_finished(system: RID, switch_name: StringName, active_track: int) -> void:
+        calls.append([&"switch_movement_finished", system, switch_name, active_track])
+
+    func _system_linked(system: RID, other: RID) -> void:
+        calls.append([&"system_linked", system, other])
+
+    func _system_unlinked(system: RID, other: RID) -> void:
+        calls.append([&"system_unlinked", system, other])
+
+    func _route_added(system: RID, route: RID) -> void:
+        calls.append([&"route_added", system, route])
+
+    func _route_set_requested(system: RID, route: RID) -> void:
+        calls.append([&"route_set_requested", system, route])
+
+    func _route_cancel_requested(system: RID, route: RID) -> void:
+        calls.append([&"route_cancel_requested", system, route])
+
+    func _route_release_requested(system: RID, route: RID) -> void:
+        calls.append([&"route_release_requested", system, route])
+
+    func _route_emergency_release_requested(system: RID, route: RID) -> void:
+        calls.append([&"route_emergency_release_requested", system, route])
+
+
+## How long a switch takes to move at most [s]
+const SWITCH_MOVEMENT_TIMEOUT: float = 5.0
+## The switch's track width [m]
+const TRACK_WIDTH: float = 1.435
+
+
+func test_a_sensor_impulse_reaches_its_system_with_the_polarity() -> void:
+    var system: RID = SignallingServer.system_create()
+    var recording: InterlockingRecording = InterlockingRecording.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    var source: RID = SignallingServer.source_create()
+    SignallingServer.system_add_source(system, source)
+
+    SignallingServer.source_send_event(source, &"impulse", {&"polarity": SignallingServer.SOURCE_POLARITY_NEGATIVE})
+
+    assert_eq(recording.calls, [[&"source_event", system, source, &"impulse",
+            {&"polarity": SignallingServer.SOURCE_POLARITY_NEGATIVE}]])
+    SignallingServer.source_free(source)
+    SignallingServer.system_free(system)
+
+
+func test_a_switch_of_a_system_reports_where_it_came_to_lie() -> void:
+    var switch_track: RID = _create_switch("test_switch_moved")
+    var system: RID = SignallingServer.system_create()
+    SignallingServer.system_add_switch(system, &"test_switch_moved")
+    var recording: InterlockingRecording = InterlockingRecording.new()
+
+    SignallingServer.system_attach_implementation(system, recording)
+    TrackServer.switch_set_active_track(
+            TrackServer.switch_get_rid_by_name("test_switch_moved"), TrackServer.TRACK_DIVERGING)
+    await wait_until(func() -> bool: return recording.calls.size() == 2, SWITCH_MOVEMENT_TIMEOUT)
+
+    assert_eq(SignallingServer.switch_get_system(&"test_switch_moved"), system)
+    assert_eq(SignallingServer.system_get_switches(system), PackedStringArray(["test_switch_moved"]))
+    assert_eq(recording.calls, [
+        [&"switch_added", system, &"test_switch_moved"],
+        [&"switch_movement_finished", system, &"test_switch_moved", TrackServer.TRACK_DIVERGING],
+    ], "a late implementation learns the switches held, then their movements")
+    SignallingServer.system_free(system)
+    assert_false(SignallingServer.switch_get_system(&"test_switch_moved").is_valid(),
+            "a freed system lets its switches go")
+    TrackServer.track_free(switch_track)
+
+
+func test_a_switch_named_before_its_track_follows_the_track_coming_and_going() -> void:
+    var system: RID = SignallingServer.system_create()
+    var recording: InterlockingRecording = InterlockingRecording.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    SignallingServer.system_add_switch(system, &"test_switch_later")
+
+    var switch_track: RID = _create_switch("test_switch_later")
+    TrackServer.track_update(switch_track, TrackServer.TRACK_NORMAL, "test_switch_later", TRACK_WIDTH)
+    TrackServer.track_update(switch_track, TrackServer.TRACK_SWITCH, "test_switch_later", TRACK_WIDTH)
+    TrackServer.track_free(switch_track)
+
+    assert_eq(recording.calls, [
+        [&"switch_added", system, &"test_switch_later"],
+        [&"switch_created", system, &"test_switch_later"],
+        [&"switch_freed", system, &"test_switch_later"],
+        [&"switch_created", system, &"test_switch_later"],
+        [&"switch_freed", system, &"test_switch_later"],
+    ], "the system follows its switch by name through the track's types and its end")
+    assert_eq(SignallingServer.system_get_switches(system), PackedStringArray(["test_switch_later"]),
+            "the name stays; there is no switch to hold")
+    SignallingServer.system_free(system)
+
+
+func test_a_link_between_systems_goes_both_ways_and_goes_with_a_system() -> void:
+    var system: RID = SignallingServer.system_create()
+    var other: RID = SignallingServer.system_create()
+    var recording: InterlockingRecording = InterlockingRecording.new()
+    var other_recording: InterlockingRecording = InterlockingRecording.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    SignallingServer.system_attach_implementation(other, other_recording)
+
+    SignallingServer.system_link(system, other)
+
+    assert_eq(SignallingServer.system_get_linked_systems(system), [other] as Array[RID])
+    assert_eq(SignallingServer.system_get_linked_systems(other), [system] as Array[RID])
+    assert_eq(recording.calls, [[&"system_linked", system, other]])
+    assert_eq(other_recording.calls, [[&"system_linked", other, system]])
+    SignallingServer.system_free(system)
+    assert_eq(SignallingServer.system_get_linked_systems(other), [] as Array[RID])
+    assert_eq(other_recording.calls.back(), [&"system_unlinked", other, system])
+    SignallingServer.system_free(other)
+
+
+func test_a_route_keeps_its_definition() -> void:
+    var route: RID = SignallingServer.route_create()
+    var other: RID = SignallingServer.route_create()
+    var section: RID = SignallingServer.source_create()
+    var overlap: RID = SignallingServer.source_create()
+    var approach: RID = SignallingServer.source_create()
+    var sections: Array[RID] = [section]
+    var overlap_sections: Array[RID] = [overlap]
+    var approach_sections: Array[RID] = [approach]
+
+    SignallingServer.route_set_name(route, &"test_route_a1")
+    SignallingServer.route_set_kind(route, SignallingServer.ROUTE_KIND_SHUNTING)
+    SignallingServer.route_set_sections(route, sections)
+    SignallingServer.route_set_overlap_sections(route, overlap_sections)
+    SignallingServer.route_set_approach_sections(route, approach_sections)
+    SignallingServer.route_set_switch_position(route, &"test_route_switch", TrackServer.TRACK_DIVERGING)
+    SignallingServer.route_add_conflict(route, other)
+
+    assert_eq(SignallingServer.route_get_rid_by_name(&"test_route_a1"), route)
+    assert_eq(SignallingServer.route_get_kind(route), SignallingServer.ROUTE_KIND_SHUNTING)
+    assert_eq(SignallingServer.route_get_sections(route), sections)
+    assert_eq(SignallingServer.route_get_overlap_sections(route), overlap_sections)
+    assert_eq(SignallingServer.route_get_approach_sections(route), approach_sections)
+    assert_eq(SignallingServer.route_get_switch_positions(route), {&"test_route_switch": TrackServer.TRACK_DIVERGING})
+    assert_eq(SignallingServer.route_get_conflicts(other), [route] as Array[RID], "a conflict goes both ways")
+    SignallingServer.source_free(section)
+    assert_eq(SignallingServer.route_get_sections(route), [] as Array[RID], "a freed source leaves the route")
+    SignallingServer.route_free(other)
+    assert_eq(SignallingServer.route_get_conflicts(route), [] as Array[RID], "a freed route leaves the conflicts")
+    SignallingServer.route_free(route)
+    SignallingServer.source_free(overlap)
+    SignallingServer.source_free(approach)
+
+
+func test_route_requests_go_to_the_implementation_of_its_system() -> void:
+    var system: RID = SignallingServer.system_create()
+    var route: RID = SignallingServer.route_create()
+    SignallingServer.system_add_route(system, route)
+    var recording: InterlockingRecording = InterlockingRecording.new()
+
+    SignallingServer.system_attach_implementation(system, recording)
+    SignallingServer.route_request_set(route)
+    SignallingServer.route_request_cancel(route)
+    SignallingServer.route_request_release(route)
+    SignallingServer.route_request_emergency_release(route)
+
+    assert_eq(SignallingServer.route_get_system(route), system)
+    assert_eq(recording.calls, [
+        [&"route_added", system, route],
+        [&"route_set_requested", system, route],
+        [&"route_cancel_requested", system, route],
+        [&"route_release_requested", system, route],
+        [&"route_emergency_release_requested", system, route],
+    ])
+    SignallingServer.route_free(route)
+    SignallingServer.system_free(system)
+
+
+func test_a_locked_route_holds_its_sections_until_released_one_by_one() -> void:
+    var route: RID = SignallingServer.route_create()
+    var first: RID = SignallingServer.source_create()
+    var second: RID = SignallingServer.source_create()
+    var overlap: RID = SignallingServer.source_create()
+    var sections: Array[RID] = [first, second]
+    var overlap_sections: Array[RID] = [overlap]
+    SignallingServer.route_set_sections(route, sections)
+    SignallingServer.route_set_overlap_sections(route, overlap_sections)
+    watch_signals(SignallingServer)
+
+    SignallingServer.route_set_state(route, SignallingServer.ROUTE_STATE_LOCKED)
+    SignallingServer.route_release_section(route, first)
+
+    assert_eq(SignallingServer.route_get_state(route), SignallingServer.ROUTE_STATE_LOCKED)
+    assert_signal_emitted_with_parameters(SignallingServer, "route_state_changed",
+            [route, SignallingServer.ROUTE_STATE_LOCKED])
+    assert_signal_emitted_with_parameters(SignallingServer, "route_section_released", [route, first])
+    assert_eq(SignallingServer.route_get_locked_sections(route), [second, overlap] as Array[RID])
+    SignallingServer.route_set_state(route, SignallingServer.ROUTE_STATE_IDLE)
+    assert_eq(SignallingServer.route_get_locked_sections(route), [] as Array[RID], "an idle route holds nothing")
+    SignallingServer.route_free(route)
+    for source: RID in [first, second, overlap]:
+        SignallingServer.source_free(source)
+
+
 func test_signal_head_node_registers_the_model_under_its_name() -> void:
     var model: E3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_registered", model)
@@ -272,3 +487,14 @@ func _create_transform_submodel(submodel_name: String, visible: bool) -> E3DSubM
     submodel.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
     submodel.visible = visible
     return submodel
+
+
+func _create_switch(switch_name: String) -> RID:
+    var straight: TrackCurve = TrackCurve.new()
+    straight.p2 = Vector3(10.0, 0.0, 0.0)
+    var diverging: TrackCurve = TrackCurve.new()
+    diverging.p2 = Vector3(10.0, 0.0, 10.0)
+    var switch_track: RID = TrackServer.track_create()
+    TrackServer.track_update_curves(switch_track, straight, diverging)
+    TrackServer.track_update(switch_track, TrackServer.TRACK_SWITCH, switch_name, TRACK_WIDTH)
+    return switch_track
