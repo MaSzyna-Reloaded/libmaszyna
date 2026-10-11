@@ -20,10 +20,16 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            /* dMirrorMoveL/dMirrorMoveR of the original (DynObj.h) - the vehicle's, not the
+             * simulation's: 0 folded .. 1 out */
+            double mirror_left_position = 0.0;
+            double mirror_right_position = 0.0;
 
         protected:
             void _register_commands() override;
             void _unregister_commands() override;
+            /* The mirrors moved on by a step - called by the backend from its own step */
+            void _process_mirrors(double p_delta);
 
         public:
             /* Live state, read straight from the backend - nothing is stored. */
@@ -105,8 +111,8 @@ namespace godot {
             virtual void next_permit_preset() = 0;
             virtual void previous_permit_preset() = 0;
             /* The cab mirrors (DynObj.cpp:4207-4236): how far each side is unfolded, 0 folded .. 1 out */
-            virtual double get_mirror_left_position() const = 0;
-            virtual double get_mirror_right_position() const = 0;
+            double get_mirror_left_position() const;
+            double get_mirror_right_position() const;
             /* The mirrors are kept folded (MirrorForbidden, the cab's mirrors_sw: - Train.cpp:7726) */
             virtual bool get_mirrors_forbidden() const = 0;
             virtual void forbid_mirrors(bool p_state) = 0;

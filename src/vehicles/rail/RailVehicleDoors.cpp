@@ -151,4 +151,33 @@ namespace godot {
         unregister_command("doors_departure_signal");
         unregister_command("mirrors_forbid");
     }
+
+    // DynObj.cpp:4207-4236: the mirrors fold above MirrorVelClose, with no cab active or when
+    // forbidden, and unfold on the side whose doors are permitted to open - a full travel per
+    // second. The original folds them with no cab active whatever its InactiveCabFlag says.
+    void RailVehicleDoors::_process_mirrors(const double p_delta) {
+        const RailVehicleController *controller = get_rail_vehicle_controller();
+        ERR_FAIL_NULL(controller);
+        if (controller->get_speed() > get_mirror_close_velocity() ||
+            controller->get_active_cabin_kind() == RailVehicleCabinKind::RAIL_VEHICLE_CABIN_NONE ||
+            get_mirrors_forbidden()) {
+            mirror_left_position = MAX(0.0, mirror_left_position - p_delta);
+            mirror_right_position = MAX(0.0, mirror_right_position - p_delta);
+            return;
+        }
+        if (get_left_open_permit()) {
+            mirror_left_position = MIN(1.0, mirror_left_position + p_delta);
+        }
+        if (get_right_open_permit()) {
+            mirror_right_position = MIN(1.0, mirror_right_position + p_delta);
+        }
+    }
+
+    double RailVehicleDoors::get_mirror_left_position() const {
+        return mirror_left_position;
+    }
+
+    double RailVehicleDoors::get_mirror_right_position() const {
+        return mirror_right_position;
+    }
 } // namespace godot

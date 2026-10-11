@@ -71,15 +71,10 @@ namespace godot {
             bool get_remote_only() const override;
             void next_permit_preset() override;
             void previous_permit_preset() override;
-            double get_mirror_left_position() const override;
-            double get_mirror_right_position() const override;
             bool get_mirrors_forbidden() const override;
             void forbid_mirrors(bool p_state) override;
 
         private:
-            /* dMirrorMoveL/dMirrorMoveR of the original (DynObj.h), kept by the vehicle, not the Mover */
-            double mirror_left_position = 0.0;
-            double mirror_right_position = 0.0;
             const std::map<Voltage, float> voltage_map = {
                     {VOLTAGE_0, 0.0f}, {VOLTAGE_12, 12.0f}, {VOLTAGE_24, 24.0f}, {VOLTAGE_110, 110.0f}};
             const std::map<Type, int> door_type_map = {

@@ -207,7 +207,6 @@ Legend:
   * `src/legacy/vehicles/MoverRailVehicleWipers.hpp:22-35`: `wipers` ("the vendored Mover has no
     wipers at all")
   * `MoverRailVehicleWheels.hpp:33-35`: `wheel_angle_*_deg` ("vehicle layer's, not the Mover's")
-  * `MoverRailVehicleDoors.hpp:81-82`: `mirror_left_position`
   * `MoverRailVehicleMasterController.hpp:36-43`: tachometer, `distance_counter`
 * **Rule:** "if this layer were replaced wholesale, would the field go with it?"
 * **Problem:** replacing the backend would lose vehicle state.
