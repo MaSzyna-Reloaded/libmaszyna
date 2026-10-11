@@ -82,7 +82,7 @@ namespace godot {
         return hit;
     }
 
-    void E3DNodesBackend::update(const E3DInstanceData &p_instance) {
+    void E3DNodesBackend::update(E3DInstanceData &p_instance) {
         const Array light_names = p_instance.lights_state.keys();
         for (int i = 0; i < light_names.size(); i++) {
             const String light_name = light_names[i];

@@ -385,6 +385,12 @@ namespace godot {
         }
     }
 
+    void E3DRenderingServer::_update_visibility_if_built(E3DInstanceData &p_instance) {
+        if (p_instance.built) {
+            _get_backend(p_instance).update_visibility(p_instance);
+        }
+    }
+
     /// Creates an empty instance; set it up with instance_set_*() and
     /// instance_attach_object_instance_id(), then call instance_build().
     ///
@@ -564,7 +570,7 @@ namespace godot {
         E3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
         instance->visible = p_visible;
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
         _update_instance_smoke(*instance);
     }
 
@@ -619,7 +625,7 @@ namespace godot {
         ERR_FAIL_NULL(instance);
         instance->lights_override = p_lights_state.duplicate();
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// Light name -> dimmed: a dimmed light shows its "_xon" submodel instead of "_on" when it has
@@ -631,7 +637,7 @@ namespace godot {
         ERR_FAIL_NULL(instance);
         instance->lights_dimmed = p_lights_dimmed.duplicate();
         instance->lights_dimmed_multiplier = p_multiplier;
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The `lights` list of a scenery model node, by light index: `lights 3` means light 0 is
@@ -651,7 +657,7 @@ namespace godot {
         }
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// One light by index, what `LightSet()` does for a `lights` event (AnimModel.cpp:664-670).
@@ -671,7 +677,7 @@ namespace godot {
         declaration.phase = 0.0;
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The pick pass draws only opaque submodels (opengl33renderer.cpp:1208 Render_cab(..., Alpha =
@@ -721,7 +727,7 @@ namespace godot {
         declaration.phase = p_phase;
         _update_blinking(p_instance, *instance);
         _resolve_lights(*instance);
-        _update_if_built(*instance);
+        _update_visibility_if_built(*instance);
     }
 
     /// The `lightcolors` list of a scenery model node, in the same order. It overrides the colour
@@ -1331,7 +1337,7 @@ namespace godot {
                 if (declaration.value.mode == LIGHT_MODE_BLINK &&
                     _is_light_on(declaration.value) != declaration.value.blink_on) {
                     _resolve_lights(*instance);
-                    _update_if_built(*instance);
+                    _update_visibility_if_built(*instance);
                     break;
                 }
             }
@@ -1535,7 +1541,7 @@ namespace godot {
         settings.hidden = !p_visible;
         if (instance->built) {
             _resolve_submodel_settings(*instance);
-            _get_backend(*instance).update(*instance);
+            _get_backend(*instance).update_visibility(*instance);
         }
     }
 
@@ -1863,7 +1869,7 @@ namespace godot {
         if (E3DInstanceData *instance = instances.getptr(light->owner); instance != nullptr) {
             instance->lights_override[light->light_name] = true;
             _resolve_lights(*instance);
-            _update_if_built(*instance);
+            _update_visibility_if_built(*instance);
         }
     }
 
@@ -1875,7 +1881,7 @@ namespace godot {
         if (E3DInstanceData *instance = instances.getptr(light->owner); instance != nullptr) {
             instance->lights_override[light->light_name] = false;
             _resolve_lights(*instance);
-            _update_if_built(*instance);
+            _update_visibility_if_built(*instance);
         }
     }
 
@@ -1949,7 +1955,7 @@ namespace godot {
             const Dictionary previous = instance->lights_state;
             _resolve_lights(*instance);
             if (!(previous == instance->lights_state)) {
-                _update_if_built(*instance);
+                _update_visibility_if_built(*instance);
             }
         }
     }

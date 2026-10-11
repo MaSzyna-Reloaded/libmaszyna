@@ -249,6 +249,8 @@ namespace godot {
             const E3DInstanceBackend &_get_backend(const E3DInstanceData &p_instance) const;
             void _rebuild_if_built(E3DInstanceData &p_instance);
             void _update_if_built(E3DInstanceData &p_instance);
+            /// _update_if_built() of what is shown only: the lights, a submodel's or the instance's visibility
+            void _update_visibility_if_built(E3DInstanceData &p_instance);
             void _on_data_unload_requested();
             void _on_data_reload_requested();
             /// What the lights and the emitters were built with, by the settings that shape them -

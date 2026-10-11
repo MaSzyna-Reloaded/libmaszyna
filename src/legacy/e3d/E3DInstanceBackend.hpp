@@ -152,6 +152,8 @@ namespace godot {
             Vector<RID> rids;
             Vector<Transform3D> local_transforms;
             Vector<Vector<E3DSubModel *>> chains; // submodel with all its ancestors
+            /// What each RID was last shown as: a light switching sets only the ones that change
+            Vector<bool> rid_visible;
             Vector<Ref<Material>> materials;
 
             // NODES backend
@@ -181,7 +183,12 @@ namespace godot {
             virtual void build(E3DInstanceData &p_instance, E3DMaterialResolver &p_material_resolver) = 0;
             virtual void clear(E3DInstanceData &p_instance) = 0;
             /// Applies transform, visibility, layers and lights state
-            virtual void update(const E3DInstanceData &p_instance) = 0;
+            virtual void update(E3DInstanceData &p_instance) = 0;
+            /// Applies what is shown, after the lights state, a submodel's or the instance's own
+            /// visibility changed - a blinking lamp touches nothing else
+            virtual void update_visibility(E3DInstanceData &p_instance) {
+                update(p_instance);
+            }
             /* Moves what was built, and nothing else. A moving instance is the per-frame path, so
              * it must not re-apply the lights state: the submodels a light switches are shown and
              * hidden by whoever owns that light, and re-applying them on every move overwrites

@@ -5,6 +5,13 @@ namespace godot {
     /// Renders submodels as RenderingServer instances, without creating any nodes.
     class E3DOptimizedBackend : public E3DInstanceBackend {
         private:
+            /// The submodels the lights state shows or hides, for the instance being updated - kept
+            /// across updates, so filling it again allocates nothing
+            HashMap<E3DSubModel *, bool> light_overrides;
+
+            void _fill_light_overrides(const E3DInstanceData &p_instance);
+            /// Shows each RID as its chain and the lights say, setting only those that change
+            void _apply_visibility(E3DInstanceData &p_instance);
             void _add_submodels(
                     E3DInstanceData &p_instance, const TypedArray<E3DSubModel> &p_submodels,
                     const Transform3D &p_parent_transform, const Vector<E3DSubModel *> &p_parent_chain,
@@ -18,7 +25,8 @@ namespace godot {
         public:
             void build(E3DInstanceData &p_instance, E3DMaterialResolver &p_material_resolver) override;
             void clear(E3DInstanceData &p_instance) override;
-            void update(const E3DInstanceData &p_instance) override;
+            void update(E3DInstanceData &p_instance) override;
+            void update_visibility(E3DInstanceData &p_instance) override;
             void apply_transform(const E3DInstanceData &p_instance) override;
             void apply_poses(E3DInstanceData &p_instance) override;
             bool intersect_segment(

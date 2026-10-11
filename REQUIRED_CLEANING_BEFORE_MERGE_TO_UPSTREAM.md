@@ -105,7 +105,7 @@ Legend:
 - [x] [RC-059](#rc-059) Unbounded E3D animation loop with allocations
 - [x] [RC-060](#rc-060) Time and light level each walk all E3D instances
 - [x] [RC-061](#rc-061) Smoke emitters looked up and ticked while idle
-- [ ] [RC-062](#rc-062) `E3DOptimizedBackend::update()` allocates a map
+- [x] [RC-062](#rc-062) `E3DOptimizedBackend::update()` allocates a map
 - [x] [RC-063](#rc-063) Scenery streaming runs every frame while idle
 - [x] [RC-064](#rc-064) Scenery streaming entry found by linear scan
 - [x] [RC-065](#rc-065) `TractionServer` ticks forever
@@ -187,18 +187,6 @@ Legend:
 - [ ] [RC-122](#rc-122) Commands named `set_*` without a property
 
 ---
-
-## Per-frame work
-
-### RC-062
-
-**`E3DOptimizedBackend::update()` allocates a map**
-
-* **Where:** `src/legacy/e3d/E3DOptimizedBackend.cpp:38, 57`
-* **Problem:** `HashMap<E3DSubModel *, bool> overrides` is allocated, and every RID is walked,
-  on each call - reached from blink edges in `_process_lights` and from `_resolve_all_lights`.
-* **Fix:** keep the map as a member and update only what changed.
-
 
 ## Cosmetic
 

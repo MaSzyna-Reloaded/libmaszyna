@@ -29,41 +29,16 @@ namespace godot {
         p_instance.rids.clear();
         p_instance.local_transforms.clear();
         p_instance.chains.clear();
+        p_instance.rid_visible.clear();
         p_instance.materials.clear();
         p_instance.light_submodels.clear();
     }
 
-    void E3DOptimizedBackend::update(const E3DInstanceData &p_instance) {
-        // Submodel visibility overrides from the light state, same as E3DNodesBackend::update()
-        HashMap<E3DSubModel *, bool> overrides;
-        for (const KeyValue<String, E3DInstanceData::LightSubmodels> &light: p_instance.light_submodels) {
-            if (!p_instance.lights_state.has(light.key)) {
-                continue;
-            }
-            const bool has_xon = light.value.xon != nullptr;
-            if (light.value.on != nullptr) {
-                overrides[light.value.on] = _light_part_visible(p_instance, light.key, LIGHT_PART_ON, has_xon);
-            }
-            if (light.value.off != nullptr) {
-                overrides[light.value.off] = _light_part_visible(p_instance, light.key, LIGHT_PART_OFF, has_xon);
-            }
-            if (has_xon) {
-                overrides[light.value.xon] = _light_part_visible(p_instance, light.key, LIGHT_PART_XON, has_xon);
-            }
-        }
-
+    void E3DOptimizedBackend::update(E3DInstanceData &p_instance) {
         RenderingServer *rs = RenderingServer::get_singleton();
         const RID overlay = p_instance.material_overlay.is_valid() ? p_instance.material_overlay->get_rid() : RID();
         for (int i = 0; i < p_instance.rids.size(); i++) {
-            // A submodel is rendered only if all its ancestors are visible (node hierarchy semantics)
-            bool visible = p_instance.visible;
-            for (E3DSubModel *submodel: p_instance.chains[i]) {
-                const HashMap<E3DSubModel *, bool>::ConstIterator override = overrides.find(submodel);
-                visible = visible &&
-                          (override == overrides.end() ? _is_submodel_shown(p_instance, submodel) : override->value);
-            }
             rs->instance_set_transform(p_instance.rids[i], p_instance.transform * p_instance.local_transforms[i]);
-            rs->instance_set_visible(p_instance.rids[i], visible);
             rs->instance_set_layer_mask(p_instance.rids[i], p_instance.layer_mask);
             rs->instance_geometry_set_material_overlay(p_instance.rids[i], overlay);
             // the chain ends with the submodel itself (instance_set_submodel_material_override())
@@ -72,6 +47,57 @@ namespace godot {
                 material != nullptr) {
                 rs->instance_geometry_set_material_override(p_instance.rids[i], (*material)->get_rid());
             }
+        }
+        // every RID set, whatever it was last shown as
+        p_instance.rid_visible.clear();
+        update_visibility(p_instance);
+    }
+
+    void E3DOptimizedBackend::update_visibility(E3DInstanceData &p_instance) {
+        _fill_light_overrides(p_instance);
+        _apply_visibility(p_instance);
+    }
+
+    /// Submodel visibility overrides from the light state, same as E3DNodesBackend::update()
+    void E3DOptimizedBackend::_fill_light_overrides(const E3DInstanceData &p_instance) {
+        light_overrides.clear();
+        for (const KeyValue<String, E3DInstanceData::LightSubmodels> &light: p_instance.light_submodels) {
+            if (!p_instance.lights_state.has(light.key)) {
+                continue;
+            }
+            const bool has_xon = light.value.xon != nullptr;
+            if (light.value.on != nullptr) {
+                light_overrides[light.value.on] = _light_part_visible(p_instance, light.key, LIGHT_PART_ON, has_xon);
+            }
+            if (light.value.off != nullptr) {
+                light_overrides[light.value.off] = _light_part_visible(p_instance, light.key, LIGHT_PART_OFF, has_xon);
+            }
+            if (has_xon) {
+                light_overrides[light.value.xon] = _light_part_visible(p_instance, light.key, LIGHT_PART_XON, has_xon);
+            }
+        }
+    }
+
+    void E3DOptimizedBackend::_apply_visibility(E3DInstanceData &p_instance) {
+        RenderingServer *rs = RenderingServer::get_singleton();
+        // none known (built, or a full update): every RID is set
+        const bool known = p_instance.rid_visible.size() == p_instance.rids.size();
+        if (!known) {
+            p_instance.rid_visible.resize(p_instance.rids.size());
+        }
+        for (int i = 0; i < p_instance.rids.size(); i++) {
+            // A submodel is rendered only if all its ancestors are visible (node hierarchy semantics)
+            bool visible = p_instance.visible;
+            for (E3DSubModel *submodel: p_instance.chains[i]) {
+                const HashMap<E3DSubModel *, bool>::ConstIterator override = light_overrides.find(submodel);
+                visible = visible && (override == light_overrides.end() ? _is_submodel_shown(p_instance, submodel)
+                                                                        : override->value);
+            }
+            if (known && p_instance.rid_visible[i] == visible) {
+                continue;
+            }
+            rs->instance_set_visible(p_instance.rids[i], visible);
+            p_instance.rid_visible.set(i, visible);
         }
     }
 
