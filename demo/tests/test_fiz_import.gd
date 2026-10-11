@@ -200,3 +200,25 @@ func test_two_coupler_sections_reach_both_ends() -> void:
     assert_has(locations, RailVehicleBuffCoupl.BUFFER_LOCATION_FRONT)
     assert_has(locations, RailVehicleBuffCoupl.BUFFER_LOCATION_BACK)
 
+
+
+## A bare coupler is sized by the engine's Ftmax (LoadFIZ_BuffCoupl, Mover.cpp:10663-10672). Its
+## BuffCoupl. comes before Engine:, as in the game's data - the second configuration pass reads the
+## engine whatever the order. Doors at 110 V and the speed recorder's dial reach the vehicle too.
+func test_bare_coupler_sized_by_the_engine_after_it() -> void:
+    var bare := RailVehiclePhysicsNode.new()
+    add_child_autofree(bare)
+    bare.set_controller(FizVehicleBuilder.build_description_at("res://tests/fixtures/test_vehicle_bare_coupler.fiz"))
+    await wait_idle_frames(2)
+    var built: VehicleController = VehicleServer.vehicle_get_controller(bare.get_vehicle_rid())
+
+    var coupler: RailVehicleBuffCoupl = built.get_rail_component(RailVehicleComponentType.COMPONENT_BUFFERS)
+    # FmaxC = 100 * Mass + 2 * Ftmax, both ends of a BuffCoupl. entry
+    var expected_force: float = 100.0 * 74000.0 + 2.0 * 392000.0
+    assert_almost_eq(coupler.get_coupler_max_force(RailVehicleController.COUPLER_END_FRONT), expected_force, 0.001)
+    assert_almost_eq(coupler.get_coupler_max_force(RailVehicleController.COUPLER_END_REAR), expected_force, 0.001)
+
+    var doors: RailVehicleDoors = built.get_component(VehicleComponentType.COMPONENT_DOORS)
+    assert_eq(doors.voltage, RailVehicleDoors.VOLTAGE_110)
+    var master_controller: RailVehicleMasterController = built.get_rail_component(RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER)
+    assert_eq(master_controller.tachometer_max_speed, 150.0)

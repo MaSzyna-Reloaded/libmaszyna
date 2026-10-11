@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenarioEventServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="animation_set_done_event">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_attach_action">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="action" type="ScenarioEventAction" />
+			<description>
+			</description>
+		</method>
+		<method name="event_attach_condition">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="condition" type="ScenarioEventCondition" />
+			<description>
+			</description>
+		</method>
+		<method name="event_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_free">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_action" qualifiers="const">
+			<return type="ScenarioEventAction" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_condition" qualifiers="const">
+			<return type="ScenarioEventCondition" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_delay" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_departure_delay" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_random_delay" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="event_get_run_time" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_is_passive" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_is_queued" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="event_queue">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" default="RID()" />
+			<param index="2" name="extra_delay" type="float" default="0.0" />
+			<description>
+			</description>
+		</method>
+		<method name="event_set_delay">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="seconds" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="event_set_departure_delay">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="seconds" type="float" />
+			<description>
+				Queued by a vehicle, the event runs [param seconds] from the departure of the vehicle's train by its timetable ([method DriverServer.vehicle_get_seconds_until_departure]), not before now, instead of from now ([code]departuredelay[/code], [code]Event.cpp:2431-2444[/code]); [code]NAN[/code] for an event that does not wait for a departure.
+			</description>
+		</method>
+		<method name="event_set_name">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="event_set_passive">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="passive" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="event_set_random_delay">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="seconds" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_add_event">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="slot" type="int" enum="ScenarioEventServer.IsolatedEvent" />
+			<param index="2" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="isolated_clear_events">
+			<return type="void" />
+			<param index="0" name="isolated" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_attach_condition">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="condition" type="ScenarioEventCondition" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_fire">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_fire_shift">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_free">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_event" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_key" qualifiers="const">
+			<return type="int" enum="Key" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_position" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_radius" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_get_shift_event" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_events">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="event" type="RID" />
+			<param index="2" name="shift_event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_interval">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="seconds" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_key">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="key" type="int" enum="Key" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_name">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_position">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="position" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_radio_call">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_radius">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="radius" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="launcher_set_time_of_day">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="hour" type="int" />
+			<param index="2" name="minute" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_create">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_free">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_position" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_rid_by_name" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_text" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_track" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_value1" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_get_value2" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_set_name">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="name" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_set_position">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="position" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_set_track">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="memory_set_values">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="text" type="String" />
+			<param index="2" name="value1" type="float" />
+			<param index="3" name="value2" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="queue_get_events" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+				Returns the queued events in the order they run.
+			</description>
+		</method>
+		<method name="track_add_event">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="slot" type="int" enum="ScenarioEventServer.TrackEvent" />
+			<param index="2" name="event" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_clear_events">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="track_get_events" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="slot" type="int" enum="ScenarioEventServer.TrackEvent" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="event_dequeued">
+			<param index="0" name="event" type="RID" />
+			<description>
+				A queued event left the queue without launching - it was freed (its scenery unloaded). The RID is no longer valid.
+			</description>
+		</signal>
+		<signal name="event_launched">
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="event_queued">
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="memory_values_changed">
+			<param index="0" name="memory" type="RID" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="MEMORY_FIELD_TEXT" value="1" enum="MemoryField" is_bitfield="true">
+		</constant>
+		<constant name="MEMORY_FIELD_VALUE1" value="2" enum="MemoryField" is_bitfield="true">
+		</constant>
+		<constant name="MEMORY_FIELD_VALUE2" value="4" enum="MemoryField" is_bitfield="true">
+		</constant>
+		<constant name="TRACK_EVENT0" value="0" enum="TrackEvent">
+		</constant>
+		<constant name="TRACK_EVENT1" value="1" enum="TrackEvent">
+		</constant>
+		<constant name="TRACK_EVENT2" value="2" enum="TrackEvent">
+		</constant>
+		<constant name="TRACK_EVENTALL0" value="3" enum="TrackEvent">
+		</constant>
+		<constant name="TRACK_EVENTALL1" value="4" enum="TrackEvent">
+		</constant>
+		<constant name="TRACK_EVENTALL2" value="5" enum="TrackEvent">
+		</constant>
+		<constant name="ISOLATED_BUSY" value="0" enum="IsolatedEvent">
+		</constant>
+		<constant name="ISOLATED_FREE" value="1" enum="IsolatedEvent">
+		</constant>
+		<constant name="ISOLATED_INC" value="2" enum="IsolatedEvent">
+		</constant>
+		<constant name="ISOLATED_DEC" value="3" enum="IsolatedEvent">
+		</constant>
+	</constants>
+</class>

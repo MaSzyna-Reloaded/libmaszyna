@@ -1,9 +1,6 @@
 #include "vehicles/base/VehicleComponent.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
-#include "vehicles/rail/RailVehicleEngine.hpp"
-#include "vehicles/rail/RailVehicleServer.hpp"
-#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/gd_extension.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/math.hpp>
@@ -43,6 +40,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("apply_configuration"), &VehicleController::apply_configuration);
         ClassDB::bind_method(D_METHOD("is_simulation_ready"), &VehicleController::is_simulation_ready);
         ClassDB::bind_method(D_METHOD("add_component", "component"), &VehicleController::add_component);
+        ClassDB::bind_method(D_METHOD("remove_component", "component"), &VehicleController::remove_component);
         ClassDB::bind_method(D_METHOD("set_components", "components"), &VehicleController::set_components);
         ClassDB::bind_method(D_METHOD("get_components"), &VehicleController::get_components);
         ADD_PROPERTY(
@@ -122,30 +120,33 @@ namespace godot {
         return commands.has(p_command);
     }
 
+    /* In the editor too: a component outliving its controller must not keep a pointer to it */
     void VehicleController::_notification(const int p_what) {
-        if (Engine::get_singleton()->is_editor_hint()) {
-            return;
-        }
         if (p_what == NOTIFICATION_PREDELETE) {
             release();
         }
     }
 
-    /* Applying the vehicle's configuration to the backend: the vehicle's own, then every
-     * component's, in registration order. The signal is emitted afterwards and means exactly
-     * "the backend now carries this" - it is not how the components are reached, because a
-     * component of this vehicle is applied by name here rather than by whoever happens to be
-     * connected. */
+    /* Applying the vehicle's configuration to the backend, in two passes. The first writes what
+     * each part owns alone - the vehicle's own, then every component's, in registration order
+     * (the order of the FIZ sections). The second writes what depends on other parts of the
+     * vehicle (a bare coupler on the engine's tractive force), so it never depends on that order.
+     * The signal is emitted afterwards and means exactly "the backend now carries this" - it is
+     * not how the components are reached, because a component of this vehicle is applied by name
+     * here rather than by whoever happens to be connected. */
     void VehicleController::apply_configuration() {
         apply_config();
         for (const Ref<VehicleComponent> &component: components) {
             component->apply_config();
         }
+        apply_vehicle_config();
+        for (const Ref<VehicleComponent> &component: components) {
+            component->apply_vehicle_config();
+        }
+        emit_config_changed();
         emit_signal(simulation_configured_signal);
     }
 
-    /* Registering the vehicle's name and its own commands, where the vehicle comes into being -
-     * it used to wait for NOTIFICATION_ENTER_TREE, which a vehicle outside a tree never gets. */
     /* A vehicle that is rebuilt keeps its identity - every reference taken to it stays valid -
      * so what it holds is handed back by name rather than by destroying the vehicle. */
     void VehicleController::release() {
@@ -190,7 +191,7 @@ namespace godot {
 
     void VehicleController::emit_position_changed_if_needed() {
         const Vector3 position = get_world_position();
-        if (position.distance_to(last_emitted_position) < 1.0) {
+        if (position.distance_to(last_emitted_position) < POSITION_CHANGED_MIN_DISTANCE) {
             return;
         }
         last_emitted_position = position;
@@ -285,6 +286,12 @@ namespace godot {
         }
     }
 
+    void VehicleController::remove_component(const Ref<VehicleComponent> &p_component) {
+        ERR_FAIL_COND(p_component.is_null());
+        p_component->detach();
+        components.erase(p_component);
+    }
+
     void VehicleController::set_components(const TypedArray<VehicleComponent> &p_components) {
         _detach_components();
         components.clear();
@@ -325,7 +332,7 @@ namespace godot {
         p_component->attach_implementation(ObjectID());
     }
 
-    Dictionary VehicleController::compose_state() {
+    Dictionary VehicleController::get_state() const {
         Dictionary result;
         _fill_state_dictionary(result);
         for (const Ref<VehicleComponent> &component: components) {
@@ -341,11 +348,11 @@ namespace godot {
     }
 
     Transform3D VehicleController::get_world_transform() const {
-        RailVehicleServer *server = RailVehicleServer::get_instance();
-        if (server == nullptr || !rid.is_valid()) {
-            return Transform3D();
-        }
-        return server->vehicle_get_transform(rid);
+        return world_transform;
+    }
+
+    void VehicleController::set_world_transform(const Transform3D &p_transform) {
+        world_transform = p_transform;
     }
 
     void VehicleController::set_implementation(const StringName &p_implementation) {

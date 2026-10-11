@@ -4,8 +4,9 @@
 
 namespace godot {
     void SignallingSystemNode::_bind_methods() {
-        ClassDB::bind_method(D_METHOD("set_delegate", "delegate"), &SignallingSystemNode::set_delegate);
-        ClassDB::bind_method(D_METHOD("get_delegate"), &SignallingSystemNode::get_delegate);
+        ClassDB::bind_method(
+                D_METHOD("set_implementation", "implementation"), &SignallingSystemNode::set_implementation);
+        ClassDB::bind_method(D_METHOD("get_implementation"), &SignallingSystemNode::get_implementation);
         ClassDB::bind_method(D_METHOD("set_signal_head_names", "names"), &SignallingSystemNode::set_signal_head_names);
         ClassDB::bind_method(D_METHOD("get_signal_head_names"), &SignallingSystemNode::get_signal_head_names);
         ClassDB::bind_method(D_METHOD("get_system"), &SignallingSystemNode::get_system);
@@ -13,8 +14,9 @@ namespace godot {
                 D_METHOD("send_event", "event", "arguments"), &SignallingSystemNode::send_event, DEFVAL(Dictionary()));
 
         ADD_PROPERTY(
-                PropertyInfo(Variant::OBJECT, "delegate", PROPERTY_HINT_RESOURCE_TYPE, "SignallingSystemDelegate"),
-                "set_delegate", "get_delegate");
+                PropertyInfo(
+                        Variant::OBJECT, "implementation", PROPERTY_HINT_RESOURCE_TYPE, "SignallingImplementation"),
+                "set_implementation", "get_implementation");
         ADD_PROPERTY(
                 PropertyInfo(Variant::PACKED_STRING_ARRAY, "signal_head_names"), "set_signal_head_names",
                 "get_signal_head_names");
@@ -29,7 +31,7 @@ namespace godot {
         switch (p_what) {
             case NOTIFICATION_ENTER_TREE: {
                 system = server->system_create();
-                server->system_attach_delegate(system, delegate);
+                server->system_attach_implementation(system, implementation);
                 server->connect(
                         SignallingServer::signal_head_registered_signal,
                         callable_mp(this, &SignallingSystemNode::_on_signal_head_registered));
@@ -65,18 +67,18 @@ namespace godot {
         server->system_add_signal_head(system, p_signal_head);
     }
 
-    void SignallingSystemNode::set_delegate(const Ref<SignallingSystemDelegate> &p_delegate) {
-        delegate = p_delegate;
+    void SignallingSystemNode::set_implementation(const Ref<SignallingImplementation> &p_implementation) {
+        implementation = p_implementation;
         if (!system.is_valid()) {
             return;
         }
         SignallingServer *server = SignallingServer::get_instance();
         ERR_FAIL_NULL(server);
-        server->system_attach_delegate(system, delegate);
+        server->system_attach_implementation(system, implementation);
     }
 
-    Ref<SignallingSystemDelegate> SignallingSystemNode::get_delegate() const {
-        return delegate;
+    Ref<SignallingImplementation> SignallingSystemNode::get_implementation() const {
+        return implementation;
     }
 
     /// Taken when the node enters the tree, and for signal heads registered after that

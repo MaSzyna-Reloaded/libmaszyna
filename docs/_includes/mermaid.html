@@ -1,0 +1,93 @@
+{%- comment -%}
+Renders the ```mermaid blocks of a page (GitHub renders them by itself) and opens a diagram in a
+lightbox on click: zoom out, zoom in, 100% (the diagram's own size), close. Include it once at the
+end of a page that has diagrams (include mermaid.html).
+{%- endcomment -%}
+<style>
+  pre.mermaid { cursor: zoom-in; background: none; border: 0; text-align: center; }
+  .diagram-lightbox {
+    position: fixed; inset: 0; z-index: 1000; display: none; flex-direction: column;
+    background: rgba(0, 0, 0, 0.75);
+  }
+  .diagram-lightbox.open { display: flex; }
+  .diagram-lightbox-toolbar { display: flex; gap: 6px; justify-content: center; align-items: center; padding: 10px; }
+  .diagram-lightbox-toolbar button {
+    min-width: 44px; height: 36px; font-size: 18px; border: 0; border-radius: 4px; background: #fff; cursor: pointer;
+  }
+  .diagram-lightbox-toolbar output { color: #fff; min-width: 56px; text-align: center; }
+  .diagram-lightbox-view { flex: 1; overflow: auto; margin: 0 16px 16px; background: #fff; border-radius: 4px; }
+  .diagram-lightbox-view svg { display: block; margin: auto; max-width: none !important; }
+</style>
+<div class="diagram-lightbox" role="dialog" aria-modal="true" aria-label="Diagram">
+  <div class="diagram-lightbox-toolbar">
+    <button type="button" data-zoom="out" aria-label="Zoom out">&minus;</button>
+    <output></output>
+    <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+    <button type="button" data-zoom="actual" aria-label="Actual size">100%</button>
+    <button type="button" data-zoom="close" aria-label="Close">&times;</button>
+  </div>
+  <div class="diagram-lightbox-view"></div>
+</div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const ZOOM_STEP = 1.25;
+  const ZOOM_MIN = 0.1;
+  const ZOOM_MAX = 8;
+  const lightbox = document.querySelector(".diagram-lightbox");
+  const view = lightbox.querySelector(".diagram-lightbox-view");
+  const label = lightbox.querySelector("output");
+  let svg = null;
+  let width = 0;
+  let height = 0;
+  let zoom = 1;
+
+  function set_zoom(value) {
+    zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+    svg.setAttribute("width", width * zoom);
+    svg.setAttribute("height", height * zoom);
+    label.value = Math.round(zoom * 100) + "%";
+  }
+
+  function open(diagram) {
+    svg = diagram.querySelector("svg").cloneNode(true);
+    svg.removeAttribute("style");
+    // the diagram's own size is its viewBox; 100% shows it at that size
+    [, , width, height] = svg.getAttribute("viewBox").split(/[\s,]+/).map(Number);
+    view.replaceChildren(svg);
+    lightbox.classList.add("open");
+    // opens fitted to the window, never enlarged beyond its own size
+    set_zoom(Math.min(1, view.clientWidth / width, view.clientHeight / height));
+  }
+
+  function close() {
+    lightbox.classList.remove("open");
+    view.replaceChildren();
+  }
+
+  document.querySelectorAll("code.language-mermaid").forEach((code) => {
+    const diagram = document.createElement("pre");
+    diagram.className = "mermaid";
+    diagram.textContent = code.textContent;
+    diagram.title = "Click to enlarge";
+    diagram.addEventListener("click", () => open(diagram));
+    code.closest("pre").replaceWith(diagram);
+  });
+  lightbox.querySelector("[data-zoom=out]").addEventListener("click", () => set_zoom(zoom / ZOOM_STEP));
+  lightbox.querySelector("[data-zoom=in]").addEventListener("click", () => set_zoom(zoom * ZOOM_STEP));
+  lightbox.querySelector("[data-zoom=actual]").addEventListener("click", () => set_zoom(1));
+  lightbox.querySelector("[data-zoom=close]").addEventListener("click", close);
+  lightbox.addEventListener("click", (event) => {
+    if (event.target === lightbox) {
+      close();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && lightbox.classList.contains("open")) {
+      close();
+    }
+  });
+
+  mermaid.initialize({ startOnLoad: false });
+  await mermaid.run();
+</script>

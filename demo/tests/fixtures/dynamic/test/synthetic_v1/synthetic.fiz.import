@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://deugbiluptbe"
+path="res://.godot/imported/synthetic.fiz-84ae5d684753c7c575bb078eae7c2594.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/synthetic_v1/synthetic.fiz"
+dest_files=["res://.godot/imported/synthetic.fiz-84ae5d684753c7c575bb078eae7c2594.res"]
+
+[params]
+

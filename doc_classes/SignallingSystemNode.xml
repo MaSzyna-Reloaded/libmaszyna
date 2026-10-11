@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="SignallingSystemNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		A node proxy of a signalling system: creates it with a delegate and groups signal heads by name.
+		A node proxy of a signalling system: creates it with an implementation and groups signal heads by name.
 	</brief_description>
 	<description>
 	</description>
@@ -22,7 +22,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="delegate" type="SignallingSystemDelegate" setter="set_delegate" getter="get_delegate">
+		<member name="implementation" type="SignallingImplementation" setter="set_implementation" getter="get_implementation">
 		</member>
 		<member name="signal_head_names" type="PackedStringArray" setter="set_signal_head_names" getter="get_signal_head_names" default="PackedStringArray()">
 		</member>

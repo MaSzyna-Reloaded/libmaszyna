@@ -1,0 +1,76 @@
+[gd_scene format=3 uid="uid://dqg8w15j37q0"]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_controller.gd" id="1_ucl"]
+[ext_resource type="PackedScene" uid="uid://dy8wkx8wr4gjf" path="res://addons/libmaszyna/debug_hud/button.tscn" id="2_ucl"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="3_switch"]
+
+[node name="Controller" type="VBoxContainer"]
+script = ExtResource("1_ucl")
+target = 1
+
+[node name="Cab" parent="." instance=ExtResource("3_switch")]
+layout_mode = 2
+label = "Cab"
+state_property = "cabin"
+command = "cab_activation"
+
+[node name="Direction" type="HBoxContainer" parent="." unique_id=2020502642]
+layout_mode = 2
+
+[node name="Forward" parent="Direction" unique_id=1737412244 instance=ExtResource("2_ucl")]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Forward"
+command = "direction_increase"
+
+[node name="Reverse" parent="Direction" unique_id=692990129 instance=ExtResource("2_ucl")]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Backward"
+command = "direction_decrease"
+
+[node name="MainController" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="MainDecrease" parent="MainController" instance=ExtResource("2_ucl")]
+layout_mode = 2
+text = "Main -"
+command = "main_controller_decrease"
+target = 1
+
+[node name="MainIncrease" parent="MainController" instance=ExtResource("2_ucl")]
+layout_mode = 2
+text = "Main +"
+command = "main_controller_increase"
+target = 1
+
+[node name="MainPosition" type="Label" parent="MainController"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pos: 0"
+
+[node name="SecondController" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="SecondDecrease" parent="SecondController" instance=ExtResource("2_ucl")]
+layout_mode = 2
+text = "Shunt -"
+command = "second_controller_decrease"
+target = 1
+
+[node name="SecondIncrease" parent="SecondController" instance=ExtResource("2_ucl")]
+layout_mode = 2
+text = "Shunt +"
+command = "second_controller_increase"
+target = 1
+
+[node name="SecondPosition" type="Label" parent="SecondController"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pos: 0"
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

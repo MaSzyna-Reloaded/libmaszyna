@@ -111,6 +111,11 @@ namespace godot {
             Vector<RID> light_objects;
             /// By lower-case submodel name, kept across a stream clear/build cycle
             HashMap<String, SubmodelAnimation> submodel_animations;
+            /// The pass of E3DRenderingServer::_process_animations() and the simulated time its
+            /// animations were last advanced at. One advanced in the previous pass is advanced by
+            /// the slice, exactly; one the budget left out catches up by the time it waited.
+            uint64_t animation_pass = 0;
+            double animation_time = 0.0;
             /// By lower-case submodel name, kept across a rebuild (instance_set_submodel_*())
             HashMap<String, SubmodelSettings> submodel_settings;
             /// What the animations and the client's poses make of their submodels, on top of the
@@ -138,7 +143,7 @@ namespace godot {
             /// Drawn over every submodel (instance_set_material_overlay()), kept across a stream
             /// clear/build cycle
             Ref<Material> material_overlay;
-            /// E3DRenderingServer::InstanceKind - scenery unless the client says otherwise,
+            /// E3DInstanceTypes::InstanceKind - scenery unless the client says otherwise,
             /// which is what a placement registered for streaming always is
             int instance_kind = 0;
 
@@ -147,6 +152,8 @@ namespace godot {
             Vector<RID> rids;
             Vector<Transform3D> local_transforms;
             Vector<Vector<E3DSubModel *>> chains; // submodel with all its ancestors
+            /// What each RID was last shown as: a light switching sets only the ones that change
+            Vector<bool> rid_visible;
             Vector<Ref<Material>> materials;
 
             // NODES backend
@@ -176,7 +183,12 @@ namespace godot {
             virtual void build(E3DInstanceData &p_instance, E3DMaterialResolver &p_material_resolver) = 0;
             virtual void clear(E3DInstanceData &p_instance) = 0;
             /// Applies transform, visibility, layers and lights state
-            virtual void update(const E3DInstanceData &p_instance) = 0;
+            virtual void update(E3DInstanceData &p_instance) = 0;
+            /// Applies what is shown, after the lights state, a submodel's or the instance's own
+            /// visibility changed - a blinking lamp touches nothing else
+            virtual void update_visibility(E3DInstanceData &p_instance) {
+                update(p_instance);
+            }
             /* Moves what was built, and nothing else. A moving instance is the per-frame path, so
              * it must not re-apply the lights state: the submodels a light switches are shown and
              * hidden by whoever owns that light, and re-applying them on every move overwrites
@@ -210,7 +222,7 @@ namespace godot {
             /// only in a dynamic (vehicle) model (Model3d.cpp:275, 2221)
             static bool _is_submodel_shown(const E3DInstanceData &p_instance, const E3DSubModel *p_submodel);
             static Vector<E3DSubModel *> _get_force_alpha_submodels(const E3DInstanceData &p_instance);
-            /* How the submodel is drawn (E3DRenderingServer::Translucency): p_forced for a forced
+            /* How the submodel is drawn (E3DInstanceTypes::Translucency): p_forced for a forced
              * one - its parent is, it is one of p_force_alpha_submodels, or the instance forces
              * its translucent submodels (flag 0x20, or a translucent replaceable skin) - else
              * the cutout */

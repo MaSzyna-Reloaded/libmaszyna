@@ -17,8 +17,9 @@ namespace godot {
         private:
             static void _bind_methods();
             /* The node carrying the modder's script. A component is not a node, so the script
-             * lives on the proxy that authored it and the calls go back there. */
-            Node *script_owner = nullptr;
+             * lives on the proxy that authored it and the calls go back there. The proxy may be
+             * freed before the component, so it is held by its ObjectID. */
+            ObjectID script_owner;
 
         protected:
             void _apply_configuration() override;
@@ -31,7 +32,7 @@ namespace godot {
             virtual Dictionary _get_component_state();
             virtual Dictionary _get_component_config();
             /* Set by GenericVehicleComponentNode when it puts this component into a vehicle. */
-            void set_script_owner(Node *p_owner);
+            void set_script_owner(const ObjectID &p_owner);
             Object *script_target();
 
             Dictionary get_vehicle_state();

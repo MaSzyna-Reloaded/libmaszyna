@@ -4,7 +4,7 @@
 		The state of the world the whole simulation shares, and its one clock.
 	</brief_description>
 	<description>
-		Carries the light level and the air temperature as the environment publishes them ([code]Global.fLuminance[/code], [code]Global.AirTemperature[/code]) and runs the one clock of the simulation ([code]Timer::UpdateTimers()[/code], [code]Timer.cpp:70-92[/code]): the physics, the events, the drivers and the time of day all advance by the same seconds, read here. The caches and the game's data are [GameDataServer]'s.
+		Owns the environment's time of day, date, location, cloud cover and air temperature, works the light level out of them ([code]Global.fLuminance[/code], [code]cSun[/code] in [code]sun.cpp[/code]) and announces their changes by signals; and runs the one clock of the simulation ([code]Timer::UpdateTimers()[/code], [code]Timer.cpp:70-92[/code]): the physics, the events, the drivers and the time of day all advance by the same seconds, read here. The caches and the game's data are [GameDataServer]'s.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -17,6 +17,36 @@
 		<method name="clock_release">
 			<return type="void" />
 			<description>
+			</description>
+		</method>
+		<method name="date_get_day" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_get_month" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_get_year" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="date_set">
+			<return type="void" />
+			<param index="0" name="year" type="int" />
+			<param index="1" name="month" type="int" />
+			<param index="2" name="day" type="int" />
+			<description>
+				The day the time of day belongs to. A day or a month past its end carries over (the 32nd of January is the 1st of February). Emits [signal date_changed] on a change; the clock rolls the date itself at midnight.
+			</description>
+		</method>
+		<method name="environment_reset">
+			<return type="void" />
+			<description>
+				The time of day, the date, the location, the cloud cover and the temperature back to their defaults - what an environment starts from before its scene sets its own ([code]MaszynaEnvironmentNode[/code]).
 			</description>
 		</method>
 		<method name="simulation_advance">
@@ -62,22 +92,43 @@
 		</method>
 	</methods>
 	<members>
-		<member name="air_temperature" type="float" setter="set_air_temperature" getter="get_air_temperature" default="0.0">
+		<member name="air_temperature" type="float" setter="set_air_temperature" getter="get_air_temperature" default="15.0">
+			Degrees Celsius; the sun's refraction depends on it.
 		</member>
-		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;pl&quot;">
-			The language of the game's strings, named as its catalogue in the game's [code]lang/[/code] ([code]"pl"[/code] for [code]lang/pl.po[/code]); [code]"en"[/code] is the original's own strings, untranslated. Kept in the user settings; [MaszynaTranslationServer] loads the catalogue.
+		<member name="cloud_cover" type="float" setter="set_cloud_cover" getter="get_cloud_cover" default="0.5">
+			0-1, the weather's; full cover dims the daylight by 0.65 ([code]simulationenvironment.cpp:163[/code]).
 		</member>
-		<member name="light_level" type="float" setter="set_light_level" getter="get_light_level" default="1.0">
+		<member name="latitude" type="float" setter="set_latitude" getter="get_latitude" default="50.271">
+			Where the sun is seen from, decimal degrees north. The original's is a fixed 52 N ([code]sun.cpp:13[/code]).
+		</member>
+		<member name="light_level" type="float" setter="" getter="get_light_level" default="0.675">
+			How bright the scene is, 0-1: daylight from the refracted altitude of the sun ([code]cSun::move()[/code], [code]refract()[/code], [code]sun.cpp:104-240[/code]), ramped between the project settings [code]maszyna/lights/night_altitude[/code] and [code]day_altitude[/code], dimmed by [member cloud_cover]. Worked out when a minute passes and when anything it depends on is set; [signal light_level_changed] when it moves.
+		</member>
+		<member name="longitude" type="float" setter="set_longitude" getter="get_longitude" default="19.04">
+			Decimal degrees east. The original's is a fixed 19 E ([code]sun.cpp:13[/code]).
 		</member>
 		<member name="simulation_speed" type="float" setter="set_simulation_speed" getter="get_simulation_speed" default="1.0">
 		</member>
-		<member name="time_of_day" type="float" setter="set_time_of_day" getter="get_time_of_day" default="0.0">
+		<member name="time_of_day" type="float" setter="set_time_of_day" getter="get_time_of_day" default="8.0">
+			Hours since midnight. Set, it jumps; running, it advances with the simulation and carries the date past midnight.
+		</member>
+		<member name="timezone_offset" type="int" setter="set_timezone_offset" getter="get_timezone_offset" default="1">
+			Hours the time of day is ahead of UTC.
+		</member>
+		<member name="use_system_time" type="bool" setter="set_use_system_time" getter="get_use_system_time" default="false">
+			The time of day and the date follow the system's clock instead of the simulation's.
 		</member>
 	</members>
 	<signals>
-		<signal name="language_changed">
+		<signal name="date_changed">
 			<description>
-				[member language] was set to another language.
+				The date was set, or the clock passed midnight.
+			</description>
+		</signal>
+		<signal name="light_level_changed">
+			<param index="0" name="light_level" type="float" />
+			<description>
+				[member light_level] moved.
 			</description>
 		</signal>
 		<signal name="simulation_advanced">
@@ -106,6 +157,12 @@
 		</signal>
 		<signal name="time_of_day_changed">
 			<description>
+				A minute passed, or the time of day was set.
+			</description>
+		</signal>
+		<signal name="time_of_day_hour_changed">
+			<description>
+				An hour passed, or the time of day was set to another hour.
 			</description>
 		</signal>
 	</signals>

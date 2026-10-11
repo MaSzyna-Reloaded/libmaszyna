@@ -84,3 +84,26 @@ func test_state_reports_the_handle_flows_its_hiss_is_made_of() -> void:
     # the sound's own filtering is the sound system's business (BrakeSoundModel)
     assert_false(state.has("brake_loco_pressure_fall_rate"))
     assert_true(brake.has_signal(&"accelerator_activated"))
+
+
+## Train.cpp:1724, 1750, 1826 - a vehicle whose local brake is the hand wheel (EN57 ra,
+## LocalBrake=ManualBrake) has no independent brake: its keys and handle move nothing
+func test_a_manual_local_brake_takes_no_independent_brake_command() -> void:
+    brake.cntrl_local_brake_type = RailVehicleBrake.LOCAL_BRAKE_TYPE_MANUAL
+    train.apply_configuration()
+    var rid:RID = vehicle.get_vehicle_rid()
+
+    VehicleServer.vehicle_send_command(rid, "local_brake_set", 0.5)
+    VehicleServer.vehicle_send_command(rid, "local_brake_increase")
+
+    assert_eq(VehicleServer.vehicle_dump_state(rid).get("brake_local_position_normalized", -1.0), 0.0)
+
+
+func test_a_pneumatic_local_brake_takes_the_independent_brake_command() -> void:
+    brake.cntrl_local_brake_type = RailVehicleBrake.LOCAL_BRAKE_TYPE_PNEUMATIC
+    train.apply_configuration()
+    var rid:RID = vehicle.get_vehicle_rid()
+
+    VehicleServer.vehicle_send_command(rid, "local_brake_set", 0.5)
+
+    assert_eq(VehicleServer.vehicle_dump_state(rid).get("brake_local_position_normalized", -1.0), 0.5)

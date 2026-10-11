@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://blimjm70v7rep"
+path="res://.godot/imported/inverter.fiz-49e25ec74ff9030d728b8a1692163a48.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/elf_v1/inverter.fiz"
+dest_files=["res://.godot/imported/inverter.fiz-49e25ec74ff9030d728b8a1692163a48.res"]
+
+[params]
+

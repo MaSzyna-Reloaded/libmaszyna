@@ -1,5 +1,6 @@
 #include "MoverRailVehicleElectricSeriesEngine.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include <algorithm>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <limits>
@@ -13,7 +14,7 @@ namespace godot {
         RailVehicleElectricSeriesEngine::_apply_configuration();
         p_mover->NominalVoltage = get_nominal_voltage();
         p_mover->WindingRes = get_winding_resistance();
-        p_mover->nmax = get_max_rpm() / 60.0;
+        p_mover->nmax = get_max_rpm() / LibMaszynaUnits::SECONDS_PER_MINUTE;
 
         p_mover->RVentType = static_cast<int>(get_resistor_fan_type());
         p_mover->RVentnmax = get_resistor_fan_max_rpm();
@@ -82,7 +83,8 @@ namespace godot {
         constexpr int CURRENT_ITERATIONS = 5;
         /* RList[].ScndAct of a position that sets no field shunt of its own */
         constexpr int NO_SHUNT = 255;
-        constexpr double SECONDS_PER_HOUR_PER_KILOMETRE = 3.6;
+        constexpr double SECONDS_PER_HOUR_PER_KILOMETRE =
+                static_cast<double>(LibMaszynaUnits::SECONDS_PER_HOUR) / LibMaszynaUnits::METRES_PER_KILOMETRE;
         TMoverParameters *mover = get_mover();
         if (mover == nullptr) {
             return 0.0;

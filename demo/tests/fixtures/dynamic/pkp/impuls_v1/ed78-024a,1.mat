@@ -1,0 +1,8 @@
+shader: parallax_specgloss
+texture_diffuse: skins\ed78\ed78-024a
+texture_normalmap: skins\ed78\ed78-a_pr_normal
+texture_specgloss: skins\en63a\en63a-a_zachpom_specgloss
+param_height_scale: 0.004
+param_height_offset: 0
+param_specular: 1
+param_glossiness: 80

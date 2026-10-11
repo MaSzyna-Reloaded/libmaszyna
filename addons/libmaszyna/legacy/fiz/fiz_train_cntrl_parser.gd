@@ -41,6 +41,7 @@ func parse(p: MaszynaParser, context: FizImportContext, _prefix: String = "") ->
         master_controller.step_delay = FizLineUtil.get_float(kv, "SCDelay")
         # without SCDDelay stepping down is as slow as up (Mover.cpp:10868)
         master_controller.step_down_delay = FizLineUtil.get_float(kv, "SCDDelay", master_controller.step_delay)
+        master_controller.tachometer_max_speed = FizLineUtil.get_float(kv, "MaxTachoSpeed")
         context.add_part("RailVehicleMasterController", master_controller)
 
     var brake: RailVehicleBrake = context.get_part("RailVehicleBrake")

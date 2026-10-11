@@ -31,8 +31,8 @@ namespace godot {
 
     void RailVehiclePowerSupply::_register_commands() {
         VehicleComponent::_register_commands();
-        register_command("battery", Callable(this, "battery"));
-        register_command("converter", Callable(this, "converter"));
+        register_command("battery", callable_mp(this, &RailVehiclePowerSupply::battery));
+        register_command("converter", callable_mp(this, &RailVehiclePowerSupply::converter));
     }
 
     void RailVehiclePowerSupply::_unregister_commands() {

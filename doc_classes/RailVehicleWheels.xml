@@ -24,12 +24,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_bogie_transform" qualifiers="const">
-			<return type="Transform3D" />
-			<param index="0" name="bogie" type="int" enum="RailVehicleWheels.Bogie" />
-			<description>
-			</description>
-		</method>
 		<method name="get_flat" qualifiers="const">
 			<return type="float" />
 			<description>

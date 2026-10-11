@@ -204,4 +204,4 @@ func _process(frame_delta):
             visible = false
         elif not visible and light_energy:
             visible = true
-        light_energy = lerpf(light_energy, _target_light_energy, delta * animation_speed)
+        light_energy = lerpf(light_energy, _target_light_energy, BaseCabinTool3D.friction_weight(delta, animation_speed))

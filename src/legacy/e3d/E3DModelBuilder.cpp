@@ -258,7 +258,7 @@ namespace godot {
             int child_idx = meta.first_child_idx;
             while (child_idx > -1 && static_cast<size_t>(child_idx) < submodels.size()) {
                 const Ref<E3DSubModel> &child = submodels.at(child_idx);
-                child->set_parent(parent.ptr());
+                parent->add_child(child);
                 parent_indices.at(child_idx) = static_cast<int>(i);
                 has_parent.at(child_idx) = true;
                 child_idx = p_submodels.at(child_idx).next_idx;

@@ -4,7 +4,7 @@
 		A named logger of [GameLog].
 	</brief_description>
 	<description>
-		Taken from [method GameLog.get_logger]; its lines go to the handlers registered for its id and to [signal GameLog.message_logged].
+		Taken from [method GameLog.get_logger]; its lines go to its handlers, which [GameLog] attaches to it ([method GameLog.assign_handler]).
 	</description>
 	<tutorials>
 	</tutorials>

@@ -1,0 +1,98 @@
+//model pojazdu i definicje podmodeli:
+models: asf.t3d
+animations: 4 0 0 4 2 0 -1
+lowpolyinterior: asf_lowpolyinterior.t3d
+//ruchome czesci (animations)
+//krecace sie kola (o srednicy jak w *.chk)
+animwheelprefix: wheel0
+
+
+endmodels
+
+sounds:
+wheel_clatter: 20 -0.76 26284_asf_stukot_1.wav -0.76 26284_asf_stukot_1.wav  end
+tractionmotor: {
+ amplitudeoffset: 0.7
+ amplitudefactor: 2.5
+ frequencyfactor: 0.1
+ range: 100
+ soundproofing: [ 0.6 0.7 0.6 0.8 0.8 0.8 ]
+ crossfade: 95
+sound1: 26284_asf_przekladnia.wav
+sound1000: 26284_asf_przekladnia.wav }
+brakesound: {
+ amplitudefactor: 1.0
+ amplitudeoffset: 0.1 
+ range: 70
+ crossfade: 85
+ soundproofing: [ 0.1 0.6 0.1 0.5 0.5 0.5 ]
+ sound1: 20786_et42_brake.wav
+ sound13: 20786_et42_brake.wav }
+derail: derail.wav 200
+horn1: { soundset: [  697_sm42-klakson-start.wav|697_sm42-klakson-trwa.wav|697_sm42-klakson-stop.wav ] range: 50 } 
+horn2: { soundset: [  697_sm42-klakson-start.wav|697_sm42-klakson-trwa.wav|697_sm42-klakson-stop.wav ] range: 50 } 
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+battery: { soundbegin: 26284_asf_stycznik.wav soundmain: silence1.wav soundend: 26284_asf_stycznik.wav }
+
+internaldata:
+relay: silence1.wav
+runningnoise: {
+sound0: 26284_asf_runningnoise.wav pitch0: 0.8 
+sound20: 26284_asf_runningnoise.wav pitch20: 1 
+crossfade: 75 placement: internal amplitudefactor: 0.7 range: -1 } 
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.6 }
+
+mechspring: 200      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+
+jointcabs: true
+
+cab1definition:   //rozmiary kabiny po ktorej mozna chodzic
+-1.17  0.29 -0.5 1.17 0.9 0.5
+driver1pos:   //pozycja stojaca
+1.05 2.483 -3
+driver1sitpos:   //pozycja siedzaca
+1.05 2.483 -3
+cab1model: kabina_asf.t3d   //nazwa modelu kabiny A
+
+cab2definition:
+-1.17  0.29 -0.5 1.17 0.9 0.5
+driver1pos:   //pozycja stojaca
+1.05 0 2
+driver1sitpos:   //pozycja siedzaca
+-1.05 2.483 2
+cab2model: none   //nazwa modelu kabiny B   
+
+
+
+
+batteryon_sw: { bt-wylacznik mov -0.005 0 0.1 type: push soundinc: 20786_ep09_grzyb_1_on.wav sounddec: 20786_ep09_grzyb_1_of.wav }
+batteryoff_sw:  { bt-wlacznik  mov -0.005 0 0.1 type: push soundinc: 20786_ep09_grzyb_3_on.wav sounddec: 20786_ep09_grzyb_4_of.wav }
+dirkey: { sw-kierunek1 rot -0.05 0.01 0.1 soundinc: 20786_203E_reverser_inc_1.wav sounddec: 20786_203E_reverser_inc_1.wav sound0: 20786_203E_reverser_dec_1.wav }
+//dirkey: { sw-kierunek2 rot -0.05 0.01 0.15 soundinc: 20786_203E_reverser_inc_1.wav sounddec: 20786_203E_reverser_inc_1.wav sound0: 20786_203E_reverser_dec_1.wav }
+mainctrlact: ws-pozycja rot -0.0916 0 0.05 
+mainctrl: { nastawnik1 rot -0.0926 0.0 0.1 sound0: 26284_asf_nastawnik_1.wav sound1: 26284_asf_nastawnik_2.wav sound2: 26284_asf_nastawnik_3.wav sound3: 26284_asf_nastawnik_4.wav sound4: 26284_asf_nastawnik_5.wav sound5: 26284_asf_nastawnik_6.wav sound6: 26284_asf_nastawnik_7.wav sound7: 26284_asf_nastawnik_8.wav sound8: 26284_asf_nastawnik_9.wav sound9: 26284_asf_nastawnik_10.wav } 
+//mainctrl: { nastawnik2 rot -0.0926 0.0 0.15 sound0: 26284_asf_nastawnik_1.wav sound1: 26284_asf_nastawnik_2.wav sound2: 26284_asf_nastawnik_3.wav sound3: 26284_asf_nastawnik_4.wav sound4: 26284_asf_nastawnik_5.wav sound5: 26284_asf_nastawnik_6.wav sound6: 26284_asf_nastawnik_7.wav sound7: 26284_asf_nastawnik_8.wav sound8: 26284_asf_nastawnik_9.wav sound9: 26284_asf_nastawnik_10.wav } 
+hornlow_bt: { syrena2 mov -0.005 0 0.1 soundinc: 20786_ep09_grzyb_5_on.wav sounddec: 20786_ep09_grzyb_5_of.wav }
+hornhigh_bt: { syrena1 mov -0.005 0 0.1 soundinc: 20786_ep09_grzyb_2_on.wav sounddec: 20786_ep09_grzyb_2_of.wav }
+couplingdisconnectback_sw: sprzeg1  mov -0.1 0 0.1 soundinc: cisza.wav sounddec: cisza.wav }
+couplingdisconnect_sw: sprzeg2  mov -0.1 0 0.1 soundinc: cisza.wav sounddec: cisza.wav }
+lights_sw: { sw-swiatlo rot -0.5 0 0.1 soundinc: 20786_203e_switch_nast_ham_1_r.wav sounddec: 20786_203e_switch_nast_ham_1_p.wav }
+cablight_sw: { sw-swiatlo_kab rot -0.25 0 0.1 soundinc: 20786_203e_switch_nast_ham_1_r.wav sounddec: 20786_203e_switch_nast_ham_1_p.wav } 
+sand_bt: { sand4 mov -0.015 0 0.2 soundinc: 20786_203E_sandbox_pedal_2_on.wav sounddec: 20786_203E_sandbox_pedal_2_of.wav }
+//hamulec A
+//manualbrake: { hamulec1 rot 0.30 0.0 0.8 sound0: hamulec_reczny_poczatek.wav sound1: 20786_201e_boczV2_dec_1.wav sound2: hamulec_reczny_1.wav sound3: hamulec_reczny_2.wav sound17: hamulec_reczny_4.wav sound18: hamulec_reczny_4.wav sound19: hamulec_reczny_4.wav sound20: hamulec_reczny_koniec.wav soundinc: hamulec_reczny_3.wav sounddec: hamulec_reczny_3.wav }
+
+//Hamulec B
+manualbrake: { hamulec2 rot 0.30 0.0 0.8 sound0: hamulec_reczny_poczatek.wav sound1: 20786_201e_boczV2_dec_1.wav sound2: hamulec_reczny_1.wav sound3: hamulec_reczny_2.wav sound17: hamulec_reczny_4.wav sound18: hamulec_reczny_4.wav sound19: hamulec_reczny_4.wav sound20: hamulec_reczny_koniec.wav soundinc: hamulec_reczny_3.wav sounddec: hamulec_reczny_3.wav }
+lvoltage: ma17_a_wsk rot -0.0025 0 0.2
+lvoltage: ma17_a_wsk1 rot -0.0025 0 0.2
+i-cablight: lampa_sufit
+//korytarz (corridor)
+cab0definition:
+-0.5 1.5 2.57 0.5 1.5 2.6
+driver0pos:
+0.0 2.21 -6.55
+cab0model: none   //nazwa modelu korytarza
+//na koncu zeby nie szukal nieistniejacych regulatorow i lampek!
+
+

@@ -102,6 +102,7 @@ namespace godot {
                 D_METHOD("vehicle_has_command", "vehicle", "command"), &VehicleServer::vehicle_has_command);
         ClassDB::bind_method(D_METHOD("vehicle_get_velocity", "vehicle"), &VehicleServer::vehicle_get_velocity);
         ClassDB::bind_method(D_METHOD("vehicle_get_speed", "vehicle"), &VehicleServer::vehicle_get_speed);
+        ClassDB::bind_method(D_METHOD("vehicle_get_position", "vehicle"), &VehicleServer::vehicle_get_position);
         ClassDB::bind_method(
                 D_METHOD("vehicle_component_get", "vehicle", "type"), &VehicleServer::vehicle_component_get);
         ClassDB::bind_method(D_METHOD("vehicle_get_controller", "vehicle"), &VehicleServer::vehicle_get_controller);
@@ -197,20 +198,12 @@ namespace godot {
         if (p_delta <= 0.0) {
             return;
         }
-        for (KeyValue<StringName, Vector<RID>> &entry: stepped_vehicles) {
-            entry.value.clear();
-        }
-        for (const KeyValue<RID, Vehicle> &entry: vehicles) {
-            if (!entry.value.implementation.is_empty()) {
-                stepped_vehicles[entry.value.implementation].push_back(entry.key);
-            }
-        }
-        for (const KeyValue<StringName, Vector<RID>> &entry: stepped_vehicles) {
+        for (const KeyValue<StringName, SteppedGroup> &entry: stepped_groups) {
             const ObjectID *id = implementations.getptr(entry.key);
             VehicleImplementationServer *implementation =
                     id != nullptr ? Object::cast_to<VehicleImplementationServer>(ObjectDB::get_instance(*id)) : nullptr;
-            if (implementation != nullptr && !entry.value.is_empty()) {
-                implementation->stepping_advance(entry.value, p_delta);
+            if (implementation != nullptr && !entry.value.vehicles.is_empty()) {
+                implementation->stepping_advance(entry.value.vehicles, entry.value.controllers, p_delta);
             }
         }
     }
@@ -294,6 +287,12 @@ namespace godot {
         ERR_FAIL_NULL(vehicle);
         // what the vehicle ran on lets go of its components, commands and simulation
         if (VehicleController *previous = _get_controller(p_vehicle); previous != nullptr) {
+            // it leaves the group its implementation steps
+            if (SteppedGroup *group = stepped_groups.getptr(vehicle->implementation); group != nullptr) {
+                const int64_t index = group->vehicles.find(p_vehicle);
+                group->vehicles.remove_at(index);
+                group->controllers.remove_at(index);
+            }
             _disconnect_relays(p_vehicle);
             previous->release();
             controllers.getptr(vehicle->controller)->vehicle = RID();
@@ -315,6 +314,11 @@ namespace godot {
         controller->set_vehicle_id(vehicle->name);
         controller->set_initial_velocity(vehicle->initial_velocity);
         vehicle->implementation = controller->get_implementation();
+        if (!vehicle->implementation.is_empty()) {
+            SteppedGroup &group = stepped_groups[vehicle->implementation];
+            group.vehicles.push_back(p_vehicle);
+            group.controllers.push_back(slot->controller);
+        }
         _connect_relays(p_vehicle);
         emit_signal(vehicle_controller_changed_signal, p_vehicle);
         controller->attach_to_system();
@@ -494,6 +498,11 @@ namespace godot {
         return controller != nullptr ? controller->get_velocity() : 0.0;
     }
 
+    Vector3 VehicleServer::vehicle_get_position(const RID &p_vehicle) const {
+        const VehicleController *controller = _get_controller(p_vehicle);
+        return controller != nullptr ? controller->get_world_position() : Vector3();
+    }
+
     double VehicleServer::vehicle_get_speed(const RID &p_vehicle) const {
         const VehicleController *controller = _get_controller(p_vehicle);
         return controller != nullptr ? controller->get_speed() : 0.0;
@@ -511,8 +520,11 @@ namespace godot {
         return controller != nullptr ? controller->find_generic_components(p_tag) : TypedArray<VehicleComponent>();
     }
 
-    /* Built once per state of the vehicle and handed out unchanged until a step or a command
-     * moves it - the controller's state serial says when. */
+    /* Built lazily, on the first read after a step or a command moves the state - the
+     * controller's state serial says when - and handed out unchanged until then: at most once per
+     * tick, and not at all for a vehicle nobody reads. A deliberate exception to "a getter never
+     * changes state" (the operator's decision, RC-024): a tick building every vehicle's dump would
+     * pay for hundreds of keys nobody asks for. */
     Dictionary VehicleServer::vehicle_dump_state(const RID &p_vehicle) {
         Vehicle *vehicle = vehicles.getptr(p_vehicle);
         if (vehicle == nullptr) {
@@ -526,9 +538,7 @@ namespace godot {
         if (vehicle->state_dump_valid && vehicle->state_dump_serial == serial) {
             return vehicle->state_dump;
         }
-        // compose_state(), not get_state(): the controller's accessor asks this cache, so calling
-        // it here would recurse.
-        vehicle->state_dump = controller->compose_state();
+        vehicle->state_dump = controller->get_state();
         vehicle->state_dump_serial = serial;
         vehicle->state_dump_valid = true;
         return vehicle->state_dump;

@@ -1,6 +1,6 @@
 #pragma once
 #include "SignalHeadKind.hpp"
-#include "SignallingSystemDelegate.hpp"
+#include "SignallingImplementation.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -12,7 +12,7 @@ namespace godot {
     ///
     /// A signal head is the lights of one model instance; it lives exactly as long as that
     /// instance. Low level, its lights are switched one by one. High level, signal heads and event
-    /// sources are grouped into systems, and a system's SignallingSystemDelegate decides what an
+    /// sources are grouped into systems, and a system's SignallingImplementation decides what an
     /// event means and shows it on the system's signal heads.
     class SignallingServer : public Object {
             GDCLASS(SignallingServer, Object)
@@ -62,7 +62,7 @@ namespace godot {
 
             struct SystemData {
                     StringName name;
-                    Ref<SignallingSystemDelegate> delegate;
+                    Ref<SignallingImplementation> implementation;
                     Vector<RID> signal_heads;
                     Vector<RID> sources;
             };
@@ -111,8 +111,9 @@ namespace godot {
 
             RID system_create();
             void system_free(const RID &p_system);
-            void system_attach_delegate(const RID &p_system, const Ref<SignallingSystemDelegate> &p_delegate);
-            Ref<SignallingSystemDelegate> system_get_delegate(const RID &p_system) const;
+            void
+            system_attach_implementation(const RID &p_system, const Ref<SignallingImplementation> &p_implementation);
+            Ref<SignallingImplementation> system_get_implementation(const RID &p_system) const;
             void system_set_name(const RID &p_system, const StringName &p_name);
             StringName system_get_name(const RID &p_system) const;
             RID system_get_rid_by_name(const StringName &p_name) const;

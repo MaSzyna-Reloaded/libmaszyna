@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleComponentType" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="COMPONENT_NONE" value="0" enum="Type">
+		</constant>
+		<constant name="COMPONENT_GENERIC" value="1" enum="Type">
+		</constant>
+		<constant name="COMPONENT_ENGINE" value="2" enum="Type">
+		</constant>
+		<constant name="COMPONENT_HEATING" value="3" enum="Type">
+		</constant>
+		<constant name="COMPONENT_LIGHTING" value="4" enum="Type">
+		</constant>
+		<constant name="COMPONENT_LOAD" value="5" enum="Type">
+		</constant>
+		<constant name="COMPONENT_DOORS" value="6" enum="Type">
+		</constant>
+		<constant name="COMPONENT_HORNS" value="7" enum="Type">
+		</constant>
+		<constant name="COMPONENT_WIPERS" value="8" enum="Type">
+		</constant>
+		<constant name="COMPONENT_RADIO" value="9" enum="Type">
+		</constant>
+		<constant name="COMPONENT_WHEELS" value="10" enum="Type">
+		</constant>
+		<constant name="COMPONENT_TYPE_MAX" value="11" enum="Type">
+		</constant>
+	</constants>
+</class>

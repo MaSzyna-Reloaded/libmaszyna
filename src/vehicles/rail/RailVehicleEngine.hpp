@@ -99,33 +99,56 @@ namespace godot {
             bool get_motor_blowers_enabled(RailVehicleController::CouplerEnd p_end) const;
             bool get_motor_blowers_disabled(RailVehicleController::CouplerEnd p_end) const;
             bool get_motor_blowers_active(RailVehicleController::CouplerEnd p_end) const;
+
+        private:
             static void _bind_methods();
             TypedArray<RailVehicleMotorParameter> motor_param_table;
+            /* Engine: (the fields every kind of drive has) */
+            int transmission_gear_teeth_motor = 0;
+            int transmission_gear_teeth_wheel = 0;
+            double transmission_efficiency = 1.0;
 
-            /* Engine: (wspolne pola dla wszystkich typow napedu) */
-            MAKE_MEMBER_GS(int, transmission_gear_teeth_motor, 0);
-            MAKE_MEMBER_GS(int, transmission_gear_teeth_wheel, 0);
-            MAKE_MEMBER_GS(double, transmission_efficiency, 1.0);
+        public:
+            MAKE_GS(int, transmission_gear_teeth_motor);
+            MAKE_GS(int, transmission_gear_teeth_wheel);
+            MAKE_GS(double, transmission_efficiency);
             /* Wheel teeth over motor teeth, 1.0 without a gear (LoadFIZ_Engine, Mover.cpp) */
             double get_transmission_ratio() const;
-            MAKE_MEMBER_GS(double, maximum_traction_force, 0.0);
-            MAKE_MEMBER_GS(double, motor_blowers_speed, 0.0);
-            MAKE_MEMBER_GS(double, motor_blowers_sustain_time, 0.0);
-            MAKE_MEMBER_GS(double, motor_blowers_start_velocity, -1.0);
-            MAKE_MEMBER_GS(bool, pressure_switch_present, false);
-            MAKE_MEMBER_GS(int, inverters_count, 0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, motor_blowers_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
 
-            /* Cntrl. (wspolne pola sterowania nastawnikiem i rozrusznikiem) */
-            MAKE_MEMBER_GS(bool, cntrl_eim_control_additional_zeros, false);
-            MAKE_MEMBER_GS(bool, cntrl_eim_control_emergency, false);
-            MAKE_MEMBER_GS_NR(EimControlType, cntrl_eim_control_type, EIM_CONTROL_TYPE_0);
-            MAKE_MEMBER_GS_NR(AutoRelayMode, cntrl_auto_relay_mode, AUTO_RELAY_NO);
-            MAKE_MEMBER_GS(bool, cntrl_has_camshaft, false);
-            MAKE_MEMBER_GS(bool, cntrl_series_shunt_on_series_position, false);
-            MAKE_MEMBER_GS(bool, cntrl_fast_series_circuit, false);
+        private:
+            double maximum_traction_force = 0.0;
+            double motor_blowers_speed = 0.0;
+            double motor_blowers_sustain_time = 0.0;
+            double motor_blowers_start_velocity = -1.0;
+            bool pressure_switch_present = false;
+            int inverters_count = 0;
+            RailVehicleController::StartMode motor_blowers_start_mode = RailVehicleController::START_MODE_MANUAL;
+
+            /* Cntrl. (the fields of the master controller and the starter every engine has) */
+            bool cntrl_eim_control_additional_zeros = false;
+            bool cntrl_eim_control_emergency = false;
+            EimControlType cntrl_eim_control_type = EIM_CONTROL_TYPE_0;
+            AutoRelayMode cntrl_auto_relay_mode = AUTO_RELAY_NO;
+            bool cntrl_has_camshaft = false;
+            bool cntrl_series_shunt_on_series_position = false;
+            bool cntrl_fast_series_circuit = false;
+
+        public:
+            MAKE_GS(double, maximum_traction_force);
+            MAKE_GS(double, motor_blowers_speed);
+            MAKE_GS(double, motor_blowers_sustain_time);
+            MAKE_GS(double, motor_blowers_start_velocity);
+            MAKE_GS(bool, pressure_switch_present);
+            MAKE_GS(int, inverters_count);
+            MAKE_GS_NR(RailVehicleController::StartMode, motor_blowers_start_mode);
+
+            MAKE_GS(bool, cntrl_eim_control_additional_zeros);
+            MAKE_GS(bool, cntrl_eim_control_emergency);
+            MAKE_GS_NR(EimControlType, cntrl_eim_control_type);
+            MAKE_GS_NR(AutoRelayMode, cntrl_auto_relay_mode);
+            MAKE_GS(bool, cntrl_has_camshaft);
+            MAKE_GS(bool, cntrl_series_shunt_on_series_position);
+            MAKE_GS(bool, cntrl_fast_series_circuit);
 
         private:
             /* Cntrl. MainInitTime: how long the main circuit takes to get ready once it has power
@@ -155,8 +178,6 @@ namespace godot {
             void _fill_config_dictionary(Dictionary &p_config) const override;
             void _register_commands() override;
             void _unregister_commands() override;
-
-        public:
     };
 } // namespace godot
 

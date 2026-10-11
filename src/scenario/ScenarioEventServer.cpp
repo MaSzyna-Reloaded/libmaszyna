@@ -1,9 +1,11 @@
 #include "../tracks/TrackServer.hpp"
 #include "ScenarioEventServer.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverServer.hpp"
 #include "legacy/e3d/E3DRenderingServer.hpp"
+#include "radio/RadioServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
 #include "simulation/SimulationServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "utils/Names.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
@@ -161,9 +163,10 @@ namespace godot {
         vehicles->connect(
                 RailVehicleServer::vehicle_stopped_on_track_signal,
                 callable_mp(this, &ScenarioEventServer::_on_vehicle_stopped_on_track));
-        vehicles->connect(
-                RailVehicleServer::vehicle_radio_called_signal,
-                callable_mp(this, &ScenarioEventServer::_on_vehicle_radio_called));
+        RadioServer *radios = RadioServer::get_instance();
+        ERR_FAIL_NULL(radios);
+        radios->connect(
+                RadioServer::transmitted_signal, callable_mp(this, &ScenarioEventServer::_on_radio_transmitted));
         VehicleServer *vehicle_server = VehicleServer::get_instance();
         ERR_FAIL_NULL(vehicle_server);
         vehicle_server->connect(
@@ -210,9 +213,10 @@ namespace godot {
     void ScenarioEventServer::_check_timed_launchers() {
         const SimulationServer *runtime = SimulationServer::get_instance();
         ERR_FAIL_NULL(runtime);
-        const int minutes = static_cast<int>(Math::floor(runtime->get_time_of_day() * MINUTES_PER_HOUR));
-        const int hour = minutes / static_cast<int>(MINUTES_PER_HOUR);
-        const int minute = minutes % static_cast<int>(MINUTES_PER_HOUR);
+        const int minutes =
+                static_cast<int>(Math::floor(runtime->get_time_of_day() * LibMaszynaUnits::MINUTES_PER_HOUR));
+        const int hour = minutes / static_cast<int>(LibMaszynaUnits::MINUTES_PER_HOUR);
+        const int minute = minutes % static_cast<int>(LibMaszynaUnits::MINUTES_PER_HOUR);
         // copied: firing queues events, and a listener may create launchers
         const Vector<RID> timed = timed_launchers;
         for (const RID &rid: timed) {
@@ -240,15 +244,20 @@ namespace godot {
                p_launcher.position.distance_to(streaming->streaming_get_camera_position()) < p_launcher.radius;
     }
 
-    /// event_manager::queue_receivers() (Event.cpp:2255-2268): only a launcher's first event, and
-    /// with no activator
-    void ScenarioEventServer::_on_vehicle_radio_called(
-            const RID &p_vehicle, const RailVehicleRadio::RadioCall p_call, const Vector3 &p_position) {
+    /// event_manager::queue_receivers() (Event.cpp:2255-2268): a radio call heard by the launchers
+    /// listening for it within their radius - only a launcher's first event, and with no activator
+    void ScenarioEventServer::_on_radio_transmitted(
+            const int64_t p_kind, const int64_t /* p_channel */, const Variant &p_payload, const Vector3 &p_position,
+            const double /* p_reach */) {
+        if (p_kind != RadioServer::KIND_CALL) {
+            return;
+        }
+        const RailVehicleRadio::RadioCall call = static_cast<RailVehicleRadio::RadioCall>(int(p_payload));
         // copied: firing queues events, and a listener may create launchers
         const Vector<RID> listening = radio_launchers;
         for (const RID &rid: listening) {
             const LauncherData *launcher = launchers.getptr(rid);
-            if (launcher == nullptr || !(launcher->radio_call == p_call)) {
+            if (launcher == nullptr || !(launcher->radio_call == call)) {
                 continue;
             }
             if (launcher->radius >= 0.0 && launcher->position.distance_to(p_position) >= launcher->radius) {
@@ -587,7 +596,7 @@ namespace godot {
         double run_time = now + event->delay + p_extra_delay + (event->random_delay * UtilityFunctions::randf());
         const VehicleServer *vehicles = VehicleServer::get_instance();
         if (!Math::is_nan(event->departure_delay) && vehicles != nullptr && vehicles->vehicle_exists(p_activator)) {
-            const DriverSystem *drivers = DriverSystem::get_instance();
+            const DriverServer *drivers = DriverServer::get_instance();
             ERR_FAIL_NULL_V(drivers, false);
             // the departure may be past already: the event runs at once (Event.cpp:2444)
             run_time = MAX(

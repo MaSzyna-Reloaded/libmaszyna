@@ -94,9 +94,29 @@
 			<description>
 			</description>
 		</signal>
-		<signal name="radio_toggled">
-			<param index="0" name="enabled" type="bool" />
+		<signal name="radio_call_sent">
+			<param index="0" name="call" type="int" />
 			<description>
+				A call to be transmitted on the radio's channel - the vehicle's owner transmits it from the vehicle's radio in [RadioServer].
+			</description>
+		</signal>
+		<signal name="radio_stop_sent">
+			<description>
+				Radio-Stop to be transmitted - pressed on a powered radio.
+			</description>
+		</signal>
+		<signal name="radio_toggled">
+			<param index="0" name="powered" type="bool" />
+			<description>
+				The radio came on or went off - powered, not only switched on.
+			</description>
+		</signal>
+		<signal name="transmission_received">
+			<param index="0" name="kind" type="int" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="payload" type="Variant" />
+			<description>
+				What the vehicle's radio heard, Radio-Stop aside - a message for the cab to play ([CabinRadio3D]).
 			</description>
 		</signal>
 	</signals>
@@ -104,6 +124,9 @@
 		<constant name="RADIO_CALL1" value="0" enum="RadioCall">
 		</constant>
 		<constant name="RADIO_CALL3" value="1" enum="RadioCall">
+		</constant>
+		<constant name="CHANNEL_NO_CALLS" value="10">
+			On this channel the radio sends no calls (Train.cpp:8211, 8228).
 		</constant>
 	</constants>
 </class>

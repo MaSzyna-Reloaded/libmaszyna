@@ -28,10 +28,8 @@ const HOUR_SEPARATOR:String = "."
 const PERCENT:String = "%"
 ## The track count closes a station's name and its facilities
 const TRACK_COUNTS:Array[String] = ["1", "2"]
-const MINUTES_PER_HOUR:float = 60.0
 ## A time left out of the table (TimetableEntry::NO_TIME)
 const NO_TIME:float = -1.0
-const MINUTES_PER_DAY:float = 1440.0
 ## A station's facilities name its radio channel (`R4`); a larger number is something else
 ## (`R307`, mtable.cpp:540-553)
 const RADIO_PREFIX:String = "R"
@@ -208,7 +206,7 @@ static func _read_velocity(
 static func _read_time(token:String, previous_hour:int) -> float:
     var hour:int = int(token.get_slice(HOUR_SEPARATOR, 0)) if token.contains(HOUR_SEPARATOR) else previous_hour
     var minute:float = float(token.get_slice(HOUR_SEPARATOR, 1)) if token.contains(HOUR_SEPARATOR) else float(token)
-    return NO_TIME if hour < 0 else hour + minute / MINUTES_PER_HOUR
+    return NO_TIME if hour < 0 else hour + minute / LibMaszynaUnits.MINUTES_PER_HOUR
 
 
 static func _hour(time:float) -> int:
@@ -231,7 +229,7 @@ static func _read_radio_channel(entry:TimetableEntry, active_channel:int) -> int
 static func _shift(time:float, minutes:float) -> float:
     if time < 0.0:
         return time
-    return fposmod(time * MINUTES_PER_HOUR + minutes, MINUTES_PER_DAY) / MINUTES_PER_HOUR
+    return fposmod(time * LibMaszynaUnits.MINUTES_PER_HOUR + minutes, LibMaszynaUnits.MINUTES_PER_DAY) / LibMaszynaUnits.MINUTES_PER_HOUR
 
 
 ## The table's tokens, read one after another

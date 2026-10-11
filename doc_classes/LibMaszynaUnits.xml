@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LibMaszynaUnits" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Unit conversion factors shared by the C++ code and GDScript.
+	</brief_description>
+	<description>
+		Constants only, read as [code]LibMaszynaUnits.SECONDS_PER_MINUTE[/code]. Every factor is a whole number, bound as an [int]; dividing an [int] by one truncates, so an integer value is converted with [code]float()[/code] first.
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="SECONDS_PER_MINUTE" value="60">
+			Seconds in a minute; also converts revolutions per minute to revolutions per second, the unit the simulation keeps engine speed in.
+		</constant>
+		<constant name="MINUTES_PER_HOUR" value="60">
+			Minutes in an hour; the time of day is kept in hours.
+		</constant>
+		<constant name="SECONDS_PER_HOUR" value="3600">
+			Seconds in an hour.
+		</constant>
+		<constant name="MINUTES_PER_DAY" value="1440">
+			Minutes in a day.
+		</constant>
+		<constant name="HOURS_PER_DAY" value="24">
+			Hours in a day; the time of day wraps at it.
+		</constant>
+		<constant name="SECONDS_PER_DAY" value="86400">
+			Seconds in a day.
+		</constant>
+		<constant name="ARCSECONDS_PER_DEGREE" value="3600">
+			Arcseconds in a degree.
+		</constant>
+		<constant name="USEC_PER_MSEC" value="1000">
+			Microseconds in a millisecond.
+		</constant>
+		<constant name="USEC_PER_SECOND" value="1000000">
+			Microseconds in a second, the unit of [method Time.get_ticks_usec].
+		</constant>
+		<constant name="METRES_PER_KILOMETRE" value="1000">
+			Metres in a kilometre.
+		</constant>
+		<constant name="NEWTONS_PER_KILONEWTON" value="1000">
+			Newtons in a kilonewton; the vehicle data gives forces in kN.
+		</constant>
+		<constant name="KILOGRAMS_PER_TONNE" value="1000">
+			Kilograms in a tonne; the vehicle data gives masses in tonnes.
+		</constant>
+		<constant name="KILOPASCALS_PER_BAR" value="100">
+			Kilopascals in a bar; a pressure in bar on an area in m² gives a force in kN after this factor.
+		</constant>
+		<constant name="JOULES_PER_KILOWATT_HOUR" value="3600000">
+			Joules in a kilowatt-hour, the unit of the energy meter.
+		</constant>
+		<constant name="BYTES_PER_KILOBYTE" value="1024">
+			Bytes in a kilobyte.
+		</constant>
+	</constants>
+</class>

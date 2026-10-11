@@ -2,9 +2,10 @@ extends Node3D
 class_name CabinRadio3D
 
 ## The cab's radio loudspeaker, where the cab puts it (TTrain::m_radiosound, Train.cpp:10732-10739).
-## Every radio message within reach plays on it, on any channel and with the radio off - muted
-## until the radio is on, powered and tuned to the message's channel, as the original starts them
-## all in case the radio is tuned mid-message (TTrain::radio_message(), Train.cpp:11010-11029).
+## Every radio message the vehicle's radio hears (RailVehicleRadio.transmission_received - within the
+## message's reach, on any channel, with the radio off too) plays on it - muted until the radio is
+## on, powered and tuned to the message's channel, as the original starts them all in case the radio
+## is switched on or tuned mid-message (TTrain::radio_message(), Train.cpp:11010-11029).
 ## While messages play their gain follows the radio, and the Radio-Stop alarm loops while the
 ## radio is on and its Radio-Stop is set (TTrain::update_sounds_radio(), Train.cpp:10227-10262).
 ## The cab's lamps of the message and of the Radio-Stop read their state from here
@@ -34,7 +35,6 @@ var _message_played:bool = false
 
 
 func _ready() -> void:
-    CabinSystem.radio_message_sent.connect(_on_radio_message_sent)
     if radio_stop_alarm:
         _alarm_player = _new_player()
         var bank := SfxBank.new()
@@ -46,15 +46,20 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-    CabinSystem.radio_message_sent.disconnect(_on_radio_message_sent)
+    if _radio and _radio.transmission_received.is_connected(_on_transmission_received):
+        _radio.transmission_received.disconnect(_on_transmission_received)
     if _vehicle_rid.is_valid():
         CabinSystem.state_computed_value_unregister(_vehicle_rid, MESSAGE_PLAYED_KEY)
         CabinSystem.state_computed_value_unregister(_vehicle_rid, RADIO_STOP_LAMP_KEY)
 
 
 func set_vehicle_rid(vehicle_rid:RID) -> void:
+    if _radio and _radio.transmission_received.is_connected(_on_transmission_received):
+        _radio.transmission_received.disconnect(_on_transmission_received)
     _vehicle_rid = vehicle_rid
     _radio = CabinSystem.vehicle_component(vehicle_rid, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio
+    if _radio:
+        _radio.transmission_received.connect(_on_transmission_received)
     CabinSystem.state_computed_value_register(vehicle_rid, MESSAGE_PLAYED_KEY, func() -> bool: return _message_played)
     CabinSystem.state_computed_value_register(vehicle_rid, RADIO_STOP_LAMP_KEY,
             func() -> bool: return _radio != null and _radio.get_enabled() and _radio.get_radio_stop_active())
@@ -76,13 +81,13 @@ func _gain(channel:int) -> float:
     return 0.0
 
 
-func _on_radio_message_sent(
-    message:SfxEvent, transcript:Transcript, channel:int, position:Vector3, reach:float
-) -> void:
-    # a vehicle without a radio hears nothing it could ever tune to
-    if not _radio or message == null:
+## A spoken message is a payload {sound: SfxEvent, transcript: Transcript} (RadioServer.KIND_MESSAGE)
+func _on_transmission_received(kind:RadioServer.Kind, channel:int, payload:Variant) -> void:
+    if kind != RadioServer.KIND_MESSAGE:
         return
-    if reach > 0.0 and RailVehicleServer.vehicle_get_transform(_vehicle_rid).origin.distance_to(position) > reach:
+    var message:SfxEvent = payload.get("sound")
+    var transcript:Transcript = payload.get("transcript")
+    if message == null:
         return
     var played:SfxEvent = message.duplicate(true)
     played.name = RADIO_MESSAGE

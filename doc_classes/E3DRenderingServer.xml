@@ -4,7 +4,7 @@
 		RID based server of E3D model instances.
 	</brief_description>
 	<description>
-		Singleton with an API similar to [RenderingServer]. An instance is created with [method instance_create], set up with the [code]instance_set_*[/code] methods and [method instance_attach_node], and built with [method instance_build]. The [enum Instancer] of an instance selects how it is built: [constant INSTANCER_OPTIMIZED] renders every submodel as a [RenderingServer] instance without creating any nodes (used for scenery models), [constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build a [Node3D]/[MeshInstance3D]/[SpotLight3D] tree under the attached node. [code]E3DModelInstance[/code] is a node client of this server. [RenderingServer] instances are freed when the singleton is deleted.
+		Singleton with an API similar to [RenderingServer]. An instance is created with [method instance_create], set up with the [code]instance_set_*[/code] methods and [method instance_attach_object_instance_id], and built with [method instance_build]. The [enum Instancer] of an instance selects how it is built: [constant INSTANCER_OPTIMIZED] renders every submodel as a [RenderingServer] instance without creating any nodes (used for scenery models), [constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build a [Node3D]/[MeshInstance3D]/[SpotLight3D] tree under the attached node. [code]E3DModelInstance[/code] is a node client of this server. [RenderingServer] instances are freed when the singleton is deleted.
 		Scenery placements are registered with [method instance_register] instead: [SceneryStreamingServer] builds them only while its camera is within their visibility range of the chunk they fall into, and clears them again when it leaves.
 	</description>
 	<tutorials>
@@ -37,12 +37,12 @@
 				The wind every particle emitter drifts with: [param strength] in metres per second along the unit [param direction]. Separate so that the direction can grow a vertical component without the signature changing. Pushed by [code]MaszynaEnvironmentNode[/code] together with the time of day and the light level.
 			</description>
 		</method>
-		<method name="instance_attach_node">
+		<method name="instance_attach_object_instance_id">
 			<return type="void" />
 			<param index="0" name="instance" type="RID" />
-			<param index="1" name="node" type="Node3D" />
+			<param index="1" name="id" type="int" />
 			<description>
-				[constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build their node tree under [param node]. [constant INSTANCER_OPTIMIZED] instances report [param node] as their owner (e.g. for picking in the editor). Rebuilds an already built instance.
+				The [Node3D], by instance id, that [constant INSTANCER_NODES] and [constant INSTANCER_EDITABLE_NODES] build their node tree under. [constant INSTANCER_OPTIMIZED] instances report it as their owner (e.g. for picking in the editor). [code]0[/code] detaches it. Rebuilds an already built instance.
 			</description>
 		</method>
 		<method name="instance_build">
@@ -58,7 +58,7 @@
 			<param index="1" name="instancer" type="int" enum="E3DRenderingServer.Instancer" />
 			<param index="2" name="instance_kind" type="int" enum="E3DRenderingServer.InstanceKind" />
 			<description>
-				Creates an empty instance; set it up with the [code]instance_set_*[/code] methods and [method instance_attach_node], then call [method instance_build].
+				Creates an empty instance; set it up with the [code]instance_set_*[/code] methods and [method instance_attach_object_instance_id], then call [method instance_build].
 				[param instance_kind] says what the placement is, in the words a [code].scn[/code] uses for it. It is given here rather than through a setter because it cannot be changed once the instance is built: the smoke density it selects is baked into every particle emitter of the model - its process material, its particle budget and its spawn rate. A client that has to change it frees the instance and creates it again.
 			</description>
 		</method>
@@ -80,7 +80,7 @@
 			<return type="int" />
 			<param index="0" name="instance" type="RID" />
 			<description>
-				The instance id of the node attached with [method instance_attach_node] - the one a node tree is built under - or [code]0[/code] for none, or for one that is gone.
+				The instance id of the node attached with [method instance_attach_object_instance_id] - the one a node tree is built under - or [code]0[/code] for none, or for one that is gone.
 			</description>
 		</method>
 		<method name="instance_get_data_path" qualifiers="const">

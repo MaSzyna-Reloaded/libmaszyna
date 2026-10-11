@@ -51,35 +51,53 @@ namespace godot {
             bool get_mainbreaker_active() const;
 
             static void _bind_methods();
-            /* Circuit: (elektryczny obwod napedowy) */
-            MAKE_MEMBER_GS(double, circuit_resistance, 0.0);
-            MAKE_MEMBER_GS(int, circuit_imax_low, 0);
-            MAKE_MEMBER_GS(int, circuit_imax_high, 0);
-            MAKE_MEMBER_GS(int, circuit_imin_low, 0);
-            MAKE_MEMBER_GS(int, circuit_imin_high, 0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_sum, 750.0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_diff, 10.0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_min_current, 60.0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_max_current, 400.0);
-            MAKE_MEMBER_GS(int, circuit_tuhex_stages, 0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_sum_1, 750.0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_sum_2, 750.0);
-            MAKE_MEMBER_GS(double, circuit_tuhex_sum_3, 750.0);
+
+        private:
+            /* Circuit: (elektryczny obwod napedowy) - defaults of MOVER.h:1740-1744, 1762-1769 */
+            double circuit_resistance = 0.0;
+            int circuit_imax_low = 0;
+            int circuit_imax_high = 0;
+            int circuit_imin_low = 0;
+            int circuit_imin_high = 0;
+            double circuit_tuhex_sum = 750.0;
+            double circuit_tuhex_diff = 10.0;
+            double circuit_tuhex_min_current = 60.0;
+            double circuit_tuhex_max_current = 400.0;
+            int circuit_tuhex_stages = 0;
+            double circuit_tuhex_sum_1 = 750.0;
+            double circuit_tuhex_sum_2 = 750.0;
+            double circuit_tuhex_sum_3 = 750.0;
 
             /* Cntrl. (elektryczne) */
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_converter_overload_relay_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
-            MAKE_MEMBER_GS(bool, cntrl_converter_overload_relay_off_when_main_is_off, false);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::StartMode, cntrl_main_switch_start_mode,
-                    RailVehicleController::START_MODE_MANUAL);
+            RailVehicleController::StartMode cntrl_converter_overload_relay_start_mode =
+                    RailVehicleController::START_MODE_MANUAL;
+            bool cntrl_converter_overload_relay_off_when_main_is_off = false;
+            RailVehicleController::StartMode cntrl_main_switch_start_mode = RailVehicleController::START_MODE_MANUAL;
+
+        public:
+            MAKE_GS(double, circuit_resistance);
+            MAKE_GS(int, circuit_imax_low);
+            MAKE_GS(int, circuit_imax_high);
+            MAKE_GS(int, circuit_imin_low);
+            MAKE_GS(int, circuit_imin_high);
+            MAKE_GS(double, circuit_tuhex_sum);
+            MAKE_GS(double, circuit_tuhex_diff);
+            MAKE_GS(double, circuit_tuhex_min_current);
+            MAKE_GS(double, circuit_tuhex_max_current);
+            MAKE_GS(int, circuit_tuhex_stages);
+            MAKE_GS(double, circuit_tuhex_sum_1);
+            MAKE_GS(double, circuit_tuhex_sum_2);
+            MAKE_GS(double, circuit_tuhex_sum_3);
+
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_converter_overload_relay_start_mode);
+            MAKE_GS(bool, cntrl_converter_overload_relay_off_when_main_is_off);
+            MAKE_GS_NR(RailVehicleController::StartMode, cntrl_main_switch_start_mode);
 
             void converter_fuse_reset();
-            void _register_commands() override;
-            void _unregister_commands() override;
 
         protected:
+            void _register_commands() override;
+            void _unregister_commands() override;
             void _apply_configuration() override;
     };
 } // namespace godot

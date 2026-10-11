@@ -16,6 +16,12 @@
 				Appends a whole chunk's geometry to the chunk of its texture, cell and range.
 			</description>
 		</method>
+		<method name="add_geometry_file">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="add_triangles">
 			<return type="void" />
 			<param index="0" name="texture" type="String" />

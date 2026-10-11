@@ -5,6 +5,8 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    const char *RailVehicleSecuritySystem::blinking_changed_signal = "blinking_changed";
+    const char *RailVehicleSecuritySystem::beeping_changed_signal = "beeping_changed";
     void RailVehicleSecuritySystem::_bind_methods() {
         BIND_PROPERTY(RailVehicleSecuritySystem, Variant::BOOL, aware_system_active, "aware_system");
         BIND_PROPERTY(RailVehicleSecuritySystem, Variant::BOOL, aware_system_cabsignal, "aware_system");
@@ -28,8 +30,8 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("security_cabsignal_trigger"), &RailVehicleSecuritySystem::security_cabsignal_trigger);
         ClassDB::bind_method(D_METHOD("security_radiostop", "enabled"), &RailVehicleSecuritySystem::security_radiostop);
-        ADD_SIGNAL(MethodInfo("blinking_changed", PropertyInfo(Variant::BOOL, "state")));
-        ADD_SIGNAL(MethodInfo("beeping_changed", PropertyInfo(Variant::BOOL, "state")));
+        ADD_SIGNAL(MethodInfo(blinking_changed_signal, PropertyInfo(Variant::BOOL, "state")));
+        ADD_SIGNAL(MethodInfo(beeping_changed_signal, PropertyInfo(Variant::BOOL, "state")));
 
         BIND_ENUM_CONSTANT(EMERGENCY_SIGNAL_SIREN_LOW_TONE);
         BIND_ENUM_CONSTANT(EMERGENCY_SIGNAL_SIREN_HIGH_TONE);
@@ -48,10 +50,14 @@ namespace godot {
     }
 
     void RailVehicleSecuritySystem::_register_commands() {
-        register_command("security_acknowledge", Callable(this, "security_acknowledge"));
-        register_command("security_cabsignal_acknowledge", Callable(this, "security_cabsignal_acknowledge"));
-        register_command("security_cabsignal_trigger", Callable(this, "security_cabsignal_trigger"));
-        register_command("security_radiostop", Callable(this, "security_radiostop"));
+        register_command("security_acknowledge", callable_mp(this, &RailVehicleSecuritySystem::security_acknowledge));
+        register_command(
+                "security_cabsignal_acknowledge",
+                callable_mp(this, &RailVehicleSecuritySystem::security_cabsignal_acknowledge));
+        register_command(
+                "security_cabsignal_trigger",
+                callable_mp(this, &RailVehicleSecuritySystem::security_cabsignal_trigger));
+        register_command("security_radiostop", callable_mp(this, &RailVehicleSecuritySystem::security_radiostop));
     }
 
     void RailVehicleSecuritySystem::_unregister_commands() {

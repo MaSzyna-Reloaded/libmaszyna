@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://bqm2tjc1181ek"]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_security.gd" id="1_6ebrn"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="1_cq237"]
+[ext_resource type="PackedScene" uid="uid://c4f4ti7sfn87w" path="res://addons/libmaszyna/debug_hud/light.tscn" id="2_light"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="Security" type="VBoxContainer" unique_id=628826945]
+script = ExtResource("1_6ebrn")
+
+[node name="CA_SHP_Reset" parent="." unique_id=1643046840 instance=ExtResource("1_cq237")]
+layout_mode = 2
+label = "CA/SHP"
+type = 1
+command = "security_acknowledge"
+
+[node name="Lights" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="SecurityLight" parent="Lights" instance=ExtResource("2_light")]
+unique_name_in_owner = true
+layout_mode = 2
+color_active = Color(0.988281, 0.138977, 0, 1)
+label = "CA"
+blink_interval = 0.25
+
+[node name="CabSignalLight" parent="Lights" instance=ExtResource("2_light")]
+unique_name_in_owner = true
+layout_mode = 2
+color_active = Color(0.988281, 0.138977, 0, 1)
+label = "SHP"
+blink_interval = 0.25
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

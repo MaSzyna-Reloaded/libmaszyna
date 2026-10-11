@@ -1,0 +1,124 @@
+// to jest plik z parametrami dla ET22 
+// stale uniwersalne stosowane dla kazdego pojazdu
+# prametry hamulca dla SPKS: youBy
+Param. Category=train M=120000 Mred=18000 Vmax=125 PWR=3120 SandCap=700
+Load: MaxLoad=52 LoadQ=pieces LoadAccepted=pantstate LoadSpeed=1 UnLoadSpeed=0.1
+// rodzaj (train,auto,ship), masa [kg], Vmax [km/h], moc [kW] 
+Dimensions: L=19.240 H=4.055 W=3.005 Cx=0.3 
+// dlugosc ze zderzakami, wysokosc, szerokosc [m], wspolcz. oporu aerodynam.
+Wheels: D=1.250 AIM=2000 Tw=1.435 Axle=Co'Co' Ad=3.05 Bd=10.30  Rmin=120 BearingType=Roll
+// srednica kol napednych, moment bezwladosci [kgm^2], szerokosc, uklad i rozstaw osi, rozstaw czopow, min. promien skretu [m]
+Brake: BrakeValve=LSt NBpA=4 MBF=85.0 MaxBP=4.2 MaxASBP=1.8 BCN=8 BCR=0.1143 BCD=0.05 BCM=7.75 HiPP=5 LoPP=3.5 Vv=1 MinCP=7.5 MaxCP=8.5 CompressorSpeed=0.0566 BVV=250 RM=0.677 BSA=0 BCS=1 BM=P10-Bgu CompressorPower=Converter BRE=0.88
+// ilosc elementow ciernych na os, max sila docisku ham. recznego [kN], max. cisnienie w cyl., 
+// cylindry: ilosc, promien, skok roboczy, mnoznik przekladni,
+// cisnienie nominalne w przew. glownym [MPa], opcjonalnie dane dotyczace sprezarki i zbiornika glownego
+BuffCoupl. CType=Screw kB=9200 DmaxB=0.15 FmaxB=740 kC=4800 DmaxC=0.15 FmaxC=780 beta=0.58 AllowedFlag=99
+// urzadzenia zderzno-cieglowe, sily w kN (uwaga - sprezystosc kB to 2*sprezystosc pojedynczego zderzaka!)
+Cntrl. BrakeSystem=Pneumatic BCPN=6 BDelay1=15 BDelay2=4 BDelay3=35 BDelay4=25 ASB=Manual LocalBrake=PneumaticBrake DynamicBrake=Passive MCPN=3 SCPN=6 AutoRelay=Yes MainInitTime=10 IniCDelay=0.2 SCDelay=0.75 SCIM=1 BrakeDelays=GPR BrakeHandle=FV4a LocBrakeHandle=FD1 PantAutoValve=Yes ConverterStart=Automatic ConverterStartDelay=3
+-1 0.7 	-1	60 Pneumatic 
+ 0 0.5	-1	9  Pneumatic
+ 1 0.44 -1	9  Pneumatic
+ 2 0.40 -1	9  Pneumatic
+ 3 0.36	-1	9  Pneumatic
+ 4 0.32	-1	9  Pneumatic
+ 5 0.28	-1	9  Pneumatic
+ 6 0	-1	35 Pneumatic
+// tabelka z parametrami nastaw glownego hamulca: cisnienie w przewodzie glowny, cylindrach (-1: nie dotyczy), szybkosc nap.,
+// powyzej rodzaj hamulca zespolonego, ilosc nastaw hamulca oraz opoznienie dzialania, typ hamulca niesamoczynnego
+// ilosc nastaw glownego i dodatkowego nastawnika, rozruch aut., opoznienia zadzialania stycznikow
+Security: AwareSystem=Active,CabSignal AwareDelay=60 SoundSignalDelay=3 MaxHoldTime=1.0 EmergencyBrakeDelay=6 RadioStop=Yes 
+// systemy zabezpieczajace: czuwaki, sygnalizacja kabinowa itp
+Light: Light=Generator LGeneratorEngine=ElectricSeriesMotor LMaxVoltage=110 LMaxCurrent=155  
+// zrodlo mocy dla oswietlenia
+Clima: Heating=Main
+Power: EnginePower=CurrentCollector CollectorsNo=2 MaxVoltage=3600 MaxCurrent=1800 MinH=0.38 MinV=1900 MaxH=2.4 CSW=1.4 PhysicalLayout=3
+// zrodlo mocy dla silnikow trakcyjnych
+Engine: EngineType=ElectricSeriesMotor Volt=1500 Trans=18:79 WindingRes=0.14 nmax=2390
+Switches: Pantograph=Continuos
+
+// Parametry stale dla elektrycznych silnikow trakcyjnych
+// parametry silnika dla roznych stopni bocznikowania
+// pozycja, alfa,beta,gamma(->moment), fi,Isat(->SEM)
+// zmiana - fi,Isat->moment, fi,Isat->SEM
+
+MotorParamTable0:       
+0 21.4 105 0.12 141.5 105 0.12 0
+1 19.57 140 0.07 129.3 140 0.07 0
+2 20.42 190 0.09 134.7 190 0.09 0
+3 22.97 160 0.25 152.1 160 0.25 0
+4 22.12 255 0.16 145.8 255 0.16 0
+5 24.18 170 0.35 158.2 170 0.35 0
+6 22.76 800 0.02 149 800 0.02 0
+END-MPT       
+
+
+Circuit: CircuitRes=0.01 ImaxLo=600 ImaxHi=601 IminLo=350 IminHi=420
+
+// nastawnik, rezystory rozruchowe, ilosc galezi, ilosc silnikow w galezi
+RList: Size=64 RVent=Automatic RVentnmax=3300 RVentCutOff=0.2
+0	0	0	0	0 0
+1	99999	1	6	1 0
+1	0	0	0	0 0
+2	0	0	0	0 0
+2	21.51 	1	6	0 0   //gr1
+2	17.61 	1	6	0 0
+2	13.85 	1	6	1 0
+2	10.39 	1	6	1 0   
+2	8.26 	1	6	1 0
+2	5.54 	1	6	1 0
+2	5.11 	1	6	0 0
+2	4.67 	1	6	1 0
+2	4.11 	1	6	1 0
+2	3.61 	1	6	1 0
+2	3.06 	1	6	1 0
+2	2.70 	1	6	1 0
+2	2.38 	1	6	0 0
+2	2.05 	1	6	1 0
+2	1.69 	1	6	1 0
+2	1.36 	1	6	1 0 
+2	1.00 	1	6	1 0
+2	0.84 	1	6	1 0
+2	0.29 	1	6	1 0
+2	0.00 	1	6	0 0   //gr2
+2	0.00 	1	6	1 0
+2	7.29	2	3	1 0
+2	4.50	2	3	1 0
+2	3.58	2	3	1 0
+2	3.03	2	3	0 0
+2	2.60	2	3	1 0
+2	2.26	2	3	1 0
+2	1.97	2	3	1 0
+2	1.60	2	3	1 0
+2	1.46	2	3	1 0
+2	1.26	2	3	0 0
+2	1.00	2	3	1 0
+2	0.62	2	3	1 0
+2	0.35	2	3	1 0
+2	0.23	2	3	1 0
+2	0.00	2	3	0 0   //gr3
+2	0.00	2	3	1 0
+2	2.23 	3	2	1 0
+2	1.78 	3	2	1 0
+2	1.49 	3	2	1 0
+2	1.29 	3	2	1 0
+2	1.11 	3	2	0 0
+2	0.95 	3	2	1 0
+2	0.78 	3	2	1 0
+2	0.62 	3	2	1 0
+2	0.47 	3	2	1 0
+2	0.22 	3	2	1 0
+2	0.00 	3	2	0 0   // bocz  
+2	0.00 	3	2	1 0
+2	0.00 	3	2	0 1
+2	0.00 	3	2	1 1
+2	0.00 	3	2	0 2
+2	0.00 	3	2	1 2
+2	0.00 	3	2	0 3
+2	0.00 	3	2	1 3
+2	0.00 	3	2	0 4
+2	0.00 	3	2	1 4
+2	0.00 	3	2	0 5
+2	0.00 	3	2	1 5
+2	0.00 	3	2	0 6
+3	0.00 	3	2	0 6
+END-RL 

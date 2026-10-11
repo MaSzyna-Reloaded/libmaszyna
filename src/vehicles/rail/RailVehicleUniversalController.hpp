@@ -17,12 +17,18 @@ namespace godot {
         private:
             static void _bind_methods();
 
-        public:
-            MAKE_MEMBER_GS(bool, integrated_brake_pn, false);
-            MAKE_MEMBER_GS(bool, integrated_brake, false);
+            bool integrated_brake_pn = false;
+            bool integrated_brake = false;
             /* IntegratedLocBrake: the controller's braking positions work the local brake */
-            MAKE_MEMBER_GS(bool, integrated_local_brake, false);
-            MAKE_MEMBER_GS(int, selector_position, 0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleUniversalControllerListItem>, positions)
+            bool integrated_local_brake = false;
+            int selector_position = 0;
+            TypedArray<RailVehicleUniversalControllerListItem> positions;
+
+        public:
+            MAKE_GS(bool, integrated_brake_pn);
+            MAKE_GS(bool, integrated_brake);
+            MAKE_GS(bool, integrated_local_brake);
+            MAKE_GS(int, selector_position);
+            MAKE_GS_NR(TypedArray<RailVehicleUniversalControllerListItem>, positions);
     };
 } // namespace godot

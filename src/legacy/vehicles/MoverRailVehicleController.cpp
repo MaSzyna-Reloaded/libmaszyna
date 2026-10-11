@@ -2,8 +2,8 @@
 #include "MoverRailVehicleController.hpp"
 #include "legacy/maszyna-mover/utilities.h"
 #include "legacy/vehicles/MoverBackend.hpp"
-#include "legacy/vehicles/MoverTypes.hpp"
 #include "vehicles/base/VehicleServer.hpp"
+#include <algorithm>
 #include <cmath>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -367,7 +367,7 @@ namespace godot {
         coupler.adapter_type = TCouplerType::Automatic;
         coupler.adapter_length = length;
         coupler.adapter_height = other->get_coupler_adapter_height();
-        fitted_adapter_models[p_end] = other->get_coupler_adapter_model();
+        _set_coupler_adapter_fitted_model(p_end, other->get_coupler_adapter_model());
         emit_signal(coupler_adapter_attached_signal, p_end);
         return true;
     }
@@ -415,13 +415,9 @@ namespace godot {
         coupler.adapter_type = TCouplerType::NoCoupler;
         coupler.adapter_length = 0.0;
         coupler.adapter_height = 0.0;
-        fitted_adapter_models[end] = String();
+        _set_coupler_adapter_fitted_model(end, String());
         emit_signal(coupler_adapter_removed_signal, end);
         return true;
-    }
-
-    String MoverRailVehicleController::get_coupler_adapter_fitted_model(const CouplerEnd p_end) const {
-        return fitted_adapter_models[p_end];
     }
 
     double MoverRailVehicleController::get_coupler_adapter_fitted_length(const CouplerEnd p_end) const {
@@ -565,14 +561,6 @@ namespace godot {
 
         mover->CategoryFlag = get_category();
         mover->TrainType = get_train_type();
-        // an EZT's automatic start thresholds before an engine's Circuit: writes its own
-        // (LoadFIZ_Param, Mover.cpp:10300-10305) - a cab car has no engine to write them, and with
-        // Imin == IminHi == 0 DirectionBackward() switches the high start off forever (Mover.cpp:3250)
-        if (mover->TrainType == Maszyna::dt_EZT && mover->IminLo == 0 && mover->IminHi == 0) {
-            mover->IminLo = EZT_IMIN_LOW;
-            mover->IminHi = EZT_IMIN_HIGH;
-            mover->Imin = mover->IminLo;
-        }
         mover->SandCapacity = static_cast<int>(get_sand_capacity());
         mover->HeatingPower = get_heating_power();
         mover->LightPower = get_light_power();
@@ -583,11 +571,27 @@ namespace godot {
         mover->Cx = get_dimensions_drag_coefficient();
         mover->Floor = static_cast<float>(get_dimensions_floor_height());
 
-        mover->GroundRelayStart = mover_start_mode(get_cntrl_ground_relay_start_mode());
-        mover->CompartmentLights.start_type = mover_start_mode(get_cntrl_compartment_lights_start_mode());
+        mover->GroundRelayStart = MaszynaMoverVehicleServer::start_mode_to_mover(get_cntrl_ground_relay_start_mode());
+        mover->CompartmentLights.start_type =
+                MaszynaMoverVehicleServer::start_mode_to_mover(get_cntrl_compartment_lights_start_mode());
         mover->AutomaticCabActivation = get_cntrl_automatic_cab_activation();
         mover->InactiveCabFlag = get_cntrl_inactive_cab_flag();
         emit_config_changed();
+    }
+
+    /* An EZT's automatic start thresholds where the engine's Circuit: has not written its own
+     * (LoadFIZ_Param, Mover.cpp:10300-10305) - a cab car has no engine to write them, and with
+     * Imin == IminHi == 0 DirectionBackward() switches the high start off forever (Mover.cpp:3250).
+     * Read after every component has applied its configuration, the engine's among them. */
+    void MoverRailVehicleController::apply_vehicle_config() {
+        if (mover == nullptr) {
+            return;
+        }
+        if (mover->TrainType == Maszyna::dt_EZT && mover->IminLo == 0 && mover->IminHi == 0) {
+            mover->IminLo = EZT_IMIN_LOW;
+            mover->IminHi = EZT_IMIN_HIGH;
+            mover->Imin = mover->IminLo;
+        }
     }
 
     void MoverRailVehicleController::_fill_config_dictionary(Dictionary &p_config) const {
@@ -643,12 +647,12 @@ namespace godot {
         return mover != nullptr ? static_cast<Direction>(mover->DirActive) : DIRECTION_NEUTRAL;
     }
 
-    void MoverRailVehicleController::compartment_lights(const bool p_enabled) const {
+    void MoverRailVehicleController::compartment_lights(const bool p_enabled) {
         ASSERT_MOVER(mover);
         mover->CompartmentLightsSwitch(p_enabled);
     }
 
-    void MoverRailVehicleController::compartment_lights_switch_off(const bool p_enabled) const {
+    void MoverRailVehicleController::compartment_lights_switch_off(const bool p_enabled) {
         ASSERT_MOVER(mover);
         mover->CompartmentLightsSwitchOff(p_enabled);
     }
@@ -662,7 +666,7 @@ namespace godot {
     }
 
     // Original engine: OnCommand_cabactivationenable/disable (Train.cpp:2430-2472)
-    void MoverRailVehicleController::cab_activation(const bool p_enabled) const {
+    void MoverRailVehicleController::cab_activation(const bool p_enabled) {
         ASSERT_MOVER(mover);
         if (p_enabled) {
             mover->CabActivisation();
@@ -673,20 +677,20 @@ namespace godot {
 
     // Original engine: taking over a vehicle activates its cab if the FIZ allows automatic
     // activation (Train.cpp:9086, 9147); otherwise the driver uses cab_activation
-    void MoverRailVehicleController::cab_activation_auto() const {
+    void MoverRailVehicleController::cab_activation_auto() {
         ASSERT_MOVER(mover);
         mover->CabActivisationAuto(true);
     }
 
     // Original engine: TTrain::CabChange() (Train.cpp:10336) switches the cab off before the change
-    void MoverRailVehicleController::cab_deactivation_auto() const {
+    void MoverRailVehicleController::cab_deactivation_auto() {
         ASSERT_MOVER(mover);
         mover->CabDeactivisationAuto();
     }
 
     // Original engine: what TMoverParameters::ChangeCab() resets besides the cab (Mover.cpp:735-749);
     // the cab itself is the driver's, handed down by set_driver_cabin_kind()
-    void MoverRailVehicleController::cab_controls_reset() const {
+    void MoverRailVehicleController::cab_controls_reset() {
         ASSERT_MOVER(mover);
         if ((mover->BrakeCtrlPosNo > 0) && ((mover->BrakeSystem == TBrakeSystem::Pneumatic) ||
                                             (mover->BrakeSystem == TBrakeSystem::ElectroPneumatic))) {
@@ -724,7 +728,7 @@ namespace godot {
 
     // Original engine: TTrain::MoveToVehicle() (Train.cpp:10950-10954) - CabOccupied follows the driver
     // (set_driver_cabin_kind())
-    void MoverRailVehicleController::cabin_leave() const {
+    void MoverRailVehicleController::cabin_leave() {
         ASSERT_MOVER(mover);
         mover->CabDeactivisation();
         mover->BrakeLevelSet(mover->Handle->GetPos(bh_NP));
@@ -733,7 +737,7 @@ namespace godot {
     }
 
     // Original engine: TTrain::MoveToVehicle() (Train.cpp:10976-10977)
-    void MoverRailVehicleController::cabin_enter() const {
+    void MoverRailVehicleController::cabin_enter() {
         ASSERT_MOVER(mover);
         mover->LimPipePress = mover->PipePress;
         mover->CabActivisationAuto(true);
@@ -754,47 +758,52 @@ namespace godot {
         }
     }
 
-    void MoverRailVehicleController::ground_relay_reset() const {
+    void MoverRailVehicleController::ground_relay_reset() {
         ASSERT_MOVER(mover);
         mover->RelayReset(Maszyna::maincircuitground);
     }
 
-    void MoverRailVehicleController::antislip() const {
+    void MoverRailVehicleController::antislip() {
         ASSERT_MOVER(mover);
         mover->AntiSlippingButton();
     }
 
-    void MoverRailVehicleController::main_controller_increase(const int p_step) const {
+    void MoverRailVehicleController::main_controller_increase(const int p_step) {
         ASSERT_MOVER(mover);
         const int step = p_step > 0 ? p_step : 1;
         mover->IncMainCtrl(step);
     }
 
-    void MoverRailVehicleController::main_controller_decrease(const int p_step) const {
+    void MoverRailVehicleController::main_controller_decrease(const int p_step) {
         ASSERT_MOVER(mover);
         const int step = p_step > 0 ? p_step : 1;
         mover->DecMainCtrl(step);
     }
 
+    void MoverRailVehicleController::main_controller_set_position(const int p_position) {
+        ASSERT_MOVER(mover);
+        mover->MainCtrlPos = std::clamp(p_position, 0, mover->MainCtrlPosNo);
+    }
+
     // Original engine: OnCommand_secondcontrollerincrease/decrease (Train.cpp:1188, 1349), regular mode
-    void MoverRailVehicleController::second_controller_increase(const int p_step) const {
+    void MoverRailVehicleController::second_controller_increase(const int p_step) {
         ASSERT_MOVER(mover);
         const int step = p_step > 0 ? p_step : 1;
         mover->IncScndCtrl(step);
     }
 
-    void MoverRailVehicleController::second_controller_decrease(const int p_step) const {
+    void MoverRailVehicleController::second_controller_decrease(const int p_step) {
         ASSERT_MOVER(mover);
         const int step = p_step > 0 ? p_step : 1;
         mover->DecScndCtrl(step);
     }
 
-    void MoverRailVehicleController::direction_increase() const {
+    void MoverRailVehicleController::direction_increase() {
         ASSERT_MOVER(mover);
         mover->DirectionForward();
     }
 
-    void MoverRailVehicleController::direction_decrease() const {
+    void MoverRailVehicleController::direction_decrease() {
         ASSERT_MOVER(mover);
         mover->DirectionBackward();
     }

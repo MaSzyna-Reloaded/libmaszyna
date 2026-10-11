@@ -10,7 +10,6 @@ extends RefCounted
 ## [SceneryLoad] FILES 41.2 s, longest frame 0.90 s, peak 3.60 GB resident, 1.20 GB Godot static
 
 const STAGE_NAMES: PackedStringArray = ["FILES", "INFRASTRUCTURE", "TERRAIN", "OBJECTS", "VEHICLES"]
-const USEC_PER_SEC: float = 1000000.0
 const BYTES_PER_GB: float = 1024.0 * 1024.0 * 1024.0
 
 var _root: MaszynaIncludeNode = null
@@ -63,8 +62,8 @@ func _close_stage() -> void:
     _durations_usec[_stage] += now - _stage_started_usec
     _stage_started_usec = now
     print("[SceneryLoad] %s %.1f s, longest frame %.2f s, peak %.2f GB resident, %.2f GB Godot static" % [
-        STAGE_NAMES[_stage], _durations_usec[_stage] / USEC_PER_SEC,
-        _longest_frames_usec[_stage] / USEC_PER_SEC, _peaks_resident_bytes[_stage] / BYTES_PER_GB,
+        STAGE_NAMES[_stage], _durations_usec[_stage] / float(LibMaszynaUnits.USEC_PER_SECOND),
+        _longest_frames_usec[_stage] / float(LibMaszynaUnits.USEC_PER_SECOND), _peaks_resident_bytes[_stage] / BYTES_PER_GB,
         _peaks_static_bytes[_stage] / BYTES_PER_GB,
     ])
 

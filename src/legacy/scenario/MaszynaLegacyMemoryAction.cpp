@@ -1,5 +1,5 @@
 #include "MaszynaLegacyMemoryAction.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverServer.hpp"
 #include "macros.hpp"
 #include "tracks/TrackServer.hpp"
 
@@ -90,7 +90,7 @@ namespace godot {
             }
             const RID track = server->memory_get_track(memory);
             TrackServer *tracks = TrackServer::get_instance();
-            DriverSystem *drivers = DriverSystem::get_instance();
+            DriverServer *drivers = DriverServer::get_instance();
             if (!track.is_valid() || tracks == nullptr || drivers == nullptr) {
                 continue;
             }

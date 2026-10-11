@@ -8,8 +8,11 @@ static var config_importer = preload("res://addons/libmaszyna/legacy/scenery/mas
 static var node_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_importer.gd").new()
 static var event_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_event_importer.gd").new()
 ## A lit model no `lights` event is aimed at - it has lights but no aspects
-## The one delegate every scenery driver shares; it keeps their state per driver
-static var _ai_driver:MaszynaLegacyAIDriver = MaszynaLegacyAIDriver.new()
+## What a scenery's drivers think with, by name (DriverServer.implementation_register()): the
+## original's driver, which the game registers - a scenery knows its drivers, not their class
+const DRIVER_IMPLEMENTATION:StringName = &"maszyna_legacy"
+## The order that gives a driver its timetable (simulationstateserializer.cpp:845, endtrainset)
+const TIMETABLE_ORDER:String = "Timetable:"
 const GENERIC_SIGNAL_HEAD_KIND:SignalHeadKind = preload("../signalling/generic_signal_head_kind.tres")
 static var origin_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_origin_importer.gd").new()
 static var endorigin_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_endorigin_importer.gd").new()
@@ -338,12 +341,12 @@ static func _build_trainsets(root:MaszynaIncludeNode, trainsets:Array[MaszynaTra
             var driver:RID = MaszynaLegacyVehicleSystem.vehicle_get_driver(trainset_vehicles[member])
             if driver.is_valid():
                 trainset_driver = driver
-                DriverSystem.driver_attach_delegate(trainset_driver, _ai_driver)
+                DriverServer.driver_attach_implementation(trainset_driver, DRIVER_IMPLEMENTATION)
         # endtrainset (simulationstateserializer.cpp:839-848): the trainset's driver gets its
         # timetable and the velocity it starts with; of several drivers, the one furthest along
         if trainset_driver.is_valid() and trainset_data.timetable:
-            DriverSystem.driver_send_command(
-                    trainset_driver, MaszynaLegacyAIDriver.TIMETABLE_PREFIX + trainset_data.timetable,
+            DriverServer.driver_send_command(
+                    trainset_driver, TIMETABLE_ORDER + trainset_data.timetable,
                     trainset_data.velocity, 0.0)
     root.load_progress.emit(1.0, MaszynaIncludeNode.LoadStage.VEHICLES, "")
 
@@ -397,7 +400,7 @@ static func _instantiate_server_data(
 
     # the original's signal heads: every lit model, driven by the scenery's own `lights` events
     var signalling_system:RID = SignallingServer.system_create()
-    SignallingServer.system_attach_delegate(signalling_system, MaszynaLegacySignallingDelegate.new())
+    SignallingServer.system_attach_implementation(signalling_system, MaszynaLegacySignallingImplementation.new())
     SignallingServer.system_set_name(signalling_system, root.filename)
     root._signalling_system_rids.append(signalling_system)
     for model_data:MaszynaModelData in models:
@@ -516,16 +519,17 @@ static func _instantiate_cached_nodes(packed_scene:PackedScene) -> Array:
     return objects
 
 
-## Runs `task` on a WorkerTaskQueue worker while the main thread keeps drawing frames with
-## the progress reported; its result, null when the load is cancelled (cancel_loading())
+## Runs `task` on a WorkerTaskQueue worker while the main thread keeps drawing frames, the
+## progress reported; its result, null when the load is cancelled (cancel_loading())
 static func _run_on_worker(
     root:MaszynaIncludeNode, task:Callable, progress:float, stage:MaszynaIncludeNode.LoadStage, message:String
 ) -> Variant:
     var queue := WorkerTaskQueue.new()
     _active_queues.append(queue)
     var task_id:int = queue.submit(task)
-    while not queue.is_done(task_id):
-        await _report_progress(root, progress, stage, message)
+    root.load_progress.emit(progress, stage, message)
+    await queue.task_finished
+    _last_report_msec = Time.get_ticks_msec()
     _active_queues.erase(queue)
     return queue.wait(task_id)
 
@@ -693,7 +697,8 @@ func parse_subscene_task(
 
 
 ## Parses root's scenery on WorkerTaskQueue workers (every include is a task), reporting
-## progress every frame: finished tasks / tasks submitted so far.
+## progress as they finish, at most once per FRAME_BUDGET_MSEC: finished tasks / tasks submitted
+## so far.
 func _parse_file_with_progress(
     root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:SceneryTrianglesSink
 ) -> MaszynaImporterContext:
@@ -709,14 +714,18 @@ func _parse_file_with_progress(
     # every include is a task submitted while parsing, so the total grows with the parse; the bar
     # does not go back when it does
     var parsed:float = 0.0
-    while not queue.is_done(task_id):
+    # the root task finishes last: it waits for the includes it submitted
+    while await queue.task_finished != task_id:
+        if Time.get_ticks_msec() - _last_report_msec < FRAME_BUDGET_MSEC:
+            continue
+        _last_report_msec = Time.get_ticks_msec()
         parsed = maxf(parsed, float(queue.get_completed_count()) / float(queue.get_submitted_count()))
         _file_in_parse_mutex.lock()
         var file_in_parse:String = _file_in_parse
         _file_in_parse_mutex.unlock()
         root.load_files_parsed.emit(queue.get_completed_count(), file_in_parse)
-        await _report_progress(
-            root, PARSE_PROGRESS * parsed, MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
+        root.load_progress.emit(
+            PARSE_PROGRESS * parsed, MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
         )
     var context:MaszynaImporterContext = queue.wait(task_id) as MaszynaImporterContext
     _active_queues.erase(queue)

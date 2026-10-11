@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleComponent" inherits="VehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A component only a railway vehicle has.
+	</brief_description>
+	<description>
+		A brake system, couplers, an engine of the original's kinds, a master controller, the alerter - it belongs to a [RailVehicleController].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

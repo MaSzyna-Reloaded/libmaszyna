@@ -222,12 +222,12 @@ func test_handing_over_gives_the_ai_driver_the_players_cabin_and_leaving_hands_i
     var front:RID = RailVehicleServer.vehicle_get_front_cabin(vehicle)
     var driver:RID = _create_person()
     var player:RID = PlayerServer.player_get_person()
-    DriverSystem.driver_attach_delegate(driver, IdleDelegate.new())
+    attach_driver_implementation(driver, IdleImplementation.new())
     assert_eq(RailVehicleServer.person_enter_rear_cabin(driver, vehicle, DRIVER), OK)
-    assert_true(DriverSystem.vehicle_is_control_active(vehicle), "the AI drives")
+    assert_true(DriverServer.vehicle_is_control_active(vehicle), "the AI drives")
     PlayerServer.player_take_over_vehicle(vehicle)
-    assert_false(DriverSystem.vehicle_is_control_active(vehicle), "the player drives")
-    assert_eq(DriverSystem.vehicle_get_driver(vehicle), driver, "the AI is aboard still")
+    assert_false(DriverServer.vehicle_is_control_active(vehicle), "the player drives")
+    assert_eq(DriverServer.vehicle_get_driver(vehicle), driver, "the AI is aboard still")
     # the player walks over to the other end, at the controls
     assert_eq(RailVehicleServer.person_move_to_front_cabin(player), OK)
 
@@ -236,7 +236,7 @@ func test_handing_over_gives_the_ai_driver_the_players_cabin_and_leaving_hands_i
     assert_eq(VehicleServer.person_get_cabin(driver), front, "the AI sits down in the player's cabin")
     assert_eq(VehicleServer.person_get_role(driver), DRIVER)
     assert_eq(VehicleServer.person_get_role(player), OBSERVER, "the player rides along")
-    assert_true(DriverSystem.vehicle_is_control_active(vehicle))
+    assert_true(DriverServer.vehicle_is_control_active(vehicle))
     assert_eq(RailVehicleServer.vehicle_get_driver_cabin(vehicle), front)
     assert_eq(PlayerServer.player_get_vehicle(), vehicle, "the player stays aboard")
 
@@ -249,7 +249,7 @@ func test_handing_over_gives_the_ai_driver_the_players_cabin_and_leaving_hands_i
     assert_eq(VehicleServer.person_get_cabin(player), RID(), "the player is on foot")
     assert_eq(PlayerServer.player_get_vehicle(), RID())
     assert_eq(VehicleServer.person_get_role(driver), DRIVER, "the AI drives again")
-    assert_true(DriverSystem.vehicle_is_control_active(vehicle))
+    assert_true(DriverServer.vehicle_is_control_active(vehicle))
 
 
 func test_a_drivers_cab_change_leaves_the_controls_at_rest() -> void:
@@ -299,5 +299,5 @@ func test_a_cab_change_stops_at_the_end_of_the_vehicle() -> void:
             "nothing ahead of the front cabin")
 
 
-class IdleDelegate extends DriverDelegate:
+class IdleImplementation extends DriverImplementation:
     pass

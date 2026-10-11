@@ -1,5 +1,5 @@
 #include "E3DInstanceBackend.hpp"
-#include "E3DRenderingServer.hpp"
+#include "E3DInstanceTypes.hpp"
 #include "rendering/MousePicking.hpp"
 #include <godot_cpp/classes/base_material3d.hpp>
 #include <godot_cpp/core/math.hpp>
@@ -51,7 +51,7 @@ namespace godot {
             const E3DInstanceData &p_instance, const String &p_light_name, const LightPart p_part,
             const bool p_has_xon) {
         const bool enabled = p_instance.lights_state.get(p_light_name, false);
-        const bool dimmed = p_has_xon && bool(p_instance.lights_dimmed.get(p_light_name, false));
+        const bool dimmed = p_has_xon && static_cast<bool>(p_instance.lights_dimmed.get(p_light_name, false));
         switch (p_part) {
             case LIGHT_PART_ON:
                 return enabled && !dimmed;
@@ -97,7 +97,7 @@ namespace godot {
     }
 
     bool E3DInstanceBackend::_is_submodel_shown(const E3DInstanceData &p_instance, const E3DSubModel *p_submodel) {
-        const bool dynamic_instance = p_instance.instance_kind == E3DRenderingServer::INSTANCE_KIND_DYNAMIC;
+        const bool dynamic_instance = p_instance.instance_kind == E3DInstanceTypes::INSTANCE_KIND_DYNAMIC;
         return p_submodel->get_visible() &&
                (!(dynamic_instance && p_submodel->get_dynamic_hidden()) ||
                 p_instance.shown_submodels.has(p_submodel)) &&
@@ -120,9 +120,9 @@ namespace godot {
             const E3DInstanceData &p_instance, E3DSubModel *p_submodel,
             const Vector<E3DSubModel *> &p_force_alpha_submodels, const int p_parent_translucency, const int p_forced) {
         const bool translucent = p_submodel->get_material_transparent() || p_submodel->get_skin_translucent();
-        const bool forced = p_parent_translucency != E3DRenderingServer::TRANSLUCENCY_CUTOUT ||
+        const bool forced = p_parent_translucency != E3DInstanceTypes::TRANSLUCENCY_CUTOUT ||
                             p_force_alpha_submodels.has(p_submodel) || (p_instance.force_alpha && translucent);
-        return forced ? p_forced : E3DRenderingServer::TRANSLUCENCY_CUTOUT;
+        return forced ? p_forced : E3DInstanceTypes::TRANSLUCENCY_CUTOUT;
     }
 
     bool E3DInstanceBackend::_requires_alpha_depth_prepass_sorting(const Ref<Material> &p_material) {

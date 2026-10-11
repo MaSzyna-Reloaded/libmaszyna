@@ -24,14 +24,12 @@ namespace godot {
         protected:
             static void _bind_methods();
             void _do_process_component(double p_delta) override;
+            bool _radio_stop_receive(bool p_driven) override;
 
         public:
             bool get_enabled() const override;
             bool get_powered() const override;
             bool get_radio_stop_active() const override;
             void radio(bool p_enabled) override;
-            void radio_stop(bool p_pressed) override;
-            bool radio_stop_receive() override;
-            void radio_call(bool p_pressed, RadioCall p_call) override;
     };
 } // namespace godot

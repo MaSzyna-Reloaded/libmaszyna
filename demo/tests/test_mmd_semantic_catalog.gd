@@ -24,6 +24,14 @@ func test_converter_sw_is_the_cab_logics_and_springs_back_by_the_vehicle():
     assert_false(entry["fixed_fields"].has("command"), "the cab logic sends the command")
 
 
+func test_stlinoff_bt_springs_back_unless_the_vehicles_button_is_a_toggle():
+    var entry:Dictionary = MmdSemanticCatalog.get_entry("stlinoff_bt")
+    assert_eq(entry["widget_class"], CabinButton)
+    assert_true(entry["fixed_fields"]["monostable"], "impulse is the original's default (Train.cpp:5045)")
+    assert_eq(entry["monostable_from_config"], "motor_connectors_switch_impulse")
+    assert_eq(entry["fixed_fields"]["command"], "motor_connectors_open")
+
+
 func test_compressor_sw_uses_compressor_command_and_state():
     var entry:Dictionary = MmdSemanticCatalog.get_entry("compressor_sw")
     assert_eq(entry["widget_class"], CabinButton)

@@ -1,0 +1,2 @@
+horn1: { soundbegin: 07]syrena1-start.wav soundmain: 07]syrena1-mid.wav soundend: 07]syrena1-end.wav range: 1000 offset: [ (p1), 3.80 , (p2) ] }
+horn2: { soundbegin: 07]syrena2-start.wav soundmain: 07]syrena2-mid.wav soundend: 07]syrena2-end.wav range: 1000 offset: [ (p3), 3.80 , (p4) ] }

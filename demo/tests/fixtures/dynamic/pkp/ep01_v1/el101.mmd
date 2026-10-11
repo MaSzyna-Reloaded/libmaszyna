@@ -1,0 +1,118 @@
+models: el101.t3d
+animations: 4 0 0 4 2 2 -1
+animwheelprefix: wheel0
+animpantrd1prefix: ramiedolne1_pant0
+animpantrd2prefix: ramiedolne2_pant0
+animpantrg1prefix: ramiegorne1_pant0
+animpantrg2prefix: ramiegorne2_pant0
+animpantslprefix: slizg_pant0
+pantfactors: -5.754 5.785 4.517 0.33 
+endmodels
+
+sounds:
+wheel_clatter: 70 -5.8 wheel-heavy.wav -2.75 wheel-heavy.wav 2.75 wheel-heavy.wav 5.8 wheel-heavy.wav end
+tractionmotor: motor-eu07.wav 200.0  0.5 0.5  0.06 0.1    
+brake: brake-scr.wav 100.0 5000.0 -1.0
+derail: derail.wav 200
+horn1: 07]syrena5-start.wav 07]syrena5-mid.wav 07]syrena5-end.wav 1000
+compressor: compressor-start.wav,compressor.wav,compressor-stop.wav 100
+converter: converter_eu07-start.wav,converter_eu07.wav,converter_eu07-stop.wav 90
+sand: sand_1.wav sand_2.wav sand_3.wav 15 
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+endsounds 
+
+internaldata:
+ctrl: nastawnik.wav
+buzzer: [ buczek.wav 24150_buczek_cashp.wav 20786_203e_buzzer.wav 697_su45-czuwak.wav 14745_czuwak181.wav 07]bzyczek.wav bzyczek.wav et42_bzyczek.wav bzyczek4.wav bzyczek3.wav ]
+tachoclock: { sound1: hasler_1_km.wav sound2: hasler_2_km.wav sound3: hasler_3_km.wav sound4: hasler_4_km.wav sound5: 20786_hasler_5km.wav sound10: 20786_hasler_10_km.wav sound20: 20786_hasler_20_km.wav sound30: 20786_hasler_30_km.wav sound40: 20786_hasler_40_km.wav sound50: 20786_hasler_50_km.wav  sound60: 20786_hasler_60_km.wav sound70: 20786_hasler_70_km.wav sound80: 20786_hasler_80_km.wav sound90: 20786_hasler_90_km.wav sound100: 20786_hasler_100_km.wav sound110: 20786_hasler_110_km.wav sound120: 20786_hasler_120_km.wav sound130: 20786_hasler_130_km.wav sound140: 20786_hasler_140_km.wav sound150: 20786_hasler_150_km.wav sound500: 20786_hasler_150_km.wav }
+switch: switch.wav
+relay: relay.wav
+pneumaticrelay: pneumaticrelay.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+
+brakesound: brake.wav 0.1 0 0.2 0.9   
+slipperysound: brake-slipp.wav 2.0 0.2  
+airsound: hiss.wav 1000.0 -0.1  //unnormalized
+airsound2: et21-hiss.wav 1000.0 -0.1
+runningnoise: runningnoise.wav 1.5 0.0 2.0 0.05     
+
+mechspring: 100 0.0 0.0 0.0 0.0 0. 0.0 0.0 
+
+cab1definition:   
+-1.6 1.7 4.5 1.6 1.8 5.5
+driver1pos:       
+-0.76 3.2 4.98	
+cab1model: kabina_EP01_a.t3d 
+
+cab2definition:
+-1.6 1.7 -5.5 1.6 1.8 -4.5      
+driver2pos:
+0.76 3.2 -4.98
+cab2model: kabina_EP01_b.t3d
+
+mainctrl: nastawnikpodst rot -0.02068 0.0 0.15          
+scndctrl: bocznikpodst rot -0.0416 0.0 0.15              
+dirkey: kluczpodst rot 0.05 0.01 0.15                
+brakectrl: kran_zasadniczy rot -0.073 0.0 0.15          
+localbrake: kran_pomocniczy rot -0.05 0.0 0.3
+
+brakeprofile_sw: przelacznik-hamulec-typ rot -0.25 0.0 0.2
+maxcurrent_sw: przelacznik-prad-rozruchu rot -0.25 0.0 0.2
+
+main_off_bt: przycisk-szybki-off mov -0.005 0 0.2                  
+main_on_bt:  przycisk-szybki-on  mov -0.005 0 0.2                  
+releaser_bt: Przycisk-odluzniacz mov -0.005 0 0.25                
+antislip_bt: antyposlizg mov -0.005 0 0.2                 
+fuse_bt: przycisk-roznicowy-i-nadmiarowy-silnikow mov -0.005 0 0.2                      
+compressor_sw: sprezarka mov -0.005 0 0.2
+converter_sw: przetwornica mov -0.005 0 0.2
+pantfront_sw: SW-pantograf-przod rot 0.2 0 0.2
+pantrear_sw: SW-pantograf-tyl rot 0.2 0 0.2
+upperlight_sw: swiatlo_gora rot -0.2 0 0.2
+leftlight_sw: swiatlo_lewe rot -0.2 0 0.2
+rightlight_sw: swiatlo_prawe rot -0.2 0 0.2
+leftend_sw: koncowki2 rot -0.2 0 0.2
+rightend_sw: koncowki2 rot -0.2 0 0.2
+instrumentlight_sw: podswietlenie rot -0.2 0 0.2
+horn_bt: horn mov -0.04 0.08 0.2
+  
+tachometer: speedknob rot 0.0056 -0.34 0 
+HVcurrent: I1Knob rot -0.000123 -0.0 0.4         
+Hvoltage: UTKnob rot -0.0000455 0 0.4 
+Lvoltage: UBKnob rot -0.00155 0 0.3
+brakepress: CylHamKnob rot 0.79 0 0
+pipepress: PrzGlKnob rot 0.15 0 0
+compressor: ZbGlKnob rot 0.20 0 0
+clock: analog  //na razie tylko taki moze byc
+ManualBrake: { hamreczny rot 1.0 0 0.5 sound0: hamulec_reczny_poczatek.wav sound1: 20786_201e_boczV2_dec_1.wav sound2: hamulec_reczny_1.wav sound3: hamulec_reczny_2.wav sound17: hamulec_reczny_4.wav sound18: hamulec_reczny_4.wav sound19: hamulec_reczny_4.wav sound20: hamulec_reczny_koniec.wav soundinc: hamulec_reczny_3.wav sounddec: hamulec_reczny_3.wav }
+sand_bt: box02 mov 0 0 0
+
+
+i-slippery: poslizg
+i-contactors: styczn
+i-conv_ovld: przetw
+i-diff_relay: przek_rozn
+i-motor_ovld: nadm_siln
+i-mainbreaker: wyl_szybk
+i-vent_ovld: nadm_went
+i-comp_ovld: nadm_spr
+i-resistors: opory
+i-highcurrent: wys_rozr
+i-instrumentlight: tacho
+
+cab0definition:
+-0.4 1.5 -4.8 0.4 1.5 4.8
+driver0pos:
+0.0 3.0 1.0
+cab0model: korytarz_ep01.t3d

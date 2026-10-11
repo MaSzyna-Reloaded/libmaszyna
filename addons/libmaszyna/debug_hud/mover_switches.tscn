@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://laujatulc22"]
+
+[ext_resource type="Script" uid="uid://cyuyraig8yxc" path="res://addons/libmaszyna/debug_hud/mover_switches.gd" id="1_khm1i"]
+[ext_resource type="PackedScene" uid="uid://karqply1tqnp" path="res://addons/libmaszyna/debug_hud/mover_switches_general.tscn" id="2_6ijjf"]
+[ext_resource type="PackedScene" uid="uid://bqm2tjc1181ek" path="res://addons/libmaszyna/debug_hud/mover_switches_security.tscn" id="3_slxh6"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/mover_switches_engine.tscn" id="4_engine"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/mover_switches_power_source.tscn" id="10_power_source"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/mover_switches_spring_brake.tscn" id="8_spring"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/mover_switches_lights.tscn" id="9_lights"]
+[ext_resource type="PackedScene" uid="uid://bn0vwl5vjwu45" path="res://addons/libmaszyna/debug_hud/mover_switches_brakes.tscn" id="5_fofk8"]
+[ext_resource type="PackedScene" uid="uid://ce8ab4bwjftcl" path="res://addons/libmaszyna/debug_hud/mover_switches_doors.tscn" id="6_fofk8"]
+[ext_resource type="PackedScene" uid="uid://dqg8w15j37q0" path="res://addons/libmaszyna/debug_hud/mover_switches_controller.tscn" id="7_ucl"]
+
+[node name="MoverSwitches" type="HBoxContainer" unique_id=2006728460]
+size_flags_vertical = 3
+script = ExtResource("1_khm1i")
+
+[node name="General" parent="." unique_id=1612449326 instance=ExtResource("2_6ijjf")]
+layout_mode = 2
+
+[node name="Security" parent="." unique_id=628826945 instance=ExtResource("3_slxh6")]
+layout_mode = 2
+
+[node name="Engine" parent="." unique_id=1618493965 instance=ExtResource("4_engine")]
+layout_mode = 2
+
+[node name="PowerSource" parent="." instance=ExtResource("10_power_source")]
+layout_mode = 2
+
+[node name="Brakes" parent="." unique_id=207886123 instance=ExtResource("5_fofk8")]
+layout_mode = 2
+
+[node name="SpringBrake" parent="." instance=ExtResource("8_spring")]
+layout_mode = 2
+
+[node name="Lights" parent="." instance=ExtResource("9_lights")]
+layout_mode = 2
+
+[node name="Doors" parent="." unique_id=1529964687 instance=ExtResource("6_fofk8")]
+layout_mode = 2
+
+[node name="Controller" parent="." instance=ExtResource("7_ucl")]
+layout_mode = 2

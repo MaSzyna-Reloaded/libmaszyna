@@ -21,6 +21,8 @@
 		<member name="diffuse_color" type="Color" setter="set_diffuse_color" getter="get_diffuse_color" default="Color(1, 1, 1, 1)">
 			The base color of the submodel's material.
 		</member>
+		<member name="dynamic_hidden" type="bool" setter="set_dynamic_hidden" getter="get_dynamic_hidden" default="false">
+		</member>
 		<member name="dynamic_material" type="bool" setter="set_dynamic_material" getter="get_dynamic_material" default="false">
 			If [code]true[/code], the submodel uses a dynamic material that can change based on the environment or seasonal settings.
 		</member>
@@ -66,6 +68,9 @@
 		</member>
 		<member name="self_illumination" type="Color" setter="set_self_illumination" getter="get_self_illumination" default="Color(1, 1, 1, 1)">
 			The emissive color of the submodel, used for lights and glowing parts.
+		</member>
+		<member name="skin_translucent" type="bool" setter="set_skin_translucent" getter="get_skin_translucent" default="false">
+			A replaceable skin drawn in the translucent phase - flags 1, 2, 4, 8 instead of 0x20 ([code]Model3d.cpp:421-441[/code]).
 		</member>
 		<member name="skip_rendering" type="bool" setter="set_skip_rendering" getter="get_skip_rendering" default="false">
 			If [code]true[/code], the submodel is excluded from the rendering pass but remains part of the model hierarchy and animation logic.

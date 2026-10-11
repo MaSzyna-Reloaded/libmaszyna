@@ -118,7 +118,7 @@ namespace godot {
         p_state["line_breaker_delay"] = get_line_breaker_delay();
         p_state["line_breaker_initial_delay"] = get_line_breaker_initial_delay();
         p_state["line_breaker_closes_at_no_power"] = get_line_breaker_closes_at_no_power();
-        p_state["Im"] = get_motor_current();
+        p_state["motor_current"] = get_motor_current();
         p_state["engine_voltage"] = get_engine_voltage();
         p_state["total_current"] = get_total_current();
         p_state["circuit_imax"] = get_circuit_imax();
@@ -192,9 +192,10 @@ namespace godot {
 
     void RailVehicleElectricEngine::_register_commands() {
         RailVehicleEngine::_register_commands();
-        register_command("converter_fuse_reset", Callable(this, "converter_fuse_reset"));
-        register_command("fuse_reset", Callable(this, "fuse_reset"));
-        register_command("motor_connectors_open", Callable(this, "set_motor_connectors_open"));
+        register_command("converter_fuse_reset", callable_mp(this, &RailVehicleElectricEngine::converter_fuse_reset));
+        register_command("fuse_reset", callable_mp(this, &RailVehicleElectricEngine::fuse_reset));
+        register_command(
+                "motor_connectors_open", callable_mp(this, &RailVehicleElectricEngine::set_motor_connectors_open));
     }
 
     void RailVehicleElectricEngine::_unregister_commands() {

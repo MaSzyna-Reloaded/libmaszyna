@@ -1,6 +1,7 @@
 #include "MoverRailVehicleHeating.hpp"
+#include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
-#include "legacy/vehicles/MoverTypes.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/rail/RailVehicleController.hpp"
 
@@ -12,7 +13,7 @@ namespace godot {
         ASSERT_MOVER(p_mover);
         VehicleComponent::_apply_configuration();
 
-        p_mover->HeatingPowerSource.SourceType = mover_power_source(get_heating_source());
+        p_mover->HeatingPowerSource.SourceType = MaszynaMoverVehicleServer::power_source_to_mover(get_heating_source());
         p_mover->HeatingPowerSource.MaxVoltage = get_heating_max_voltage();
 
         switch (get_heating_source()) {
@@ -22,14 +23,17 @@ namespace godot {
                 // SourceType == Generator, so it must be pointed at a real double before that can
                 // run safely. enrot is the vehicle's own engine revolutions counter.
                 p_mover->HeatingPowerSource.EngineGenerator.engine_revolutions = &p_mover->enrot;
-                p_mover->HeatingPowerSource.EngineGenerator.revolutions_min = get_heating_generator_min_rpm() / 60.0;
-                p_mover->HeatingPowerSource.EngineGenerator.revolutions_max = get_heating_generator_max_rpm() / 60.0;
+                p_mover->HeatingPowerSource.EngineGenerator.revolutions_min =
+                        get_heating_generator_min_rpm() / LibMaszynaUnits::SECONDS_PER_MINUTE;
+                p_mover->HeatingPowerSource.EngineGenerator.revolutions_max =
+                        get_heating_generator_max_rpm() / LibMaszynaUnits::SECONDS_PER_MINUTE;
                 p_mover->HeatingPowerSource.EngineGenerator.voltage_min = get_heating_generator_min_voltage();
                 p_mover->HeatingPowerSource.EngineGenerator.voltage_max = get_heating_generator_max_voltage();
                 break;
             }
             case RailVehicleController::POWER_SOURCE_POWERCABLE: {
-                p_mover->HeatingPowerSource.RPowerCable.PowerTrans = mover_power_type(get_heating_power_cable_type());
+                p_mover->HeatingPowerSource.RPowerCable.PowerTrans =
+                        MaszynaMoverVehicleServer::power_type_to_mover(get_heating_power_cable_type());
                 break;
             }
             default:

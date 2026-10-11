@@ -28,6 +28,10 @@ namespace godot {
             SubViewport *viewport = nullptr;
             Camera3D *camera = nullptr;
             Ref<ShaderMaterial> material;
+            // the shader's parameters set every frame, named once (not static: a StringName outlives
+            // nothing of the extension's)
+            const StringName reflecting_parameter = "reflecting";
+            const StringName view_projection_parameter = "mirror_view_projection";
             Ref<Environment> environment;
             // the glass's plane in the glass's own space, and how far the glass reaches from its middle
             Vector3 plane_point;

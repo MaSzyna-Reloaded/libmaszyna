@@ -17,6 +17,8 @@ namespace godot {
 
         private:
             Ref<GenericVehicleComponent> component;
+            /* The vehicle the component was put into, to take it out of again on leaving */
+            RID vehicle;
 
         protected:
             static void _bind_methods();

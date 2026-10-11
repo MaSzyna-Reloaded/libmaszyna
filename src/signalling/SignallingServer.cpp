@@ -57,8 +57,10 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("system_create"), &SignallingServer::system_create);
         ClassDB::bind_method(D_METHOD("system_free", "system"), &SignallingServer::system_free);
         ClassDB::bind_method(
-                D_METHOD("system_attach_delegate", "system", "delegate"), &SignallingServer::system_attach_delegate);
-        ClassDB::bind_method(D_METHOD("system_get_delegate", "system"), &SignallingServer::system_get_delegate);
+                D_METHOD("system_attach_implementation", "system", "implementation"),
+                &SignallingServer::system_attach_implementation);
+        ClassDB::bind_method(
+                D_METHOD("system_get_implementation", "system"), &SignallingServer::system_get_implementation);
         ClassDB::bind_method(D_METHOD("system_set_name", "system", "name"), &SignallingServer::system_set_name);
         ClassDB::bind_method(D_METHOD("system_get_name", "system"), &SignallingServer::system_get_name);
         ClassDB::bind_method(D_METHOD("system_get_rid_by_name", "name"), &SignallingServer::system_get_rid_by_name);
@@ -317,7 +319,7 @@ namespace godot {
         return data->kind.is_valid() ? data->kind->get_aspect_names() : PackedStringArray();
     }
 
-    /// Lights every light the aspect describes and tells the signal head's system, whose delegate
+    /// Lights every light the aspect describes and tells the signal head's system, whose implementation
     /// may react (an automatic block changes the signal head behind)
     void SignallingServer::signal_head_set_aspect(const RID &p_signal_head, const StringName &p_aspect) {
         SignalHeadData *data = signal_heads.getptr(p_signal_head);
@@ -357,9 +359,9 @@ namespace godot {
         const RID system_rid = data->system;
         emit_signal(signal_head_aspect_changed_signal, p_signal_head, p_aspect);
         const SystemData *system = systems.getptr(system_rid);
-        if (system != nullptr && system->delegate.is_valid()) {
-            const Ref<SignallingSystemDelegate> delegate = system->delegate;
-            delegate->signal_head_aspect_changed(system_rid, p_signal_head, p_aspect);
+        if (system != nullptr && system->implementation.is_valid()) {
+            const Ref<SignallingImplementation> implementation = system->implementation;
+            implementation->signal_head_aspect_changed(system_rid, p_signal_head, p_aspect);
         }
     }
 
@@ -380,7 +382,7 @@ namespace godot {
     /// Frees the system; its signal heads and sources stay, belonging to no system
     void SignallingServer::system_free(const RID &p_system) {
         ERR_FAIL_COND(!systems.has(p_system));
-        system_attach_delegate(p_system, Ref<SignallingSystemDelegate>());
+        system_attach_implementation(p_system, Ref<SignallingImplementation>());
         const SystemData freed = *systems.getptr(p_system);
         systems.erase(p_system);
         names_rename(systems_by_name, freed.name, StringName(), p_system);
@@ -396,36 +398,36 @@ namespace godot {
         }
     }
 
-    /// Replaces the system's delegate (null detaches it). The new delegate is told about every
+    /// Replaces the system's implementation (null detaches it). The new implementation is told about every
     /// signal head and source the system already holds, so the order of setting up does not matter.
-    void
-    SignallingServer::system_attach_delegate(const RID &p_system, const Ref<SignallingSystemDelegate> &p_delegate) {
+    void SignallingServer::system_attach_implementation(
+            const RID &p_system, const Ref<SignallingImplementation> &p_implementation) {
         SystemData *system = systems.getptr(p_system);
         ERR_FAIL_NULL(system);
-        const Ref<SignallingSystemDelegate> previous = system->delegate;
-        system->delegate = p_delegate;
-        // copied: a delegate may call back into this server and rehash `systems`
+        const Ref<SignallingImplementation> previous = system->implementation;
+        system->implementation = p_implementation;
+        // copied: an implementation may call back into this server and rehash `systems`
         const Vector<RID> held_signal_heads = system->signal_heads;
         const Vector<RID> held_sources = system->sources;
         if (previous.is_valid()) {
             previous->system_detached(p_system);
         }
-        if (p_delegate.is_null()) {
+        if (p_implementation.is_null()) {
             return;
         }
-        p_delegate->system_attached(p_system);
+        p_implementation->system_attached(p_system);
         for (const RID &signal_head: held_signal_heads) {
-            p_delegate->signal_head_added(p_system, signal_head);
+            p_implementation->signal_head_added(p_system, signal_head);
         }
         for (const RID &source: held_sources) {
-            p_delegate->source_added(p_system, source);
+            p_implementation->source_added(p_system, source);
         }
     }
 
-    Ref<SignallingSystemDelegate> SignallingServer::system_get_delegate(const RID &p_system) const {
+    Ref<SignallingImplementation> SignallingServer::system_get_implementation(const RID &p_system) const {
         const SystemData *system = systems.getptr(p_system);
-        ERR_FAIL_NULL_V(system, Ref<SignallingSystemDelegate>());
-        return system->delegate;
+        ERR_FAIL_NULL_V(system, Ref<SignallingImplementation>());
+        return system->implementation;
     }
 
     void SignallingServer::system_set_name(const RID &p_system, const StringName &p_name) {
@@ -456,10 +458,10 @@ namespace godot {
         ERR_FAIL_COND_MSG(signal_head->system.is_valid(), "The signal head already belongs to a system.");
         signal_head->system = p_system;
         system->signal_heads.push_back(p_signal_head);
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
+        const Ref<SignallingImplementation> implementation = system->implementation;
         emit_signal(system_signal_head_added_signal, p_system, p_signal_head);
-        if (delegate.is_valid()) {
-            delegate->signal_head_added(p_system, p_signal_head);
+        if (implementation.is_valid()) {
+            implementation->signal_head_added(p_system, p_signal_head);
         }
     }
 
@@ -471,10 +473,10 @@ namespace godot {
         ERR_FAIL_COND_MSG(!(signal_head->system == p_system), "The signal head does not belong to this system.");
         signal_head->system = RID();
         system->signal_heads.erase(p_signal_head);
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
+        const Ref<SignallingImplementation> implementation = system->implementation;
         emit_signal(system_signal_head_removed_signal, p_system, p_signal_head);
-        if (delegate.is_valid()) {
-            delegate->signal_head_removed(p_system, p_signal_head);
+        if (implementation.is_valid()) {
+            implementation->signal_head_removed(p_system, p_signal_head);
         }
     }
 
@@ -497,10 +499,10 @@ namespace godot {
         ERR_FAIL_COND_MSG(source->system.is_valid(), "The source already belongs to a system.");
         source->system = p_system;
         system->sources.push_back(p_source);
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
+        const Ref<SignallingImplementation> implementation = system->implementation;
         emit_signal(system_source_added_signal, p_system, p_source);
-        if (delegate.is_valid()) {
-            delegate->source_added(p_system, p_source);
+        if (implementation.is_valid()) {
+            implementation->source_added(p_system, p_source);
         }
     }
 
@@ -512,10 +514,10 @@ namespace godot {
         ERR_FAIL_COND_MSG(!(source->system == p_system), "The source does not belong to this system.");
         source->system = RID();
         system->sources.erase(p_source);
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
+        const Ref<SignallingImplementation> implementation = system->implementation;
         emit_signal(system_source_removed_signal, p_system, p_source);
-        if (delegate.is_valid()) {
-            delegate->source_removed(p_system, p_source);
+        if (implementation.is_valid()) {
+            implementation->source_removed(p_system, p_source);
         }
     }
 
@@ -529,14 +531,14 @@ namespace godot {
         return result;
     }
 
-    /// A command to the system as a whole, handed to its delegate
+    /// A command to the system as a whole, handed to its implementation
     void
     SignallingServer::system_send_event(const RID &p_system, const StringName &p_event, const Dictionary &p_arguments) {
         const SystemData *system = systems.getptr(p_system);
         ERR_FAIL_NULL(system);
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
-        ERR_FAIL_COND_MSG(delegate.is_null(), "The system has no delegate.");
-        delegate->handle_event(p_system, p_event, p_arguments);
+        const Ref<SignallingImplementation> implementation = system->implementation;
+        ERR_FAIL_COND_MSG(implementation.is_null(), "The system has no implementation.");
+        implementation->handle_event(p_system, p_event, p_arguments);
     }
 
     // --- source ---
@@ -583,15 +585,15 @@ namespace godot {
         return source->system;
     }
 
-    /// A report of the source, handed to the delegate of the system it belongs to
+    /// A report of the source, handed to the implementation of the system it belongs to
     void
     SignallingServer::source_send_event(const RID &p_source, const StringName &p_event, const Dictionary &p_arguments) {
         const SourceData *source = sources.getptr(p_source);
         ERR_FAIL_NULL(source);
         const SystemData *system = systems.getptr(source->system);
         ERR_FAIL_NULL_MSG(system, "The source belongs to no system.");
-        const Ref<SignallingSystemDelegate> delegate = system->delegate;
-        ERR_FAIL_COND_MSG(delegate.is_null(), "The system has no delegate.");
-        delegate->handle_source_event(source->system, p_source, p_event, p_arguments);
+        const Ref<SignallingImplementation> implementation = system->implementation;
+        ERR_FAIL_COND_MSG(implementation.is_null(), "The system has no implementation.");
+        implementation->handle_source_event(source->system, p_source, p_event, p_arguments);
     }
 } // namespace godot

@@ -2,6 +2,7 @@
 #include "legacy/maszyna-mover/McZapkie/MOVER.h"
 #include "vehicles/base/VehicleImplementationServer.hpp"
 #include "vehicles/rail/RailVehicleController.hpp"
+#include "vehicles/rail/RailVehicleEngine.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -30,14 +31,12 @@ namespace godot {
             bool diagnostics = false;
             /* The velocity each vehicle had after the last step, for the kick diagnostics */
             HashMap<RID, double> diagnostics_velocity;
-            /* Rebuilt every step, kept as members so the step allocates nothing per frame */
-            Vector<RID> stepped_vehicles;
-            Vector<Ref<RailVehicleController>> stepped_controllers;
 
             /* Diagnostics: a velocity jump within one frame is a kick - with consistent track
              * movement it comes from the forces, typically a coupler reacting to an inconsistent
              * vehicle position. */
-            void _check_velocity_jumps(double p_delta);
+            void _check_velocity_jumps(
+                    const Vector<RID> &p_vehicles, const Vector<Ref<VehicleController>> &p_controllers, double p_delta);
             void _on_vehicle_freed(const RID &p_vehicle);
             /// The diagnostics follow their setting; switched on, they start from the next step
             void _on_project_settings_changed();
@@ -67,6 +66,22 @@ namespace godot {
             /* The vehicle a Mover belongs to - what a coupler's Connected is traced back with */
             RID mover_get_vehicle(const TMoverParameters *p_mover) const;
 
-            void stepping_advance(const Vector<RID> &p_vehicles, double p_delta) override;
+            void stepping_advance(
+                    const Vector<RID> &p_vehicles, const Vector<Ref<VehicleController>> &p_controllers,
+                    double p_delta) override;
+
+            /* The bits of TMoverParameters::WarningSignal and EmergencyBrakeWarningSignal: low horn,
+             * high horn, whistle (MOVER.h:2101; Train.cpp:7946-8037, DynObj.cpp:4893-4905) */
+            static constexpr int WARNING_SIGNAL_HORN_LOW = 1;
+            static constexpr int WARNING_SIGNAL_HORN_HIGH = 2;
+            static constexpr int WARNING_SIGNAL_WHISTLE = 4;
+
+            /* The vehicle interfaces' own enums as the vendored Mover spells them, for this
+             * implementation's controller and components; the interfaces name no Mover type. */
+            static Maszyna::start_t start_mode_to_mover(RailVehicleController::StartMode p_mode);
+            static Maszyna::TEngineType engine_type_to_mover(RailVehicleEngine::EngineType p_type);
+            static Maszyna::TPowerSource power_source_to_mover(RailVehicleController::TrainPowerSource p_source);
+            static RailVehicleController::TrainPowerSource power_source_from_mover(Maszyna::TPowerSource p_source);
+            static Maszyna::TPowerType power_type_to_mover(RailVehicleController::TrainPowerType p_type);
     };
 } // namespace godot

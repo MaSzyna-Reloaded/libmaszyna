@@ -1,7 +1,7 @@
 #include "LuaHandle.hpp"
 #include "LuaModules.hpp"
 #include "LuaVariant.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverServer.hpp"
 
 namespace godot {
     /// send_command(v, command, value1, value2) - an order to the vehicle's driver, as a
@@ -11,7 +11,7 @@ namespace godot {
         const String command = String::utf8(luaL_checkstring(p_state, 2));
         const double value1 = luaL_optnumber(p_state, 3, 0.0);
         const double value2 = luaL_optnumber(p_state, 4, 0.0);
-        DriverSystem *drivers = LuaModules::server<DriverSystem>(p_state);
+        DriverServer *drivers = LuaModules::server<DriverServer>(p_state);
         const RID driver = drivers->vehicle_get_driver(vehicle);
         if (driver.is_valid()) {
             drivers->driver_send_command(driver, command, value1, value2);
@@ -23,7 +23,7 @@ namespace godot {
     /// timetable(v) - the driver's timetable and how far it got, nil when nobody drives
     static int driver_timetable(lua_State *p_state) {
         const RID vehicle = LuaHandle::check(p_state, 1, ScriptHandleKind::VEHICLE);
-        const DriverSystem *drivers = LuaModules::server<DriverSystem>(p_state);
+        const DriverServer *drivers = LuaModules::server<DriverServer>(p_state);
         const RID driver = drivers->vehicle_get_driver(vehicle);
         if (!driver.is_valid()) {
             lua_pushnil(p_state);

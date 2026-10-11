@@ -551,7 +551,7 @@ func test_a_cab_leaves_the_vehicles_logic_alone():
     var cabin:MaszynaDynamicTrainCabin = MaszynaDynamicTrainCabin.new()
     cabin.mmd_filename = FIXTURE_PATH.get_file().get_basename()
     add_child(cabin)
-    cabin.set_vehicle_rid(vehicle)
+    cabin.set_cabin(RailVehicleServer.vehicle_get_front_cabin(vehicle))
     # the fixture has no cab model to build (a warning): only the cab's logic matters here
     assert_eq(CabinSystem.vehicle_get_cab_logic(vehicle), vehicle_logic, "shown, the cab brings no logic")
 

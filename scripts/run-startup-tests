@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Runs the vehicles' start-up tests (demo/tests/test_zzz_startup_*.gd) one script at a time and
+# prints each vehicle's result as soon as it is known: OK, or the step its start stopped at.
+# Logs go to $STARTUP_LOG_DIR (default: /tmp/maszyna-startup-tests). An argument narrows the
+# vehicles by name: scripts/run-startup-tests ep09
+#
+# .claude/skills/testing/SKILL.md "Start-up test of a vehicle"
+set -u
+cd "$(dirname "$0")/.."
+GODOT="${GODOT:-godot-double}"
+LOG_DIR="${STARTUP_LOG_DIR:-/tmp/maszyna-startup-tests}"
+# a script that runs longer than this (seconds) is hung
+TIMEOUT="${STARTUP_TIMEOUT:-100}"
+mkdir -p "$LOG_DIR"
+passed=0
+failed=0
+for script in demo/tests/test_zzz_startup_*"${1:-}"*.gd; do
+    name="$(basename "$script" .gd)"
+    log="$LOG_DIR/$name.log"
+    timeout "$TIMEOUT" "$GODOT" --headless --audio-driver Dummy --path demo -s addons/gut/gut_cmdln.gd \
+        -gdir=res://tests/ -gselect="$name" -gexit > "$log" 2>&1
+    rc=$?
+    vehicle="${name#test_zzz_startup_}"
+    if [ "$rc" -eq 0 ]; then
+        echo "OK      $vehicle"
+        passed=$((passed + 1))
+        continue
+    fi
+    failed=$((failed + 1))
+    reason="$(grep -oE 'stopped at [^:]*' "$log" | head -1)"
+    [ -z "$reason" ] && reason="$(grep -oE 'Parse Error.*|\[Failed\].{0,160}' "$log" | head -1)"
+    [ "$rc" -eq 124 ] && reason="timed out after ${TIMEOUT} s"
+    echo "FAILED  $vehicle: $reason ($log)"
+done
+echo "passed $passed, failed $failed"

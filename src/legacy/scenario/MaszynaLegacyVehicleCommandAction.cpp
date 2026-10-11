@@ -1,8 +1,7 @@
 #include "MaszynaLegacyVehicleCommandAction.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverServer.hpp"
 #include "scenario/ScenarioEventServer.hpp"
 #include "vehicles/base/VehicleServer.hpp"
-#include "vehicles/rail/RailVehicleServer.hpp"
 
 namespace godot {
     void MaszynaLegacyVehicleCommandAction::_bind_methods() {
@@ -16,22 +15,25 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_source"), &MaszynaLegacyVehicleCommandAction::get_source);
         ClassDB::bind_method(D_METHOD("set_position", "position"), &MaszynaLegacyVehicleCommandAction::set_position);
         ClassDB::bind_method(D_METHOD("get_position"), &MaszynaLegacyVehicleCommandAction::get_position);
+        ClassDB::bind_method(D_METHOD("set_radio", "radio"), &MaszynaLegacyVehicleCommandAction::set_radio);
+        ClassDB::bind_method(D_METHOD("get_radio"), &MaszynaLegacyVehicleCommandAction::get_radio);
 
         ADD_PROPERTY(PropertyInfo(Variant::STRING, "command"), "set_command", "get_command");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "value1"), "set_value1", "get_value1");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "value2"), "set_value2", "get_value2");
         ADD_PROPERTY(PropertyInfo(Variant::RID, "source"), "set_source", "get_source");
         ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "position"), "set_position", "get_position");
+        ADD_PROPERTY(
+                PropertyInfo(Variant::OBJECT, "radio", PROPERTY_HINT_RESOURCE_TYPE, "SceneryVirtualRadio"), "set_radio",
+                "get_radio");
     }
 
     /// getvalues_event::run_() / putvalues_event::run_() (Event.cpp:615-635, 771-844)
     void MaszynaLegacyVehicleCommandAction::run(const RID &p_event, const RID &p_activator) {
         const ScenarioEventServer *events = ScenarioEventServer::get_instance();
         VehicleServer *vehicle_server = VehicleServer::get_instance();
-        RailVehicleServer *vehicles = RailVehicleServer::get_instance();
         ERR_FAIL_NULL(events);
         ERR_FAIL_NULL(vehicle_server);
-        ERR_FAIL_NULL(vehicles);
         const bool read = source.is_valid();
         const String text = read ? events->memory_get_text(source) : command;
         if (text == CAB_SIGNAL && p_activator.is_valid()) {
@@ -43,12 +45,15 @@ namespace godot {
         const double command_value1 = read ? events->memory_get_value1(source) : value1;
         if (text == EMERGENCY_BRAKE) {
             if (Math::floor(command_value1) == 1.0) {
-                vehicles->emergency_signal_send(position);
+                ERR_FAIL_COND_MSG(radio.is_null(), "Emergency_brake needs the scenery's radio.");
+                radio->transmit(
+                        position, RadioServer::CHANNEL_ALL, RadioServer::RADIO_STOP_REACH,
+                        RadioServer::KIND_RADIO_STOP);
             }
             return;
         }
         // the rest is an order for the driver of the vehicle that queued the event
-        DriverSystem *drivers = DriverSystem::get_instance();
+        DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(drivers);
         const RID driver = drivers->vehicle_get_driver(p_activator);
         if (text.is_empty() || !driver.is_valid()) {
@@ -96,5 +101,13 @@ namespace godot {
 
     Vector3 MaszynaLegacyVehicleCommandAction::get_position() const {
         return position;
+    }
+
+    void MaszynaLegacyVehicleCommandAction::set_radio(const Ref<SceneryVirtualRadio> &p_radio) {
+        radio = p_radio;
+    }
+
+    Ref<SceneryVirtualRadio> MaszynaLegacyVehicleCommandAction::get_radio() const {
+        return radio;
     }
 } // namespace godot

@@ -88,11 +88,11 @@ namespace godot {
         private:
             static constexpr const char *CURVE_BAKE_INTERVAL_SETTING = "maszyna/scenery/track_curve_bake_interval";
             static constexpr double DEFAULT_CURVE_BAKE_INTERVAL = 10.0;
-            /* Maximum switch blade offset (MaSzyna Track.cpp:35 fMaxOffset). */
+            /* Maximum switch blade offset (MaSzyna Track.cpp:33 fMaxOffset). */
             static constexpr double SWITCH_MAX_OFFSET = 0.1;
-            /* Delay applied before switch blade movement starts. */
+            /* Delay applied before switch blade movement starts (Track.h:68 fOffsetDelay). */
             static constexpr double SWITCH_OFFSET_DELAY = 0.05;
-            /* Default rail height used by track sampling. */
+            /* Default rail height used by track sampling (Track.cpp:555 railheight). */
             static constexpr double RAIL_HEIGHT = 0.180;
 
             /* Tolerance for "these two endpoints are the same physical point", per axis - the
@@ -106,16 +106,19 @@ namespace godot {
              * scan is complete. */
             static constexpr double ENDPOINT_CELL_SIZE = 0.5;
             static constexpr double GRID_CELL_SIZE = 500.0;
-            /* The switch blade travels its whole range in this long (s). */
-            static constexpr double SWITCH_FULL_DURATION = 2.0;
+            /* Track.h:67 fOffsetSpeed - the blade's linear speed (m/s) */
+            static constexpr double SWITCH_OFFSET_SPEED = 0.1;
             static constexpr int SWITCH_BLADE_SEGMENT_COUNT = 6;
+            /* Track.cpp:1371 bladelength */
             static constexpr double SWITCH_BLADE_RATIO = 0.65;
             /* Step along both branches while looking for the frog, where they part (m). */
             static constexpr double FROG_SEARCH_STEP = 0.5;
             /* Margin added around a track's own extent before it is filed in the spatial index (m). */
             static constexpr double AABB_MARGIN = 5.0;
-            /* A roll of this many degrees lifts the outer rail by sin(roll) * this. */
+            /* A roll of this many degrees lifts the outer rail by sin(roll) * this (Segment.cpp:84). */
             static constexpr double ROLL_FIX_FACTOR = 0.75;
+            /* Track.h:205 fTrackWidth */
+            static constexpr double DEFAULT_TRACK_WIDTH = 1.435;
 
             /* Both endpoints of one curve, read out of the GDScript resource once. */
             struct CurvePoints {
@@ -136,7 +139,7 @@ namespace godot {
                     CurvePoints points2;
                     Ref<Curve3D> domain_curve1;
                     Ref<Curve3D> domain_curve2;
-                    double width = 1.6;
+                    double width = DEFAULT_TRACK_WIDTH;
                     int quality_flag = 0;
                     int environment = 0;
                     double sound_distance = -1.0;
@@ -154,10 +157,8 @@ namespace godot {
                     double switch_f_offset_delay = SWITCH_OFFSET_DELAY;
                     double switch_desired_offset = -SWITCH_OFFSET_DELAY;
                     double switch_f_offset = -SWITCH_OFFSET_DELAY;
-                    double switch_f_offset1 = -0.05;
+                    double switch_f_offset1 = -SWITCH_OFFSET_DELAY; // Track.cpp:55
                     double switch_f_offset2 = 0.0;
-                    /* How far the blade still has to travel per second while it is moving. */
-                    double switch_offset_speed = 0.0;
                     int switch_common_endpoint_index = POINT_NONE;
                     PackedInt32Array switch_common_endpoints;
                     /* Indexed by SwitchTrack; -1 where the branch does not exist. */
@@ -320,6 +321,9 @@ namespace godot {
             PackedVector3Array track_get_endpoints(const RID &p_track);
             int track_get_common_endpoint_index(const RID &p_track) const;
             Ref<Resource> track_get_curve(const RID &p_track, int p_branch = TRACK_COMMON) const;
+            /* The roll of the branch's curve at its start (x) and end (y) [deg], as read out of the
+             * curve resource when it was set */
+            Vector2 track_get_roll(const RID &p_track, int p_branch = TRACK_COMMON) const;
             Ref<Curve3D> track_get_domain_curve(const RID &p_track, int p_branch = TRACK_COMMON) const;
             PackedInt32Array switch_get_common_endpoints(const RID &p_track) const;
             int switch_get_branch_start_endpoint(const RID &p_track, int p_branch) const;

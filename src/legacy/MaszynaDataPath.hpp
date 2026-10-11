@@ -14,8 +14,9 @@ namespace godot {
 
         public:
             /// Quirk: MaSzyna databacks are authored for Windows' case-insensitive filesystem.
-            /// Keep the spelling from the data first, then try its lowercase relative form, then
-            /// match each part of it letter case aside.
+            /// Keep the spelling from the data first, then try its lowercase relative form. Any other
+            /// difference in case is not found on a case-sensitive filesystem (the data's
+            /// `przejazdy/plyty3_l.t3d` for `plyty3_L.e3d`).
             static String resolve(const String &p_base_dir, const String &p_relative_path);
     };
 } // namespace godot

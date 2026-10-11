@@ -1,26 +1,39 @@
 #include "MoverRailVehicleSpeedControl.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
+#include "vehicles/rail/RailVehicleEngine.hpp"
+#include "vehicles/rail/RailVehicleMasterController.hpp"
 #include <algorithm>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <type_traits>
 
 namespace godot {
     void MoverRailVehicleSpeedControl::_bind_methods() {}
 
+
+    /* Mover.cpp:11097 - an induction motor with a second controller has it whatever its FIZ says;
+     * the engine and the master controller are other components of the vehicle */
+    void MoverRailVehicleSpeedControl::apply_vehicle_config() {
+        TMoverParameters *p_mover = get_mover();
+        ASSERT_MOVER(p_mover);
+        const Ref<RailVehicleEngine> engine =
+                train_controller_node->get_component(VehicleComponentType::COMPONENT_ENGINE);
+        const Ref<RailVehicleMasterController> master_controller = get_rail_vehicle_controller()->get_rail_component(
+                RailVehicleComponentType::COMPONENT_MASTER_CONTROLLER);
+        p_mover->SpeedCtrl = get_speed_control_enabled() ||
+                             (engine.is_valid() && engine->get_type() == RailVehicleEngine::ELECTRIC_INDUCTION_MOTOR &&
+                              master_controller.is_valid() && master_controller->get_second_position_count() > 0);
+    }
 
     void MoverRailVehicleSpeedControl::_apply_configuration() {
         TMoverParameters *p_mover = get_mover();
         ASSERT_MOVER(p_mover);
         VehicleComponent::_apply_configuration();
 
-        // Mover.cpp:11097 - an induction motor with a second controller has it whatever its FIZ says
-        p_mover->SpeedCtrl =
-                get_speed_control_enabled() ||
-                (p_mover->EngineType == Maszyna::TEngineType::ElectricInductionMotor && p_mover->ScndCtrlPosNo > 0);
         p_mover->SpeedCtrlDelay = get_delay();
         p_mover->SpeedCtrlTypeTime = get_impulse_lever();
         p_mover->SpeedCtrlAutoTurnOffFlag = get_disables_on();
 
-        constexpr int MAX_PRESET_SPEEDS = 10;
+        constexpr int MAX_PRESET_SPEEDS = static_cast<int>(std::extent_v<decltype(TMoverParameters::SpeedCtrlButtons)>);
         const int preset_speeds_size = static_cast<int>(get_preset_speeds().size());
         if (preset_speeds_size > MAX_PRESET_SPEEDS) {
             UtilityFunctions::push_warning(

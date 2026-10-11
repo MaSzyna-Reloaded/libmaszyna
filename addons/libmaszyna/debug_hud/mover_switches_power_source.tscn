@@ -1,0 +1,134 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_power_source.gd" id="1_power_source"]
+[ext_resource type="PackedScene" uid="uid://cslby72tp46ig" path="res://addons/libmaszyna/debug_hud/switch.tscn" id="2_switch"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/vertical_gauge.tscn" id="9_vgauge"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="PowerSource" type="VBoxContainer"]
+script = ExtResource("1_power_source")
+target = 2
+
+[node name="SourceType" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Source: -"
+
+[node name="Collector" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Controls" type="VBoxContainer" parent="Collector"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PantographsValve" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Pantographs valve"
+state_property = "current_collector/valve_enabled"
+command = "pantographs_valve"
+target = 2
+
+[node name="PantographFirst" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "First pantograph"
+state_property = "current_collector/pantograph_first_active"
+command = "pantograph"
+target = 2
+command_argument = 0
+
+[node name="PantographSecond" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Second pantograph"
+state_property = "current_collector/pantograph_second_active"
+command = "pantograph"
+target = 2
+command_argument = 1
+
+[node name="PantographCompressorValve" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Pantograph tank to compressor"
+state_property = "current_collector/pantograph_compressor_valve"
+command = "pantograph_compressor_valve"
+target = 1
+
+[node name="PantographCompressor" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Pantograph compressor"
+state_property = "current_collector/pantograph_compressor_enabled"
+command = "pantograph_compressor"
+target = 2
+
+[node name="PantographsDropAll" parent="Collector/Controls" instance=ExtResource("2_switch")]
+layout_mode = 2
+label = "Drop all pantographs"
+type = 0
+command = "pantographs_drop_all"
+target = 2
+
+[node name="Gauges" type="VBoxContainer" parent="Collector"]
+layout_mode = 2
+
+[node name="Voltages" type="HBoxContainer" parent="Collector/Gauges"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="CollectorVoltage" parent="Collector/Gauges/Voltages" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+bar_width = 52.0
+value = 0.0
+max_value = 4000.0
+unit = "V"
+decimals = 0
+label = "Line"
+
+[node name="PantographFirstVoltage" parent="Collector/Gauges/Voltages" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+bar_width = 52.0
+value = 0.0
+max_value = 4000.0
+unit = "V"
+decimals = 0
+label = "Pantograph 1"
+
+[node name="PantographSecondVoltage" parent="Collector/Gauges/Voltages" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+bar_width = 52.0
+value = 0.0
+max_value = 4000.0
+unit = "V"
+decimals = 0
+label = "Pantograph 2"
+
+[node name="TrainsetHighVoltage" parent="Collector/Gauges/Voltages" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+bar_width = 52.0
+value = 0.0
+max_value = 4000.0
+unit = "V"
+decimals = 0
+label = "Trainset line"
+
+[node name="PantographTankPressure" parent="Collector/Gauges" instance=ExtResource("9_vgauge")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+value = 0.0
+max_value = 10.0
+unit = "bar"
+decimals = 2
+label = "Pantograph tank"
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]

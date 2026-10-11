@@ -1,5 +1,21 @@
 # TODO
 
+## Split from the game
+
+* `demo/examples/mover_demo.tscn` and `cabin_demo.tscn` point at `res://vehicles/sm42/*`, deleted in
+  af72fa4c0 (`cabin_demo` also at the missing `environment/sky.gd`) - the simple Mover demo the
+  demo is to keep does not load.
+* The core input actions live in both `demo/project.godot` and the game's `project.godot`: Godot
+  keeps no input map per addon.
+* A vehicle (`MaszynaRailVehicle3D`, `TrainSet3D`) is not rebuilt on
+  `GameDataServer.data_reload_requested` as models, cabs, tracks and materials are: a game directory
+  set while `demo_3d` runs leaves its vehicles unbuilt until the scene starts again.
+* Tests, the demo and the game share one user directory (`MaSzyna-Reloaded`): a test setting
+  `maszyna/game_dir` to the fixtures and restoring it in `after_each` undoes a directory the
+  operator sets while the test runs.
+* libsimulator: the MaSzyna-independent core (servers, vehicles, player, HUD state) split out of
+  libmaszyna.
+
 ## Architecture rework (#184)
 
 Each stage is one PR, titled `(#184) <area> - <what>`, and leaves the game runnable.
@@ -85,51 +101,28 @@ are still to decide and move (preload/`res://` paths and `.tscn`/`.tres` referen
 
 ## Player and HUD
 
-* The HUD keeps copies of the player's state: `DrivingAid.vehicle`, `FollowedVehicleChip.vehicle`,
-  `PlayerVehicleChip.vehicle` (set from `PlayerServer`/`PlayerCameraServer` signals).
+The game's screens and HUD are the game repository's (`MaSzyna-Reloaded/maszyna-reloaded`), and
+so is their open work.
+
 * The developer console (`addons/libmaszyna/console/console.gd`) still reads keycodes for
   Ctrl+~ (size), Escape, the arrows, Page Up/Down and Tab - only its toggle is an action
   (`console_toggle`).
-
-### Scenario panel (Shift+F2, `demo/hud/scenario_panel.gd`)
-* A scenery started with `-s` shows the file name as the title and an empty "Scenario
-  description" tab, although its header has `//$n`, `//$d` and `//$i` (seen on
-  `$zwierzyniec_tlk.scn`; the same before the "Scenario progress" tab was added).
-* "Scenario progress" (`ScenarioTask`) tells only what the driver already has - its timetable and
-  the order the scenario's events gave it so far; an order an event will give later cannot be
-  known ahead, events being tied to tracks, not to vehicles.
-* The trainset's `assignment <lang> "<text>" ... endassignment` block
-  (simulationstateserializer.cpp:197-205, the original's "Assignment" in the scenario window) is
-  not parsed.
-
-### Problem reports (`demo/bug_report/`)
-* The reporting endpoint (`maszyna/bugtracking/endpoint`, the Cloudflare Worker in
-  `MaSzyna-Reloaded/reports`, `worker/`) is on a personal `workers.dev` account; moving it to the
-  project's account or domain changes that address.
-* A command carries no sender (`VehicleServer.vehicle_command_received`), so the report's command
-  audit cannot tell the player's commands from the scenario's or the console's.
-
-### Settings screen (`demo/settings/`)
-* A light a caller makes by hand (`E3DRenderingServer.spot_light_create()`/`omni_light_create()`)
-  keeps the `scenery/lights/size` it was made with.
-* In a scenery the panel pauses nothing, and the world takes keys before the panel swallows them -
-  the cab may react to keys meant for the settings.
-* Not on the screen, editor-only: `import/*`, `python/home`, `locale/translations`,
-  `smoke/modern/atlas`, `smoke/modern/atlas_frames`.
-* `settings.json` repeats the readers' defaults: the registration in `libmaszyna.gd` runs only in
-  the editor. One registrar that runs in the game too would let the screen take hints and defaults
-  from `ProjectSettings`.
-* A drop-down's popup is mouse-only; the keyboard walks its choices with left and right.
-* Weather > Advanced lacks `near_rain_color`, `mid_rain_color`: the screen has no row for a
-  `Color`.
-* `demo/hud/user_settings_panel.gd` (demo_3d) and the editor dock keep their own widgets; the
-  dock's `render/fxaa_enabled` is read by nothing (the game reads `render/screen_space_aa`).
-
-### Game directory (`GameDirWindow`)
-* The warning chip's "Configure" is mouse-only; from the keyboard the window is reached only
-  through the dialog shown at launch.
+* `PlayerServer.player_enter_vehicle()` into a vehicle of the trainset the player drives (the
+  game's vehicle card "Enter cabin") leaves the trainset with nobody at the controls: the driver
+  the take-over made an observer gets the controls back only for another trainset
+  (`trainset_left_drivers_take_control`), and a gangway walk back keeps the player an observer -
+  the chip shows the vehicle unmanned until Q, F5 or the chip (reports#16). Left as it is on the
+  operator's decision; what an observer visit should do to the trainset is open.
 
 ## Cabins
+
+* **Next, right after the split commit (operator, 2026-10-09):** the occupancy layer drives the cabs
+  by plain vehicle commands instead of `set_driver_cabin_kind()` (`RailVehicleServer.cpp:1007`):
+  `cabin_activate` (today's `cab_activation`), `cabin_change` (`ChangeCab()`, Mover.cpp:736) and,
+  if decided, `cabin_occupy`. Every `cab_*` command renamed to `cabin_*` at once. Open: whether
+  `CabOccupied` is the vehicle's control state (any sender may set it) or the persons' fact (only
+  `RailVehicleServer` sends it) - the first changes `CODE_STYLE.md`, "A vehicle is commanded, not
+  called". `mover_demo` then activates its cab without a seated person.
 
 * **Cab elements run on a clock of their own** (`SimulationClock`, the simulation's time in their
   `_process`): every `BaseCabinTool3D` (buttons, switches, knobs, gauges, blinkers), the lamps and
@@ -200,15 +193,16 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * EP07: round buttons get a rectangular outline. First dump the button's submodel (AABB, faces,
   alpha texture): a quad with an alpha-tested texture outlines as its quad.
 
-### DebugWindow
-
-* `debug_hud.tscn` (`examples/mover_demo.tscn`) hands the vehicle only to `MoverSwitches`, which
-  does not pass it on to its sections.
-
 ### Python integration
 
-* **Windows runtime untested** - should use the game dir's `python27.dll` and `python64/`
-  (PyInt.cpp:233); `make python-runtime` builds only the Linux one.
+* **Windows runtime tested under wine only** - `maszyna-python-host.64.exe` with Steam MaSzyna's
+  `python27.dll` and `python64/` starts and renders a PIL screen; not yet on a player's Windows.
+  `make python-runtime` builds only the Linux one.
+* **`maszyna-python-host` in an export** (`[dependencies]` of `libmaszyna.gdextension`): not yet
+  seen in an exported game; on Linux its executable bit must survive the export.
+* **Non-ASCII paths on Windows**: CPython 2.7 takes paths in the ANSI code page, the host hands
+  it UTF-8 (`maszyna/python/home` set to an absolute path, the game directory and the scripts'
+  paths). The default home is relative, so only a game directory outside the code page breaks.
 * **Keys with no source yet**: `off_from_dimmer` (no dimmer positions in the vendored Mover),
   `lights_compartments` (`compartmentlights_sw` not ported), `doors_no_N` (MMD `animations:`
   count, held by the model layer), lamps beyond the five carried in `lights_front`/`lights_rear`/
@@ -261,11 +255,14 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   only register what `LegacyCabinUnmodelledControls` registers anyway - fold them in.
 * A tile's placeholder guesses its width (`TileGrid.PLACEHOLDER_STRETCH`): FIZ `Dim=` is parsed
   nowhere for `MaszynaSceneryInfo.Vehicle`.
+* **Cab shake** (`Cabin3D::_process_engine_shake()`, `TDynamicObject::update_shake`,
+  DynObj.cpp:8048-8137): the acceleration-driven base shake (`AccN`, `AccVert`, `AccSVBased` with
+  `Global.ShakingMultiplier*`, `:8102-8109`) and the hunting shake (`:8083-8097`) are not ported,
+  and the cab shakes only when its vehicle has a diesel engine - the original's base shake moves
+  every cab (`:8064-8065` limits only the engine's vibration to a diesel).
 
 ## Translations
 
-* The HUD's help (`demo/hud/help.gd`) shows `action.capitalize()` as a msgid, so a new input
-  action needs its capitalised name added to `demo/translations/*.po` by hand.
 * Units (`km/h`, `bar`, `%d m`, ...) are not msgids.
 
 ## Sounds
@@ -356,8 +353,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
     into the new one.
   * The HUD's "remove trainset" frees only vehicles built from MaSzyna data.
   * A vehicle coming within detail distance is built twice
-    (`instance_attach_node()` then `instance_set_instancer()`).
-  * `E3DRenderingServer::instance_attach_node(RID, Node3D *)` takes a pointer in a public API.
+    (`instance_attach_object_instance_id()` then `instance_set_instancer()`).
   * `compiled.nodes` still carries the Time/Config/Atmo nodes.
   * "Edit FIZ" logs errors: `cabin_python_screen.gd` and `maszyna_dynamic_train_cabin.gd`
     disconnect in `_exit_tree()` what they connected once; `!is_inside_tree()` transform reads -
@@ -399,6 +395,20 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   distance).
 * A vehicle is clicked in free camera only while its model is detailed; its tooltip shows the
   name taken at registration.
+* **Headlight properties nobody reads**: `RailVehicleLighting.head_light_color` and the normal
+  and high-beam multipliers are parsed but not drawn - the original tints and scales the head
+  lights by them (`rendering/lightarray.cpp:78-109`); the wrapper applies only the dimmed
+  multiplier (`RailVehicleRenderingServer.cpp:1404`) and a fixed 1.0 otherwise
+  (`E3DNodesBackend.cpp:110`), and has no high beam. `instrument_type` has neither a writer nor a
+  reader.
+* `RailVehicleBrake.friction_elements_per_axle` defaults to 1, the original's `NBpA` to 0
+  (`MOVER.h:1607`), which decides `Mover.cpp:5225`.
+* The switch blade is stepped on the wall clock (`TrackServer`, `Time::get_ticks_usec()`), the
+  original's on the simulation's delta (`Track.cpp:1944`).
+* **The second configuration pass runs only with the whole vehicle**
+  (`VehicleController::apply_configuration()`): a component applied again alone - `apply_config()`,
+  `add_component` to a running vehicle, the wipers' count from the appearance - does not run
+  `apply_vehicle_config()`.
 
 ## Rendering
 
@@ -450,12 +460,14 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   printed twice before `(Re)Initialized`); the earlier one is removed, but the install runs twice.
   The D3D12 crash fix (`FINDINGS.md`, 2026-10-06) is unconfirmed on Windows until a player reports.
 * **Windows: td.scn ends the game without a message** (RTX 4080 SUPER, Vulkan, build
-  20261007-1333; Stary Jawor loads). `app.log` stops after `[SceneryMemory] loaded`, nothing in the
-  Windows event log; an older build loaded it. Each step after it is now in `app.log`
-  (`[ScenarioStart]`, `[PlayerStart]`, `[PythonScreen]`, `[RailVehicleRendering]`), the streaming's
-  pieces with `--verbose`. Candidates: the streaming, Vulkan (`--rendering-driver d3d12`), the
-  Python runtime (`python27.dll`). Also unguarded: a pending vehicle build whose appearance was set
-  to none - `_build_models()` reads the appearance without a check.
+  20261007-1333). The `--verbose` log ends at starting the Python interpreter and `--no-python`
+  runs without fault (`docs/findings-archive.md`, 2026-10-09): Python now runs in
+  `maszyna-python-host`, so the game survives it. **Still open: why it failed for that player** -
+  the next build's `app.log` has the host's stderr and exit code; asked of the player meanwhile:
+  `--verbose 2> stderr.txt` from `cmd`, the event log's faulting module and exception code,
+  whether eu07.exe shows the Python screens, another Python 2.7 in the registry
+  (`PythonCore\2.7`) or on `PATH`. Also unguarded: a pending vehicle build whose appearance was
+  set to none - `_build_models()` reads the appearance without a check.
 * Normal maps: Godot's tangents not checked against the original's `f_tbn`.
 * Overexposure in the demo scenery unmeasured. Candidates, one at a time: `tonemap_mode`,
   `soft_shadow_filter_quality` 3 -> 1, `directional_shadow/size=8192` (`042b392`), `fog_enabled`,
@@ -479,6 +491,10 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   cache in local space, invalidate by dependency list.
 * `ResourceLazyLoader` shares only a held copy: a per-model load lock, and the loader holding the
   copy with a release for a dropped preload.
+* Lazy loading off (default): a vehicle's cargo (`_build_load()`) and coupler adapters
+  (`_update_coupler_adapters()`) still load through `model_load()` at their build, outside
+  `ResourceLazyLoader` - their files change while the game runs. After a data reload a resource
+  resident by registration is loaded again only by its next use.
 * The subscene cache is used only by queued parsing; `parse_file()` reparses every include.
 * Streaming keeps the track/traction instances and drops only meshes (~16k empty in `baltyk`).
 * A track streams by the chunk of its first curve point, not its nearest point.
@@ -501,6 +517,8 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   append in `gnd-sfx`.
 * `[SceneryLoad]` lines not measured on a heavy scenery.
 * In the editor streaming follows 3D viewport 0 only.
+* A freed streaming camera is not noticed: `SceneryStreamingServer::camera_id` stays set,
+  `streaming_has_camera()` stays true and the streaming stops where it was, silently.
 * `maszyna_node_track_importer.gd` drops `road`, `river`, `cross`, `turn`, `table`
   (`Track.cpp:1554` on).
 * Lamp head colour does not match its tinted pool - needs a flag in the `E3DMaterialResolver` key.
@@ -525,13 +543,16 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 ## Signalling (#296)
 
 * **The isolated sections become the system's sources** (`SignallingServer.system_add_source`).
-* **The logical aspect for trains**: a signalling delegate has only the lights, nothing it shows
+* **The logical aspect for trains**: a signalling implementation has only the lights, nothing it shows
   reaches a train (the driver reads the memcells).
 * **`ls_Dark`/`ls_Home` from a `lights` event** (value 3, 24 times): no light following the
   daylight.
 * **Semaphore arms** - the `animation` event on a named submodel (`Event.cpp:1569-1735`).
 * **Telling signal heads apart** from other lit models (street lamps included).
 * A scenery signal head's light states read `LIGHT_STATE_OFF` until its first aspect.
+* `SignalHeadNode.model` set while the node is in the tree is not connected
+  (`e3d_instance_created` is connected on `ENTER_TREE` only), and `EXIT_TREE` disconnects the new
+  model instead of the old one.
 * **`SignalAspect.lights` are plain numbers** in the inspector, not an enum.
 
 ## Scenario events
@@ -588,15 +609,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `ScenarioKeyboard` and the tests read it as "built, coupled and placed". A `vehicle_find_vehicle()`
   right after it finds no neighbour. Needs a "scenario ready" event at its owner (operator: a task of
   its own; where it lives is to be decided - scenery node or a server).
-* **`universal_brake_button` 0, 1, 2 sent on every driver update** while coupling, standing
-  (calkowo SN61 log 2026-10-09, `shunt_sn61_couple.scn`): check against the original's
-  `universal` handling before treating it as a bug.
-
-* **The AI stops at a Tm at Ms1, not 7-12 m before it** (shunting, SN61-02 + a wagon,
-  calkowo_sn61_zima.scn, Paszki Tm7, 2026-10-07): at "0.0 km" to the stop point it still ran
-  11 km/h and stood with its buffers past the mast, braking hard (pipe 2.8 bar). The original's
-  shunting range is 5-25 m (`Driver.cpp:6715-6716`, ported the same). Measure with a probe - speed,
-  distance of the front, `brake_distance`, when braking starts - against the original's.
 * **Commands a vehicle does not have are sent and fail**: `fuse_reset` from the cab key (N, every
   cab, `mmd_semantic_catalog.gd:224`) and `security_cabsignal_trigger` from an SHP event
   (`MaszynaLegacyVehicleCommandAction.cpp:38`) on an SN61 - no electric engine, no security system;
@@ -605,75 +617,8 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   and switch limits, spring return, the horn's value); `LegacyCabinControls` parses the MMD with no
   random choices. The `brake_level_drive` `CabinCommand` node still carries `command`/
   `command_param`, only as the guard of its key.
-* **Preparing and releasing the engine** (`Driver.cpp:2759-3012`): diesel heating
-  (`PrepareHeating()`), pantograph air (`bPantKurek3`, `PantsValve`) and the speed a pantograph
-  counts as up at, ground and motor overload relay resets, SN61's idle position,
-  `mastercontrollersetreverserunlock`, motor blowers, spring brake, doors, releaser and brakes on
-  putting away; compressor presence not asked; the brake handle's driving position cued, not
-  checked; `Activation()`'s move to another vehicle (EN57, ET41); `ShuntModeAllow`. On Stary Jawor
-  sa134-014 and WMB10-819 report their line breaker open after being prepared.
-  `PrepareEngine()`'s readiness compares the main reservoir, the original the feed pipe
-  (`ScndPipePress`, Driver.cpp:2843-2851).
-* **Orders**: `engine_active` lost on a breakdown while driving; the trainset's timetable and
-  velocity from the `.scn` (`OrdersInit`); a push-pull set turning only at `@` (`movePushPull`);
-  `OrderCheck()`'s doors; lights - lamp inventory (`iInventory`), the far end put out on
-  `Disconnect` (`Driver.cpp:2510-2525`), the player's vehicle on taking over (`Driver.cpp:5662`),
-  `Global.AITrainman`'s Pc5; `SetSignal`; station announcements and guard signals of `Timetable:`.
-* **Trainset reading**: stretched couplers, doors, light, relays of the other vehicles, the
-  individual release of an overcharged vehicle, the parking brake of a speed control unit, EP
-  brakes in `IsConsistBraked`, `BrakePressureActual.PipePressureVal` (taken as 3.9).
-* **Speed**: obstacles, an aggressive driver, EMU/DMU thresholds, cargo trains' and couplers'
-  acceleration limits, the braking test.
-* **Traction**: EN57 does not prepare (`Activation()` not ported); doors closed and departure
-  signal off before power (`Doors()`, `DepartureSignal` not published); no-current sections
-  (`fOverhead2`, `iOverheadZero`); shunting mode of a 2Ls150 and of an induction motor; SN61's idle
-  position after the reverser (Driver.cpp:5778); the input action for `maxcurrent_sw` (Ctrl+F);
-  `Engine:EngineMaxTemperature` (Mover.cpp:8306, not in the vendored Mover); the radio off after a
-  Radio-Stop.
-* **Braking**: the braking test (`ForcePNBrake`, `DynamicBrakeTest`), unlocking the pipe before
-  the releaser (`control_main_pipe()`), individual release of an overcharged wagon, `manualbrakon`
-  on putting away, the weather's friction; why the eszelon almost stopped on n226 before E4 (x20).
-* **Speed table**: passenger stop points, section and road speeds, stopping at an SBL, crossings,
-  the switch branch of an event on a switch, the cargo train's distances; vehicles ahead - the scan
-  from the rear end (Driver.cpp:6642), a signal beyond a vehicle ahead (`isforsomeoneelse`,
-  Driver.cpp:1566, 1709), coupler adapters in the gap, `braking_distance_multiplier()` in the
-  target speed. `VelLimitLastDist` ported, `SwitchClearDist` only as far as it extends it,
-  `moveSwitchFound`/`moveStopPointFound` (Driver.cpp:1043) not.
-* **Timetable**: the departure signal before the doors close (Driver.cpp:4305-4320) and the wait
-  after (`Random(-3.5, -1.0)`, Driver.cpp:4351); `moveGuardOpenDoor`; car load weights
-  (`load_weights.txt`) and visible load (`update_load_visibility()`, `update_load_sections()`);
-  passenger announcements; the load unit `"tons"` vs the original's `"tonns"` (Mover.cpp:4464);
-  the guard's message beside the train (`<timetable>.ogg`, Driver.cpp:4466-4472, 6862-6870); the
-  radio channel hint (Driver.cpp:1113); `UpdateDelayFlag()`; a player's stop left far behind
-  (Driver.cpp:1190-1200); `VelSignalLast` reset by a stop (`eSignNext`); a player leaving a stop
-  early keeps counting the delay from it.
-* **Timetable panel** (`demo/hud/timetable_panel.gd`): the list from `StationStart`
-  (driveruipanels.cpp:392), the expanded mode's weight and length (:360-386), re-resolving the
-  followed driver on coupling.
-* **The driver's hints**: the compartment lights go by the scenery's light level alone - the
-  consist's shade (`ConsistShade`) is not published.
-* **The Hints chip** (`demo/hud/driver_hints.tscn`): its place under the driving aid not seen in the
-  running game yet.
-* **Coupling and uncoupling - not checked on a scenery** (linia61, calkowo too heavy for a headless
-  probe so far). Left: high voltage and power lines of a coupler number; `coupler_connect` joins in
-  a fixed order; lights after the trainset changed (`CheckVehicles()`); `bh_EPB`; a coupling a
-  player left half done; margins of modern vehicles, the weather and a late train (`moveLate`).
-* **`movePrimary` is not ported** (`TController::primary()`, Driver.h:226-231): the others defer
-  to it (Driver.cpp:2410-2430), only it runs the dynamic brake test (Driver.cpp:7856), and one
-  moving through a gangway takes over (Driver.cpp:5870).
-* **To drive again in game**: Stary Jawor Osobowy 1, the AI's n323m ran past a signal at stop
-  while the player shunted in SM42-329 (two likely causes fixed on krzyzowa2).
 * **Cab targets**: the motor car's ammeters, voltmeters and lamps (`mvControlled` in
   `update_gauges`) need `target` in `MmdSemanticCatalog`.
-
-### Driving aid (`demo/hud/driving_aid.gd`)
-
-* Left out (`driveruipanels.cpp:42-205`): the reverser letter, the grade, the slipping `!`, the
-  brake cylinder pressure, the load exchange / vehicle ahead line, the alerter/SHP line.
-* An EIM vehicle shows `MainCtrlPos + ScndCtrlPos`; the original `eimic_real` % plus `MainCtrlPos`
-  and the integrated brake's `eimic` (`EIMCtrlType` not exposed).
-* The nearest signal and its lights (postponed): a memcell -> signal head link recorded from the
-  scenery's `multiple`; the lights' colours have no getter in `E3DRenderingServer`.
 
 ## Game data (GameDataServer)
 
@@ -699,7 +644,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * **The start sequence**: still open - the converter and the master controller through the cab,
   an EP09 and an ED78/36WE fixture (`ep09_v1/104e-039.fiz`, `impuls_v1/ed78-028-a..d_zachpom.fiz`:
   `LMaxVoltage=24`, control cars `a`/`d`, motor cars `b`/`c`). The five tests b5e744f1 took
-  `battery_voltage` from (`test_driver_system.gd`, `test_driver_braking.gd`,
+  `battery_voltage` from (`test_driver_server.gd`, `test_driver_braking.gd`,
   `test_train_controller_radio_channel.gd`, `test_train_ep_fuse_switch.gd`,
   `test_train_sound_system.gd`) get `build_power_supply()` back where they relied on the low
   voltage. The tester's report (EU07, ED78, 36WE unstartable) is not reproduced: needs the build
@@ -732,7 +677,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
     `test_traction_power_sections.gd`, `test_rail_vehicle_track_movement.gd`,
     `test_rail_vehicle_at_rest.gd`, `test_rail_vehicle_start_track.gd`,
     `test_rail_vehicle_idle_*_regression.gd`.
-  * *Stops before what the player sees*: `test_driver_system.gd` (`Prepare_engine` only to
+  * *Stops before what the player sees*: `test_driver_server.gd` (`Prepare_engine` only to
     `battery_enabled`, `:185` asserts an open main switch).
   * *Fixtures that build a 0 V vehicle unnoticed*: `test_vehicle.fiz`, `test_wagon.fiz`,
     `dynamic/test/synthetic_v1/synthetic.fiz`.
@@ -782,23 +727,10 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `_move_placement()` (writes TrackServer, emits signals) and `Curve3D` baking on first sample.
   The original's function is `vehicle_table::update()`, `DynObj.cpp:8686`.
 
-## Linux release built on an old glibc
-
-* `release-linux-symbols` (`compile-release-symbols`) still builds on the host; needs the
-  `release-linux` container.
-* A local install holds the host-built debug export template until `ci/fetch-godot.sh` replaces it.
-
 ## CI
 
-* A pull request from a fork has a read-only token: after a `GODOT_VERSION` bump it cannot
-  publish the engine release, and it publishes no prerelease.
 * The Linux library is built in the SDK container without ccache.
 * The engine is built without Swappy and AccessKit, which the official builds carry.
-* Android: only `arm64`; the `android_x86_64` preset has no template.
-* The `maszyna-reloaded-<branch>` prerelease of a pull request stays after it is merged or closed.
-* The Windows installer and the exe are unsigned: SmartScreen asks "Run anyway". Candidates:
-  SignPath Foundation (free for open source, signs in GitHub Actions), Certum Open Source Code
-  Signing (cloud key, awkward in CI), Azure Trusted Signing (eligibility for individuals limited).
 
 ## Data the original reads that the wrapper does not read yet
 

@@ -1,8 +1,8 @@
 #include "cabin/Cabin3D.hpp"
 #include "cabin/CabinHUDMouseSystem.hpp"
 #include "cache/ResourceCache.hpp"
-#include "driver/DriverDelegate.hpp"
-#include "driver/DriverSystem.hpp"
+#include "driver/DriverImplementation.hpp"
+#include "driver/DriverServer.hpp"
 #include "game_data/GameDataServer.hpp"
 #include "hud/HUDServer.hpp"
 #include "legacy/MaszynaDataPath.hpp"
@@ -30,7 +30,7 @@
 #include "legacy/scenery/MaszynaTrianglesChunkGeometry.hpp"
 #include "legacy/scenery/MaszynaTrianglesImporter.hpp"
 #include "legacy/signalling/MaszynaLegacySignalHeadKindFactory.hpp"
-#include "legacy/signalling/MaszynaLegacySignallingDelegate.hpp"
+#include "legacy/signalling/MaszynaLegacySignallingImplementation.hpp"
 #include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverRailVehicleAIHints.hpp"
 #include "legacy/vehicles/MoverRailVehicleBrake.hpp"
@@ -64,6 +64,8 @@
 #include "person/PersonServer.hpp"
 #include "player/PlayerCameraServer.hpp"
 #include "player/PlayerServer.hpp"
+#include "radio/RadioServer.hpp"
+#include "radio/SceneryVirtualRadio.hpp"
 #include "register_types.h"
 #include "rendering/PlanarMirror3D.hpp"
 #include "resources/ResourceLazyLoader.hpp"
@@ -79,13 +81,13 @@
 #include "scenery/SceneryStreamingServer.hpp"
 #include "scenery/SceneryTrianglesSink.hpp"
 #include "scripting/ScenarioScriptAction.hpp"
-#include "scripting/ScenarioScriptCabinDelegate.hpp"
+#include "scripting/ScenarioScriptCabinImplementation.hpp"
 #include "scripting/ScenarioScriptServer.hpp"
 #include "signalling/SignalAspect.hpp"
 #include "signalling/SignalHeadKind.hpp"
 #include "signalling/SignalHeadNode.hpp"
+#include "signalling/SignallingImplementation.hpp"
 #include "signalling/SignallingServer.hpp"
-#include "signalling/SignallingSystemDelegate.hpp"
 #include "signalling/SignallingSystemNode.hpp"
 #include "simulation/SimulationRuntime.hpp"
 #include "simulation/SimulationServer.hpp"
@@ -94,6 +96,7 @@
 #include "tracks/TrackEndpointRef.hpp"
 #include "tracks/TrackServer.hpp"
 #include "traction/TractionServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "utils/MaszynaTranslationServer.hpp"
 #include "utils/ProcessMemory.hpp"
 #include "utils/UserSettings.hpp"
@@ -187,9 +190,10 @@ SignallingServer *signalling_server_singleton = nullptr;
 ScenarioEventServer *scenario_event_server_singleton = nullptr;
 SceneryHUDMouseServer *scenery_hud_mouse_server_singleton = nullptr;
 ScenarioScriptServer *scenario_script_server_singleton = nullptr;
-DriverSystem *driver_system_singleton = nullptr;
+DriverServer *driver_server_singleton = nullptr;
 PlayerServer *player_server_singleton = nullptr;
 StationServer *station_server_singleton = nullptr;
+RadioServer *radio_server_singleton = nullptr;
 PlayerCameraServer *player_camera_server_singleton = nullptr;
 HUDServer *hud_server_singleton = nullptr;
 Ref<E3DResourceFormatLoader> e3d_resource_format_loader;
@@ -239,20 +243,22 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(SignalAspect);
         GDREGISTER_CLASS(SignalHeadKind);
         GDREGISTER_ABSTRACT_CLASS(MaszynaLegacySignalHeadKindFactory);
-        GDREGISTER_VIRTUAL_CLASS(SignallingSystemDelegate);
-        GDREGISTER_CLASS(MaszynaLegacySignallingDelegate);
+        GDREGISTER_VIRTUAL_CLASS(SignallingImplementation);
+        GDREGISTER_CLASS(MaszynaLegacySignallingImplementation);
         GDREGISTER_CLASS(SignalHeadNode);
         GDREGISTER_CLASS(SignallingSystemNode);
         GDREGISTER_CLASS(ScenarioEventServer);
         GDREGISTER_CLASS(SceneryHUDMouseServer);
-        GDREGISTER_CLASS(DriverSystem);
-        GDREGISTER_VIRTUAL_CLASS(DriverDelegate);
+        GDREGISTER_CLASS(DriverServer);
+        GDREGISTER_VIRTUAL_CLASS(DriverImplementation);
         GDREGISTER_VIRTUAL_CLASS(ScenarioEventAction);
         GDREGISTER_VIRTUAL_CLASS(ScenarioEventCondition);
         GDREGISTER_CLASS(ScenarioScriptServer);
-        GDREGISTER_VIRTUAL_CLASS(ScenarioScriptCabinDelegate);
+        GDREGISTER_VIRTUAL_CLASS(ScenarioScriptCabinImplementation);
         GDREGISTER_CLASS(PlayerServer);
         GDREGISTER_CLASS(StationServer);
+        GDREGISTER_CLASS(RadioServer);
+        GDREGISTER_CLASS(SceneryVirtualRadio);
         GDREGISTER_CLASS(PlayerCameraServer);
         GDREGISTER_CLASS(HUDServer);
         GDREGISTER_INTERNAL_CLASS(ScenarioScriptAction);
@@ -285,6 +291,7 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_ABSTRACT_CLASS(VehicleComponentType);
         GDREGISTER_ABSTRACT_CLASS(RailVehicleComponentType);
         GDREGISTER_ABSTRACT_CLASS(VehiclePersonRole);
+        GDREGISTER_ABSTRACT_CLASS(LibMaszynaUnits);
         GDREGISTER_ABSTRACT_CLASS(RailVehicleCabinKind);
         GDREGISTER_CLASS(VehiclePhysicsNode);
         GDREGISTER_CLASS(RailVehiclePhysicsNode);
@@ -383,7 +390,6 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         e3d_parser_singleton = memnew(E3DParser);
         scenery_streaming_server_singleton = memnew(SceneryStreamingServer);
         track_server_singleton = memnew(TrackServer);
-        traction_server_singleton = memnew(TractionServer);
         python_screen_server_singleton = memnew(PythonScreenServer);
         cabin_hud_mouse_system_singleton = memnew(CabinHUDMouseSystem);
 
@@ -395,12 +401,20 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         Engine::get_singleton()->register_singleton("E3DRenderingServer", e3d_rendering_server_singleton); // 6
         Engine::get_singleton()->register_singleton("SimulationServer", simulation_server_singleton);      // 7
         Engine::get_singleton()->register_singleton("TrackServer", track_server_singleton);                // 8
+        /* after SimulationServer is registered and before VehicleServer: the constructor follows
+         * its clock first, so a slice ticks the power sources before the vehicles draw from them -
+         * the original's order (simulation.cpp:115-116) */
+        traction_server_singleton = memnew(TractionServer);
         // after SimulationServer is registered: the constructor follows its clock
         person_server_singleton = memnew(PersonServer);
         Engine::get_singleton()->register_singleton("PersonServer", person_server_singleton); // 8b
         // after PersonServer is registered: the constructor follows its freed persons
         vehicle_server_singleton = memnew(VehicleServer);
         Engine::get_singleton()->register_singleton("VehicleServer", vehicle_server_singleton); // 9
+        // after VehicleServer: a radio in a vehicle is where the vehicle is; before the servers that
+        // wire radios or follow the ether
+        radio_server_singleton = memnew(RadioServer);
+        Engine::get_singleton()->register_singleton("RadioServer", radio_server_singleton); // 9a
         // after VehicleServer is registered: the constructor follows the vehicles' lifetime
         rail_vehicle_server_singleton = memnew(RailVehicleServer);
         Engine::get_singleton()->register_singleton("RailVehicleServer", rail_vehicle_server_singleton); // 10
@@ -424,8 +438,8 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         scenario_event_server_singleton = memnew(ScenarioEventServer);
         Engine::get_singleton()->register_singleton("ScenarioEventServer", scenario_event_server_singleton); // 16
         // after RailVehicleServer is registered: the constructor follows its freed vehicles
-        driver_system_singleton = memnew(DriverSystem);
-        Engine::get_singleton()->register_singleton("DriverSystem", driver_system_singleton); // 17
+        driver_server_singleton = memnew(DriverServer);
+        Engine::get_singleton()->register_singleton("DriverServer", driver_server_singleton); // 17
         // after E3DRenderingServer is registered: it outlines and picks its instances
         scenery_hud_mouse_server_singleton = memnew(SceneryHUDMouseServer);
         Engine::get_singleton()->register_singleton("SceneryHUDMouseServer", scenery_hud_mouse_server_singleton); // 18
@@ -437,7 +451,7 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         // after VehicleServer: the constructor follows its freed vehicles
         station_server_singleton = memnew(StationServer);
         Engine::get_singleton()->register_singleton("StationServer", station_server_singleton); // 18b
-        // after RailVehicleServer and DriverSystem: it follows freed vehicles and hands trainsets
+        // after RailVehicleServer and DriverServer: it follows freed vehicles and hands trainsets
         // over to their drivers
         player_server_singleton = memnew(PlayerServer);
         Engine::get_singleton()->register_singleton("PlayerServer", player_server_singleton); // 19
@@ -474,6 +488,8 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         e3d_resource_format_loader.unref();
     }
 
+    // in reverse order of creation, which is not the order of registration: a singleton created
+    // early and registered late (SimulationServer) still outlives the ones created after it
     if (Engine::get_singleton()->has_singleton("ScenarioScriptServer")) {
         Engine::get_singleton()->unregister_singleton("ScenarioScriptServer"); // 22
     }
@@ -530,12 +546,12 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         scenery_hud_mouse_server_singleton = nullptr;
     }
 
-    if (Engine::get_singleton()->has_singleton("DriverSystem")) {
-        Engine::get_singleton()->unregister_singleton("DriverSystem"); // 17
+    if (Engine::get_singleton()->has_singleton("DriverServer")) {
+        Engine::get_singleton()->unregister_singleton("DriverServer"); // 17
     }
-    if (driver_system_singleton != nullptr) {
-        memdelete(driver_system_singleton);
-        driver_system_singleton = nullptr;
+    if (driver_server_singleton != nullptr) {
+        memdelete(driver_server_singleton);
+        driver_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("ScenarioEventServer")) {
@@ -554,20 +570,79 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         signalling_server_singleton = nullptr;
     }
 
-    if (Engine::get_singleton()->has_singleton("CabinHUDMouseSystem")) {
-        Engine::get_singleton()->unregister_singleton("CabinHUDMouseSystem"); // 14
-    }
-    if (cabin_hud_mouse_system_singleton != nullptr) {
-        memdelete(cabin_hud_mouse_system_singleton);
-        cabin_hud_mouse_system_singleton = nullptr;
-    }
-
     if (Engine::get_singleton()->has_singleton("MaszynaTranslationServer")) {
         Engine::get_singleton()->unregister_singleton("MaszynaTranslationServer"); // 13
     }
     if (maszyna_translation_server_singleton != nullptr) {
         memdelete(maszyna_translation_server_singleton);
         maszyna_translation_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("MaszynaMoverVehicleServer")) {
+        Engine::get_singleton()->unregister_singleton("MaszynaMoverVehicleServer"); // 10a
+    }
+    if (maszyna_mover_vehicle_server_singleton != nullptr) {
+        if (vehicle_server_singleton != nullptr) {
+            vehicle_server_singleton->implementation_unregister(MaszynaMoverVehicleServer::IMPLEMENTATION_NAME);
+        }
+        memdelete(maszyna_mover_vehicle_server_singleton);
+        maszyna_mover_vehicle_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("RailVehicleServer")) {
+        Engine::get_singleton()->unregister_singleton("RailVehicleServer"); // 10
+    }
+    if (rail_vehicle_server_singleton != nullptr) {
+        memdelete(rail_vehicle_server_singleton);
+        rail_vehicle_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("RadioServer")) {
+        Engine::get_singleton()->unregister_singleton("RadioServer"); // 9a
+    }
+    if (radio_server_singleton != nullptr) {
+        memdelete(radio_server_singleton);
+        radio_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("VehicleServer")) {
+        Engine::get_singleton()->unregister_singleton("VehicleServer"); // 9
+    }
+    if (vehicle_server_singleton != nullptr) {
+        memdelete(vehicle_server_singleton);
+        vehicle_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("PersonServer")) {
+        Engine::get_singleton()->unregister_singleton("PersonServer"); // 8b
+    }
+    if (person_server_singleton != nullptr) {
+        memdelete(person_server_singleton);
+        person_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("TractionServer")) {
+        Engine::get_singleton()->unregister_singleton("TractionServer"); // 11
+    }
+    if (traction_server_singleton != nullptr) {
+        memdelete(traction_server_singleton);
+        traction_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("E3DRenderingServer")) {
+        Engine::get_singleton()->unregister_singleton("E3DRenderingServer"); // 6
+    }
+    if (e3d_rendering_server_singleton != nullptr) {
+        memdelete(e3d_rendering_server_singleton);
+        e3d_rendering_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("CabinHUDMouseSystem")) {
+        Engine::get_singleton()->unregister_singleton("CabinHUDMouseSystem"); // 14
+    }
+    if (cabin_hud_mouse_system_singleton != nullptr) {
+        memdelete(cabin_hud_mouse_system_singleton);
+        cabin_hud_mouse_system_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("PythonScreenServer")) {
@@ -578,130 +653,66 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         python_screen_server_singleton = nullptr;
     }
 
-    if (Engine::get_singleton()->has_singleton("MaszynaMoverVehicleServer")) {
-        Engine::get_singleton()->unregister_singleton("MaszynaMoverVehicleServer"); // 10a
-    }
-
-    if (Engine::get_singleton()->has_singleton("RailVehicleServer")) {
-        if (Engine::get_singleton()->has_singleton("TractionServer")) {
-            Engine::get_singleton()->unregister_singleton("TractionServer"); // 11
-        }
-        if (traction_server_singleton != nullptr) {
-            memdelete(traction_server_singleton);
-            traction_server_singleton = nullptr;
-        }
-        Engine::get_singleton()->unregister_singleton("RailVehicleServer"); // 10
-    }
-
-    if (Engine::get_singleton()->has_singleton("VehicleServer")) {
-        Engine::get_singleton()->unregister_singleton("VehicleServer"); // 9
-    }
-
-    if (Engine::get_singleton()->has_singleton("PersonServer")) {
-        Engine::get_singleton()->unregister_singleton("PersonServer"); // 8b
-    }
-
     if (Engine::get_singleton()->has_singleton("TrackServer")) {
         Engine::get_singleton()->unregister_singleton("TrackServer"); // 8
     }
-
-    if (Engine::get_singleton()->has_singleton("SimulationServer")) {
-        Engine::get_singleton()->unregister_singleton("SimulationServer"); // 7
-    }
-
-    if (Engine::get_singleton()->has_singleton("E3DRenderingServer")) {
-        Engine::get_singleton()->unregister_singleton("E3DRenderingServer"); // 6
+    if (track_server_singleton != nullptr) {
+        memdelete(track_server_singleton);
+        track_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("SceneryStreamingServer")) {
         Engine::get_singleton()->unregister_singleton("SceneryStreamingServer"); // 5
     }
-
-    if (Engine::get_singleton()->has_singleton("GameLog")) {
-        Engine::get_singleton()->unregister_singleton("GameLog"); // 3
+    if (scenery_streaming_server_singleton != nullptr) {
+        memdelete(scenery_streaming_server_singleton);
+        scenery_streaming_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("E3DParser")) {
         Engine::get_singleton()->unregister_singleton("E3DParser"); // 2
     }
+    if (e3d_parser_singleton != nullptr) {
+        memdelete(e3d_parser_singleton);
+        e3d_parser_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("GameLog")) {
+        Engine::get_singleton()->unregister_singleton("GameLog"); // 3
+    }
+    if (game_log_singleton != nullptr) {
+        memdelete(game_log_singleton);
+        game_log_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("SimulationServer")) {
+        Engine::get_singleton()->unregister_singleton("SimulationServer"); // 7
+    }
+    if (simulation_server_singleton != nullptr) {
+        memdelete(simulation_server_singleton);
+        simulation_server_singleton = nullptr;
+    }
 
     if (Engine::get_singleton()->has_singleton("ResourceLazyLoader")) {
         Engine::get_singleton()->unregister_singleton("ResourceLazyLoader"); // 1b
+    }
+    if (resource_lazy_loader_singleton != nullptr) {
+        memdelete(resource_lazy_loader_singleton);
+        resource_lazy_loader_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("GameDataServer")) {
         Engine::get_singleton()->unregister_singleton("GameDataServer"); // 1a
     }
-
-    if (Engine::get_singleton()->has_singleton("UserSettings")) {
-        Engine::get_singleton()->unregister_singleton("UserSettings"); // 1
-    }
-
-    if (maszyna_mover_vehicle_server_singleton != nullptr) { // 10a
-        if (vehicle_server_singleton != nullptr) {
-            vehicle_server_singleton->implementation_unregister(MaszynaMoverVehicleServer::IMPLEMENTATION_NAME);
-        }
-        memdelete(maszyna_mover_vehicle_server_singleton);
-        maszyna_mover_vehicle_server_singleton = nullptr;
-    }
-
-    if (rail_vehicle_server_singleton != nullptr) { // 10
-        memdelete(rail_vehicle_server_singleton);
-        rail_vehicle_server_singleton = nullptr;
-    }
-
-    if (vehicle_server_singleton != nullptr) { // 9
-        memdelete(vehicle_server_singleton);
-        vehicle_server_singleton = nullptr;
-    }
-
-    if (person_server_singleton != nullptr) { // 8b
-        memdelete(person_server_singleton);
-        person_server_singleton = nullptr;
-    }
-
-    if (track_server_singleton != nullptr) { // 8
-        memdelete(track_server_singleton);
-        track_server_singleton = nullptr;
-    }
-
-    if (simulation_server_singleton != nullptr) { // 7
-        memdelete(simulation_server_singleton);
-        simulation_server_singleton = nullptr;
-    }
-
-    if (e3d_rendering_server_singleton != nullptr) { // 6
-        memdelete(e3d_rendering_server_singleton);
-        e3d_rendering_server_singleton = nullptr;
-    }
-
-    if (scenery_streaming_server_singleton != nullptr) { // 5
-        memdelete(scenery_streaming_server_singleton);
-        scenery_streaming_server_singleton = nullptr;
-    }
-
-
-    if (game_log_singleton != nullptr) { // 3
-        memdelete(game_log_singleton);
-        game_log_singleton = nullptr;
-    }
-
-    if (e3d_parser_singleton != nullptr) { // 2
-        memdelete(e3d_parser_singleton);
-        e3d_parser_singleton = nullptr;
-    }
-
-    if (resource_lazy_loader_singleton != nullptr) { // 1b
-        memdelete(resource_lazy_loader_singleton);
-        resource_lazy_loader_singleton = nullptr;
-    }
-
-    if (game_data_server_singleton != nullptr) { // 1a
+    if (game_data_server_singleton != nullptr) {
         memdelete(game_data_server_singleton);
         game_data_server_singleton = nullptr;
     }
 
-    if (user_settings_singleton != nullptr) { // 1
+    if (Engine::get_singleton()->has_singleton("UserSettings")) {
+        Engine::get_singleton()->unregister_singleton("UserSettings"); // 1
+    }
+    if (user_settings_singleton != nullptr) {
         memdelete(user_settings_singleton);
         user_settings_singleton = nullptr;
     }

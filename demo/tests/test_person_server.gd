@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 ## PersonServer - a person is a handle and nothing more; whatever a person is to another server (a
-## seat in a cabin, a driver's delegate) goes away when the person is freed.
+## seat in a cabin, a driver's implementation) goes away when the person is freed.
 
 var _persons:Array[RID] = []
 var _vehicles:Array[RID] = []
@@ -75,24 +75,24 @@ func test_a_freed_person_leaves_its_cabin() -> void:
 func test_a_freed_person_is_no_driver() -> void:
     var cabin:RID = _create_cabin()
     var person:RID = _create_person()
-    var delegate:IdleDelegate = IdleDelegate.new()
+    var implementation:IdleImplementation = IdleImplementation.new()
     assert_eq(VehicleServer.cabin_person_enter(cabin, person, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER), OK)
-    DriverSystem.driver_attach_delegate(person, delegate)
-    assert_has(DriverSystem.driver_get_rids(), person)
-    assert_eq(DriverSystem.vehicle_get_driver(VehicleServer.cabin_get_vehicle(cabin)), person)
-    watch_signals(DriverSystem)
+    attach_driver_implementation(person, implementation)
+    assert_has(DriverServer.driver_get_rids(), person)
+    assert_eq(DriverServer.vehicle_get_driver(VehicleServer.cabin_get_vehicle(cabin)), person)
+    watch_signals(DriverServer)
 
     PersonServer.person_free(person)
 
-    assert_signal_emitted_with_parameters(DriverSystem, "driver_freed", [person])
-    assert_does_not_have(DriverSystem.driver_get_rids(), person)
+    assert_signal_emitted_with_parameters(DriverServer, "driver_freed", [person])
+    assert_does_not_have(DriverServer.driver_get_rids(), person)
     var detached:Array[RID] = [person]
-    assert_eq(delegate.detached, detached, "its delegate learns it drives no more")
-    assert_false(DriverSystem.vehicle_get_driver(VehicleServer.cabin_get_vehicle(cabin)).is_valid(),
+    assert_eq(implementation.detached, detached, "its implementation learns it drives no more")
+    assert_false(DriverServer.vehicle_get_driver(VehicleServer.cabin_get_vehicle(cabin)).is_valid(),
             "the vehicle has no driver")
 
 
-class IdleDelegate extends DriverDelegate:
+class IdleImplementation extends DriverImplementation:
     var detached:Array[RID] = []
 
     func _driver_detached(driver:RID) -> void:

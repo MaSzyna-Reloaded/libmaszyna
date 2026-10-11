@@ -1,0 +1,132 @@
+models: st44-u.t3d
+animations: 6 0 0 4 2 0 -1
+animwheelprefix: wheel0
+animdoorprefix: door0
+endmodels
+
+locations:
+ tractionmotors: -4.3 4.3 end
+ bogies: -4.3 4.3 end
+endlocations
+
+sounds: 
+wheel_clatter: 80 -6.4 697_st44-stukot1.wav -4.3 697_st44-stukot1.wav -2.2 697_st44-stukot2.wav 2.2 697_st44-stukot1.wav 4.3 697_st44-stukot2.wav 6.4 697_st44-stukot1.wav end
+oilpump: { soundmain: 697_st44-oilpump-v2.wav range: 150 }
+engine: {
+ amplitudefactor: 0.9
+ amplitudeoffset: 1.0
+ range: 150
+ crossfade: 65
+ soundend: 697_st44-end.wav
+ sound300: silence1.wav pitch300: 300
+ sound399: 697_st44-idle-1.wav pitch399: 399
+ sound500: 697_st44-idle-2.wav pitch500: 500
+ sound625: 697_st44-idle-3.wav pitch625: 625
+ sound750: 697_st44-idle-4.wav pitch750: 750  }
+tractionmotor: 697_st44-motor.wav 100.0  0.5 0.8  0.16 0.1
+brake: 697_en57-brake1.wav 100.0 4000.0 -1.0
+derail: derail.wav 200
+horn2: { soundset: [ 14745_M62gwizdstart.wav|14745_M62gwizdtrwa.wav|14745_M62gwizdstop.wav ] range: 200 } 
+horn1: { soundset: [ !horn-st44-start-1|!horn-st44-1|!horn-st44-stop-1, !horn-st44-start-2|!horn-st44-2|!horn-st44-stop-2, 697_st44-horn1|697_st44-horn2|697_st44-horn3, !horn-st44-start-1|!horn-st44-1|!horn-st44-stop-1, 26284_st44_horn_low-1.wav|26284_st44_horn_low-2.wav|26284_st44_horn_low-3.wav ] range: 800 }
+sand: sand_1.wav sand_2.wav sand_3.wav 15
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15
+outernoise: { range: 190 soundmain: runningnoise.wav }
+emergencybrake: { soundbegin: 20786_et22_emergency_brake_1 soundmain: 20786_et22_emergency_brake_2 soundend: 20786_et22_emergency_brake_3 }
+endsounds
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+buzzer: TEM2-czuwak.wav
+switch: 14745_przelacznik181.wav
+relay: pss.wav
+pneumaticrelay: 14745_M62odluzniacz.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+reverserkey: 14745_kierunkowy181.wav
+ ignition: { soundmain: 697_st44-start.wav range: 150 }
+ radiostop: [ 24150_radmor_rs_sygnal.wav 697_radiostop.wav ]
+
+brakesound: 697_brake.wav 0.1 0.0 1.5 0.2
+slipperysound: brake-slipp.wav 2.0 0.2  
+airsound:  { soundmain: [ 697_fv4a_syk.wav 697_ep05-hiss.wav sm42-powietrze.wav 07]hiss.wav ] amplitudeoffset: -0.01 }
+airsound2: [1007]fv4a_luz.wav 0.025 -0.01
+airsound3: [1007]fv4a_e.wav 0.25 -0.01
+airsound4: { soundmain: [ [1007]fv4a_x.wav 20786_et22_popelnianie.wav ] amplitudeoffset: -0.01 }
+airsound5: [1007]fv4a_t.wav 10.0 -0.01
+runningnoise: { range: -1 amplitudefactor: 0.5 soundmain: 697_runningnoise-st44.wav }  
+
+mechspring: 100      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+
+cab1definition:   
+-1.77 1.5 6.8 1.6 1.77 7.3
+driver1pos:   
+0.29 3.399 6.83
+driver1sitpos:   
+-0.73 3.033 6.85
+cab1model: st44_kabina_a.t3d 
+  
+cab2definition:
+-1.75 1.5 -7.3 1.75 1.5 -6.8
+driver2pos:
+-0.25 3.399 -6.85
+driver2sitpos:
+0.69 3.033 -6.87
+cab2model: st44_kabina_b.t3d   
+
+mainctrl: { stery rot -0.05 0.0 0.1 sound0: 697_st44-nast-0.wav sound1: 697_st44-nast-1.wav sound2: 697_st44-nast-2.wav sound3: 697_st44-nast-3.wav sound4: 697_st44-nast-4.wav sound5: 697_st44-nast-1.wav sound6: 697_st44-nast-3.wav sound7: 697_st44-nast-2.wav sound8: 697_st44-nast-4.wav sound9: 697_st44-nast-3.wav sound10: 697_st44-nast-2.wav sound11: 697_st44-nast-4.wav sound12: 697_st44-nast-1.wav sound13: 697_st44-nast-3.wav sound14: 697_st44-nast-4.wav sound15: 697_st44-nast-2.wav }
+dirkey: { cylinder41 rot -0.1 0.01 0.1 soundinc: 697_st44-kier-2.wav sounddec: 697_st44-kier-2.wav sound0: 697_st44-kier-1.wav }
+brakectrl: { zasadniczy rot 0.05 0.0 -0.1 sound-2: 20786_203E_nast_ham_odc_1.wav sound-1: 20786_203E_nast_ham_pop_1.wav sound0: 20786_203E_nast_ham_0_4.wav sound1: 20786_203E_nast_ham_1_1.wav sound4: 20786_203E_nast_ham_2_1.wav sound5: 20786_203E_nast_ham_3_1.wav sound6: 20786_203E_nast_ham_nag_1.wav }
+localbrake: { pomocniczy rot 0.05 0.0 0.1 soundinc: 20786_203e_additional_brake_1.wav sounddec: 20786_203e_additional_unbrake_1.wav sound0: 20786_203e_additional_strong_unbrake_1.wav sound10: 20786_203e_additional_strong_brake_1.wav }
+
+main_off_bt: { wylsamroz rot 0.05 0 0.1 soundinc: 20786_203E_button_ws_1_on.wav sounddec: 20786_203E_button_ws_1_of.wav }
+main_on_bt: { start01 mov -0.05 0 0.1 soundinc: 20786_203E_button_ws_1_on.wav sounddec: 20786_203E_button_ws_1_of.wav }
+security_reset_bt: { czuw mov -0.005 0 0.1 soundinc: 20786_203E_button_strong_reset_ca_shp_2_on.wav sounddec: 20786_203E_button_strong_reset_ca_shp_2_of.wav } 
+releaser_bt: { odham mov -0.001 0 0.15 soundinc: 20786_203E_button_releaser_2_on.wav sounddec: 20786_203E_button_releaser_2_of.wav }
+horn_bt: { horn rot -0.1 0 0.1 soundinc: 20786_203E_switch_horn_pom_high_3_on.wav sounddec: 20786_203E_switch_horn_pom_high_3_of.wav } 
+upperlight_sw: { refpelny rot 0.05 0 0.1 soundinc: 697_st44-switch-1.wav sounddec: 697_st44-switch-2.wav }
+leftlight_sw: { refpelny rot 0.05 0 0.1 soundinc: 697_et42_switch_8_on.wav sounddec: 697_et42_switch_8_off.wav }
+rightlight_sw: { refpelny rot 0.05 0 0.1 soundinc: 697_et42_switch_9.wav sounddec: 697_et42_switch_7.wav }
+leftend_sw: { koncowkilewe rot 0.05 0 0.1 soundinc: 697_et42_switch_8_on.wav sounddec: 697_et42_switch_9.wav }
+rightend_sw: { koncowkiprawe rot 0.05 0 0.1 soundinc: 697_st44-switch-2.wav sounddec: 697_st44-switch-1.wav }
+antislip_bt: { piasek mov -0.3 0 0.15 soundinc: 20786_203E_sandbox_pedal_3_on.wav sounddec: 20786_203E_sandbox_pedal_3_of.wav } 
+fuelpump_sw: { pompapal rot 0.05 0 0.1 soundinc: 20786_203E_switch_converter_2_on.wav sounddec: 20786_203E_switch_converter_2_of.wav }
+instrumentlight_sw: { lcdradio mov 0.007 0 0.0 soundinc: 20786_203E_switch_light_devices_3_on.wav sounddec: 20786_203E_switch_light_devices_3_of.wav } 
+dimheadlights_sw: { refprz rot 0.05 0 0.1 soundinc: 20786_203E_switch_lights_cabin_2_on.wav sounddec: 20786_203E_switch_lights_cabin_2_of.wav }
+battery_sw: { wylsamster rot 0.05 0 0.1 soundinc: 697_st44-switch-1.wav sounddec: 697_st44-switch-2.wav }
+
+radiochannel_sw: { swr-kanal rot -0.085 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiovolume_sw: { swr-glosnosc rot -0.7 0 0.1 soundinc: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] sounddec: [ 20786_radmor_pokretlo1.wav 20786_radmor_pokretlo2.wav 20786_radmor_pokretlo3.wav 20786_radmor_pokretlo4.wav 20786_radmor_pokretlo5.wav ] }
+radiostop_sw: radiostop mov -0.005 0 0
+radio_sw: { swr-wl mov -0.004 0 0.002 soundinc: 20786_203e_button_radio_3_on.wav sounddec: 20786_203e_button_radio_3_of.wav }
+radiocall3_sw: { swr-wywolanie3 mov -0.004 0 0.002 soundinc: 20786_203e_button_radio_3_on.wav sounddec: 20786_203e_button_radio_3_of.wav }
+
+tachometern: wskpr rot 0.00585 0.0 0 
+hvoltage: wsk19 rot -0.0003 0 0.4
+hvcurrent1: wsk20 rot -0.000053 0 0.4
+
+brakepress: cyl rot 0.61 0 0
+pipepress: przgl rot 0.625 -0.0435 0
+compressor: zbgl rot 0.625 -0.0435 0.2
+clock: analog  
+
+i-security_aware: czuwak
+i-security_cabsignal: shp
+i-no_resistors: obmoc1
+i-no_resistors_b: obmoc2
+i-trainheating: uziemienie
+
+cab0definition:
+-0.3 1.5 -3.5 0.2 1.5 -2.3
+driver0pos:
+0.0 3.3 3.2
+cab0model: korytarz.t3d   

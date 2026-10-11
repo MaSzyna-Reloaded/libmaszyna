@@ -2,8 +2,10 @@
 #include "game_data/GameDataServer.hpp"
 #include "legacy/e3d/E3DModel.hpp"
 #include "legacy/e3d/E3DRenderingServer.hpp"
+#include "resources/ResourceLazyLoader.hpp"
 #include "scenery/SceneryHUDMouseServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleBuffCoupl.hpp"
 #include "vehicles/rail/RailVehicleComponentType.hpp"
@@ -34,6 +36,7 @@
 namespace godot {
     RailVehicleRenderingServer *RailVehicleRenderingServer::singleton = nullptr;
     const char *RailVehicleRenderingServer::vehicle_model_built_signal = "vehicle_model_built";
+    const char *RailVehicleRenderingServer::builds_finished_signal = "builds_finished";
 
     namespace {
         /* Which submodel of the model shows which of the vehicle's lamps, read off the lighting
@@ -149,6 +152,9 @@ namespace godot {
 
     RailVehicleRenderingServer::RailVehicleRenderingServer() {
         singleton = this;
+        _on_project_settings_changed();
+        ProjectSettings::get_singleton()->connect(
+                "settings_changed", callable_mp(this, &RailVehicleRenderingServer::_on_project_settings_changed));
         if (VehicleServer *vehicle_server = VehicleServer::get_instance(); vehicle_server != nullptr) {
             vehicle_server->connect(
                     VehicleServer::vehicle_freed_signal,
@@ -198,6 +204,11 @@ namespace godot {
                     SceneryStreamingServer::streaming_camera_changed_signal,
                     callable_mp(this, &RailVehicleRenderingServer::_on_streaming_camera_changed));
         }
+    }
+
+    void RailVehicleRenderingServer::_on_project_settings_changed() {
+        detail_distance =
+                ProjectSettings::get_singleton()->get_setting(DETAIL_DISTANCE_SETTING, DEFAULT_DETAIL_DISTANCE);
     }
 
     /* Every vehicle's place against the new camera at once - the ones within the draw distance
@@ -299,6 +310,7 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("builds_get_pending_count"), &RailVehicleRenderingServer::builds_get_pending_count);
         ADD_SIGNAL(MethodInfo(vehicle_model_built_signal, PropertyInfo(Variant::RID, "vehicle")));
+        ADD_SIGNAL(MethodInfo(builds_finished_signal));
     }
 
     Node3D *RailVehicleRenderingServer::_node(const Visual &p_visual) {
@@ -328,6 +340,7 @@ namespace godot {
         }
         _cancel_build(p_vehicle, *visual);
         _free_models(*visual);
+        _free_model_resources(*visual);
         if (visual->load.is_valid()) {
             E3DRenderingServer::get_instance()->instance_free(visual->load);
         }
@@ -431,9 +444,29 @@ namespace godot {
         visual->appearance = p_appearance;
         visual->model_missing = false;
         // models of its own replace the ones built from the last appearance, built once the
-        // vehicle is within the draw distance (_update_detail()); handed-over ones stay
+        // vehicle is within the draw distance (_update_detail()); handed-over ones stay. Its files
+        // are registered at once - without lazy loading, that loads them
         if (p_appearance.is_valid() && !p_appearance->get_model_filename().is_empty()) {
             _free_models(*visual);
+            _free_model_resources(*visual);
+            E3DRenderingServer *models = E3DRenderingServer::get_instance();
+            ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+            ERR_FAIL_NULL(models);
+            ERR_FAIL_NULL(lazy_loader);
+            const String data_path = p_appearance->get_data_path();
+            PackedStringArray filenames = p_appearance->get_attachment_model_filenames();
+            filenames.push_back(p_appearance->get_model_filename());
+            filenames.push_back(p_appearance->get_low_poly_model_filename());
+            filenames.push_back(p_appearance->get_passengers_model_filename());
+            for (const String &filename: filenames) {
+                if (filename.is_empty() || visual->model_resources.has(filename)) {
+                    continue;
+                }
+                // the key a scenery placement of the same file has (E3DRenderingServer::instance_register())
+                visual->model_resources[filename] = lazy_loader->resource_register(
+                        data_path.path_join(filename),
+                        callable_mp(models, &E3DRenderingServer::model_load).bind(data_path, filename));
+            }
             _build_load(p_vehicle, *visual);
         }
         _bind_parts(p_vehicle, *visual);
@@ -601,6 +634,21 @@ namespace godot {
         p_visual.passengers = RID();
         p_visual.attachments.clear();
         p_visual.own_models = false;
+        if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
+            for (const RID &resource: p_visual.held_models) {
+                lazy_loader->resource_release(resource);
+            }
+        }
+        p_visual.held_models.clear();
+    }
+
+    void RailVehicleRenderingServer::_free_model_resources(Visual &p_visual) {
+        if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
+            for (const KeyValue<String, RID> &resource: p_visual.model_resources) {
+                lazy_loader->resource_free(resource.value);
+            }
+        }
+        p_visual.model_resources.clear();
     }
 
     /* Every MaSzyna-authored model of a vehicle lives in one vehicle-local frame (the original
@@ -609,15 +657,23 @@ namespace godot {
      * camera - their submodels are posed and hidden - the passengers and the attachments never are. */
     void RailVehicleRenderingServer::_create_models(const RID &p_vehicle, Visual &p_visual) {
         E3DRenderingServer *models = E3DRenderingServer::get_instance();
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
         ERR_FAIL_NULL(models);
+        ERR_FAIL_NULL(lazy_loader);
         const Ref<RailVehicleAppearance> &appearance = p_visual.appearance;
         const String data_path = appearance->get_data_path();
         // models built again while the vehicle is drawn in detail go under the holder it has
         Node3D *holder = Object::cast_to<Node3D>(ObjectDB::get_instance(p_visual.holder));
         const auto create = [&](const String &p_filename, const PackedStringArray &p_skins,
                                 const E3DRenderingServer::Instancer p_instancer) {
-            const Ref<E3DModel> model =
-                    p_filename.is_empty() ? Ref<E3DModel>() : models->model_load(data_path, p_filename);
+            // held while built, as a streamed scenery placement holds its model
+            const RID *resource = p_visual.model_resources.getptr(p_filename);
+            const Ref<Resource> loaded = resource != nullptr ? lazy_loader->resource_load(*resource) : Ref<Resource>();
+            if (loaded.is_null()) {
+                return RID();
+            }
+            const Ref<E3DModel> model = lazy_loader->resource_hold(*resource, loaded);
+            p_visual.held_models.push_back(*resource);
             if (model.is_null()) {
                 return RID();
             }
@@ -628,7 +684,7 @@ namespace godot {
             constexpr bool FORCE_ALPHA = true;
             models->instance_set_options(instance, data_path, p_skins, Array(), FORCE_ALPHA, {}, 0);
             if (p_instancer != E3DRenderingServer::INSTANCER_OPTIMIZED) {
-                models->instance_attach_node(instance, holder);
+                models->instance_attach_object_instance_id(instance, holder->get_instance_id());
             }
             models->instance_set_node_transform(instance, appearance->get_model_transform());
             models->instance_set_scenario(instance, p_visual.placed ? p_visual.scenario : RID());
@@ -810,13 +866,15 @@ namespace godot {
                                             p_vehicle, RailVehicleComponentType::COMPONENT_ENGINE_POWER_SOURCE))
                                   : Ref<RailVehicleEnginePowerSource>();
         const Ref<RailVehicleAppearance> &appearance = p_visual.appearance;
-        if (models == nullptr || appearance.is_null() || source.is_null()) {
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+        if (models == nullptr || lazy_loader == nullptr || appearance.is_null() || source.is_null()) {
             return;
         }
         // the model this server builds from the appearance, or the one handed over
         Ref<E3DModel> model;
-        if (!appearance->get_model_filename().is_empty()) {
-            model = models->model_load(appearance->get_data_path(), appearance->get_model_filename());
+        if (const RID *resource = p_visual.model_resources.getptr(appearance->get_model_filename());
+            resource != nullptr) {
+            model = lazy_loader->resource_load(*resource);
         } else if (p_visual.model.is_valid()) {
             model = models->instance_get_model(p_visual.model);
         }
@@ -942,7 +1000,7 @@ namespace godot {
             const int index = p_pantograph == RailVehicleEnginePowerSource::PANTOGRAPH_FIRST ? 0 : 1;
             if (slider_height == 0.0) {
                 // the MMD's place along is the model's own, the vehicle frame turns it (DynObj.cpp:5605-5614)
-                position.z = model_transform.basis.xform(Vector3(0.0, 0.0, real_t(factors[index]))).z;
+                position.z = model_transform.basis.xform(Vector3(0.0, 0.0, static_cast<real_t>(factors[index]))).z;
                 slider_height = factors[PANTOGRAPH_FACTOR_HEIGHTS + index];
             }
             if (position.y == 0.0) {
@@ -1036,19 +1094,20 @@ namespace godot {
         }
     }
 
-    /* The bogies turned towards their own track (the wheels' business: they know the pivot
-     * spacing and where each bogie sits), and the wheels turned by the distance rolled - the same
+    /* The bogies turned towards their own track (where each sits on it is RailVehicleServer's,
+     * by the wheels' pivot spacing), and the wheels turned by the distance rolled - the same
      * sign as the original's UpdateAxle() (DynObj.cpp:489). A bogie turns about the vehicle's
      * vertical, which in its own frame is its rest basis seen from the vehicle. */
     void RailVehicleRenderingServer::_pose_running_gear(const RID &p_vehicle, Visual &p_visual) {
         const Ref<RailVehicleWheels> wheels =
                 component<RailVehicleWheels>(p_vehicle, VehicleComponentType::COMPONENT_WHEELS);
-        if (wheels.is_null()) {
+        const RailVehicleServer *server = RailVehicleServer::get_instance();
+        if (wheels.is_null() || server == nullptr) {
             return;
         }
         const Transform3D bogie_transforms[] = {
-                wheels->get_bogie_transform(RailVehicleWheels::BOGIE_FRONT),
-                wheels->get_bogie_transform(RailVehicleWheels::BOGIE_REAR)};
+                server->vehicle_get_bogie_transform(p_vehicle, RailVehicleWheels::BOGIE_FRONT),
+                server->vehicle_get_bogie_transform(p_vehicle, RailVehicleWheels::BOGIE_REAR)};
         Vector3 body_forward = bogie_transforms[0].origin - bogie_transforms[1].origin;
         if (!body_forward.is_zero_approx()) {
             body_forward.normalize();
@@ -1373,7 +1432,7 @@ namespace godot {
                 continue;
             }
             const bool enabled = (lighting.ptr()->*binding.is_enabled)();
-            if (bool(p_visual.lights[binding.light_name]) != enabled) {
+            if (static_cast<bool>(p_visual.lights[binding.light_name]) != enabled) {
                 p_visual.lights[binding.light_name] = enabled;
                 changed = true;
             }
@@ -1423,7 +1482,6 @@ namespace godot {
         // particles.cpp:188-205
         static constexpr double SPINUP_RATE = 4.0;
         static constexpr double SMOKE_SCALE = 0.01;
-        static constexpr double SECONDS_PER_MINUTE = 60.0;
         static constexpr double LOAD_SCALE = 0.005;
         static constexpr double RATE_SCALE = 0.02;
         const double revolutions = engine->get_rpm_count(); // rev/s, as the Mover keeps enrot
@@ -1440,7 +1498,7 @@ namespace godot {
             // deficit nearly constant and makes the rate track the engine power. Kept as it is:
             // reading both in rev/min would stop a diesel from smoking at full revs, which is
             // where it smokes most.
-            const double revolutions_deficit = (max_rpm - revolutions) / SECONDS_PER_MINUTE;
+            const double revolutions_deficit = (max_rpm - revolutions) / LibMaszynaUnits::SECONDS_PER_MINUTE;
             const double load = power * LOAD_SCALE;
             if (Math::is_zero_approx(direction) || Math::is_zero_approx(current)) {
                 intensity = revolutions_deficit * RATE_SCALE * load;
@@ -1522,8 +1580,6 @@ namespace godot {
             if (!has_camera) {
                 return;
             }
-            const float detail_distance =
-                    ProjectSettings::get_singleton()->get_setting(DETAIL_DISTANCE_SETTING, DEFAULT_DETAIL_DISTANCE);
             const float hysteresis = MAX(DETAIL_HYSTERESIS_MIN, detail_distance * DETAIL_HYSTERESIS);
             detailed = p_visual.detailed ? distance <= detail_distance : distance <= detail_distance - hysteresis;
         }
@@ -1554,6 +1610,9 @@ namespace godot {
         for (int index = 0; index < pending_builds.size(); ++index) {
             if (pending_builds[index].vehicle == p_vehicle) {
                 pending_builds.remove_at(index);
+                if (pending_builds.is_empty()) {
+                    emit_signal(builds_finished_signal);
+                }
                 return;
             }
         }
@@ -1578,9 +1637,9 @@ namespace godot {
             }
             holder->set_global_transform(p_visual.transform);
             p_visual.holder = ObjectID(holder->get_instance_id());
-            models->instance_attach_node(p_visual.model, holder);
+            models->instance_attach_object_instance_id(p_visual.model, p_visual.holder);
             if (p_visual.low_poly.is_valid()) {
-                models->instance_attach_node(p_visual.low_poly, holder);
+                models->instance_attach_object_instance_id(p_visual.low_poly, p_visual.holder);
             }
         }
         const E3DRenderingServer::Instancer instancer = detail_instancer(p_visual.detailed, p_visual.editable);
@@ -1644,7 +1703,7 @@ namespace godot {
                 if (String(accepted[index]).to_lower() == cargo) {
                     const double max_load = load->get_max_load();
                     const double fill = max_load > 0.0 ? CLAMP(vehicle->get_load_amount() / max_load, 0.0, 1.0) : 0.0;
-                    p_visual.load_height = Math::lerp(double(offsets[index]), 0.0, fill);
+                    p_visual.load_height = Math::lerp(static_cast<double>(offsets[index]), 0.0, fill);
                     break;
                 }
             }
@@ -1794,12 +1853,16 @@ namespace godot {
 
         // the models of the vehicles that came within the draw distance, the nearest first
         const uint64_t deadline = Time::get_singleton()->get_ticks_msec() + BUILD_BUDGET_MSEC;
+        const bool had_builds = !pending_builds.is_empty();
         while (!pending_builds.is_empty() && Time::get_singleton()->get_ticks_msec() < deadline) {
             const RID vehicle = pending_builds[0].vehicle;
             pending_builds.remove_at(0);
             Visual &visual = vehicles[vehicle];
             visual.build_pending = false;
             _build_models(vehicle, visual);
+        }
+        if (had_builds && pending_builds.is_empty()) {
+            emit_signal(builds_finished_signal);
         }
 
         slow_elapsed += delta;

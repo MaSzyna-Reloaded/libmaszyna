@@ -31,17 +31,27 @@
 				Registers a light.
 			</description>
 		</method>
+		<method name="register_smoke_source">
+			<return type="void" />
+			<param index="0" name="p_entry" type="E3DModelSmokeSourceDefinition" />
+			<description>
+				Registers a particle emitter.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="lights" type="Dictionary[String, E3DModelLightDefinition]" setter="set_lights" getter="get_lights" default="{}">
 			Returns dictionary of registered lights.
+		</member>
+		<member name="smoke_sources" type="E3DModelSmokeSourceDefinition[]" setter="set_smoke_sources" getter="get_smoke_sources" default="[]">
+			The particle emitters the model declares. A list rather than a dictionary: a model may carry several emitters of one template.
 		</member>
 		<member name="submodels" type="E3DSubModel[]" setter="set_submodels" getter="get_submodels" default="[]">
 			A list of top-level [E3DSubModel] resources that form the root of the model's hierarchy.
 		</member>
 	</members>
 	<constants>
-		<constant name="FORMAT_VERSION" value="20260913">
+		<constant name="FORMAT_VERSION" value="20261004">
 			Version of the serialized E3D model cache format.
 		</constant>
 	</constants>

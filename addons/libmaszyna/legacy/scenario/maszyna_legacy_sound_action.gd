@@ -3,8 +3,8 @@ extends ScenarioEventAction
 class_name MaszynaLegacySoundAction
 
 ## The original's `sound` event (sound_event, Event.cpp:1394-1429): plays, loops or stops its
-## scenery sounds. Played with a radio channel it is a radio message instead, heard only on the
-## player's cab radio (simulation::radio_message(), CabinSystem.send_radio_message()).
+## scenery sounds. Played with a radio channel it is a radio message instead, transmitted from the
+## sound's place on the scenery's radio (simulation::radio_message(), SceneryVirtualRadio).
 
 enum Mode {
     ## 0
@@ -21,15 +21,19 @@ var targets:PackedStringArray = []
 @export var mode:Mode = Mode.PLAY
 ## The radio channel the sound is a message on, 0 for none
 @export var radio_channel:int = 0
+## The scenery's radio a message is transmitted on
+var radio:SceneryVirtualRadio = null
 
 
 func _run(_event:RID, _activator:RID) -> void:
     for target:String in targets:
         var sound:RID = scenery_sounds.get_sound(target)
         if mode == Mode.PLAY and radio_channel > 0:
-            CabinSystem.send_radio_message(
-                    ScenerySoundServer.sound_get_play_event(sound), scenery_sounds.get_transcript(target),
-                    radio_channel, ScenerySoundServer.sound_get_position(sound), scenery_sounds.get_reach(target))
+            radio.transmit(ScenerySoundServer.sound_get_position(sound), radio_channel, scenery_sounds.get_reach(target),
+                    RadioServer.KIND_MESSAGE, {
+                        "sound": ScenerySoundServer.sound_get_play_event(sound),
+                        "transcript": scenery_sounds.get_transcript(target),
+                    })
             continue
         if mode == Mode.STOP:
             ScenerySoundServer.sound_stop(sound)

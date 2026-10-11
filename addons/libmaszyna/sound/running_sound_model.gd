@@ -160,16 +160,16 @@ func _traction_motor(source:MmdSoundSourceDefinition, delta:float) -> Array:
     var motor_revolutions:float = wheel_revolutions * _engine.get_transmission_ratio()
     var frequency:float = source.frequency_offset + source.frequency_factor * motor_revolutions * normalizer
     var amplitude_factor:float = source.amplitude_factor / (max_rpm + power * 3.0)
-    var volume:float = source.amplitude_offset + amplitude_factor * motor_revolutions * 60.0
+    var volume:float = source.amplitude_offset + amplitude_factor * motor_revolutions * LibMaszynaUnits.SECONDS_PER_MINUTE
     if engine_type == RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR:
         volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * 2.0)
     elif engine_type == RailVehicleEngine.ELECTRIC_SERIES_MOTOR:
-        volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * 60.0)
+        volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * LibMaszynaUnits.SECONDS_PER_MINUTE)
     if engine_type == RailVehicleEngine.ELECTRIC_SERIES_MOTOR:
         if volume < 1.0 and engine_power < 100.0:
             var variation:float = (
                     randf_range(0.0, 100.0) * _engine.get_rpm_count()
-                    / (1.0 + max_rpm / 60.0))
+                    / (1.0 + max_rpm / LibMaszynaUnits.SECONDS_PER_MINUTE))
             if variation < 2.0:
                 volume += variation / 200.0
         # a series motor is an electric engine

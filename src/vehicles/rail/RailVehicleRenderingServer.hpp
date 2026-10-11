@@ -33,6 +33,9 @@ namespace godot {
             /* The vehicle's exterior model was built - as nodes near the camera, as
              * RenderingServer instances far from it; what dresses its nodes does it again */
             static const char *vehicle_model_built_signal;
+            /* No vehicle within the draw distance waits for its models any more
+             * (builds_get_pending_count() came down to 0) */
+            static const char *builds_finished_signal;
 
             /* maszyna/vehicles/detail_distance [m]: nearer than this a vehicle is drawn as nodes and
              * animated, further it is drawn as RenderingServer instances and holds still */
@@ -100,6 +103,11 @@ namespace godot {
                     String load_data_path;
                     String load_model_filename;
                     bool own_models = false;
+                    /* The appearance's model files registered with ResourceLazyLoader, by file
+                     * name - loaded at once without lazy loading - and what the models built from
+                     * them hold, one per model */
+                    HashMap<String, RID> model_resources;
+                    Vector<RID> held_models;
                     /* Waiting in pending_builds for its models to be built */
                     bool build_pending = false;
                     /* The appearance's model could not be loaded - not built again until another
@@ -197,13 +205,17 @@ namespace godot {
             };
             Vector<PendingBuild> pending_builds;
             bool processing = false;
+            /* DETAIL_DISTANCE_SETTING, read when the settings change - not per vehicle visited */
+            float detail_distance = DEFAULT_DETAIL_DISTANCE;
 
             static Node3D *_node(const Visual &p_visual);
             void _set_processing(bool p_processing);
             void _process_frame();
             void _on_data_reload_requested();
             void _on_streaming_camera_changed();
+            void _on_project_settings_changed();
             void _free_models(Visual &p_visual);
+            static void _free_model_resources(Visual &p_visual);
             void _create_models(const RID &p_vehicle, Visual &p_visual);
             void _bind_parts(const RID &p_vehicle, Visual &p_visual);
             Part _part(const Visual &p_visual, const String &p_submodel) const;

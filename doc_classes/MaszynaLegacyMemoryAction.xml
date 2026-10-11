@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyMemoryAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mask" type="int" setter="set_mask" getter="get_mask" enum="ScenarioEventServer.MemoryField" is_bitfield="true" default="0">
+		</member>
+		<member name="memories" type="RID[]" setter="set_memories" getter="get_memories" default="[]">
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="MaszynaLegacyMemoryAction.Mode" default="0">
+		</member>
+		<member name="source" type="RID" setter="set_source" getter="get_source" default="RID()">
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+		</member>
+	</members>
+	<constants>
+		<constant name="MODE_SET" value="0" enum="Mode">
+		</constant>
+		<constant name="MODE_ADD" value="1" enum="Mode">
+		</constant>
+		<constant name="MODE_ISOLATED_BUSY" value="2" enum="Mode">
+		</constant>
+		<constant name="MODE_ISOLATED_FREE" value="3" enum="Mode">
+		</constant>
+	</constants>
+</class>

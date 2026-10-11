@@ -13,12 +13,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="emergency_signal_send">
-			<return type="void" />
-			<param index="0" name="position" type="Vector3" />
-			<description>
-			</description>
-		</method>
 		<method name="load_add">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
@@ -257,12 +251,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="vehicle_emergency_signal_send">
-			<return type="void" />
-			<param index="0" name="vehicle" type="RID" />
-			<description>
-			</description>
-		</method>
 		<method name="vehicle_find_pantograph_carrier" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
@@ -296,6 +284,13 @@
 			<return type="VehiclePerson[]" />
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
+			<description>
+			</description>
+		</method>
+		<method name="vehicle_get_bogie_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="bogie" type="int" enum="RailVehicleWheels.Bogie" />
 			<description>
 			</description>
 		</method>
@@ -406,7 +401,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="vehicle_get_transform">
+		<method name="vehicle_get_transform" qualifiers="const">
 			<return type="Transform3D" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
@@ -464,13 +459,6 @@
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="delta" type="float" />
-			<description>
-			</description>
-		</method>
-		<method name="vehicle_radio_call">
-			<return type="void" />
-			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
 			<description>
 			</description>
 		</method>
@@ -586,6 +574,14 @@
 			<description>
 			</description>
 		</signal>
+		<signal name="vehicle_pantograph_contact_lost">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="pantograph" type="int" />
+			<param index="2" name="cause" type="int" enum="RailVehicleServer.PantographContactLoss" />
+			<description>
+				A raised pantograph of the vehicle (0 or 1) lost its line voltage, for [param cause]: announced once a loss, on the change.
+			</description>
+		</signal>
 		<signal name="vehicle_placed">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
@@ -596,13 +592,6 @@
 			<param index="0" name="vehicle" type="RID" />
 			<description>
 				The vehicle is somewhere else on the route - once a step it moved in, or once a deliberate move.
-			</description>
-		</signal>
-		<signal name="vehicle_radio_called">
-			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="call" type="int" />
-			<param index="2" name="position" type="Vector3" />
-			<description>
 			</description>
 		</signal>
 		<signal name="vehicle_stopped_on_track">
@@ -623,6 +612,15 @@
 		</constant>
 		<constant name="CABIN_CHANGE_BACKWARD" value="1" enum="CabinChange">
 			Towards its rear.
+		</constant>
+		<constant name="PANTOGRAPH_CONTACT_LOSS_NOT_REACHING" value="0" enum="PantographContactLoss">
+			The pantograph's arm does not reach the wire found over it.
+		</constant>
+		<constant name="PANTOGRAPH_CONTACT_LOSS_NO_WIRE" value="1" enum="PantographContactLoss">
+			There is no wire over the pantograph.
+		</constant>
+		<constant name="PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE" value="2" enum="PantographContactLoss">
+			The wire over the pantograph carries no voltage.
 		</constant>
 		<constant name="TRAINSET_TYPE_NONE" value="0" enum="TrainsetType">
 			No cars coupled to the vehicle, or not determined yet.

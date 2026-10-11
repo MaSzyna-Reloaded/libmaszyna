@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://dbhgm4yvswgj2"
+path="res://.godot/imported/test_vehicle_bare_coupler.fiz-f1489ecd53661e77c76351ed1dc90b15.res"
+
+[deps]
+
+source_file="res://tests/fixtures/test_vehicle_bare_coupler.fiz"
+dest_files=["res://.godot/imported/test_vehicle_bare_coupler.fiz-f1489ecd53661e77c76351ed1dc90b15.res"]
+
+[params]
+

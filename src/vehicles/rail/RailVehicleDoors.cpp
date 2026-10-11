@@ -19,7 +19,7 @@ namespace godot {
         BIND_PROPERTY_W_HINT(
                 RailVehicleDoors, Variant::INT, close_method, "close", PROPERTY_HINT_ENUM,
                 "Passenger,Automatic,Driver,Conductor,Mixed");
-        BIND_PROPERTY_W_HINT(RailVehicleDoors, Variant::INT, voltage, PROPERTY_HINT_ENUM, "Automatic,0V,12V,24V,112V");
+        BIND_PROPERTY_W_HINT(RailVehicleDoors, Variant::INT, voltage, PROPERTY_HINT_ENUM, "Automatic,0V,12V,24V,110V");
         BIND_PROPERTY(RailVehicleDoors, Variant::BOOL, close_warning, "close");
         BIND_PROPERTY(RailVehicleDoors, Variant::BOOL, close_auto_close_warning, "close");
         BIND_PROPERTY(RailVehicleDoors, Variant::FLOAT, open_delay, "open");
@@ -72,10 +72,11 @@ namespace godot {
         BIND_ENUM_CONSTANT(CONTROLS_CONDUCTOR)
         BIND_ENUM_CONSTANT(CONTROLS_MIXED)
 
+        BIND_ENUM_CONSTANT(VOLTAGE_AUTO)
         BIND_ENUM_CONSTANT(VOLTAGE_0)
         BIND_ENUM_CONSTANT(VOLTAGE_12)
         BIND_ENUM_CONSTANT(VOLTAGE_24)
-        BIND_ENUM_CONSTANT(VOLTAGE_112)
+        BIND_ENUM_CONSTANT(VOLTAGE_110)
 
         BIND_ENUM_CONSTANT(TYPE_SHIFT)
         BIND_ENUM_CONSTANT(TYPE_ROTATE)
@@ -120,19 +121,21 @@ namespace godot {
     }
 
     void RailVehicleDoors::_register_commands() {
-        register_command("doors_next_permit_preset", Callable(this, "next_permit_preset"));
-        register_command("doors_previous_permit_preset", Callable(this, "previous_permit_preset"));
-        register_command("doors_permit_step", Callable(this, "permit_step"));
-        register_command("doors_left_permit", Callable(this, "permit_doors").bind(SIDE_LEFT));
-        register_command("doors_right_permit", Callable(this, "permit_doors").bind(SIDE_RIGHT));
-        register_command("doors_left", Callable(this, "operate_doors").bind(SIDE_LEFT));
-        register_command("doors_right", Callable(this, "operate_doors").bind(SIDE_RIGHT));
-        register_command("doors_left_local", Callable(this, "operate_doors_locally").bind(SIDE_LEFT));
-        register_command("doors_right_local", Callable(this, "operate_doors_locally").bind(SIDE_RIGHT));
-        register_command("doors_lock", Callable(this, "door_lock"));
-        register_command("doors_remote_control", Callable(this, "door_remote_control"));
-        register_command("doors_departure_signal", Callable(this, "signal_departure"));
-        register_command("mirrors_forbid", Callable(this, "forbid_mirrors"));
+        register_command("doors_next_permit_preset", callable_mp(this, &RailVehicleDoors::next_permit_preset));
+        register_command("doors_previous_permit_preset", callable_mp(this, &RailVehicleDoors::previous_permit_preset));
+        register_command("doors_permit_step", callable_mp(this, &RailVehicleDoors::permit_step));
+        register_command("doors_left_permit", callable_mp(this, &RailVehicleDoors::permit_doors).bind(SIDE_LEFT));
+        register_command("doors_right_permit", callable_mp(this, &RailVehicleDoors::permit_doors).bind(SIDE_RIGHT));
+        register_command("doors_left", callable_mp(this, &RailVehicleDoors::operate_doors).bind(SIDE_LEFT));
+        register_command("doors_right", callable_mp(this, &RailVehicleDoors::operate_doors).bind(SIDE_RIGHT));
+        register_command(
+                "doors_left_local", callable_mp(this, &RailVehicleDoors::operate_doors_locally).bind(SIDE_LEFT));
+        register_command(
+                "doors_right_local", callable_mp(this, &RailVehicleDoors::operate_doors_locally).bind(SIDE_RIGHT));
+        register_command("doors_lock", callable_mp(this, &RailVehicleDoors::door_lock));
+        register_command("doors_remote_control", callable_mp(this, &RailVehicleDoors::door_remote_control));
+        register_command("doors_departure_signal", callable_mp(this, &RailVehicleDoors::signal_departure));
+        register_command("mirrors_forbid", callable_mp(this, &RailVehicleDoors::forbid_mirrors));
     }
 
     void RailVehicleDoors::_unregister_commands() {
@@ -149,5 +152,34 @@ namespace godot {
         unregister_command("doors_remote_control");
         unregister_command("doors_departure_signal");
         unregister_command("mirrors_forbid");
+    }
+
+    // DynObj.cpp:4207-4236: the mirrors fold above MirrorVelClose, with no cab active or when
+    // forbidden, and unfold on the side whose doors are permitted to open - a full travel per
+    // second. The original folds them with no cab active whatever its InactiveCabFlag says.
+    void RailVehicleDoors::_process_mirrors(const double p_delta) {
+        const RailVehicleController *controller = get_rail_vehicle_controller();
+        ERR_FAIL_NULL(controller);
+        if (controller->get_speed() > get_mirror_close_velocity() ||
+            controller->get_active_cabin_kind() == RailVehicleCabinKind::RAIL_VEHICLE_CABIN_NONE ||
+            get_mirrors_forbidden()) {
+            mirror_left_position = MAX(0.0, mirror_left_position - p_delta);
+            mirror_right_position = MAX(0.0, mirror_right_position - p_delta);
+            return;
+        }
+        if (get_left_open_permit()) {
+            mirror_left_position = MIN(1.0, mirror_left_position + p_delta);
+        }
+        if (get_right_open_permit()) {
+            mirror_right_position = MIN(1.0, mirror_right_position + p_delta);
+        }
+    }
+
+    double RailVehicleDoors::get_mirror_left_position() const {
+        return mirror_left_position;
+    }
+
+    double RailVehicleDoors::get_mirror_right_position() const {
+        return mirror_right_position;
     }
 } // namespace godot

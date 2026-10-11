@@ -5,7 +5,7 @@ const EventImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_ev
 const SIGNAL_HEAD_POSITION: Vector3 = Vector3(5.0, 0.0, 0.0)
 
 
-class RecordingDelegate extends SignallingSystemDelegate:
+class RecordingImplementation extends SignallingImplementation:
     var added: Array[RID] = []
     var events: Array[StringName] = []
 
@@ -59,19 +59,19 @@ func test_a_blinking_light_goes_on_and_off() -> void:
     assert_true(seen_on and seen_off, "a blinking light should be seen both on and off")
 
 
-func test_a_system_delegate_receives_its_signal_heads_and_events() -> void:
+func test_a_system_implementation_receives_its_signal_heads_and_events() -> void:
     var model: E3DModelInstance = _create_model_instance()
     _create_signal_head_node(&"test_system", model)
     var signal_head: RID = SignallingServer.signal_head_get_rid_by_name(&"test_system")
-    var delegate: RecordingDelegate = RecordingDelegate.new()
+    var implementation: RecordingImplementation = RecordingImplementation.new()
     var system: RID = SignallingServer.system_create()
     SignallingServer.system_add_signal_head(system, signal_head)
 
-    SignallingServer.system_attach_delegate(system, delegate)
+    SignallingServer.system_attach_implementation(system, implementation)
     SignallingServer.system_send_event(system, &"proceed", {})
 
-    assert_eq(delegate.added, [signal_head] as Array[RID], "an attached delegate learns the signal heads held")
-    assert_eq(delegate.events, [&"proceed"] as Array[StringName])
+    assert_eq(implementation.added, [signal_head] as Array[RID], "an attached implementation learns the signal heads held")
+    assert_eq(implementation.events, [&"proceed"] as Array[StringName])
     assert_eq(SignallingServer.signal_head_get_light_state(signal_head, 0), SignallingServer.LIGHT_STATE_ON)
     SignallingServer.system_free(system)
 
@@ -130,7 +130,7 @@ func test_legacy_kind_turns_lights_events_into_aspects() -> void:
     }
     SignallingServer.signal_head_set_kind(signal_head, MaszynaLegacySignalHeadKindFactory.create_kind(aspects))
     var system: RID = SignallingServer.system_create()
-    SignallingServer.system_attach_delegate(system, MaszynaLegacySignallingDelegate.new())
+    SignallingServer.system_attach_implementation(system, MaszynaLegacySignallingImplementation.new())
     SignallingServer.system_add_signal_head(system, signal_head)
 
     SignallingServer.system_send_event(system, &"lights", {"signal_head": signal_head, "aspect": &"sem_ligh1"})

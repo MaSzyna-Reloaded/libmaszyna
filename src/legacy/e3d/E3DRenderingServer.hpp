@@ -1,5 +1,6 @@
 #pragma once
 #include "E3DInstanceBackend.hpp"
+#include "E3DInstanceTypes.hpp"
 #include "E3DLightFactory.hpp"
 #include "E3DNodesBackend.hpp"
 #include "E3DOptimizedBackend.hpp"
@@ -9,6 +10,8 @@
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/particle_process_material.hpp>
+#include <godot_cpp/classes/time.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/mutex.hpp>
 
 namespace godot {
@@ -19,7 +22,8 @@ namespace godot {
     ///
     /// Scenery placements are registered with instance_register() instead of being built right
     /// away: SceneryStreamingServer builds them only while the camera is within their range.
-    class E3DRenderingServer : public Object {
+    /// InstanceKind and Translucency are E3DInstanceTypes', shared with the backends below it.
+    class E3DRenderingServer : public Object, public E3DInstanceTypes {
             GDCLASS(E3DRenderingServer, Object)
 
         public:
@@ -27,29 +31,6 @@ namespace godot {
                 INSTANCER_OPTIMIZED,
                 INSTANCER_NODES,
                 INSTANCER_EDITABLE_NODES,
-            };
-
-            /// What a placement is: a static piece of the scenery (a "node ... model" of a .scn)
-            /// against a dynamic one (its "dynamic", which is a vehicle). The original keeps the same distinction
-            /// wherever it matters - a TAnimModel against a TDynamicObject, remembered by its
-            /// particle emitters as owner_type { none, vehicle, node } (particles.h:135).
-            /// Nothing about this is particular to smoke; smoke is only its first reader.
-            enum InstanceKind {
-                INSTANCE_KIND_STATIC,
-                INSTANCE_KIND_DYNAMIC,
-            };
-
-            /// How a submodel is drawn, as the backends tell the material resolver. The original
-            /// draws a submodel in one pass, the opaque or the alpha one, by its flags
-            /// (opengl33renderer.cpp:3422, 4313).
-            enum Translucency {
-                /// As its material says: opaque, or cut out at the alpha threshold
-                TRANSLUCENCY_CUTOUT,
-                /// Alpha-blended - a forced submodel drawn as nodes (near the camera)
-                TRANSLUCENCY_BLENDED,
-                /// Opaque whatever its texture's alpha - a forced submodel of the optimized
-                /// instancer, which never draws in the alpha pass
-                TRANSLUCENCY_OPAQUE,
             };
 
             /// Light state of a scenery model node (TLightState, AnimModel.h:27-33)
@@ -78,6 +59,8 @@ namespace godot {
             /// Shadows are dropped well before the light itself is, the way E3DNodesBackend fades
             /// a vehicle spotlight out
             static constexpr float SCENERY_LIGHT_SHADOW_FADE_DISTANCE = 80.0;
+            /// The light fades out over this share of its streaming distance - the wrapper's own
+            static constexpr float SCENERY_LIGHT_FADE_LENGTH_SHARE = 0.25;
             /// A lamp must not shadow its own light. With one light per arm each arm was lit by its
             /// neighbours; economy mode leaves a single light in the middle, below which the arms
             /// and the pole throw long dark spokes right across the pool. The geometry of a model
@@ -134,10 +117,12 @@ namespace godot {
             /// own clock owes it. The count of particles is unchanged either way - only how
             /// evenly they are spread.
             static constexpr int MAX_SMOKE_SOURCES_PER_FRAME = 64;
+            /// Animating instances advanced per simulation slice, round-robin as the emitters; one
+            /// left for a later slice is advanced by the simulated time it waited
+            static constexpr int MAX_ANIMATED_INSTANCES_PER_SLICE = 64;
             /// Blinking instances visited per frame; above it an instance's edge comes a few
             /// frames late, the cycle itself runs on the clock and does not drift
             static constexpr int MAX_BLINKING_INSTANCES_PER_FRAME = 64;
-            static constexpr double USEC_PER_SECOND = 1000000.0;
 
             /// Emitted once an instance is freed, so whatever refers to it can let go
             static const char *instance_freed_signal;
@@ -199,6 +184,11 @@ namespace godot {
                     /// instance up
                     Transform3D transform;
                     bool visible = true;
+                    /// A vehicle's emitter, spawned by hand (_process_smoke()); a static one the
+                    /// engine emits for
+                    bool dynamic = false;
+                    /// In smoke_order: dynamic, visible, built and of an intensity above zero
+                    bool ordered = false;
                     RID stream_rid; // SceneryStreamingServer registration, scenery emitters only
                     bool streamed_in = false;
             };
@@ -206,16 +196,19 @@ namespace godot {
             HashMap<RID, E3DInstanceData> instances;
             HashMap<RID, LightObject> lights;
             HashMap<RID, SmokeObject> smoke_objects;
-            /// The same emitters in a flat list, so the per-frame tick walks a contiguous vector
-            /// round-robin instead of a hash map
-            Vector<RID> smoke_order;
+            /// The emitters that spawn now (SmokeObject::ordered), in a flat list the per-frame tick
+            /// walks round-robin; a HashMap's elements do not move, so they are held by pointer
+            LocalVector<SmokeObject *> smoke_order;
+            /// Taken once: the smoke tick reads the clock every frame
+            Time *time = nullptr;
             int smoke_cursor = 0;
             E3DOptimizedBackend optimized_backend;
             E3DNodesBackend nodes_backend{false};
             E3DNodesBackend editable_nodes_backend{true};
             E3DMaterialResolver material_resolver;
 
-            /// Registered instances are built through SceneryStreamingServer under this owner
+            /// Registered instances are built through SceneryStreamingServer under this owner, made
+            /// with the server
             int stream_owner = -1;
             /// ...and the real lights of scenery instances under this one, with a range of their
             /// own: a street lamp is visible from half a kilometre and lights fifteen metres
@@ -233,10 +226,18 @@ namespace godot {
             /// _process_animations() on the simulation's clock - at its speed, standing while it
             /// stands (Timer::GetDeltaTime())
             Vector<RID> animating_instances;
+            int animation_cursor = 0;
+            /// Counts the passes of _process_animations() (E3DInstanceData::animation_pass)
+            uint64_t animation_pass = 0;
+            /// The submodels whose animation arrived in the instance being advanced, kept so a
+            /// pass allocates nothing
+            LocalVector<String> finished_animations;
             bool animation_processing = false;
             double light_clock = 0.0;   // seconds, the clock every blinking light cycles on
             double current_time = 12.0; // hours, 0..24
             double light_level = 1.0;   // Global.fLuminance equivalent (simulationenvironment.cpp:184)
+            /// The instances built now - the only ones whose lights a change of time or light reaches
+            HashSet<RID> built_instances;
             Callable model_loader;
             Callable smoke_source_resolver;
             /// The ResourceLazyLoader resource of each registered instance's model - in a map of
@@ -248,6 +249,8 @@ namespace godot {
             const E3DInstanceBackend &_get_backend(const E3DInstanceData &p_instance) const;
             void _rebuild_if_built(E3DInstanceData &p_instance);
             void _update_if_built(E3DInstanceData &p_instance);
+            /// _update_if_built() of what is shown only: the lights, a submodel's or the instance's visibility
+            void _update_visibility_if_built(E3DInstanceData &p_instance);
             void _on_data_unload_requested();
             void _on_data_reload_requested();
             /// What the lights and the emitters were built with, by the settings that shape them -
@@ -283,7 +286,9 @@ namespace godot {
             void _clear_instance_smoke_sources(E3DInstanceData &p_instance_data);
             void _update_instance_smoke(const E3DInstanceData &p_instance_data);
             static Transform3D _smoke_transform(const E3DInstanceData &p_instance_data, const SmokeObject &p_smoke);
-            static void _apply_smoke_placement(const E3DInstanceData &p_instance_data, SmokeObject &p_smoke);
+            void _apply_smoke_placement(const E3DInstanceData &p_instance_data, SmokeObject &p_smoke);
+            /// The emitter enters smoke_order when it starts to spawn and leaves it when it stops
+            void _refresh_smoke_order(SmokeObject &p_smoke);
             void _apply_smoke_wind(const SmokeObject &p_smoke) const;
             /// Connected to SceneTree's process_frame while any emitter exists, the way
             /// SceneryStreamingServer drives its own streaming - no script runs per frame
@@ -307,6 +312,7 @@ namespace godot {
                     const RID &p_instance, E3DInstanceData &p_instance_data, const String &p_submodel);
             /// Composes the poses out of the animations and hands them to the backend
             void _pose_submodels(E3DInstanceData &p_instance);
+            static Transform3D _animation_pose(const E3DInstanceData::SubmodelAnimation &p_animation);
             /// Finds the submodels the client's settings name in the built model, and what the
             /// backends read of them
             void _resolve_submodel_settings(E3DInstanceData &p_instance);
@@ -384,7 +390,7 @@ namespace godot {
                     const RID &p_instance, const String &p_data_path, const PackedStringArray &p_skins,
                     const Array &p_exclude_node_names, bool p_force_alpha,
                     const TypedArray<NodePath> &p_force_alpha_submodel_paths, int p_max_texture_size);
-            void instance_attach_node(const RID &p_instance, Node3D *p_node);
+            void instance_attach_object_instance_id(const RID &p_instance, uint64_t p_id);
             /// The node attached, by its ObjectID - 0 for none, or for one that is gone
             uint64_t instance_get_attached_node(const RID &p_instance) const;
             /// Where the model sits in the attached node - a node tree built under it is placed

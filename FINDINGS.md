@@ -59,6 +59,11 @@ anything. Open work belongs in `TODO.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* A configuration value that depends on another component (a bare coupler on the engine's
+  `Ftmax`, `SpeedCtrl` on the engine kind and `SCPN`) is applied in the second pass,
+  `apply_vehicle_config()`, from the other component's properties - never from what the FIZ
+  section order happened to write into the Mover first. *(10-10 configuration that depended on
+  the order of the FIZ sections)*
 * A vehicle's backend is configured once, in `TDynamicObject::Init()`'s order: every FIZ value, the
   load, then `CheckLocomotiveParameters()` once - nothing configured after it, or it undoes what it
   derived. A test builds a vehicle through its description, as the game does, not by adding
@@ -91,6 +96,9 @@ anything. Open work belongs in `TODO.md`.
   slips; 09-24 pantograph)*
 * A component's default is what a vehicle **without** the FIZ key gets - check it against the
   original's default, not against a plausible value. *(09-28 `permit_list` [0, 0, 0])*
+* A source reference is written only after reading the original's line: its value, and the
+  inputs the formula takes (`Ftmax`, not `Vmax`). What differs is reported as a port error, never
+  named over. *(10-09 port errors behind the magic numbers)*
 * A ported formula carries the original's frame with it: when our loft or basis maps an axis the
   other way (profile x to the left, not `RenderLoft`'s right), every angle in that plane flips.
   Compare world coordinates of both sides, not the formulas. *(09-28 cant reversed)*
@@ -106,8 +114,8 @@ anything. Open work belongs in `TODO.md`.
   *(09-20 blotchy ground)*
 * A driver's readiness is tested on every vehicle under control (`IsAnyLineBreakerOpen`), in its
   reset and in its check alike, and only on devices a car has - a car without an engine has no line
-  breaker to be open; a hint asks only for what the vehicle has, and is done by the switch of any
-  car that has the device, not by the device running. *(10-06 Vehicle not ready with nothing
+  breaker to be open; a hint is done by the switch of any car that has the device, not by the
+  device running. *(10-06 Vehicle not ready with nothing
   missing; "Switch on compressor" with the compressor on)*
 * A vehicle that is not driven is not simulated (`CabActive`/`PhysicActivation`). *(09-23 loco
   with nobody in the cab)*
@@ -126,7 +134,7 @@ anything. Open work belongs in `TODO.md`.
 * Grep every `extract_value(..., "Key")` of LoadFIZ_Cntrl against the parser before calling the
   section ported. *(09-29 MainInitTime was never loaded; 10-06 EN57 braked weakly - its trailers'
   wheels locked)*
-* The player's driver (DriverSystem) sits in the player's cab after every cab change, of the same
+* The player's driver (DriverServer) sits in the player's cab after every cab change, of the same
   vehicle too; which pantographs a vehicle has is its `PhysicalLayout`, not `CollectorsNo`.
   *(10-06 36WEa: "deactivate the cab" and "raise pantograph A" in the C car's cab)*
 * A `Cntrl.` key belongs to the vehicle, not to one engine type. Check that it reaches the Mover
@@ -162,9 +170,10 @@ anything. Open work belongs in `TODO.md`.
 * A FIZ section is applied whatever the order the file gives it in: `Cntrl.` may follow
   `Engine:` (EN57 keeps it in the brake include). *(09-27 EN57 without a master controller)*
 * The game data is written for Windows and `cParser`: a quoted text is one token without its
-  quotes. Keep a file name's authored spelling and resolve it exactly, then lowercase, then
-  letter case aside part by part; never lowercase the token before the first lookup. *(09-28 timetable screens without
-  their background; 10-02 uppercase 2M62 files reported missing)*
+  quotes. Keep a file name's authored spelling and resolve it exactly, then lowercase - never
+  lowercase the token before the first lookup, and never list a directory to match a name letter
+  case aside. *(09-28 timetable screens without their background; 10-02 uppercase 2M62 files
+  reported missing; 10-10 Windows streaming listed directories)*
 * A vehicle's MMD is read as an include with `(p1)` name, `(p2)` type, `(p3)` skin
   (`DynObj.cpp:5260`); a model named `none` is a missing parameter. *(10-02 SN61 drawn without
   its body)*
@@ -203,6 +212,20 @@ anything. Open work belongs in `TODO.md`.
 * A key is the original's binding (`driverkeyboardinput.cpp`); a key of our own only for an action
   the original leaves unbound - never move the original's keys around. *(10-06 the line breaker's
   keys took the rear motor blowers' Shift+M)*
+
+* An EP handle that "does not move" the train: read the brake cylinders first - an FVel6 holds
+  them at "drive" (0, the EP neutral) and releases only at -1 (hamulce.cpp:34). *(10-10 an EN57
+  that "does not start" stood on its EP brake)*
+
+* A driver's hint ends on the state the original's hint reads, of the same vehicle: a pantograph
+  is "raised" when the pantograph unit's valve of it works (`driverhints.cpp:269-310`), on a car
+  without that pantograph too. *(10-10 an EN76 never raised its D car's pantograph)*
+* Where the original's driver assigns a control (`MainCtrlPos = 4`), the port does not step it: a
+  step (`IncMainCtrl()`) restarts the relay time an Elf waits out. *(10-10 an Elf that never
+  gathered power under its driver)*
+* A cab button springs back or stays as the original's handler decides it, with the original's
+  test (`StLinSwitchType != "toggle"` is impulse, Train.cpp:5045) - never a catalog guess from the
+  `_bt`/`_sw` suffix. *(10-10 the EP07's motor connectors stayed open)*
 
 ## State, ownership, events
 * An operation somebody awaits is done only when everything its waiter relies on is; a signal
@@ -271,7 +294,7 @@ anything. Open work belongs in `TODO.md`.
   the cab layer: `CabinSystem` knows no view, and hid the low-poly cab from outside too. *(10-04
   SM42's windows missing)*
 * A cab (the original's TTrain) is at work only for a driven vehicle: its logic is attached on
-  `DriverSystem.vehicle_driven_changed`, never to every vehicle. *(09-29 every vehicle's cab ran
+  `DriverServer.vehicle_driven_changed`, never to every vehicle. *(09-29 every vehicle's cab ran
   each step)*
 
 * Outside a vehicle's composition an action on it is `vehicle_send_command()`, never the
@@ -425,6 +448,10 @@ anything. Open work belongs in `TODO.md`.
 * Setting a `Range`'s `min_value`/`max_value`/`step` clamps its value and emits `value_changed`: a
   control is only shown a value, and saving happens on an explicit apply of what differs from what
   was shown. *(10-04 settings saved their minimums)*
+* A runtime loaded from the player's game directory (CPython 2.7) runs in a process of its own,
+  never in the game's: its fatal error is `abort()` on a stderr nobody sees, and Godot's crash
+  handler covers only the main thread. The host's stderr and exit code go to the log.
+  *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
 * Every sink of parsed geometry - a subscene's too - writes to a directory with a limit, and hands
@@ -445,8 +472,9 @@ anything. Open work belongs in `TODO.md`.
   made an empty chunk, cached and failing as a mesh when streamed (`array_len == 0`). *(10-02 an
   empty terrain chunk)*
 * What a streamed piece loads is held by its build and let go by its clear
-  (`ResourceLazyLoader`); a memo that never evicts grows with the session, and a cache file holds
-  data, never a mesh. *(10-01 a scenery's whole terrain kept in memory)*
+  (`ResourceLazyLoader`, with `maszyna/resources/lazy_loading`; off - the default - it is loaded
+  at registration and kept); a memo that never evicts grows with the session, and a cache file
+  holds data, never a mesh. *(10-01 a scenery's whole terrain kept in memory)*
 * An object is never taken back from its `ObjectID` on another thread than the one that may drop
   its last reference: while it is destroyed it is still in `ObjectDB`, and `cast_to` on it
   crashes. A copy shared across threads is held by a `Ref` its owner keeps. *(10-04 segfault in
@@ -621,7 +649,7 @@ anything. Open work belongs in `TODO.md`.
   length is read off its Ogg pages, never by loading the file. *(10-02 the Vehicles stage spent
   its time on sound banks nobody heard)*
 * A vehicle's models are built when it comes within the draw distance and freed beyond it, never
-  at load; what the simulation needs of the model (the pantographs) is read off the model file,
+  at load (their files are loaded at load unless lazy loading is on); what the simulation needs of the model (the pantographs) is read off the model file,
   not off its drawing. *(10-06 the Vehicles stage drew every vehicle of the scenery)*
 * Code that runs in the editor calls no autoload that is not `@tool` (`TrainSoundSystem`,
   `CabinSystem`): the call is a script error returning null into the caller's data - a null part
@@ -643,7 +671,7 @@ anything. Open work belongs in `TODO.md`.
 * A tool reading the game's text files skips a UTF-8 BOM as the game does. *(10-05 EN57KM cab)*
 * A default the original sets in one FIZ section for another section's keys reaches the vehicle
   even without that section's component (`LoadFIZ_Param`'s EZT `IminLo/Hi`). *(10-05 EN57 cab car reverser)*
-* A delegate, a role or a seat goes to the person its owner created, never to whoever holds the
+* An implementation, a role or a seat goes to the person its owner created, never to whoever holds the
   role at that moment - the player takes a vehicle over while the scenery still loads. *(10-05 player as the AI driver)*
 * A CI step piping a test run keeps its exit code (`set -o pipefail`); a green run is checked
   against its summary. *(10-05 CI green over red tests)*
@@ -666,3 +694,13 @@ anything. Open work belongs in `TODO.md`.
 * A consumer of `scenery_loaded` exists and is connected before loading starts; removing a
   readiness fallback means every composition and its test fixture must use that signal path.
   *(10-08 player initialization CI regression)*
+* After moving classes or files out of a project, check from a fresh `.godot` (imported twice) and
+  parse every test script (`-gdir=res://tests/ -gunit_test_name=<none>`) - a warm class cache hides
+  the move, and GUT drops a script that fails to parse without failing the run. *(10-09 classes
+  moved out, hidden by a warm class cache)*
+* A test frees what it built through its owner (an include node, not the RIDs it owns) before it
+  ends - a leftover freed later errors inside the next script's test. *(10-09 a test that fails
+  only after another script)*
+* Whatever a node puts into another object on entering the tree it takes out on leaving -
+  detaching is not removing; a pointer kept in a member points only at its owner, parent,
+  children, a singleton or a backend. *(10-10 a scripted component called its freed node)*

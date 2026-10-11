@@ -47,11 +47,11 @@ func _ready() -> void:
 
 func streaming_update_camera() -> void:
     if not active:
-        SceneryStreamingServer.streaming_set_camera(null)
+        SceneryStreamingServer.streaming_set_camera(0)
         return
     if is_inside_tree():
         var streaming_camera:Camera3D = editor_camera if use_editor_camera and editor_camera else camera
-        SceneryStreamingServer.streaming_set_camera(streaming_camera)
+        SceneryStreamingServer.streaming_set_camera(streaming_camera.get_instance_id() if streaming_camera else 0)
 
 
 func _exit_tree() -> void:

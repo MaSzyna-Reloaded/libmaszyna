@@ -15,7 +15,7 @@ namespace godot {
         public:
             /* Reads a "triangles" node into the sink; false when it is malformed */
             static bool import_triangles(
-                    MaszynaParser *p_parser, const Vector3 &p_rotate, const Vector3 &p_origin,
+                    const Ref<MaszynaParser> &p_parser, const Vector3 &p_rotate, const Vector3 &p_origin,
                     const Ref<SceneryTrianglesSink> &p_sink, float p_range_min, float p_range_max);
     };
 } // namespace godot

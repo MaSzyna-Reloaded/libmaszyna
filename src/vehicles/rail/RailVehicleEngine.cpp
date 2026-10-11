@@ -222,10 +222,10 @@ namespace godot {
         p_state["main_switch_enabled"] = get_main_switch_enabled();
         p_state["main_switch_closable"] = get_main_switch_closable();
         p_state["engine_type"] = get_type();
-        p_state["Mm"] = get_motor_torque();
-        p_state["Mw"] = get_wheel_torque();
-        p_state["Fw"] = get_wheel_force();
-        p_state["Ft"] = get_tractive_force();
+        p_state["motor_torque"] = get_motor_torque();
+        p_state["wheel_torque"] = get_wheel_torque();
+        p_state["wheel_force"] = get_wheel_force();
+        p_state["tractive_force"] = get_tractive_force();
         p_state["engine_power"] = get_power();
         p_state["engine_rpm_count"] = get_rpm_count();
         p_state["engine_rpm_ratio"] = get_rpm_ratio();
@@ -283,18 +283,22 @@ namespace godot {
     }
 
     void RailVehicleEngine::_register_commands() {
-        register_command("main_switch", Callable(this, "main_switch"));
-        register_command("motor_overload_relay_threshold", Callable(this, "motor_overload_relay_threshold"));
+        register_command("main_switch", callable_mp(this, &RailVehicleEngine::main_switch));
         register_command(
-                "motor_blowers_front", Callable(this, "motor_blowers").bind(RailVehicleController::COUPLER_END_FRONT));
+                "motor_overload_relay_threshold",
+                callable_mp(this, &RailVehicleEngine::motor_overload_relay_threshold));
         register_command(
-                "motor_blowers_rear", Callable(this, "motor_blowers").bind(RailVehicleController::COUPLER_END_REAR));
+                "motor_blowers_front",
+                callable_mp(this, &RailVehicleEngine::motor_blowers).bind(RailVehicleController::COUPLER_END_FRONT));
         register_command(
-                "motor_blowers_front_switch_off",
-                Callable(this, "motor_blowers_switch_off").bind(RailVehicleController::COUPLER_END_FRONT));
+                "motor_blowers_rear",
+                callable_mp(this, &RailVehicleEngine::motor_blowers).bind(RailVehicleController::COUPLER_END_REAR));
         register_command(
-                "motor_blowers_rear_switch_off",
-                Callable(this, "motor_blowers_switch_off").bind(RailVehicleController::COUPLER_END_REAR));
+                "motor_blowers_front_switch_off", callable_mp(this, &RailVehicleEngine::motor_blowers_switch_off)
+                                                          .bind(RailVehicleController::COUPLER_END_FRONT));
+        register_command(
+                "motor_blowers_rear_switch_off", callable_mp(this, &RailVehicleEngine::motor_blowers_switch_off)
+                                                         .bind(RailVehicleController::COUPLER_END_REAR));
     }
 
     void RailVehicleEngine::_unregister_commands() {

@@ -80,15 +80,11 @@ const LIGHT_BITS:Dictionary[String, int] = {
 const BRAKE_PRESSURE_THRESHOLD:float = 0.2
 ## Train.cpp:762 dir_brake - the share of electrodynamic braking (fEIMParams[0][5]) that counts
 const ED_BRAKE_SHARE_THRESHOLD:float = 0.01
-## Train.cpp:8679 - eimp_pnN_mass is in tonnes
-const TONNES_PER_KILOGRAM:float = 0.001
 ## Train.cpp:8617 - the engines whose own voltage is the high voltage fHVoltage shows
 const ENGINE_VOLTAGE_TYPES:Array[RailVehicleEngine.EngineType] = [
     RailVehicleEngine.DIESEL_ELECTRIC, RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR]
 ## Train.cpp:8699 - a compressor that turns
 const COMPRESSOR_SPEED_THRESHOLD:float = 0.00001
-const SECONDS_PER_HOUR:int = 3600
-const SECONDS_PER_MINUTE:int = 60
 ## A pantograph carrier publishes its collector (EnginePowerSource.SourceType == CurrentCollector)
 const COLLECTOR_KEY:String = "current_collector/pantograph_first_active"
 
@@ -134,9 +130,9 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     result["mainctrl_pos_count"] = config.get("main_controller_position_max", 0)   # MainCtrlPosNo
     result["velocity"] = absf(state.get("speed", 0.0))   # abs(Vel), km/h
     result["manual_brake"] = state.get("brake_manual_position", 0) > 0
-    result["tractionforce"] = absf(state.get("Ft", 0.0))   # abs(mvOccupied->Ft)
+    result["tractionforce"] = absf(state.get("tractive_force", 0.0))   # abs(mvOccupied->Ft)
     result["voltage"] = absf(controlled.get("engine_voltage", 0.0))   # abs(EngineVoltage)
-    result["im"] = absf(controlled.get("Im", 0.0))   # abs(Im)
+    result["im"] = absf(controlled.get("motor_current", 0.0))   # abs(Im)
     # Train.cpp:717-718 and fHVoltage (Train.cpp:8617-8626)
     var main_countdown:float = controlled.get("main_switch_time", 0.0)   # MainsInitTimeCountdown
     result["main_init"] = main_countdown < controlled_config.get("main_init_time", 0.0) and main_countdown > 0.0
@@ -191,7 +187,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         result["eimp_pn%d_cp" % car_number] = car_state.get("brake_control_pipe_pressure", 0.0)   # CntrlPipePress
         result["eimp_pn%d_rp" % car_number] = car_state.get("brake_reservoir_pressure", 0.0)   # GetBRP()
         # (TotalMass - Mred) * 0.001
-        result["eimp_pn%d_mass" % car_number] = (car_state.get("mass_total", 0.0) - car_state.get("mass_reduced", 0.0)) * TONNES_PER_KILOGRAM
+        result["eimp_pn%d_mass" % car_number] = (car_state.get("mass_total", 0.0) - car_state.get("mass_reduced", 0.0)) / LibMaszynaUnits.KILOGRAMS_PER_TONNE  # Train.cpp:8679 - in tonnes
         result["brakes_%d_spring_active" % car_number] = car_state.get("spring_brake/braking", false)   # IsActive
         result["brakes_%d_spring_shutoff" % car_number] = car_state.get("spring_brake/shut_off", false)   # ShuttOff
         var doors_left:bool = car_state.get("doors_left_position", 0.0) > 0.0
@@ -224,7 +220,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         if powered < EIM_CAR_COUNT and engine_type in [RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR, RailVehicleEngine.DIESEL, RailVehicleEngine.DIESEL_ELECTRIC]:
             var powered_number:int = powered + 1
             if not engine_type == RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR:
-                result["diesel_param_%d_enrot" % powered_number] = car_state.get("engine_rpm_count", 0.0) * SECONDS_PER_MINUTE   # enrot * 60
+                result["diesel_param_%d_enrot" % powered_number] = car_state.get("engine_rpm_count", 0.0) * LibMaszynaUnits.SECONDS_PER_MINUTE   # enrot * 60
                 result["diesel_param_%d_nrot" % powered_number] = car_state.get("wheel_rotation_speed_rps", 0.0)   # nrot
                 result["diesel_param_%d_fill_real" % powered_number] = car_state.get("diesel_fill", 0.0)   # dizel_fill
                 result["diesel_param_%d_oil_press" % powered_number] = car_state.get("oil_pump_pressure", 0.0)   # OilPump.pressure
@@ -279,10 +275,10 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     result["compressors_no"] = compressors
 
     # world state data (Train.cpp:928-934)
-    var seconds:int = int(SimulationServer.time_of_day * SECONDS_PER_HOUR)
-    result["hours"] = seconds / SECONDS_PER_HOUR
-    result["minutes"] = seconds / SECONDS_PER_MINUTE % SECONDS_PER_MINUTE
-    result["seconds"] = seconds % SECONDS_PER_MINUTE
+    var seconds:int = int(SimulationServer.time_of_day * LibMaszynaUnits.SECONDS_PER_HOUR)
+    result["hours"] = seconds / LibMaszynaUnits.SECONDS_PER_HOUR
+    result["minutes"] = seconds / LibMaszynaUnits.SECONDS_PER_MINUTE % LibMaszynaUnits.MINUTES_PER_HOUR
+    result["seconds"] = seconds % LibMaszynaUnits.SECONDS_PER_MINUTE
     result["air_temperature"] = SimulationServer.air_temperature
     result["light_level"] = SimulationServer.light_level
     return result

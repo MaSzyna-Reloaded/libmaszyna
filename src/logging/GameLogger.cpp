@@ -10,9 +10,17 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("error", "line"), &GameLogger::error);
     }
 
-    void GameLogger::setup(GameLog *p_game_log, const String &p_logger_id) {
-        game_log = p_game_log;
+    void GameLogger::setup(const String &p_logger_id) {
         logger_id = p_logger_id;
+    }
+
+    void GameLogger::add_handler(const Ref<GameLogHandler> &p_handler) {
+        ERR_FAIL_COND(p_handler.is_null());
+        handlers.push_back(p_handler);
+    }
+
+    void GameLogger::remove_handler(const Ref<GameLogHandler> &p_handler) {
+        handlers.erase(p_handler);
     }
 
     String GameLogger::get_logger_id() const {
@@ -20,8 +28,9 @@ namespace godot {
     }
 
     void GameLogger::log(const GameLog::LogLevel p_level, const String &p_line) {
-        ERR_FAIL_NULL(game_log);
-        game_log->write(logger_id, p_level, p_line);
+        for (const Ref<GameLogHandler> &handler: handlers) {
+            handler->handle(logger_id, p_level, p_line);
+        }
     }
 
     void GameLogger::debug(const String &p_line) {

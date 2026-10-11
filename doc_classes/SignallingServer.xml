@@ -6,7 +6,7 @@
 	<description>
 		A signal head is the lights of one model instance of [E3DRenderingServer]: it is created for that instance with [method signal_head_create] and lives exactly as long as it - freeing the instance frees the signal head. Its lights are numbered from 0, as the original engine numbers the [code]Light_On00[/code]..[code]Light_On07[/code] submodels.
 		Low level, a signal head's lights are switched one by one ([method signal_head_light_enable], [method signal_head_light_disable], [method signal_head_light_blink]). High level, a signal head has a [SignalHeadKind] - what it can show - and shows one of its aspects at a time ([method signal_head_set_aspect]). The server knows no aspect of its own: "S1" or "Sz" is the vocabulary of a kind.
-		Signal heads and event sources are grouped into systems. A system is the same object for every signalling system; what differs is its [SignallingSystemDelegate], which receives the system's events and decides what they mean. A signal head or a source belongs to one system at most.
+		Signal heads and event sources are grouped into systems. A system is the same object for every signalling system; what differs is its [SignallingImplementation], which receives the system's events and decides what they mean. A signal head or a source belongs to one system at most.
 		A signal head, a source and a system can each be named, for scripts and for the scenery's events to find them. A name registered twice goes to the newest, as the original's name tables do.
 		[SignalHeadNode] and [SignallingSystemNode] are node proxies of a signal head and of a system.
 	</description>
@@ -129,7 +129,7 @@
 			<param index="0" name="signal_head" type="RID" />
 			<param index="1" name="aspect" type="StringName" />
 			<description>
-				Shows the [param aspect] of the signal head's kind: sets each light the way the aspect describes it, then emits [signal signal_head_aspect_changed] and tells the delegate of the signal head's system ([method SignallingSystemDelegate._signal_head_aspect_changed]). An aspect the kind does not have is refused.
+				Shows the [param aspect] of the signal head's kind: sets each light the way the aspect describes it, then emits [signal signal_head_aspect_changed] and tells the implementation of the signal head's system ([method SignallingImplementation._signal_head_aspect_changed]). An aspect the kind does not have is refused.
 			</description>
 		</method>
 		<method name="signal_head_set_kind">
@@ -188,7 +188,7 @@
 			<param index="1" name="event" type="StringName" />
 			<param index="2" name="arguments" type="Dictionary" default="{}" />
 			<description>
-				A report of the source, handed to the delegate of the system it belongs to ([method SignallingSystemDelegate._handle_source_event]). The sender knows only its own source; which system and delegate receive it is the server's business. A source that belongs to no system refuses it.
+				A report of the source, handed to the implementation of the system it belongs to ([method SignallingImplementation._handle_source_event]). The sender knows only its own source; which system and implementation receive it is the server's business. A source that belongs to no system refuses it.
 			</description>
 		</method>
 		<method name="source_set_name">
@@ -204,7 +204,7 @@
 			<param index="0" name="system" type="RID" />
 			<param index="1" name="signal_head" type="RID" />
 			<description>
-				Adds the signal head to the system and tells the system's delegate. A signal head that already belongs to a system is refused.
+				Adds the signal head to the system and tells the system's implementation. A signal head that already belongs to a system is refused.
 			</description>
 		</method>
 		<method name="system_add_source">
@@ -212,35 +212,35 @@
 			<param index="0" name="system" type="RID" />
 			<param index="1" name="source" type="RID" />
 			<description>
-				Adds the event source to the system and tells the system's delegate. A source that already belongs to a system is refused.
+				Adds the event source to the system and tells the system's implementation. A source that already belongs to a system is refused.
 			</description>
 		</method>
-		<method name="system_attach_delegate">
+		<method name="system_attach_implementation">
 			<return type="void" />
 			<param index="0" name="system" type="RID" />
-			<param index="1" name="delegate" type="SignallingSystemDelegate" />
+			<param index="1" name="implementation" type="SignallingImplementation" />
 			<description>
-				Gives the system its behaviour. The previous delegate is told it is detached; the new one is told it is attached and then about every signal head and source the system already has, so the order the system is set up in does not matter. [code]null[/code] only detaches.
+				Gives the system its behaviour. The previous implementation is told it is detached; the new one is told it is attached and then about every signal head and source the system already has, so the order the system is set up in does not matter. [code]null[/code] only detaches.
 			</description>
 		</method>
 		<method name="system_create">
 			<return type="RID" />
 			<description>
-				Creates an empty system: no delegate, no signal heads, no sources.
+				Creates an empty system: no implementation, no signal heads, no sources.
 			</description>
 		</method>
 		<method name="system_free">
 			<return type="void" />
 			<param index="0" name="system" type="RID" />
 			<description>
-				Frees the system, detaching its delegate. Its signal heads and sources are not freed; they belong to no system afterwards.
+				Frees the system, detaching its implementation. Its signal heads and sources are not freed; they belong to no system afterwards.
 			</description>
 		</method>
-		<method name="system_get_delegate" qualifiers="const">
-			<return type="SignallingSystemDelegate" />
+		<method name="system_get_implementation" qualifiers="const">
+			<return type="SignallingImplementation" />
 			<param index="0" name="system" type="RID" />
 			<description>
-				Returns the system's delegate, or [code]null[/code].
+				Returns the system's implementation, or [code]null[/code].
 			</description>
 		</method>
 		<method name="system_get_name" qualifiers="const">
@@ -276,7 +276,7 @@
 			<param index="0" name="system" type="RID" />
 			<param index="1" name="signal_head" type="RID" />
 			<description>
-				Takes the signal head out of the system and tells the system's delegate.
+				Takes the signal head out of the system and tells the system's implementation.
 			</description>
 		</method>
 		<method name="system_remove_source">
@@ -284,7 +284,7 @@
 			<param index="0" name="system" type="RID" />
 			<param index="1" name="source" type="RID" />
 			<description>
-				Takes the source out of the system and tells the system's delegate.
+				Takes the source out of the system and tells the system's implementation.
 			</description>
 		</method>
 		<method name="system_send_event">
@@ -293,7 +293,7 @@
 			<param index="1" name="event" type="StringName" />
 			<param index="2" name="arguments" type="Dictionary" default="{}" />
 			<description>
-				A command to the system as a whole - from a script, a dispatcher or a scenery event - handed to its delegate ([method SignallingSystemDelegate._handle_event]). [param arguments] carry whatever the event needs. A system without a delegate refuses it.
+				A command to the system as a whole - from a script, a dispatcher or a scenery event - handed to its implementation ([method SignallingImplementation._handle_event]). [param arguments] carry whatever the event needs. A system without an implementation refuses it.
 			</description>
 		</method>
 		<method name="system_set_name">

@@ -20,7 +20,7 @@ func before_each():
         _item(3, 0.2, 0.0, 0.1),
     ]
     train.add_component(wipers)
-    # a VehicleComponent takes its configuration and its commands on its first step
+    # the vehicle publishes the wipers' state once it has stepped
     if not await wait_simulated_until(func() -> bool: return train.get_state()["wiper_positions"].size() > 0,
             TICK, "the wipers' first step"):
         return
@@ -33,6 +33,25 @@ func _item(mask: int, transit_time: float, period: float, return_delay: float) -
     item.period = period
     item.return_delay = return_delay
     return item
+
+
+## The switch is the driver's: configuring the wipers again leaves it where it was moved
+func test_reapplying_the_configuration_keeps_the_switch():
+    train.send_command("wipers_switch_increase")
+    assert_eq(wipers.get_switch_position(), 1)
+    wipers.apply_config()
+    assert_eq(wipers.get_switch_position(), 1)
+
+
+## A new list puts the switch at its default (Mover.cpp:11942), within the list
+func test_a_new_list_sets_the_switch_to_its_default():
+    wipers.default_position = 1
+    train.send_command("wipers_switch_increase")
+    assert_eq(wipers.get_switch_position(), 2)
+    wipers.positions = [_item(0, 1.0, 0.0, 0.5), _item(3, 1.0, 5.0, 0.5)]
+    assert_eq(wipers.get_switch_position(), 1)
+    wipers.default_position = 5
+    assert_eq(wipers.get_switch_position(), 1, "clamped to the last position")
 
 
 func test_defaults():

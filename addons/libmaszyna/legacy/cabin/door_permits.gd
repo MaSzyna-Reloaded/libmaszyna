@@ -28,8 +28,6 @@ const LAMP_KEYS:Dictionary[RailVehicleDoors.Side, String] = {
     RailVehicleDoors.SIDE_RIGHT: "door_permit_lamp_right",
 }
 ## A permit lamp is lit on the even seconds when it blinks (wSecond % 2 < 1, Train.cpp:8515)
-const SECONDS_PER_HOUR:int = 3600
-const SECONDS_PER_MINUTE:int = 60
 ## state.data keys of m_doorpermittimers, by the side of the vehicle
 const TIMERS:Dictionary[RailVehicleDoors.Side, String] = {
     RailVehicleDoors.SIDE_LEFT: "door_permit_timer_left",
@@ -130,7 +128,7 @@ func _lamp(lamp:RailVehicleDoors.Side) -> bool:
     if not (doors.get_left_open_permit() if side == RailVehicleDoors.SIDE_LEFT else doors.get_right_open_permit()):
         return false
     var blinking:RailVehicleDoors.PermitLight = doors.permit_light_blinking
-    var second:int = int(SimulationServer.time_of_day * SECONDS_PER_HOUR) % SECONDS_PER_MINUTE
+    var second:int = int(SimulationServer.time_of_day * LibMaszynaUnits.SECONDS_PER_HOUR) % LibMaszynaUnits.SECONDS_PER_MINUTE
     if second % 2 < 1 or blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ON_PERMISSION_WITH_STEP:
         return true
     return (blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ON_PERMISSION

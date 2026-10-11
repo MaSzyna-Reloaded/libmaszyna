@@ -80,7 +80,7 @@ func parse(p: MaszynaParser, context: FizImportContext, _prefix: String = "") ->
         match voltage_str.to_int():
             12: node.voltage = RailVehicleDoors.VOLTAGE_12
             24: node.voltage = RailVehicleDoors.VOLTAGE_24
-            112: node.voltage = RailVehicleDoors.VOLTAGE_112
+            110: node.voltage = RailVehicleDoors.VOLTAGE_110
             0: node.voltage = RailVehicleDoors.VOLTAGE_0
             _: push_warning("FIZ Doors:DoorVoltage: unexpected value '%s'" % voltage_str)
 

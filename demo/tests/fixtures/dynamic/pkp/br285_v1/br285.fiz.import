@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://c4nv5moun4xjs"
+path="res://.godot/imported/br285.fiz-b78efec8fbfaa651e1ab69bfe894d841.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/br285_v1/br285.fiz"
+dest_files=["res://.godot/imported/br285.fiz-b78efec8fbfaa651e1ab69bfe894d841.res"]
+
+[params]
+

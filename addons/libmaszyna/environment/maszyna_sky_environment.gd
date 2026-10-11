@@ -1,7 +1,23 @@
 @tool
 @abstract
-extends RefCounted
+extends Node
 class_name MaszynaSkyEnvironment
+
+## Draws the state of a MaszynaEnvironmentNode - the WorldEnvironment, its sky, the sun and the cab
+## light. A sky addon is a backend extending this; libmaszyna carries none of its own, the project
+## that has the addon places its backend next to the environment node and connects the node's
+## configuration_changed to apply_configuration() in the scene.
+
+const GENERATED_WORLD_NAME: StringName = &"_WorldEnvironment"
+## Glow as tuned in forest-test-scene materials/environment_filmic.tres - what the player's Graphics
+## settings (render/glow_intensity, render/bloom_intensity) fall back to
+const GLOW_INTENSITY_DEFAULT: float = 1.37
+const BLOOM_INTENSITY_DEFAULT: float = 0.3
+## The player's gamma (render/gamma): the picture's mid-tones as x^(1/gamma) - above 1 brighter,
+## below darker, black and white staying put - through the environment's colour correction, a
+## curve of this many steps; at 1 there is no correction at all
+const GAMMA_DEFAULT: float = 1.0
+const GAMMA_CURVE_STEPS: int = 256
 
 const SHADOW_SCENERY_ENABLED_SETTING: StringName = &"maszyna/scenery/shadows/enabled"
 const SHADOW_CABIN_ENABLED_SETTING: StringName = &"maszyna/cabin/shadows/enabled"
@@ -60,18 +76,6 @@ const CABIN_LIGHT_NAME: StringName = &"CabinLight"
 ## Which settings a directional light takes: the world's sun the scenery ones, the cab light the
 ## cabin ones
 enum ShadowView { SCENERY, CABIN }
-## Sun altitude (degrees) between which get_light_level() ramps from night to full day. The
-## original lights a scenery light set to "on when dark" below a light level of 0.325
-## (AnimModel.cpp:598), which on this ramp falls at about 1.4 degrees below the horizon. Both ends
-## have to stay clear of a winter noon - at 50 N the sun peaks at 16-19 degrees in January, so a
-## day threshold anywhere near that would light the whole town at midday (see FINDINGS.md).
-const LIGHT_LEVEL_NIGHT_ALTITUDE_SETTING: StringName = &"maszyna/lights/night_altitude"
-const LIGHT_LEVEL_DAY_ALTITUDE_SETTING: StringName = &"maszyna/lights/day_altitude"
-const LIGHT_LEVEL_NIGHT_ALTITUDE: float = -6.0
-const LIGHT_LEVEL_DAY_ALTITUDE: float = 6.0
-## Overcast dims the key light in the original by this much at full cover
-## (simulationenvironment.cpp:163)
-const LIGHT_LEVEL_OVERCAST_FACTOR: float = 0.65
 ## Skydome's volumetric fog volume is 8 m deep by day and 3 m by night. The volume is measured from
 ## the camera, so a light shaft can only be seen while its lamp is inside it - at 3 m, never. This
 ## stretches the volume; the density is divided by the same factor, which leaves the optical depth
@@ -142,17 +146,112 @@ const FOG_SCENERY_DISTANCE_FACTOR_DEFAULT: float = 1.5
 const FOG_DAY_DISTANCE_FACTOR_DEFAULT: float = 1.0
 const FOG_NIGHT_DISTANCE_FACTOR_DEFAULT: float = 0.4255
 
-## Wind speed the strength of the environment node maps onto, m/s
-const WIND_SPEED_MIN: float = 0.15
-const WIND_SPEED_MAX: float = 3.0
+## The environment this sky draws
+@export_node_path("MaszynaEnvironmentNode") var environment_node_path: NodePath
 
-var environment_node: Node
+@export_group("Tone Mapping")
+@export var tonemap_mode: Environment.ToneMapper = Environment.TONE_MAPPER_AGX:
+    set(value):
+        tonemap_mode = value
+        _dirty_visuals = true
+
+@export_range(0.0, 16.0, 0.01) var tonemap_white: float = 6.0:
+    set(value):
+        tonemap_white = value
+        _dirty_visuals = true
+
+@export_range(0.0, 16.0, 0.01) var tonemap_agx_white: float = 6.19:
+    set(value):
+        tonemap_agx_white = value
+        _dirty_visuals = true
+
+@export_range(0.0, 2.0, 0.01) var tonemap_agx_contrast: float = 1.55:
+    set(value):
+        tonemap_agx_contrast = value
+        _dirty_visuals = true
+
+@export var adjustment_enabled: bool = true:
+    set(value):
+        adjustment_enabled = value
+        _dirty_visuals = true
+
+var environment_node: MaszynaEnvironmentNode
+var _environment: Environment
 ## The cab light of each world light, when CABIN_SHADOWS_IMPROVED_SETTING is on
 var _cabin_lights: Dictionary[DirectionalLight3D, DirectionalLight3D] = {}
+var _dirty_visuals: bool = true
+var _dirty_lights: bool = true
+var _dirty_time: bool = true
+## The gamma the colour correction curve was made for - it is made again only when that changes -
+## and the curve itself, none at the default
+var _gamma: float = GAMMA_DEFAULT
+var _gamma_curve: ImageTexture = null
 
 
-func _init(node: Node) -> void:
-    environment_node = node
+func _ready() -> void:
+    environment_node = get_node(environment_node_path) as MaszynaEnvironmentNode
+    var world_environment: WorldEnvironment = WorldEnvironment.new()
+    world_environment.name = GENERATED_WORLD_NAME
+    _environment = Environment.new()
+    _environment.background_mode = Environment.BG_SKY
+    _environment.sky = create_sky()
+    _environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+    _environment.ambient_light_color = Color.WHITE
+    _environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+    _environment.fog_mode = Environment.FOG_MODE_DEPTH
+    _environment.fog_light_color = Color(0.3605356, 0.39691955, 0.44612736, 1.0)
+    _environment.fog_light_energy = 0.7
+    _environment.fog_sun_scatter = 0.07
+    _environment.volumetric_fog_anisotropy = 0.0
+    _environment.volumetric_fog_detail_spread = 1.0
+    # Glow tuned as in forest-test-scene materials/environment_filmic.tres (its intensity and bloom
+    # are the player's, _process()); the luminance cap keeps small specular highlights (e.g. rain
+    # streaks) from blooming into large blobs.
+    _environment.glow_normalized = true
+    _environment.glow_strength = 0.8
+    _environment.glow_hdr_threshold = 1.37
+    _environment.glow_hdr_luminance_cap = 0.18
+    world_environment.environment = _environment
+    world_environment.camera_attributes = CameraAttributesPractical.new()
+    create_nodes(world_environment, _environment)
+    add_child(world_environment, false, INTERNAL_MODE_BACK)
+
+
+func _enter_tree() -> void:
+    UserSettings.config_changed.connect(_on_user_settings_changed)
+    ProjectSettings.settings_changed.connect(_on_project_settings_changed)
+    SimulationServer.simulation_paused.connect(pause_weather)
+    SimulationServer.simulation_unpaused.connect(unpause_weather)
+
+
+func _exit_tree() -> void:
+    UserSettings.config_changed.disconnect(_on_user_settings_changed)
+    ProjectSettings.settings_changed.disconnect(_on_project_settings_changed)
+    SimulationServer.simulation_paused.disconnect(pause_weather)
+    SimulationServer.simulation_unpaused.disconnect(unpause_weather)
+
+
+func _process(delta: float) -> void:
+    if _dirty_visuals:
+        _dirty_visuals = false
+        _apply_environment_configuration()
+        apply_visual_configuration()
+    if _dirty_lights:
+        _dirty_lights = false
+        apply_light_configuration()
+    if _dirty_time:
+        _dirty_time = false
+        apply_time_configuration()
+    sync_cabin_lights()
+    process_time(delta)
+
+
+## The environment node's configuration changed (MaszynaEnvironmentNode.configuration_changed) -
+## everything it shows is taken again
+func apply_configuration() -> void:
+    _dirty_visuals = true
+    _dirty_lights = true
+    _dirty_time = true
 
 
 @abstract func create_sky() -> Sky
@@ -163,9 +262,7 @@ func _init(node: Node) -> void:
 ) -> void
 
 
-@abstract func bind_nodes(world_environment: WorldEnvironment) -> void
-
-
+## The backend's own share of the environment's weather and fog
 @abstract func apply_visual_configuration() -> void
 
 
@@ -173,43 +270,12 @@ func _init(node: Node) -> void:
 @abstract func apply_light_configuration() -> void
 
 
-@abstract func set_date(year: int, month: int, day: int) -> Vector3i
-
-
+## The environment's time and date set, not run - the sky jumps to them
 @abstract func apply_time_configuration() -> void
 
 
-@abstract func get_date() -> Vector3i
-
-
-@abstract func get_current_time() -> float
-
-
-## How bright the scene is, the equivalent of the original's Global.fLuminance
-## (simulationenvironment.cpp:184). It is what decides whether a scenery light that is set to come
-## on automatically is on: the original compares it against DefaultDarkThresholdLevel of 0.325
-## (AnimModel.cpp:598). A backend that cannot tell day from night returns 1.0 and leaves every such
-## light off.
-func get_light_level() -> float:
-    return 1.0
-
-
-## Unit vector the wind blows along. Horizontal for now - the environment node carries a compass
-## bearing - but a vector so that a backend with a vertical component needs no new API. The
-## original keeps one wind for the whole simulation (simulationenvironment.cpp:255-268) and the
-## smoke emitters drift with it.
-func get_wind_direction() -> Vector3:
-    var bearing:float = deg_to_rad((environment_node as MaszynaEnvironmentNode).wind_direction)
-    return Vector3(cos(bearing), 0.0, sin(bearing))
-
-
-## Wind speed in metres per second. A backend without weather of its own maps the environment
-## node's own 0-1 wind_strength onto WIND_SPEED_MIN..WIND_SPEED_MAX.
-func get_wind_strength() -> float:
-    return lerpf(WIND_SPEED_MIN, WIND_SPEED_MAX, (environment_node as MaszynaEnvironmentNode).wind_strength)
-
-
-func process(_delta: float) -> void:
+## The running time of the environment, followed by the sky
+func process_time(_delta: float) -> void:
     pass
 
 
@@ -221,6 +287,56 @@ func pause_weather() -> void:
 
 func unpause_weather() -> void:
     pass
+
+
+func _apply_environment_configuration() -> void:
+    # fog_density is a multiplier; zero fades the fog out instead of switching it off.
+    var fog_active: bool = environment_node.fog_enabled
+    _environment.tonemap_mode = tonemap_mode
+    _environment.tonemap_white = tonemap_white
+    _environment.tonemap_agx_white = tonemap_agx_white
+    _environment.tonemap_agx_contrast = tonemap_agx_contrast
+    _environment.ssr_enabled = bool(UserSettings.get_setting("render", "ssr_enabled", true))
+    _environment.ssao_enabled = bool(UserSettings.get_setting("render", "ssao_enabled", true))
+    _environment.ssil_enabled = bool(UserSettings.get_setting("render", "ssil_enabled", true))
+    _environment.sdfgi_enabled = bool(UserSettings.get_setting("render", "sdfgi_enabled", true))
+    _environment.glow_enabled = bool(UserSettings.get_setting("render", "glow_enabled", true))
+    _environment.glow_intensity = float(
+        UserSettings.get_setting("render", "glow_intensity", GLOW_INTENSITY_DEFAULT))
+    _environment.glow_bloom = float(
+        UserSettings.get_setting("render", "bloom_intensity", BLOOM_INTENSITY_DEFAULT))
+    _environment.adjustment_enabled = adjustment_enabled
+    var gamma: float = float(UserSettings.get_setting("render", "gamma", GAMMA_DEFAULT))
+    if not is_equal_approx(gamma, _gamma):
+        _gamma = gamma
+        _gamma_curve = null
+        if not is_equal_approx(gamma, GAMMA_DEFAULT):
+            # one row, the input along it, the output in every channel
+            var curve: Image = Image.create(GAMMA_CURVE_STEPS, 1, false, Image.FORMAT_RGB8)
+            for step: int in GAMMA_CURVE_STEPS:
+                var value: float = pow(float(step) / float(GAMMA_CURVE_STEPS - 1), 1.0 / gamma)
+                curve.set_pixel(step, 0, Color(value, value, value))
+            _gamma_curve = ImageTexture.create_from_image(curve)
+    _environment.adjustment_color_correction = _gamma_curve
+    _environment.fog_enabled = fog_active
+    # the sky backends leave these two alone
+    _environment.fog_aerial_perspective = float(ProjectSettings.get_setting(
+        FOG_AERIAL_PERSPECTIVE_SETTING, FOG_AERIAL_PERSPECTIVE_DEFAULT))
+    _environment.fog_depth_curve = maxf(FOG_CURVE_MIN, float(
+        ProjectSettings.get_setting(FOG_CURVE_SETTING, FOG_CURVE_DEFAULT)))
+    _environment.volumetric_fog_enabled = (
+        fog_active and bool(UserSettings.get_setting("render", "volumetric_fog_enabled", true))
+    )
+
+
+func _on_user_settings_changed() -> void:
+    _dirty_visuals = true
+
+
+## The fog, the shadows and the lights follow their project settings while the scenery runs
+func _on_project_settings_changed() -> void:
+    _dirty_visuals = true
+    _dirty_lights = true
 
 
 ## Copies what the sky backend drives on a world light every frame (Skydome writes colour, energy
@@ -254,12 +370,6 @@ func _create_cabin_light(world_light: DirectionalLight3D) -> void:
     )
 
 
-func _bind_cabin_light(world_light: DirectionalLight3D) -> void:
-    var cabin_light: DirectionalLight3D = world_light.get_node_or_null(NodePath(CABIN_LIGHT_NAME)) as DirectionalLight3D
-    if cabin_light:
-        _cabin_lights[world_light] = cabin_light
-
-
 ## The world light gives the cab light back the cab layer it took
 func _free_cabin_light(world_light: DirectionalLight3D) -> void:
     world_light.light_cull_mask |= MaszynaEnvironmentNode.CABIN_RENDER_LAYER
@@ -287,7 +397,7 @@ func _apply_directional_light_settings(light: DirectionalLight3D, view: ShadowVi
     # seen from outside
     light.shadow_enabled = (
         bool(ProjectSettings.get_setting(SHADOW_CABIN_ENABLED_SETTING, true))
-        and (environment_node as MaszynaEnvironmentNode).cabin_view
+        and environment_node.cabin_view
         if cabin
         else bool(ProjectSettings.get_setting(SHADOW_SCENERY_ENABLED_SETTING, true))
     )

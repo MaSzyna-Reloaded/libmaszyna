@@ -1,5 +1,5 @@
 #include "MaszynaLegacyLightsAction.hpp"
-#include "legacy/signalling/MaszynaLegacySignallingDelegate.hpp"
+#include "legacy/signalling/MaszynaLegacySignallingImplementation.hpp"
 #include "signalling/SignallingServer.hpp"
 
 namespace godot {
@@ -28,7 +28,7 @@ namespace godot {
             arguments["signal_head"] = signal_head;
             arguments["aspect"] = aspects[i];
             server->system_send_event(
-                    server->signal_head_get_system(signal_head), MaszynaLegacySignallingDelegate::LIGHTS_EVENT,
+                    server->signal_head_get_system(signal_head), MaszynaLegacySignallingImplementation::LIGHTS_EVENT,
                     arguments);
         }
     }

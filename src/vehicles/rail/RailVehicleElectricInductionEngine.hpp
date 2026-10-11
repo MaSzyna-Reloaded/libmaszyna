@@ -46,27 +46,51 @@ namespace godot {
                 wwlist.append_array(p_wwlist);
             }
 
-            MAKE_MEMBER_GS(double, slip_current_ratio, 0.0);
-            MAKE_MEMBER_GS(double, max_slip, 0.0);
-            MAKE_MEMBER_GS(double, pole_pairs, 0.0);
-            MAKE_MEMBER_GS(double, nominal_uf_ratio, 0.0);
-            MAKE_MEMBER_GS(double, current_torque_ratio, 0.0);
-            MAKE_MEMBER_GS(double, current_three_phase_ratio, 0.0);
-            MAKE_MEMBER_GS(double, max_supply_voltage, 0.0);
-            MAKE_MEMBER_GS(double, max_supply_voltage_braking, 0.0);
-            MAKE_MEMBER_GS(double, inverter_voltage_drop, 0.0);
-            MAKE_MEMBER_GS(double, no_load_current, 0.0);
-            MAKE_MEMBER_GS(double, inverter_uf_setpoint, 0.0);
-            MAKE_MEMBER_GS(double, inverter_uf_setpoint_braking, 0.0);
-            MAKE_MEMBER_GS(double, initial_force, 0.0);
-            MAKE_MEMBER_GS(double, force_drop_rate, 0.0);
-            MAKE_MEMBER_GS(double, max_power, 0.0);
-            MAKE_MEMBER_GS(double, max_braking_force, 0.0);
-            MAKE_MEMBER_GS(double, max_braking_power, 0.0);
-            MAKE_MEMBER_GS(double, braking_decay_velocity, 0.0);
-            MAKE_MEMBER_GS(double, braking_decay_start_velocity, 0.0);
-            MAKE_MEMBER_GS(double, motor_max_current, 0.0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<VehicleCurvePointItem>, max_power_table)
+        private:
+            double slip_current_ratio = 0.0;
+            double max_slip = 0.0;
+            double pole_pairs = 0.0;
+            double nominal_uf_ratio = 0.0;
+            double current_torque_ratio = 0.0;
+            double current_three_phase_ratio = 0.0;
+            double max_supply_voltage = 0.0;
+            double max_supply_voltage_braking = 0.0;
+            double inverter_voltage_drop = 0.0;
+            double no_load_current = 0.0;
+            double inverter_uf_setpoint = 0.0;
+            double inverter_uf_setpoint_braking = 0.0;
+            double initial_force = 0.0;
+            double force_drop_rate = 0.0;
+            double max_power = 0.0;
+            double max_braking_force = 0.0;
+            double max_braking_power = 0.0;
+            double braking_decay_velocity = 0.0;
+            double braking_decay_start_velocity = 0.0;
+            double motor_max_current = 0.0;
+            TypedArray<VehicleCurvePointItem> max_power_table;
+
+        public:
+            MAKE_GS(double, slip_current_ratio);
+            MAKE_GS(double, max_slip);
+            MAKE_GS(double, pole_pairs);
+            MAKE_GS(double, nominal_uf_ratio);
+            MAKE_GS(double, current_torque_ratio);
+            MAKE_GS(double, current_three_phase_ratio);
+            MAKE_GS(double, max_supply_voltage);
+            MAKE_GS(double, max_supply_voltage_braking);
+            MAKE_GS(double, inverter_voltage_drop);
+            MAKE_GS(double, no_load_current);
+            MAKE_GS(double, inverter_uf_setpoint);
+            MAKE_GS(double, inverter_uf_setpoint_braking);
+            MAKE_GS(double, initial_force);
+            MAKE_GS(double, force_drop_rate);
+            MAKE_GS(double, max_power);
+            MAKE_GS(double, max_braking_force);
+            MAKE_GS(double, max_braking_power);
+            MAKE_GS(double, braking_decay_velocity);
+            MAKE_GS(double, braking_decay_start_velocity);
+            MAKE_GS(double, motor_max_current);
+            MAKE_GS_NR(TypedArray<VehicleCurvePointItem>, max_power_table);
 
         private:
             /* The rest of the FIZ Engine: line of an induction motor. */

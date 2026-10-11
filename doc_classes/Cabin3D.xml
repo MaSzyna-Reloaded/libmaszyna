@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Cabin3D" inherits="Node3D" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_cabin" qualifiers="const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_shake_offset" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_shake_roll" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_camera_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<description>
+			</description>
+		</method>
+		<method name="get_sound_listener_context" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vehicle_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The vehicle this cab sits in - the vehicle of its cabin ([method set_cabin]).
+			</description>
+		</method>
+		<method name="is_cabin_ready" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_cabin">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<description>
+				The [VehicleServer] cabin this interior is of. Its vehicle comes with it ([method VehicleServer.cabin_get_vehicle]): when that changes, [signal vehicle_rid_changed] is emitted before [signal cabin_changed].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cab_window_open" type="bool" setter="set_cab_window_open" getter="get_cab_window_open" default="false">
+		</member>
+		<member name="camera_bound_enabled" type="bool" setter="set_camera_bound_enabled" getter="get_camera_bound_enabled" default="false">
+		</member>
+		<member name="camera_bound_max" type="Vector3" setter="set_camera_bound_max" getter="get_camera_bound_max" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="camera_bound_min" type="Vector3" setter="set_camera_bound_min" getter="get_camera_bound_min" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="driver_position" type="Vector3" setter="set_driver_position" getter="get_driver_position" default="Vector3(0, 0, 0)">
+			Where the cab camera starts - the driver's seat ([code]driverNsitpos:[/code], or [code]driverNpos:[/code] without it).
+		</member>
+		<member name="driver_view_angle" type="Vector2" setter="set_driver_view_angle" getter="get_driver_view_angle" default="Vector2(0, 0)">
+			The cab camera's start: yaw, then pitch, in degrees, from the way the cab faces ([code]driverNangle:[/code], Train.cpp:10529-10538).
+		</member>
+		<member name="engine_shake_fade_in_factor" type="float" setter="set_engine_shake_fade_in_factor" getter="get_engine_shake_fade_in_factor" default="0.3">
+		</member>
+		<member name="engine_shake_fade_in_rpm" type="float" setter="set_engine_shake_fade_in_rpm" getter="get_engine_shake_fade_in_rpm" default="90.0">
+		</member>
+		<member name="engine_shake_fade_out_factor" type="float" setter="set_engine_shake_fade_out_factor" getter="get_engine_shake_fade_out_factor" default="0.5">
+		</member>
+		<member name="engine_shake_fade_out_rpm" type="float" setter="set_engine_shake_fade_out_rpm" getter="get_engine_shake_fade_out_rpm" default="600.0">
+		</member>
+		<member name="engine_shake_scale" type="float" setter="set_engine_shake_scale" getter="get_engine_shake_scale" default="2.0">
+		</member>
+		<member name="has_cab_model" type="bool" setter="set_has_cab_model" getter="get_has_cab_model" default="true">
+		</member>
+		<member name="shake_angle_scale" type="Vector2" setter="set_shake_angle_scale" getter="get_shake_angle_scale" default="Vector2(0.05, 0.1)">
+		</member>
+		<member name="shake_jolt_limit" type="float" setter="set_shake_jolt_limit" getter="get_shake_jolt_limit" default="2.0">
+		</member>
+		<member name="shake_jolt_scale" type="Vector3" setter="set_shake_jolt_scale" getter="get_shake_jolt_scale" default="Vector3(0.2, 0.2, 0.1)">
+		</member>
+		<member name="shake_spring_damping" type="float" setter="set_shake_spring_damping" getter="get_shake_spring_damping" default="0.002">
+		</member>
+		<member name="shake_spring_stiffness" type="float" setter="set_shake_spring_stiffness" getter="get_shake_spring_stiffness" default="125.0">
+		</member>
+	</members>
+	<signals>
+		<signal name="cabin_changed">
+			<param index="0" name="cabin" type="RID" />
+			<description>
+			</description>
+		</signal>
+		<signal name="cabin_ready">
+			<description>
+			</description>
+		</signal>
+		<signal name="camera_configuration_changed">
+			<description>
+			</description>
+		</signal>
+		<signal name="vehicle_rid_changed">
+			<param index="0" name="vehicle_rid" type="RID" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

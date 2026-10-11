@@ -165,7 +165,7 @@ func _precipitation_from_overcast(value:float) -> float:
 
 func _date_from_day_of_year(year_day:int, year:int) -> Dictionary:
     var new_year:int = Time.get_unix_time_from_datetime_dict({"year": year, "month": 1, "day": 1})
-    return Time.get_date_dict_from_unix_time(new_year + (year_day - 1) * 86400)
+    return Time.get_date_dict_from_unix_time(new_year + (year_day - 1) * LibMaszynaUnits.SECONDS_PER_DAY)
 
 
 ## The player belongs in a vehicle with a driver, not in whatever vehicle the scenery declares

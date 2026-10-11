@@ -1,6 +1,6 @@
 #include "TractionServer.hpp"
-#include <godot_cpp/classes/scene_tree.hpp>
-#include <godot_cpp/classes/window.hpp>
+#include "simulation/SimulationServer.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -36,6 +36,9 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("wire_get_voltage", "wire", "assumed_voltage", "current"), &TractionServer::wire_get_voltage);
         ClassDB::bind_method(
+                D_METHOD("wire_draw_current", "wire", "assumed_voltage", "current"),
+                &TractionServer::wire_draw_current);
+        ClassDB::bind_method(
                 D_METHOD("wire_set_parallel", "wire", "parallel_name"), &TractionServer::wire_set_parallel);
         ClassDB::bind_method(
                 D_METHOD("wire_find_above_with_height", "position", "up", "forward", "left", "width", "horn_width"),
@@ -48,31 +51,11 @@ namespace godot {
     TractionServer::TractionServer() {
         spatial_index.instantiate();
         spatial_index->set_cell_size(GRID_CELL_SIZE);
-        if (SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop()); tree != nullptr) {
-            tree->connect("process_frame", callable_mp(this, &TractionServer::_on_process_frame));
-        }
     }
 
-    TractionServer::~TractionServer() {
-        if (SceneTree *tree = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop()); tree != nullptr) {
-            tree->disconnect("process_frame", callable_mp(this, &TractionServer::_on_process_frame));
-        }
-    }
-
-    /* The sources are ticked from the frame, the way the original ticks them from its own
-     * simulation step - see the quirk PowerSource::tick() documents about loads asking on a
-     * different beat. */
-    void TractionServer::_on_process_frame() {
-        if (Engine::get_singleton()->is_editor_hint()) {
-            return;
-        }
-        const double delta = Engine::get_singleton()->get_main_loop() != nullptr
-                                     ? Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop())
-                                               ->get_root()
-                                               ->get_process_delta_time()
-                                     : 0.0;
+    void TractionServer::_on_simulation_advanced(const double p_seconds) {
         for (KeyValue<RID, PowerSource> &entry: power_sources) {
-            entry.value.tick(delta);
+            entry.value.tick(p_seconds);
         }
     }
 
@@ -105,45 +88,56 @@ namespace godot {
                 fuse_counter = 0;
             }
         }
-        /* Quirk: the original updates the sources and asks them for current inside one simulation
-         * step; here the loads ask from render frames while the sources tick on their own, so a
-         * hitching frame runs a tick with nobody asking - keep the previous load then instead of
-         * dropping it to nothing, which made the next current_get() return 0 V and trip
-         * NoVoltRelay. */
-        if (!loaded && !fast_fuse && !slow_fuse) {
-            return;
-        }
-        loaded = false;
         total_previous_admittance = total_admittance;
         if (Math::is_zero_approx(total_previous_admittance)) {
-            total_previous_admittance = 1e-10;
+            total_previous_admittance = LEAKAGE_ADMITTANCE;
         }
-        total_admittance = 1e-10;
+        total_admittance = LEAKAGE_ADMITTANCE;
     }
 
-    double TractionServer::PowerSource::current_get(const double p_resistance) {
-        if (fast_fuse || slow_fuse) {
-            if (p_resistance < 100.0) {
+    double TractionServer::PowerSource::output_current() const {
+        const double nominal =
+                total_previous_admittance < 0.0 ? nominal_voltage * RECUPERATION_VOLTAGE_FACTOR : nominal_voltage;
+        /* An exact comparison like the original's TotalPreviousAdmitance != 0.0 - the LEAKAGE_ADMITTANCE floor
+         * tick() sets is within is_zero_approx()'s tolerance, and treating it as zero made every
+         * such query return no current. */
+        return total_previous_admittance != 0.0 ? nominal / (internal_resistance + (1.0 / total_previous_admittance))
+                                                : 0.0;
+    }
+
+    double TractionServer::PowerSource::current_get(const double p_resistance) const {
+        if (fuse()) {
+            return 0.0;
+        }
+        return output_current() / (p_resistance * total_previous_admittance);
+    }
+
+    void TractionServer::PowerSource::draw(const double p_resistance) {
+        if (fuse()) {
+            if (p_resistance < FUSE_LOAD_RESISTANCE) {
                 fuse_timer = 0.0;
             }
-            return 0.0;
+            return;
         }
         if (!Math::is_zero_approx(p_resistance)) {
             total_admittance += 1.0 / p_resistance;
         }
-        loaded = true;
-        const double nominal = total_previous_admittance < 0.0 ? nominal_voltage * 1.083 : nominal_voltage;
-        /* An exact comparison like the original's TotalPreviousAdmitance != 0.0 - the 1e-10 floor
-         * tick() sets is within is_zero_approx()'s tolerance, and treating it as zero made every
-         * such query return no current. */
-        total_current = total_previous_admittance != 0.0
-                                ? nominal / (internal_resistance + (1.0 / total_previous_admittance))
-                                : 0.0;
-        output_voltage = nominal - (internal_resistance * total_current);
-        return total_current / (p_resistance * total_previous_admittance);
+        total_current = output_current();
     }
 
     RID TractionServer::power_source_create() {
+        /* The sources tick by the simulation's clock, each slice before the vehicles draw from
+         * them, as the original updates the power grid before the vehicles in one step
+         * (simulation.cpp:115-116) - while there is a source to tick. No disconnect on the
+         * server's death: callable_mp reports this instance as the callable's object, so the
+         * engine drops the connection when the instance dies. */
+        if (power_sources.is_empty()) {
+            SimulationServer *simulation = SimulationServer::get_instance();
+            ERR_FAIL_NULL_V(simulation, RID());
+            simulation->connect(
+                    SimulationServer::simulation_advanced_signal,
+                    callable_mp(this, &TractionServer::_on_simulation_advanced));
+        }
         next_power_source_id += 1;
         const RID rid = UtilityFunctions::rid_from_int64(next_power_source_id);
         power_sources.insert(rid, PowerSource());
@@ -194,13 +188,21 @@ namespace godot {
 
     void TractionServer::power_source_free(const RID &p_power_source) {
         const PowerSource *source = power_sources.getptr(p_power_source);
-        if (source != nullptr) {
-            const RID *named = power_sources_by_name.getptr(source->name);
-            if (named != nullptr && *named == p_power_source) {
-                power_sources_by_name.erase(source->name);
-            }
+        if (source == nullptr) {
+            return;
+        }
+        const RID *named = power_sources_by_name.getptr(source->name);
+        if (named != nullptr && *named == p_power_source) {
+            power_sources_by_name.erase(source->name);
         }
         power_sources.erase(p_power_source);
+        if (power_sources.is_empty()) {
+            SimulationServer *simulation = SimulationServer::get_instance();
+            ERR_FAIL_NULL(simulation);
+            simulation->disconnect(
+                    SimulationServer::simulation_advanced_signal,
+                    callable_mp(this, &TractionServer::_on_simulation_advanced));
+        }
     }
 
     RID TractionServer::wire_create() {
@@ -223,12 +225,13 @@ namespace godot {
         wire->nominal_voltage = p_nominal_voltage;
         wire->max_current = p_max_current;
         wire->resistivity =
-                (Math::is_equal_approx(p_resistivity, LEGACY_RESISTIVITY) ? DEFAULT_RESISTIVITY : p_resistivity) *
-                OHM_PER_KM_TO_OHM_PER_M;
+                (Math::is_equal_approx(p_resistivity, LEGACY_RESISTIVITY) ? DEFAULT_RESISTIVITY : p_resistivity) /
+                LibMaszynaUnits::METRES_PER_KILOMETRE; // Traction.cpp:112 - the data gives Ohm/km, the network works in
+                                                       // Ohm/m
         Rect2 rect(Vector2(p_p1.x, p_p1.z), Vector2());
         rect = rect.expand(Vector2(p_p2.x, p_p2.z));
         spatial_index->remove(p_wire);
-        spatial_index->add(p_wire, rect.grow(5.0));
+        spatial_index->add(p_wire, rect.grow(WIRE_AABB_MARGIN));
     }
 
     void TractionServer::wire_set_parallel(const RID &p_wire, const String &p_parallel_name) {
@@ -261,12 +264,12 @@ namespace godot {
                 const Wire *neighbour = wires.getptr(wire.next[end]);
                 if (neighbour == nullptr) {
                     // no neighbour on this end: this span ends the section
-                    wire.last_flags |= 1;
+                    wire.last_flags |= LAST_SPAN;
                     continue;
                 }
                 // the neighbour's far end is open, so this span is the second to last
                 if (!neighbour->next[1 - wire.next_endpoint[end]].is_valid()) {
-                    wire.last_flags |= 2;
+                    wire.last_flags |= SECOND_LAST_SPAN;
                 }
             }
         }
@@ -291,7 +294,7 @@ namespace godot {
             }
             if (wire.parallel_name == "none" || wire.parallel_name == "*") {
                 // the author says there is a parallel span but does not name it: search anyway
-                wire.last_flags |= 2;
+                wire.last_flags |= SECOND_LAST_SPAN;
                 continue;
             }
             wire.has_parallel = true;
@@ -317,9 +320,13 @@ namespace godot {
                         vformat("Bad scenario: traction piece connected to nonexistent power source \"%s\"",
                                 wire.power_supply_name));
                 source_rid = power_source_create();
+                // TTractionPowerSource::Init() sets the voltage and current, the rest keep their defaults
+                // (Traction.cpp:715-720, TractionPower.cpp:27-32)
+                const PowerSource defaults;
                 power_source_set_params(
-                        source_rid, wire.power_supply_name, wire.nominal_voltage, 0.0, 0.2, wire.max_current, 1.0, 3,
-                        60.0, false, true, false);
+                        source_rid, wire.power_supply_name, wire.nominal_voltage, defaults.voltage_frequency,
+                        defaults.internal_resistance, wire.max_current, defaults.fast_fuse_timeout,
+                        defaults.fast_fuse_repetition, defaults.slow_fuse_timeout, defaults.recuperation, true, false);
             }
             /* A section is membership, not a supply: the spans of a section take their power
              * through the network from whatever substation feeds it, which is what
@@ -466,7 +473,7 @@ namespace godot {
     void TractionServer::_connect_section_ends() {
         Vector<RID> ends;
         for (const KeyValue<RID, Wire> &entry: wires) {
-            if ((entry.value.last_flags & 1) != 0) {
+            if ((entry.value.last_flags & LAST_SPAN) != 0) {
                 ends.push_back(entry.key);
             }
         }
@@ -534,53 +541,88 @@ namespace godot {
         }
     }
 
-    double TractionServer::wire_get_voltage(const RID &p_wire, const double p_assumed_voltage, const double p_current) {
+    /* Port of TTraction::VoltageGet(u, i), Traction.cpp:470: the sources the span is fed from
+     * and the resistance each of them sees, for a load of p_resistance on the span. */
+    int TractionServer::_wire_feeds(const Wire &p_wire, const double p_resistance, Feed (&p_feeds)[2]) const {
+        if (power_sources.has(p_wire.power_source)) {
+            // directly powered - taken straight from the substation, no star network
+            if (Math::is_zero_approx(p_resistance)) {
+                return 0;
+            }
+            p_feeds[0] = {p_wire.power_source, p_resistance};
+            return 1;
+        }
+        const PowerSource *near0 = power_sources.getptr(p_wire.power_near[0]);
+        const PowerSource *near1 = power_sources.getptr(p_wire.power_near[1]);
+        if ((near0 != nullptr && near0->fuse()) || (near1 != nullptr && near1->fuse())) {
+            // if either supply is out, so is this span
+            return 0;
+        }
+        const double r0 = p_wire.resistance[0];
+        const double r1 = p_wire.resistance[1];
+        if (near0 != nullptr && near1 != nullptr) {
+            if (r0 > 0.0 && r1 > 0.0) {
+                // fed from both ends: the triangle res/r0/r1 read as a star
+                p_feeds[0] = {p_wire.power_near[0], p_resistance + r0 + ((p_resistance * r0) / r1)};
+                p_feeds[1] = {p_wire.power_near[1], p_resistance + r1 + ((p_resistance * r1) / r0)};
+                return 2;
+            }
+            if (r0 >= 0.0) {
+                p_feeds[0] = {p_wire.power_near[0], p_resistance + r0};
+                return 1;
+            }
+            if (r1 >= 0.0) {
+                p_feeds[0] = {p_wire.power_near[1], p_resistance + r1};
+                return 1;
+            }
+            return 0;
+        }
+        if (near0 != nullptr && r0 >= 0.0) {
+            p_feeds[0] = {p_wire.power_near[0], p_resistance + r0};
+            return 1;
+        }
+        if (near1 != nullptr && r1 >= 0.0) {
+            p_feeds[0] = {p_wire.power_near[1], p_resistance + r1};
+            return 1;
+        }
+        // in a section, but nothing along it reaches this span
+        return 0;
+    }
+
+    double TractionServer::_load_resistance(const double p_assumed_voltage, const double p_current) {
+        return !Math::is_zero_approx(p_current) ? p_assumed_voltage / p_current : NO_LOAD_RESISTANCE;
+    }
+
+    double
+    TractionServer::wire_get_voltage(const RID &p_wire, const double p_assumed_voltage, const double p_current) const {
         const Wire *wire = wires.getptr(p_wire);
         if (wire == nullptr) {
             return 0.0;
         }
-        // Port of TTraction::VoltageGet(u, i), Traction.cpp:470.
         if (!wire->section.is_valid() && !wire->power_source.is_valid()) {
             // belongs to no section and is fed by nothing: the span's own nominal voltage stands
             return wire->nominal_voltage;
         }
-        const double res = !Math::is_zero_approx(p_current) ? p_assumed_voltage / p_current : 10000.0;
-        if (PowerSource *direct = power_sources.getptr(wire->power_source); direct != nullptr) {
-            // directly powered - taken straight from the substation, no star network
-            return !Math::is_zero_approx(res) ? direct->current_get(res) * res : 0.0;
+        const double res = _load_resistance(p_assumed_voltage, p_current);
+        Feed feeds[2];
+        const int count = _wire_feeds(*wire, res, feeds);
+        double current = 0.0;
+        for (int index = 0; index < count; ++index) {
+            current += power_sources.getptr(feeds[index].source)->current_get(feeds[index].resistance);
         }
+        return current * res;
+    }
 
-        PowerSource *near0 = power_sources.getptr(wire->power_near[0]);
-        PowerSource *near1 = power_sources.getptr(wire->power_near[1]);
-        if ((near0 != nullptr && near0->fuse()) || (near1 != nullptr && near1->fuse())) {
-            // if either supply is out, so is this span
-            return 0.0;
+    void TractionServer::wire_draw_current(const RID &p_wire, const double p_assumed_voltage, const double p_current) {
+        const Wire *wire = wires.getptr(p_wire);
+        if (wire == nullptr) {
+            return;
         }
-        const double r0 = wire->resistance[0];
-        const double r1 = wire->resistance[1];
-        if (near0 != nullptr && near1 != nullptr) {
-            if (r0 > 0.0 && r1 > 0.0) {
-                // fed from both ends: the triangle res/r0/r1 read as a star
-                const double r0_star = res + r0 + ((res * r0) / r1);
-                const double r1_star = res + r1 + ((res * r1) / r0);
-                return (near0->current_get(r0_star) + near1->current_get(r1_star)) * res;
-            }
-            if (r0 >= 0.0) {
-                return near0->current_get(res + r0) * res;
-            }
-            if (r1 >= 0.0) {
-                return near1->current_get(res + r1) * res;
-            }
-            return 0.0;
+        Feed feeds[2];
+        const int count = _wire_feeds(*wire, _load_resistance(p_assumed_voltage, p_current), feeds);
+        for (int index = 0; index < count; ++index) {
+            power_sources.getptr(feeds[index].source)->draw(feeds[index].resistance);
         }
-        if (near0 != nullptr && r0 >= 0.0) {
-            return near0->current_get(res + r0) * res;
-        }
-        if (near1 != nullptr && r1 >= 0.0) {
-            return near1->current_get(res + r1) * res;
-        }
-        // in a section, but nothing along it reaches this span
-        return 0.0;
     }
 
     Dictionary TractionServer::wire_find_above_with_height(

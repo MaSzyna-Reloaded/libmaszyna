@@ -5,19 +5,27 @@ extends MaszynaGutTest
 
 ## Frames given to the streaming worker and the frame-budgeted build/clear before a check fails
 const STREAMING_FRAMES:int = 60
+## Real seconds to wait for the streaming to look at a moved camera - a few of its watch intervals
+const CAMERA_WATCH_TIMEOUT:float = 1.0
 const CHUNK_SIZE_M:float = 1000.0
+## Real seconds for a watched area to be announced
+const AREA_TIMEOUT:float = 2.0
 
 var _camera:Camera3D
 var _rids:Array[RID] = []
 var _stream_rids:Array[RID] = []
 var _build_order:Array[RID] = []
+var _previous_lazy_loading:bool = false
 
 
 func before_each() -> void:
+    # what is loaded and let go follows the camera only with lazy loading
+    _previous_lazy_loading = ResourceLazyLoader.lazy_loading
+    ResourceLazyLoader.lazy_loading = true
     _camera = Camera3D.new()
     add_child_autoqfree(_camera)
     E3DRenderingServer.model_set_loader(_load_test_model)
-    SceneryStreamingServer.streaming_set_camera(_camera)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
 
 
 func after_each() -> void:
@@ -28,14 +36,18 @@ func after_each() -> void:
         SceneryStreamingServer.stream_free(rid)
     _stream_rids.clear()
     _build_order.clear()
-    SceneryStreamingServer.streaming_set_camera(null)
+    SceneryStreamingServer.streaming_set_camera(0)
     E3DRenderingServer.model_set_loader(E3DModelManager.load_model)
+    ResourceLazyLoader.lazy_loading = _previous_lazy_loading
 
 
+## A piece registered where the camera stands could be built by a plan made before the camera moves
+## away: the tests of what stays unbuilt register with the camera already out of range.
 func test_registered_instance_is_built_only_within_range() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     _register(Vector3.ZERO, 200.0)
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "built while out of range")
 
     await _move_camera(Vector3.ZERO)
@@ -60,9 +72,10 @@ func test_model_is_held_only_while_an_instance_of_it_is_built() -> void:
 
 func test_range_of_a_node_without_one_is_capped_by_the_draw_distance() -> void:
     var draw_distance:float = SceneryStreamingServer.streaming_get_draw_distance()
+    await _move_camera(Vector3(draw_distance + 2 * CHUNK_SIZE_M, 0, 0))
     _register(Vector3.ZERO, 0.0)
 
-    await _move_camera(Vector3(draw_distance + 2 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "built beyond the draw distance")
 
     await _move_camera(Vector3(draw_distance * 0.5, 0, 0))
@@ -70,9 +83,10 @@ func test_range_of_a_node_without_one_is_capped_by_the_draw_distance() -> void:
 
 
 func test_registered_instance_is_freed_before_it_is_ever_built() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     var rid:RID = _register(Vector3.ZERO, 200.0)
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     E3DRenderingServer.instance_free(rid)
     _rids.erase(rid)
 
@@ -83,6 +97,7 @@ func test_registered_instance_is_freed_before_it_is_ever_built() -> void:
 ## Building a chunk needs a real renderer (a headless material has no shader), so this covers the
 ## registration side only: an out-of-range chunk stays unbuilt and frees cleanly
 func test_triangle_chunk_out_of_range_is_not_built() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     var chunk := MaszynaTrianglesChunkData.new()
     chunk.geometry_path = "test/chunk_out_of_range.res"
     chunk.position = Vector3.ZERO
@@ -92,7 +107,7 @@ func test_triangle_chunk_out_of_range_is_not_built() -> void:
         func() -> MaszynaTrianglesChunkGeometry: return MaszynaTrianglesChunkGeometry.new()
     )
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "chunk built while out of range")
 
     MaszynaSceneryChunkRenderingServer.free_chunk(rid)
@@ -101,47 +116,91 @@ func test_triangle_chunk_out_of_range_is_not_built() -> void:
 
 
 func test_camera_can_pause_registration_until_the_final_start_position() -> void:
-    SceneryStreamingServer.streaming_set_camera(null)
+    SceneryStreamingServer.streaming_set_camera(0)
     var owner:int = SceneryStreamingServer.owner_create("test", Callable(), _record_build, _record_clear)
     var menu_rid:RID = _stream_register(owner, Vector3.ZERO)
     var cabin_rid:RID = _stream_register(owner, Vector3(4 * CHUNK_SIZE_M, 0, 0))
 
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(_build_order.size(), 0, "built scenery while streaming was paused")
 
     _camera.global_position = Vector3(4 * CHUNK_SIZE_M, 0, 0)
-    SceneryStreamingServer.streaming_set_camera(_camera)
-    await wait_idle_frames(STREAMING_FRAMES)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
+    await wait_streaming(STREAMING_FRAMES)
     assert_has(_build_order, cabin_rid, "did not build around the final camera")
     assert_does_not_have(_build_order, menu_rid, "built around the stale menu camera")
 
 
 func test_nearest_chunk_is_built_first_and_neighbourhood_becomes_ready() -> void:
-    SceneryStreamingServer.streaming_set_camera(null)
+    SceneryStreamingServer.streaming_set_camera(0)
     var owner:int = SceneryStreamingServer.owner_create("test", Callable(), _record_build, _record_clear)
     var far_rid:RID = _stream_register(owner, Vector3(CHUNK_SIZE_M, 0, 0))
     var near_rid:RID = _stream_register(owner, Vector3.ZERO)
     assert_false(SceneryStreamingServer.area_is_ready(1), "paused streaming reported ready")
 
-    SceneryStreamingServer.streaming_set_camera(_camera)
-    await wait_idle_frames(STREAMING_FRAMES)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(_build_order[0], near_rid, "farther chunk was built before the camera chunk")
     assert_has(_build_order, far_rid, "neighbour chunk was not built")
     assert_true(SceneryStreamingServer.area_is_ready(1), "camera neighbourhood did not become ready")
+
+
+## The area is announced once its chunks are built, not before
+func test_a_watched_area_is_announced_once_built() -> void:
+    SceneryStreamingServer.streaming_set_camera(0)
+    var owner:int = SceneryStreamingServer.owner_create("test", Callable(), _record_build, _record_clear)
+    var far_rid:RID = _stream_register(owner, Vector3(CHUNK_SIZE_M, 0, 0))
+    var near_rid:RID = _stream_register(owner, Vector3.ZERO)
+    var built_when_ready:Array = []
+    var on_ready:Callable = func(chunk_radius:int) -> void: built_when_ready.append([chunk_radius, _build_order.duplicate()])
+    SceneryStreamingServer.area_ready.connect(on_ready)
+    SceneryStreamingServer.area_watch(1)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
+    await wait_until(func() -> bool: return not built_when_ready.is_empty(), AREA_TIMEOUT)
+    await wait_streaming(STREAMING_FRAMES)
+    SceneryStreamingServer.area_unwatch(1)
+    SceneryStreamingServer.area_ready.disconnect(on_ready)
+    assert_eq(built_when_ready.size(), 1, "announced once while the camera stood")
+    assert_eq(built_when_ready[0][0], 1)
+    assert_has(built_when_ready[0][1], near_rid)
+    assert_has(built_when_ready[0][1], far_rid, "announced before the neighbour chunk was built")
+
+
+## An area with nothing to build is announced too, as is the camera's own chunk alone
+func test_an_area_with_nothing_to_build_is_announced() -> void:
+    await wait_streaming(STREAMING_FRAMES)
+    var announced:Array[int] = []
+    var on_ready:Callable = func(chunk_radius:int) -> void: announced.append(chunk_radius)
+    SceneryStreamingServer.area_ready.connect(on_ready)
+    SceneryStreamingServer.area_watch(0)
+    SceneryStreamingServer.area_watch(1)
+    await wait_until(func() -> bool: return announced.size() >= 2, AREA_TIMEOUT)
+    SceneryStreamingServer.area_unwatch(0)
+    SceneryStreamingServer.area_unwatch(1)
+    SceneryStreamingServer.area_ready.disconnect(on_ready)
+    announced.sort()
+    assert_eq(announced, [0, 1] as Array[int])
 
 
 ## The catch-up budget fills the area around a new camera, or one that jumped - never the world a
 ## train drives through
 func test_the_area_is_filled_after_a_new_camera_and_a_jump_only() -> void:
     _register(Vector3.ZERO, 200.0)
-    SceneryStreamingServer.streaming_set_camera(_camera)
+    SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
     assert_true(SceneryStreamingServer.streaming_get_statistics()["filling"], "a new camera is not filling")
     await _move_camera(Vector3.ZERO)
     assert_false(SceneryStreamingServer.streaming_get_statistics()["filling"], "still filling a ready area")
 
+    # the camera is looked at every SceneryStreamingServer.WATCH_INTERVAL_SEC: the jump is seen when
+    # the plan for it moves the camera's chunk - read there, as an empty area is filled at once
+    var filling_at_jump:Array[bool] = []
+    var on_chunk_changed:Callable = func(_chunk:Vector2i) -> void:
+        filling_at_jump.append(SceneryStreamingServer.streaming_get_statistics()["filling"])
+    SceneryStreamingServer.streaming_camera_chunk_changed.connect(on_chunk_changed)
     _camera.global_position = Vector3(10.0 * CHUNK_SIZE_M, 0, 0)
-    await wait_idle_frames(1)
-    assert_true(SceneryStreamingServer.streaming_get_statistics()["filling"], "a jump is not filling")
+    await wait_for_signal(SceneryStreamingServer.streaming_camera_chunk_changed, CAMERA_WATCH_TIMEOUT)
+    SceneryStreamingServer.streaming_camera_chunk_changed.disconnect(on_chunk_changed)
+    assert_eq(filling_at_jump, [true] as Array[bool], "a jump is not filling")
     await _move_camera(Vector3(10.0 * CHUNK_SIZE_M + 40.0, 0, 0))
     assert_false(SceneryStreamingServer.streaming_get_statistics()["filling"], "still filling after the jump")
 
@@ -164,18 +223,18 @@ func test_the_anchor_chunk_is_kept_built_wherever_the_camera_is() -> void:
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0)
 
     SceneryStreamingServer.streaming_set_anchor_position(Vector3(500.0, 0, 500.0))
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 1, "the anchor's chunk was not built")
 
     # driven on by an AI into the next chunk: the one it left is no longer kept
     SceneryStreamingServer.streaming_set_anchor_position(Vector3(1500.0, 0, 500.0))
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "the chunk left is still kept")
 
     SceneryStreamingServer.streaming_set_anchor_position(Vector3(500.0, 0, 500.0))
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
     SceneryStreamingServer.streaming_clear_anchor()
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "kept after the anchor went")
 
 
@@ -269,7 +328,7 @@ func _record_clear(_user_rid:RID) -> void:
 ## the streaming to settle instead of assuming it happened in one frame
 func _move_camera(position:Vector3) -> void:
     _camera.global_position = position
-    await wait_idle_frames(STREAMING_FRAMES)
+    await wait_streaming(STREAMING_FRAMES)
 
 
 func _load_test_model(_data_path:String, _filename:String) -> E3DModel:

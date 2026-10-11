@@ -26,7 +26,10 @@ namespace godot {
             /* Stamped by the build itself (cmake/write_build_number.cmake), empty in a checkout
              * that was never built */
             String build_number;
-            bool build_version_checked = false;
+
+            /* Clears the caches on disk when the build behind them is not the one that wrote them -
+             * once, with the server, before anything reads them */
+            void _check_build_version();
 
         protected:
             static void _bind_methods();
@@ -49,8 +52,5 @@ namespace godot {
              * owner, then built again - the game directory changed, or the data in it */
             void data_reload();
             String build_get_number() const;
-            /* Clears every cache once per run when the build behind them is not the one that
-             * wrote them */
-            bool build_check_version();
     };
 } // namespace godot

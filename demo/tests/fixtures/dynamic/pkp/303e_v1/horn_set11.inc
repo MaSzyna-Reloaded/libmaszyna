@@ -1,0 +1,2 @@
+horn1: { soundbegin: 697_eu07-horn-07.wav soundmain: 697_eu07-horn-08.wav soundend: 697_eu07-horn-09.wav range: 1000 }
+horn2: { soundbegin: 07]syrena2-start.wav soundmain: 07]syrena2-mid.wav soundend: 07]syrena2-end.wav range: 1000 }

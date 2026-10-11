@@ -36,11 +36,6 @@ const CAB_LAMP_SUBMODEL_NAMES:Array[String] = [
 ## Distance of the cab light below the found ceiling lamp - inside the lamp's shadow casting mesh
 ## it would light nothing.
 const CAB_LIGHT_BELOW_LAMP:float = 0.05
-## No rain falls inside the vehicle the player sits in: its body, as FIZ Dimensions give it, takes
-## the precipitation away. Only the shown cab has one - a volume on every vehicle of a scenery was
-## a quarter of the frame (docs/findings-archive.md, 2026-10-03 hundreds of vehicles)
-const RAIN_EXCLUSION_NAME:StringName = &"RainExclusion"
-const RAIN_EXCLUSION_PRECIPITATION_DELTA:float = -1.0
 
 var _generated:Node3D
 var _diagnostics:Array[Dictionary] = []
@@ -55,19 +50,11 @@ func _ready() -> void:
     # the MMD and the models are the game directory's
     GameDataServer.data_reload_requested.connect(reload)
     ProjectSettings.settings_changed.connect(_apply_reverse_cull_face)
-    # controller_path (inherited from Cabin3D) may already name the vehicle when this cab is
-    # placed in a scene rather than built by CabinSystem.cabin_show(), which names it itself.
-    # It is the vehicle's front cab then, as the original's cab 1.
-    if controller_path:
-        var physics_node:VehiclePhysicsNode = get_node_or_null(controller_path)
-        var vehicle:RID = physics_node.get_vehicle_rid() if physics_node else RID()
-        set_cabin(RailVehicleServer.vehicle_get_front_cabin(vehicle))
-        set_vehicle_rid(vehicle)
     # Cabin3D's own _ready() emits cabin_ready; the engine calls it beside this one.
 
 
-## Cabin3D announces the vehicle rather than letting a subclass override set_vehicle_rid(): the
-## vehicle calls that method typed, so a script method of the same name would never run.
+## Cabin3D announces the vehicle of its cabin rather than letting a subclass override set_cabin():
+## CabinSystem calls that method typed, so a script method of the same name would never run.
 func _on_vehicle_rid_changed(_vehicle_rid:RID) -> void:
     _rebuild_generated()
 
@@ -78,13 +65,13 @@ func _on_cabin_changed(_cabin:RID) -> void:
 
 
 func _exit_tree() -> void:
-    # the announcement goes first: clearing the vehicle would otherwise rebuild the cab on its
-    # way out of the tree
+    # the announcement goes first: clearing the cabin would otherwise rebuild the cab on its way
+    # out of the tree
     vehicle_rid_changed.disconnect(_on_vehicle_rid_changed)
     cabin_changed.disconnect(_on_cabin_changed)
     GameDataServer.data_reload_requested.disconnect(reload)
     ProjectSettings.settings_changed.disconnect(_apply_reverse_cull_face)
-    set_vehicle_rid(RID())
+    set_cabin(RID())
     _free_occluders()
 
 
@@ -155,14 +142,6 @@ func _rebuild_generated() -> void:
     if not definition.instruments.any(
             func(instrument:MmdInstrumentDescriptor) -> bool: return instrument.label == "i-cablight"):
         _build_cab_light(definition)
-    # the vehicle's origin lies on the rail level, so the box is lifted by half of its height; the
-    # cab's own turn about the vertical leaves the box as it is
-    var rain_exclusion := RainVolume.new()
-    rain_exclusion.name = RAIN_EXCLUSION_NAME
-    rain_exclusion.precipitation_delta = RAIN_EXCLUSION_PRECIPITATION_DELTA
-    rain_exclusion.size = VehicleServer.vehicle_get_dimensions(get_vehicle_rid())
-    rain_exclusion.position.y = rain_exclusion.size.y * 0.5
-    _generated.add_child(rain_exclusion)
     var windscreen_wipers := CabinWindscreenWipers.new()
     windscreen_wipers.name = "WindscreenWipers"
     windscreen_wipers.vehicle_rid = get_vehicle_rid()

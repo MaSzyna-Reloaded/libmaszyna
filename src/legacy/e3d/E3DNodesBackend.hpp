@@ -31,7 +31,7 @@ namespace godot {
 
             void build(E3DInstanceData &p_instance, E3DMaterialResolver &p_material_resolver) override;
             void clear(E3DInstanceData &p_instance) override;
-            void update(const E3DInstanceData &p_instance) override;
+            void update(E3DInstanceData &p_instance) override;
             void apply_poses(E3DInstanceData &p_instance) override;
             bool intersect_segment(
                     const E3DInstanceData &p_instance, const Vector3 &p_from, const Vector3 &p_to, double &p_r_distance,

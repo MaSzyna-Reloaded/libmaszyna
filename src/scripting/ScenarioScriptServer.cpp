@@ -28,10 +28,11 @@ namespace godot {
                 D_METHOD("context_apply_source", "context", "unit", "source"),
                 &ScenarioScriptServer::context_apply_source);
         ClassDB::bind_method(
-                D_METHOD("context_attach_cabin_delegate", "context", "cabin"),
-                &ScenarioScriptServer::context_attach_cabin_delegate);
+                D_METHOD("context_attach_cabin_implementation", "context", "cabin"),
+                &ScenarioScriptServer::context_attach_cabin_implementation);
         ClassDB::bind_method(
-                D_METHOD("context_get_cabin_delegate", "context"), &ScenarioScriptServer::context_get_cabin_delegate);
+                D_METHOD("context_get_cabin_implementation", "context"),
+                &ScenarioScriptServer::context_get_cabin_implementation);
 
         ADD_SIGNAL(MethodInfo(
                 script_error_signal, PropertyInfo(Variant::RID, "context"), PropertyInfo(Variant::STRING, "message")));
@@ -102,7 +103,7 @@ namespace godot {
         }
         if (context->cabin.is_valid()) {
             context->cabin->disconnect(
-                    ScenarioScriptCabinDelegate::control_changed_signal,
+                    ScenarioScriptCabinImplementation::control_changed_signal,
                     callable_mp(this, &ScenarioScriptServer::_on_cabin_control_changed).bind(p_context));
         }
         if (context->runtime != nullptr) {
@@ -148,23 +149,24 @@ namespace godot {
         });
     }
 
-    void ScenarioScriptServer::context_attach_cabin_delegate(
-            const RID &p_context, const Ref<ScenarioScriptCabinDelegate> &p_cabin) {
+    void ScenarioScriptServer::context_attach_cabin_implementation(
+            const RID &p_context, const Ref<ScenarioScriptCabinImplementation> &p_cabin) {
         Context *context = contexts.getptr(p_context);
         ERR_FAIL_NULL(context);
         const Callable changed = callable_mp(this, &ScenarioScriptServer::_on_cabin_control_changed).bind(p_context);
         if (context->cabin.is_valid()) {
-            context->cabin->disconnect(ScenarioScriptCabinDelegate::control_changed_signal, changed);
+            context->cabin->disconnect(ScenarioScriptCabinImplementation::control_changed_signal, changed);
         }
         context->cabin = p_cabin;
         if (p_cabin.is_valid()) {
-            p_cabin->connect(ScenarioScriptCabinDelegate::control_changed_signal, changed);
+            p_cabin->connect(ScenarioScriptCabinImplementation::control_changed_signal, changed);
         }
     }
 
-    Ref<ScenarioScriptCabinDelegate> ScenarioScriptServer::context_get_cabin_delegate(const RID &p_context) const {
+    Ref<ScenarioScriptCabinImplementation>
+    ScenarioScriptServer::context_get_cabin_implementation(const RID &p_context) const {
         const Context *context = contexts.getptr(p_context);
-        ERR_FAIL_NULL_V(context, Ref<ScenarioScriptCabinDelegate>());
+        ERR_FAIL_NULL_V(context, Ref<ScenarioScriptCabinImplementation>());
         return context->cabin;
     }
 

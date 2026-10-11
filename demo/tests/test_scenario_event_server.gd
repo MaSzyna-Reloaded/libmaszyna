@@ -39,7 +39,7 @@ class RecordingAction extends ScenarioEventAction:
 
 
 ## A driver whose train departs this many seconds from any time
-class DepartingDriver extends DriverDelegate:
+class DepartingDriver extends DriverImplementation:
     var seconds:float = 0.0
 
     func _get_seconds_until_departure(_driver:RID, _hours:float) -> float:
@@ -208,7 +208,8 @@ func test_a_radio_call_fires_the_launchers_listening_in_range() -> void:
         ScenarioEventServer.launcher_set_radius(launcher, 100.0)
         launchers.append(launcher)
 
-    RailVehicleServer.vehicle_radio_called.emit(RID(), RailVehicleRadio.RADIO_CALL3, Vector3(10, 0, 0))
+    var radio:SceneryVirtualRadio = SceneryVirtualRadio.new()
+    radio.transmit(Vector3(10, 0, 0), 1, 0.0, RadioServer.KIND_CALL, RailVehicleRadio.RADIO_CALL3)
 
     assert_true(ScenarioEventServer.event_is_queued(near), "call 3 within 100 m")
     assert_false(ScenarioEventServer.event_is_queued(far), "out of range")
@@ -244,7 +245,7 @@ func test_a_departure_delay_counts_from_the_departure_of_the_train() -> void:
             "DepartureDelayTest", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid()
     var departing:DepartingDriver = DepartingDriver.new()
     departing.seconds = UNTIL_DEPARTURE
-    DriverSystem.driver_attach_delegate(get_vehicle_driver(vehicle), departing)
+    attach_driver_implementation(get_vehicle_driver(vehicle), departing)
     var event:RID = _create_event(RecordingAction.new(), EVENT_DELAY)
     ScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
     var now:float = SimulationServer.simulation_get_time()
@@ -349,13 +350,15 @@ func test_a_timed_launcher_of_a_radius_fires_only_near_the_camera() -> void:
 
 func test_a_passenger_stop_is_named_as_the_timetable_names_it() -> void:
     var models:Array[MaszynaModelData] = []
-    await _build_scenery("event w4_stopinfo putvalues 0 none 1 2 3 PassengerStopPoint:Jawor#2 -4 151 endevent", models)
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "event w4_stopinfo putvalues 0 none 1 2 3 PassengerStopPoint:Jawor#2 -4 151 endevent", models
+    )
     var event:RID = ScenarioEventServer.event_get_rid_by_name(&"w4_stopinfo")
     var action:MaszynaLegacyVehicleCommandAction = ScenarioEventServer.event_get_action(event)
 
     assert_eq(action.command, "PassengerStopPoint:Jawor", "unique only past its #")
     assert_true(ScenarioEventServer.event_is_passive(event), "read by the drivers ahead, never queued")
-    _free_events([event])
+    root.free()
 
 
 func test_a_departure_delay_is_read_from_the_scenery() -> void:
@@ -428,7 +431,7 @@ func test_scenery_lights_event_shows_the_aspect() -> void:
     var aspects:Dictionary = {&"sem_ligh1": PackedFloat32Array([1.0])}
     SignallingServer.signal_head_set_kind(signal_head, MaszynaLegacySignalHeadKindFactory.create_kind(aspects))
     var system:RID = SignallingServer.system_create()
-    SignallingServer.system_attach_delegate(system, MaszynaLegacySignallingDelegate.new())
+    SignallingServer.system_attach_implementation(system, MaszynaLegacySignallingImplementation.new())
     SignallingServer.system_add_signal_head(system, signal_head)
     var model_data:MaszynaModelData = MaszynaModelData.new()
     model_data.name = "Sem_A"

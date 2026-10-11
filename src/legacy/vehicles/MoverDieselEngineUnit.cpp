@@ -1,6 +1,7 @@
 #include "MoverDieselEngineUnit.hpp"
+#include "legacy/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "legacy/vehicles/MoverBackend.hpp"
-#include "legacy/vehicles/MoverTypes.hpp"
+#include "utils/LibMaszynaUnits.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/rail/RailVehicleDieselEngine.hpp"
 
@@ -123,9 +124,12 @@ namespace godot {
 
         p_mover->OilPump.pressure_minimum = p_engine->get_oil_pump_pressure_minimum();
         p_mover->OilPump.pressure_maximum = p_engine->get_oil_pump_pressure_maximum();
-        p_mover->FuelPump.start_type = mover_start_mode(p_engine->get_fuel_pump_start_mode());
-        p_mover->OilPump.start_type = mover_start_mode(p_engine->get_oil_pump_start_mode());
-        p_mover->WaterPump.start_type = mover_start_mode(p_engine->get_water_pump_start_mode());
+        p_mover->FuelPump.start_type =
+                MaszynaMoverVehicleServer::start_mode_to_mover(p_engine->get_fuel_pump_start_mode());
+        p_mover->OilPump.start_type =
+                MaszynaMoverVehicleServer::start_mode_to_mover(p_engine->get_oil_pump_start_mode());
+        p_mover->WaterPump.start_type =
+                MaszynaMoverVehicleServer::start_mode_to_mover(p_engine->get_water_pump_start_mode());
 
         p_mover->dizel_nmin = p_engine->get_mechanical_min_rpm();
         p_mover->dizel_nmax = p_engine->get_mechanical_max_rpm();
@@ -220,7 +224,7 @@ namespace godot {
                 continue;
             }
             // matches readV2NMAXList (Mover.cpp:8476-8489): x unconverted, y (rpm) -> rev/s
-            p_mover->dizel_vel2nmax_Table.emplace(row->get_x(), row->get_y() / 60.0);
+            p_mover->dizel_vel2nmax_Table.emplace(row->get_x(), row->get_y() / LibMaszynaUnits::SECONDS_PER_MINUTE);
         }
 
         p_mover->hydro_R = p_engine->get_retarder_present();
@@ -272,7 +276,7 @@ namespace godot {
                         String::num(i));
                 continue;
             }
-            p_mover->dizel_Momentum_Table.emplace(row->get_x() / 60.0, row->get_y());
+            p_mover->dizel_Momentum_Table.emplace(row->get_x() / LibMaszynaUnits::SECONDS_PER_MINUTE, row->get_y());
         }
     }
 
@@ -283,7 +287,9 @@ namespace godot {
         if (p_mover == nullptr) {
             return 0.0;
         }
-        return p_mover->EngineType == TEngineType::DieselEngine ? p_mover->dizel_nmin : p_mover->DElist[0].RPM / 60.0;
+        return p_mover->EngineType == TEngineType::DieselEngine
+                       ? p_mover->dizel_nmin
+                       : p_mover->DElist[0].RPM / LibMaszynaUnits::SECONDS_PER_MINUTE;
     }
 
     void MoverDieselEngineUnit::fill_config(Dictionary &p_config) const {

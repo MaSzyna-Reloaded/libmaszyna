@@ -20,6 +20,8 @@ namespace godot {
 
         private:
             static void _bind_methods();
+            /* DynObj's DimHeadlights - the vehicle's, not the simulation's */
+            bool headlights_dimmed = false;
 
         public:
             /* Live state, read straight from the backend - nothing is stored. */
@@ -61,35 +63,53 @@ namespace godot {
 
         public:
             static const char *selector_position_changed_signal;
-            MAKE_MEMBER_GS(bool, lights_wrap_selector, false);
-            MAKE_MEMBER_GS(int, lights_default_selector_position, 0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, light_source,
-                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleEngine::EngineType, source_generator_engine, RailVehicleEngine::EngineType::MAIN);
-            MAKE_MEMBER_GS(double, source_accumulator_max_voltage, 0.0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, light_alternative_source,
-                    RailVehicleController::TrainPowerSource::POWER_SOURCE_ACCUMULATOR);
-            MAKE_MEMBER_GS(double, light_alternative_max_voltage, 24.0);
-            MAKE_MEMBER_GS(double, light_alternative_capacity, 495.0);
-            MAKE_MEMBER_GS_NR(
-                    RailVehicleController::TrainPowerSource, source_accumulator_recharge_source,
-                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR);
-            MAKE_MEMBER_GS(Color, head_light_color, Color(255, 255, 255));
-            MAKE_MEMBER_GS(double, head_light_dimmed_multiplier, 0.6);
-            MAKE_MEMBER_GS(double, head_light_normal_multiplier, 1.0);
-            MAKE_MEMBER_GS(double, head_light_high_beam_dimmed_multiplier, 2.5);
-            MAKE_MEMBER_GS(double, head_light_high_beam_normal_multiplier, 2.8);
-            MAKE_MEMBER_GS(int, instrument_type, 0);
+
+        private:
+            bool lights_wrap_selector = false;
+            /* MOVER.h:1701 LightsDefPos */
+            int lights_default_selector_position = 1;
+            RailVehicleController::TrainPowerSource light_source =
+                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR;
+            RailVehicleEngine::EngineType source_generator_engine = RailVehicleEngine::EngineType::MAIN;
+            double source_accumulator_max_voltage = 0.0;
+            RailVehicleController::TrainPowerSource light_alternative_source =
+                    RailVehicleController::TrainPowerSource::POWER_SOURCE_ACCUMULATOR;
+            /* TPowerParameters defaults (MOVER.h:1032, the accumulator's MaxCapacity MOVER.h:950) */
+            double light_alternative_max_voltage = 0.0;
+            double light_alternative_capacity = 0.0;
+            RailVehicleController::TrainPowerSource source_accumulator_recharge_source =
+                    RailVehicleController::TrainPowerSource::POWER_SOURCE_GENERATOR;
+            /* Headlights: defaults of MOVER.h:2273-2280 */
+            Color head_light_color = Color(1, 1, 1);
+            double head_light_dimmed_multiplier = 0.6;
+            double head_light_normal_multiplier = 1.0;
+            double head_light_high_beam_dimmed_multiplier = 2.5;
+            double head_light_high_beam_normal_multiplier = 2.8;
+            int instrument_type = 0;
+
+        public:
+            MAKE_GS(bool, lights_wrap_selector);
+            MAKE_GS(int, lights_default_selector_position);
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, light_source);
+            MAKE_GS_NR(RailVehicleEngine::EngineType, source_generator_engine);
+            MAKE_GS(double, source_accumulator_max_voltage);
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, light_alternative_source);
+            MAKE_GS(double, light_alternative_max_voltage);
+            MAKE_GS(double, light_alternative_capacity);
+            MAKE_GS_NR(RailVehicleController::TrainPowerSource, source_accumulator_recharge_source);
+            MAKE_GS(Color, head_light_color);
+            MAKE_GS(double, head_light_dimmed_multiplier);
+            MAKE_GS(double, head_light_normal_multiplier);
+            MAKE_GS(double, head_light_high_beam_dimmed_multiplier);
+            MAKE_GS(double, head_light_high_beam_normal_multiplier);
+            MAKE_GS(int, instrument_type);
             virtual TypedArray<RailVehicleLightListItem> get_lights_list() = 0;
             virtual void set_lights_list(const TypedArray<RailVehicleLightListItem> &p_list) = 0;
             virtual void increase_light_selector_position() = 0;
             virtual void decrease_light_selector_position() = 0;
             /* The headlights dimmer (dimheadlights_sw:, Train.cpp:6125) */
-            virtual void headlights_dim(bool p_enabled) = 0;
-            virtual bool get_headlights_dimmed() const = 0;
+            void headlights_dim(bool p_enabled);
+            bool get_headlights_dimmed() const;
             /* Whether any lamp is lit at either end (iLights[front] != 0 || iLights[rear] != 0) - what
              * an instrument light of the head lights follows (Train.cpp:9570) */
             virtual bool get_any_light_enabled() const = 0;

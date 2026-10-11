@@ -1,4 +1,5 @@
 #pragma once
+#include "vehicles/base/VehicleController.hpp"
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/rid.hpp>
@@ -15,7 +16,10 @@ namespace godot {
             static void _bind_methods() {}
 
         public:
-            /* One frame of p_vehicles, the vehicles VehicleServer holds for this implementation */
-            virtual void stepping_advance(const Vector<RID> &p_vehicles, double p_delta) {}
+            /* One frame of p_vehicles, the vehicles VehicleServer holds for this implementation,
+             * and p_controllers, theirs at the same index */
+            virtual void stepping_advance(
+                    const Vector<RID> &p_vehicles, const Vector<Ref<VehicleController>> &p_controllers,
+                    double p_delta) {}
     };
 } // namespace godot

@@ -5,7 +5,7 @@
 namespace godot {
     /// The original's `lights` event (lights_event, Event.cpp:1741-1803). The event is an aspect of
     /// each signal head it is aimed at (MaszynaLegacySignalHeadKindFactory); this hands it to the
-    /// signal head's system, whose MaszynaLegacySignallingDelegate shows it.
+    /// signal head's system, whose MaszynaLegacySignallingImplementation shows it.
     class MaszynaLegacyLightsAction : public ScenarioEventAction {
             GDCLASS(MaszynaLegacyLightsAction, ScenarioEventAction)
 

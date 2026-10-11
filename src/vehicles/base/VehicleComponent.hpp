@@ -17,6 +17,10 @@ namespace godot {
             GDCLASS(VehicleComponent, Resource)
         public:
             static void _bind_methods();
+            static const char *config_changed_signal;
+            static const char *enable_changed_signal;
+            static const char *component_enabled_signal;
+            static const char *component_disabled_signal;
 
         private:
             bool _commands_registered = false;
@@ -26,8 +30,6 @@ namespace godot {
 
         protected:
             bool enabled = true;
-            bool enabled_changed = false;
-            bool dirty = false;
             /* The vehicle this component belongs to, set when it joins it. A raw pointer with no
              * initialiser used to be safe only because nothing read this component before it
              * joined; a property read does (see FINDINGS.md, 2026-09-22). */
@@ -71,7 +73,7 @@ namespace godot {
 
             void register_command(const String &p_command, const Callable &p_callback);
             void unregister_command(const String &p_command);
-            void
+            Variant
             send_command(const String &p_command, const Variant &p_p1 = Variant(), const Variant &p_p2 = Variant());
             void log(GameLog::LogLevel p_level, const String &p_line);
             void log_debug(const String &p_line);
@@ -86,6 +88,10 @@ namespace godot {
              * whatever config the vehicle derives from it. The simulation backend is an
              * implementation detail: the interface knows state and config, nothing else. */
             void apply_config();
+            /* The second pass of the vehicle's configuration: writes what depends on other
+             * components of the vehicle, read from their properties once every component has
+             * applied its own (VehicleController::apply_configuration()). */
+            virtual void apply_vehicle_config();
 
             /* Writes this component's share of the vehicle dump. Called only when somebody asks
              * for a dump - a console, a test, a diagnostic - never per frame: the live values are
@@ -116,6 +122,5 @@ namespace godot {
             virtual void _fill_config_dictionary(Dictionary &p_config) const;
             Dictionary get_config();
             void emit_config_changed_signal();
-            void mark_dirty();
     };
 } // namespace godot

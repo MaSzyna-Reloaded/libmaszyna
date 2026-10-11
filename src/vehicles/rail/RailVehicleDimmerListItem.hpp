@@ -8,8 +8,15 @@ namespace godot {
 
         public:
             static void _bind_methods();
-            MAKE_MEMBER_GS(bool, high_beam, false);
-            MAKE_MEMBER_GS(bool, dimmed, false);
-            MAKE_MEMBER_GS(bool, off, false);
+
+        private:
+            bool high_beam = false;
+            bool dimmed = false;
+            bool off = false;
+
+        public:
+            MAKE_GS(bool, high_beam);
+            MAKE_GS(bool, dimmed);
+            MAKE_GS(bool, off);
     };
 } // namespace godot

@@ -4,7 +4,7 @@
 		Where the lines of a [GameLogger] go.
 	</brief_description>
 	<description>
-		Registered with [method GameLog.create_handler]. The lines below [member min_level] are left out. Override [method _handle] in a script to handle the lines.
+		Registered by name with [method GameLog.register_handler] and assigned to loggers with [method GameLog.assign_handler]; one handler may serve many loggers. The lines below [member min_level] are left out. Override [method _handle] in a script to handle the lines.
 	</description>
 	<tutorials>
 	</tutorials>

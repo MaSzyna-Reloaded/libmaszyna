@@ -2,6 +2,8 @@
 
 #include "game_data/GameDataServer.hpp"
 
+#include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/object.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
@@ -17,6 +19,9 @@ namespace godot {
     /// What is read from the game's data is let go when the data is (GameDataServer)
     ResourceLazyLoader::ResourceLazyLoader() {
         singleton = this;
+        lazy_loading = OS::get_singleton()->get_cmdline_args().has(ARG_ENABLE_LAZY_LOADING) ||
+                       static_cast<bool>(ProjectSettings::get_singleton()->get_setting(
+                               LAZY_LOADING_SETTING, DEFAULT_LAZY_LOADING));
         GameDataServer *game_data = GameDataServer::get_instance();
         ERR_FAIL_NULL(game_data);
         game_data->connect(
@@ -36,10 +41,24 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("resource_release", "resource"), &ResourceLazyLoader::resource_release);
         ClassDB::bind_method(D_METHOD("resource_is_resident", "resource"), &ResourceLazyLoader::resource_is_resident);
         ClassDB::bind_method(D_METHOD("resource_get_statistics"), &ResourceLazyLoader::resource_get_statistics);
+        ClassDB::bind_method(D_METHOD("set_lazy_loading", "lazy_loading"), &ResourceLazyLoader::set_lazy_loading);
+        ClassDB::bind_method(D_METHOD("get_lazy_loading"), &ResourceLazyLoader::get_lazy_loading);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lazy_loading"), "set_lazy_loading", "get_lazy_loading");
+    }
+
+    void ResourceLazyLoader::set_lazy_loading(const bool p_lazy_loading) {
+        MutexLock lock(mutex);
+        lazy_loading = p_lazy_loading;
+    }
+
+    bool ResourceLazyLoader::get_lazy_loading() const {
+        MutexLock lock(mutex);
+        return lazy_loading;
     }
 
     /// The new data is loaded anew; whoever holds a resource keeps holding it and gets the new one
-    /// with its next load
+    /// with its next load. One resident by its registration is loaded again by its next use, and
+    /// kept from its hold on
     void ResourceLazyLoader::_on_data_unload_requested() {
         Vector<Ref<Resource>> dropped; // freed once the mutex is let go
         MutexLock lock(mutex);
@@ -49,18 +68,34 @@ namespace godot {
         }
     }
 
+    /// Without lazy loading the first registration of a key loads it, outside the mutex as
+    /// resource_load() does
     RID ResourceLazyLoader::resource_register(const String &p_key, const Callable &p_loader) {
-        MutexLock lock(mutex);
-        if (const RID *found = keys.getptr(p_key); found != nullptr) {
-            entries[*found].registrations++;
-            return *found;
+        RID rid;
+        {
+            MutexLock lock(mutex);
+            if (const RID *found = keys.getptr(p_key); found != nullptr) {
+                entries[*found].registrations++;
+                return *found;
+            }
+            rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
+            Entry &entry = entries[rid];
+            entry.key = p_key;
+            entry.loader = p_loader;
+            entry.registrations = 1;
+            entry.resident_by_registration = !lazy_loading;
+            keys[p_key] = rid;
+            if (lazy_loading || !p_loader.is_valid()) {
+                return rid;
+            }
+            UtilityFunctions::print_verbose("[ResourceLazyLoader] loading ", p_key);
         }
-        const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
-        Entry &entry = entries[rid];
-        entry.key = p_key;
-        entry.loader = p_loader;
-        entry.registrations = 1;
-        keys[p_key] = rid;
+        const Ref<Resource> resource = p_loader.call();
+        MutexLock lock(mutex);
+        load_count++;
+        if (Entry *entry = entries.getptr(rid); entry != nullptr && entry->resource.is_null()) {
+            entry->resource = resource;
+        }
         return rid;
     }
 
@@ -123,7 +158,7 @@ namespace godot {
         ERR_FAIL_NULL(entry);
         ERR_FAIL_COND_MSG(entry->holders <= 0, "Released more times than fetched: " + entry->key);
         entry->holders--;
-        if (entry->holders == 0) {
+        if (entry->holders == 0 && !entry->resident_by_registration) {
             dropped = entry->resource;
             entry->resource.unref();
         }

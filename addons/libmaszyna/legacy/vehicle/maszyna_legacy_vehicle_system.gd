@@ -56,7 +56,7 @@ var _auto_rewident:MaszynaLegacyAutoRewident = null
 var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 
 
-## The editor drives no vehicle and plays no sound: CabinSystem, TrainSoundSystem and DriverSystem's
+## The editor drives no vehicle and plays no sound: CabinSystem, TrainSoundSystem and DriverServer's
 ## drivers are the game's
 func _ready() -> void:
     RailVehicleRenderingServer.vehicle_model_built.connect(_on_vehicle_model_built)

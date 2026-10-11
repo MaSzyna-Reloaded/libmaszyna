@@ -39,6 +39,9 @@ signal vehicle_rid_changing
 
 ## How deep the wiper animation turns the submodels below the control (Gauge.cpp:472-478)
 const WIPER_CHAIN_DEPTH:int = 2
+## A step of at least this share of the friction sets an element at its target outright
+## (TGauge::Update(), Gauge.cpp:366)
+const FRICTION_SNAP_SHARE:float = 0.5
 var _wiper_chain_meshes:Array[Node3D] = []
 var _wiper_chain_bases:Array[Basis] = []
 
@@ -191,6 +194,17 @@ func _set_mouse_state(state:String) -> void:
 func _exit_tree() -> void:
     set_vehicle_rid(RID())
     _dirty = true
+
+
+## How far an element moves towards its target in a step of `delta` seconds at `animation_speed`
+## (1 / the MMD friction): TGauge::Update() (Gauge.cpp:364-376) - no friction, or a step of half of
+## it or more, sets it outright ("zabezpieczenie przed oscylacjami dla dlugich czasow"), so a slow
+## frame or a fast simulation never throws it past the target into a spin
+static func friction_weight(delta:float, animation_speed:float) -> float:
+    var weight:float = delta * animation_speed
+    if animation_speed <= 0.0 or weight >= FRICTION_SNAP_SHARE:
+        return 1.0
+    return weight
 
 
 func _process_dirty(delta):

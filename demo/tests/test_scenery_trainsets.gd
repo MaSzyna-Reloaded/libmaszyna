@@ -64,8 +64,8 @@ func test_the_vehicle_with_somebody_aboard_gets_its_driver() -> void:
     await _scenery.load()
 
     assert_eq(_scenery.first_train_id, "first", "the player belongs in the vehicle with a driver")
-    assert_true(DriverSystem.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("first")).is_valid())
-    assert_false(DriverSystem.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("second")).is_valid())
+    assert_true(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("first")).is_valid())
+    assert_false(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("second")).is_valid())
 
 
 func test_a_skin_chosen_for_the_load_is_that_vehicles_alone() -> void:

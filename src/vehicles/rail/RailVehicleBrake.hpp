@@ -241,82 +241,145 @@ namespace godot {
             };
 
         private:
-            MAKE_MEMBER_GS_NR(TrainBrakeValve, valve_type, BRAKE_VALVE_NO_VALVE);
+            TrainBrakeValve valve_type = BRAKE_VALVE_NO_VALVE;
             /* BrakeValve= as the data writes it (BrakeValveParams): an ESt3's relays are read off it -
              * "PZZ" takes the independent brake's pressure, "AL2", "-s216", "-ED" (TNESt3::SetSize(),
              * Oerlikon_ESt.cpp) */
             String valve_parameters;
 
         public:
+            MAKE_GS_NR(TrainBrakeValve, valve_type);
             void set_valve_parameters(const String &p_valve_parameters);
             String get_valve_parameters() const;
 
         private:
-            MAKE_MEMBER_GS(int, est_valve_size, 0);
-            MAKE_MEMBER_GS(int, friction_elements_per_axle, 1);
-            MAKE_MEMBER_GS(double, brake_force_max, 1.0);
-            MAKE_MEMBER_GS(double, brake_force_traction, 0.0);
-            MAKE_MEMBER_GS(double, max_cylinder_pressure, 0.0);
-            MAKE_MEMBER_GS(double, max_aux_pressure, 0.0);
-            MAKE_MEMBER_GS(double, max_antislip_pressure, 0.0);
-            MAKE_MEMBER_GS(double, max_tare_pressure, 0.0);
-            MAKE_MEMBER_GS(double, max_medium_pressure, 0.0);
-            MAKE_MEMBER_GS(int, cylinder_count, 0);
-            MAKE_MEMBER_GS(double, cylinder_radius, 0.0);
-            MAKE_MEMBER_GS(double, cylinder_distance, 0.0);
-            MAKE_MEMBER_GS(double, cylinder_spring_force, 0.0);
-            MAKE_MEMBER_GS(double, piston_stroke_adjuster_resistance, 0.0);
-            MAKE_MEMBER_GS(double, cylinder_gear_ratio, 0.0);
-            MAKE_MEMBER_GS(double, cylinder_gear_ratio_low, 0.0);
-            MAKE_MEMBER_GS(double, cylinder_gear_ratio_high, 0.0);
-            MAKE_MEMBER_GS(double, pipe_pressure_max, 5.0);
-            MAKE_MEMBER_GS(double, pipe_pressure_min, 3.5);
-            MAKE_MEMBER_GS(double, tank_volume_main, 0.0);
-            MAKE_MEMBER_GS(double, tank_volume_aux, 0.0);
-            MAKE_MEMBER_GS(double, compressor_cab_a_min_pressure, 0.0);
-            MAKE_MEMBER_GS(double, compressor_cab_a_max_pressure, 0.0);
-            MAKE_MEMBER_GS(double, compressor_cab_b_min_pressure, 0.0);
-            MAKE_MEMBER_GS(double, compressor_cab_b_max_pressure, 0.0);
-            MAKE_MEMBER_GS(double, compressor_speed, 0.0);
-            MAKE_MEMBER_GS(double, rapid_transfer, 1.0);
-            MAKE_MEMBER_GS(double, rapid_switching_speed, 55.0);
-            MAKE_MEMBER_GS_NR(CompressorPower, compressor_power, COMPRESSOR_POWER_CONVERTER_MANUAL);
-            MAKE_MEMBER_GS_NR(BrakeMethod, brake_method, BRAKE_METHOD_NONE);
-            MAKE_MEMBER_GS(double, rig_effectiveness, 0.0);
-            MAKE_MEMBER_GS(double, air_leak_multiplier, 1.0);
-            MAKE_MEMBER_GS(bool, compressor_tank_valve_active, false);
-            MAKE_MEMBER_GS(double, compressor_lower_emergency_closing_pressure, -1.0);
-            MAKE_MEMBER_GS(double, compressor_higher_emergency_closing_pressure, -1.0);
+            int est_valve_size = 0;
+            int friction_elements_per_axle = 1;
+            double brake_force_max = 1.0;
+            double brake_force_traction = 0.0;
+            double max_cylinder_pressure = 0.0;
+            double max_aux_pressure = 0.0;
+            double max_antislip_pressure = 0.0;
+            double max_tare_pressure = 0.0;
+            double max_medium_pressure = 0.0;
+            int cylinder_count = 0;
+            double cylinder_radius = 0.0;
+            double cylinder_distance = 0.0;
+            double cylinder_spring_force = 0.0;
+            double piston_stroke_adjuster_resistance = 0.0;
+            double cylinder_gear_ratio = 0.0;
+            double cylinder_gear_ratio_low = 0.0;
+            double cylinder_gear_ratio_high = 0.0;
+            /* HiPP [bar]; 0 when the FIZ gives none - the control pipe then starts near 5 bar */
+            double pipe_pressure_max = 0.0;
+            double pipe_pressure_min = 3.5;
+            double tank_volume_main = 0.0;
+            double tank_volume_aux = 0.0;
+            double compressor_cab_a_min_pressure = 0.0;
+            double compressor_cab_a_max_pressure = 0.0;
+            double compressor_cab_b_min_pressure = 0.0;
+            double compressor_cab_b_max_pressure = 0.0;
+            double compressor_speed = 0.0;
+            double rapid_transfer = 1.0;
+            double rapid_switching_speed = 55.0;
+            CompressorPower compressor_power = COMPRESSOR_POWER_CONVERTER_MANUAL;
+            BrakeMethod brake_method = BRAKE_METHOD_NONE;
+            double rig_effectiveness = 0.0;
+            double air_leak_multiplier = 1.0;
+            bool compressor_tank_valve_active = false;
+            double compressor_lower_emergency_closing_pressure = -1.0;
+            double compressor_higher_emergency_closing_pressure = -1.0;
+
+        public:
+            MAKE_GS(int, est_valve_size);
+            MAKE_GS(int, friction_elements_per_axle);
+            MAKE_GS(double, brake_force_max);
+            MAKE_GS(double, brake_force_traction);
+            MAKE_GS(double, max_cylinder_pressure);
+            MAKE_GS(double, max_aux_pressure);
+            MAKE_GS(double, max_antislip_pressure);
+            MAKE_GS(double, max_tare_pressure);
+            MAKE_GS(double, max_medium_pressure);
+            MAKE_GS(int, cylinder_count);
+            MAKE_GS(double, cylinder_radius);
+            MAKE_GS(double, cylinder_distance);
+            MAKE_GS(double, cylinder_spring_force);
+            MAKE_GS(double, piston_stroke_adjuster_resistance);
+            MAKE_GS(double, cylinder_gear_ratio);
+            MAKE_GS(double, cylinder_gear_ratio_low);
+            MAKE_GS(double, cylinder_gear_ratio_high);
+            MAKE_GS(double, pipe_pressure_max);
+            MAKE_GS(double, pipe_pressure_min);
+            MAKE_GS(double, tank_volume_main);
+            MAKE_GS(double, tank_volume_aux);
+            MAKE_GS(double, compressor_cab_a_min_pressure);
+            MAKE_GS(double, compressor_cab_a_max_pressure);
+            MAKE_GS(double, compressor_cab_b_min_pressure);
+            MAKE_GS(double, compressor_cab_b_max_pressure);
+            MAKE_GS(double, compressor_speed);
+            MAKE_GS(double, rapid_transfer);
+            MAKE_GS(double, rapid_switching_speed);
+            MAKE_GS_NR(CompressorPower, compressor_power);
+            MAKE_GS_NR(BrakeMethod, brake_method);
+            MAKE_GS(double, rig_effectiveness);
+            MAKE_GS(double, air_leak_multiplier);
+            MAKE_GS(bool, compressor_tank_valve_active);
+            MAKE_GS(double, compressor_lower_emergency_closing_pressure);
+            MAKE_GS(double, compressor_higher_emergency_closing_pressure);
             /* LPOn=/LPOff= absent: the main pipe is never locked, no pressure is below it
                (LockPipeOn/Off -1, Mover.cpp:4533, 10505-10506) */
             static constexpr double MAIN_PIPE_LOCK_NONE = -1.0;
             /* HandlePipeUnlockPos= absent (HandleUnlock -3, Mover.cpp:10507) */
             static constexpr double MAIN_PIPE_UNLOCK_HANDLE_POSITION_NONE = -3.0;
-            MAKE_MEMBER_GS(double, main_pipe_blocking_pressure, MAIN_PIPE_LOCK_NONE);
-            MAKE_MEMBER_GS(double, main_pipe_unblocking_pressure, MAIN_PIPE_LOCK_NONE);
-            MAKE_MEMBER_GS(double, main_pipe_minimum_unblocking_handle_position, MAIN_PIPE_UNLOCK_HANDLE_POSITION_NONE);
+
+        private:
+            double main_pipe_blocking_pressure = MAIN_PIPE_LOCK_NONE;
+            double main_pipe_unblocking_pressure = MAIN_PIPE_LOCK_NONE;
+            double main_pipe_minimum_unblocking_handle_position = MAIN_PIPE_UNLOCK_HANDLE_POSITION_NONE;
 
         public:
+            MAKE_GS(double, main_pipe_blocking_pressure);
+            MAKE_GS(double, main_pipe_unblocking_pressure);
+            MAKE_GS(double, main_pipe_minimum_unblocking_handle_position);
+
             virtual bool get_main_pipe_emergency_cuts_off_handle() const = 0;
             virtual void set_main_pipe_emergency_cuts_off_handle(bool p_value) = 0;
-            MAKE_MEMBER_GS(bool, releaser_enabled_only_at_no_power_pos, false)
-            MAKE_MEMBER_GS(double, compressor_emergency_valve_area, 0.0);
-            MAKE_MEMBER_GS(int, universal_brake_button_1, 0);
-            MAKE_MEMBER_GS(int, universal_brake_button_2, 0);
-            MAKE_MEMBER_GS(int, universal_brake_button_3, 0);
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleBrakePressureTableItem>, brake_pressure_table)
-            MAKE_MEMBER_GS_NR_NO_DEF(TypedArray<RailVehicleCompressorListItem>, compressor_list)
-            /* Cntrl. (czesc dotyczaca hamulca) */
+
+        private:
+            bool releaser_enabled_only_at_no_power_pos = false;
+            double compressor_emergency_valve_area = 0.0;
+            int universal_brake_button_1 = 0;
+            int universal_brake_button_2 = 0;
+            int universal_brake_button_3 = 0;
+            TypedArray<RailVehicleBrakePressureTableItem> brake_pressure_table;
+            TypedArray<RailVehicleCompressorListItem> compressor_list;
+            /* Cntrl. (the brake's part) */
             /* BrakeSystem= absent: Individual (Mover.cpp:10726) */
-            MAKE_MEMBER_GS_NR(BrakeSystemType, cntrl_brake_system, BRAKE_SYSTEM_INDIVIDUAL);
+            BrakeSystemType cntrl_brake_system = BRAKE_SYSTEM_INDIVIDUAL;
             /* LoadFIZ_Cntrl's defaults (MOVER.h:1612-1630, 1696, 2045): no handle, no delays - a
                delay of 0 is taken from CheckLocomotiveParameters' table (Mover.cpp:12066-12073) */
-            MAKE_MEMBER_GS(int, cntrl_brake_ctrl_position_count, 0);
-            MAKE_MEMBER_GS_NR(BrakeDelaySetting, cntrl_brake_delays, BRAKE_DELAY_NONE);
-            MAKE_MEMBER_GS(double, cntrl_brake_delay_1, 0.0);
-            MAKE_MEMBER_GS(double, cntrl_brake_delay_2, 0.0);
-            MAKE_MEMBER_GS(double, cntrl_brake_delay_3, 0.0);
-            MAKE_MEMBER_GS(double, cntrl_brake_delay_4, 0.0);
+            int cntrl_brake_ctrl_position_count = 0;
+            BrakeDelaySetting cntrl_brake_delays = BRAKE_DELAY_NONE;
+            double cntrl_brake_delay_1 = 0.0;
+            double cntrl_brake_delay_2 = 0.0;
+            double cntrl_brake_delay_3 = 0.0;
+            double cntrl_brake_delay_4 = 0.0;
+
+        public:
+            MAKE_GS(bool, releaser_enabled_only_at_no_power_pos);
+            MAKE_GS(double, compressor_emergency_valve_area);
+            MAKE_GS(int, universal_brake_button_1);
+            MAKE_GS(int, universal_brake_button_2);
+            MAKE_GS(int, universal_brake_button_3);
+            MAKE_GS_NR(TypedArray<RailVehicleBrakePressureTableItem>, brake_pressure_table);
+            MAKE_GS_NR(TypedArray<RailVehicleCompressorListItem>, compressor_list);
+            MAKE_GS_NR(BrakeSystemType, cntrl_brake_system);
+            MAKE_GS(int, cntrl_brake_ctrl_position_count);
+            MAKE_GS_NR(BrakeDelaySetting, cntrl_brake_delays);
+            MAKE_GS(double, cntrl_brake_delay_1);
+            MAKE_GS(double, cntrl_brake_delay_2);
+            MAKE_GS(double, cntrl_brake_delay_3);
+            MAKE_GS(double, cntrl_brake_delay_4);
 
         private:
             /* MaxBPMass= [t]: the mass at which the cylinders reach MaxBP, an empty car TareMaxBP and a
@@ -331,8 +394,14 @@ namespace godot {
             void set_cntrl_max_brake_pressure_mass(const double p_value) {
                 cntrl_max_brake_pressure_mass = p_value;
             }
-            MAKE_MEMBER_GS_NR(BrakeOperationMode, cntrl_brake_op_modes, BRAKE_OP_MODE_NONE);
-            MAKE_MEMBER_GS_NR(BrakeHandleType, cntrl_brake_handle_type, BRAKE_HANDLE_TYPE_NO_HANDLE);
+
+        private:
+            BrakeOperationMode cntrl_brake_op_modes = BRAKE_OP_MODE_NONE;
+            BrakeHandleType cntrl_brake_handle_type = BRAKE_HANDLE_TYPE_NO_HANDLE;
+
+        public:
+            MAKE_GS_NR(BrakeOperationMode, cntrl_brake_op_modes);
+            MAKE_GS_NR(BrakeHandleType, cntrl_brake_handle_type);
 
         private:
             /* How the handle answers a key; the positions brake_level_increase()/_decrease() move it
@@ -353,16 +422,30 @@ namespace godot {
             void set_handle_step(const double p_value) {
                 handle_step = p_value;
             }
-            MAKE_MEMBER_GS_NR(AntiSkidBrakeType, cntrl_anti_skid_brake_type, ANTI_SKID_BRAKE_NONE);
-            MAKE_MEMBER_GS_NR(LocalBrakeType, cntrl_local_brake_type, LOCAL_BRAKE_TYPE_NONE);
-            MAKE_MEMBER_GS_NR(BrakeHandleType, cntrl_local_brake_handle_type, BRAKE_HANDLE_TYPE_NO_HANDLE);
-            MAKE_MEMBER_GS(bool, cntrl_manual_brake_present, false);
-            MAKE_MEMBER_GS_NR(DynamicBrakeType, cntrl_dynamic_brake_type, DYNAMIC_BRAKE_NONE);
-            MAKE_MEMBER_GS(bool, cntrl_local_brake_traxx, false);
-            MAKE_MEMBER_GS(bool, cntrl_release_parking_by_spring_brake, false);
-            MAKE_MEMBER_GS(bool, cntrl_release_parking_by_spring_brake_when_door_open, false);
-            MAKE_MEMBER_GS(bool, cntrl_spring_brake_cuts_off_drive, true);
-            MAKE_MEMBER_GS(double, cntrl_spring_brake_drive_emergency_velocity, -1.0);
+
+        private:
+            AntiSkidBrakeType cntrl_anti_skid_brake_type = ANTI_SKID_BRAKE_NONE;
+            LocalBrakeType cntrl_local_brake_type = LOCAL_BRAKE_TYPE_NONE;
+            BrakeHandleType cntrl_local_brake_handle_type = BRAKE_HANDLE_TYPE_NO_HANDLE;
+            bool cntrl_manual_brake_present = false;
+            DynamicBrakeType cntrl_dynamic_brake_type = DYNAMIC_BRAKE_NONE;
+            bool cntrl_local_brake_traxx = false;
+            bool cntrl_release_parking_by_spring_brake = false;
+            bool cntrl_release_parking_by_spring_brake_when_door_open = false;
+            bool cntrl_spring_brake_cuts_off_drive = true;
+            double cntrl_spring_brake_drive_emergency_velocity = -1.0;
+
+        public:
+            MAKE_GS_NR(AntiSkidBrakeType, cntrl_anti_skid_brake_type);
+            MAKE_GS_NR(LocalBrakeType, cntrl_local_brake_type);
+            MAKE_GS_NR(BrakeHandleType, cntrl_local_brake_handle_type);
+            MAKE_GS(bool, cntrl_manual_brake_present);
+            MAKE_GS_NR(DynamicBrakeType, cntrl_dynamic_brake_type);
+            MAKE_GS(bool, cntrl_local_brake_traxx);
+            MAKE_GS(bool, cntrl_release_parking_by_spring_brake);
+            MAKE_GS(bool, cntrl_release_parking_by_spring_brake_when_door_open);
+            MAKE_GS(bool, cntrl_spring_brake_cuts_off_drive);
+            MAKE_GS(double, cntrl_spring_brake_drive_emergency_velocity);
 
         private:
             /* How much of the maximum force one block is making, 0..1. */

@@ -21,7 +21,7 @@ var _placed:Transform3D
 
 
 ## An AI driver that does nothing of its own: only who sits at the controls is tested
-class IdleDriver extends DriverDelegate:
+class IdleDriver extends DriverImplementation:
     pass
 
 
@@ -93,7 +93,7 @@ func test_taking_over_the_vehicle_driven_goes_back_into_its_cab() -> void:
     # the vehicle's driver rides in its rear cabin
     var driver:RID = PersonServer.person_create()
     RailVehicleServer.person_enter_rear_cabin(driver, _vehicle.get_rid(), VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
-    DriverSystem.driver_attach_delegate(driver, IdleDriver.new())
+    attach_driver_implementation(driver, IdleDriver.new())
     PlayerServer.player_take_over_vehicle(_vehicle.get_rid())
     PlayerCameraServer.camera_toggle_cabin()
     # Shift+Q: handed to its driver
@@ -107,7 +107,7 @@ func test_taking_over_the_vehicle_driven_goes_back_into_its_cab() -> void:
     assert_eq(PlayerServer.player_get_vehicle(), _vehicle.get_rid())
     assert_eq(VehicleServer.person_get_role(PlayerServer.player_get_person()),
             VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER, "taken back by the player")
-    assert_false(DriverSystem.vehicle_is_control_active(_vehicle.get_rid()), "the driver only rides along")
+    assert_false(DriverServer.vehicle_is_control_active(_vehicle.get_rid()), "the driver only rides along")
     PersonServer.person_free(driver)
 
 
@@ -118,7 +118,7 @@ func test_q_takes_the_controls_back_and_the_view_stays_outside() -> void:
     await wait_idle_frames(SETTLE_FRAMES)
     var driver:RID = PersonServer.person_create()
     RailVehicleServer.person_enter_rear_cabin(driver, _vehicle.get_rid(), VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
-    DriverSystem.driver_attach_delegate(driver, IdleDriver.new())
+    attach_driver_implementation(driver, IdleDriver.new())
     PlayerServer.player_take_over_vehicle(_vehicle.get_rid())
     PlayerServer.player_hand_over_vehicle()
     # Shift+F4: looking at the vehicle from outside
@@ -130,7 +130,7 @@ func test_q_takes_the_controls_back_and_the_view_stays_outside() -> void:
     assert_eq(PlayerCameraServer.camera_get_mode(), PlayerCameraServer.CAMERA_MODE_FOLLOW, "the view stays outside")
     assert_eq(VehicleServer.person_get_role(PlayerServer.player_get_person()),
             VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER, "the player drives again")
-    assert_false(DriverSystem.vehicle_is_control_active(_vehicle.get_rid()), "the driver only rides along")
+    assert_false(DriverServer.vehicle_is_control_active(_vehicle.get_rid()), "the driver only rides along")
     PersonServer.person_free(driver)
 
 

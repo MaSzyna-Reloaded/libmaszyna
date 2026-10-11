@@ -100,18 +100,18 @@ func _power_up() -> bool:
 func test_handed_to_the_ai_and_taken_back_the_locomotive_runs_on() -> void:
     assert_true(VehicleServer.vehicle_is_simulation_ready(vehicle_rid), "EP07-424 should exist")
     assert_eq(PlayerServer.player_get_vehicle(), vehicle_rid, "the player drives EP07-424")
-    var ai_driver:RID = DriverSystem.vehicle_get_driver(vehicle_rid)
+    var ai_driver:RID = DriverServer.vehicle_get_driver(vehicle_rid)
     assert_true(ai_driver.is_valid(), "the scenery's driver rides along")
     assert_ne(ai_driver, PlayerServer.player_get_person(), "and it is not the player")
-    assert_false(DriverSystem.driver_get_rids().has(PlayerServer.player_get_person()), "the player thinks for itself")
-    assert_false(DriverSystem.vehicle_is_control_active(vehicle_rid), "the AI touches nothing while the player drives")
+    assert_false(DriverServer.driver_get_rids().has(PlayerServer.player_get_person()), "the player thinks for itself")
+    assert_false(DriverServer.vehicle_is_control_active(vehicle_rid), "the AI touches nothing while the player drives")
     if not await _power_up():
         return
     assert_true(_main_switch_enabled(), "the line breaker is on")
     assert_true(_converter_enabled(), "the converter runs")
 
     PlayerServer.player_hand_over_vehicle()
-    assert_true(DriverSystem.vehicle_is_control_active(vehicle_rid), "the AI drives")
+    assert_true(DriverServer.vehicle_is_control_active(vehicle_rid), "the AI drives")
     await step(ticks(AI_DRIVING_SECONDS))
     assert_true(_main_switch_enabled(), "the line breaker stays on while the AI drives")
     assert_true(_converter_enabled(), "and so does the converter")
@@ -119,7 +119,7 @@ func test_handed_to_the_ai_and_taken_back_the_locomotive_runs_on() -> void:
     PlayerServer.player_take_over_vehicle(vehicle_rid)
     assert_eq(VehicleServer.person_get_role(PlayerServer.player_get_person()),
             VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER, "the player drives again")
-    assert_false(DriverSystem.vehicle_is_control_active(vehicle_rid), "and the AI rides along")
+    assert_false(DriverServer.vehicle_is_control_active(vehicle_rid), "and the AI rides along")
     await step(ticks(TAKE_BACK_WATCH_SECONDS))
     assert_true(_main_switch_enabled(), "the line breaker stays on after the take-back")
     assert_true(_converter_enabled(), "and so does the converter")

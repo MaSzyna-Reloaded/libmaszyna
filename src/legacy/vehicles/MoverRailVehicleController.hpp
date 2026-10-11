@@ -24,8 +24,6 @@ namespace godot {
              * was created for - the controller's own may change meanwhile. */
             TMoverParameters *mover = nullptr;
             RID mover_vehicle;
-            /* The model of the adapter fitted to each end, "" without one */
-            String fitted_adapter_models[2];
             /* An end fitted with its neighbour's adapter; p_with_room asks for room left for it */
             bool _fit_coupler_adapter(CouplerEnd p_end, bool p_with_room);
             /* The MaszynaMoverVehicleServer the Mover came from, by id: at shutdown it is freed -
@@ -69,26 +67,27 @@ namespace godot {
             /* C++ only and unbound: the Mover is this implementation's own business. */
             TMoverParameters *get_mover() const;
 
-            void cab_activation(bool p_enabled) const override;
-            void compartment_lights(bool p_enabled) const override;
-            void compartment_lights_switch_off(bool p_enabled) const override;
+            void cab_activation(bool p_enabled) override;
+            void compartment_lights(bool p_enabled) override;
+            void compartment_lights_switch_off(bool p_enabled) override;
             bool get_compartment_lights_enabled() const override;
             bool get_compartment_lights_active() const override;
-            void cab_activation_auto() const override;
-            void cab_deactivation_auto() const override;
-            void cab_controls_reset() const override;
+            void cab_activation_auto() override;
+            void cab_deactivation_auto() override;
+            void cab_controls_reset() override;
             void set_driver_cabin_kind(RailVehicleCabinKind::Kind p_kind) override;
             RailVehicleCabinKind::Kind get_active_cabin_kind() const override;
-            void cabin_leave() const override;
-            void cabin_enter() const override;
-            void ground_relay_reset() const override;
-            void antislip() const override;
-            void main_controller_increase(int p_step = 1) const override;
-            void main_controller_decrease(int p_step = 1) const override;
-            void second_controller_increase(int p_step = 1) const override;
-            void second_controller_decrease(int p_step = 1) const override;
-            void direction_increase() const override;
-            void direction_decrease() const override;
+            void cabin_leave() override;
+            void cabin_enter() override;
+            void ground_relay_reset() override;
+            void antislip() override;
+            void main_controller_increase(int p_step = 1) override;
+            void main_controller_decrease(int p_step = 1) override;
+            void main_controller_set_position(int p_position) override;
+            void second_controller_increase(int p_step = 1) override;
+            void second_controller_decrease(int p_step = 1) override;
+            void direction_increase() override;
+            void direction_decrease() override;
 
             bool is_simulation_ready() const override;
             void release() override;
@@ -100,6 +99,7 @@ namespace godot {
             double get_total_distance() const override;
             Direction get_direction() const override;
             void apply_config() override;
+            void apply_vehicle_config() override;
             double process_movement(double p_delta) override;
             void update_location() override;
             void update_neighbour(
@@ -124,7 +124,6 @@ namespace godot {
             bool is_coupler_automatic(CouplerEnd p_end) const override;
             BitField<CouplingFlags> get_coupler_joinable_flags(CouplerEnd p_end) const override;
             bool coupler_adapter_remove(const Variant &p_where) override;
-            String get_coupler_adapter_fitted_model(CouplerEnd p_end) const override;
             double get_coupler_adapter_fitted_length(CouplerEnd p_end) const override;
             double get_coupler_adapter_fitted_height(CouplerEnd p_end) const override;
             Ref<RailVehicleController> get_coupled_controller(CouplerEnd p_end) const override;

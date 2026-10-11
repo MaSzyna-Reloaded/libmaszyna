@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""The vehicles' start-up tests as a Markdown table: vehicle -> OK, FAIL with the step it stopped
+at, or NOT RUN (a script GUT did not load). Read from GUT's JUnit file; the vehicles are the
+demo/tests/test_zzz_startup_*.gd scripts, so a script missing from the run still has its row.
+
+    scripts/startup-report demo/test_results.xml >> "$GITHUB_STEP_SUMMARY"
+
+CI writes it to the run's summary and to a comment of the pull request (.github/workflows/ci.yml).
+"""
+
+import glob
+import os
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+# the comment of the pull request CI updates instead of adding another
+MARKER = "<!-- startup-report -->"
+CHIP = {
+    "OK": "![OK](https://img.shields.io/badge/-OK-brightgreen)",
+    "FAIL": "![FAIL](https://img.shields.io/badge/-FAIL-red)",
+    "NOT RUN": "![NOT RUN](https://img.shields.io/badge/-NOT%20RUN-lightgrey)",
+}
+TESTS_DIR = os.path.join(os.path.dirname(__file__), "..", "demo", "tests")
+
+
+def vehicle_of(script):
+    """The vehicle and its scenery fixture the script starts (its run_startup() call)"""
+    match = re.search(r'run_startup\("([^"]+)",\s*"([^"]+)"', open(script, encoding="utf-8").read())
+    return (match.group(2), match.group(1)) if match else (os.path.basename(script), "")
+
+
+def results(junit_path):
+    """script file name -> (status, the step a failed start stopped at)"""
+    found = {}
+    if not os.path.exists(junit_path):
+        return found
+    for suite in ET.parse(junit_path).getroot().iter("testsuite"):
+        name = os.path.basename(suite.get("name", ""))
+        failures = [element for case in suite.iter("testcase") for element in case
+                    if element.tag in ("failure", "error")]
+        if not failures:
+            found[name] = ("OK", "")
+            continue
+        text = " ".join((f.get("message") or "") + " " + (f.text or "") for f in failures)
+        step = re.search(r"start-up stopped at ([^:]+)", text)
+        found[name] = ("FAIL", step.group(1).strip() if step else text.strip().split("\n")[0][:120])
+    return found
+
+
+def main():
+    junit = sys.argv[1] if len(sys.argv) > 1 else os.path.join(TESTS_DIR, "..", "test_results.xml")
+    found = results(junit)
+    rows = []
+    for script in sorted(glob.glob(os.path.join(TESTS_DIR, "test_zzz_startup_*.gd"))):
+        status, step = found.get(os.path.basename(script), ("NOT RUN", ""))
+        vehicle, scenery = vehicle_of(script)
+        rows.append((vehicle, scenery, status, step))
+    passed = sum(1 for row in rows if row[2] == "OK")
+    print(MARKER)
+    print("### Start-up from cold by the keyboard: %d of %d vehicles move off\n" % (passed, len(rows)))
+    print("| Vehicle | Fixture | Result | Stopped at |")
+    print("|---|---|---|---|")
+    for vehicle, scenery, status, step in rows:
+        print("| %s | %s | %s | %s |" % (vehicle, scenery, CHIP[status], step.replace("|", "\\|")))
+
+
+if __name__ == "__main__":
+    main()
