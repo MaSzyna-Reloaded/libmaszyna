@@ -41,10 +41,13 @@ func after_each() -> void:
     ResourceLazyLoader.lazy_loading = _previous_lazy_loading
 
 
+## A piece registered where the camera stands could be built by a plan made before the camera moves
+## away: the tests of what stays unbuilt register with the camera already out of range.
 func test_registered_instance_is_built_only_within_range() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     _register(Vector3.ZERO, 200.0)
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "built while out of range")
 
     await _move_camera(Vector3.ZERO)
@@ -69,9 +72,10 @@ func test_model_is_held_only_while_an_instance_of_it_is_built() -> void:
 
 func test_range_of_a_node_without_one_is_capped_by_the_draw_distance() -> void:
     var draw_distance:float = SceneryStreamingServer.streaming_get_draw_distance()
+    await _move_camera(Vector3(draw_distance + 2 * CHUNK_SIZE_M, 0, 0))
     _register(Vector3.ZERO, 0.0)
 
-    await _move_camera(Vector3(draw_distance + 2 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "built beyond the draw distance")
 
     await _move_camera(Vector3(draw_distance * 0.5, 0, 0))
@@ -79,9 +83,10 @@ func test_range_of_a_node_without_one_is_capped_by_the_draw_distance() -> void:
 
 
 func test_registered_instance_is_freed_before_it_is_ever_built() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     var rid:RID = _register(Vector3.ZERO, 200.0)
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     E3DRenderingServer.instance_free(rid)
     _rids.erase(rid)
 
@@ -92,6 +97,7 @@ func test_registered_instance_is_freed_before_it_is_ever_built() -> void:
 ## Building a chunk needs a real renderer (a headless material has no shader), so this covers the
 ## registration side only: an out-of-range chunk stays unbuilt and frees cleanly
 func test_triangle_chunk_out_of_range_is_not_built() -> void:
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
     var chunk := MaszynaTrianglesChunkData.new()
     chunk.geometry_path = "test/chunk_out_of_range.res"
     chunk.position = Vector3.ZERO
@@ -101,7 +107,7 @@ func test_triangle_chunk_out_of_range_is_not_built() -> void:
         func() -> MaszynaTrianglesChunkGeometry: return MaszynaTrianglesChunkGeometry.new()
     )
 
-    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "chunk built while out of range")
 
     MaszynaSceneryChunkRenderingServer.free_chunk(rid)
