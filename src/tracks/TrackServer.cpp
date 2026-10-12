@@ -21,8 +21,8 @@ namespace godot {
     const char *TrackServer::topology_changed_signal = "topology_changed";
     const char *TrackServer::isolated_occupied_signal = "isolated_occupied";
     const char *TrackServer::isolated_freed_signal = "isolated_freed";
-    const char *TrackServer::isolated_vehicle_entered_signal = "isolated_vehicle_entered";
-    const char *TrackServer::isolated_vehicle_left_signal = "isolated_vehicle_left";
+    const char *TrackServer::isolated_axle_entered_signal = "isolated_axle_entered";
+    const char *TrackServer::isolated_axle_left_signal = "isolated_axle_left";
 
     double TrackServer::TrackSegment::get_length(const SwitchTrack p_switch_track) const {
         if (p_switch_track == TRACK_DIVERGING && curve2.is_valid()) {
@@ -89,6 +89,8 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("track_get_sound_distance", "track"), &TrackServer::track_get_sound_distance);
         ClassDB::bind_method(D_METHOD("track_set_velocity", "track", "velocity"), &TrackServer::track_set_velocity);
         ClassDB::bind_method(D_METHOD("track_get_velocity", "track"), &TrackServer::track_get_velocity);
+        ClassDB::bind_method(D_METHOD("track_axle_entered", "track", "vehicle"), &TrackServer::track_axle_entered);
+        ClassDB::bind_method(D_METHOD("track_axle_left", "track", "vehicle"), &TrackServer::track_axle_left);
         ClassDB::bind_method(
                 D_METHOD("track_vehicle_entered", "track", "vehicle"), &TrackServer::track_vehicle_entered);
         ClassDB::bind_method(D_METHOD("track_vehicle_left", "track", "vehicle"), &TrackServer::track_vehicle_left);
@@ -225,8 +227,8 @@ namespace godot {
         ADD_SIGNAL(MethodInfo(topology_rebuilt_signal));
         ADD_SIGNAL(MethodInfo(topology_changed_signal));
         for (const char *signal:
-             {isolated_occupied_signal, isolated_freed_signal, isolated_vehicle_entered_signal,
-              isolated_vehicle_left_signal}) {
+             {isolated_occupied_signal, isolated_freed_signal, isolated_axle_entered_signal,
+              isolated_axle_left_signal}) {
             ADD_SIGNAL(
                     MethodInfo(signal, PropertyInfo(Variant::RID, "isolated"), PropertyInfo(Variant::RID, "vehicle")));
         }
@@ -781,28 +783,37 @@ namespace godot {
         return track != nullptr ? track->velocity : -1.0;
     }
 
-    void TrackServer::track_vehicle_entered(const RID &p_track, const RID &p_vehicle) {
+    void TrackServer::track_axle_entered(const RID &p_track, const RID &p_vehicle) {
+        _count_axle(p_track, AXLE_ENTERED, p_vehicle);
+    }
+
+    void TrackServer::track_axle_left(const RID &p_track, const RID &p_vehicle) {
+        _count_axle(p_track, AXLE_LEFT, p_vehicle);
+    }
+
+    /// TTrack::AxleCounter() (Track.h:302-304)
+    void TrackServer::_count_axle(const RID &p_track, const int p_delta, const RID &p_vehicle) {
         TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return; // a vehicle off the tracks, or a track already gone
         }
-        track->vehicles.push_back(p_vehicle);
+        track->axle_count += p_delta;
         // copied: a listener may add the track to a section
         const Vector<RID> isolated = track->isolated;
         for (const RID &section: isolated) {
-            _count_isolated(section, 1, p_vehicle);
+            _count_isolated(section, p_delta, p_vehicle);
+        }
+    }
+
+    void TrackServer::track_vehicle_entered(const RID &p_track, const RID &p_vehicle) {
+        if (TrackSegment *track = tracks.getptr(p_track); track != nullptr) {
+            track->vehicles.push_back(p_vehicle);
         }
     }
 
     void TrackServer::track_vehicle_left(const RID &p_track, const RID &p_vehicle) {
-        TrackSegment *track = tracks.getptr(p_track);
-        if (track == nullptr) {
-            return; // the track went first
-        }
-        track->vehicles.erase(p_vehicle);
-        const Vector<RID> isolated = track->isolated;
-        for (const RID &section: isolated) {
-            _count_isolated(section, -1, p_vehicle);
+        if (TrackSegment *track = tracks.getptr(p_track); track != nullptr) {
+            track->vehicles.erase(p_vehicle);
         }
     }
 
@@ -821,23 +832,28 @@ namespace godot {
         return result;
     }
 
+    const Vector<RID> &TrackServer::track_get_vehicle_list(const RID &p_track) const {
+        static const Vector<RID> no_vehicles;
+        const TrackSegment *track = tracks.getptr(p_track);
+        return track != nullptr ? track->vehicles : no_vehicles;
+    }
+
     /// TIsolated::Modify() (Track.cpp:118-170)
     void TrackServer::_count_isolated(const RID &p_isolated, const int p_delta, const RID &p_vehicle) {
         IsolatedData *section = isolated_sections.getptr(p_isolated);
         if (section == nullptr) {
             return;
         }
-        const int previous = section->vehicle_count;
-        section->vehicle_count += p_delta;
-        const int current = section->vehicle_count;
+        const int previous = section->axle_count;
+        section->axle_count += p_delta;
+        const int current = section->axle_count;
         const RID parent = section->parent;
         if (previous == 0 && current > 0) {
             emit_signal(isolated_occupied_signal, p_isolated, p_vehicle);
         } else if (previous > 0 && current == 0) {
             emit_signal(isolated_freed_signal, p_isolated, p_vehicle);
         }
-        emit_signal(
-                p_delta > 0 ? isolated_vehicle_entered_signal : isolated_vehicle_left_signal, p_isolated, p_vehicle);
+        emit_signal(p_delta > 0 ? isolated_axle_entered_signal : isolated_axle_left_signal, p_isolated, p_vehicle);
         if (parent.is_valid()) {
             _count_isolated(parent, p_delta, p_vehicle);
         }
@@ -879,7 +895,7 @@ namespace godot {
         return rid != nullptr ? *rid : RID();
     }
 
-    /// The track's vehicles count for the section from now on
+    /// The track's axles count for the section from now on
     void TrackServer::isolated_add_track(const RID &p_isolated, const RID &p_track) {
         IsolatedData *section = isolated_sections.getptr(p_isolated);
         ERR_FAIL_NULL(section);
@@ -890,7 +906,7 @@ namespace godot {
         }
         track->isolated.push_back(p_isolated);
         section->tracks.push_back(p_track);
-        section->vehicle_count += static_cast<int>(track->vehicles.size());
+        section->axle_count += track->axle_count;
     }
 
     void TrackServer::isolated_set_parent(const RID &p_isolated, const RID &p_parent) {
@@ -902,7 +918,7 @@ namespace godot {
     bool TrackServer::isolated_is_occupied(const RID &p_isolated) const {
         const IsolatedData *section = isolated_sections.getptr(p_isolated);
         ERR_FAIL_NULL_V(section, false);
-        return section->vehicle_count > 0;
+        return section->axle_count > 0;
     }
 
     PackedVector3Array TrackServer::track_get_endpoints(const RID &p_track) {

@@ -33,8 +33,10 @@ const CANTED_END:Vector3 = Vector3(-44.72, 0.0, -78.82)
 const CANTED_CONTROL1:Vector3 = Vector3(-18.1848, 0.0, -24.1313)
 const CANTED_CONTROL2:Vector3 = Vector3(11.4707, 0.0, 28.2051)
 const CANTED_ROLL:float = 2.0
-## Bogie pivots this far apart [m]
+## Bogie pivots this far apart [m] - the radius is measured over them (ts.R, DynObj.cpp:3158) -
+## on a car this long [m], which leaves room for them (fAxleDist up to L - 0.2, DynObj.cpp:2502)
 const BOGIE_SPACING:float = 15.0
+const CAR_LENGTH:float = 20.0
 const TRACK_FRICTION:float = 0.2
 const SCENERY_FRICTION:float = 0.5
 ## A memory cell's values on a track's friction: friction * 2 + 0.1, then * 0.5 + 0
@@ -161,7 +163,15 @@ func test_a_canted_curve_leans_against_its_radius() -> void:
         _cars.append(car)
         await step(ticks(TICK) + 1)
         var vehicle:RID = (car.get_node(car.controller_path) as VehiclePhysicsNode).get_vehicle_rid()
-        var shape:Dictionary = RailVehicleServer.vehicle_get_curve(vehicle, BOGIE_SPACING)
+        # bogies to measure the curve over; the axles stand at them once the car is placed again
+        var wheels:RailVehicleWheels = MoverRailVehicleWheels.new()
+        wheels.bogie_pivot_spacing = BOGIE_SPACING
+        var controller:VehicleController = VehicleServer.vehicle_get_controller(vehicle)
+        controller.add_component(wheels)
+        controller.dimensions_length = CAR_LENGTH
+        RailVehicleServer.vehicle_set_track(vehicle, track,
+                0.5 * TrackServer.track_get_length(track, TrackServer.TRACK_COMMON), direction)
+        var shape:Dictionary = RailVehicleServer.vehicle_get_curve(vehicle)
         assert_false(is_zero_approx(float(shape["radius"])), "the curve is found (direction %d)" % direction)
         assert_lt(float(shape["radius"]) * float(shape["cant"]), 0.0,
                 "the cant leans against the radius (direction %d): %s" % [direction, shape])

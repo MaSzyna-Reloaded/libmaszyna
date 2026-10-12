@@ -78,8 +78,8 @@ func update(delta:float, outer_noise_audible:bool) -> Dictionary:
     if speed > 0.0 and (_labels.has("wheel_clatter") or _labels.has("curve")
             or _labels.has("outernoise") or _labels.has("runningnoise")):
         shape = RailVehicleServer.vehicle_get_track_position(_vehicle_rid)
-    if speed > 5.0 and _labels.has("curve") and _wheels:
-        shape.merge(RailVehicleServer.vehicle_get_curve(_vehicle_rid, _wheels.bogie_pivot_spacing))
+    if speed > 5.0 and _labels.has("curve"):
+        shape.merge(RailVehicleServer.vehicle_get_curve(_vehicle_rid))
     var track_rid:RID = shape.get("track_rid", RID())
     var quality_volume:float = lerpf(
             0.8, 1.2, clampf(TrackServer.track_get_quality_flag(track_rid) / 20.0, 0.0, 1.0))

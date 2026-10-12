@@ -36,6 +36,8 @@ namespace godot {
     const char *RailVehicleServer::vehicle_heading_to_track_start_signal = "vehicle_heading_to_track_start";
     const char *RailVehicleServer::vehicle_heading_to_track_end_signal = "vehicle_heading_to_track_end";
     const char *RailVehicleServer::vehicle_stopped_on_track_signal = "vehicle_stopped_on_track";
+    const char *RailVehicleServer::vehicle_secondary_axle_stopped_on_track_signal =
+            "vehicle_secondary_axle_stopped_on_track";
     const char *RailVehicleServer::vehicle_emergency_signal_received_signal = "vehicle_emergency_signal_received";
     const char *RailVehicleServer::vehicle_pantograph_contact_lost_signal = "vehicle_pantograph_contact_lost";
 
@@ -230,9 +232,6 @@ namespace godot {
                 D_METHOD("vehicle_get_pantograph_raise", "vehicle", "pantograph"),
                 &RailVehicleServer::vehicle_get_pantograph_raise);
         ClassDB::bind_method(
-                D_METHOD("vehicle_get_transform_at_distance", "vehicle", "distance"),
-                &RailVehicleServer::vehicle_get_transform_at_distance);
-        ClassDB::bind_method(
                 D_METHOD("vehicle_get_bogie_transform", "vehicle", "bogie"),
                 &RailVehicleServer::vehicle_get_bogie_transform);
         ClassDB::bind_method(
@@ -243,8 +242,7 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_find_vehicle", "vehicle", "end", "distance"),
                 &RailVehicleServer::vehicle_find_vehicle);
-        ClassDB::bind_method(
-                D_METHOD("vehicle_get_curve", "vehicle", "bogie_pivot_spacing"), &RailVehicleServer::vehicle_get_curve);
+        ClassDB::bind_method(D_METHOD("vehicle_get_curve", "vehicle"), &RailVehicleServer::vehicle_get_curve);
 
         ADD_SIGNAL(MethodInfo(vehicle_emergency_signal_received_signal, PropertyInfo(Variant::RID, "vehicle")));
         ADD_SIGNAL(MethodInfo(
@@ -284,6 +282,9 @@ namespace godot {
                 PropertyInfo(Variant::RID, "track")));
         ADD_SIGNAL(MethodInfo(
                 vehicle_stopped_on_track_signal, PropertyInfo(Variant::RID, "vehicle"),
+                PropertyInfo(Variant::RID, "track")));
+        ADD_SIGNAL(MethodInfo(
+                vehicle_secondary_axle_stopped_on_track_signal, PropertyInfo(Variant::RID, "vehicle"),
                 PropertyInfo(Variant::RID, "track")));
     }
 
@@ -512,14 +513,17 @@ namespace godot {
         }
         _disconnect_relays(p_vehicle, *placement);
         _disconnect_radio(p_vehicle, *placement);
-        if (Vector<RID> *listed = track_vehicles.getptr(placement->indexed_track); listed != nullptr) {
-            listed->erase(p_vehicle);
-        }
-        const RID reported_track = placement->reported_track;
-        _track_changed(placement->track);
+        const AxleFollower axles[AXLE_COUNT] = {placement->axles[AXLE_FRONT], placement->axles[AXLE_REAR]};
+        const RID listed_track = placement->axles[placement->primary_axle].track;
+        _track_changed(listed_track);
         vehicles.erase(p_vehicle);
-        if (TrackServer *tracks = TrackServer::get_instance(); tracks != nullptr && reported_track.is_valid()) {
-            tracks->track_vehicle_left(reported_track, p_vehicle);
+        // Ours: the original never takes a removed vehicle's axles off its sections, which then
+        // stay occupied - a vehicle detached here leaves its tracks as it would by driving off
+        if (TrackServer *tracks = TrackServer::get_instance(); tracks != nullptr) {
+            for (const AxleFollower &axle: axles) {
+                tracks->track_axle_left(axle.track, p_vehicle);
+            }
+            tracks->track_vehicle_left(listed_track, p_vehicle);
         }
     }
 
@@ -964,9 +968,11 @@ namespace godot {
         _disconnect_radio(p_vehicle, *placement);
         placement->controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
         // the scans that found it hold the previous controller
-        _track_changed(placement->track);
+        _track_changed(placement->axles[placement->primary_axle].track);
         _connect_relays(p_vehicle, *placement);
-        _place_body(*placement);
+        // the axle distance is the new controller's
+        _place_axles(p_vehicle, _vehicle_centre(*placement));
+        placement = vehicles.getptr(p_vehicle); // the track signals may have rehashed
         // a newly bound controller takes the rail values before its simulation starts
         // (VehicleServer::vehicle_bind_controller() tells this before starting it)
         if (RailVehicleController *controller = _get_controller(*placement); controller != nullptr) {
@@ -978,11 +984,11 @@ namespace godot {
         _hand_driver_cabin_kind(p_vehicle);
     }
 
-    /* The bogie pivot spacing is the wheels' configuration, and the body hangs between the
-     * pivots */
+    /* The axle distance comes from the wheels' configuration and the vehicle's length, and the
+     * body hangs between the axles */
     void RailVehicleServer::_on_vehicle_config_changed(const RID &p_vehicle) {
-        if (VehiclePlacement *placement = vehicles.getptr(p_vehicle); placement != nullptr) {
-            _place_body(*placement);
+        if (const VehiclePlacement *placement = vehicles.getptr(p_vehicle); placement != nullptr) {
+            _place_axles(p_vehicle, _vehicle_centre(*placement));
         }
     }
 
@@ -1145,10 +1151,10 @@ namespace godot {
         ERR_FAIL_NULL_V(tracks, result);
         for (const KeyValue<RID, VehiclePlacement> &entry: vehicles) {
             // a vehicle not standing on a track has no place on the map
-            if (!tracks->track_exists(entry.value.track)) {
+            if (!tracks->track_exists(entry.value.axles[entry.value.primary_axle].track)) {
                 continue;
             }
-            const Vector3 position = _placement_transform(entry.value).origin;
+            const Vector3 position = entry.value.body_transform.origin;
             if (p_rect.has_point(Vector2(position.x, position.z))) {
                 result.push_back(entry.key);
             }
@@ -1159,48 +1165,187 @@ namespace godot {
     void RailVehicleServer::vehicle_set_track(
             const RID &p_vehicle, const RID &p_track, const double p_track_offset,
             const TrackServer::Direction p_track_direction) {
-        VehiclePlacement *placement = vehicles.getptr(p_vehicle);
-        if (placement == nullptr) {
+        if (!vehicles.has(p_vehicle)) {
             return;
         }
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL(tracks);
-        _track_changed(placement->track);
-        placement->track = p_track;
-        placement->track_direction = p_track_direction;
-        placement->moved = true;
-        placement->location_stale = true;
-        placement->track_is_switch = tracks->track_is_switch(p_track);
-        placement->switch_track = placement->track_is_switch
-                                          ? tracks->switch_get_active_track(tracks->track_get_switch(p_track))
-                                          : TrackServer::TRACK_COMMON;
-        placement->track_offset =
-                CLAMP(p_track_offset, 0.0, tracks->track_get_length(p_track, placement->switch_track));
-        const double remaining_offset = p_track_offset - placement->track_offset;
+        AxleFollower centre;
+        centre.track = p_track;
+        centre.track_direction = p_track_direction;
+        centre.track_is_switch = tracks->track_is_switch(p_track);
+        centre.switch_track = centre.track_is_switch
+                                      ? tracks->switch_get_active_track(tracks->track_get_switch(p_track))
+                                      : TrackServer::TRACK_COMMON;
+        centre.track_offset = CLAMP(p_track_offset, 0.0, tracks->track_get_length(p_track, centre.switch_track));
+        const double remaining_offset = p_track_offset - centre.track_offset;
         const double direction_sign = p_track_direction == TrackServer::DIRECTION_NORMAL ? -1.0 : 1.0;
-        _move_placement(*placement, remaining_offset * direction_sign, false);
-        _place_body(*placement);
-        _track_changed(placement->track);
-        _note_track_move(p_vehicle, *placement);
+        _walk_axle(centre, remaining_offset * direction_sign, false, nullptr);
+        _place_axles(p_vehicle, centre);
+        VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement); // a listener of the track signals freed it
         placement->placement_unreported = false;
         emit_signal(vehicle_placed_signal, p_vehicle);
     }
 
-    void RailVehicleServer::vehicle_move(const RID &p_vehicle, const double p_distance) {
+    void RailVehicleServer::_place_axles(const RID &p_vehicle, const AxleFollower &p_centre) {
         VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement);
         TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
+        ERR_FAIL_NULL(tracks);
+        const RailVehicleController *controller = _get_controller(*placement);
+        const Ref<RailVehicleWheels> wheels =
+                controller != nullptr ? controller->get_component(VehicleComponentType::COMPONENT_WHEELS)
+                                      : Ref<VehicleComponent>();
+        double axle_distance = 0.0;
+        if (controller != nullptr && wheels.is_valid()) {
+            // fAxleDist = clamp(max(BDist, ADist), 0.2, L - 0.2) (DynObj.cpp:2499-2502); the lower
+            // bound wins for a vehicle shorter than both margins, where std::clamp is undefined
+            axle_distance = MAX(
+                    AXLE_DISTANCE_MARGIN, MIN(MAX(wheels->get_bogie_pivot_spacing(), wheels->get_bogie_axle_spacing()),
+                                              controller->get_dimensions_length() - AXLE_DISTANCE_MARGIN));
+        }
+        const AxleFollower previous[AXLE_COUNT] = {placement->axles[AXLE_FRONT], placement->axles[AXLE_REAR]};
+        const RID previous_listed = previous[placement->primary_axle].track;
+        placement->axle_distance = axle_distance;
+        placement->moved = true;
+        placement->location_stale = true;
+        placement->placement_unreported = true;
+        for (int axle = AXLE_FRONT; axle < AXLE_COUNT; ++axle) {
+            placement->axles[axle] = p_centre;
+            _walk_axle(
+                    placement->axles[axle], AXLE_SIDES[axle] * AXLE_HALF_DISTANCE_FACTOR * axle_distance, false,
+                    nullptr);
+        }
+        const RID axle_tracks[AXLE_COUNT] = {placement->axles[AXLE_FRONT].track, placement->axles[AXLE_REAR].track};
+        const RID listed = axle_tracks[placement->primary_axle];
+        _place_body(*placement);
+        _track_changed(previous_listed);
+        _track_changed(listed);
+        // counted where each axle stands, not on the tracks it passed to get there: the original
+        // counts those too (Move(false) still changes tracks, TrkFoll.cpp:88-91), but at load,
+        // before any section has its events (TIsolated::AssignEvents(), Track.cpp:3559) - counted
+        // here they would fire :busy and :free of sections the vehicle never stood on. The new
+        // track first, as on a move, so a section both are in never reads empty.
+        for (int axle = AXLE_FRONT; axle < AXLE_COUNT; ++axle) {
+            tracks->track_axle_entered(axle_tracks[axle], p_vehicle);
+            tracks->track_axle_left(previous[axle].track, p_vehicle);
+        }
+        tracks->track_vehicle_left(previous_listed, p_vehicle);
+        tracks->track_vehicle_entered(listed, p_vehicle);
+    }
+
+    RailVehicleServer::AxleFollower RailVehicleServer::_vehicle_centre(const VehiclePlacement &p_placement) {
+        AxleFollower centre = p_placement.axles[AXLE_REAR];
+        _walk_axle(
+                centre, AXLE_SIDES[AXLE_FRONT] * AXLE_HALF_DISTANCE_FACTOR * p_placement.axle_distance, false, nullptr);
+        return centre;
+    }
+
+    void RailVehicleServer::vehicle_move(const RID &p_vehicle, const double p_distance) {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        const TrackServer *tracks = TrackServer::get_instance();
+        if (placement == nullptr || tracks == nullptr ||
+            !tracks->track_exists(placement->axles[placement->primary_axle].track)) {
             return;
         }
-        _track_changed(placement->track);
-        _move_placement(*placement, p_distance, true);
-        _place_body(*placement);
-        _track_changed(placement->track);
-        _note_track_move(p_vehicle, *placement);
+        _move_vehicle(p_vehicle, p_distance);
+        placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement); // a listener of the track signals freed it
         if (RailVehicleController *controller = _get_controller(*placement); controller != nullptr) {
             controller->emit_position_changed_if_needed();
         }
         vehicle_report_placement(p_vehicle);
+    }
+
+    void RailVehicleServer::_move_vehicle(const RID &p_vehicle, const double p_distance) {
+        VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement);
+        if (Math::is_zero_approx(p_distance)) {
+            return;
+        }
+        // the primary axle changes only while both stand on one track, so the vehicle is never
+        // listed on a track none of its axles is on; it is the second axle in the direction of
+        // travel, so the AI does not clear the signal it passes too early (DynObj.cpp:2645-2655:
+        // "żeby AI nie wyłączało sobie semafora za szybko")
+        if (const RailVehicleController *controller = _get_controller(*placement);
+            controller != nullptr && placement->axles[AXLE_FRONT].track == placement->axles[AXLE_REAR].track &&
+            controller->get_speed() > PRIMARY_AXLE_SWITCH_SPEED) {
+            placement->primary_axle = controller->get_velocity() >= 0.0 ? AXLE_REAR : AXLE_FRONT;
+        }
+        placement->moved = true;
+        placement->location_stale = true;
+        placement->placement_unreported = true;
+        _track_changed(placement->axles[placement->primary_axle].track);
+        // the leading axle first (DynObj.cpp:2656-2670) - it sets a switch on the way for the one
+        // behind; this server's distance counts towards the rear, so a positive one leads with
+        // the rear axle. The trailing axle goes as far as the leading one went, so the two stay
+        // the axle distance apart where the leading one stopped at a track's end.
+        const Axle leading = p_distance > 0.0 ? AXLE_REAR : AXLE_FRONT;
+        const Axle trailing = leading == AXLE_REAR ? AXLE_FRONT : AXLE_REAR;
+        LocalVector<TrackCrossing> crossings;
+        const double walked = _walk_axle(placement->axles[leading], p_distance, true, &crossings);
+        _report_crossings(p_vehicle, leading, crossings);
+        placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement); // a listener of the track signals freed it
+        crossings.clear();
+        _walk_axle(placement->axles[trailing], walked, true, &crossings);
+        _report_crossings(p_vehicle, trailing, crossings);
+        placement = vehicles.getptr(p_vehicle);
+        ERR_FAIL_NULL(placement);
+        _place_body(*placement);
+        const RID listed = placement->axles[placement->primary_axle].track;
+        _track_changed(listed);
+        // a moving vehicle that turned back on its track: the events of its new heading
+        // (TrkFoll.cpp:136-161 - a track's event1 and event2 each once, whichever comes)
+        const RailVehicleController *controller = _get_controller(*placement);
+        if (controller == nullptr || controller->get_speed() <= STANDING_SPEED) {
+            return;
+        }
+        const TrackHeading heading =
+                placement->axles[placement->primary_axle].travel_sign > 0.0 ? HEADING_TO_END : HEADING_TO_START;
+        if (heading == placement->reported_heading && listed == placement->reported_track) {
+            return;
+        }
+        placement->reported_heading = heading;
+        placement->reported_track = listed;
+        emit_signal(
+                heading == HEADING_TO_END ? vehicle_heading_to_track_end_signal : vehicle_heading_to_track_start_signal,
+                p_vehicle, listed);
+    }
+
+    /* Every axle counts on every track it comes onto, the primary one also moves the vehicle
+     * between the tracks' lists and fires their events (TTrackFollower::Move(), TrkFoll.cpp:88-91,
+     * 112-161, 194-241) - track by track, a track shorter than the step's travel included */
+    void RailVehicleServer::_report_crossings(
+            const RID &p_vehicle, const Axle p_axle, const LocalVector<TrackCrossing> &p_crossings) {
+        TrackServer *tracks = TrackServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        for (const TrackCrossing &crossing: p_crossings) {
+            // the new track first, so a section both belong to never reads empty
+            tracks->track_axle_entered(crossing.entered, p_vehicle);
+            tracks->track_axle_left(crossing.left, p_vehicle);
+            VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+            if (placement == nullptr || !(placement->primary_axle == p_axle)) {
+                continue; // freed by a listener, or an axle that only counts
+            }
+            tracks->track_vehicle_left(crossing.left, p_vehicle);
+            tracks->track_vehicle_entered(crossing.entered, p_vehicle);
+            _track_changed(crossing.left);
+            _track_changed(crossing.entered);
+            // only a moving vehicle fires a track's event1 and event2 (ismoving, TrkFoll.cpp:104)
+            const RailVehicleController *controller = _get_controller(*placement);
+            if (controller == nullptr || controller->get_speed() <= STANDING_SPEED) {
+                continue;
+            }
+            const TrackHeading heading = crossing.travel_sign > 0.0 ? HEADING_TO_END : HEADING_TO_START;
+            placement->reported_heading = heading;
+            placement->reported_track = crossing.entered;
+            emit_signal(
+                    heading == HEADING_TO_END ? vehicle_heading_to_track_end_signal
+                                              : vehicle_heading_to_track_start_signal,
+                    p_vehicle, crossing.entered);
+        }
     }
 
     /* The original moves every vehicle by the distance times its own DirectionGet(), the way the
@@ -1357,25 +1502,23 @@ namespace godot {
         }
     }
 
-    void RailVehicleServer::_move_placement(
-            VehiclePlacement &p_placement, const double p_distance, const bool p_force_switch_state) {
+    double RailVehicleServer::_walk_axle(
+            AxleFollower &p_axle, const double p_distance, const bool p_force_switch_state,
+            LocalVector<TrackCrossing> *p_crossings) {
         if (Math::is_zero_approx(p_distance)) {
-            return;
+            return 0.0;
         }
         TrackServer *tracks = TrackServer::get_instance();
-        ERR_FAIL_NULL(tracks);
-        p_placement.moved = true;
-        p_placement.location_stale = true;
-        p_placement.placement_unreported = true;
+        ERR_FAIL_NULL_V(tracks, 0.0);
 
-        RID current_track = p_placement.track;
-        TrackServer::SwitchTrack current_switch_track = p_placement.switch_track;
-        bool current_is_switch = p_placement.track_is_switch;
+        RID current_track = p_axle.track;
+        TrackServer::SwitchTrack current_switch_track = p_axle.switch_track;
+        bool current_is_switch = p_axle.track_is_switch;
         // Length of the occupied branch, kept across the loop: it used to be asked twice for the
         // same track on every step.
         double current_length = tracks->track_get_length(current_track, current_switch_track);
-        double current_track_offset = CLAMP(p_placement.track_offset, 0.0, current_length);
-        TrackServer::Direction current_track_direction = p_placement.track_direction;
+        double current_track_offset = CLAMP(p_axle.track_offset, 0.0, current_length);
+        TrackServer::Direction current_track_direction = p_axle.track_direction;
         bool beyond_track_end = false;
         double remaining = Math::abs(p_distance);
         const double request_sign = p_distance < 0.0 ? -1.0 : 1.0;
@@ -1444,6 +1587,7 @@ namespace godot {
                 break;
             }
 
+            const RID left_track = current_track;
             current_track = next_track;
             current_is_switch = tracks->track_is_switch(current_track);
             // The connection endpoint is where the vehicle enters the next track; on a switch it
@@ -1464,89 +1608,122 @@ namespace godot {
             current_track_offset = movement_sign > 0.0 ? 0.0 : current_length;
             current_track_direction = movement_sign * request_sign < 0.0 ? TrackServer::DIRECTION_NORMAL
                                                                          : TrackServer::DIRECTION_REVERSED;
+            if (p_crossings != nullptr) {
+                p_crossings->push_back({left_track, current_track, movement_sign});
+            }
         }
 
-        p_placement.track = current_track;
-        p_placement.track_is_switch = current_is_switch;
-        p_placement.travel_sign = movement_sign;
-        p_placement.track_offset = current_track_offset;
-        p_placement.track_direction = current_track_direction;
-        p_placement.switch_track = current_switch_track;
-        p_placement.beyond_track_end = beyond_track_end;
+        p_axle.track = current_track;
+        p_axle.track_is_switch = current_is_switch;
+        p_axle.travel_sign = movement_sign;
+        p_axle.track_offset = current_track_offset;
+        p_axle.track_direction = current_track_direction;
+        p_axle.switch_track = current_switch_track;
+        p_axle.beyond_track_end = beyond_track_end;
+        const double walked = Math::abs(p_distance) - remaining;
         if (diagnostics && p_force_switch_state) {
-            _check_movement(p_placement, start_point, Math::abs(p_distance) - remaining);
+            _check_movement(p_axle, start_point, walked);
         }
+        return request_sign * walked;
     }
 
-    /* Diagnostics: the vehicle must move in the world by the distance it moved along the track (a
+    /* Diagnostics: an axle must move in the world by the distance it moved along the track (a
      * step is far shorter than any curve radius, so the chord equals the arc) - a mismatch shifts
      * the simulated location and kicks the coupled vehicles. */
-    void RailVehicleServer::_check_movement(
-            const VehiclePlacement &p_placement, const Vector3 &p_start, const double p_moved) const {
+    void
+    RailVehicleServer::_check_movement(const AxleFollower &p_axle, const Vector3 &p_start, const double p_moved) const {
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL(tracks);
-        const Ref<Curve3D> curve = tracks->track_get_domain_curve(p_placement.track, p_placement.switch_track);
+        const Ref<Curve3D> curve = tracks->track_get_domain_curve(p_axle.track, p_axle.switch_track);
         if (curve.is_null()) {
             return;
         }
-        const Vector3 end_point = curve->sample_baked(static_cast<real_t>(p_placement.track_offset), false);
+        const Vector3 end_point = curve->sample_baked(static_cast<real_t>(p_axle.track_offset), false);
         const double world_moved = p_start.distance_to(end_point);
         if (Math::abs(world_moved - p_moved) > DIAGNOSTICS_MOVE_TOLERANCE) {
             UtilityFunctions::push_error(
                     vformat("RailVehicleServer: moved %.4f m in the world instead of %.4f m on track %s (offset %.3f)",
-                            world_moved, p_moved, tracks->track_get_name(p_placement.track), p_placement.track_offset));
+                            world_moved, p_moved, tracks->track_get_name(p_axle.track), p_axle.track_offset));
         }
     }
 
-    /* Where the vehicle's body is. A vehicle on bogies is carried by them, so its body is the
-     * chord between the two pivots and its attitude the mean of theirs - which is how the
-     * original reads the running shape too (DynObj.cpp:2950-2970). The track sampled under the
-     * vehicle's centre is the same thing only on straight track; on a curve it differs, and on a
-     * switch it differs most. One of them has to be the answer, and it is this one. */
+    /* Where the vehicle's body is: hung between its two axles, as the original computes it
+     * (DynObj.cpp:2671-2716) */
     Transform3D RailVehicleServer::vehicle_get_transform(const RID &p_vehicle) const {
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         const TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
+        if (placement == nullptr || tracks == nullptr ||
+            !tracks->track_exists(placement->axles[placement->primary_axle].track)) {
             return Transform3D();
         }
         return placement->body_transform;
     }
 
-    /* Composed once where the placement changes, and handed down to the controller as the
-     * vehicle's world transform - the state its owner hands down, as the driver cabin kind. */
+    /* Composed once where the axles move, and handed down to the controller as the vehicle's
+     * world transform - the state its owner hands down, as the driver cabin kind - with the track
+     * under it for its physics */
     void RailVehicleServer::_place_body(VehiclePlacement &p_placement) {
         const TrackServer *tracks = TrackServer::get_instance();
         RailVehicleController *controller = _get_controller(p_placement);
-        const Ref<RailVehicleWheels> wheels =
-                controller != nullptr ? controller->get_component(VehicleComponentType::COMPONENT_WHEELS)
-                                      : Ref<VehicleComponent>();
-        const double spacing = wheels.is_valid() ? wheels->get_bogie_pivot_spacing() : 0.0;
-        const bool on_track = tracks != nullptr && tracks->track_exists(p_placement.track);
+        const AxleFollower &front = p_placement.axles[AXLE_FRONT];
+        const AxleFollower &rear = p_placement.axles[AXLE_REAR];
+        const AxleFollower &primary = p_placement.axles[p_placement.primary_axle];
+        const bool on_track = tracks != nullptr && tracks->track_exists(primary.track);
         Transform3D body;
         if (on_track) {
-            // no bogies to be carried by: the track under the vehicle's own centre is all there is
-            body = _placement_transform(p_placement);
-        }
-        p_placement.bogie_transforms[RailVehicleWheels::BOGIE_FRONT] = body;
-        p_placement.bogie_transforms[RailVehicleWheels::BOGIE_REAR] = body;
-        if (on_track && spacing > 0.0) {
-            /* The track-offset distance is rear-relative (see vehicle_process_movement()), so a
-             * positive distance samples toward the vehicle's rear - the sign is deliberate and was
-             * confirmed live: getting it wrong flips the whole vehicle the moment it starts moving
-             * (test_rail_vehicle_idle_orientation_regression.gd). */
-            const Transform3D front = _placement_transform(_sample_placement(p_placement, -0.5 * spacing));
-            const Transform3D rear = _placement_transform(_sample_placement(p_placement, 0.5 * spacing));
-            p_placement.bogie_transforms[RailVehicleWheels::BOGIE_FRONT] = front;
-            p_placement.bogie_transforms[RailVehicleWheels::BOGIE_REAR] = rear;
-            Vector3 body_forward = front.origin - rear.origin;
+            p_placement.axle_transforms[AXLE_FRONT] = _axle_transform(front);
+            p_placement.axle_transforms[AXLE_REAR] = _axle_transform(rear);
+            // the axles' cants, each signed for the way it stands on its track, and the body
+            // leaning by their mean (Roll() * 0.5, DynObj.cpp:2690; ts.dHrail, :3167)
+            const double cant = Math::deg_to_rad(AXLE_ROLL_MEAN_FACTOR * (_axle_roll(front) + _axle_roll(rear)));
+            const Vector3 front_origin = p_placement.axle_transforms[AXLE_FRONT].origin;
+            const Vector3 rear_origin = p_placement.axle_transforms[AXLE_REAR].origin;
+            Vector3 body_forward = front_origin - rear_origin;
+            // axles at one point - a vehicle whose spacings are unknown yet - is the track there
+            body = p_placement.axle_transforms[AXLE_FRONT];
             if (!body_forward.is_zero_approx()) {
+                // vFront between the outer axles, vLeft level, vUp square to both, then the
+                // cant about vFront; the centre midway between the axles (DynObj.cpp:2673-2697).
+                // The original also takes fAdjustment = |vFront| - fAxleDist here (:2677) and uses
+                // it nowhere (its uses, :2659-2684, are commented out): not ported.
                 body_forward.normalize();
-                const Vector3 average_up = (front.basis.get_column(1) + rear.basis.get_column(1)).normalized();
+                Vector3 reference_up(0.0, 1.0, 0.0);
+                if (Math::abs(body_forward.dot(reference_up)) > UP_PARALLEL_DOT_LIMIT) {
+                    reference_up = Vector3(1.0, 0.0, 0.0);
+                }
                 const Vector3 z_axis = -body_forward;
-                const Vector3 x_axis = average_up.cross(z_axis).normalized();
+                const Vector3 x_axis = reference_up.cross(z_axis).normalized();
                 const Vector3 y_axis = z_axis.cross(x_axis).normalized();
-                body = Transform3D(Basis(x_axis, y_axis, z_axis).orthonormalized(), (front.origin + rear.origin) * 0.5);
+                body = Transform3D(
+                        Basis(x_axis, y_axis, z_axis).orthonormalized().rotated(body_forward, cant).orthonormalized(),
+                        (front_origin + rear_origin) * AXLE_MIDPOINT_FACTOR);
             }
+            // ts.R from the yaw difference of the axles - over the pivot spacing (BDist), not
+            // the axle distance it was measured over, as the original divides it
+            // (DynObj.cpp:3145-3161, MASZYNA_ORIGINAL_QUIRKS.md)
+            const Vector3 front_heading = -p_placement.axle_transforms[AXLE_FRONT].basis.get_column(2);
+            const Vector3 rear_heading = -p_placement.axle_transforms[AXLE_REAR].basis.get_column(2);
+            // yaw as the original turns its models, atan2(-x, z) (modelRot.z, DynObj.cpp:2687)
+            const double yaw_difference = Math::wrapf(
+                    Math::atan2(-front_heading.x, front_heading.z) - Math::atan2(-rear_heading.x, rear_heading.z),
+                    -Math::PI, Math::PI);
+            const Ref<RailVehicleWheels> wheels =
+                    controller != nullptr ? controller->get_component(VehicleComponentType::COMPONENT_WHEELS)
+                                          : Ref<VehicleComponent>();
+            const double pivot_spacing = wheels.is_valid() ? wheels->get_bogie_pivot_spacing() : 0.0;
+            double radius = 0.0;
+            if (!Math::is_zero_approx(Math::sin(yaw_difference * CURVE_RADIUS_HALF_FACTOR))) {
+                radius = -CURVE_RADIUS_HALF_FACTOR * pivot_spacing /
+                         Math::sin(yaw_difference * CURVE_RADIUS_HALF_FACTOR);
+            }
+            if (Math::abs(radius) > CURVE_RADIUS_LIMIT) {
+                radius = 0.0;
+            }
+            p_placement.track_curve = Vector2(radius, cant);
+        } else {
+            p_placement.axle_transforms[AXLE_FRONT] = body;
+            p_placement.axle_transforms[AXLE_REAR] = body;
+            p_placement.track_curve = Vector2();
         }
         if (controller != nullptr) {
             // a derailed body beside its track, across it on the level, and below it
@@ -1564,23 +1741,25 @@ namespace godot {
             return;
         }
         // the track under it for its physics, as TDynamicObject::Update() hands it to the Mover
-        // (DynObj.cpp:3145-3240): the curve between the bogies, the rise towards the front
-        // (ts.dHtrack = -vFront.y), and the track's own gauge, friction, kind and damage
+        // (DynObj.cpp:3145-3240): the curve between the axles, the rise towards the front
+        // (ts.dHtrack = -vFront.y), and the gauge, friction, kind and damage of MyTrack - the
+        // primary axle's track
         RailVehicleController::TrackConditions conditions;
-        const Vector2 curve = _placement_curve(p_placement, spacing);
-        conditions.radius = curve.x;
-        conditions.cant = curve.y;
+        conditions.radius = p_placement.track_curve.x;
+        conditions.cant = p_placement.track_curve.y;
         conditions.grade = body.basis.get_column(2).y;
-        conditions.gauge = tracks->track_get_width(p_placement.track);
+        conditions.gauge = tracks->track_get_width(primary.track);
         // times the scenery's multiplier and the weather's (tp.friction, DynObj.cpp:3176)
         const SimulationServer *simulation = SimulationServer::get_instance();
-        conditions.friction = tracks->track_get_friction(p_placement.track) *
+        conditions.friction = tracks->track_get_friction(primary.track) *
                               (simulation != nullptr ? simulation->get_friction() *
                                                                simulation->simulation_get_weather_friction_factor()
                                                      : 1.0);
-        conditions.group = tracks->track_get_group(p_placement.track);
-        conditions.damage = tracks->track_get_damage_flag(p_placement.track);
-        if (p_placement.beyond_track_end) {
+        conditions.group = tracks->track_get_group(primary.track);
+        conditions.damage = tracks->track_get_damage_flag(primary.track);
+        // either axle run off a track's end has the vehicle off the rails - the leading one does
+        // first, while the primary one is the trailing one (TTrack::NullCreate(), TrkFoll.cpp:79-83)
+        if (front.beyond_track_end || rear.beyond_track_end) {
             conditions.damage.set_flag(TrackServer::TRACK_DAMAGE_NO_RAIL);
         }
         controller->set_track_conditions(conditions);
@@ -1589,38 +1768,22 @@ namespace godot {
     Transform3D
     RailVehicleServer::vehicle_get_bogie_transform(const RID &p_vehicle, const RailVehicleWheels::Bogie p_bogie) const {
         // the bogie comes from scripts as a bare int
-        ERR_FAIL_INDEX_V(p_bogie, 2, Transform3D());
+        ERR_FAIL_INDEX_V(p_bogie, AXLE_COUNT, Transform3D());
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
-        return placement != nullptr ? placement->bogie_transforms[p_bogie] : Transform3D();
+        // BOGIE_FRONT is the front axle's, BOGIE_REAR the rear one's
+        return placement != nullptr ? placement->axle_transforms[p_bogie] : Transform3D();
     }
 
-    Transform3D RailVehicleServer::vehicle_get_transform_at_distance(const RID &p_vehicle, const double p_distance) {
-        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
-        const TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
-            return Transform3D();
-        }
-        return _placement_transform(_sample_placement(*placement, p_distance));
-    }
-
-    RailVehicleServer::VehiclePlacement
-    RailVehicleServer::_sample_placement(const VehiclePlacement &p_placement, const double p_distance) {
-        VehiclePlacement sampled = p_placement;
-        sampled.controller_id = ObjectID();
-        _move_placement(sampled, p_distance, false);
-        return sampled;
-    }
-
-    Transform3D RailVehicleServer::_placement_transform(const VehiclePlacement &p_placement) const {
+    Transform3D RailVehicleServer::_axle_transform(const AxleFollower &p_axle) const {
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL_V(tracks, Transform3D());
-        const Ref<Curve3D> curve = tracks->track_get_domain_curve(p_placement.track, p_placement.switch_track);
+        const Ref<Curve3D> curve = tracks->track_get_domain_curve(p_axle.track, p_axle.switch_track);
         if (curve.is_null()) {
             return Transform3D();
         }
 
         const double length = curve->get_baked_length();
-        const double safe_offset = CLAMP(p_placement.track_offset, 0.0, length);
+        const double safe_offset = CLAMP(p_axle.track_offset, 0.0, length);
         // linear on purpose: the cubic interpolation has no neighbour point at the curve ends, so
         // the position advanced there only about 60% of the offset - every vehicle lost
         // centimetres at each track joint, which kicked the trainset through its couplers
@@ -1648,7 +1811,7 @@ namespace godot {
         const Vector3 z_axis = -forward;
         const Vector3 x_axis = reference_up.cross(z_axis).normalized();
         const Vector3 y_axis = z_axis.cross(x_axis).normalized();
-        const Vector2 rolls = tracks->track_get_roll(p_placement.track, p_placement.switch_track);
+        const Vector2 rolls = tracks->track_get_roll(p_axle.track, p_axle.switch_track);
         const double roll =
                 length <= 0.0 ? rolls.x : Math::lerp(rolls.x, rolls.y, CLAMP(safe_offset / length, 0.0, 1.0));
         Transform3D track_transform(
@@ -1657,7 +1820,7 @@ namespace godot {
                         .rotated(forward, static_cast<real_t>(Math::deg_to_rad(roll)))
                         .orthonormalized(),
                 origin);
-        if (p_placement.track_direction == TrackServer::DIRECTION_REVERSED) {
+        if (p_axle.track_direction == TrackServer::DIRECTION_REVERSED) {
             track_transform.basis =
                     track_transform.basis.rotated(track_transform.basis.get_column(1).normalized(), Math::PI)
                             .orthonormalized();
@@ -1666,32 +1829,36 @@ namespace godot {
         return track_transform;
     }
 
-    double RailVehicleServer::_placement_roll(const VehiclePlacement &p_placement) const {
+    double RailVehicleServer::_axle_roll(const AxleFollower &p_axle) const {
         TrackServer *tracks = TrackServer::get_instance();
         ERR_FAIL_NULL_V(tracks, 0.0);
-        const double length = tracks->track_get_length(p_placement.track, p_placement.switch_track);
+        const double length = tracks->track_get_length(p_axle.track, p_axle.switch_track);
         if (length <= 0.0) {
             return 0.0;
         }
-        const Vector2 rolls = tracks->track_get_roll(p_placement.track, p_placement.switch_track);
-        return Math::lerp(
+        const Vector2 rolls = tracks->track_get_roll(p_axle.track, p_axle.switch_track);
+        const double roll = Math::lerp(
                 static_cast<double>(rolls.x), static_cast<double>(rolls.y),
-                CLAMP(p_placement.track_offset / length, 0.0, 1.0));
+                CLAMP(p_axle.track_offset / length, 0.0, 1.0));
+        // a track run backwards has its roll the other way (TTrackFollower::ComputatePosition(),
+        // TrkFoll.cpp:270-275)
+        return p_axle.track_direction == TrackServer::DIRECTION_REVERSED ? -roll : roll;
     }
 
     Dictionary RailVehicleServer::vehicle_get_track_position(const RID &p_vehicle) const {
         Dictionary result;
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         const TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
+        const AxleFollower *primary = placement != nullptr ? &placement->axles[placement->primary_axle] : nullptr;
+        if (primary == nullptr || tracks == nullptr || !tracks->track_exists(primary->track)) {
             result["track_rid"] = RID();
             result["along"] = 0.0;
             return result;
         }
-        result["track_rid"] = placement->track;
+        result["track_rid"] = primary->track;
         // moving forward decreases the offset on a track run in its normal direction
-        result["along"] = placement->track_direction == TrackServer::DIRECTION_NORMAL ? -placement->track_offset
-                                                                                      : placement->track_offset;
+        result["along"] = primary->track_direction == TrackServer::DIRECTION_NORMAL ? -primary->track_offset
+                                                                                    : primary->track_offset;
         return result;
     }
 
@@ -1699,25 +1866,26 @@ namespace godot {
     RailVehicleServer::vehicle_trace_route(const RID &p_vehicle, const int p_direction, const double p_distance) {
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
+        const AxleFollower *primary = placement != nullptr ? &placement->axles[placement->primary_axle] : nullptr;
+        if (primary == nullptr || tracks == nullptr || !tracks->track_exists(primary->track)) {
             return TypedArray<TrackRouteSegment>();
         }
-        const double length = tracks->track_get_length(placement->track, placement->switch_track);
-        const double offset = CLAMP(placement->track_offset, 0.0, length);
-        // as _move_placement(): positive moves toward the branch end. Its distance counts from the
+        const double length = tracks->track_get_length(primary->track, primary->switch_track);
+        const double offset = CLAMP(primary->track_offset, 0.0, length);
+        // as _walk_axle(): positive moves toward the branch end. Its distance counts from the
         // rear, the vehicle's front (the mover's V > 0) is its negative (vehicle_process_movement())
-        const bool toward_end = (placement->track_direction == TrackServer::DIRECTION_NORMAL) == (p_direction >= 0);
+        const bool toward_end = (primary->track_direction == TrackServer::DIRECTION_NORMAL) == (p_direction >= 0);
         // the track it stands on is entered behind it; its branch is where it stands, not a setting
         const double start = (toward_end ? length - offset : offset) - length;
-        return tracks->track_trace_route(
-                placement->track, placement->switch_track, false, toward_end, start, p_distance);
+        return tracks->track_trace_route(primary->track, primary->switch_track, false, toward_end, start, p_distance);
     }
 
     Ref<RailVehicleNeighbour> RailVehicleServer::vehicle_find_vehicle(
             const RID &p_vehicle, const RailVehicleController::CouplerEnd p_end, const double p_distance) {
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         const TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
+        if (placement == nullptr || tracks == nullptr ||
+            !tracks->track_exists(placement->axles[placement->primary_axle].track)) {
             return Ref<RailVehicleNeighbour>();
         }
         RID found;
@@ -1728,55 +1896,21 @@ namespace godot {
                     p_vehicle, *placement, p_end, p_distance, found, found_end, found_distance, scanned_tracks)) {
             return Ref<RailVehicleNeighbour>();
         }
-        // the scan measures between the centres (MoverRailVehicleController::update_neighbour())
-        const RailVehicleController *controller = _get_controller(*placement);
-        const RailVehicleController *other = _get_controller(*vehicles.getptr(found));
-        const double half_lengths = 0.5 * ((controller != nullptr ? controller->get_dimensions_length() : 0.0) +
-                                           (other != nullptr ? other->get_dimensions_length() : 0.0));
         Ref<RailVehicleNeighbour> neighbour;
         neighbour.instantiate();
         neighbour->set_vehicle_rid(found);
         neighbour->set_end(found_end);
-        neighbour->set_distance(found_distance - half_lengths);
+        neighbour->set_distance(found_distance);
         return neighbour;
     }
 
-    Dictionary RailVehicleServer::vehicle_get_curve(const RID &p_vehicle, const double p_bogie_pivot_spacing) {
+    Dictionary RailVehicleServer::vehicle_get_curve(const RID &p_vehicle) const {
         Dictionary result;
         const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
-        const TrackServer *tracks = TrackServer::get_instance();
-        if (placement == nullptr || tracks == nullptr || !tracks->track_exists(placement->track)) {
-            result["radius"] = 0.0;
-            result["cant"] = 0.0;
-            return result;
-        }
-        const Vector2 curve = _placement_curve(*placement, p_bogie_pivot_spacing);
+        const Vector2 curve = placement != nullptr ? placement->track_curve : Vector2();
         result["radius"] = curve.x;
         result["cant"] = curve.y;
         return result;
-    }
-
-    Vector2 RailVehicleServer::_placement_curve(const VehiclePlacement &p_placement, const double p_spacing) {
-        const VehiclePlacement front = _sample_placement(p_placement, 0.5 * p_spacing);
-        const VehiclePlacement rear = _sample_placement(p_placement, -0.5 * p_spacing);
-        const Vector3 front_forward = -_placement_transform(front).basis.get_column(2);
-        const Vector3 rear_forward = -_placement_transform(rear).basis.get_column(2);
-        double yaw_difference =
-                Math::atan2(front_forward.x, front_forward.z) - Math::atan2(rear_forward.x, rear_forward.z);
-        yaw_difference = Math::wrapf(yaw_difference, -Math::PI, Math::PI);
-        double radius = 0.0;
-        if (!Math::is_zero_approx(Math::sin(yaw_difference * 0.5))) {
-            radius = -0.5 * p_spacing / Math::sin(yaw_difference * 0.5);
-        }
-        if (Math::abs(radius) > CURVE_RADIUS_LIMIT) {
-            radius = 0.0;
-        }
-        // a track run backwards has its roll the other way (TTrackFollower::Move(), TrkFoll.cpp:273-278)
-        const auto roll = [this](const VehiclePlacement &p_sample) {
-            return p_sample.track_direction == TrackServer::DIRECTION_REVERSED ? -_placement_roll(p_sample)
-                                                                               : _placement_roll(p_sample);
-        };
-        return Vector2(radius, Math::deg_to_rad(0.5 * (roll(front) + roll(rear))));
     }
 
     /* The next track (TrackServer::track_find_next()); entering a switch from a branch side
@@ -1818,7 +1952,8 @@ namespace godot {
             return;
         }
         const TrackServer *tracks = TrackServer::get_instance();
-        if (placement->track.is_valid() && (tracks == nullptr || !tracks->track_exists(placement->track))) {
+        const RID track = placement->axles[placement->primary_axle].track;
+        if (track.is_valid() && (tracks == nullptr || !tracks->track_exists(track))) {
             return;
         }
         RailVehicleController *controller = _get_controller(*placement);
@@ -1828,42 +1963,7 @@ namespace godot {
         // the controller's distance is front-relative (it mirrors the mover's V); this server's
         // track-offset math is rear-relative - negate at the boundary
         const double distance = -controller->process_movement(p_delta);
-        if (Math::is_zero_approx(distance)) {
-            return;
-        }
-        _track_changed(placement->track);
-        _move_placement(*placement, distance, true);
-        _place_body(*placement);
-        _track_changed(placement->track);
-        _note_track_move(p_vehicle, *placement);
-    }
-
-    /* Only the vehicles that changed track since the last update move in the index, at the same
-     * moment of the step as ever: once, before any vehicle looks for its neighbours */
-    void RailVehicleServer::neighbour_index_update() {
-        for (const RID &vehicle: track_moved_vehicles) {
-            VehiclePlacement *placement = vehicles.getptr(vehicle);
-            if (placement == nullptr || placement->indexed_track == placement->track) {
-                continue;
-            }
-            if (Vector<RID> *listed = track_vehicles.getptr(placement->indexed_track); listed != nullptr) {
-                listed->erase(vehicle);
-            }
-            if (placement->track.is_valid()) {
-                track_vehicles[placement->track].push_back(vehicle);
-            }
-            // a scan made since it entered the track could not find it there yet
-            _track_changed(placement->indexed_track);
-            _track_changed(placement->track);
-            placement->indexed_track = placement->track;
-        }
-        track_moved_vehicles.clear();
-    }
-
-    void RailVehicleServer::_note_track_move(const RID &p_vehicle, const VehiclePlacement &p_placement) {
-        if (!(p_placement.track == p_placement.indexed_track)) {
-            track_moved_vehicles.push_back(p_vehicle);
-        }
+        _move_vehicle(p_vehicle, distance);
     }
 
     void RailVehicleServer::_track_changed(const RID &p_track) {
@@ -1921,7 +2021,7 @@ namespace godot {
         // only a vehicle standing on a track is under a wire, as every one of the original's is
         if (const Ref<RailVehicleEnginePowerSource> power_source =
                     controller->get_rail_component(RailVehicleComponentType::COMPONENT_ENGINE_POWER_SOURCE);
-            power_source.is_valid() && placement->track.is_valid()) {
+            power_source.is_valid() && placement->axles[placement->primary_axle].track.is_valid()) {
             const VehicleServer *vehicle_server = VehicleServer::get_instance();
             ERR_FAIL_NULL(vehicle_server);
             const Transform3D frame = vehicle_get_transform(p_vehicle);
@@ -2023,44 +2123,27 @@ namespace godot {
         }
     }
 
-    /* Reported on a change only: the track events hang on what it was, not on every step */
-    void RailVehicleServer::vehicle_report_track_heading(const RID &p_vehicle) {
+    /* Reported once as it stops: the track events of a standing vehicle go on by themselves
+     * (ScenarioEventServer queues event0 again while it stands) */
+    void RailVehicleServer::vehicle_report_track_standing(const RID &p_vehicle) {
         VehiclePlacement *placement = vehicles.getptr(p_vehicle);
         ERR_FAIL_NULL(placement);
         const RailVehicleController *controller = _get_controller(*placement);
         ERR_FAIL_NULL(controller);
-        TrackHeading heading = HEADING_TO_START;
-        if (controller->get_speed() <= STANDING_SPEED) {
-            heading = HEADING_STANDING;
-        } else if (placement->travel_sign > 0.0) {
-            heading = HEADING_TO_END;
-        }
-        if (heading == placement->reported_heading && placement->track == placement->reported_track) {
+        const RID track = placement->axles[placement->primary_axle].track;
+        if (controller->get_speed() > STANDING_SPEED ||
+            (placement->reported_heading == HEADING_STANDING && placement->reported_track == track)) {
             return;
         }
-        if (!(placement->track == placement->reported_track)) {
-            // the new track first, so a section both belong to never reads empty (TrkFoll.cpp:88-91)
-            TrackServer *tracks = TrackServer::get_instance();
-            ERR_FAIL_NULL(tracks);
-            tracks->track_vehicle_entered(placement->track, p_vehicle);
-            if (placement->reported_track.is_valid()) {
-                tracks->track_vehicle_left(placement->reported_track, p_vehicle);
-            }
-            placement = vehicles.getptr(p_vehicle); // the section signals may have rehashed
-        }
-        placement->reported_heading = heading;
-        placement->reported_track = placement->track;
-        const RID track = placement->track;
-        switch (heading) {
-            case HEADING_STANDING:
-                emit_signal(vehicle_stopped_on_track_signal, p_vehicle, track);
-                break;
-            case HEADING_TO_START:
-                emit_signal(vehicle_heading_to_track_start_signal, p_vehicle, track);
-                break;
-            case HEADING_TO_END:
-                emit_signal(vehicle_heading_to_track_end_signal, p_vehicle, track);
-                break;
+        placement->reported_heading = HEADING_STANDING;
+        placement->reported_track = track;
+        const Axle secondary = placement->primary_axle == AXLE_FRONT ? AXLE_REAR : AXLE_FRONT;
+        const RID secondary_track = placement->axles[secondary].track;
+        emit_signal(vehicle_stopped_on_track_signal, p_vehicle, track);
+        // every axle of a standing vehicle fires its track's event0 (TrkFoll.cpp:122-133 has no
+        // bPrimary) - the other track's too when the axles stand on two
+        if (secondary_track.is_valid() && !(secondary_track == track)) {
+            emit_signal(vehicle_secondary_axle_stopped_on_track_signal, p_vehicle, secondary_track);
         }
     }
 
@@ -2095,7 +2178,7 @@ namespace godot {
         const double velocity = controller->get_velocity();
         const double scan_range = MAX(SCAN_RANGE_MINIMUM, Math::abs(velocity)) + SCAN_RANGE_MARGIN;
         // the track does not change between the two ends, so it is asked about once
-        const bool on_track = tracks->track_exists(p_placement.track);
+        const bool on_track = tracks->track_exists(p_placement.axles[p_placement.primary_axle].track);
         for (const RailVehicleController::CouplerEnd end:
              {RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLER_END_REAR}) {
             // a coupled end is not cleared by this call: the original recomputes its coupler
@@ -2139,8 +2222,9 @@ namespace godot {
         }
     }
 
-    /* Original engine: TDynamicObject::find_vehicle() (DynObj.cpp:7592) - scans the route from the
-     * vehicle centre towards the given end. */
+    /* Original engine: TDynamicObject::find_vehicle() (DynObj.cpp:7688) - scans the route from the
+     * vehicle's primary axle towards the given end, for the primary axles of the others listed on
+     * the tracks (ABuFindObject(), DynObj.cpp:1544-1640); the distance is between the two. */
     bool RailVehicleServer::_find_vehicle(
             const RID &p_vehicle, const VehiclePlacement &p_placement, const RailVehicleController::CouplerEnd p_end,
             const double p_scan_range, RID &p_found_out, RailVehicleController::CouplerEnd &p_found_end_out,
@@ -2151,35 +2235,37 @@ namespace godot {
         }
         // server distances are rear-relative, see the step's own note on this
         const double request_sign = p_end == RailVehicleController::COUPLER_END_FRONT ? -1.0 : 1.0;
-        VehiclePlacement cursor = p_placement;
-        cursor.controller_id = ObjectID();
+        AxleFollower cursor = p_placement.axles[p_placement.primary_axle];
         double scanned = 0.0;
         double min_along = 0.0;
         p_tracks_out.clear();
 
         while (scanned < p_scan_range) {
             p_tracks_out.push_back(cursor.track);
-            // same conversion to the curve offset direction as in _move_placement()
+            // same conversion to the curve offset direction as in _walk_axle()
             const double movement_sign =
                     (cursor.track_direction == TrackServer::DIRECTION_NORMAL ? -1.0 : 1.0) * request_sign;
             RID found_rid;
             double found_along = INFINITY;
-            if (const Vector<RID> *on_track = track_vehicles.getptr(cursor.track); on_track != nullptr) {
-                for (const RID &other_rid: *on_track) {
-                    const VehiclePlacement *other = vehicles.getptr(other_rid);
-                    if (other_rid == p_vehicle || other == nullptr || other->switch_track != cursor.switch_track) {
-                        continue;
-                    }
-                    const double along = (other->track_offset - cursor.track_offset) * movement_sign;
-                    if (along > min_along && along < found_along) {
-                        found_rid = other_rid;
-                        found_along = along;
-                    }
+            for (const RID &other_rid: tracks->track_get_vehicle_list(cursor.track)) {
+                const VehiclePlacement *placement = vehicles.getptr(other_rid);
+                if (other_rid == p_vehicle || placement == nullptr) {
+                    continue;
+                }
+                const AxleFollower &other = placement->axles[placement->primary_axle];
+                if (other.switch_track != cursor.switch_track) {
+                    continue;
+                }
+                const double along = (other.track_offset - cursor.track_offset) * movement_sign;
+                if (along > min_along && along < found_along) {
+                    found_rid = other_rid;
+                    found_along = along;
                 }
             }
             if (found_rid.is_valid()) {
                 const VehiclePlacement *found = vehicles.getptr(found_rid);
-                const double found_front_sign = found->track_direction == TrackServer::DIRECTION_NORMAL ? 1.0 : -1.0;
+                const double found_front_sign =
+                        found->axles[found->primary_axle].track_direction == TrackServer::DIRECTION_NORMAL ? 1.0 : -1.0;
                 p_found_out = found_rid;
                 p_found_end_out = Math::is_equal_approx(found_front_sign, -movement_sign)
                                           ? RailVehicleController::COUPLER_END_FRONT
@@ -2192,7 +2278,7 @@ namespace godot {
             const double distance_to_endpoint =
                     movement_sign > 0.0 ? length - cursor.track_offset : cursor.track_offset;
             const RID previous_track = cursor.track;
-            _move_placement(cursor, request_sign * (distance_to_endpoint + SCAN_ENDPOINT_EPSILON), false);
+            _walk_axle(cursor, request_sign * (distance_to_endpoint + SCAN_ENDPOINT_EPSILON), false, nullptr);
             if (cursor.track == previous_track) {
                 return false;
             }

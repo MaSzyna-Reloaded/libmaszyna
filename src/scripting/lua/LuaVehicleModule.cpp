@@ -129,7 +129,7 @@ namespace godot {
         return 1;
     }
 
-    /// track_position(v) - {track = the track it stands on, along = metres along it}
+    /// track_position(v) - {track = the track its primary axle stands on, along = metres along it}
     static int vehicle_track_position(lua_State *p_state) {
         const RID vehicle = check_vehicle(p_state);
         const Dictionary position = LuaModules::server<RailVehicleServer>(p_state)->vehicle_get_track_position(vehicle);

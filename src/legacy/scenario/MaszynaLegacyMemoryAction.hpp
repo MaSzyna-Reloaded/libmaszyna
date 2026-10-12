@@ -24,6 +24,9 @@ namespace godot {
                 MODE_ISOLATED_FREE,
             };
 
+            /// The bit of value 2 an occupied isolated section sets - the value made odd
+            /// (Track.cpp:157)
+            static constexpr int ISOLATED_BUSY_FLAG = 1;
             /// The part of value 2 a freed isolated section clears
             static constexpr int ISOLATED_FREE_MASK = 0xFF;
 

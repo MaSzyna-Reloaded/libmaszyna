@@ -98,13 +98,13 @@ namespace godot {
                 p_state, ScenarioScriptServer::SIGNAL_VEHICLE_STOPPED_ON_TRACK, ScriptHandleKind::TRACK);
     }
 
-    /// on_isolated_occupied(i, fn) - fn(vehicle) when the first vehicle comes onto the section
+    /// on_isolated_occupied(i, fn) - fn(vehicle) when the first axle comes onto the section
     static int track_on_isolated_occupied(lua_State *p_state) {
         return LuaModules::subscribe(
                 p_state, ScenarioScriptServer::SIGNAL_ISOLATED_OCCUPIED, ScriptHandleKind::ISOLATED);
     }
 
-    /// on_isolated_freed(i, fn) - fn(vehicle) when the last vehicle leaves the section
+    /// on_isolated_freed(i, fn) - fn(vehicle) when the last axle leaves the section
     static int track_on_isolated_freed(lua_State *p_state) {
         return LuaModules::subscribe(p_state, ScenarioScriptServer::SIGNAL_ISOLATED_FREED, ScriptHandleKind::ISOLATED);
     }
