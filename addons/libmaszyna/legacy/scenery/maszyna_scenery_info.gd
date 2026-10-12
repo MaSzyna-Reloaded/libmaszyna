@@ -27,6 +27,9 @@ class Vehicle:
     var driver_type:String = ""
     ## Stood the other way round - its offset is -1 (MaszynaNodeDynamicImporter)
     var reversed:bool = false
+    ## Its place in the trainset as the .scn declares it, front first; -1 for a vehicle added to
+    ## it - MaszynaDynamicData.trainset_index
+    var trainset_index:int = -1
 
     ## Its name for the player: as the .scn writes it, else its vehicle_id
     func get_name() -> String:
@@ -37,10 +40,12 @@ class Vehicle:
     func has_driver() -> bool:
         return driver_type == "headdriver" or driver_type == "reardriver"
 
-    ## The same vehicle in the same files and skin - the name of the scenery included
+    ## The same vehicle in the same files and skin - the name of the scenery and its place in the
+    ## declared trainset included
     func is_same(other:Vehicle) -> bool:
-        return (vehicle_id == other.vehicle_id and data_path == other.data_path
-                and file_name == other.file_name and skin == other.skin and reversed == other.reversed)
+        return (vehicle_id == other.vehicle_id and trainset_index == other.trainset_index
+                and data_path == other.data_path and file_name == other.file_name and skin == other.skin
+                and reversed == other.reversed)
 
     ## The same vehicle, to be changed without touching this one
     func copy() -> Vehicle:
@@ -52,6 +57,7 @@ class Vehicle:
         vehicle.file_name = file_name
         vehicle.driver_type = driver_type
         vehicle.reversed = reversed
+        vehicle.trainset_index = trainset_index
         return vehicle
 
 
@@ -283,6 +289,7 @@ static func read(filename:String) -> MaszynaSceneryInfo:
                     vehicle.file_name = tokens[7]
                     vehicle.reversed = is_equal_approx(float(tokens[8]), -1.0)
                     vehicle.driver_type = tokens[9].to_lower()
+                    vehicle.trainset_index = trainset.vehicles.size()
                     trainset.vehicles.append(vehicle)
     info.description = "\n".join(description_lines)
     return info

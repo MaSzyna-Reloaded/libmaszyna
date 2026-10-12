@@ -4896,3 +4896,32 @@ lighting or the trainset.
     the original runs them in the same pass.
 * **Rule:** an event name may have many definitions. Check `joinduplicatedevents` and the
   original's `insert()` before a lookup by name stands for "the" event.
+
+
+## 2026-10-12 The ET22 that left its wagons at Herby Nowe
+
+* **Symptom:**
+  - reports#32: on `linia61_towarowy1.scn` the player's ET22-663 pulled one container wagon of
+    the 17 its trainset 53060 declares ("jadę Et22 z jakimś pudłem"). The snapshot shows the other
+    16 wagons standing in groups 90-450 m behind it.
+* **What proved it:**
+  - The report's `gameplay.log` holds 12 trainsets at simulation time 0, before the player's
+    first command: `et22-663#1,31514541864-8#2`, then single wagons and pairs. A pair coupled
+    only where the vehicle ahead was the ET22 or a `45413912`.
+  - The `.scn` declares the wagons coupled `3`, with the last at `0`. Their ids repeat:
+    `31514541864-8` 13 times, `45413912` 4 times.
+  - The game's selector always sends an arranged trainset. `MaszynaTrainsetData.get_arranged_dynamics()`
+    paired its entries with the declared dynamics through `by_id[vehicle_id]`, where the last
+    declaration of an id overwrote the others. Every `31514541864-8` took the couplings, crew and
+    load of the last wagon, coupling 0. The defect has been there since 40cc3a4a, keyed by `name`
+    then.
+  - The original keeps each vehicle with its own coupling and couples by index
+    (`simulationstateserializer.cpp:818-834`, `1079-1081`). A repeated name only goes to the log
+    (`:449-451`).
+* **Fix:**
+  - `MaszynaSceneryInfo.Vehicle.trainset_index` and `MaszynaDynamicData.trainset_index` carry a
+    vehicle's place in the declared trainset from the selector to the scenery, -1 for one added.
+  - `get_arranged_dynamics()` takes the declaration at that place. The arrangement is the
+    trainset's only when every place it names holds a vehicle of that id.
+* **Rule:** a vehicle's id may repeat within one trainset. A vehicle is paired with its
+  declaration by its place, never by its id.
