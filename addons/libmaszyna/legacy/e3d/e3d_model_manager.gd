@@ -10,14 +10,6 @@ func _ready() -> void:
     E3DRenderingServer.model_set_loader(load_model)
 
 
-## Saving a model reads its meshes back from the RenderingServer, which off the main thread waits
-## for the main thread to flush its commands - a worker waiting there deadlocked the load
-## (docs/findings-archive.md, 2026-10-02). So a worker hands the save to the main thread - by a
-## deferred call: a signal of a node in the tree cannot even be emitted off the main thread.
-func _save_model(cached_path:String, model:E3DModel, cache_hash:String) -> void:
-    _cache.set(cached_path, model, cache_hash)
-
-
 func clear_cache():
     _cache.clear()
 
@@ -64,14 +56,10 @@ func load_model(data_path:String, filename: String) -> E3DModel:
     if FileAccess.file_exists(path):
         output = load(path) as E3DModel # load external e3d
         if output:
-            if not OS.get_thread_caller_id() == OS.get_main_thread_id():
-                _save_model.call_deferred(cached_path, output, cache_hash)
-                return output
+            # saved on the thread that loaded it: an E3DMesh keeps its arrays, so saving reads
+            # nothing back from the RenderingServer (it was a GPU stall on the main thread)
             _cache.set(cached_path, output, cache_hash)
-            # the saved resource is the one to share; a cache that is switched off
-            # (maszyna/cache/enabled) keeps nothing, and the model is the one just loaded
-            var saved:E3DModel = _cache.get(cached_path) as E3DModel
-            return saved if saved else output
+            return output
         else:
             push_warning("File is not an E3DModel: "+path)
     else:

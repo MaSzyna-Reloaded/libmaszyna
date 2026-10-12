@@ -17,7 +17,7 @@ namespace godot {
             TypedArray<E3DSubModel> submodels;
 
         public:
-            static constexpr int FORMAT_VERSION = 20261004; // must be incremented when public API of E3DModel or
+            static constexpr int FORMAT_VERSION = 20261012; // must be incremented when public API of E3DModel or
                                                             // E3DSubModel is changing
             ~E3DModel() override;
 

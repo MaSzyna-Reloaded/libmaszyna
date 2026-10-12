@@ -476,6 +476,9 @@ anything. Open work belongs in `TODO.md`.
   *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
+* A mesh that is saved, picked or read is an `E3DMesh` with its arrays in memory, never an
+  `ArrayMesh`: saving or reading an `ArrayMesh` reads its buffers back from the GPU, a stall of
+  every frame in flight, on the main thread. *(10-12 E3D models saved on the main thread)*
 * A resource is saved only through `ResourceCache.resource_save()` and a scene packed only through
   `ResourceCache.scene_pack()`: both look up Godot's property defaults, a cache it fills without a
   lock, and two at once corrupt the heap. *(10-12 the crash at exit after a scenery parse)*

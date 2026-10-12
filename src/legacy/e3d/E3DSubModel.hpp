@@ -78,7 +78,8 @@ namespace godot {
             String material_name = "";
             Transform3D transform = Transform3D();
             Transform3D material_transform = Transform3D();
-            Ref<ArrayMesh> mesh;
+            /// An E3DMesh when made of the model's data, which keeps its arrays (E3DModelBuilder)
+            Ref<Mesh> mesh;
             TypedArray<E3DSubModel> submodels;
             bool visible = true;
             bool skip_rendering = false;
@@ -100,7 +101,7 @@ namespace godot {
             MAKE_GS_NR(String, material_name);
             MAKE_GS_NR(Transform3D, transform);
             MAKE_GS_NR(Transform3D, material_transform);
-            MAKE_GS_NR(Ref<ArrayMesh>, mesh);
+            MAKE_GS_NR(Ref<Mesh>, mesh);
             MAKE_GS_NR(TypedArray<E3DSubModel>, submodels);
             MAKE_GS_NR(bool, visible);
             MAKE_GS_NR(bool, skip_rendering);
