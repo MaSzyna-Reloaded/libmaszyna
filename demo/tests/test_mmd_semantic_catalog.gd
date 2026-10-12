@@ -100,7 +100,7 @@ func test_i_radio_indicator_and_powered_omnilight_are_separate():
     assert_true(entry["position_at_submodel"])
     assert_eq(entry["light_widget_class"], CabinOmniLight3D)
     assert_eq(entry["light_fixed_fields"]["state_property"], "radio_powered")
-    # the lamp takes the submodel's diffuse, which tints its greyscale texture (Model3d.cpp:1918)
+    # the lamp takes the colour it is drawn with, its texture times its diffuse (light_common.glsl:164)
     assert_true(entry["light_color_from_submodel"])
     assert_false(entry["light_fixed_fields"].has("light_color"))
     assert_eq(entry["light_fixed_fields"]["light_energy_on"], 0.05)

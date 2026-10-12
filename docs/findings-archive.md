@@ -4621,3 +4621,23 @@ lighting or the trainset.
   abstraction; `TODO.md` says a source fed from scenery data takes a bridge from track events.
 * **Rule:** the original detects a train only by isolated sections and track events; a new
   detection object is ours, fed from the data by a bridge from track events.
+
+## 2026-10-12 ST45's blue lamps glowed orange
+
+* **Symptom:** reports#29 (libmaszyna#314): in the ST45 cab the lit CA/SHP lamps are blue, but
+  the glow they cast on the desk was warm orange.
+* **What proved it:** the E3D (`kabina-st45-a.e3d`) gives `czuwak_on`/`shp_on` diffuse
+  (1.00, 0.80, 0.58); the blue is only in the texture (`czuwak.dds`). The indicator's `CabinGlow`
+  and the `light_color_from_submodel` lights took the diffuse alone, after a comment citing the
+  legacy fixed-function renderer (Model3d.cpp:1918, openglrenderer.cpp:2779). In opengl33 the
+  diffuse goes to `param[0]` for textured submodels too (opengl33renderer.cpp:2176-2186) and the
+  lit colour is diffuse x emission x texture (shaders/light_common.glsl:158-164,221), so the lamp
+  is blue with a warm tint - and EP07's `wylszybki` (green diffuse over a grey texture) green. The
+  original lights no surface from an indicator; the glow is ours.
+* **Fix:** `LegacyCabinLampIslands.submodel_color()` - the lamp mesh sampled as one piece, texture
+  x albedo, the albedo alone for a texture without colour channels (SM42's BC5), at full
+  brightness - colours the indicator glow and the `light_color_from_submodel` lights. Probe on the
+  game data: ST45 CA/SHP (0.42, 0.41, 1.0), EP07 `wylszybki` (0, 1, 0).
+  `test_legacy_cabin_lamp_islands.gd`, `test_mmd_cabin_instancer.gd`.
+* **Rule:** a lit E3D lamp is its texture times its diffuse; a light standing for it samples the
+  texture, never takes the diffuse alone.
