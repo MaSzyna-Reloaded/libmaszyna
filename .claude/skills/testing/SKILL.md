@@ -12,8 +12,12 @@ skill gathers them with what they cost us when they were broken.
 
 A test that turns red after a change is **distrusted, not fixed**. Before touching it:
 
-1. Read what it guarded - its assertions and its setup - and say why that behaviour changed on
-   purpose. If you cannot, the change is wrong, not the test.
+1. Read what it guarded - its assertions and its setup - find the change that turned it red, and
+   report it to the operator: the commit, the line, what it does to the real data. "On purpose"
+   is the **operator's** word, never yours: a commit message, a comment citing the original or
+   your own reading of the intent does not make a behaviour change wanted. Until the operator
+   confirms that exact behaviour, the change is the regression and the test stays as it is - the
+   regression is looked for first, the test is changed last.
 2. Never make it pass by removing its setup or its assertion, by loosening a tolerance, or by
    giving it a value the code now happens to produce.
 3. When the change moved a responsibility (a field to another component, a command to another
@@ -23,6 +27,14 @@ A test that turns red after a change is **distrusted, not fixed**. Before touchi
 lost `battery_voltage = 110` with nothing in its place and stayed green, because none of them
 asserted the low voltage. The tester could not start an EU07, ED78 or 36WE. Breaking this rule
 breaks the project's rules.
+
+2026-10-12, 4af6453d (#296): the importer started reading every `.scn` node name in lower case
+("as the original reads it") - a change of semantics written into a plan about switches as one of
+its decisions, never asked. The EN57 start-up test went red on it; it was called a "test bug", its
+names were lowercased and the edit folded into #296 as a fixup, with nobody asking the operator.
+The operator's decision came only after the game started players outside their vehicles: names as
+the original, lowercased at read time - and the start-up test had been the first to show that the
+port did it only halfway (the starter and the trainset's track still read as written).
 
 ## The test steps the simulation - no timeouts - PROHIBITED, ABSOLUTE
 
