@@ -1,0 +1,16 @@
+// a trainset whose wagons share one id, each with its own load - only the last one is not coupled
+// to a next vehicle (linia61_towarowy1.scn: 13 Sgs wagons named 31514541864-8)
+node -1 0 main_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+0.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+0.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+trainset freight main_track 150 0
+node -1 0 loco dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+node -1 0 wagon dynamic test/synthetic_v1 none synthetic 0 nobody 3 10 load_a enddynamic
+node -1 0 wagon dynamic test/synthetic_v1 none synthetic 0 nobody 3 20 load_b enddynamic
+node -1 0 wagon dynamic test/synthetic_v1 none synthetic 0 nobody 0 30 load_c enddynamic
+endtrainset

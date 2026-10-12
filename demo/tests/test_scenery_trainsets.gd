@@ -8,6 +8,9 @@ const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## A trainset "express" of `first` (with a driver) and `second` on main_track, `lone` on
 ## side_track (written "Lone"), and `road_car` on a track the scenery does not have
 const SCENERY:String = "trainsets.scn"
+## A trainset "freight" of `loco` and three wagons all named `wagon`, loaded load_a, load_b and
+## load_c, the last one not coupled to a next vehicle
+const REPEATED_IDS_SCENERY:String = "trainsets_repeated_ids.scn"
 ## How exactly the second vehicle stands a vehicle's length behind the first [m]
 const PLACEMENT_TOLERANCE:float = 0.01
 
@@ -82,8 +85,8 @@ func test_a_vehicle_is_found_by_its_id_and_shown_by_its_name() -> void:
 
 func test_a_skin_chosen_for_the_load_is_that_vehicles_alone() -> void:
     _scenery.trainset_override.assign([
-        _arranged("first", "dynamic/test/synthetic_v1", "synthetic", "chosen"),
-        _arranged("second", "dynamic/test/synthetic_v1", "synthetic", "none"),
+        _arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "chosen"),
+        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none"),
     ])
     await _scenery.load()
 
@@ -96,9 +99,9 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
     # second goes first, first becomes another vehicle and keeps its driver, a vehicle is added
     # at the end, and lone - another trainset's - stays as declared
     _scenery.trainset_override.assign([
-        _arranged("second", "dynamic/test/synthetic_v1", "synthetic", "none"),
-        _arranged("first", "dynamic/test/animated_v1", "animated", "none"),
-        _arranged("", "dynamic/test/synthetic_v1", "synthetic", "none"),
+        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none"),
+        _arranged("first", 0, "dynamic/test/animated_v1", "animated", "none"),
+        _arranged("", -1, "dynamic/test/synthetic_v1", "synthetic", "none"),
     ])
     # and the second is turned round
     _scenery.trainset_override[0].direction = TrackServer.DIRECTION_REVERSED
@@ -122,10 +125,37 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
 
 
 func test_a_vehicle_left_out_of_the_arranged_trainset_is_not_built() -> void:
-    _scenery.trainset_override.assign([_arranged("first", "dynamic/test/synthetic_v1", "synthetic", "none")])
+    _scenery.trainset_override.assign([_arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "none")])
     await _scenery.load()
 
     assert_eq(_ids(_scenery.get_vehicles()), ["first", "lone"])
+
+
+func test_an_arranged_trainset_with_repeated_ids_is_coupled_through() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 1, 2, 3]
+    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    await _scenery.load()
+
+    var vehicles:Array[RID] = []
+    vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
+    assert_eq(_loads(vehicles), ["", "load_a", "load_b", "load_c"], "each wagon with its own load")
+    var coupled:Array[RID] = []
+    coupled.assign(RailVehicleServer.vehicle_get_coupled(
+            vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER))
+    assert_eq(coupled.size(), 4, "every wagon coupled, not only the one behind the loco")
+
+
+func test_a_moved_wagon_of_a_repeated_id_keeps_its_own_load() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    # the last wagon goes behind the loco
+    var places:Array[int] = [0, 3, 1, 2]
+    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    await _scenery.load()
+
+    var vehicles:Array[RID] = []
+    vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
+    assert_eq(_loads(vehicles), ["", "load_c", "load_a", "load_b"])
 
 
 func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
@@ -142,14 +172,31 @@ func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
     assert_false(VehicleServer.vehicle_get_rid_by_id("first").is_valid())
 
 
+func _loads(vehicles:Array[RID]) -> Array:
+    return vehicles.map(func(vehicle:RID) -> String:
+        return MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).load_name)
+
+
+## The trainset of REPEATED_IDS_SCENERY as the selector sends it, its vehicles at `places`
+func _arranged_repeated_ids(places:Array[int]) -> Array[MaszynaDynamicData]:
+    var arranged:Array[MaszynaDynamicData] = []
+    for place:int in places:
+        arranged.append(_arranged("loco" if place == 0 else "wagon", place, "dynamic/test/synthetic_v1",
+                "synthetic", "none"))
+    return arranged
+
+
 func _ids(vehicles:Array[RID]) -> Array:
     return vehicles.map(func(vehicle:RID) -> String: return VehicleServer.vehicle_get_id(vehicle))
 
 
-## An entry of the player's trainset as the scenery selector arranges it
-func _arranged(vehicle_name:String, data_path:String, file_name:String, skin:String) -> MaszynaDynamicData:
+## An entry of the player's trainset as the scenery selector arranges it: a declared vehicle at
+## its place in the declared trainset, -1 for one added
+func _arranged(vehicle_name:String, trainset_index:int, data_path:String, file_name:String,
+        skin:String) -> MaszynaDynamicData:
     var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
     dynamic.vehicle_id = vehicle_name
+    dynamic.trainset_index = trainset_index
     dynamic.data_path = data_path
     dynamic.file_name = file_name
     dynamic.skin = skin

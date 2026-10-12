@@ -498,6 +498,21 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * The subscene cache is used only by queued parsing; `parse_file()` reparses every include.
 * Streaming keeps the track/traction instances and drops only meshes (~16k empty in `baltyk`).
 * A track streams by the chunk of its first curve point, not its nearest point.
+* **A long trainset jammed at load - not looked into yet** (reports#32). On
+  linia61_towarowy1.scn the ET42 112E-025 freight (`sklady_towarowy_hn.scm`, 38 vehicles,
+  `trainset rozklad HrN_A -500 40`) never moves. From the first frame, before its engine starts,
+  its rear coupler is stretched to ~719 kN against 213 kN of traction. In the report's snapshot its
+  last four wagons stand pairwise at one spot, with ±1.08 MN in their couplers. It is the train the
+  scenario waits for: passing t131 gives the player's exit signal (`HrN_C2_s10`,
+  `l61_towarowy1.ctr:24`), so 53060 stands at C2 for good. Suspect: `RailVehicleServer.trainset_place()`
+  placing the train back from the offset; compare with the original's placement.
+* **Road, river and cross tracks are not imported** (#318) (`maszyna_node_track_importer.gd:23-28`
+  drops them whole, without a warning). Platforms built as roads are missing with them: Herby
+  Nowe platforms 3 and 4 (`l61_tory.scm:38837-38945`, `plateplatform2`, reports#32).
+  linia61_towarowy1.scn alone drops 964 road nodes, 39 river and 9 cross. Port: the road loft
+  with its sides (`Track.cpp:1479-1517`, `create_road_profile` :3010,
+  `create_road_side_profile` :3070, a kerb for `fTexHeight1 < 0` :3107), rivers drawn the same
+  way (:1686-1712), crossings (`tt_Cross`, :1520-1683).
 * Tracks and traction have no worker `preload`.
 * A terrain chunk's material is looked up on the main thread (`.mat` parse, DDS decode, md5 key) -
   move to the worker preload once the streaming panel shows terrain dominated by it.

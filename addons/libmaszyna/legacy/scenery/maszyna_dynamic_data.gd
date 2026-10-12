@@ -39,3 +39,8 @@ enum DriverType {
 @export var driver_type:DriverType = DriverType.DRIVER_NOBODY
 @export var load_name:String = ""
 @export var load_amount:float = 0.0
+## In a trainset as the player arranged it (MaszynaIncludeNode.trainset_override): its place in
+## the trainset as the `.scn` declares it, front first, by which it is paired with its declared
+## vehicle - the original couples a trainset by position (simulationstateserializer.cpp:818-834),
+## and an id may repeat. -1: a vehicle added to it
+@export var trainset_index:int = -1
