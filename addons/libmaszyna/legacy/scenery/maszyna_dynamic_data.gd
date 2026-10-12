@@ -16,7 +16,10 @@ enum DriverType {
     DRIVER_REAR,
 }
 
-## The scenery's name of the vehicle; may be empty or repeated
+## The vehicle's id - its `.scn` name in lower case, as the original reads it; what finds the
+## vehicle. May be empty or repeated
+@export var vehicle_id:String = ""
+## Its name as the `.scn` writes it, for the player to read; none shows the vehicle_id
 @export var name:String = ""
 ## Where its files are, under the game directory (`dynamic/pkp/303e_v1`)
 @export var data_path:String = ""

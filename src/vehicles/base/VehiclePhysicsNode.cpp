@@ -90,7 +90,7 @@ namespace godot {
             controller_rid = server->controller_create();
         }
         // the scenery's values first: the controller takes them when its simulation starts
-        server->vehicle_set_name(vehicle_rid, vehicle_id);
+        server->vehicle_set_id(vehicle_rid, vehicle_id);
         server->vehicle_set_initial_velocity(vehicle_rid, initial_velocity);
         _prepare_vehicle(vehicle_rid);
         // configuring a bound controller restarts the vehicle on it; the first time it is bound
@@ -121,7 +121,7 @@ namespace godot {
     void VehiclePhysicsNode::set_vehicle_id(const String &p_vehicle_id) {
         vehicle_id = p_vehicle_id;
         if (VehicleServer *server = VehicleServer::get_instance(); server != nullptr && vehicle_rid.is_valid()) {
-            server->vehicle_set_name(vehicle_rid, vehicle_id);
+            server->vehicle_set_id(vehicle_rid, vehicle_id);
         }
     }
 

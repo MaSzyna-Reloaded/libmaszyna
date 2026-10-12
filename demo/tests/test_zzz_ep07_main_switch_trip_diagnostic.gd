@@ -50,7 +50,7 @@ func after_each():
 
 
 func _find_train_controller(vehicle_name:String) -> VehicleController:
-    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name(vehicle_name)
+    var vehicle:RID = VehicleServer.vehicle_get_rid_by_id(vehicle_name)
     return VehicleServer.vehicle_get_controller(vehicle) if VehicleServer.vehicle_is_simulation_ready(vehicle) else null
 
 

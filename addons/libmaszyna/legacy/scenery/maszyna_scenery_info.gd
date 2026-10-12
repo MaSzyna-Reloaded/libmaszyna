@@ -13,11 +13,11 @@ class_name MaszynaSceneryInfo
 
 ## One vehicle of a trainset ("node ... dynamic ... enddynamic")
 class Vehicle:
-    ## The scenery's name of the vehicle - MaszynaDynamicData.name, in lower case as the vehicle is
-    ## found by it
+    ## The vehicle's id - MaszynaDynamicData.vehicle_id, its name in lower case, by which the
+    ## vehicle is found
     var vehicle_id:String = ""
-    ## The same name as the .scn writes it, for the player to read
-    var display_name:String = ""
+    ## Its name as the .scn writes it, for the player to read - MaszynaDynamicData.name
+    var name:String = ""
     ## e.g. "dynamic/pkp/su42_v1"
     var data_path:String = ""
     var skin:String = ""
@@ -29,8 +29,8 @@ class Vehicle:
     var reversed:bool = false
 
     ## Its name for the player: as the .scn writes it, else its vehicle_id
-    func get_display_name() -> String:
-        return display_name if display_name else vehicle_id
+    func get_name() -> String:
+        return name if name else vehicle_id
 
     ## A driver sits in it - only "headdriver" and "reardriver" steer a cab, "passenger" and
     ## "nobody" are no driver (DynObj.cpp:1994-2001)
@@ -46,7 +46,7 @@ class Vehicle:
     func copy() -> Vehicle:
         var vehicle:Vehicle = Vehicle.new()
         vehicle.vehicle_id = vehicle_id
-        vehicle.display_name = display_name
+        vehicle.name = name
         vehicle.data_path = data_path
         vehicle.skin = skin
         vehicle.file_name = file_name
@@ -275,7 +275,7 @@ static func read(filename:String) -> MaszynaSceneryInfo:
                 if trainset and tokens.size() > 9 and tokens[4].to_lower() == "dynamic":
                     var vehicle := Vehicle.new()
                     vehicle.vehicle_id = tokens[3].to_lower()
-                    vehicle.display_name = tokens[3]
+                    vehicle.name = tokens[3]
                     vehicle.data_path = _resolve_data_path(tokens[5])
                     # spelled as the .scn spells them, like maszyna_node_dynamic_importer.gd - the
                     # files are found by MaszynaDataPath.resolve() whatever the letter case

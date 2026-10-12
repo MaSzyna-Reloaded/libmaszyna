@@ -48,7 +48,7 @@ func after_each() -> void:
 func _create(vehicle_name:String, file_name:String = FILE_NAME,
         driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> RID:
     var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
-    dynamic.name = vehicle_name
+    dynamic.vehicle_id = vehicle_name
     dynamic.data_path = DATA_PATH
     dynamic.file_name = file_name
     dynamic.driver_type = driver
@@ -63,11 +63,11 @@ func test_a_vehicle_is_built_by_its_handle_without_a_node() -> void:
     var vehicle:RID = await _create("system_test")
 
     assert_true(VehicleServer.vehicle_is_simulation_ready(vehicle), "it has its simulation")
-    assert_eq(VehicleServer.vehicle_get_rid_by_name("system_test"), vehicle, "found by the scenery's name of it")
+    assert_eq(VehicleServer.vehicle_get_rid_by_id("system_test"), vehicle, "found by the scenery's name of it")
     assert_true(RailVehicleServer.vehicle_is_attached(vehicle), "it is a rail vehicle")
     assert_true(RailVehicleRenderingServer.vehicle_is_attached(vehicle), "it is drawn")
     assert_eq(find_children("", "RailVehicle3D", true, false).size(), 0, "no node stands for it")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).name, "system_test")
+    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).vehicle_id, "system_test")
 
 
 ## A `dynamic` that names no file has nothing to be built from
@@ -104,7 +104,7 @@ func test_a_freed_vehicle_is_gone_from_the_servers() -> void:
     MaszynaLegacyVehicleSystem.vehicle_free(vehicle)
 
     assert_false(MaszynaLegacyVehicleSystem.vehicle_exists(vehicle))
-    assert_false(VehicleServer.vehicle_get_rid_by_name("system_test_freed").is_valid())
+    assert_false(VehicleServer.vehicle_get_rid_by_id("system_test_freed").is_valid())
     assert_false(RailVehicleRenderingServer.vehicle_is_attached(vehicle), "drawn no more")
 
 

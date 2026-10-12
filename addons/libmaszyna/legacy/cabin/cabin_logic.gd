@@ -55,11 +55,11 @@ func _init(controls_for_cabin:Callable) -> void:
 
 
 ## The logic of the cabs a vehicle's MMD defines
-static func from_mmd(data_path:String, mmd_filename:String, skin:String, vehicle_name:String) -> LegacyCabinLogic:
+static func from_mmd(data_path:String, mmd_filename:String, skin:String, vehicle_id:String) -> LegacyCabinLogic:
     var game_dir:String = UserSettings.get_maszyna_game_dir()
     var relative_path:String = data_path.trim_prefix("/").path_join(mmd_filename + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_name, mmd_filename, skin)
+    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, mmd_filename, skin)
     return LegacyCabinLogic.new(LegacyCabinControls.from_mmd.bind(abs_mmd_path, parameters))
 
 

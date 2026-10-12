@@ -1753,7 +1753,7 @@ namespace godot {
         p_visual.pickable = RID();
         if (p_visual.detailed && p_visual.model.is_valid()) {
             p_visual.pickable = mouse->vehicle_pickable_create(
-                    p_visual.model, vehicle_server->vehicle_get_name(p_vehicle), p_vehicle);
+                    p_visual.model, vehicle_server->vehicle_get_id(p_vehicle), p_vehicle);
         }
     }
 

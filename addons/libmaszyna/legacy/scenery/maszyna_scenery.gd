@@ -175,9 +175,9 @@ func _find_driver_vehicle_id() -> String:
     for vehicle:RID in get_vehicles():
         var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
         if dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_HEAD:
-            return dynamic.name
+            return dynamic.vehicle_id
         if dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_REAR and not reverse_driver_vehicle_id:
-            reverse_driver_vehicle_id = dynamic.name
+            reverse_driver_vehicle_id = dynamic.vehicle_id
     if reverse_driver_vehicle_id:
         return reverse_driver_vehicle_id
-    return MaszynaLegacyVehicleSystem.vehicle_get_dynamic(get_vehicles()[0]).name if get_vehicles() else ""
+    return MaszynaLegacyVehicleSystem.vehicle_get_dynamic(get_vehicles()[0]).vehicle_id if get_vehicles() else ""

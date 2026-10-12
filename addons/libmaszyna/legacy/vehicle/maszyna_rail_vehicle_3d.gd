@@ -37,9 +37,9 @@ signal vehicle_built
             _dirty = true
             set_process(true)
 
-## The scenery's name for this vehicle, registered with VehicleServer.vehicle_set_name(), which is
-## how an event, a scenario or the console find a vehicle by name. It may be empty or repeated -
-## everything that holds the vehicle uses its RID, so only a lookup by that name is affected.
+## The vehicle's id, registered with VehicleServer.vehicle_set_id(), which is how an event, a
+## scenario or the console find a vehicle. It may be empty or repeated - everything that holds the
+## vehicle uses its RID, so only a lookup by that id is affected.
 @export var vehicle_id:String = "":
     set(x):
         if not x == vehicle_id:
@@ -121,7 +121,7 @@ func _process(_delta:float) -> void:
     _dirty = false
     _free_vehicle()
     var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
-    dynamic.name = vehicle_id
+    dynamic.vehicle_id = vehicle_id
     dynamic.data_path = data_path
     dynamic.file_name = file_name
     dynamic.skin = skin

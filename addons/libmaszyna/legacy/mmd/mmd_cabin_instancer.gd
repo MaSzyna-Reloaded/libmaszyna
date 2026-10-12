@@ -343,12 +343,12 @@ static func _skin_slot_exists(base_dir:String, slot:String) -> bool:
 ## The (pN) a vehicle's own MMD is read with: the original parses the text
 ## "include <TypeName>.mmd <name> <TypeName> <skin> end" (DynObj.cpp:5260) - SN61's MMD is only
 ## "include sn61.mmd.inc (p2)", SM42 6D names its attachments by (p3)
-static func vehicle_parameters(vehicle_name:String, type_name:String, skin:String) -> Dictionary:
-    var values:Array[String] = [vehicle_name, type_name, skin]
+static func vehicle_parameters(vehicle_id:String, type_name:String, skin:String) -> Dictionary:
+    var values:Array[String] = [vehicle_id, type_name, skin]
     return _include_parameters(values)
 
 
-## Whether what the MMD reads depends on the vehicle's own name - its text names (p1), which no
+## Whether what the MMD reads depends on the vehicle's id - its text names (p1), which no
 ## include of it can name unless passed it. What is read from it then belongs to that vehicle alone.
 static func names_vehicle(abs_mmd_path:String) -> bool:
     return FileAccess.get_file_as_bytes(abs_mmd_path).get_string_from_ascii().contains("(p1)")

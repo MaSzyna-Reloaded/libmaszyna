@@ -121,7 +121,7 @@ func test_an_include_inside_a_trainset_keeps_its_place_in_it() -> void:
     assert_eq(trainset.track_name, "main_track")
     assert_eq(trainset.name, "express")
     assert_eq(trainset.timetable, "express", "its driver's timetable is named after it")
-    assert_eq(trainset.dynamics.map(func(dynamic:MaszynaDynamicData) -> String: return dynamic.name),
+    assert_eq(trainset.dynamics.map(func(dynamic:MaszynaDynamicData) -> String: return dynamic.vehicle_id),
             ["first", "middle", "last"])
     assert_almost_eq(trainset.dynamics[1].gap, 0.25, 0.001, "the included vehicle keeps its gap")
     assert_eq(trainset.dynamics[1].coupling, 7, "and its coupling")

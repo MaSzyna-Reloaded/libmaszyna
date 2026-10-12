@@ -100,7 +100,7 @@ func _rebuild_generated() -> void:
     var relative_path:String = data_path.trim_prefix("/").path_join(mmd_filename + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
     var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(
-            VehicleServer.vehicle_get_name(get_vehicle_rid()), mmd_filename, skin)
+            VehicleServer.vehicle_get_id(get_vehicle_rid()), mmd_filename, skin)
     var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
             abs_mmd_path, parameters, cab_definition, _random_choices)
     _diagnostics.append_array(definition.diagnostics)

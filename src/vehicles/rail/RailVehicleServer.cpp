@@ -387,7 +387,7 @@ namespace godot {
             p_pantograph.wire.is_valid() && !RID(found["rid"]).is_valid() && vehicle_server != nullptr) {
             UtilityFunctions::push_warning(
                     vformat("Bad traction: %s lost the wire under pantograph %d - %s, %v",
-                            vehicle_server->vehicle_get_name(p_vehicle), p_index, _track_position_text(p_vehicle),
+                            vehicle_server->vehicle_get_id(p_vehicle), p_index, _track_position_text(p_vehicle),
                             contact_point));
         }
         p_pantograph.wire = found["rid"];
@@ -2073,7 +2073,7 @@ namespace godot {
                 if (active[pantograph] && collector.touching && !collector.reaches_wire) {
                     UtilityFunctions::push_warning(vformat(
                             "Lost contact: %s pantograph %d is not reaching the wire - %s",
-                            vehicle_server->vehicle_get_name(p_vehicle), pantograph, _track_position_text(p_vehicle)));
+                            vehicle_server->vehicle_get_id(p_vehicle), pantograph, _track_position_text(p_vehicle)));
                     // one announcement a loss: the arm short of a wire found, or no wire over it
                     emit_signal(
                             vehicle_pantograph_contact_lost_signal, p_vehicle, pantograph,
@@ -2097,7 +2097,7 @@ namespace godot {
                     if (collector.powered && Math::is_zero_approx(voltage)) {
                         UtilityFunctions::push_warning(
                                 vformat("Dead traction: %s has a wire under pantograph %d carrying no voltage - %s, %v",
-                                        vehicle_server->vehicle_get_name(p_vehicle), pantograph,
+                                        vehicle_server->vehicle_get_id(p_vehicle), pantograph,
                                         _track_position_text(p_vehicle), frame.xform(collector.position)));
                         emit_signal(
                                 vehicle_pantograph_contact_lost_signal, p_vehicle, pantograph,

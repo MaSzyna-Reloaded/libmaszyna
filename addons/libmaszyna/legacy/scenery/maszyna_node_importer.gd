@@ -16,10 +16,13 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
     var range_max = float(p.next_token())
     var range_min = float(p.next_token())
     # the original reads the node's name in lower case, as every token (cParser::getTokens(),
-    # parser.h:71; simulationstateserializer.cpp:424-431); "none" is no name (Names.h:29)
-    var name = p.next_token().to_lower()
+    # parser.h:71; simulationstateserializer.cpp:424-431); "none" is no name (Names.h:29). A
+    # dynamic keeps it as written too: its name for the player, the lower case its vehicle_id
+    var written_name:String = p.next_token()
+    var name = written_name.to_lower()
     if name == "none":
         name = ""
+        written_name = ""
 
     var type = p.next_token().to_lower()
     var node_name = name if name else "node_%s" % type
@@ -82,7 +85,9 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
                 context.tracks.append(track)
 
         "dynamic":
-            dynamic_importer.import(p, context).name = name
+            var dynamic:MaszynaDynamicData = dynamic_importer.import(p, context)
+            dynamic.vehicle_id = name
+            dynamic.name = written_name
 
         "memcell":
             var memcell:MaszynaMemcellData = memcell_importer.import(p, context)

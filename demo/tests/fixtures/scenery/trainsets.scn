@@ -19,5 +19,5 @@ trainset express main_track 150 0
 node -1 0 first dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
 node -1 0 second dynamic test/synthetic_v1 none synthetic 0 nobody 3 0 enddynamic
 endtrainset
-node -1 0 lone dynamic test/synthetic_v1 none synthetic side_track -20.0 nobody 0 0 enddynamic
+node -1 0 Lone dynamic test/synthetic_v1 none synthetic side_track -20.0 nobody 0 0 enddynamic
 node -1 0 road_car dynamic test/synthetic_v1 none synthetic road_track -20.0 nobody 0 0 enddynamic

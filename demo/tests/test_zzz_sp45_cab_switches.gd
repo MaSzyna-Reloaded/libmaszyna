@@ -26,7 +26,7 @@ func before_each() -> void:
     # announced once its vehicles are built
     if not await wait_loaded(_scenery.scenery_loaded, SCENERY):
         return
-    _vehicle = VehicleServer.vehicle_get_rid_by_name(VEHICLE)
+    _vehicle = VehicleServer.vehicle_get_rid_by_id(VEHICLE)
     assert_true(VehicleServer.vehicle_is_simulation_ready(_vehicle), "%s is simulated once %s is loaded" % [VEHICLE, SCENERY])
     _cabin = RailVehicleServer.vehicle_get_driver_cabin(_vehicle)
     _engine = VehicleServer.vehicle_component_get(_vehicle, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleDieselEngine

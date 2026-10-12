@@ -76,10 +76,11 @@ RID names. Every vehicle handles its own subset of all commands, which can be in
 disabled component gives its commands back.
 
 A vehicle is addressed by its `VehicleServer` handle (RID); `RailVehicleServer` knows the same handle for what is rail
-(the track, the couplers, the rail component kinds). One known only by its scenery name - which may be empty or shared
-by several vehicles - is found first. For example, to enable battery in the `train1` vehicle:
+(the track, the couplers, the rail component kinds). One known only by its id - its scenery name in lower case, which
+may be empty or shared by several vehicles - is found first. The id is not what the player reads: that is its name as
+the scenery writes it (`vehicle_get_name()`). For example, to enable battery in the `train1` vehicle:
 ```gdscript
-var vehicle: RID = VehicleServer.vehicle_get_rid_by_name("train1")
+var vehicle: RID = VehicleServer.vehicle_get_rid_by_id("train1")
 VehicleServer.vehicle_send_command(vehicle, "battery", true)
 ```
 

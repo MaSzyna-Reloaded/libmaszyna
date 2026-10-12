@@ -28,27 +28,27 @@ namespace godot {
         return LuaHandle::check(p_state, 1, ScriptHandleKind::VEHICLE);
     }
 
-    /// find(name) - the vehicle of the name, nil when there is none; of several, one
+    /// find(id) - the vehicle of the id, nil when there is none; of several, one
     static int vehicle_find(lua_State *p_state) {
-        const String name = String::utf8(luaL_checkstring(p_state, 1));
+        const String id = String::utf8(luaL_checkstring(p_state, 1));
         LuaHandle::push(
-                p_state, LuaModules::server<VehicleServer>(p_state)->vehicle_get_rid_by_name(name),
+                p_state, LuaModules::server<VehicleServer>(p_state)->vehicle_get_rid_by_id(id),
                 ScriptHandleKind::VEHICLE);
         return 1;
     }
 
-    /// find_all(name) - every vehicle of the name: a scenery may give one name to several
+    /// find_all(id) - every vehicle of the id: a scenery may give one id to several
     static int vehicle_find_all(lua_State *p_state) {
-        const String name = String::utf8(luaL_checkstring(p_state, 1));
+        const String id = String::utf8(luaL_checkstring(p_state, 1));
         const VehicleServer *vehicles = LuaModules::server<VehicleServer>(p_state);
         const TypedArray<RID> all = vehicles->vehicle_get_rids();
-        TypedArray<RID> named;
+        TypedArray<RID> found;
         for (int64_t i = 0; i < all.size(); i++) {
-            if (vehicles->vehicle_get_name(all[i]) == name) {
-                named.push_back(all[i]);
+            if (vehicles->vehicle_get_id(all[i]) == id) {
+                found.push_back(all[i]);
             }
         }
-        push_vehicles(p_state, named);
+        push_vehicles(p_state, found);
         return 1;
     }
 
@@ -57,6 +57,14 @@ namespace godot {
         return 1;
     }
 
+    /// id(v) - what find() takes
+    static int vehicle_id(lua_State *p_state) {
+        const RID vehicle = check_vehicle(p_state);
+        LuaVariant::push(p_state, LuaModules::server<VehicleServer>(p_state)->vehicle_get_id(vehicle));
+        return 1;
+    }
+
+    /// name(v) - as the scenery writes it, for a message to the player
     static int vehicle_name(lua_State *p_state) {
         const RID vehicle = check_vehicle(p_state);
         LuaVariant::push(p_state, LuaModules::server<VehicleServer>(p_state)->vehicle_get_name(vehicle));
@@ -151,6 +159,7 @@ namespace godot {
             {"find", vehicle_find},
             {"find_all", vehicle_find_all},
             {"all", vehicle_all},
+            {"id", vehicle_id},
             {"name", vehicle_name},
             {"speed", vehicle_speed},
             {"velocity", vehicle_velocity},
