@@ -41,7 +41,8 @@ namespace godot {
                     /* The controller driving this vehicle (vehicle_bind_controller()), RID() for none */
                     RID controller;
                     /* What the scenery placed the vehicle with, handed to every controller bound
-                     * to it before its simulation starts (the `.scn` `dynamic` entry) */
+                     * to it before its simulation starts (the `.scn` `dynamic` entry) - along the
+                     * vehicle's own front, negated for a reversed one (DynObj.cpp:2019) */
                     double initial_velocity = 0.0;
                     /* Its cabins, in the order they were attached */
                     Vector<RID> cabins;
