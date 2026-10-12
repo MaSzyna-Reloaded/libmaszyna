@@ -3,7 +3,7 @@ extends Node
 
 
 ## Returns the first mesh from the E3D submodel tree using depth-first preorder.
-func find_first_mesh(model: E3DModel) -> ArrayMesh:
+func find_first_mesh(model: E3DModel) -> Mesh:
     if not model:
         return null
 
@@ -36,7 +36,7 @@ func _get_aabb_from_submodel(submodel: E3DSubModel, parent_transform: Transform3
 
 
 ## Returns null when the current branch does not contain any mesh.
-func _find_first_mesh_in_submodels(submodels: Array) -> ArrayMesh:
+func _find_first_mesh_in_submodels(submodels: Array) -> Mesh:
     for item: Variant in submodels:
         if not item is E3DSubModel:
             continue
@@ -45,7 +45,7 @@ func _find_first_mesh_in_submodels(submodels: Array) -> ArrayMesh:
         if submodel.mesh:
             return submodel.mesh
 
-        var mesh: ArrayMesh = _find_first_mesh_in_submodels(submodel.submodels)
+        var mesh: Mesh = _find_first_mesh_in_submodels(submodel.submodels)
         if mesh:
             return mesh
 

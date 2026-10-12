@@ -106,7 +106,7 @@ namespace godot {
         BIND_PROPERTY(E3DSubModel, Variant::TRANSFORM3D, transform);
         BIND_PROPERTY(E3DSubModel, Variant::TRANSFORM3D, material_transform);
 
-        BIND_PROPERTY_W_HINT(E3DSubModel, Variant::OBJECT, mesh, PROPERTY_HINT_RESOURCE_TYPE, "ArrayMesh");
+        BIND_PROPERTY_W_HINT(E3DSubModel, Variant::OBJECT, mesh, PROPERTY_HINT_RESOURCE_TYPE, "Mesh");
 
         BIND_PROPERTY_W_HINT_RES_ARRAY(E3DSubModel, Variant::ARRAY, submodels, PROPERTY_HINT_ARRAY_TYPE, "E3DSubModel");
 

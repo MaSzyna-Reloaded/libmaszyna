@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="E3DMesh" inherits="Mesh" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The triangle surface of an E3D submodel, its arrays kept in memory.
+	</brief_description>
+	<description>
+		An [ArrayMesh] keeps its data only in the [RenderingServer]: saving it, or reading its faces or arrays, reads every buffer back from the GPU. [E3DMesh] keeps the arrays of its one surface as floats beside the [RenderingServer] mesh made of them, so the model is saved on the thread that loaded it and [method Mesh.get_faces], [method Mesh.surface_get_arrays] and [method Mesh.get_aabb] read no GPU.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="surface" type="Dictionary" setter="set_surface" getter="get_surface" default="{}">
+			The surface's arrays: [code]vertices[/code], [code]normals[/code], [code]tangents[/code] (optional) and [code]uvs[/code] as [PackedFloat32Array], [code]indices[/code] as [PackedInt32Array] of clockwise triangles. Setting it makes the [RenderingServer] mesh of them on the calling thread.
+		</member>
+	</members>
+</class>

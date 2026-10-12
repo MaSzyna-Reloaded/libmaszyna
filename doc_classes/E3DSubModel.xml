@@ -4,7 +4,7 @@
 		Represents a single subcomponent of an E3D model, containing geometry and metadata.
 	</brief_description>
 	<description>
-		[E3DSubModel] is a resource that stores the data for a specific part of an [E3DModel]. It contains the [ArrayMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
+		[E3DSubModel] is a resource that stores the data for a specific part of an [E3DModel]. It contains the [E3DMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -57,8 +57,8 @@
 		</member>
 		<member name="material_transparent" type="bool" setter="set_material_transparent" getter="get_material_transparent" default="false">
 		</member>
-		<member name="mesh" type="ArrayMesh" setter="set_mesh" getter="get_mesh">
-			The [ArrayMesh] containing the vertex data (positions, normals, UVs, colors) for this submodel.
+		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
+			The geometry of this submodel - an [E3DMesh] when read from a model file, keeping its arrays in memory.
 		</member>
 		<member name="near_attenuation_end" type="float" setter="set_near_attenuation_end" getter="get_near_attenuation_end" default="0.0">
 			Distance where the near attenuation ends.
