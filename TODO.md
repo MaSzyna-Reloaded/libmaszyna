@@ -553,8 +553,11 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   them when used; its signal heads are still attached by RID, and `SignallingSystemNode` keeps
   `signal_head_names` and re-attaches them itself (state in an editor proxy). Move the names and
   the re-attaching into the server, as for switches.
-* **Sensor detection**: point sensors on a track (one-coil, two-coil with polarity) and axle
-  counter sections feeding the system's sources; occupancy counted by axles.
+* **Point sensors (our USRK layer, not a port)**: the original has no sensor object - a "sensor"
+  in its data is a track with an event (`FINDINGS.md`, 2026-10-12 "The original has no point
+  sensors"). If a source is ever fed from scenery data, the port is a bridge "track event ->
+  `SOURCE_IMPULSE_EVENT`" (event1/event2 give the polarity), like the isolated section -> source
+  bridge - not a new sensor object on a track.
 * **The logical aspect for trains**: a signalling implementation has only the lights, nothing it shows
   reaches a train (the driver reads the memcells).
 * **`ls_Dark`/`ls_Home` from a `lights` event** (value 3, 24 times): no light following the
@@ -570,10 +573,9 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 ## Scenario events
 
 * **Track events**: the direction filter by the intended direction (`eventfilter`,
-  `TrkFoll.cpp:117-121`); the placement point stands for the primary axle; delay <= -1 events
+  `TrkFoll.cpp:117-121`); delay <= -1 events
   queued on every move along the track (`TrkFoll.cpp:249-260`); a crewed vehicle is any DRIVER,
   the original's `Mechanik->primary()` one per trainset.
-* **Occupancy counts vehicles, not axles** (`TrkFoll.cpp:88-91`).
 * **`putvalues`/`getvalues`**: `CabSignal` acts on the vehicle crossing it; the Mover's other
   commands (`Load=`, `UnLoad=`, `BrakeDelay`, ... `Mover.cpp:12187-12720`) are dropped.
 * `updatevalues`/`addvalues` of a memory on a track: the `:sent` event (`StopCommandSent()`).

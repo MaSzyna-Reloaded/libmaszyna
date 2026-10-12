@@ -12,6 +12,15 @@ const COLLISION_SPEED: float = 5.0
 const COLLISION_GAP: float = 80.0
 const COLLISION_TIME: float = 30.0
 const COLLISION_FRAME: float = 0.1
+## The fixture vehicle's axles this far apart [m] (its pivot spacing; fAxleDist, DynObj.cpp:2499)
+const AXLE_DISTANCE: float = 10.0
+## A track this long [m], crossed by moves this long - longer than it, shorter than the axle
+## distance - so many of them taking both axles from the first track onto the last
+const SHORT_TRACK: float = 1.0
+const SHORT_TRACK_MOVE: float = 5.0
+const SHORT_TRACK_MOVES: int = 8
+## How long [s] a vehicle rolls in one process_movement() call to change its primary axle
+const ROLL_TIME: float = 0.1
 
 var created_tracks: Array[RID] = []
 var created_vehicle_rids: Array[RID] = []
@@ -145,72 +154,6 @@ func test_vehicle_move_crosses_connected_tracks() -> void:
     _assert_vector_eq(
         RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(13.0, TrackServer.rail_height, 0.0)
-    )
-
-
-func test_vehicle_transform_at_distance_crosses_tracks_without_moving_vehicle() -> void:
-    var first_rid:RID = _register_track(
-        _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)),
-        null,
-        TrackServer.TRACK_NORMAL
-    )
-    _register_track(
-        _curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)),
-        null,
-        TrackServer.TRACK_NORMAL
-    )
-    TrackServer.topology_rebuild()
-    var vehicle_rid:RID = _create_vehicle()
-    RailVehicleServer.vehicle_set_track(
-        vehicle_rid,
-        first_rid,
-        8.0,
-        TrackServer.DIRECTION_REVERSED
-    )
-
-    var sampled_transform:Transform3D = (
-        RailVehicleServer.vehicle_get_transform_at_distance(vehicle_rid, 5.0)
-    )
-
-    _assert_vector_eq(
-        sampled_transform.origin,
-        Vector3(13.0, TrackServer.rail_height, 0.0),
-        "sample should continue on the connected track",
-    )
-    _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
-        Vector3(8.0, TrackServer.rail_height, 0.0),
-        "sample should not move the vehicle",
-    )
-
-
-func test_vehicle_transform_at_distance_does_not_change_switch_state() -> void:
-    var start_rid:RID = _register_track(
-        _curve(Vector3(20.0, 0.0, 20.0), Vector3(10.0, 0.0, 10.0)),
-        null,
-        TrackServer.TRACK_NORMAL
-    )
-    var switch_rid:RID = _register_track(
-        _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)),
-        _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
-        TrackServer.TRACK_SWITCH
-    )
-    TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
-    TrackServer.topology_rebuild()
-    var vehicle_rid:RID = _create_vehicle()
-    RailVehicleServer.vehicle_set_track(
-        vehicle_rid,
-        start_rid,
-        12.0,
-        TrackServer.DIRECTION_REVERSED
-    )
-
-    RailVehicleServer.vehicle_get_transform_at_distance(vehicle_rid, 5.0)
-
-    assert_eq(
-        TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)),
-        TrackServer.TRACK_COMMON,
-        "sampling through a diverging branch should not move the switch",
     )
 
 
@@ -574,6 +517,128 @@ func test_a_parked_vehicle_is_pushed_by_one_rolling_onto_it() -> void:
 
     var pushed_by: Vector3 = RailVehicleServer.vehicle_get_transform(parked.get_rid()).origin - parked_start
     assert_gt(pushed_by.dot(forward), 0.0, "the parked vehicle is pushed the way the other one rolled")
+
+
+func test_an_axle_counts_on_every_track_it_crosses() -> void:
+    var first: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(50.0, 0.0, 0.0)))
+    var short: RID = _register_track(_curve(Vector3(50.0, 0.0, 0.0), Vector3(50.0 + SHORT_TRACK, 0.0, 0.0)))
+    _register_track(_curve(Vector3(50.0 + SHORT_TRACK, 0.0, 0.0), Vector3(100.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var section: RID = TrackServer.isolated_create()
+    TrackServer.isolated_add_track(section, short)
+    var counts: Dictionary[StringName, int] = {&"entered": 0, &"left": 0, &"occupied": 0, &"freed": 0}
+    var count: Callable = func(_isolated: RID, _vehicle: RID, what: StringName) -> void: counts[what] += 1
+    var listeners: Dictionary[Signal, Callable] = {
+        TrackServer.isolated_axle_entered: count.bind(&"entered"),
+        TrackServer.isolated_axle_left: count.bind(&"left"),
+        TrackServer.isolated_occupied: count.bind(&"occupied"),
+        TrackServer.isolated_freed: count.bind(&"freed"),
+    }
+    for listened: Signal in listeners:
+        listened.connect(listeners[listened])
+    var vehicle: RID = _create_spaced_fiz_vehicle(0.0).get_rid()
+    RailVehicleServer.vehicle_set_track(vehicle, first, 20.0, TrackServer.DIRECTION_REVERSED)
+
+    # each axle crosses the short track within one move, onto the last track
+    for move: int in SHORT_TRACK_MOVES:
+        RailVehicleServer.vehicle_move(vehicle, SHORT_TRACK_MOVE)
+
+    for listened: Signal in listeners:
+        listened.disconnect(listeners[listened])
+    # a section shorter than the axle distance is free between the axles, as the original's is
+    assert_eq(counts, {&"entered": 2, &"left": 2, &"occupied": 2, &"freed": 2} as Dictionary[StringName, int],
+            "two axles, each on and off the short track")
+    assert_false(TrackServer.isolated_is_occupied(section))
+    TrackServer.isolated_free(section)
+
+
+func test_an_axle_occupies_a_section_before_its_vehicle_is_on_the_track() -> void:
+    var first: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(50.0, 0.0, 0.0)))
+    var second: RID = _register_track(_curve(Vector3(50.0, 0.0, 0.0), Vector3(100.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var section: RID = TrackServer.isolated_create()
+    TrackServer.isolated_add_track(section, second)
+    var vehicle: RID = _create_spaced_fiz_vehicle(0.0).get_rid()
+
+    # the front axle at 42 m on the first track, the rear one at 52 m on the second
+    RailVehicleServer.vehicle_set_track(vehicle, first, 47.0, TrackServer.DIRECTION_REVERSED)
+
+    assert_true(TrackServer.isolated_is_occupied(section), "the rear axle stands in the section")
+    assert_eq(TrackServer.track_get_vehicles(first), [vehicle] as Array[RID], "listed by its primary, front axle")
+    assert_false(TrackServer.track_is_occupied(second), "not listed on the rear axle's track")
+    var front: Vector3 = RailVehicleServer.vehicle_get_bogie_transform(vehicle, RailVehicleWheels.BOGIE_FRONT).origin
+    var rear: Vector3 = RailVehicleServer.vehicle_get_bogie_transform(vehicle, RailVehicleWheels.BOGIE_REAR).origin
+    _assert_vector_eq(front, Vector3(47.0 - 0.5 * AXLE_DISTANCE, TrackServer.rail_height, 0.0), "the front axle")
+    _assert_vector_eq(rear, Vector3(47.0 + 0.5 * AXLE_DISTANCE, TrackServer.rail_height, 0.0), "the rear axle")
+    _assert_vector_eq(RailVehicleServer.vehicle_get_transform(vehicle).origin, (front + rear) * 0.5,
+            "the body midway between the axles")
+    RailVehicleServer.vehicle_detach(vehicle)
+    assert_false(TrackServer.isolated_is_occupied(section), "a removed vehicle leaves the section")
+    TrackServer.isolated_free(section)
+
+
+func test_the_leading_axle_forces_a_switch_before_the_centre_reaches_it() -> void:
+    var start_rid: RID = _register_track(_curve(Vector3(20.0, 0.0, 20.0), Vector3(10.0, 0.0, 10.0)))
+    var switch_rid: RID = _register_track(
+        _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)),
+        _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 10.0)),
+        TrackServer.TRACK_SWITCH
+    )
+    var switch: RID = TrackServer.track_get_switch(switch_rid)
+    TrackServer.switch_set_active_track(switch, TrackServer.TRACK_COMMON)
+    TrackServer.topology_rebuild()
+    var vehicle: RID = _create_spaced_fiz_vehicle(0.0).get_rid()
+    # the centre 6 m along the start track, the leading (rear) axle 11 m along it
+    RailVehicleServer.vehicle_set_track(vehicle, start_rid, 6.0, TrackServer.DIRECTION_REVERSED)
+
+    RailVehicleServer.vehicle_move(vehicle, 4.0)
+
+    assert_lt(10.0, TrackServer.track_get_length(start_rid, TrackServer.TRACK_COMMON), "the centre is still before it")
+    assert_eq(TrackServer.switch_get_active_track(switch), TrackServer.TRACK_DIVERGING,
+            "the leading axle entering from the diverging branch forced it")
+
+
+func test_the_primary_axle_is_the_second_in_the_direction_of_travel() -> void:
+    var track: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(200.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var vehicle: RID = _create_spaced_fiz_vehicle(COLLISION_SPEED).get_rid()
+    RailVehicleServer.vehicle_set_track(vehicle, track, 100.0, TrackServer.DIRECTION_NORMAL)
+    var front_along: float = float(RailVehicleServer.vehicle_get_track_position(vehicle)["along"])
+
+    RailVehicleServer.vehicle_process_movement(vehicle, ROLL_TIME)
+
+    # rolling forwards the rear axle leads the events: the position is now the rear axle's
+    var along: float = float(RailVehicleServer.vehicle_get_track_position(vehicle)["along"])
+    assert_almost_eq(absf(along - front_along), AXLE_DISTANCE, COLLISION_SPEED * ROLL_TIME + 0.01,
+            "the position moved to the other axle")
+
+
+func test_a_vehicle_stopped_across_a_joint_reports_both_tracks() -> void:
+    var first: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(50.0, 0.0, 0.0)))
+    var second: RID = _register_track(_curve(Vector3(50.0, 0.0, 0.0), Vector3(100.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var vehicle: RID = _create_spaced_fiz_vehicle(0.0).get_rid()
+    RailVehicleServer.vehicle_set_track(vehicle, first, 47.0, TrackServer.DIRECTION_REVERSED)
+    var reported: Array[RID] = []
+    var primary: Callable = func(_vehicle: RID, track: RID) -> void: reported.append(track)
+    var secondary: Callable = func(_vehicle: RID, track: RID) -> void: reported.append(track)
+    RailVehicleServer.vehicle_stopped_on_track.connect(primary)
+    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.connect(secondary)
+
+    SimulationServer.simulation_advance(COLLISION_FRAME)
+
+    RailVehicleServer.vehicle_stopped_on_track.disconnect(primary)
+    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.disconnect(secondary)
+    assert_eq(reported, [first, second] as Array[RID], "the primary axle's track, then the other one's")
+
+
+## The fixture vehicle with its axles AXLE_DISTANCE apart, rolling at `velocity` (m/s)
+func _create_spaced_fiz_vehicle(velocity: float) -> VehicleController:
+    var controller: VehicleController = _create_fiz_vehicle(velocity)
+    var wheels: RailVehicleWheels = VehicleServer.vehicle_component_get(
+            controller.get_rid(), VehicleComponentType.COMPONENT_WHEELS) as RailVehicleWheels
+    wheels.bogie_pivot_spacing = AXLE_DISTANCE
+    return controller
 
 
 func _create_vehicle() -> RID:

@@ -140,6 +140,9 @@ namespace godot {
             struct VehicleOnTrack {
                     RID track;
                     bool standing = false;
+                    /// The track the other axle of the standing vehicle is on, where it is another
+                    /// one: its event0 goes on too (TrkFoll.cpp:122-133 runs for every axle)
+                    RID secondary_track;
                     /// The event1 and event2 of the track were fired since the vehicle came on it -
                     /// once per entry (TTrackFollower::iEventFlag, TrkFoll.cpp:136-161, 199)
                     bool fired_to_start = false;
@@ -178,11 +181,12 @@ namespace godot {
             void _on_vehicle_heading_to_track_start(const RID &p_vehicle, const RID &p_track);
             void _on_vehicle_heading_to_track_end(const RID &p_vehicle, const RID &p_track);
             void _on_vehicle_stopped_on_track(const RID &p_vehicle, const RID &p_track);
+            void _on_vehicle_secondary_axle_stopped_on_track(const RID &p_vehicle, const RID &p_track);
             void _on_vehicle_freed(const RID &p_vehicle);
             void _on_isolated_occupied(const RID &p_isolated, const RID &p_vehicle);
             void _on_isolated_freed(const RID &p_isolated, const RID &p_vehicle);
-            void _on_isolated_vehicle_entered(const RID &p_isolated, const RID &p_vehicle);
-            void _on_isolated_vehicle_left(const RID &p_isolated, const RID &p_vehicle);
+            void _on_isolated_axle_entered(const RID &p_isolated, const RID &p_vehicle);
+            void _on_isolated_axle_left(const RID &p_isolated, const RID &p_vehicle);
             void _on_instance_submodel_animation_finished(const RID &p_instance, const String &p_submodel);
             void _on_instance_freed(const RID &p_instance);
             void _queue_isolated_events(const RID &p_isolated, IsolatedEvent p_slot, const RID &p_vehicle);

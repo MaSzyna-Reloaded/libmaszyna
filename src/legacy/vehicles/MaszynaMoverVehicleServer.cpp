@@ -97,7 +97,6 @@ namespace godot {
         for (const RID &vehicle_rid: p_vehicles) {
             rail_vehicles->vehicle_report_position(vehicle_rid);
         }
-        rail_vehicles->neighbour_index_update();
 
         // the whole frame, in steps no longer than PHYSICS_STEP; the clock caps the frame
         // (drivermode.cpp:193-206)
@@ -161,7 +160,7 @@ namespace godot {
             }
             rail_vehicles->vehicle_collect_current(p_vehicles[index], p_delta);
             controller->process_components(p_delta);
-            rail_vehicles->vehicle_report_track_heading(p_vehicles[index]);
+            rail_vehicles->vehicle_report_track_standing(p_vehicles[index]);
         }
         if (diagnostics) {
             _check_velocity_jumps(p_vehicles, p_controllers, p_delta);

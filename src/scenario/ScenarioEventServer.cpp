@@ -166,6 +166,9 @@ namespace godot {
         vehicles->connect(
                 RailVehicleServer::vehicle_stopped_on_track_signal,
                 callable_mp(this, &ScenarioEventServer::_on_vehicle_stopped_on_track));
+        vehicles->connect(
+                RailVehicleServer::vehicle_secondary_axle_stopped_on_track_signal,
+                callable_mp(this, &ScenarioEventServer::_on_vehicle_secondary_axle_stopped_on_track));
         RadioServer *radios = RadioServer::get_instance();
         ERR_FAIL_NULL(radios);
         radios->connect(
@@ -182,11 +185,11 @@ namespace godot {
         track_server->connect(
                 TrackServer::isolated_freed_signal, callable_mp(this, &ScenarioEventServer::_on_isolated_freed));
         track_server->connect(
-                TrackServer::isolated_vehicle_entered_signal,
-                callable_mp(this, &ScenarioEventServer::_on_isolated_vehicle_entered));
+                TrackServer::isolated_axle_entered_signal,
+                callable_mp(this, &ScenarioEventServer::_on_isolated_axle_entered));
         track_server->connect(
-                TrackServer::isolated_vehicle_left_signal,
-                callable_mp(this, &ScenarioEventServer::_on_isolated_vehicle_left));
+                TrackServer::isolated_axle_left_signal,
+                callable_mp(this, &ScenarioEventServer::_on_isolated_axle_left));
         // ...and the animations' `:done` events on what the rendering server reports
         E3DRenderingServer *rendering = E3DRenderingServer::get_instance();
         ERR_FAIL_NULL(rendering);
@@ -316,14 +319,21 @@ namespace godot {
                 } else {
                     action->run_else(entry.owner, entry.activator);
                 }
-                // a track's event0 goes on while its vehicle stands there (the original queues it
-                // on every Move() of a standing vehicle, TrkFoll.cpp:126-133)
+                // a track's event0 goes on while its vehicle stands there, on the tracks of both
+                // its axles (the original queues it on every Move() of a standing vehicle, for
+                // each axle, TrkFoll.cpp:126-133 - an event already queued is not queued twice,
+                // Event.cpp:2384)
                 const VehicleOnTrack *on_track = vehicles_on_tracks.getptr(entry.activator);
-                const TrackEvents *standing_events =
-                        on_track != nullptr && on_track->standing ? track_events.getptr(on_track->track) : nullptr;
-                if (standing_events != nullptr && (standing_events->events[TRACK_EVENT0].has(entry.owner) ||
-                                                   standing_events->events[TRACK_EVENTALL0].has(entry.owner))) {
-                    event_queue(entry.owner, entry.activator);
+                if (on_track == nullptr || !on_track->standing) {
+                    continue;
+                }
+                for (const RID &standing_track: {on_track->track, on_track->secondary_track}) {
+                    const TrackEvents *standing_events = track_events.getptr(standing_track);
+                    if (standing_events != nullptr && (standing_events->events[TRACK_EVENT0].has(entry.owner) ||
+                                                       standing_events->events[TRACK_EVENTALL0].has(entry.owner))) {
+                        event_queue(entry.owner, entry.activator);
+                        break;
+                    }
                 }
                 continue;
             }
@@ -341,6 +351,7 @@ namespace godot {
     void ScenarioEventServer::_on_vehicle_heading_to_track_start(const RID &p_vehicle, const RID &p_track) {
         VehicleOnTrack &on_track = _place_vehicle(p_vehicle, p_track);
         on_track.standing = false;
+        on_track.secondary_track = RID();
         if (on_track.fired_to_start) {
             return;
         }
@@ -351,6 +362,7 @@ namespace godot {
     void ScenarioEventServer::_on_vehicle_heading_to_track_end(const RID &p_vehicle, const RID &p_track) {
         VehicleOnTrack &on_track = _place_vehicle(p_vehicle, p_track);
         on_track.standing = false;
+        on_track.secondary_track = RID();
         if (on_track.fired_to_end) {
             return;
         }
@@ -359,7 +371,17 @@ namespace godot {
     }
 
     void ScenarioEventServer::_on_vehicle_stopped_on_track(const RID &p_vehicle, const RID &p_track) {
-        _place_vehicle(p_vehicle, p_track).standing = true;
+        VehicleOnTrack &on_track = _place_vehicle(p_vehicle, p_track);
+        on_track.standing = true;
+        on_track.secondary_track = RID();
+        _queue_track_events(p_track, TRACK_EVENT0, TRACK_EVENTALL0, p_vehicle);
+    }
+
+    /// Reported right after the vehicle's own track: its primary track's once-per-entry state stays
+    void ScenarioEventServer::_on_vehicle_secondary_axle_stopped_on_track(const RID &p_vehicle, const RID &p_track) {
+        VehicleOnTrack *on_track = vehicles_on_tracks.getptr(p_vehicle);
+        ERR_FAIL_NULL(on_track);
+        on_track->secondary_track = p_track;
         _queue_track_events(p_track, TRACK_EVENT0, TRACK_EVENTALL0, p_vehicle);
     }
 
@@ -375,11 +397,11 @@ namespace godot {
         _queue_isolated_events(p_isolated, ISOLATED_FREE, p_vehicle);
     }
 
-    void ScenarioEventServer::_on_isolated_vehicle_entered(const RID &p_isolated, const RID &p_vehicle) {
+    void ScenarioEventServer::_on_isolated_axle_entered(const RID &p_isolated, const RID &p_vehicle) {
         _queue_isolated_events(p_isolated, ISOLATED_INC, p_vehicle);
     }
 
-    void ScenarioEventServer::_on_isolated_vehicle_left(const RID &p_isolated, const RID &p_vehicle) {
+    void ScenarioEventServer::_on_isolated_axle_left(const RID &p_isolated, const RID &p_vehicle) {
         _queue_isolated_events(p_isolated, ISOLATED_DEC, p_vehicle);
     }
 

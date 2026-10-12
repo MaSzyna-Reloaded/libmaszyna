@@ -234,7 +234,8 @@ namespace godot {
     }
 
     // Original engine: TDynamicObject::update_neighbours() (DynObj.cpp:7544); the track scan itself
-    // (find_vehicle) is done by RailVehicleServer, which passes the center to center track distance
+    // (find_vehicle) is done by RailVehicleServer, which passes the track distance between the two
+    // vehicles' primary axles
     void MoverRailVehicleController::update_neighbour(
             const CouplerEnd p_end, const Ref<RailVehicleController> &p_other, const CouplerEnd p_other_end,
             const double p_track_distance) {
@@ -257,7 +258,9 @@ namespace godot {
         const TCoupling &other_coupler = other_mover->Couplers[p_other_end];
         neighbour.vehicle = other_mover;
         neighbour.vehicle_end = p_other_end;
-        neighbour.distance = static_cast<float>(p_track_distance - (0.5 * (mover->Dim.L + other_mover->Dim.L)));
+        // taken as found, between the axles - the original's subtraction of the half lengths is
+        // commented out (find_vehicle(), DynObj.cpp:7752-7765); near enough, the couplers measure it
+        neighbour.distance = static_cast<float>(p_track_distance);
         const double measure_range =
                 other_mover->CategoryFlag == CATEGORY_ROAD ? COUPLER_MEASURE_RANGE_ROAD : COUPLER_MEASURE_RANGE;
         if (neighbour.distance < static_cast<float>(measure_range)) {

@@ -14,7 +14,7 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
-				Adds [param track] to the isolated section; its vehicles count towards the section's occupancy (TIsolated, Track.cpp:90-170).
+				Adds [param track] to the isolated section; its axles count towards the section's occupancy (TIsolated, Track.cpp:90-170).
 			</description>
 		</method>
 		<method name="isolated_create">
@@ -48,7 +48,7 @@
 			<return type="bool" />
 			<param index="0" name="isolated" type="RID" />
 			<description>
-				Returns [code]true[/code] while any vehicle stands on a track of the section or of its child sections.
+				Returns [code]true[/code] while any axle stands on a track of the section or of its child sections.
 			</description>
 		</method>
 		<method name="isolated_set_name">
@@ -127,6 +127,22 @@
 			<return type="void" />
 			<description>
 				Pairs the endpoints of all tracks again and rebuilds the connected graphs; emits [signal topology_rebuilt].
+			</description>
+		</method>
+		<method name="track_axle_entered">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+				Reports that an axle of [param vehicle] came onto the track - called by [RailVehicleServer] for each of a vehicle's two axles, the new track before the old one, so a section both tracks belong to never reads empty (TTrack::AxleCounter(), TrkFoll.cpp:88-91). The track's isolated sections count it.
+			</description>
+		</method>
+		<method name="track_axle_left">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+				Reports that an axle of [param vehicle] left the track.
 			</description>
 		</method>
 		<method name="track_create">
@@ -331,7 +347,7 @@
 			<return type="bool" />
 			<param index="0" name="track" type="RID" />
 			<description>
-				Returns [code]true[/code] while a vehicle stands on the track.
+				Returns [code]true[/code] while a vehicle is listed on the track - one whose primary axle is on it (TTrack::Dynamics).
 			</description>
 		</method>
 		<method name="track_is_switch" qualifiers="const">
@@ -402,7 +418,7 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				Reports that [param vehicle] came onto the track - called by [RailVehicleServer], the new track first (TrkFoll.cpp:88-91).
+				Lists [param vehicle] on the track: its primary axle came onto it - called by [RailVehicleServer] (TTrack::AddDynamicObject(), TrkFoll.cpp:194-241). What [method track_is_occupied] and [method track_get_vehicles] answer; the isolated sections count axles instead ([method track_axle_entered]).
 			</description>
 		</method>
 		<method name="track_vehicle_left">
@@ -410,7 +426,7 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				Reports that [param vehicle] left the track.
+				Takes [param vehicle] off the track's list: its primary axle left it.
 			</description>
 		</method>
 		<method name="tracks_find_in_aabb" qualifiers="const">
@@ -440,28 +456,28 @@
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				The last vehicle left the isolated section ([code]:free[/code]).
+				The last axle left the isolated section ([code]:free[/code]); [param vehicle] is that axle's.
 			</description>
 		</signal>
 		<signal name="isolated_occupied">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				The first vehicle came onto the isolated section ([code]:busy[/code]).
+				The first axle came onto the isolated section ([code]:busy[/code]); [param vehicle] is that axle's.
 			</description>
 		</signal>
-		<signal name="isolated_vehicle_entered">
+		<signal name="isolated_axle_entered">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				A vehicle came onto the isolated section ([code]:inc[/code]).
+				An axle of [param vehicle] came onto the isolated section ([code]:inc[/code]) - twice for every vehicle, as it has two axles.
 			</description>
 		</signal>
-		<signal name="isolated_vehicle_left">
+		<signal name="isolated_axle_left">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
 			<description>
-				A vehicle left the isolated section ([code]:dec[/code]).
+				An axle of [param vehicle] left the isolated section ([code]:dec[/code]).
 			</description>
 		</signal>
 		<signal name="switch_active_track_changed">

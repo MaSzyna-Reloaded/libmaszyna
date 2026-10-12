@@ -217,8 +217,8 @@ namespace godot {
             virtual void direction_decrease() = 0;
             virtual double process_movement(double p_delta) = 0;
             virtual void update_location() = 0;
-            /* The vehicle nearest beyond p_end, p_track_distance [m] center to center along the
-             * track, facing it with p_other_end */
+            /* The vehicle nearest beyond p_end, p_track_distance [m] along the track between the
+             * two vehicles' primary axles, facing it with p_other_end */
             virtual void update_neighbour(
                     CouplerEnd p_end, const Ref<RailVehicleController> &p_other, CouplerEnd p_other_end,
                     double p_track_distance) = 0;

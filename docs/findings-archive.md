@@ -4542,3 +4542,58 @@ lighting or the trainset.
   `test_rail_vehicle_track_physics.gd`, `test_driver_weather.gd`.
 * **Rule:** a backend integrated by the wrapper gets every input its original caller gave it -
   list the arguments of the original call and trace where each comes from.
+
+## 2026-10-12 A vehicle is its two axles
+
+* **Symptom:** asked whether entering and leaving an isolated section is handled: it was, by one
+  point per vehicle - its centre. A section was counted per vehicle, `:free` came while the rear
+  of the vehicle still stood on it, `:inc`/`:dec` fired once instead of twice, a track shorter than
+  one step's travel was never entered (no count, no event1/event2), a switch was forced by the
+  centre half a vehicle late, and the body hung between samples at the pivot spacing.
+* **What proved it:** the original's vehicle is two track followers, `Axle0` and `Axle1`
+  (DynObj.h:203-204). `iNumAxles = 2` is fixed (DynObj.cpp:2497) - the choice of four by `NAxles`
+  is commented out (:2495), so the four-axle branch (:2513-2518) never runs. They stand
+  `fAxleDist = clamp(max(BDist, ADist), 0.2, L - 0.2)` apart (:2499-2503). Every follower counts
+  +1 on the track it enters and then -1 on the one it left (TrkFoll.cpp:88-91, `AxleCounter()`,
+  Track.h:302) and forces a switch entered from the blade side (:47-56); only the primary one
+  (`iAxleFirst`) moves the vehicle between the tracks' `Dynamics` and fires event1/event2 of every
+  track it enters (TrkFoll.cpp:112-161, 194-241); standing, both fire event0 (:122-133). The
+  primary is the front axle at first (DynObj.cpp:1909) and becomes the **second** in the direction
+  of travel only while both are on one track above 2 km/h - "żeby AI nie wyłączało sobie semafora
+  za szybko" (:2645-2655); the leading axle moves first (:2656-2670). The body is hung between
+  the axles (:2671-2716): centre midway, front from Axle1 to Axle0, half the summed roll, couplers
+  ±L/2 along the front; the running shape divides the axles' yaw difference by `BDist`
+  (:3145-3167). At load an axle placed by `Init` + `Move(false)` counts every track it passes,
+  but no section has its events yet (`AssignEvents()`, Track.cpp:3404, 3559).
+* **Fix:** `RailVehicleServer`'s placement is two `AxleFollower`s walked by one walker
+  (`_walk_axle()`) that lists every track crossed; `_move_vehicle()` swaps the primary axle, walks
+  the leading axle, then the trailing one by as far as the leading one went, and reports each
+  crossing - `TrackServer.track_axle_entered/left()` (sections count axles, signals
+  `isolated_axle_entered/left`) for every axle, `track_vehicle_entered/left()` and the heading
+  signals for the primary one. A standing vehicle reports the primary track and, across a joint,
+  `vehicle_secondary_axle_stopped_on_track`. Placing counts each axle on its final track only.
+  The neighbour scan reads `TrackServer`'s per-track list (the second index is gone) and measures
+  between primary axles, without the half lengths the original also leaves out
+  (DynObj.cpp:7752-7765). `vehicle_get_track_position()` and `vehicle_trace_route()` are the
+  primary axle's, `vehicle_get_curve()` is the physics' shape. Ours: a detached vehicle takes its
+  axles off its sections; the original never does. `test_rail_vehicle_physics_server.gd`,
+  `test_scenario_event_server.gd`, `test_rail_vehicle_track_physics.gd`.
+* **Rule:** a vehicle's place on the track is its two axles - occupancy, track events, the track it
+  is "on" and its body all come from them; a section shorter than the axle distance is free
+  between them, as in the original.
+
+## 2026-10-12 The original has no point sensors - a track is the sensor
+
+* **Symptom:** `TODO.md` asked for one- and two-coil point sensors on a track feeding the
+  signalling sources; it was unclear whether that was a port or our own layer.
+* **What proved it:** the original has no sensor object. A train is detected only by isolated
+  sections (`TIsolated::Modify()`, Track.cpp:118-170: `:busy`, `:free`, `:inc`, `:dec` and the
+  section's memory cell) and by a track's own events (TrkFoll.cpp:100-260): event1/eventall1 when
+  the primary axle moves towards Point1, event2/eventall2 towards Point2 - the direction a two-coil
+  sensor reports - each once per entry (`iEventFlag`/`iEventallFlag` reset on a track change),
+  `event*` for a crewed vehicle, `eventall*` for every one, event0/eventall0 every step while
+  standing, from both axles. A "point" in the data is a short or split track carrying the event.
+* **Fix:** none in code. `SOURCE_IMPULSE_EVENT` and `SourcePolarity` stay as our USRK's
+  abstraction; `TODO.md` says a source fed from scenery data takes a bridge from track events.
+* **Rule:** the original detects a train only by isolated sections and track events; a new
+  detection object is ours, fed from the data by a bridge from track events.

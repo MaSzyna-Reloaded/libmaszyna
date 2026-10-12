@@ -176,18 +176,18 @@ func test_a_subscription_runs_through_the_queue_until_cancelled() -> void:
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"subscription", source))
 
-    TrackServer.track_vehicle_entered(track, vehicle)
+    TrackServer.track_axle_entered(track, vehicle)
     assert_eq(ScenarioEventServer.memory_get_text(_output), "", "never inside the server that reported it")
     if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "true", EVENT_MARGIN,
             "the subscription's function run"):
         return
-    TrackServer.track_vehicle_left(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"cancel", "assert(maszyna.cancel(subscription))"))
-    TrackServer.track_vehicle_entered(track, vehicle)
+    TrackServer.track_axle_entered(track, vehicle)
     await wait_idle_frames(SETTLE_FRAMES)
 
     assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0, "a cancelled subscription is not called")
-    TrackServer.track_vehicle_left(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
     TrackServer.isolated_free(section)
     TrackServer.track_free(track)
     ScenarioEventServer.memory_free(vehicle)

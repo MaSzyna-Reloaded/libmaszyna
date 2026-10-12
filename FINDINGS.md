@@ -59,6 +59,13 @@ anything. Open work belongs in `TODO.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* A vehicle's place is its two axles (`iNumAxles = 2`, not `NAxles`): each counts on every track
+  it crosses, the primary one - the second in the direction of travel - lists the vehicle and fires
+  the track events, the body hangs between them. Never a single centre point. *(10-12 a vehicle is
+  its two axles)*
+* The original detects a train only by isolated sections and track events - a "sensor" in the data
+  is a track with an event; a new detection object is ours, fed by a bridge from track events.
+  *(10-12 the original has no point sensors)*
 * A configuration value that depends on another component (a bare coupler on the engine's
   `Ftmax`, `SpeedCtrl` on the engine kind and `SCPN`) is applied in the second pass,
   `apply_vehicle_config()`, from the other component's properties - never from what the FIZ
