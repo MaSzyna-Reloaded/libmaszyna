@@ -4925,3 +4925,27 @@ lighting or the trainset.
     trainset's only when every place it names holds a vehicle of that id.
 * **Rule:** a vehicle's id may repeat within one trainset. A vehicle is paired with its
   declaration by its place, never by its id.
+
+
+## 2026-10-12 The ET42 freight jammed at load
+
+* **Symptom:**
+  - reports#32: on `linia61_towarowy1.scn` the player's 53060 stood at Herby Nowe exit signal C2 for
+    good. C2 opens only on `t131:event2` (`l61_towarowy1.ctr:24`), which fires when the opposing
+    freight has passed it. That freight never moved: the ET42 112E-025 with 36 wagons,
+    `trainset rozklad HrN_A -500 40` (`sklady_towarowy_hn.scm`), seven of the wagons reversed (`-1`).
+* **What proved it:**
+  - A probe printed the trainset in coupling order. At load it stood buffer to buffer with 0 kN in
+    every coupler, but every vehicle had +11.11 m/s, the reversed ones included. One second later
+    the train stood still, its couplers at 657-720 kN and its buffers at about ±1.05 MN.
+  - Those are the clamps of `CouplerForce()` (`Mover.cpp:4814`): (4500+4500)/2 × 0.15 = 675 kN
+    between wagons, 4800 × 0.15 = 720 kN between the two ET42 halves, (9000+9000)/2 × 0.12 = 1.08 MN
+    for the buffers. With the force clamped, a gap of 52 m pulls no harder than one of 1 m, so the
+    train never straightened out; the ET42's 213 kN did not move it.
+  - The Mover's V runs along the vehicle's own front. The original creates a reversed vehicle with
+    `-fVel` (`DynObj.cpp:1989, 2019`). `MaszynaLegacyVehicleSystem._build()` handed every vehicle
+    `dynamic.velocity` as it was, so each reversed WAP started at 11 m/s against its neighbours.
+* **Fix:** `_build()` hands a reversed vehicle the trainset's velocity negated. After it, the
+  same probe shows the reversed wagons at -11.11 m/s and the couplers at a few kN.
+* **Rule:** a value the original gives "along the vehicle" (velocity, the Mover's V) is signed by
+  the vehicle's own direction on the track; a reversed vehicle takes it negated.

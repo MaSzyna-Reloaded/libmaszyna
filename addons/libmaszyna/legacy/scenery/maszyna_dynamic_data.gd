@@ -34,7 +34,8 @@ enum DriverType {
 ## Its coupling with the next vehicle of the trainset (`couplingdata`), a mask of
 ## RailVehicleController.CouplingFlags
 @export var coupling:int = 0
-## The velocity it starts with [km/h]
+## The velocity it starts with [km/h] - its trainset's, along the track; a reversed vehicle takes
+## it negated (MaszynaLegacyVehicleSystem, DynObj.cpp:2019)
 @export var velocity:float = 0.0
 @export var driver_type:DriverType = DriverType.DRIVER_NOBODY
 @export var load_name:String = ""

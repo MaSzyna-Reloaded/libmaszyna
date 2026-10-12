@@ -174,7 +174,8 @@ namespace godot {
             // ready to depart" (ReadyFlag=false, battery stays off until switched on manually);
             // any non-zero value (scenario authors commonly use 0.1 for a stationary-but-ready
             // vehicle) marks it ready, so CheckLocomotiveParameters() turns the battery on per
-            // cntrl_battery_start_mode.
+            // cntrl_battery_start_mode. It counts along the vehicle's own front, as the Mover's V:
+            // a reversed vehicle of a moving trainset starts with it negated (DynObj.cpp:2019).
             double initial_velocity = 0.0;
 
         public:

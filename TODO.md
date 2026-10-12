@@ -498,14 +498,12 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * The subscene cache is used only by queued parsing; `parse_file()` reparses every include.
 * Streaming keeps the track/traction instances and drops only meshes (~16k empty in `baltyk`).
 * A track streams by the chunk of its first curve point, not its nearest point.
-* **A long trainset jammed at load - not looked into yet** (reports#32). On
-  linia61_towarowy1.scn the ET42 112E-025 freight (`sklady_towarowy_hn.scm`, 38 vehicles,
-  `trainset rozklad HrN_A -500 40`) never moves. From the first frame, before its engine starts,
-  its rear coupler is stretched to ~719 kN against 213 kN of traction. In the report's snapshot its
-  last four wagons stand pairwise at one spot, with ±1.08 MN in their couplers. It is the train the
-  scenario waits for: passing t131 gives the player's exit signal (`HrN_C2_s10`,
-  `l61_towarowy1.ctr:24`), so 53060 stands at C2 for good. Suspect: `RailVehicleServer.trainset_place()`
-  placing the train back from the offset; compare with the original's placement.
+* **Trainset placement - what the original does and the port does not** (found on reports#32, not
+  the cause there): `AttachNext()` pushes an overlapping next vehicle back (DynObj.cpp:2819-2829);
+  a vehicle walking off a track end goes on onto a `NullCreate()` track (TrkFoll.cpp:81-86,
+  Track.cpp:226-259), where `RailVehicleServer::_walk_axle()` stops at the end and every later
+  vehicle stacks there (RailVehicleServer.cpp:1585-1591); a switch entered from a branch while
+  placing is thrown (`SwitchForced()`, TrkFoll.cpp:52-56), the port takes the branch and leaves it.
 * **Road, river and cross tracks are not imported** (#318) (`maszyna_node_track_importer.gd:23-28`
   drops them whole, without a warning). Platforms built as roads are missing with them: Herby
   Nowe platforms 3 and 4 (`l61_tory.scm:38837-38945`, `plateplatform2`, reports#32).

@@ -11,6 +11,15 @@ const SCENERY:String = "trainsets.scn"
 ## A trainset "freight" of `loco` and three wagons all named `wagon`, loaded load_a, load_b and
 ## load_c, the last one not coupled to a next vehicle
 const REPEATED_IDS_SCENERY:String = "trainsets_repeated_ids.scn"
+## A trainset "moving" of `head`, `reversed` (stood the other way round) and `tail`, starting at
+## 40 km/h
+const MOVING_REVERSED_SCENERY:String = "trainset_moving_reversed.scn"
+## How long the moving trainset is let run [s] - about 20 m at its 40 km/h
+const MOVING_SECONDS:float = 2.0
+## How much less than its start-up velocity would take it the trainset may run [m]
+const MOVING_MIN_DISTANCE:float = 15.0
+## How far apart the vehicles of a trainset may drift while it runs - the play of their couplers [m]
+const COUPLED_DRIFT_TOLERANCE:float = 0.1
 ## How exactly the second vehicle stands a vehicle's length behind the first [m]
 const PLACEMENT_TOLERANCE:float = 0.01
 
@@ -156,6 +165,26 @@ func test_a_moved_wagon_of_a_repeated_id_keeps_its_own_load() -> void:
     var vehicles:Array[RID] = []
     vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
     assert_eq(_loads(vehicles), ["", "load_c", "load_a", "load_b"])
+
+
+func test_a_reversed_vehicle_of_a_moving_trainset_runs_with_it() -> void:
+    _scenery.filename = MOVING_REVERSED_SCENERY
+    await _scenery.load()
+    var vehicles:Array[RID] = []
+    vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
+    var start:Array[Vector3] = []
+    for vehicle:RID in vehicles:
+        start.append(VehicleServer.vehicle_get_position(vehicle))
+    assert_lt(VehicleServer.vehicle_get_velocity(vehicles[1]), 0.0,
+            "the reversed one starts backwards along its own front")
+
+    await step(ticks(MOVING_SECONDS))
+
+    var head_run:float = VehicleServer.vehicle_get_position(vehicles[0]).distance_to(start[0])
+    assert_gt(head_run, MOVING_MIN_DISTANCE, "the trainset runs on")
+    for index:int in vehicles.size():
+        assert_almost_eq(VehicleServer.vehicle_get_position(vehicles[index]).distance_to(start[index]), head_run,
+                COUPLED_DRIFT_TOLERANCE, "%s runs as far as the head" % VehicleServer.vehicle_get_id(vehicles[index]))
 
 
 func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
