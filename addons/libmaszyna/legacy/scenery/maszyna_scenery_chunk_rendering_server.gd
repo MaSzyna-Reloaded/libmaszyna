@@ -32,6 +32,12 @@ class ChunkState:
     ## for as long as it is built - like E3DInstanceData.materials does for models
     var material:Material
 
+## What the streaming worker reads of a chunk for the main thread
+class PreloadedChunk:
+    var arrays:Array
+    ## The box Godot measures the visibility range to the centre of - the chunk's origin
+    var visibility_aabb:AABB
+
 var _chunks:Dictionary[RID, ChunkState] = {}
 ## The geometry of each chunk, for _stream_preload() on the streaming worker, where _chunks is not
 ## safe to read
@@ -84,7 +90,7 @@ func adopt_terrain(geometry:MaszynaTrianglesChunkGeometry, scenario:RID) -> RID:
     var chunk:MaszynaTrianglesChunkData = MaszynaTrianglesChunkData.new()
     # ResourceLazyLoader's key - the geometry has no file of its own
     chunk.geometry_path = "supplied://%d" % geometry.get_instance_id()
-    chunk.position = SceneryTrianglesSink.cell_get_origin(geometry.cell)
+    chunk.position = geometry.origin
     chunk.material_name = geometry.texture
     chunk.range_min = geometry.range_min
     chunk.range_max = maxf(geometry.range_max, 0.0)
@@ -116,7 +122,10 @@ func _stream_preload(rid:RID) -> Variant:
     var geometry:MaszynaTrianglesChunkGeometry = ResourceLazyLoader.resource_load(geometry_rid)
     if not geometry:
         return null
-    return geometry.to_mesh_arrays()
+    var preloaded:PreloadedChunk = PreloadedChunk.new()
+    preloaded.arrays = geometry.to_mesh_arrays()
+    preloaded.visibility_aabb = geometry.get_visibility_aabb()
+    return preloaded
 
 
 ## The world the chunk is drawn in, an empty RID for none (its scenery out of the tree)
@@ -127,7 +136,7 @@ func chunk_set_scenario(rid:RID, scenario:RID) -> void:
         RenderingServer.instance_set_scenario(state.mesh_instance, scenario)
 
 
-func _stream_build(rid:RID, preloaded:Variant) -> void:
+func _stream_build(rid:RID, preloaded:PreloadedChunk) -> void:
     var state:ChunkState = _chunks.get(rid)
     if not state or state.mesh_instance.is_valid() or not preloaded:
         return
@@ -136,15 +145,18 @@ func _stream_build(rid:RID, preloaded:Variant) -> void:
     if not material:
         return
     state.mesh = RenderingServer.mesh_create()
-    RenderingServer.mesh_add_surface_from_arrays(state.mesh, RenderingServer.PRIMITIVE_TRIANGLES, preloaded)
+    RenderingServer.mesh_add_surface_from_arrays(state.mesh, RenderingServer.PRIMITIVE_TRIANGLES, preloaded.arrays)
     state.mesh_instance = RenderingServer.instance_create()
     RenderingServer.instance_set_base(state.mesh_instance, state.mesh)
     RenderingServer.instance_set_scenario(state.mesh_instance, state.scenario)
     RenderingServer.instance_set_transform(state.mesh_instance, state.transform)
     state.material = material
     RenderingServer.instance_geometry_set_material_override(state.mesh_instance, material.get_rid())
-    # the chunk's own range still culls it inside the streamed area, as it did on the node
+    # the chunk's own range still culls it inside the streamed area, measured from its origin as the
+    # original measures it from the shape's centre (opengl33renderer.cpp:2814); a chunk of a section
+    # has none - the original draws those whatever their range (opengl33renderer.cpp:2495)
     if state.range_max > 0:
+        RenderingServer.instance_set_custom_aabb(state.mesh_instance, preloaded.visibility_aabb)
         RenderingServer.instance_geometry_set_visibility_range(
             state.mesh_instance, state.range_min, state.range_max, 0.0, 0.0,
             RenderingServer.VISIBILITY_RANGE_FADE_DISABLED

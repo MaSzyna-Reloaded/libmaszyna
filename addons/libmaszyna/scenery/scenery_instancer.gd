@@ -25,7 +25,7 @@ static var firstinit_importer = preload("res://addons/libmaszyna/legacy/scenery/
 static var isolated_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_lua_importer.gd").new()
-const CACHE_FORMAT_VERSION:int = 43
+const CACHE_FORMAT_VERSION:int = 44
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -112,6 +112,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
     var source_path:String = _get_source_path(filename)
     var parameters_hash:String = _get_parameters_hash(parameters)
     var cache_path:String = _get_cache_path(source_path, parameters_hash)
+    print("[SceneryLoad] SCENERY %s" % source_path)
     var world_3d:World3D = root.get_world_3d()
     var measurement := SceneryLoadMeasurement.new(root)
     var compiled:MaszynaCompiledScenery
@@ -131,7 +132,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
         # are packed, and the scenery is built below from that alone, as from the cache - a large
         # scenery kept whole in memory as it was parsed filled it
         var triangles_sink:SceneryTrianglesSink = SceneryTrianglesSink.create(
-            _cache.get_file_path(cache_path.get_basename())
+            _cache.get_file_path(cache_path.get_basename()), MaterialManager.is_material_translucent
         )
         var context:MaszynaImporterContext = await _parse_file_with_progress(
                 root, filename, parameters, triangles_sink)
@@ -672,7 +673,8 @@ func parse_subscene_task(
     # the subscene's triangles go to disk beside its cache entry as they are parsed, like the
     # scenery's - kept whole in memory, the vegetation of a large scenery took gigabytes
     var subscene_sink:SceneryTrianglesSink = SceneryTrianglesSink.create(
-        "" if is_saving else _cache.get_file_path(cache_path.get_basename()), SUBSCENE_TRIANGLES_BUDGET_BYTES
+        "" if is_saving else _cache.get_file_path(cache_path.get_basename()),
+        MaterialManager.is_material_translucent, SUBSCENE_TRIANGLES_BUDGET_BYTES
     )
     state["triangles_sink"] = subscene_sink
     var context:MaszynaImporterContext = parse_file_task(filename, parameters, state, queue)

@@ -1,11 +1,19 @@
 extends MaszynaGutTest
 
-## SceneryTrianglesSink: "triangles" are cut along the 1 km grid into chunks as they are added, and
-## a sink with a directory writes them out, past its budget part by part.
+## SceneryTrianglesSink: "triangles" are merged into chunks as they are added, as the original merges
+## its shapes - a large opaque one cut along the 1 km grid, its range dropped; a ranged or translucent
+## one whole, with the shapes of its range within MERGE_DISTANCE_M - and a sink with a directory
+## writes them out, past its budget part by part.
 
 ## SceneryTrianglesSink::CHUNK_SIZE_M
 const CELL_SIZE:float = 1000.0
 const DIRECTORY:String = "user://test_scenery_triangles_sink"
+## A texture the test's translucency takes for translucent
+const TRANSLUCENT_TEXTURE:String = "@glass"
+## A range the original keeps in a cell (SceneryTrianglesSink.CELL_RANGE_MAX_M and below)
+const CELL_RANGE:float = 300.0
+## A range the original keeps in a section, and does not draw by
+const SECTION_RANGE:float = 1000.0
 ## A budget of a few triangles, so that the sink writes parts many times over
 const TEST_BUDGET_BYTES:int = 1024
 const TEST_TRIANGLES:int = 100
@@ -19,10 +27,24 @@ func after_each() -> void:
     DirAccess.remove_absolute(DIRECTORY)
 
 
+## MaterialManager.is_material_translucent() of the test
+func _is_translucent(texture:String) -> bool:
+    return texture == TRANSLUCENT_TEXTURE
+
+
+func _create_sink(directory:String, budget_bytes:int = SceneryTrianglesSink.BUDGET_BYTES) -> SceneryTrianglesSink:
+    return SceneryTrianglesSink.create(directory, _is_translucent, budget_bytes)
+
+
+## A 2 m triangle with its first corner at the corner
+func _triangle(corner:Vector3) -> PackedVector3Array:
+    return PackedVector3Array([corner, corner + Vector3(0, 0, 2), corner + Vector3(2, 0, 0)])
+
+
 ## The chunks of the entries ([texture, vertices, normals, uvs]) as the old builder listed them,
 ## positions relative to "origin"
 func _build_chunks(entries:Array) -> Array[Dictionary]:
-    var sink:SceneryTrianglesSink = SceneryTrianglesSink.create("")
+    var sink:SceneryTrianglesSink = _create_sink("")
     for entry:Array in entries:
         sink.add_triangles(entry[0], entry[1], entry[2], entry[3], 0.0, 0.0)
     var chunks:Array[Dictionary] = []
@@ -30,9 +52,9 @@ func _build_chunks(entries:Array) -> Array[Dictionary]:
         var arrays:Array = geometry.to_mesh_arrays()
         chunks.append({
             "texture": geometry.texture,
-            "chunk_x": geometry.cell.x,
-            "chunk_z": geometry.cell.y,
-            "origin": SceneryTrianglesSink.cell_get_origin(geometry.cell),
+            "chunk_x": floori(geometry.origin.x / CELL_SIZE),
+            "chunk_z": floori(geometry.origin.z / CELL_SIZE),
+            "origin": geometry.origin,
             "vertices": arrays[Mesh.ARRAY_VERTEX],
             "normals": arrays[Mesh.ARRAY_NORMAL],
             "uvs": arrays[Mesh.ARRAY_TEX_UV],
@@ -144,7 +166,7 @@ func test_finished_chunks_hold_every_triangle_also_past_the_budget() -> void:
     var triangle:PackedVector3Array = PackedVector3Array([
         Vector3(100, 0, 100), Vector3(100, 0, 200), Vector3(200, 0, 100),
     ])
-    var sink:SceneryTrianglesSink = SceneryTrianglesSink.create(DIRECTORY, TEST_BUDGET_BYTES)
+    var sink:SceneryTrianglesSink = _create_sink(DIRECTORY, TEST_BUDGET_BYTES)
     for index:int in TEST_TRIANGLES:
         sink.add_triangles("grass", triangle, normals, uvs, 0.0, 0.0)
     assert_gt(DirAccess.get_files_at(DIRECTORY).size(), 0, "nothing went to disk past the budget")
@@ -163,9 +185,9 @@ func test_added_geometry_joins_the_chunk_of_its_texture_cell_and_range() -> void
     ])
     var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
     var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
-    var subscene:SceneryTrianglesSink = SceneryTrianglesSink.create("")
+    var subscene:SceneryTrianglesSink = _create_sink("")
     subscene.add_triangles("grass", vertices, normals, uvs, 0.0, 300.0)
-    var scenery:SceneryTrianglesSink = SceneryTrianglesSink.create("")
+    var scenery:SceneryTrianglesSink = _create_sink("")
     scenery.add_triangles("grass", vertices, normals, uvs, 0.0, 300.0)
     scenery.add_triangles("grass", vertices, normals, uvs, 0.0, 0.0)
     for geometry:MaszynaTrianglesChunkGeometry in subscene.get_geometries():
@@ -183,10 +205,10 @@ func test_finished_chunk_file_joins_another_sink() -> void:
     ])
     var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
     var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
-    var subscene:SceneryTrianglesSink = SceneryTrianglesSink.create(DIRECTORY)
+    var subscene:SceneryTrianglesSink = _create_sink(DIRECTORY)
     subscene.add_triangles("grass", vertices, normals, uvs, 0.0, 300.0)
     var descriptors:Array = subscene.finish()
-    var scenery:SceneryTrianglesSink = SceneryTrianglesSink.create("")
+    var scenery:SceneryTrianglesSink = _create_sink("")
     scenery.add_triangles("grass", vertices, normals, uvs, 0.0, 300.0)
     scenery.add_geometry_file(descriptors[0]["path"])
     var geometries:Array[MaszynaTrianglesChunkGeometry] = scenery.get_geometries()
@@ -232,3 +254,65 @@ func test_a_chunk_larger_than_an_upload_is_split_into_whole_triangles() -> void:
         assert_eq(piece.texture, "split")
         total += piece_vertices
     assert_eq(total, vertex_count)
+
+
+## The original draws a section's shapes whatever their range (opengl33renderer.cpp:2495): Całkowo's
+## terrain declares 1000 m, and kept, it hid the ground ~500 m inside its section
+func test_a_large_opaque_shape_goes_to_its_section_without_its_range() -> void:
+    var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
+    var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
+    var sink:SceneryTrianglesSink = _create_sink("")
+    sink.add_triangles("ground", _triangle(Vector3(100, 0, 100)), normals, uvs, 0.0, SECTION_RANGE)
+    var geometries:Array[MaszynaTrianglesChunkGeometry] = sink.get_geometries()
+    assert_eq(geometries.size(), 1)
+    assert_eq(geometries[0].range_max, 0.0, "a section's shape keeps no range")
+    assert_eq(geometries[0].origin, SceneryTrianglesSink.cell_get_origin(Vector2i.ZERO))
+
+
+## basic_cell::insert() (scene.cpp:282-291): shapes of one range merge when their centres are closer
+## than 25 m, and the merged centre - what the range is measured from - is their vertex-weighted mean
+func test_ranged_shapes_merge_only_within_the_merge_distance_around_their_centre() -> void:
+    var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
+    var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
+    var sink:SceneryTrianglesSink = _create_sink("")
+    for corner:Vector3 in [Vector3(10, 0, 10), Vector3(30, 0, 10), Vector3(100, 0, 10)]:
+        sink.add_triangles("grass", _triangle(corner), normals, uvs, 0.0, CELL_RANGE)
+    var geometries:Array[MaszynaTrianglesChunkGeometry] = sink.get_geometries()
+    assert_eq(geometries.size(), 2, "a shape 70 m away is another chunk")
+    var merged:MaszynaTrianglesChunkGeometry = geometries[0]
+    assert_eq(merged.range_max, CELL_RANGE)
+    assert_eq(merged.vertices.size(), 2 * 3 * 3)
+    var triangle_centre:Vector3 = Vector3(2.0, 0.0, 2.0) / 3.0
+    assert_almost_eq(merged.origin, Vector3(20, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
+    var first_vertex:Vector3 = Vector3(merged.vertices[0], merged.vertices[1], merged.vertices[2])
+    assert_almost_eq(first_vertex + merged.origin, Vector3(10, 0, 10), Vector3.ONE * 0.001)
+    assert_almost_eq(geometries[1].origin, Vector3(100, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
+
+
+## basic_section::insert() (scene.cpp:849-851): a translucent shape and one with a minimum range are
+## drawn by their range too, whatever its size
+func test_a_translucent_shape_or_one_with_a_minimum_range_is_kept_around_its_centre() -> void:
+    var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
+    var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
+    var sink:SceneryTrianglesSink = _create_sink("")
+    sink.add_triangles(TRANSLUCENT_TEXTURE, _triangle(Vector3(100, 0, 100)), normals, uvs, 0.0, 0.0)
+    sink.add_triangles("far", _triangle(Vector3(100, 0, 100)), normals, uvs, 50.0, SECTION_RANGE)
+    var triangle_centre:Vector3 = Vector3(100, 0, 100) + Vector3(2.0, 0.0, 2.0) / 3.0
+    for geometry:MaszynaTrianglesChunkGeometry in sink.get_geometries():
+        assert_almost_eq(geometry.origin, triangle_centre, Vector3.ONE * 0.001, geometry.texture)
+    assert_eq(sink.get_geometries()[1].range_max, SECTION_RANGE, "a ranged shape keeps its range")
+
+
+## Godot measures a visibility range to the centre of the instance's box
+func test_the_visibility_box_is_centred_on_the_origin_and_holds_every_vertex() -> void:
+    var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
+    var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
+    var sink:SceneryTrianglesSink = _create_sink("")
+    sink.add_triangles("grass", _triangle(Vector3(10, 0, 10)), normals, uvs, 0.0, CELL_RANGE)
+    sink.add_triangles("grass", _triangle(Vector3(20, 3, 10)), normals, uvs, 0.0, CELL_RANGE)
+    var geometry:MaszynaTrianglesChunkGeometry = sink.get_geometries()[0]
+    var box:AABB = geometry.get_visibility_aabb()
+    assert_almost_eq(box.get_center(), Vector3.ZERO, Vector3.ONE * 0.001)
+    for index:int in range(0, geometry.vertices.size(), 3):
+        var vertex:Vector3 = Vector3(geometry.vertices[index], geometry.vertices[index + 1], geometry.vertices[index + 2])
+        assert_true(box.grow(0.001).has_point(vertex))

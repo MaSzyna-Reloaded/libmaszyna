@@ -520,6 +520,39 @@ interface.
   rest fall back to `general`, which the interior/exterior attenuation model short-circuits to a
   constant - so the loudest brake sound in the game is outside that model entirely.
 
+## Scenery shapes (`scene/scene.cpp`, `scene/scenenode.cpp`)
+
+* **A large opaque shape's declared range is ignored.** `basic_section::insert()` keeps a shape in
+  a 250 m cell only if it is translucent, has a range of at most 300 m or a minimum range
+  (`scene.cpp:849-851`). Any other shape goes to its 1 km section, merged there by material alone
+  (`scenenode.cpp:430`), and the section draws it with `Render(shape, true)`, which skips the range
+  test (`opengl33renderer.cpp:2495`). So `node 1000 0 ... triangles` terrain (all of Całkowo's
+  `v2_terennowy.scm`) shows wherever its section is in view, whatever the 1000.
+  - Wrapper: `SceneryTrianglesSink` and `MaszynaLegacySBTTerrainProvider` merge such shapes per
+    1 km section and drop their range.
+  - Applied as a Godot visibility range, it was measured to the centre of a whole merged section,
+    and the ground went missing under houses and trees ~500 m inside the section.
+* **A cell's range is measured from a merged centre.** Shapes in a cell merge with one of the same
+  range whose centre is closer than 25 m (`scene.cpp:282-291`). The merged centre is the
+  vertex-weighted mean of the shapes' centres (`scenenode.cpp:436-439`), and the range is measured
+  from it (`opengl33renderer.cpp:2814`).
+  - Wrapper: the same merge.
+  - The chunk's origin is that centre, and its custom box is centred there, because Godot measures
+    to the box's centre (`MaszynaTrianglesChunkGeometry.get_visibility_aabb()`).
+* **Translucency is the legacy "problend": `@` in the texture's name and an alpha channel.**
+  - A scenery shape is translucent when its material's diffuse texture has `@` anywhere in its
+    name and the loaded texture has alpha (`scenenode.cpp:221-227`).
+  - `has_alpha` is `data_components == GL_RGBA` (`Texture.cpp:276`): for a `.dds` that is DXT3 or
+    DXT5, never DXT1 (`Texture.cpp:618-621`); for a `.tga`, 4 bytes a pixel; for the STBI formats,
+    4 channels.
+  - Neither the `.mat` nor the shape can say it otherwise (a submodel converted to a shape uses the
+    material's `opacity: 0` instead, `scenenode.cpp:352`).
+  - 8 textures in the datapack are named so (`@water03`, `@oslonatrakcji`, ...).
+  - Wrapper: the rule lives in one place, `MaterialManager.is_material_translucent()`, which
+    `SceneryTrianglesSink` asks per material. It reads only a `.dds` header
+    (`DDSTextureLoader.has_alpha()`), as `MaterialManager` loads only `.dds` textures. Another
+    source of translucency is set there and nowhere else.
+
 ## Sound (`audio/audiorenderer.cpp`, `vehicle/DynObj.cpp`)
 
 * **The original knows its running noise combs and works around it in one line.** Every vehicle of

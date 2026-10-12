@@ -7,6 +7,20 @@
 ## at full native resolution with no way to cap VRAM use on a weaker GPU.
 
 
+## Where the pixel format's fourCC stands: magic, then the header up to ddspf.dwFourCC
+const PIXEL_FORMAT_FOURCC_OFFSET:int = 84
+
+## Whether the texture has an alpha channel, read from its header alone - the original's
+## data_components: GL_RGB for DXT1, GL_RGBA for DXT3 and DXT5 (Texture.cpp:618-621)
+static func has_alpha(path:String) -> bool:
+    var file:FileAccess = FileAccess.open(path, FileAccess.READ)
+    if not file or not file.get_buffer(4).get_string_from_ascii() == "DDS ":
+        return false
+    file.seek(PIXEL_FORMAT_FOURCC_OFFSET)
+    var fourcc:String = file.get_buffer(4).get_string_from_ascii()
+    return fourcc == "DXT3" or fourcc == "DXT5"
+
+
 ## Returns null on anything this loader doesn't handle (bad magic, unsupported fourCC,
 ## a max_size too small to keep any mip level) - callers should fall back to load(path).
 static func load_texture(path:String, max_size:int) -> Texture2D:

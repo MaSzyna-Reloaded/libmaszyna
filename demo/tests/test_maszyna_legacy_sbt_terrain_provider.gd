@@ -31,7 +31,7 @@ func _geometry(geometries:Array, texture:String) -> MaszynaTrianglesChunkGeometr
 
 func _world_vertex(geometry:MaszynaTrianglesChunkGeometry, index:int) -> Vector3:
     var vertices:PackedFloat32Array = geometry.vertices
-    return SceneryTrianglesSink.cell_get_origin(geometry.cell) + Vector3(
+    return geometry.origin + Vector3(
             vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2])
 
 
@@ -48,12 +48,16 @@ func test_the_sections_are_listed_as_streaming_cells_without_being_read() -> voi
     assert_eq(provider.get_content_kinds(), PackedInt32Array([SceneryStreamingProvider.CONTENT_TERRAIN]))
 
 
-func test_a_cell_is_its_visible_shapes_one_chunk_per_texture_and_range() -> void:
+## The section's own shapes are merged per texture around the section's centre; a cell's shape stays
+## as the file holds it, around the centre the file gives it - its range is measured from there
+## (opengl33renderer.cpp:2814)
+func test_a_cell_is_its_visible_shapes_the_sections_merged_and_the_cells_as_they_are() -> void:
     var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_TERRAIN)
     assert_eq(geometries.size(), 2, "the hidden shape and the lines are left out")
     assert_not_null(_geometry(geometries, "test_grass"), "textures/ is not trimmed")
     assert_not_null(_geometry(geometries, "test_bush"), "a cell's shape with user data is read past its user data")
-    assert_eq(_geometry(geometries, "test_grass").cell, FIXTURE_CELL)
+    assert_eq(_geometry(geometries, "test_grass").origin, SceneryTrianglesSink.cell_get_origin(FIXTURE_CELL))
+    assert_eq(_geometry(geometries, "test_bush").origin, Vector3.ZERO, "the fixture's cell shape is centred at 0")
 
 
 func test_vertices_are_in_world_space_and_turned_around_like_a_triangles_node() -> void:

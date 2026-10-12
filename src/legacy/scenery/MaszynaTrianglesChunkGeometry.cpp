@@ -8,8 +8,8 @@ namespace godot {
     void MaszynaTrianglesChunkGeometry::_bind_methods() {
         ClassDB::bind_method(D_METHOD("set_texture", "texture"), &MaszynaTrianglesChunkGeometry::set_texture);
         ClassDB::bind_method(D_METHOD("get_texture"), &MaszynaTrianglesChunkGeometry::get_texture);
-        ClassDB::bind_method(D_METHOD("set_cell", "cell"), &MaszynaTrianglesChunkGeometry::set_cell);
-        ClassDB::bind_method(D_METHOD("get_cell"), &MaszynaTrianglesChunkGeometry::get_cell);
+        ClassDB::bind_method(D_METHOD("set_origin", "origin"), &MaszynaTrianglesChunkGeometry::set_origin);
+        ClassDB::bind_method(D_METHOD("get_origin"), &MaszynaTrianglesChunkGeometry::get_origin);
         ClassDB::bind_method(D_METHOD("set_range_min", "range_min"), &MaszynaTrianglesChunkGeometry::set_range_min);
         ClassDB::bind_method(D_METHOD("get_range_min"), &MaszynaTrianglesChunkGeometry::get_range_min);
         ClassDB::bind_method(D_METHOD("set_range_max", "range_max"), &MaszynaTrianglesChunkGeometry::set_range_max);
@@ -21,11 +21,12 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("set_uvs", "uvs"), &MaszynaTrianglesChunkGeometry::set_uvs);
         ClassDB::bind_method(D_METHOD("get_uvs"), &MaszynaTrianglesChunkGeometry::get_uvs);
         ClassDB::bind_method(D_METHOD("to_mesh_arrays"), &MaszynaTrianglesChunkGeometry::to_mesh_arrays);
+        ClassDB::bind_method(D_METHOD("get_visibility_aabb"), &MaszynaTrianglesChunkGeometry::get_visibility_aabb);
         ClassDB::bind_method(D_METHOD("split"), &MaszynaTrianglesChunkGeometry::split);
         BIND_CONSTANT(MAX_VERTICES);
 
         ADD_PROPERTY(PropertyInfo(Variant::STRING, "texture"), "set_texture", "get_texture");
-        ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "cell"), "set_cell", "get_cell");
+        ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "origin"), "set_origin", "get_origin");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "range_min"), "set_range_min", "get_range_min");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "range_max"), "set_range_max", "get_range_max");
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "vertices"), "set_vertices", "get_vertices");
@@ -41,12 +42,12 @@ namespace godot {
         return texture;
     }
 
-    void MaszynaTrianglesChunkGeometry::set_cell(const Vector2i &p_cell) {
-        cell = p_cell;
+    void MaszynaTrianglesChunkGeometry::set_origin(const Vector3 &p_origin) {
+        origin = p_origin;
     }
 
-    Vector2i MaszynaTrianglesChunkGeometry::get_cell() const {
-        return cell;
+    Vector3 MaszynaTrianglesChunkGeometry::get_origin() const {
+        return origin;
     }
 
     void MaszynaTrianglesChunkGeometry::set_range_min(const float p_range_min) {
@@ -112,6 +113,17 @@ namespace godot {
         return arrays;
     }
 
+    /// As E3DInstanceBackend::_visibility_aabb(): Godot measures a visibility range to the centre of
+    /// the instance's box, the original from the shape's centre (opengl33renderer.cpp:2814) - which
+    /// the origin is
+    AABB MaszynaTrianglesChunkGeometry::get_visibility_aabb() const {
+        Vector3 extent;
+        for (int64_t index = 0; index + 2 < vertices.size(); index += VECTOR3_FLOATS) {
+            extent = extent.max(Vector3(vertices[index], vertices[index + 1], vertices[index + 2]).abs());
+        }
+        return {-extent, extent * 2.0};
+    }
+
     TypedArray<MaszynaTrianglesChunkGeometry> MaszynaTrianglesChunkGeometry::split() {
         TypedArray<MaszynaTrianglesChunkGeometry> pieces;
         const int64_t vertex_count = vertices.size() / VECTOR3_FLOATS;
@@ -127,7 +139,7 @@ namespace godot {
             Ref<MaszynaTrianglesChunkGeometry> piece;
             piece.instantiate();
             piece->set_texture(texture);
-            piece->set_cell(cell);
+            piece->set_origin(origin);
             piece->set_range_min(range_min);
             piece->set_range_max(range_max);
             piece->set_vertices(vertices.slice(first * VECTOR3_FLOATS, last * VECTOR3_FLOATS));

@@ -221,6 +221,38 @@ func load_texture(
     normal:bool = false,
     max_texture_size:int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT,
 ) -> Texture:
+    var full_path:String = _get_texture_file(model_path, material_name)
+    if not full_path:
+        return UNKNOWN_TEXTURE
+
+    var max_size:int = max_texture_size
+    if max_size == MAX_TEXTURE_SIZE_PROJECT_DEFAULT:
+        max_size = int(ProjectSettings.get_setting("maszyna/import/dds_max_texture_size", 1024))
+    var texture:Texture2D = _load_dds_clamped(full_path, max_size)
+    if not texture:
+        texture = load(full_path) as Texture2D
+    if texture:
+        return texture
+    return UNKNOWN_TEXTURE
+
+
+## Whether a scenery shape with this material is translucent - the original's legacy "problend":
+## its diffuse texture has "@" in its name and an alpha channel (scenenode.cpp:221-227). Asked by
+## SceneryTrianglesSink to merge the shape as the original does (MASZYNA_ORIGINAL_QUIRKS.md,
+## "Scenery shapes"); called on the parse's workers.
+func is_material_translucent(material_name:String) -> bool:
+    var variant:MaszynaMaterial.MaszynaMaterialVariant = load_material("", material_name).default
+    var texture_name:String = variant.get_texture_path("diffuse")
+    if not texture_name:
+        texture_name = variant.get_texture_path("tex1")
+    if not ("@" in texture_name):
+        return false
+    var full_path:String = _get_texture_file("", texture_name)
+    return full_path and DDSTextureLoader.has_alpha(full_path)
+
+
+## The texture's file in the game directory, empty when there is none
+func _get_texture_file(model_path:String, material_name:String) -> String:
     var project_data_dir:String = UserSettings.get_maszyna_game_dir()
     if (project_data_dir.ends_with("\\")):
         project_data_dir = project_data_dir.trim_suffix("\\")
@@ -234,26 +266,11 @@ func load_texture(
         "textures".path_join(material_name+".dds"),
     ]
 
-    var final_path:String = ""
     for p:String in possible_paths:
         var resolved_path:String = MaszynaDataPath.resolve(project_data_dir, p)
         if FileAccess.file_exists(project_data_dir.path_join(resolved_path)):
-            final_path = resolved_path
-            break
-
-    if not final_path:
-        return UNKNOWN_TEXTURE
-
-    var full_path:String = project_data_dir.path_join(final_path)
-    var max_size:int = max_texture_size
-    if max_size == MAX_TEXTURE_SIZE_PROJECT_DEFAULT:
-        max_size = int(ProjectSettings.get_setting("maszyna/import/dds_max_texture_size", 1024))
-    var texture:Texture2D = _load_dds_clamped(full_path, max_size)
-    if not texture:
-        texture = load(full_path) as Texture2D
-    if texture:
-        return texture
-    return UNKNOWN_TEXTURE
+            return project_data_dir.path_join(resolved_path)
+    return ""
 
 
 ## Loads a .dds with its top mipmap levels discarded down to max_size - port of the original

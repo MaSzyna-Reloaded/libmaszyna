@@ -647,6 +647,19 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 ## Tests
 
+* **Tests run inside the demo's and the game's projects** (operator, 2026-10-12: tests may not
+  live in the demo or game project). `demo/tests` (478 files) and `maszyna-reloaded/tests` (71) use
+  the project's `user://`. Both projects had `custom_user_dir_name="MaSzyna-Reloaded"`, so a test's
+  `settings.cfg`, caches, GUT temp and logs land in the player's game directory - fixtures in
+  `game_dir`. Each repo gets a tests project of its own:
+  - its own `project.godot` and `custom_user_dir_name`;
+  - its addons linked as in `demo/addons`;
+  - fixtures for what the tests take from the demo (`vehicles/`, `materials/`, `sounds/`, scenes);
+  - the game's tests reach the game's code through links;
+  - updated: Makefile `run-tests`, CI, `.gutconfig.json`, AGENTS.md, the testing skill.
+
+  The demo has its own `custom_user_dir_name="Libmaszyna-Demo"` already. Until the split, every
+  headless run sets `XDG_DATA_HOME` to a scratch directory.
 * **`test_sun_shafts_compositor_effect.gd` is pending in CI**: it renders on a GPU, and the CI runs
   GUT `--headless` (no RenderingDevice). Locally it runs under `gamescope --backend headless`. A
   GPU runner (lavapipe) would make it a CI test; D3D12 itself is not covered anywhere.
@@ -769,9 +782,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 ## Grass and trees vanishing up close (report 2026-10-05)
 
-* Ranged triangles are merged per 1 km chunk and Godot measures `visibility_range` from the chunk
-  AABB centre (`maszyna_scenery_chunk_rendering_server.gd:146-151`); the original merges in 250 m
-  cells and measures from the shape's centre (`scene.cpp:834-837`, `opengl33renderer.cpp:2866-2873`).
 * Models: whether a model's node range (`E3DOptimizedBackend.cpp:196-205`) still goes by the
   submodel's own centre instead of the model origin (`opengl33renderer.cpp:2935-2942, 3617, 3654`).
-* Measure at the reported spot (Linia053_Wrzosy, the 36WE) before changing either.
+* Measure at the reported spot (Linia053_Wrzosy, the 36WE) before changing it. The triangles were
+  fixed 2026-10-12 (`docs/findings-archive.md`, "Całkowo's ground missing under its houses").
