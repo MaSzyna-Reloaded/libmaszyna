@@ -1,6 +1,9 @@
 extends GutTest
 class_name MaszynaGutTest
 
+## ResourceCache's switch: simulation_runtime_hook.gd turns it off, so a test never reads what a
+## previous run compiled; a test of the cache itself turns it on for its duration
+const CACHE_ENABLED_SETTING:String = "maszyna/cache/enabled"
 ## Standard gauge of build_track() [m]
 const BUILT_TRACK_GAUGE:float = 1.435
 ## build_rail_vehicle()'s mass [kg]

@@ -7,6 +7,8 @@ var _cache_path:String
 
 
 func before_each() -> void:
+    # this test is about the cache: on for its duration, where the tests' hook keeps it off
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, true)
     var suffix:String = str(Time.get_ticks_usec())
     _source_path = OS.get_temp_dir().path_join("libmaszyna_scenery_%s.scn" % suffix)
     _nested_path = OS.get_temp_dir().path_join("libmaszyna_scenery_%s.inc" % suffix)
@@ -22,6 +24,7 @@ func after_each() -> void:
     SceneryInstancer._cache.remove(_cache_path)
     DirAccess.remove_absolute(_source_path)
     DirAccess.remove_absolute(_nested_path)
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, false)
 
 
 func test_binary_cache_restores_typed_track_resources_and_nodes() -> void:

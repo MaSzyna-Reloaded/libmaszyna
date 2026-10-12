@@ -9,12 +9,15 @@ var _requests:Array[StringName] = []
 
 
 func before_each():
+    # these tests are about the cache: on for their duration, where the tests' hook keeps it off
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, true)
     _cache = ResourceCache.create(CACHE_DIRECTORY)
     _requests.clear()
 
 func after_each():
     _cache.clear()
     _cache = null
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, false)
 
 func test_clear_cache_emits_the_request():
     watch_signals(GameDataServer)
