@@ -22,7 +22,7 @@ Code generation:
 * use english comments (if needed)
 * a vehicle is held by its `VehicleServer` RID and commanded with
   `VehicleServer.vehicle_send_command(vehicle_rid, ...)`; `RailVehicleServer` knows the same RID
-  for what is rail (track, couplers, rail component kinds). Its scenery name (`train_id`) may be
+  for what is rail (track, couplers, rail component kinds). Its scenery name (`vehicle_id`) may be
   empty or repeated and is only for finding it (`vehicle_get_rid_by_name`). Call a
   `VehicleController` directly only where the composition already holds it (e.g. `VehicleComponent`s)
 * REQUIRED: **outside a vehicle's own composition an action on it is a command, never a method

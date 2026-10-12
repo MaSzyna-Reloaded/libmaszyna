@@ -13,8 +13,11 @@ class_name MaszynaSceneryInfo
 
 ## One vehicle of a trainset ("node ... dynamic ... enddynamic")
 class Vehicle:
-    ## The scenery's name of the vehicle - MaszynaDynamicData.name
-    var train_id:String = ""
+    ## The scenery's name of the vehicle - MaszynaDynamicData.name, in lower case as the vehicle is
+    ## found by it
+    var vehicle_id:String = ""
+    ## The same name as the .scn writes it, for the player to read
+    var display_name:String = ""
     ## e.g. "dynamic/pkp/su42_v1"
     var data_path:String = ""
     var skin:String = ""
@@ -25,6 +28,10 @@ class Vehicle:
     ## Stood the other way round - its offset is -1 (MaszynaNodeDynamicImporter)
     var reversed:bool = false
 
+    ## Its name for the player: as the .scn writes it, else its vehicle_id
+    func get_display_name() -> String:
+        return display_name if display_name else vehicle_id
+
     ## A driver sits in it - only "headdriver" and "reardriver" steer a cab, "passenger" and
     ## "nobody" are no driver (DynObj.cpp:1994-2001)
     func has_driver() -> bool:
@@ -32,13 +39,14 @@ class Vehicle:
 
     ## The same vehicle in the same files and skin - the name of the scenery included
     func is_same(other:Vehicle) -> bool:
-        return (train_id == other.train_id and data_path == other.data_path
+        return (vehicle_id == other.vehicle_id and data_path == other.data_path
                 and file_name == other.file_name and skin == other.skin and reversed == other.reversed)
 
     ## The same vehicle, to be changed without touching this one
     func copy() -> Vehicle:
         var vehicle:Vehicle = Vehicle.new()
-        vehicle.train_id = train_id
+        vehicle.vehicle_id = vehicle_id
+        vehicle.display_name = display_name
         vehicle.data_path = data_path
         vehicle.skin = skin
         vehicle.file_name = file_name
@@ -73,15 +81,16 @@ class Trainset:
     func is_drivable() -> bool:
         return is_occupied() and is_offered()
 
-    ## Vehicle the player starts in: the one with a headdriver, else any with a driver
-    func get_driver_train_id() -> String:
+    ## Vehicle the player starts in: the one with a headdriver, else any with a driver, else the
+    ## first; none in a trainset without vehicles
+    func get_driver_vehicle() -> Vehicle:
         for vehicle:Vehicle in vehicles:
             if vehicle.driver_type == "headdriver":
-                return vehicle.train_id
+                return vehicle
         for vehicle:Vehicle in vehicles:
             if vehicle.driver_type == "reardriver":
-                return vehicle.train_id
-        return vehicles[0].train_id if vehicles else ""
+                return vehicle
+        return vehicles[0] if vehicles else null
 
 ## Only the beginning of a scenery is read - the header and the trainsets are there
 const MAX_BYTES:int = 262144
@@ -265,7 +274,8 @@ static func read(filename:String) -> MaszynaSceneryInfo:
             "node":
                 if trainset and tokens.size() > 9 and tokens[4].to_lower() == "dynamic":
                     var vehicle := Vehicle.new()
-                    vehicle.train_id = tokens[3].to_lower()
+                    vehicle.vehicle_id = tokens[3].to_lower()
+                    vehicle.display_name = tokens[3]
                     vehicle.data_path = _resolve_data_path(tokens[5])
                     # spelled as the .scn spells them, like maszyna_node_dynamic_importer.gd - the
                     # files are found by MaszynaDataPath.resolve() whatever the letter case

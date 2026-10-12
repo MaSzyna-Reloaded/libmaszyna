@@ -100,7 +100,7 @@ func test_line_breaker_stays_closed_under_the_nominal_wire_voltage():
 ## under 3000 V, with the line breaker closed and a direction set.
 ## Built as the game builds a vehicle: every component in its description before the vehicle takes
 ## it, so the backend is configured once and CheckLocomotiveParameters() runs after all of it
-func _powered_up_eim(train_id: String) -> VehicleController:
+func _powered_up_eim(vehicle_id: String) -> VehicleController:
     var description:VehicleController = MoverRailVehicleController.new()
     description.add_component(build_power_supply(110.0))
     description.power = 5600.0
@@ -128,7 +128,7 @@ func _powered_up_eim(train_id: String) -> VehicleController:
     power_source.current_collector_number_of_collectors = 2
     description.add_component(eim)
     description.add_component(power_source)
-    var driven:VehicleController = build_vehicle(train_id, description, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var driven:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
     # the vehicle's own copy of the description's power source, the one the wire feeds
     power_source = driven.get_rail_component(RailVehicleComponentType.COMPONENT_ENGINE_POWER_SOURCE)
     driven.send_command("battery", true)

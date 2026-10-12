@@ -20,7 +20,7 @@ var _launchers_by_key:Dictionary[Key, Array] = {}
 
 
 ## Takes the launchers of the loaded scenery (connected to its `scenery_loaded` in the scene)
-func take_launchers(_first_train_id:String = "") -> void:
+func take_launchers(_first_vehicle_id:String = "") -> void:
     _launchers_by_key.clear()
     for launcher:RID in ScenarioEventServer.launcher_get_rids():
         var key:Key = ScenarioEventServer.launcher_get_key(launcher)

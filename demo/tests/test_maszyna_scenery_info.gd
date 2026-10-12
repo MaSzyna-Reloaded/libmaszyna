@@ -25,5 +25,6 @@ func test_a_vehicles_name_is_read_in_lower_case() -> void:
     if not info.trainsets:
         return
     var trainset:MaszynaSceneryInfo.Trainset = info.trainsets[0]
-    assert_eq(trainset.vehicles[0].train_id, "en57-636ra", "EN57-636ra as the importer names it")
-    assert_eq(trainset.get_driver_train_id(), "en57-636ra", "the player's vehicle by that name")
+    assert_eq(trainset.vehicles[0].vehicle_id, "en57-636ra", "EN57-636ra as the importer names it")
+    assert_eq(trainset.get_driver_vehicle().vehicle_id, "en57-636ra", "the player's vehicle by that name")
+    assert_eq(trainset.vehicles[0].get_display_name(), "EN57-636ra", "shown as the .scn writes it")

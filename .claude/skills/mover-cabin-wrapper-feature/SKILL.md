@@ -110,7 +110,7 @@ where the composition already holds that controller (e.g. `VehicleComponent`s).
 **Cabin controls are a separate layer (#94):** `CabinButton`/`CabinSwitch`/`CabinKnob`/
 `CabinCommand` never send vehicle commands. They only report manipulations
 (`hold`/`release`/`toggle`/`increase`/`decrease`/`set`) with
-`CabinSystem.act(train_id, cab, control_id, action, value)`. `control_id` is the MMD label, set by
+`CabinSystem.act(cabin, control_id, action, value)`. `control_id` is the MMD label, set by
 `MmdCabinInstancer._build_widget()`. What a manipulation does is decided by handlers registered in
 `CabinSystem` by `LegacyCabinLogic` (`addons/libmaszyna/legacy/cabin/cabin_logic.gd`), the
 vehicle's cab logic - attached with `CabinSystem.vehicle_attach_cab_logic()` by `MaszynaDynamicTrainCabin`
