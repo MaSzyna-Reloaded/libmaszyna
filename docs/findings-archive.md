@@ -4833,3 +4833,33 @@ lighting or the trainset.
   - The MMD catalogs are built in `_static_init()`.
 * **Rule:** code a worker runs keeps no static or lazily built state. A headless run is told by
   its display, not by the rendering driver's name.
+
+## 2026-10-12 materials read off the main thread
+
+* **Symptom:**
+  - Building a streamed model, terrain chunk or vehicle made its materials on the main thread, and
+    with them read every `.mat` (up to ~20 file probes each) and every DDS. That was the 163 ms
+    piece of 2026-10-02.
+  - `_texture_has_alpha()` read each diffuse texture back from the GPU (`texture.get_image()`).
+* **What proved it:**
+  - Reading `MaterialManager.get_material()` down to `DDSTextureLoader`: only
+    `ImageTexture.create_from_image()` and the ShaderMaterial need the main thread.
+  - A first preload read the images per instance into weak caches, so each queued build held its
+    own copy of a texture another one had read.
+  - A run of it was killed by the OOM killer at 5.1 GB RSS (`journalctl -k`). Two earlier
+    measurement runs were still alive then, ~3 GB between them, left by a script that killed
+    gamescope and not the game under it. The copies' share of it is not measured.
+* **Fix:**
+  - `MaterialManager.material_preload()` / `preload_model_materials()`, called on the streaming's
+    and the vehicles' workers (`E3DRenderingServer.material_preload()`, the chunk server's
+    preload), parse the `.mat` and read the images (`DDSTextureLoader.load_image()`).
+  - Each is shared by key in a counted registry and held by the `MaterialPreload` its build keeps.
+    A texture already made (`_dds_cache`) or held is not read again.
+  - The main thread takes them in `load_material()` and `_load_dds_clamped()`, and reads a file
+    only without a preload.
+  - `_texture_has_alpha()` goes by the image format, as the original's `has_alpha`
+    (`Texture.cpp:276`, 618-621).
+  - Measured on Całkowo, cold: VEHICLES 13.2 s with its longest frame 0.07 s (0.48 s before the
+    off-main work), SURROUNDINGS 5.8 s, peak 4.49 GB, no OOM.
+* **Rule:** data read ahead on a worker is shared by key and held by its consumer, counted - never
+  per user, and never taken back from a `WeakRef` on a thread that does not let it go.

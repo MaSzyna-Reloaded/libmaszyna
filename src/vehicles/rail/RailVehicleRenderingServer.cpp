@@ -231,32 +231,48 @@ namespace godot {
         }
     }
 
-    /* Every model file the vehicle's build takes: the appearance's, the cargo's and the coupler
-     * adapters' */
-    Vector<RID> RailVehicleRenderingServer::_get_preload_resources(const Visual &p_visual) {
-        Vector<RID> resources;
+    /* Every model file the vehicle's build takes - the appearance's, the cargo's and the coupler
+     * adapters' - as [resource, data path, skins], what its materials are found by */
+    Array RailVehicleRenderingServer::_get_preload_requests(const Visual &p_visual) {
+        Array requests;
+        const String data_path = p_visual.appearance.is_valid() ? p_visual.appearance->get_data_path() : String();
+        const PackedStringArray skins =
+                p_visual.appearance.is_valid() ? p_visual.appearance->get_skins() : PackedStringArray();
+        const auto request =
+                [&requests](const RID &p_resource, const String &p_data_path, const PackedStringArray &p_skins) {
+                    if (p_resource.is_valid()) {
+                        requests.push_back(Array::make(p_resource, p_data_path, p_skins));
+                    }
+                };
         for (const KeyValue<String, RID> &resource: p_visual.model_resources) {
-            resources.push_back(resource.value);
+            request(resource.value, data_path, skins);
         }
-        for (const RID &resource:
-             {p_visual.load_resource, p_visual.coupler_adapter_resources[0], p_visual.coupler_adapter_resources[1]}) {
-            if (resource.is_valid()) {
-                resources.push_back(resource);
-            }
+        // the cargo carries no skin of its own (_build_load())
+        request(p_visual.load_resource, p_visual.load_data_path, PackedStringArray());
+        for (const RID &resource: p_visual.coupler_adapter_resources) {
+            request(resource, COUPLER_ADAPTER_MODELS, skins);
         }
-        return resources;
+        return requests;
     }
 
     /// On a preload worker: the files loaded by ResourceLazyLoader, which keeps them without lazy
-    /// loading and loads one file once however many vehicles ask for it
-    Dictionary RailVehicleRenderingServer::_load_resources(const Array &p_resources) {
-        Dictionary loaded;
+    /// loading and loads one file once however many vehicles ask for it, and their materials' files
+    /// read (E3DRenderingServer::material_preload()). [{resource: model}, [what holds the materials]]
+    Array RailVehicleRenderingServer::_load_resources(const Array &p_requests) {
+        Dictionary models;
+        Array materials;
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
-        ERR_FAIL_NULL_V(lazy_loader, loaded);
-        for (const Variant &resource: p_resources) {
-            loaded[resource] = lazy_loader->resource_load(resource);
+        E3DRenderingServer *e3d = E3DRenderingServer::get_instance();
+        ERR_FAIL_NULL_V(lazy_loader, Array());
+        ERR_FAIL_NULL_V(e3d, Array());
+        for (const Variant &item: p_requests) {
+            const Array request = item;
+            const Ref<E3DModel> model = lazy_loader->resource_load(request[0]);
+            models[request[0]] = model;
+            // a vehicle's models draw with the project's texture size limit (_create_models())
+            materials.push_back(e3d->material_preload(model, request[1], request[2], 0));
         }
-        return loaded;
+        return Array::make(models, materials);
     }
 
     /* The vehicle's model files loaded off the main thread - the parse of a model stalled it for
@@ -266,14 +282,12 @@ namespace godot {
         if (p_visual.preload_task >= 0) {
             return;
         }
-        const Vector<RID> resources = _get_preload_resources(p_visual);
-        Array requested;
+        const Array requested = _get_preload_requests(p_visual);
         bool resident = true;
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
         ERR_FAIL_NULL(lazy_loader);
-        for (const RID &resource: resources) {
-            requested.push_back(resource);
-            resident = resident && lazy_loader->resource_is_resident(resource);
+        for (const Variant &request: requested) {
+            resident = resident && lazy_loader->resource_is_resident(Array(request)[0]);
         }
         // the dummy renderer takes no resource from another thread: loaded here (ResourceLazyLoader)
         if (resident || !lazy_loader->get_loads_off_main_thread()) {
@@ -293,7 +307,7 @@ namespace godot {
         const RID vehicle_rid = *vehicle;
         preload_vehicles.erase(p_task);
         Visual *visual = vehicles.getptr(vehicle_rid);
-        const Dictionary loaded = preload_queue->wait(p_task);
+        const Array loaded = preload_queue->wait(p_task);
         if (visual == nullptr || visual->preload_task != p_task) {
             return;
         }
@@ -303,12 +317,14 @@ namespace godot {
 
     /* The loaded files wait for the build; what depends on the model file alone is done now - the
      * pantographs' geometry, and the cargo and the adapters of a vehicle built already */
-    void
-    RailVehicleRenderingServer::_apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Dictionary &p_loaded) {
+    void RailVehicleRenderingServer::_apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Array &p_loaded) {
         p_visual.preloaded.clear();
-        for (const Variant &resource: p_loaded.keys()) {
-            p_visual.preloaded[resource] = p_loaded[resource];
+        ERR_FAIL_COND(p_loaded.size() < 2);
+        const Dictionary models = p_loaded[0];
+        for (const Variant &resource: models.keys()) {
+            p_visual.preloaded[resource] = models[resource];
         }
+        p_visual.preloaded_materials = p_loaded[1];
         _publish_pantographs(p_vehicle, p_visual);
         if (p_visual.own_models && p_visual.model.is_valid()) {
             _update_coupler_adapters(p_vehicle, p_visual);
@@ -317,8 +333,8 @@ namespace godot {
     }
 
     bool RailVehicleRenderingServer::_is_preloaded(const Visual &p_visual) {
-        for (const RID &resource: _get_preload_resources(p_visual)) {
-            if (!p_visual.preloaded.has(resource)) {
+        for (const Variant &request: _get_preload_requests(p_visual)) {
+            if (!p_visual.preloaded.has(Array(request)[0])) {
                 return false;
             }
         }
@@ -1715,11 +1731,7 @@ namespace godot {
                 if (at_once) {
                     // the editor's or an editable vehicle's models are wanted at once: loaded here
                     if (!_is_preloaded(p_visual)) {
-                        Array resources;
-                        for (const RID &resource: _get_preload_resources(p_visual)) {
-                            resources.push_back(resource);
-                        }
-                        _apply_preloaded(p_vehicle, p_visual, _load_resources(resources));
+                        _apply_preloaded(p_vehicle, p_visual, _load_resources(_get_preload_requests(p_visual)));
                     }
                     _build_models(p_vehicle, p_visual);
                 } else if (!p_visual.build_pending) {
@@ -1772,8 +1784,10 @@ namespace godot {
         _create_models(p_vehicle, p_visual);
         _bind_parts(p_vehicle, p_visual);
         _build_load(p_vehicle, p_visual);
-        // the built models hold what they were built from (ResourceLazyLoader)
+        // the built models hold what they were built from (ResourceLazyLoader), and their materials
+        // the textures
         p_visual.preloaded.clear();
+        p_visual.preloaded_materials.clear();
         _update_detail(p_vehicle, p_visual);
         UtilityFunctions::print("[RailVehicleRendering] built ", model_path);
     }

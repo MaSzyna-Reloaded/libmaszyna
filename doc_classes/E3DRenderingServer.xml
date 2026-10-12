@@ -405,6 +405,23 @@
 				The model of a file, loaded once and shared by every instance of it.
 			</description>
 		</method>
+		<method name="material_preload">
+			<return type="Variant" />
+			<param index="0" name="model" type="E3DModel" />
+			<param index="1" name="data_path" type="String" />
+			<param index="2" name="skins" type="PackedStringArray" />
+			<param index="3" name="max_texture_size" type="int" />
+			<description>
+				Reads the files of the model's materials - their [code].mat[/code] and their textures' images - on the calling thread, through the material preloader ([method material_set_preloader]). What it returns holds them; the build that makes the materials keeps it until it is done, so the main thread reads no file.
+			</description>
+		</method>
+		<method name="material_set_preloader">
+			<return type="void" />
+			<param index="0" name="material_preloader" type="Callable" />
+			<description>
+				Sets [code]material_preloader(model: E3DModel, data_path: String, skins: PackedStringArray, max_texture_size: int) -&gt; Variant[/code], called on the streaming's and the vehicles' preload workers ([code]MaterialManager.preload_model_materials[/code]).
+			</description>
+		</method>
 		<method name="model_set_loader">
 			<return type="void" />
 			<param index="0" name="model_loader" type="Callable" />

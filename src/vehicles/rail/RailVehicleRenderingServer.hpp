@@ -117,6 +117,9 @@ namespace godot {
                     /* What the preload loaded on a worker, by resource - taken by the next build,
                      * which holds them (_get_model()) */
                     HashMap<RID, Ref<Resource>> preloaded;
+                    /* What holds the files of those models' materials the preload read
+                     * (E3DRenderingServer::material_preload()), let go with them after the build */
+                    Array preloaded_materials;
                     /* The preload running for it in preload_queue, -1 for none */
                     int preload_task = -1;
                     /* Waiting in pending_builds for its models to be built */
@@ -231,11 +234,11 @@ namespace godot {
             void _on_project_settings_changed();
             void _free_models(Visual &p_visual);
             static void _free_model_resources(Visual &p_visual);
-            static Vector<RID> _get_preload_resources(const Visual &p_visual);
-            static Dictionary _load_resources(const Array &p_resources);
+            static Array _get_preload_requests(const Visual &p_visual);
+            static Array _load_resources(const Array &p_requests);
             void _preload(const RID &p_vehicle, Visual &p_visual);
             void _on_preload_finished(int p_task);
-            void _apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Dictionary &p_loaded);
+            void _apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Array &p_loaded);
             static bool _is_preloaded(const Visual &p_visual);
             static Ref<E3DModel> _get_model(const Visual &p_visual, const RID &p_resource);
             static void _register_coupler_adapters(const RID &p_vehicle, Visual &p_visual);
