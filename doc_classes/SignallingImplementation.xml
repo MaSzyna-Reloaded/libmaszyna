@@ -25,7 +25,7 @@
 			<param index="2" name="event" type="StringName" />
 			<param index="3" name="arguments" type="Dictionary" />
 			<description>
-				A report of one of the system's sources: [method SignallingServer.source_send_event]. A sensor's passage is the [code]"impulse"[/code] event with [code]{"polarity": SignallingServer.SourcePolarity}[/code].
+				A report of one of the system's sources: [method SignallingServer.source_send_event]. A sensor's passage is the [code]"impulse"[/code] event with [code]{"polarity": SignallingServer.SourcePolarity}[/code]. An isolated section's source ([method SignallingServer.source_set_isolated]) sends [code]"occupied"[/code] and [code]"freed"[/code] with no arguments.
 			</description>
 		</method>
 		<method name="_route_added" qualifiers="virtual">
