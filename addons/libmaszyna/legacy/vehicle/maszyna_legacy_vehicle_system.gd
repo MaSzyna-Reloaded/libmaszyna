@@ -79,10 +79,14 @@ func _ready() -> void:
 
 
 ## The reads and the vehicles' model loads run GDScript on their workers: they stop while the
-## scripts are still there
+## scripts are still there. Out of the tree nothing more is built: a vehicle freed after this
+## (a scene's MaszynaRailVehicle3D leaving the tree later, as the editor quits) finds no queue
 func _exit_tree() -> void:
     _reads.drain()
     RailVehicleRenderingServer.preloads_drain()
+    if _build_queue:
+        get_tree().process_frame.disconnect(_on_process_frame)
+        _build_queue.clear()
 
 
 ## A vehicle of `dynamic`, drawn in the world of the scene node `scene_node_id`; its files read off
