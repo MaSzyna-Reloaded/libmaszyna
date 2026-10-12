@@ -20,11 +20,11 @@ namespace godot {
     /// resource, shared by everybody who registers it. resource_hold() holds a loaded copy and
     /// resource_release() lets it go.
     ///
-    /// With lazy loading (maszyna/resources/lazy_loading, or --enable-lazy-loading on the command
-    /// line) a resource is loaded when it is wanted and let go when nobody holds it any more, so its
-    /// memory, RAM and the VRAM of a mesh or a texture, goes back. Without it - the default - a
-    /// resource is kept from its first load until its last registration is freed; holding and
-    /// releasing it only says who builds from it.
+    /// With lazy loading (maszyna/resources/lazy_loading, the default, or --enable-lazy-loading on
+    /// the command line) a resource is loaded when it is wanted and let go when nobody holds it any
+    /// more, so its memory, RAM and the VRAM of a mesh or a texture, goes back - the textures with
+    /// the last material using them. Without it a resource is kept from its first load until its
+    /// last registration is freed; holding and releasing it only says who builds from it.
     ///
     /// A resource is loaded by resource_load(), on its caller's worker thread - never at its
     /// registration on the main thread, which stalled it for every file. The exception is a headless
@@ -58,7 +58,7 @@ namespace godot {
             HashMap<RID, Entry> entries;
             HashMap<String, RID> keys;
             int load_count = 0;
-            bool lazy_loading = false;
+            bool lazy_loading = DEFAULT_LAZY_LOADING;
 
             void _on_data_unload_requested();
 
@@ -68,7 +68,7 @@ namespace godot {
         public:
             /// Read once, when the loader is created - after UserSettings applied the player's values
             static constexpr const char *LAZY_LOADING_SETTING = "maszyna/resources/lazy_loading";
-            static constexpr bool DEFAULT_LAZY_LOADING = false;
+            static constexpr bool DEFAULT_LAZY_LOADING = true;
             /// Command-line switch: lazy loading whatever the setting says
             static constexpr const char *ARG_ENABLE_LAZY_LOADING = "--enable-lazy-loading";
 
