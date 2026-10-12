@@ -195,6 +195,13 @@ Checks:
 * TESTS: never write a test that reads the game directory (`scenery/`, `dynamic/`, `textures/`) -
   CI has none. Everything a test needs is a fixture in `demo/tests/fixtures/` or
   `demo/tests/materials/`. A throwaway diagnostic script does not belong in `demo/tests/` either.
+* REQUIRED, ABSOLUTE: **a failing test is a regression of the code until proven otherwise - the
+  regression is looked for first, the test is changed last.** Find the change that made it fail
+  and report it to the operator (commit, line, what it does to real data). A behaviour a commit
+  changed on purpose is still a regression until the operator confirms that exact behaviour was
+  wanted; only then is the test adapted. Never edit a test to match new behaviour on your own,
+  and never fold such an edit into the commit that caused it - see
+  `.claude/skills/testing/SKILL.md`
 * TESTS: never run the whole test suite. Before a commit run only the test scripts you wrote or
   modified, all of them in one Godot process - not one process per script (each pays Godot's and
   GUT's start-up): `-gconfig= -gpre_run_script=res://tests/simulation_runtime_hook.gd
