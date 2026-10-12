@@ -5,15 +5,21 @@ extends MaszynaGutTest
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const ROOT:String = "subscene/root.scn"
+## ResourceCache's switch (simulation_runtime_hook.gd turns it off for every other test)
+const CACHE_ENABLED_SETTING:String = "maszyna/cache/enabled"
 
 var _previous_game_dir:String = ""
 var _cache_dir:String = "user://cache".path_join(SceneryInstancer.CACHE_DIRECTORY)
 var _existing_files:PackedStringArray = []
 var _existing_directories:PackedStringArray = []
 var _previous_lazy_loading:bool = false
+var _previous_cache_enabled:bool = false
 
 
 func before_each() -> void:
+    # this test is about the cache: on for its duration, where the tests' hook keeps it off
+    _previous_cache_enabled = ProjectSettings.get_setting(CACHE_ENABLED_SETTING, true)
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, true)
     # the terrain is streamed from its chunk files, loaded when wanted
     _previous_lazy_loading = ResourceLazyLoader.lazy_loading
     ResourceLazyLoader.lazy_loading = true
@@ -35,6 +41,7 @@ func after_each() -> void:
         DirAccess.remove_absolute(_cache_dir.path_join(directory))
     UserSettings.save_maszyna_game_dir(_previous_game_dir)
     ResourceLazyLoader.lazy_loading = _previous_lazy_loading
+    ProjectSettings.set_setting(CACHE_ENABLED_SETTING, _previous_cache_enabled)
 
 
 func test_subscenes_are_cached_per_origin_and_match_in_place_parsing() -> void:

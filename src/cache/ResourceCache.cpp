@@ -5,12 +5,16 @@
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    /* Off, no cache is read or written - the GUT hooks switch it off, so a test never sees what a
+     * previous run compiled (a stale scenery cache cost a day: FINDINGS.md, 2026-10-12) */
+    constexpr const char *CACHE_ENABLED_SETTING = "maszyna/cache/enabled";
 
     void ResourceCache::_bind_methods() {
         ClassDB::bind_static_method("ResourceCache", D_METHOD("create", "cache_dir"), &ResourceCache::create);
@@ -54,9 +58,14 @@ namespace godot {
         return _get_cache_path(p_path) + ".hash";
     }
 
+    // read on every use: the caches are made before a hook or the editor could change the setting
+    bool ResourceCache::_enabled() {
+        return ProjectSettings::get_singleton()->get_setting(CACHE_ENABLED_SETTING, true);
+    }
+
     bool ResourceCache::has(const String &p_path, const String &p_hash) const {
         const String cache_path = _get_cache_path(p_path);
-        if (!FileAccess::file_exists(cache_path)) {
+        if (!_enabled() || !FileAccess::file_exists(cache_path)) {
             return false;
         }
 
@@ -75,7 +84,7 @@ namespace godot {
 
     Ref<Resource> ResourceCache::get(const String &p_path, const String &p_hash) const {
         const String cache_path = _get_cache_path(p_path);
-        if (!FileAccess::file_exists(cache_path)) {
+        if (!_enabled() || !FileAccess::file_exists(cache_path)) {
             return nullptr;
         }
 
@@ -90,7 +99,7 @@ namespace godot {
     }
 
     void ResourceCache::set(const String &p_path, const Ref<Resource> &p_resource, const String &p_hash) const {
-        if (p_resource.is_null()) {
+        if (!_enabled() || p_resource.is_null()) {
             return;
         }
 

@@ -30,7 +30,8 @@ func import(p:MaszynaParser, context: MaszynaImporterContext) -> MaszynaDynamicD
     var trainset:MaszynaTrainsetData = context.trainset
     if not trainset:
         trainset = MaszynaTrainsetData.new()
-        trainset.track_name = p.next_token()
+        # in lower case, as the track's name (simulationstateserializer.cpp:993-995)
+        trainset.track_name = p.next_token().to_lower()
         context.trainsets.append(trainset)
     var offset:float = float(p.next_token())
     var driver_type:String = p.next_token()

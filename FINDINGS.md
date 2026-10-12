@@ -598,6 +598,10 @@ anything. Open work belongs in `TODO.md`.
 * A pantograph-air report is reproduced on a fixture whose FIZ matches its `PantAutoValve`: the
   EP09 fixture has it, the EP07 (303E) does not, and the valve matters only without it.
   *(10-06 EP09 fixture fills its pantographs on its own)*
+* A test never reads a cache: `maszyna/cache/enabled` is off in the GUT hooks, so every run
+  builds from its fixtures. A cache keyed by a format version is stale the moment the same version
+  is reused with other code, and the test then reports the old data as a regression of the new.
+  *(10-12 the stale scenery cache that looked like a name regression)*
 
 ## Sound
 * A method bound with different arguments is still one connection: when the key changes

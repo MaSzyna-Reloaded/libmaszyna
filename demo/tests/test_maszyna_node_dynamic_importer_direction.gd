@@ -123,3 +123,17 @@ func test_the_load_a_dynamic_declares_reaches_the_vehicle() -> void:
     assert_almost_eq(empty.load_amount, 0.0, 0.001)
     assert_eq(unnamed.load_name, "", "a count with no cargo named behind it is not a load")
     assert_almost_eq(unnamed.load_amount, 0.0, 0.001)
+
+
+## The track a trainset and a lone vehicle stand on is named in lower case, as the track itself is
+## (simulationstateserializer.cpp:425-430, 777-782, 993-995) - "Tor_A" would find no track
+func test_the_track_named_with_capitals_is_read_in_lower_case() -> void:
+    var context := MaszynaImporterContext.new()
+    var parser := MaszynaParser.new()
+    parser.initialize("Pociag_1 Tor_A 20 0".to_utf8_buffer(), [])
+    load("res://addons/libmaszyna/legacy/scenery/maszyna_trainset_importer.gd").new().import(parser, context)
+    assert_eq(context.trainset.track_name, "tor_a", "the trainset's track")
+    assert_eq(context.trainset.name, "pociag_1", "the trainset's name")
+    var lone := MaszynaImporterContext.new()
+    _import(lone, "fixtures skin short Tor_B 0 headdriver 0 0 enddynamic")
+    assert_eq(lone.trainsets[0].track_name, "tor_b", "a lone vehicle's track")
