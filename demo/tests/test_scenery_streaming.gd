@@ -104,7 +104,7 @@ func test_triangle_chunk_out_of_range_is_not_built() -> void:
     chunk.range_max = 200.0
     var rid:RID = MaszynaSceneryChunkRenderingServer.create_chunk(
         chunk, get_tree().root.world_3d.scenario,
-        func() -> MaszynaTrianglesChunkGeometry: return MaszynaTrianglesChunkGeometry.new()
+        func() -> MaszynaTrianglesSector: return MaszynaTrianglesSector.new()
     )
 
     await wait_streaming(STREAMING_FRAMES)

@@ -34,8 +34,9 @@ namespace godot {
     ///   measured from there.
     ///
     /// A sink with a directory keeps at most BUDGET_BYTES of geometry in memory: past that, its
-    /// largest chunks are written to the directory as parts, and finish() puts each chunk together
-    /// in one MaszynaTrianglesChunkGeometry file there. A sink without one keeps everything, for a
+    /// largest chunks are written to the directory as parts, and finish() puts each section's chunks
+    /// together in one MaszynaTrianglesSector file there - a file a section, as the original's
+    /// basic_section. A sink without one keeps everything, for a
     /// subscene whose chunks are cached with it.
     ///
     /// Thread-safe: the parse adds from every worker. The order of the triangles inside a chunk is
@@ -57,19 +58,24 @@ namespace godot {
             static constexpr double MERGE_DISTANCE_M = 25.0;
 
         private:
+            /// A shape the original merged within MERGE_DISTANCE_M, or a section's whole chunk
+            struct Group {
+                    /// What the range is measured from, in the world: the vertex-weighted mean of its
+                    /// shapes' centres
+                    Vector3 centre;
+                    int64_t vertex_count = 0;    // kept past a spill, for the weight of the next shape
+                    std::vector<float> vertices; // relative to the chunk's origin
+                    std::vector<float> normals;
+                    std::vector<float> uvs;
+            };
+
+            /// A texture and a range in a CELL_SIZE_M cell, or a texture in a CHUNK_SIZE_M section
             struct Chunk {
                     String texture;
                     float range_min = 0.0;
                     float range_max = 0.0;
-                    /// What the vertices are relative to: a section's centre, or the first shape's
-                    /// centre of a cell's chunk
-                    Vector3 origin;
-                    /// What the range is measured from: the vertex-weighted mean of the shapes' centres
-                    Vector3 centre;
-                    int64_t vertex_count = 0; // kept past a spill, for the weight of the next shape
-                    std::vector<float> vertices;
-                    std::vector<float> normals;
-                    std::vector<float> uvs;
+                    Vector3 origin; // the cell's or the section's centre
+                    std::vector<Group> groups;
                     int parts = 0; // written to the directory so far
             };
 
@@ -80,20 +86,21 @@ namespace godot {
             /// parse's workers
             Callable translucency;
             HashMap<String, bool> translucent_textures;
-            std::vector<Chunk> chunks;                       // in the order they first appeared
-            HashMap<String, int> section_chunks;             // texture|section -> chunk
-            HashMap<Vector2i, std::vector<int>> cell_chunks; // a CELL_SIZE_M cell -> its chunks
-
+            std::vector<Chunk> chunks; // in the order they first appeared
+            HashMap<String, int> chunk_indices;
             int64_t buffered_bytes = 0;
 
             bool _is_translucent(const String &p_texture);
+            Chunk &_get_chunk(
+                    const String &p_key, const String &p_texture, float p_range_min, float p_range_max,
+                    const Vector3 &p_origin);
             Chunk &_get_section_chunk(const String &p_texture, const Vector2i &p_section);
-            Chunk &_get_cell_chunk(
-                    const String &p_texture, float p_range_min, float p_range_max, const Vector3 &p_centre,
-                    int64_t p_vertex_count);
-            static int64_t _get_bytes(const Chunk &p_chunk);
-            static Ref<MaszynaTrianglesChunkGeometry> _to_geometry(const Chunk &p_chunk, const Vector3 &p_origin);
-            static void _append(Chunk &p_chunk, const Ref<MaszynaTrianglesChunkGeometry> &p_geometry);
+            Chunk &
+            _get_cell_chunk(const String &p_texture, float p_range_min, float p_range_max, const Vector3 &p_centre);
+            static Group &_get_group(Chunk &p_chunk, const Vector3 &p_centre, int64_t p_vertex_count);
+            static int64_t _get_bytes(const Group &p_group);
+            static Ref<MaszynaTrianglesChunkGeometry> _to_geometry(const Chunk &p_chunk);
+            static void _append_part(Chunk &p_chunk, const Ref<MaszynaTrianglesChunkGeometry> &p_part);
             String _get_part_path(int p_chunk, int p_part) const;
             void _spill();
 
@@ -105,7 +112,7 @@ namespace godot {
              * p_translucency(texture: String) -> bool */
             static Ref<SceneryTrianglesSink>
             create(const String &p_directory, const Callable &p_translucency, int64_t p_budget_bytes = BUDGET_BYTES);
-            /* The centre of a section of the 1 km grid, which its chunks' positions are relative to */
+            /* The centre of a section of the 1 km grid, which its chunk's positions are relative to */
             static Vector3 cell_get_origin(const Vector2i &p_cell);
             /* A shape the original keeps in a cell and draws by its range, not in its section
              * (basic_section::insert(), scene.cpp:849-851) */
@@ -114,14 +121,16 @@ namespace godot {
             void add_triangles(
                     const String &p_texture, const PackedVector3Array &p_vertices, const PackedVector3Array &p_normals,
                     const PackedVector2Array &p_uvs, float p_range_min, float p_range_max);
-            /* Merges a whole chunk's geometry as one shape, by the rules of add_triangles() */
+            /* Merges a chunk's geometry group by group, each as one shape, by the rules of add_triangles() */
             void add_geometry(const Ref<MaszynaTrianglesChunkGeometry> &p_geometry);
-            /* add_geometry() of a chunk file another sink finished - read, added and let go of */
+            /* add_geometry() of every chunk of a sector file another sink finished - read, added and
+             * let go of */
             void add_geometry_file(const String &p_path);
             /* The chunks kept in memory, in the order they first appeared */
             TypedArray<MaszynaTrianglesChunkGeometry> get_geometries() const;
-            /* Writes every chunk to <directory>/<index>.res and empties the sink; returns a Dictionary per
-             * chunk: path, position (its origin), texture, range_min, range_max */
+            /* Writes every section's chunks to one file, <directory>/<x>_<z>.res (MaszynaTrianglesSector),
+             * and empties the sink; returns a Dictionary per chunk: path (its sector's), index (in the
+             * sector), position (its origin), texture, range_min, range_max */
             Array finish();
     };
 } // namespace godot

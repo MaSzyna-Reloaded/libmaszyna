@@ -106,11 +106,14 @@ namespace godot {
 
     } // namespace
 
-    /// The vectors of a chunk of terrain, relative to its origin, as floats
+    /// The vectors of a chunk of terrain, relative to its origin, as floats, and its groups: each
+    /// one shape or one texture of a section (MaszynaTrianglesChunkGeometry)
     struct ShapeGeometry {
             std::vector<float> vertices;
             std::vector<float> normals;
             std::vector<float> uvs;
+            PackedVector3Array group_centres;
+            PackedInt32Array group_ends;
     };
 
     struct ShapeVertex {
@@ -203,7 +206,17 @@ namespace godot {
         geometry->set_vertices(to_packed(p_geometry.vertices));
         geometry->set_normals(to_packed(p_geometry.normals));
         geometry->set_uvs(to_packed(p_geometry.uvs));
+        geometry->set_group_centres(p_geometry.group_centres);
+        geometry->set_group_ends(p_geometry.group_ends);
         return geometry;
+    }
+
+    /// The shape appended as a group of its own, its centre relative to p_origin
+    static void append_group(ShapeGeometry &p_geometry, const Shape &p_shape, const Vector3 &p_origin) {
+        append_shape(p_geometry, p_shape, p_origin);
+        p_geometry.group_centres.push_back(p_shape.centre - p_origin);
+        p_geometry.group_ends.push_back(
+                static_cast<int32_t>(p_geometry.vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
     }
 
     /// lines_node::deserialize() (scenenode.cpp:550, :513) - read past, as "lines" nodes are
@@ -295,8 +308,9 @@ namespace godot {
     /// section, drawn as the original draws it:
     /// - the section's own shapes merged by texture, their range dropped - the original draws them
     ///   whenever the section is in view (Render(shape, true), opengl33renderer.cpp:2495);
-    /// - each shape of a cell as it is, merged already when the file was written (basic_cell::insert(),
-    ///   scene.cpp:282-291), its range measured from its own centre (opengl33renderer.cpp:2814)
+    /// - a cell's shapes, merged already when the file was written (basic_cell::insert(),
+    ///   scene.cpp:282-291), in one chunk per texture and range around the cell's centre, each shape a
+    ///   group of it whose range is measured from its own centre (opengl33renderer.cpp:2814)
     Array MaszynaLegacySBTTerrainProvider::chunk_load(const Vector2i &p_cell, const ContentKind p_kind) {
         Array geometries;
         if (p_kind != CONTENT_TERRAIN) {
@@ -328,28 +342,49 @@ namespace godot {
             append_shape(section_geometries[shape.texture], shape, section_origin);
         }
         for (int cell = 0; cell < SECTION_CELL_COUNT && !cursor.overrun; cell++) {
-            cursor.skip(AREA_BYTES);
+            // a cell's shapes by texture and range - one chunk each - around the cell's centre
+            const Vector3 cell_origin = cursor.dvec3();
+            cursor.f32(); // radius
+            std::vector<String> cell_keys;
+            HashMap<String, ShapeGeometry> cell_geometries;
+            HashMap<String, Shape> cell_shapes; // the texture and range of each key, without its vertices
             // opaque shapes, then translucent ones
             for (int kind = 0; kind < 2; kind++) {
                 for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
                     if (!read_shape(cursor, shape)) {
                         continue;
                     }
-                    ShapeGeometry shape_geometry;
-                    append_shape(shape_geometry, shape, shape.centre);
-                    geometries.append_array(
-                            to_geometry(shape.texture, shape.centre, shape.range_min, shape.range_max, shape_geometry)
-                                    ->split());
+                    const String key =
+                            shape.texture + "|" + String::num(shape.range_min) + "|" + String::num(shape.range_max);
+                    if (!cell_geometries.has(key)) {
+                        cell_keys.push_back(key);
+                        Shape &described = cell_shapes[key];
+                        described.texture = shape.texture;
+                        described.range_min = shape.range_min;
+                        described.range_max = shape.range_max;
+                    }
+                    append_group(cell_geometries[key], shape, cell_origin);
                 }
             }
             for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
                 skip_lines(cursor);
             }
+            for (const String &key: cell_keys) {
+                const Shape &first = cell_shapes[key];
+                geometries.append_array(
+                        to_geometry(first.texture, cell_origin, first.range_min, first.range_max, cell_geometries[key])
+                                ->split());
+            }
         }
         ERR_FAIL_COND_V_MSG(cursor.overrun, Array(), "Bad file: a region section ends early");
         for (const String &texture: section_textures) {
-            geometries.append_array(
-                    to_geometry(texture, section_origin, 0.0F, NO_RANGE, section_geometries[texture])->split());
+            ShapeGeometry &geometry = section_geometries[texture];
+            // a section's texture is one group, drawn whatever its range (Render(shape, true),
+            // opengl33renderer.cpp:2495)
+            geometry.group_centres.push_back(Vector3());
+            geometry.group_ends.push_back(
+                    static_cast<int32_t>(geometry.vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
+            geometries.append_array(to_geometry(texture, section_origin, 0.0F, NO_RANGE, geometry)->split());
         }
         return geometries;
     }
