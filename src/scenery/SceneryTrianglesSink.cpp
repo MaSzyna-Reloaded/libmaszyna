@@ -1,8 +1,9 @@
 #include "scenery/SceneryTrianglesSink.hpp"
 
+#include "cache/ResourceCache.hpp"
+
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
-#include <godot_cpp/classes/resource_saver.hpp>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -278,8 +279,8 @@ namespace godot {
                 return;
             }
             Chunk &chunk = chunks[index];
-            const Error error = ResourceSaver::get_singleton()->save(
-                    _to_geometry(chunk, chunk.origin), _get_part_path(index, chunk.parts));
+            const Error error =
+                    ResourceCache::resource_save(_to_geometry(chunk, chunk.origin), _get_part_path(index, chunk.parts));
             ERR_FAIL_COND_MSG(error != OK, "Cannot write a terrain chunk part to " + directory);
             chunk.parts++;
             buffered_bytes -= _get_bytes(chunk);
@@ -481,7 +482,7 @@ namespace godot {
             for (int64_t piece = 0; piece < pieces.size(); piece++) {
                 const String path = directory.path_join(
                         String::num_int64(index) + String("-") + String::num_int64(piece) + String(".res"));
-                const Error error = ResourceSaver::get_singleton()->save(pieces[piece], path);
+                const Error error = ResourceCache::resource_save(pieces[piece], path);
                 if (error != OK) {
                     UtilityFunctions::push_error("[SceneryTrianglesSink] Cannot write a terrain chunk to " + path);
                     continue;

@@ -476,6 +476,9 @@ anything. Open work belongs in `TODO.md`.
   *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
+* A resource is saved only through `ResourceCache.resource_save()` and a scene packed only through
+  `ResourceCache.scene_pack()`: both look up Godot's property defaults, a cache it fills without a
+  lock, and two at once corrupt the heap. *(10-12 the crash at exit after a scenery parse)*
 * Every sink of parsed geometry - a subscene's too - writes to a directory with a limit, and hands
   its chunks on as files, never as a copy of everything. *(10-02 a subscene kept its triangles)*
 * An include with parameters (a placed object, any size) is parsed in place, never as a task - a

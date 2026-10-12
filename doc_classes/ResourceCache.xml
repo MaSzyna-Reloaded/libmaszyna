@@ -52,6 +52,21 @@
 				Removes cached resource from the cache.
 			</description>
 		</method>
+		<method name="resource_save" qualifiers="static">
+			<return type="int" enum="Error" />
+			<param index="0" name="resource" type="Resource" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Saves [param resource] to [param path], from any thread - the only way the extension saves a resource. Saving looks up the classes' property defaults, a cache Godot fills without a lock, so saves and [method scene_pack] are made one at a time.
+			</description>
+		</method>
+		<method name="scene_pack" qualifiers="static">
+			<return type="PackedScene" />
+			<param index="0" name="root" type="Node" />
+			<description>
+				Packs [param root] and the nodes it owns into a new [PackedScene], from any thread, under the lock of [method resource_save]. Returns [code]null[/code] when the scene cannot be packed.
+			</description>
+		</method>
 		<method name="set" qualifiers="const">
 			<return type="void" />
 			<param index="0" name="path" type="String" />

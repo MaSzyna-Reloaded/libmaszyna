@@ -70,10 +70,9 @@ func _parse_nodebank_txt(file:FileAccess) -> PackedScene:
                 if not token in ["/", "?"]:
                     pending_label.append(token)
 
-    var scene: PackedScene = PackedScene.new()
-    var err: Error = scene.pack(root)
+    var scene: PackedScene = ResourceCache.scene_pack(root)
     root.free()
-    if err != OK:
+    if not scene:
         push_error("Could not pack nodebank scene.")
         return EMPTY_NODEBANK
 
