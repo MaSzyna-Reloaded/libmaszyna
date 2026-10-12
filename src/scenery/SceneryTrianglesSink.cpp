@@ -14,11 +14,14 @@
 namespace godot {
     void SceneryTrianglesSink::_bind_methods() {
         ClassDB::bind_static_method(
-                "SceneryTrianglesSink", D_METHOD("create", "directory", "budget_bytes"), &SceneryTrianglesSink::create,
-                DEFVAL(BUDGET_BYTES));
+                "SceneryTrianglesSink", D_METHOD("create", "directory", "translucency", "budget_bytes"),
+                &SceneryTrianglesSink::create, DEFVAL(BUDGET_BYTES));
         BIND_CONSTANT(BUDGET_BYTES);
         ClassDB::bind_static_method(
                 "SceneryTrianglesSink", D_METHOD("cell_get_origin", "cell"), &SceneryTrianglesSink::cell_get_origin);
+        ClassDB::bind_static_method(
+                "SceneryTrianglesSink", D_METHOD("shape_is_ranged", "translucent", "range_min", "range_max"),
+                &SceneryTrianglesSink::shape_is_ranged);
         ClassDB::bind_method(
                 D_METHOD("add_triangles", "texture", "vertices", "normals", "uvs", "range_min", "range_max"),
                 &SceneryTrianglesSink::add_triangles);
@@ -89,7 +92,7 @@ namespace godot {
         return clip_polygon(clip_polygon(p_polygon, p_axis, lower, true), p_axis, upper, false);
     }
 
-    /// The cell's vectors, relative to its centre, as floats
+    /// A section's or a shape's vectors, relative to its origin, as floats
     struct Piece {
             Vector2i cell;
             std::vector<float> vertices;
@@ -122,10 +125,26 @@ namespace godot {
         }
     }
 
-    Ref<SceneryTrianglesSink> SceneryTrianglesSink::create(const String &p_directory, const int64_t p_budget_bytes) {
+    /// Positions appended moved by p_offset - from the origin they are relative to onto another one;
+    /// p_positions a std::vector<float> or a PackedFloat32Array
+    template<typename Positions>
+    static void append_positions(std::vector<float> &p_values, const Positions &p_positions, const Vector3 &p_offset) {
+        const auto count = static_cast<int64_t>(p_positions.size());
+        p_values.reserve(p_values.size() + static_cast<size_t>(count));
+        for (int64_t index = 0; index + 2 < count; index += MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS) {
+            p_values.insert(
+                    p_values.end(), {p_positions[index] + static_cast<float>(p_offset.x),
+                                     p_positions[index + 1] + static_cast<float>(p_offset.y),
+                                     p_positions[index + 2] + static_cast<float>(p_offset.z)});
+        }
+    }
+
+    Ref<SceneryTrianglesSink> SceneryTrianglesSink::create(
+            const String &p_directory, const Callable &p_translucency, const int64_t p_budget_bytes) {
         Ref<SceneryTrianglesSink> sink;
         sink.instantiate();
         sink->directory = p_directory;
+        sink->translucency = p_translucency;
         sink->budget_bytes = p_budget_bytes;
         if (p_directory.is_empty()) {
             return sink;
@@ -143,26 +162,72 @@ namespace godot {
                 static_cast<real_t>((static_cast<double>(p_cell.y) + 0.5) * CHUNK_SIZE_M));
     }
 
-    String SceneryTrianglesSink::_get_chunk_key(
-            const String &p_texture, const Vector2i &p_cell, const float p_range_min, const float p_range_max) {
-        const String separator = "|";
-        return p_texture + separator + String::num_int64(p_cell.x) + separator + String::num_int64(p_cell.y) +
-               separator + String::num(p_range_min) + separator + String::num(p_range_max);
+    bool
+    SceneryTrianglesSink::shape_is_ranged(const bool p_translucent, const float p_range_min, const float p_range_max) {
+        return p_translucent || (p_range_max > 0.0 && p_range_max <= CELL_RANGE_MAX_M) || p_range_min > 0.0;
+    }
+
+    /// Asked once per texture; the call is made outside the mutex, two workers may make it at once
+    bool SceneryTrianglesSink::_is_translucent(const String &p_texture) {
+        {
+            MutexLock lock(mutex);
+            if (const bool *known = translucent_textures.getptr(p_texture); known != nullptr) {
+                return *known;
+            }
+        }
+        const bool translucent = static_cast<bool>(translucency.call(p_texture));
+        MutexLock lock(mutex);
+        translucent_textures[p_texture] = translucent;
+        return translucent;
     }
 
     /// Under the mutex
-    SceneryTrianglesSink::Chunk &SceneryTrianglesSink::_get_chunk(
-            const String &p_texture, const Vector2i &p_cell, const float p_range_min, const float p_range_max) {
-        const String key = _get_chunk_key(p_texture, p_cell, p_range_min, p_range_max);
-        if (const int *found = chunk_indices.getptr(key); found != nullptr) {
+    SceneryTrianglesSink::Chunk &
+    SceneryTrianglesSink::_get_section_chunk(const String &p_texture, const Vector2i &p_section) {
+        const String separator = "|";
+        const String key =
+                p_texture + separator + String::num_int64(p_section.x) + separator + String::num_int64(p_section.y);
+        if (const int *found = section_chunks.getptr(key); found != nullptr) {
             return chunks[*found];
         }
-        chunk_indices[key] = static_cast<int>(chunks.size());
+        section_chunks[key] = static_cast<int>(chunks.size());
         Chunk &chunk = chunks.emplace_back();
         chunk.texture = p_texture;
-        chunk.cell = p_cell;
+        chunk.origin = cell_get_origin(p_section);
+        chunk.centre = chunk.origin;
+        return chunk;
+    }
+
+    /// Under the mutex. basic_cell::insert() (scene.cpp:279-296): the first chunk of the cell with the
+    /// same texture and range and a centre closer than MERGE_DISTANCE_M takes the shape, and its
+    /// centre moves towards the shape's by the shape's share of the vertices (shape_node::merge(),
+    /// scenenode.cpp:436-439); otherwise the shape starts a chunk of its own
+    SceneryTrianglesSink::Chunk &SceneryTrianglesSink::_get_cell_chunk(
+            const String &p_texture, const float p_range_min, const float p_range_max, const Vector3 &p_centre,
+            const int64_t p_vertex_count) {
+        const Vector2i cell(
+                static_cast<int>(Math::floor(p_centre.x / CELL_SIZE_M)),
+                static_cast<int>(Math::floor(p_centre.z / CELL_SIZE_M)));
+        std::vector<int> &indices = cell_chunks[cell];
+        for (const int index: indices) {
+            Chunk &chunk = chunks[index];
+            if (chunk.texture == p_texture && chunk.range_min == p_range_min && chunk.range_max == p_range_max &&
+                chunk.centre.distance_squared_to(p_centre) < MERGE_DISTANCE_M * MERGE_DISTANCE_M) {
+                chunk.centre = chunk.centre.lerp(
+                        p_centre,
+                        static_cast<real_t>(p_vertex_count) / static_cast<real_t>(p_vertex_count + chunk.vertex_count));
+                chunk.vertex_count += p_vertex_count;
+                return chunk;
+            }
+        }
+        indices.push_back(static_cast<int>(chunks.size()));
+        Chunk &chunk = chunks.emplace_back();
+        chunk.texture = p_texture;
         chunk.range_min = p_range_min;
         chunk.range_max = p_range_max;
+        chunk.origin = p_centre;
+        chunk.centre = p_centre;
+        chunk.vertex_count = p_vertex_count;
         return chunk;
     }
 
@@ -171,21 +236,25 @@ namespace godot {
                 (p_chunk.vertices.size() + p_chunk.normals.size() + p_chunk.uvs.size()) * sizeof(float));
     }
 
-    Ref<MaszynaTrianglesChunkGeometry> SceneryTrianglesSink::_to_geometry(const Chunk &p_chunk) {
+    /// The chunk's vertices moved from its origin to p_origin
+    Ref<MaszynaTrianglesChunkGeometry>
+    SceneryTrianglesSink::_to_geometry(const Chunk &p_chunk, const Vector3 &p_origin) {
         Ref<MaszynaTrianglesChunkGeometry> geometry;
         geometry.instantiate();
         geometry->set_texture(p_chunk.texture);
-        geometry->set_cell(p_chunk.cell);
+        geometry->set_origin(p_origin);
         geometry->set_range_min(p_chunk.range_min);
         geometry->set_range_max(p_chunk.range_max);
-        geometry->set_vertices(to_packed(p_chunk.vertices));
+        std::vector<float> vertices;
+        append_positions(vertices, p_chunk.vertices, p_chunk.origin - p_origin);
+        geometry->set_vertices(to_packed(vertices));
         geometry->set_normals(to_packed(p_chunk.normals));
         geometry->set_uvs(to_packed(p_chunk.uvs));
         return geometry;
     }
 
     void SceneryTrianglesSink::_append(Chunk &p_chunk, const Ref<MaszynaTrianglesChunkGeometry> &p_geometry) {
-        append_packed(p_chunk.vertices, p_geometry->get_vertices());
+        append_positions(p_chunk.vertices, p_geometry->get_vertices(), p_geometry->get_origin() - p_chunk.origin);
         append_packed(p_chunk.normals, p_geometry->get_normals());
         append_packed(p_chunk.uvs, p_geometry->get_uvs());
     }
@@ -209,8 +278,8 @@ namespace godot {
                 return;
             }
             Chunk &chunk = chunks[index];
-            const Error error =
-                    ResourceSaver::get_singleton()->save(_to_geometry(chunk), _get_part_path(index, chunk.parts));
+            const Error error = ResourceSaver::get_singleton()->save(
+                    _to_geometry(chunk, chunk.origin), _get_part_path(index, chunk.parts));
             ERR_FAIL_COND_MSG(error != OK, "Cannot write a terrain chunk part to " + directory);
             chunk.parts++;
             buffered_bytes -= _get_bytes(chunk);
@@ -220,13 +289,41 @@ namespace godot {
         }
     }
 
-    /// A triangle is cut along the cell grid, each piece stored in its own cell: a chunk is streamed
-    /// and culled by its cell (SceneryStreamingServer), so geometry reaching outside of it - terrain
-    /// triangles can be kilometres long - went missing under the camera. Cut on the calling thread;
-    /// only the appending holds the mutex.
+    /// A ranged shape is kept whole, as the original keeps it, around its centre - the mean of its
+    /// vertices (shape_node::compute_radius(), scenenode.cpp:405-411).
+    ///
+    /// A section's triangle is cut along the 1 km grid, each piece stored in its own section: a chunk
+    /// is streamed and culled by its section (SceneryStreamingServer), so geometry reaching outside of
+    /// it - terrain triangles can be kilometres long - went missing under the camera. Cut on the
+    /// calling thread; only the appending holds the mutex.
     void SceneryTrianglesSink::add_triangles(
             const String &p_texture, const PackedVector3Array &p_vertices, const PackedVector3Array &p_normals,
             const PackedVector2Array &p_uvs, const float p_range_min, const float p_range_max) {
+        if (p_vertices.is_empty()) {
+            return;
+        }
+        if (shape_is_ranged(_is_translucent(p_texture), p_range_min, p_range_max)) {
+            Vector3 centre;
+            for (const Vector3 &vertex: p_vertices) {
+                centre += vertex;
+            }
+            centre /= static_cast<real_t>(p_vertices.size());
+            Piece shape{Vector2i(), {}, {}, {}};
+            for (int64_t index = 0; index < p_vertices.size(); index++) {
+                append_vertex(shape, {p_vertices[index], p_normals[index], p_uvs[index]}, centre);
+            }
+            MutexLock lock(mutex);
+            Chunk &chunk = _get_cell_chunk(p_texture, p_range_min, p_range_max, centre, p_vertices.size());
+            append_positions(chunk.vertices, shape.vertices, centre - chunk.origin);
+            chunk.normals.insert(chunk.normals.end(), shape.normals.begin(), shape.normals.end());
+            chunk.uvs.insert(chunk.uvs.end(), shape.uvs.begin(), shape.uvs.end());
+            buffered_bytes += static_cast<int64_t>(
+                    (shape.vertices.size() + shape.normals.size() + shape.uvs.size()) * sizeof(float));
+            if (!directory.is_empty() && buffered_bytes > budget_bytes) {
+                _spill();
+            }
+            return;
+        }
         std::vector<Piece> pieces;
         // a cell's piece is made by its first triangle with area: a cell the triangles only touch
         // gets none, and no empty chunk (FINDINGS.md, 10-02). Most nodes lie in one cell, so the
@@ -299,7 +396,9 @@ namespace godot {
 
         MutexLock lock(mutex);
         for (const Piece &piece: pieces) {
-            Chunk &chunk = _get_chunk(p_texture, piece.cell, p_range_min, p_range_max);
+            // the range is dropped: the original draws a section's shapes whatever their range
+            // (Render(shape, true), opengl33renderer.cpp:2495)
+            Chunk &chunk = _get_section_chunk(p_texture, piece.cell);
             chunk.vertices.insert(chunk.vertices.end(), piece.vertices.begin(), piece.vertices.end());
             chunk.normals.insert(chunk.normals.end(), piece.normals.begin(), piece.normals.end());
             chunk.uvs.insert(chunk.uvs.end(), piece.uvs.begin(), piece.uvs.end());
@@ -313,10 +412,19 @@ namespace godot {
 
     void SceneryTrianglesSink::add_geometry(const Ref<MaszynaTrianglesChunkGeometry> &p_geometry) {
         ERR_FAIL_COND(p_geometry.is_null());
+        const String texture = p_geometry->get_texture();
+        const Vector3 origin = p_geometry->get_origin();
+        const bool ranged =
+                shape_is_ranged(_is_translucent(texture), p_geometry->get_range_min(), p_geometry->get_range_max());
         MutexLock lock(mutex);
-        Chunk &chunk = _get_chunk(
-                p_geometry->get_texture(), p_geometry->get_cell(), p_geometry->get_range_min(),
-                p_geometry->get_range_max());
+        Chunk &chunk =
+                ranged ? _get_cell_chunk(
+                                 texture, p_geometry->get_range_min(), p_geometry->get_range_max(), origin,
+                                 p_geometry->get_vertices().size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS)
+                       : _get_section_chunk(
+                                 texture, Vector2i(
+                                                  static_cast<int>(Math::floor(origin.x / CHUNK_SIZE_M)),
+                                                  static_cast<int>(Math::floor(origin.z / CHUNK_SIZE_M))));
         const int64_t bytes = _get_bytes(chunk);
         _append(chunk, p_geometry);
         buffered_bytes += _get_bytes(chunk) - bytes;
@@ -336,7 +444,7 @@ namespace godot {
         MutexLock lock(mutex);
         TypedArray<MaszynaTrianglesChunkGeometry> geometries;
         for (const Chunk &chunk: chunks) {
-            geometries.append(_to_geometry(chunk));
+            geometries.append(_to_geometry(chunk, chunk.centre));
         }
         return geometries;
     }
@@ -350,7 +458,8 @@ namespace godot {
             Chunk &chunk = chunks[index];
             Chunk whole;
             whole.texture = chunk.texture;
-            whole.cell = chunk.cell;
+            whole.origin = chunk.origin;
+            whole.centre = chunk.centre;
             whole.range_min = chunk.range_min;
             whole.range_max = chunk.range_max;
             for (int part = 0; part < chunk.parts; part++) {
@@ -368,7 +477,7 @@ namespace godot {
             chunk = Chunk(); // its memory goes before the next chunk is read
 
             // a chunk is uploaded in one go when it is streamed: a large one goes as pieces
-            const TypedArray<MaszynaTrianglesChunkGeometry> pieces = _to_geometry(whole)->split();
+            const TypedArray<MaszynaTrianglesChunkGeometry> pieces = _to_geometry(whole, whole.centre)->split();
             for (int64_t piece = 0; piece < pieces.size(); piece++) {
                 const String path = directory.path_join(
                         String::num_int64(index) + String("-") + String::num_int64(piece) + String(".res"));
@@ -379,7 +488,7 @@ namespace godot {
                 }
                 Dictionary descriptor;
                 descriptor["path"] = path;
-                descriptor["position"] = cell_get_origin(whole.cell);
+                descriptor["position"] = whole.centre;
                 descriptor["texture"] = whole.texture;
                 descriptor["range_min"] = whole.range_min;
                 descriptor["range_max"] = whole.range_max;
@@ -387,7 +496,8 @@ namespace godot {
             }
         }
         chunks.clear();
-        chunk_indices.clear();
+        section_chunks.clear();
+        cell_chunks.clear();
         buffered_bytes = 0;
         return descriptors;
     }

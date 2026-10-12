@@ -93,7 +93,7 @@ func _parse_threaded() -> MaszynaImporterContext:
     return SceneryInstancer.parse_file_task(ROOT, {}, MaszynaImporterContext.new().get_state(), queue)
 
 
-## [models as [filename, position], terrain chunks as [texture, cell, range, vertex floats], sorted -
+## [models as [filename, position], terrain chunks as [texture, origin, range, vertex floats], sorted -
 ## the order the chunks appear in is the order the workers finished in]
 func _describe(context:MaszynaImporterContext) -> Array:
     var models:Array = context.models.map(
@@ -101,7 +101,7 @@ func _describe(context:MaszynaImporterContext) -> Array:
     )
     var chunks:Array = context.triangles_sink.get_geometries().map(
         func(geometry:MaszynaTrianglesChunkGeometry) -> Array:
-            return [geometry.texture, geometry.cell, geometry.range_max, geometry.vertices.size()]
+            return [geometry.texture, geometry.origin, geometry.range_max, geometry.vertices.size()]
     )
     chunks.sort()
     return [models, chunks]
