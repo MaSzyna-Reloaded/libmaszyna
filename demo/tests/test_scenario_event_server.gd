@@ -506,6 +506,59 @@ func test_a_standing_event_goes_on_while_the_vehicle_stands() -> void:
     ScenarioEventServer.memory_free(vehicle)
 
 
+func test_the_other_axles_standing_event_goes_on_too() -> void:
+    var action:RecordingAction = RecordingAction.new()
+    var standing:RID = _create_event(action, 0.0)
+    var track:RID = ScenarioEventServer.memory_create() # stands in for the primary axle's track
+    var other_track:RID = ScenarioEventServer.memory_create() # and for the other axle's
+    var vehicle:RID = ScenarioEventServer.memory_create()
+    ScenarioEventServer.track_add_event(other_track, ScenarioEventServer.TRACK_EVENTALL0, standing)
+
+    RailVehicleServer.vehicle_stopped_on_track.emit(vehicle, track)
+    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.emit(vehicle, other_track)
+    if not await wait_simulated_until(func() -> bool: return action.runs.size() >= 2, CHAINED_EVENT_SECONDS,
+            "the other track's standing event run again"):
+        return
+    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    if not await wait_simulated_until(func() -> bool: return not ScenarioEventServer.event_is_queued(standing), TICK,
+            "the standing event let go"):
+        return
+    var runs:int = action.runs.size()
+    await get_tree().process_frame
+    assert_eq(action.runs.size(), runs, "not once the vehicle moves")
+
+    ScenarioEventServer.track_clear_events(other_track)
+    _free_events([standing])
+    for rid:RID in [track, other_track, vehicle]:
+        ScenarioEventServer.memory_free(rid)
+
+
+func test_an_isolated_section_counts_axles_not_vehicles() -> void:
+    var track:RID = TrackServer.track_create()
+    var vehicle:RID = ScenarioEventServer.memory_create() # stands in for a vehicle
+    var section:RID = TrackServer.isolated_create()
+    TrackServer.isolated_add_track(section, track)
+    var entered:Array[RID] = []
+    var record:Callable = func(_isolated:RID, axle_vehicle:RID) -> void: entered.append(axle_vehicle)
+    TrackServer.isolated_axle_entered.connect(record)
+
+    TrackServer.track_vehicle_entered(track, vehicle)
+    assert_false(TrackServer.isolated_is_occupied(section), "listing the vehicle on the track counts no axle")
+    TrackServer.track_axle_entered(track, vehicle)
+    TrackServer.track_axle_entered(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
+    assert_true(TrackServer.isolated_is_occupied(section), "one axle of two still on it")
+    TrackServer.track_axle_left(track, vehicle)
+    assert_false(TrackServer.isolated_is_occupied(section), "free once the second axle left")
+
+    TrackServer.isolated_axle_entered.disconnect(record)
+    assert_eq(entered, [vehicle, vehicle] as Array[RID], ":inc for each axle")
+    TrackServer.track_vehicle_left(track, vehicle)
+    TrackServer.isolated_free(section)
+    TrackServer.track_free(track)
+    ScenarioEventServer.memory_free(vehicle)
+
+
 func test_scenery_animation_turns_the_submodel() -> void:
     var instance:E3DModelInstance = E3DModelInstance.new()
     var model:E3DModel = E3DModel.new()
@@ -602,7 +655,7 @@ func test_scenery_isolated_section_fires_busy_and_marks_its_memory() -> void:
     var own_memory:RID = ScenarioEventServer.memory_get_rid_by_name(&"s1")
     assert_true(own_memory.is_valid(), "a section has a memory of its name")
 
-    TrackServer.track_vehicle_entered(track, vehicle)
+    TrackServer.track_axle_entered(track, vehicle)
     assert_true(TrackServer.isolated_is_occupied(section))
     if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(cell) == "busy", TICK,
             "the busy event run"):
@@ -610,7 +663,7 @@ func test_scenery_isolated_section_fires_busy_and_marks_its_memory() -> void:
     assert_eq(ScenarioEventServer.memory_get_text(cell), "busy")
     assert_eq(int(ScenarioEventServer.memory_get_value2(own_memory)) & 1, 1, "value 2 made odd")
 
-    TrackServer.track_vehicle_left(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
     assert_false(TrackServer.isolated_is_occupied(section))
     if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_value2(own_memory) == 0.0, TICK,
             "the section's memory cleared"):

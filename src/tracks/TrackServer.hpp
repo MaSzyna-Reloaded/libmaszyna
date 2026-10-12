@@ -182,8 +182,13 @@ namespace godot {
                     double sound_distance = -1.0;
                     /* Speed limit in km/h, negative for none (TTrack::fVelocity, Track.cpp:851-858) */
                     double velocity = -1.0;
-                    /* Vehicles on it, as RailVehicleServer reports them (TTrack::Dynamics) */
+                    /* Vehicles on it by their primary axle, as RailVehicleServer reports them
+                     * (TTrack::Dynamics - only the primary axle moves a vehicle between the lists,
+                     * TrkFoll.cpp:194-241) */
                     Vector<RID> vehicles;
+                    /* The axles on it - every axle of every vehicle, primary or not (TTrack::AxleCounter(),
+                     * Track.h:302). What its isolated sections count; the vehicle list above is not. */
+                    int axle_count = 0;
                     /* The isolated sections it belongs to (TTrack::Isolated) */
                     Vector<RID> isolated;
                     double length = 0.0;
@@ -246,7 +251,8 @@ namespace godot {
                     StringName name;
                     RID parent;
                     Vector<RID> tracks;
-                    int vehicle_count = 0;
+                    /* TIsolated::iAxles - axles, not vehicles: two per vehicle */
+                    int axle_count = 0;
             };
 
             HashMap<RID, TrackSegment> tracks;
@@ -265,7 +271,13 @@ namespace godot {
              * empty, and disconnected again when the last one arrives. */
             Vector<RID> moving_switches;
 
-            /* Adds p_delta vehicles to the section and its parents, reporting the change */
+            /* An axle came onto a track or left it: the count TTrack::AxleCounter(+1/-1) adds
+             * (TrkFoll.cpp:89-91) */
+            static constexpr int AXLE_ENTERED = 1;
+            static constexpr int AXLE_LEFT = -1;
+            /* Adds p_delta axles to the track and to its sections */
+            void _count_axle(const RID &p_track, int p_delta, const RID &p_vehicle);
+            /* Adds p_delta axles to the section and its parents, reporting the change */
             void _count_isolated(const RID &p_isolated, int p_delta, const RID &p_vehicle);
             bool switch_processing = false;
             /* Timestamp of the previous blade step, the way E3DRenderingServer's smoke tick
@@ -321,12 +333,13 @@ namespace godot {
             static const char *tracks_changed_signal;
             static const char *topology_rebuilt_signal;
             static const char *topology_changed_signal;
-            /* The first vehicle came onto the isolated section, the last one left it, a vehicle
-             * came onto it or left it (TIsolated::Modify(), `:busy`, `:free`, `:inc`, `:dec`) */
+            /* The first axle came onto the isolated section, the last one left it, an axle came
+             * onto it or left it (TIsolated::Modify(), `:busy`, `:free`, `:inc`, `:dec`) - with the
+             * vehicle of that axle */
             static const char *isolated_occupied_signal;
             static const char *isolated_freed_signal;
-            static const char *isolated_vehicle_entered_signal;
-            static const char *isolated_vehicle_left_signal;
+            static const char *isolated_axle_entered_signal;
+            static const char *isolated_axle_left_signal;
 
             /* The three values the callers used to read as GDScript constants. A C++ class cannot
              * expose a float constant, so they are read-only properties. */
@@ -364,12 +377,22 @@ namespace godot {
             double track_get_sound_distance(const RID &p_track) const;
             /* Speed limit in km/h, negative for none (TTrack::VelocitySet()) */
             void track_set_velocity(const RID &p_track, double p_velocity);
-            /* A vehicle came onto the track or left it - reported by RailVehicleServer, the new
-             * track first (TTrackFollower::SetCurrentTrack(), TrkFoll.cpp:88-91) */
+            /* An axle of the vehicle came onto the track or left it - reported by RailVehicleServer
+             * for each of a vehicle's two axles, the new track first, so a section both tracks
+             * belong to never reads empty (TTrackFollower::SetCurrentTrack(), TrkFoll.cpp:88-91).
+             * The isolated sections count these. */
+            void track_axle_entered(const RID &p_track, const RID &p_vehicle);
+            void track_axle_left(const RID &p_track, const RID &p_vehicle);
+            /* The vehicle's primary axle came onto the track or left it: the vehicle is listed on
+             * the track it is on (TTrack::AddDynamicObject()/RemoveDynamicObject(),
+             * TrkFoll.cpp:194-241) - what track_is_occupied() and track_get_vehicles() answer */
             void track_vehicle_entered(const RID &p_track, const RID &p_vehicle);
             void track_vehicle_left(const RID &p_track, const RID &p_vehicle);
             bool track_is_occupied(const RID &p_track) const;
             TypedArray<RID> track_get_vehicles(const RID &p_track) const;
+            /* The same list for C++ only, without a copy - read by the neighbour scan of every
+             * vehicle on every sub-step; empty for a track that is gone */
+            const Vector<RID> &track_get_vehicle_list(const RID &p_track) const;
 
             RID isolated_create();
             void isolated_free(const RID &p_isolated);

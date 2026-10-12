@@ -271,6 +271,7 @@
 			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<param index="2" name="distance" type="float" />
 			<description>
+				The nearest vehicle along the route from the vehicle's [param end], on the tracks entered within [param distance] metres of its primary axle; [code]null[/code] when there is none. The distance is between the two vehicles' primary axles, as the original's (TDynamicObject::find_vehicle(), DynObj.cpp:7688) - it does not take off their half lengths.
 			</description>
 		</method>
 		<method name="vehicle_front_cabin_has_person_role" qualifiers="const">
@@ -292,6 +293,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="bogie" type="int" enum="RailVehicleWheels.Bogie" />
 			<description>
+				Where the bogie sits: at the vehicle's axle on that side - the front bogie at the front axle. A vehicle stands on two axles, [code]fAxleDist[/code] apart (the larger of the pivot and the axle spacing, 0.2 m from zero and from the vehicle's length, DynObj.cpp:2499-2502); both stand at the centre while the spacings are unknown.
 			</description>
 		</method>
 		<method name="vehicle_get_coupled" qualifiers="const">
@@ -337,8 +339,8 @@
 		<method name="vehicle_get_curve">
 			<return type="Dictionary" />
 			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="bogie_pivot_spacing" type="float" />
 			<description>
+				The running shape the vehicle's physics was last handed: [code]radius[/code] [m] from the yaw difference of its axles over the pivot spacing, as the original divides it, 0 above 15000 m - and [code]cant[/code] [rad], the mean of both axles' (DynObj.cpp:3145-3167).
 			</description>
 		</method>
 		<method name="vehicle_get_driver_cabin" qualifiers="const">
@@ -399,18 +401,12 @@
 			<return type="Dictionary" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The track the vehicle is on ([code]track_rid[/code]) and where along it, measured towards its front ([code]along[/code]) - its primary axle's, as the original's RaTrackGet() and RaTranslationGet() (DynObj.h:756-766).
 			</description>
 		</method>
 		<method name="vehicle_get_transform" qualifiers="const">
 			<return type="Transform3D" />
 			<param index="0" name="vehicle" type="RID" />
-			<description>
-			</description>
-		</method>
-		<method name="vehicle_get_transform_at_distance">
-			<return type="Transform3D" />
-			<param index="0" name="vehicle" type="RID" />
-			<param index="1" name="distance" type="float" />
 			<description>
 			</description>
 		</method>
@@ -521,6 +517,7 @@
 			<param index="1" name="direction" type="int" />
 			<param index="2" name="distance" type="float" />
 			<description>
+				The tracks ahead of the vehicle the way [param direction] leads - +1 towards its front, -1 towards its rear - as far as [param distance] metres, from the track its primary axle stands on (TController::TableTraceRoute() starts from the active axle, Driver.cpp:527-535).
 			</description>
 		</method>
 	</methods>
@@ -566,12 +563,14 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
+				The moving vehicle's primary axle came onto [param track] or turned on it, heading towards its end - for every track it crosses, a track shorter than one step included; what a track's [code]event2[/code] is fired by (TrkFoll.cpp:136-161).
 			</description>
 		</signal>
 		<signal name="vehicle_heading_to_track_start">
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
+				The same towards the track's start - its [code]event1[/code].
 			</description>
 		</signal>
 		<signal name="vehicle_pantograph_contact_lost">
@@ -594,10 +593,18 @@
 				The vehicle is somewhere else on the route - once a step it moved in, or once a deliberate move.
 			</description>
 		</signal>
+		<signal name="vehicle_secondary_axle_stopped_on_track">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="track" type="RID" />
+			<description>
+				The vehicle stopped with its other axle on [param track], another than its primary axle's: a standing vehicle fires the [code]event0[/code] of the tracks of both its axles (TrkFoll.cpp:122-133). Emitted right after [signal vehicle_stopped_on_track].
+			</description>
+		</signal>
 		<signal name="vehicle_stopped_on_track">
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
+				The vehicle stopped with its primary axle on [param track] - its [code]event0[/code].
 			</description>
 		</signal>
 		<signal name="vehicle_trainset_changed">

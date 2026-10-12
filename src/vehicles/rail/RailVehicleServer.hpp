@@ -97,6 +97,41 @@ namespace godot {
             static constexpr double UP_PARALLEL_DOT_LIMIT = 0.999;
             /* Beyond this the track is straight as far as the running shape is concerned (m) */
             static constexpr double CURVE_RADIUS_LIMIT = 15000.0;
+            /* ts.R = -0.5 * BDist / sin(dYaw * 0.5) (DynObj.cpp:3158): the chord of half the pivot
+             * spacing over the sine of half the angle between the axles */
+            static constexpr double CURVE_RADIUS_HALF_FACTOR = 0.5;
+
+            /* A vehicle stands on two axles, whatever its wheels: the original fixes iNumAxles = 2
+             * (DynObj.cpp:2497) - the choice of four by NAxles above it is commented out (:2495),
+             * so its four-axle branch (:2513-2518) never runs. Those two are the outermost points
+             * the vehicle runs on (TTrackFollower Axle0, Axle1): they are its position, every
+             * track it is on, what an isolated section counts (two per vehicle, `:inc` and `:dec`
+             * twice), and the body is hung between them. */
+            enum Axle {
+                /* Axle0, towards the front coupler (coupler 0) */
+                AXLE_FRONT,
+                /* Axle1, towards the rear coupler (coupler 1) */
+                AXLE_REAR,
+                AXLE_COUNT,
+            };
+            /* Which side of the centre an axle stands, in this server's distances - they count
+             * towards the rear (vehicle_process_movement()), so the front axle is at minus half the
+             * axle distance (Axle0.Move(+fAxleDistHalf), Axle1.Move(-fAxleDistHalf),
+             * DynObj.cpp:2510-2512, counted towards the front) */
+            static constexpr double AXLE_SIDES[AXLE_COUNT] = {-1.0, 1.0};
+            /* The axles stand symmetrically about the centre (fAxleDistHalf, DynObj.cpp:2503) */
+            static constexpr double AXLE_HALF_DISTANCE_FACTOR = 0.5;
+            /* The axle distance is kept this far [m] from zero, so the vector between the axles can
+             * be computed, and from the vehicle's length, so the axles never stand beyond the
+             * buffers (DynObj.cpp:2499-2502) */
+            static constexpr double AXLE_DISTANCE_MARGIN = 0.2;
+            /* The body's centre is midway between the outer axles (vPosition, DynObj.cpp:2673) */
+            static constexpr double AXLE_MIDPOINT_FACTOR = 0.5;
+            /* Roll() sums both axles' cant; the body leans by their mean (DynObj.cpp:2690, 3167) */
+            static constexpr double AXLE_ROLL_MEAN_FACTOR = 0.5;
+            /* Above this speed [km/h] the primary axle may change - not on a standing vehicle that
+             * only shakes (DynObj.cpp:2648-2650) */
+            static constexpr double PRIMARY_AXLE_SWITCH_SPEED = 2.0;
 
             /* How far outside the slider the guide horn still catches a wire (DynObj.cpp:81,
              * fWidthExtra). Without it a pantograph drops the wire wherever it swings sideways -
@@ -153,6 +188,31 @@ namespace godot {
                     void raise(double p_gap, bool p_active, double p_speed_factor, double p_delta);
             };
 
+            /* One axle on the route (TTrackFollower): which track it is on, how far along it, which
+             * way round and on which branch of a switch */
+            struct AxleFollower {
+                    RID track;
+                    double track_offset = 0.0;
+                    TrackServer::Direction track_direction = TrackServer::DIRECTION_NORMAL;
+                    TrackServer::SwitchTrack switch_track = TrackServer::TRACK_COMMON;
+                    /* Whether `track` is a switch - a track never turns into one, so it is asked
+                     * when the axle changes track rather than on every step */
+                    bool track_is_switch = false;
+                    /* Which way the last movement went along `track`: towards its end (+1) or its
+                     * start (-1) */
+                    double travel_sign = 0.0;
+                    /* The last move ran into an end of track nothing is connected to - past it are
+                     * no rails (TTrack::NullCreate(), Track.cpp:226-262: dtrack_norail) */
+                    bool beyond_track_end = false;
+            };
+            /* An axle went from one track onto the next during a walk, travelling that way along
+             * the new one */
+            struct TrackCrossing {
+                    RID left;
+                    RID entered;
+                    double travel_sign = 0.0;
+            };
+
             /* Where one vehicle sits on the route. */
             struct VehiclePlacement {
                     /* The controller this server steps and relays the rail events of - the one
@@ -163,21 +223,16 @@ namespace godot {
                     String type_name;
                     String load_name;
                     double load_amount = 0.0;
-                    RID track;
-                    double track_offset = 0.0;
-                    TrackServer::Direction track_direction = TrackServer::DIRECTION_NORMAL;
-                    TrackServer::SwitchTrack switch_track = TrackServer::TRACK_COMMON;
-                    /* The last move ran into an end of track nothing is connected to - past it are
-                     * no rails (TTrack::NullCreate(), Track.cpp:226-262: dtrack_norail) */
-                    bool beyond_track_end = false;
-                    /* Whether `track` is a switch - part of describing the occupied track, and a
-                     * track never turns into one, so it is asked when the vehicle changes track
-                     * rather than on every step. */
-                    bool track_is_switch = false;
-                    /* Which way the last movement went along `track`: towards its end (+1) or its
-                     * start (-1) */
-                    double travel_sign = 0.0;
-                    /* The track and heading last reported by the track signals */
+                    /* The vehicle's position: its two axles. Each is counted on its track by
+                     * TrackServer for as long as it is placed. */
+                    AxleFollower axles[AXLE_COUNT];
+                    /* The axle the vehicle is listed on its track by and the track events are fired
+                     * by (iAxleFirst) - the front one at first (DynObj.cpp:1909) */
+                    Axle primary_axle = AXLE_FRONT;
+                    /* fAxleDist: the larger of the pivot and the axle spacing, within the margins -
+                     * taken when the vehicle is placed, as the original takes it once (DynObj.cpp:2499) */
+                    double axle_distance = 0.0;
+                    /* The primary axle's track and heading last reported by the track signals */
                     RID reported_track;
                     TrackHeading reported_heading = HEADING_STANDING;
                     /* Moved since its position was last announced (once a frame), and since the
@@ -194,9 +249,13 @@ namespace godot {
                      * RadioServer */
                     ObjectID radio_component_id;
                     RID radio;
-                    /* Where the bogies sit (RailVehicleWheels::BOGIE_FRONT, BOGIE_REAR), sampled
-                     * with the body above and handed out with it */
-                    Transform3D bogie_transforms[2];
+                    /* Where the axles are (AXLE_FRONT, AXLE_REAR), sampled with the body above and
+                     * handed out as the bogies' - the original turns its bogie models by the axles
+                     * (DynObj.cpp:1508-1519) */
+                    Transform3D axle_transforms[AXLE_COUNT];
+                    /* The running shape handed to the physics with the body: radius [m] and cant
+                     * [rad] (ts.R, ts.dHrail) */
+                    Vector2 track_curve;
                     /* Per end: the neighbour was already reported as none, so reporting it again
                      * says nothing */
                     bool neighbour_cleared[2] = {false, false};
@@ -209,8 +268,6 @@ namespace godot {
                             bool valid = false;
                     };
                     NeighbourScan neighbour_scans[2];
-                    /* The track it is listed under in track_vehicles */
-                    RID indexed_track;
                     /* PANTOGRAPH_FIRST, PANTOGRAPH_SECOND */
                     Pantograph pantographs[2];
                     /* How long the pantographs have fed no voltage [s] (NoVoltTime) */
@@ -253,13 +310,6 @@ namespace godot {
             bool diagnostics = false;
             /// The diagnostics follow their setting
             void _on_project_settings_changed();
-            /* The rail vehicles on each track, updated once a step (neighbour_index_update()) for
-             * those that changed track since (track_moved_vehicles) */
-            HashMap<RID, Vector<RID>> track_vehicles;
-            LocalVector<RID> track_moved_vehicles;
-            /* The vehicle is on another track than it is indexed under: it moves in the index at
-             * the next neighbour_index_update() */
-            void _note_track_move(const RID &p_vehicle, const VehiclePlacement &p_placement);
             /* Counts every change a neighbour scan depends on; each track keeps the count of its
              * last change - a vehicle moving on it, entering or leaving it, its switch set - and a
              * change of the track network as a whole stales every scan */
@@ -323,20 +373,33 @@ namespace godot {
             void _on_load_add_command(double p_amount, int p_side, const RID &p_vehicle);
             void _on_load_remove_command(double p_amount, int p_side, const RID &p_vehicle);
             RailVehicleLoad *_get_load(const RID &p_vehicle) const;
-            void _move_placement(VehiclePlacement &p_placement, double p_distance, bool p_force_switch_state);
-            VehiclePlacement _sample_placement(const VehiclePlacement &p_placement, double p_distance);
-            /* Where the vehicle's body is, for the placement as it now is: into the placement and
+            /* Walks one axle p_distance along the route (TTrackFollower::Move()), the tracks it
+             * crosses into p_crossings when given; the distance actually walked */
+            double _walk_axle(
+                    AxleFollower &p_axle, double p_distance, bool p_force_switch_state,
+                    LocalVector<TrackCrossing> *p_crossings);
+            /* Stands the vehicle's axles about the centre, each on the track it reaches (Init and
+             * Move(false), DynObj.cpp:2509-2512) - counted there and nowhere on the way, with the
+             * vehicle listed by its primary axle; then its body */
+            void _place_axles(const RID &p_vehicle, const AxleFollower &p_centre);
+            /* The vehicle's centre on the route: half the axle distance in front of its rear axle */
+            AxleFollower _vehicle_centre(const VehiclePlacement &p_placement);
+            /* Moves the vehicle p_distance along the route, its leading axle first
+             * (TDynamicObject::Move(), DynObj.cpp:2645-2670), reporting every track an axle
+             * crosses */
+            void _move_vehicle(const RID &p_vehicle, double p_distance);
+            /* An axle's crossings to TrackServer and, for the primary axle, to the track signals */
+            void _report_crossings(const RID &p_vehicle, Axle p_axle, const LocalVector<TrackCrossing> &p_crossings);
+            /* Where the vehicle's body is, for the axles as they now are: into the placement and
              * to its controller */
             void _place_body(VehiclePlacement &p_placement);
-            Transform3D _placement_transform(const VehiclePlacement &p_placement) const;
-            double _placement_roll(const VehiclePlacement &p_placement) const;
-            /* The curve under bogies `p_spacing` apart: radius [m] (ts.R) and mean cant [rad]
-             * (ts.dHrail) - DynObj.cpp:3145-3172 */
-            Vector2 _placement_curve(const VehiclePlacement &p_placement, double p_spacing);
+            Transform3D _axle_transform(const AxleFollower &p_axle) const;
+            /* The track's cant under the axle [deg], signed for the way the axle stands on it */
+            double _axle_roll(const AxleFollower &p_axle) const;
             bool _motion_connection(
                     const RID &p_track, int p_endpoint_index, bool p_force_switch_state, RID &p_track_out,
                     int &p_endpoint_out);
-            void _check_movement(const VehiclePlacement &p_placement, const Vector3 &p_start, double p_moved) const;
+            void _check_movement(const AxleFollower &p_axle, const Vector3 &p_start, double p_moved) const;
             void _clear_neighbour(
                     RailVehicleController *p_controller, VehiclePlacement &p_placement,
                     RailVehicleController::CouplerEnd p_end);
@@ -375,12 +438,17 @@ namespace godot {
             /* A coupler adapter fitted to / taken off an end of the vehicle (its controller's) */
             static const char *vehicle_coupler_adapter_attached_signal;
             static const char *vehicle_coupler_adapter_removed_signal;
-            /* The vehicle has started moving along the track towards its start, its end, or has
-             * stopped on it - once per change, what a scenery's track events are fired by
+            /* The vehicle's primary axle has come onto the track or started moving along it towards
+             * its start, its end, or the vehicle has stopped with its primary axle on it - once per
+             * change and per track crossed, what a scenery's track events are fired by
              * (TTrackFollower::Move(), TrkFoll.cpp:113-161) */
             static const char *vehicle_heading_to_track_start_signal;
             static const char *vehicle_heading_to_track_end_signal;
             static const char *vehicle_stopped_on_track_signal;
+            /* The vehicle stopped with its other axle on another track than the primary one: a
+             * standing vehicle fires the event0 of the tracks of both its axles (TrkFoll.cpp:122-133
+             * runs for every axle) - a signal of its own, as that track is not the vehicle's */
+            static const char *vehicle_secondary_axle_stopped_on_track_signal;
             /* A Radio-Stop reached the vehicle and braked it (TDynamicObject::RadioStop,
              * DynObj.cpp:7229) */
             static const char *vehicle_emergency_signal_received_signal;
@@ -555,9 +623,6 @@ namespace godot {
 
             /* What the rail does for a vehicle within a step - C++ only, called by the
              * implementation that steps its vehicles in its own phases (MaszynaMoverVehicleServer). */
-            /* Which vehicle stands on which track, for this step's neighbour scans: once a step,
-             * before any vehicle looks for its neighbours */
-            void neighbour_index_update();
             /* The vehicle moved since its position was last announced: announce it */
             void vehicle_report_position(const RID &p_vehicle);
             /* Hands the simulated vehicle its location on the route, where it has moved */
@@ -568,9 +633,10 @@ namespace godot {
             /* The pantographs at the wire the vehicle now stands under, and the voltage they
              * feed it (DynObj.cpp:3714-3920) - before its circuits run on what they collect */
             void vehicle_collect_current(const RID &p_vehicle, double p_delta);
-            /* The vehicle's heading on its track, reported to the track events on a change
-             * (TTrackFollower::Move(), TrkFoll.cpp:113-161) */
-            void vehicle_report_track_heading(const RID &p_vehicle);
+            /* The vehicle stopped: reported to the track events once, for the track of each axle
+             * (TTrackFollower::Move(), TrkFoll.cpp:122-133). A moving vehicle is reported as it
+             * moves, track by track. */
+            void vehicle_report_track_standing(const RID &p_vehicle);
             /* The vehicle moved since its placement was last announced: announce it, so nothing
              * draws it a frame late */
             void vehicle_report_placement(const RID &p_vehicle);
@@ -589,26 +655,27 @@ namespace godot {
             /* How far the lower (x) and upper (y) arm are raised over lowered [rad] - what is drawn */
             Vector2 vehicle_get_pantograph_raise(
                     const RID &p_vehicle, RailVehicleEnginePowerSource::PantographSelector p_pantograph) const;
-            Transform3D vehicle_get_transform_at_distance(const RID &p_vehicle, double p_distance);
-            /* Where a bogie sits on the track: sampled with the body where the placement changes,
-             * at half the wheels' pivot spacing to each side; a vehicle whose pivot spacing is
-             * unknown yet has both bogies at its centre, which is what the caller sees. */
+            /* Where a bogie sits on the track: at the vehicle's axle on that side - the front bogie
+             * at the front axle; both at the centre of a vehicle whose spacings are unknown yet */
             Transform3D vehicle_get_bogie_transform(const RID &p_vehicle, RailVehicleWheels::Bogie p_bogie) const;
-            /* Track under the vehicle and its centre along that track, measured towards its front */
+            /* The track the vehicle is on and where along it, measured towards its front - its
+             * primary axle's (RaTrackGet(), RaTranslationGet(), DynObj.h:756-766) */
             Dictionary vehicle_get_track_position(const RID &p_vehicle) const;
             /* The tracks ahead of the vehicle the way p_direction leads - +1 towards its front, as
-             * the mover's V > 0 moves it, -1 towards its rear - as far as p_distance [m], the one it
-             * stands on first */
+             * the mover's V > 0 moves it, -1 towards its rear - as far as p_distance [m], the one
+             * its primary axle stands on first (TController::TableTraceRoute() starts from the active
+             * axle, Driver.cpp:527-535) */
             TypedArray<TrackRouteSegment> vehicle_trace_route(const RID &p_vehicle, int p_direction, double p_distance);
             /* The nearest vehicle along the route from the vehicle's p_end (0 front, 1 rear), on the
-             * tracks entered within p_distance [m] of its centre, null when there is none
+             * tracks entered within p_distance [m] of its primary axle, null when there is none;
+             * the distance is between the two primary axles, as the original's
              * (TDynamicObject::find_vehicle(), DynObj.cpp:7688) */
             Ref<RailVehicleNeighbour>
             vehicle_find_vehicle(const RID &p_vehicle, RailVehicleController::CouplerEnd p_end, double p_distance);
-            /* Running shape of the bogies (DynObj.cpp:2950-2970): the curve radius from the yaw
-             * difference of the bogie pivots, and the mean cant of both bogies in radians. Samples
-             * the track twice - call it only when the radius is needed. */
-            Dictionary vehicle_get_curve(const RID &p_vehicle, double p_bogie_pivot_spacing);
+            /* The running shape the vehicle's physics was last handed (DynObj.cpp:3145-3167): the
+             * curve radius from the yaw difference of its axles, and the mean cant of both axles
+             * in radians */
+            Dictionary vehicle_get_curve(const RID &p_vehicle) const;
     };
 } // namespace godot
 

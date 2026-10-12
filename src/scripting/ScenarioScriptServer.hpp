@@ -44,9 +44,9 @@ namespace godot {
                 SIGNAL_VEHICLE_HEADING_TO_TRACK_END,
                 /// A vehicle stopped on the track
                 SIGNAL_VEHICLE_STOPPED_ON_TRACK,
-                /// The first vehicle came onto the isolated section (target: the section)
+                /// The first axle came onto the isolated section (target: the section)
                 SIGNAL_ISOLATED_OCCUPIED,
-                /// The last vehicle left the isolated section
+                /// The last axle left the isolated section
                 SIGNAL_ISOLATED_FREED,
                 /// The switch moved to another track (target: the switch)
                 SIGNAL_SWITCH_CHANGED,

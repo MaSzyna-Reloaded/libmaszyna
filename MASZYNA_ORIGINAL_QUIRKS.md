@@ -313,6 +313,17 @@ interface.
   (`FizTrainPowerSupplyParser`); a vehicle with none - a freight wagon - has no power supply
   component, which stands for the original's zero nominal voltage.
 
+## Running gear (`vehicle/DynObj.cpp`, `world/TrkFoll.cpp`)
+
+* **The curve radius is measured over the axles and divided by the pivot spacing.** `ts.R =
+  -0.5 * BDist / sin(dYaw * 0.5)` takes `dYaw` between `Axle0` and `Axle1`, which stand
+  `fAxleDist = max(BDist, ADist)` apart (DynObj.cpp:2499, 3145-3161) - a vehicle with `ADist >
+  BDist` reads a sharper curve than it is on, and one without `BDist` reads none. Its limit tests
+  the angle in radians against 15000 (:3149), so it never limits. Wrapper: the division kept, as
+  the physics was tuned on it; the limit applied to the radius (`CURVE_RADIUS_LIMIT`).
+* **A removed vehicle keeps its sections occupied.** Nothing counts its axles off the tracks when
+  a vehicle is deleted. Wrapper: `vehicle_detach()` takes them off.
+
 ## Pantograph geometry (`vehicle/DynObj.cpp`)
 
 * **A pantograph's arms are measured from the vehicle's model, not read from its FIZ.** The original

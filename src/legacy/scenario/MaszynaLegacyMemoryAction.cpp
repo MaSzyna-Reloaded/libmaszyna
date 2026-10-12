@@ -75,7 +75,7 @@ namespace godot {
                         memory_value2 += new_value2;
                         break;
                     case MODE_ISOLATED_BUSY:
-                        memory_value2 = static_cast<int>(memory_value2) | 1;
+                        memory_value2 = static_cast<int>(memory_value2) | ISOLATED_BUSY_FLAG;
                         break;
                     case MODE_ISOLATED_FREE:
                         memory_value2 = static_cast<int>(memory_value2) & ~ISOLATED_FREE_MASK;

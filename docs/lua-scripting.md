@@ -94,7 +94,7 @@ The command and state names are the vehicle's own - the ones the console and the
 | `commands(v)` | the commands it takes |
 | `send_command(v, command, p1, p2)` | sends a command, returns the answer (`send_command(v, "battery", true)`) |
 | `coupled(v, end, element)` | the vehicles joined by `"coupler"`, `"brake_hose"`, `"main_hose"`, `"control"`, `"gangway"`, `"heating"` or `"permanent"` |
-| `track_position(v)` | `{track = <track>, along = <metres>}` |
+| `track_position(v)` | `{track = <track>, along = <metres>}` - of its primary axle, the one it is listed on its track by |
 | `on_command_received(v, fn)` | `fn(command, p1, p2)` for every command the vehicle gets |
 
 ### `maszyna.cabin` - the cab, as the driver's hand
@@ -146,7 +146,7 @@ The command and state names are the vehicle's own - the ones the console and the
 | `isolated_find(name)`, `isolated_is_occupied(i)` | |
 | `on_vehicle_heading_to_start(t, fn)`, `on_vehicle_heading_to_end(t, fn)` | `fn(vehicle)` when a vehicle on the track moves towards its start / end |
 | `on_vehicle_stopped(t, fn)` | `fn(vehicle)` when a vehicle stops on the track |
-| `on_isolated_occupied(i, fn)`, `on_isolated_freed(i, fn)` | `fn(vehicle)` when the first vehicle comes onto the section / the last one leaves |
+| `on_isolated_occupied(i, fn)`, `on_isolated_freed(i, fn)` | `fn(vehicle)` when the first axle comes onto the section / the last one leaves - a vehicle has two |
 | `on_switch_changed(s, fn)` | `fn(which)` when the switch moves |
 
 ### `maszyna.signal` - signals
