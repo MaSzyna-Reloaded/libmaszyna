@@ -8,6 +8,9 @@ extends Node
 ## Rendered profiles go into a ResourceCache, so a skin is only ever rendered once. Reading and
 ## writing that cache and loading the vehicle model run on WorkerTaskQueue workers; the
 ## render itself has to stay on the main thread, a SubViewport is only drawn with the frame.
+## The cache keeps the profile's Image, not its texture: saving a texture reads it back from the
+## GPU, which waits for the main thread while the worker holds ResourceCache.resource_save()'s
+## lock - and the main thread waiting for that lock hangs the game.
 
 ## Every profile has the same scale and the same band above the rail, so profiles shown at one
 ## height stand on one rail and in one scale; its centre is the vehicle's centre, so the vehicles
@@ -18,7 +21,7 @@ const PROFILE_PIXELS_PER_METRE:float = 16.0
 const PROFILE_BOTTOM:float = -0.3
 const PROFILE_TOP:float = 5.0
 ## Bump to re-render the cached profiles after changing how they are rendered
-const PROFILE_VERSION:int = 9
+const PROFILE_VERSION:int = 10
 const CACHE_DIRECTORY:String = "vehicle_profiles"
 ## Profiles kept in memory; past it the least recently used go - read back from the disk cache
 ## when asked again. A game directory holds thousands of vehicles and skins; a profile is at most
@@ -82,15 +85,18 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:Str
         return kept
 
     var cache_path:String = _get_cache_path(key)
-    var cached:Texture2D = await _run_in_queue(_cache.get.bind(cache_path)) as Texture2D
+    var cached:Image = await _run_in_queue(_cache.get.bind(cache_path)) as Image
     if cached:
-        _remember_profile(key, cached)
-        return cached
+        var texture:Texture2D = ImageTexture.create_from_image(cached)
+        _remember_profile(key, texture)
+        return texture
 
-    var rendered:Texture2D = await _render_profile(data_path, abs_mmd_path, file_name, skin, vehicle_id)
-    if rendered:
-        _remember_profile(key, rendered)
-        _queue.submit(_cache.set.bind(cache_path, rendered, ""))
+    var image:Image = await _render_profile(data_path, abs_mmd_path, file_name, skin, vehicle_id)
+    if not image:
+        return null
+    var rendered:Texture2D = ImageTexture.create_from_image(image)
+    _remember_profile(key, rendered)
+    _queue.submit(_cache.set.bind(cache_path, image, ""))
     return rendered
 
 
@@ -122,26 +128,25 @@ func _run_in_queue(task:Callable) -> Variant:
 
 ## One render at a time - the viewport holds a single model, only its skin changes between shots
 func _render_profile(
-        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_id:String) -> Texture2D:
+        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_id:String) -> Image:
     while _rendering:
         await get_tree().process_frame
     _rendering = true
-    var texture:Texture2D = null
+    var image:Image = null
     if await _build_model(data_path, abs_mmd_path, file_name, skin, vehicle_id):
         # the vehicle over black and over white gives its real transparency, whatever the
         # viewport does with its own background
         var over_black:Image = await _capture(Color.BLACK)
         var over_white:Image = await _capture(Color.WHITE)
-        var image:Image = _extract_alpha(over_black, over_white)
+        image = _extract_alpha(over_black, over_white)
         # trim the empty space before and after the vehicle by as much on both sides, so the
         # vehicle's centre stays the profile's; the height stays the band, so does the rail
         var used:Rect2i = image.get_used_rect()
         var trim:int = mini(used.position.x, image.get_width() - used.end.x)
         if used.size.x > 0:
             image = image.get_region(Rect2i(trim, 0, image.get_width() - 2 * trim, image.get_height()))
-        texture = ImageTexture.create_from_image(image)
     _rendering = false
-    return texture
+    return image
 
 
 func _capture(background:Color) -> Image:
