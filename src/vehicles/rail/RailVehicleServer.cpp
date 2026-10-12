@@ -242,6 +242,9 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_find_vehicle", "vehicle", "end", "distance"),
                 &RailVehicleServer::vehicle_find_vehicle);
+        ClassDB::bind_method(
+                D_METHOD("vehicle_get_coupler_distance", "vehicle", "other"),
+                &RailVehicleServer::vehicle_get_coupler_distance);
         ClassDB::bind_method(D_METHOD("vehicle_get_curve", "vehicle"), &RailVehicleServer::vehicle_get_curve);
 
         ADD_SIGNAL(MethodInfo(vehicle_emergency_signal_received_signal, PropertyInfo(Variant::RID, "vehicle")));
@@ -1902,6 +1905,17 @@ namespace godot {
         neighbour->set_end(found_end);
         neighbour->set_distance(found_distance);
         return neighbour;
+    }
+
+    double RailVehicleServer::vehicle_get_coupler_distance(const RID &p_vehicle, const RID &p_other) const {
+        const VehiclePlacement *placement = vehicles.getptr(p_vehicle);
+        const VehiclePlacement *other = vehicles.getptr(p_other);
+        RailVehicleController *controller = placement != nullptr ? _get_controller(*placement) : nullptr;
+        RailVehicleController *other_controller = other != nullptr ? _get_controller(*other) : nullptr;
+        if (controller == nullptr || other_controller == nullptr) {
+            return Math::INF;
+        }
+        return controller->get_coupler_distance(Ref<RailVehicleController>(other_controller));
     }
 
     Dictionary RailVehicleServer::vehicle_get_curve(const RID &p_vehicle) const {

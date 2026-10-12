@@ -68,7 +68,10 @@ func load_model(data_path:String, filename: String) -> E3DModel:
                 _save_model.call_deferred(cached_path, output, cache_hash)
                 return output
             _cache.set(cached_path, output, cache_hash)
-            return _cache.get(cached_path)  # force use proper resource ref
+            # the saved resource is the one to share; a cache that is switched off
+            # (maszyna/cache/enabled) keeps nothing, and the model is the one just loaded
+            var saved:E3DModel = _cache.get(cached_path) as E3DModel
+            return saved if saved else output
         else:
             push_warning("File is not an E3DModel: "+path)
     else:

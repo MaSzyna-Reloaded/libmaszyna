@@ -328,6 +328,14 @@
 				The model of the adapter fitted to an end of [param vehicle], empty without one.
 			</description>
 		</method>
+		<method name="vehicle_get_coupler_distance" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				The distance in metres between the couplers of [param vehicle] and [param other], measured directly from where the two stand (TMoverParameters::CouplerDist(), Mover.cpp:543) - what the original's driver takes for a vehicle [method vehicle_find_vehicle] found near (scan_obstacles(), Driver.cpp:6672-6675). Infinite when either has no controller.
+			</description>
+		</method>
 		<method name="vehicle_get_coupler_joinable_flags" qualifiers="const">
 			<return type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
 			<param index="0" name="vehicle" type="RID" />

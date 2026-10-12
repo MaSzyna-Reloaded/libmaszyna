@@ -279,6 +279,14 @@ namespace godot {
         mover->Neighbours[p_end] = neighbour_data();
     }
 
+    double MoverRailVehicleController::get_coupler_distance(const Ref<RailVehicleController> &p_other) const {
+        const MoverRailVehicleController *other = Object::cast_to<MoverRailVehicleController>(p_other.ptr());
+        if (mover == nullptr || other == nullptr || other->mover == nullptr) {
+            return Math::INF;
+        }
+        return TMoverParameters::CouplerDist(mover, other->mover);
+    }
+
     void MoverRailVehicleController::compute_forces(const double p_delta) {
         if (mover == nullptr) {
             return;

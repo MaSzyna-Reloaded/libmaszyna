@@ -4488,6 +4488,24 @@ lighting or the trainset.
   start-up test covers its own FIZ only: a vehicle of the same family with another FIZ needs its
   own.
 
+## 2026-10-12 The SN61 that stopped against the other and never coupled
+
+* **Symptom:** `test_zzz_driver_shunt_coupling` (game) hung: SN61-02, told to `Shunt -3 -99`, drove
+  up to SN61-03, stood with its buffers touching and never sent `coupler_connect`. Red in CI since
+  the bump to libmaszyna cbe4b54c.
+* **What proved it:** a bisect with the game at b812b62a and libmaszyna built per commit - 75411a77
+  passes, ab404141 hangs. ab404141 made `RailVehicleServer.vehicle_find_vehicle()` return the track
+  distance between the two primary axles, as the original's `find_vehicle()` (DynObj.cpp:7688),
+  where it had taken off the half lengths. The game's driver read that distance raw in
+  `scan_obstacles()` and `UpdateConnect()`; the original measures between the couplers below 100 m
+  (`CouplerDist()`, Driver.cpp:6672-6675; `Neighbours[]`, DynObj.cpp:7577). A trace showed the
+  couplers at -0.008 m and the scan's distance a vehicle length more, never under ATTACH_DISTANCE.
+* **Fix:** `RailVehicleServer.vehicle_get_coupler_distance()` (the controller's
+  `TMoverParameters::CouplerDist()`); the driver takes it for an obstacle nearer than 100 m, and
+  for the coupling end's neighbour less both adapters, as the vehicle's `Neighbours[]` hold it.
+* **Rule:** a distance is named for what it is measured between; when a server's changes, every
+  reader of it is checked against what the original reads at that place.
+
 ## 2026-10-12 A vehicle's id shown as its name
 
 * **Symptom:** the starter listed "st45-03" and "eu07-515", the HUD's vehicle card titled a TEM2

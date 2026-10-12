@@ -244,6 +244,11 @@ anything. Open work belongs in `TODO.md`.
   `vehicle_id` (lower case) finds it, its name as the `.scn` writes it (`vehicle_get_name()`) is
   shown - never one word for both. *(10-12 the HUD showed "tem2-234" over "TEM2-234")*
 
+* What finds a vehicle ahead measures along the track between primary axles; whatever acts near it
+  (the driver closing up, coupling) measures between the couplers, as the original does below
+  100 m (`vehicle_get_coupler_distance()`, Driver.cpp:6672, DynObj.cpp:7577). *(10-12 the SN61
+  that stopped against the other and never coupled)*
+
 ## State, ownership, events
 * An operation somebody awaits is done only when everything its waiter relies on is; a signal
   relayed after an `await` arrives after the call that caused it returned. *(10-03 the loading
@@ -612,6 +617,9 @@ anything. Open work belongs in `TODO.md`.
   builds from its fixtures. A cache keyed by a format version is stale the moment the same version
   is reused with other code, and the test then reports the old data as a regression of the new.
   *(10-12 the stale scenery cache that looked like a name regression)*
+* A cache that can be switched off is never read back for what was just put in it: a caller
+  returns what it built. `load_model()` returned `_cache.get()` after `_cache.set()`, so with the
+  tests' cache off no model loaded and CI went red. *(10-12 CI red from the cache switch)*
 
 ## Sound
 * A method bound with different arguments is still one connection: when the key changes

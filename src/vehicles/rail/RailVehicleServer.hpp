@@ -672,6 +672,11 @@ namespace godot {
              * (TDynamicObject::find_vehicle(), DynObj.cpp:7688) */
             Ref<RailVehicleNeighbour>
             vehicle_find_vehicle(const RID &p_vehicle, RailVehicleController::CouplerEnd p_end, double p_distance);
+            /* The distance [m] between the couplers of two vehicles, measured directly from where
+             * they stand (TMoverParameters::CouplerDist(), Mover.cpp:543) - what the original's
+             * driver takes for a vehicle found near (scan_obstacles(), Driver.cpp:6672-6675);
+             * infinite when either has no controller */
+            double vehicle_get_coupler_distance(const RID &p_vehicle, const RID &p_other) const;
             /* The running shape the vehicle's physics was last handed (DynObj.cpp:3145-3167): the
              * curve radius from the yaw difference of its axles, and the mean cant of both axles
              * in radians */

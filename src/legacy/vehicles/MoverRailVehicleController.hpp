@@ -117,6 +117,7 @@ namespace godot {
                     CouplerEnd p_end, const Ref<RailVehicleController> &p_other, CouplerEnd p_other_end,
                     double p_track_distance) override;
             void clear_neighbour(CouplerEnd p_end) override;
+            double get_coupler_distance(const Ref<RailVehicleController> &p_other) const override;
             void compute_forces(double p_delta) override;
             void compute_movement(double p_delta) override;
             void compute_fast_movement(double p_delta) override;

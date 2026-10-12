@@ -224,6 +224,9 @@ namespace godot {
                     double p_track_distance) = 0;
             /* Nothing beyond p_end within the scan range */
             virtual void clear_neighbour(CouplerEnd p_end) = 0;
+            /* The distance [m] between this vehicle's couplers and p_other's, measured directly from
+             * where the two stand (TMoverParameters::CouplerDist(), Mover.cpp:543) */
+            virtual double get_coupler_distance(const Ref<RailVehicleController> &p_other) const = 0;
             virtual void compute_forces(double p_delta) = 0;
             virtual void compute_movement(double p_delta) = 0;
             virtual void compute_fast_movement(double p_delta) = 0;
