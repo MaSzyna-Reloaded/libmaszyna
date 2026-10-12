@@ -4776,3 +4776,29 @@ lighting or the trainset.
   - `E3DModel.FORMAT_VERSION` 20261012.
 * **Rule:** never save or read back an `ArrayMesh` - its data lives on the GPU. Geometry the
   extension saves or reads keeps its arrays in memory.
+
+## 2026-10-12 Ten times the terrain chunks
+
+* **Symptom:** after the scenery-shapes commit, Całkowo's conversion (FILES) took 76.8 s against
+  57.6 s before it, under the same conditions: a real renderer (`gamescope --backend headless`), a
+  cold user directory, `calkowo_v2_pospwilb.scn`. Its peak memory was 3.36 GB against 2.49 GB.
+* **What proved it:**
+  - `[SceneryMemory]` counted 70 691 terrain chunks against 7 184.
+  - Two hypotheses were measured and thrown out:
+    - the translucency lookup short-circuited: FILES 77.9 s;
+    - the save lock removed: FILES 75.5 s.
+  - The commit had made every shape group merged within 25 m (`basic_cell::insert()`,
+    `scene.cpp:282-291`) a chunk of its own: a file, a streaming entry and an instance.
+  - The original keeps those groups as shapes inside one cell, and the cells inside one section
+    (`basic_section`).
+* **Fix:**
+  - A chunk is a texture in a section, or a texture and a range in a 250 m cell. Its shapes merged
+    within 25 m are its groups (`MaszynaTrianglesChunkGeometry.group_centres`/`group_ends`).
+  - Building a chunk makes an instance per group, its custom box centred on the group's centre.
+  - A section is one file (`MaszynaTrianglesSector`), shared by its chunks through
+    `ResourceLazyLoader`.
+  - The `.sbt` provider gives the same layout in memory.
+  - Measured: 15 593 chunks, FILES 65-69 s. The runs vary by several seconds, so this is not
+    settled yet.
+* **Rule:** port the original's structure at its own granularity, on disk too: a section is a
+  file, and a merged shape is a group inside it, never a file or a streaming entry of its own.

@@ -49,15 +49,22 @@ func _build_chunks(entries:Array) -> Array[Dictionary]:
         sink.add_triangles(entry[0], entry[1], entry[2], entry[3], 0.0, 0.0)
     var chunks:Array[Dictionary] = []
     for geometry:MaszynaTrianglesChunkGeometry in sink.get_geometries():
-        var arrays:Array = geometry.to_mesh_arrays()
+        var vertices:PackedVector3Array = []
+        var normals:PackedVector3Array = []
+        var uvs:PackedVector2Array = []
+        for group:int in geometry.get_group_count():
+            var arrays:Array = geometry.get_group_mesh_arrays(group)
+            vertices.append_array(arrays[Mesh.ARRAY_VERTEX])
+            normals.append_array(arrays[Mesh.ARRAY_NORMAL])
+            uvs.append_array(arrays[Mesh.ARRAY_TEX_UV])
         chunks.append({
             "texture": geometry.texture,
             "chunk_x": floori(geometry.origin.x / CELL_SIZE),
             "chunk_z": floori(geometry.origin.z / CELL_SIZE),
             "origin": geometry.origin,
-            "vertices": arrays[Mesh.ARRAY_VERTEX],
-            "normals": arrays[Mesh.ARRAY_NORMAL],
-            "uvs": arrays[Mesh.ARRAY_TEX_UV],
+            "vertices": vertices,
+            "normals": normals,
+            "uvs": uvs,
         })
     return chunks
 
@@ -173,9 +180,10 @@ func test_finished_chunks_hold_every_triangle_also_past_the_budget() -> void:
 
     var descriptors:Array = sink.finish()
     assert_eq(descriptors.size(), 1)
-    assert_eq(DirAccess.get_files_at(DIRECTORY).size(), 1, "parts were left beside the chunk")
-    var geometry:MaszynaTrianglesChunkGeometry = ResourceLoader.load(descriptors[0]["path"])
-    assert_eq(geometry.vertices.size(), TEST_TRIANGLES * 3 * 3, "triangles lost between the parts")
+    assert_eq(DirAccess.get_files_at(DIRECTORY).size(), 1, "parts were left beside the section's file")
+    var sector:MaszynaTrianglesSector = ResourceLoader.load(descriptors[0]["path"])
+    assert_eq(descriptors[0]["index"], 0)
+    assert_eq(sector.chunks[0].vertices.size(), TEST_TRIANGLES * 3 * 3, "triangles lost between the parts")
     assert_eq(descriptors[0]["position"], SceneryTrianglesSink.cell_get_origin(Vector2i.ZERO))
 
 
@@ -198,7 +206,7 @@ func test_added_geometry_joins_the_chunk_of_its_texture_cell_and_range() -> void
     assert_eq(geometries[0].vertices.size(), 2 * 3 * 3)
 
 
-## A subscene's finished chunks join the scenery's sink file by file
+## A subscene's finished chunks join the scenery's sink section file by section file
 func test_finished_chunk_file_joins_another_sink() -> void:
     var vertices:PackedVector3Array = PackedVector3Array([
         Vector3(100, 0, 100), Vector3(100, 0, 200), Vector3(200, 0, 100),
@@ -244,6 +252,10 @@ func test_a_chunk_larger_than_an_upload_is_split_into_whole_triangles() -> void:
     geometry.vertices = floats
     geometry.normals = floats
     geometry.uvs = uv_floats
+    # one group larger than a piece: its runs keep its centre
+    var centre:Vector3 = Vector3(5.0, 0.0, 7.0)
+    geometry.group_centres = PackedVector3Array([centre])
+    geometry.group_ends = PackedInt32Array([vertex_count])
     var pieces:Array[MaszynaTrianglesChunkGeometry] = geometry.split()
     assert_eq(pieces.size(), 2)
     var total:int = 0
@@ -252,6 +264,8 @@ func test_a_chunk_larger_than_an_upload_is_split_into_whole_triangles() -> void:
         assert_eq(piece_vertices % 3, 0, "a piece cut a triangle")
         assert_true(piece_vertices <= MaszynaTrianglesChunkGeometry.MAX_VERTICES)
         assert_eq(piece.texture, "split")
+        assert_eq(piece.group_ends, PackedInt32Array([piece_vertices]))
+        assert_eq(piece.group_centres, PackedVector3Array([centre]))
         total += piece_vertices
     assert_eq(total, vertex_count)
 
@@ -269,8 +283,13 @@ func test_a_large_opaque_shape_goes_to_its_section_without_its_range() -> void:
     assert_eq(geometries[0].origin, SceneryTrianglesSink.cell_get_origin(Vector2i.ZERO))
 
 
-## basic_cell::insert() (scene.cpp:282-291): shapes of one range merge when their centres are closer
-## than 25 m, and the merged centre - what the range is measured from - is their vertex-weighted mean
+## SceneryTrianglesSink.CELL_SIZE_M
+const SMALL_CELL_SIZE:float = 250.0
+
+
+## basic_cell::insert() (scene.cpp:282-291): in its 250 m cell, a shape merges with one of the same
+## texture and range whose centre is closer than 25 m, and the merged centre - what the range is
+## measured from - is their vertex-weighted mean; the cell is one chunk, its merged shapes its groups
 func test_ranged_shapes_merge_only_within_the_merge_distance_around_their_centre() -> void:
     var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
     var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
@@ -278,15 +297,17 @@ func test_ranged_shapes_merge_only_within_the_merge_distance_around_their_centre
     for corner:Vector3 in [Vector3(10, 0, 10), Vector3(30, 0, 10), Vector3(100, 0, 10)]:
         sink.add_triangles("grass", _triangle(corner), normals, uvs, 0.0, CELL_RANGE)
     var geometries:Array[MaszynaTrianglesChunkGeometry] = sink.get_geometries()
-    assert_eq(geometries.size(), 2, "a shape 70 m away is another chunk")
-    var merged:MaszynaTrianglesChunkGeometry = geometries[0]
-    assert_eq(merged.range_max, CELL_RANGE)
-    assert_eq(merged.vertices.size(), 2 * 3 * 3)
+    assert_eq(geometries.size(), 1, "one cell is one chunk")
+    var cell:MaszynaTrianglesChunkGeometry = geometries[0]
+    assert_eq(cell.origin, Vector3(SMALL_CELL_SIZE, 0.0, SMALL_CELL_SIZE) * 0.5, "the cell's centre")
+    assert_eq(cell.range_max, CELL_RANGE)
+    assert_eq(cell.get_group_count(), 2, "a shape 70 m away is another group")
+    assert_eq(cell.group_ends, PackedInt32Array([6, 9]))
     var triangle_centre:Vector3 = Vector3(2.0, 0.0, 2.0) / 3.0
-    assert_almost_eq(merged.origin, Vector3(20, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
-    var first_vertex:Vector3 = Vector3(merged.vertices[0], merged.vertices[1], merged.vertices[2])
-    assert_almost_eq(first_vertex + merged.origin, Vector3(10, 0, 10), Vector3.ONE * 0.001)
-    assert_almost_eq(geometries[1].origin, Vector3(100, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
+    assert_almost_eq(cell.origin + cell.group_centres[0], Vector3(20, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
+    assert_almost_eq(cell.origin + cell.group_centres[1], Vector3(100, 0, 10) + triangle_centre, Vector3.ONE * 0.001)
+    var first_vertex:Vector3 = Vector3(cell.vertices[0], cell.vertices[1], cell.vertices[2])
+    assert_almost_eq(first_vertex + cell.origin, Vector3(10, 0, 10), Vector3.ONE * 0.001)
 
 
 ## basic_section::insert() (scene.cpp:849-851): a translucent shape and one with a minimum range are
@@ -299,20 +320,40 @@ func test_a_translucent_shape_or_one_with_a_minimum_range_is_kept_around_its_cen
     sink.add_triangles("far", _triangle(Vector3(100, 0, 100)), normals, uvs, 50.0, SECTION_RANGE)
     var triangle_centre:Vector3 = Vector3(100, 0, 100) + Vector3(2.0, 0.0, 2.0) / 3.0
     for geometry:MaszynaTrianglesChunkGeometry in sink.get_geometries():
-        assert_almost_eq(geometry.origin, triangle_centre, Vector3.ONE * 0.001, geometry.texture)
+        assert_eq(geometry.get_group_count(), 1, geometry.texture)
+        assert_almost_eq(geometry.origin + geometry.group_centres[0], triangle_centre, Vector3.ONE * 0.001, geometry.texture)
     assert_eq(sink.get_geometries()[1].range_max, SECTION_RANGE, "a ranged shape keeps its range")
 
 
-## Godot measures a visibility range to the centre of the instance's box
-func test_the_visibility_box_is_centred_on_the_origin_and_holds_every_vertex() -> void:
+## Godot measures a visibility range to the centre of the instance's box: a group's box is centred on
+## the group's centre
+func test_a_groups_visibility_box_is_centred_on_its_centre_and_holds_its_vertices() -> void:
     var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
     var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
     var sink:SceneryTrianglesSink = _create_sink("")
     sink.add_triangles("grass", _triangle(Vector3(10, 0, 10)), normals, uvs, 0.0, CELL_RANGE)
     sink.add_triangles("grass", _triangle(Vector3(20, 3, 10)), normals, uvs, 0.0, CELL_RANGE)
     var geometry:MaszynaTrianglesChunkGeometry = sink.get_geometries()[0]
-    var box:AABB = geometry.get_visibility_aabb()
-    assert_almost_eq(box.get_center(), Vector3.ZERO, Vector3.ONE * 0.001)
-    for index:int in range(0, geometry.vertices.size(), 3):
-        var vertex:Vector3 = Vector3(geometry.vertices[index], geometry.vertices[index + 1], geometry.vertices[index + 2])
+    var box:AABB = geometry.get_group_visibility_aabb(0)
+    assert_almost_eq(box.get_center(), geometry.group_centres[0], Vector3.ONE * 0.001)
+    for vertex:Vector3 in geometry.get_group_mesh_arrays(0)[Mesh.ARRAY_VERTEX]:
         assert_true(box.grow(0.001).has_point(vertex))
+
+
+## The original keeps a section's shapes together (basic_section, scene.cpp:811): a section is one
+## file, its own chunks and its cells' in it, each chunk found by its index
+func test_a_section_is_one_file_with_its_cells_chunks() -> void:
+    var normals:PackedVector3Array = PackedVector3Array([Vector3.UP, Vector3.UP, Vector3.UP])
+    var uvs:PackedVector2Array = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.DOWN])
+    var sink:SceneryTrianglesSink = _create_sink(DIRECTORY)
+    sink.add_triangles("ground", _triangle(Vector3(100, 0, 100)), normals, uvs, 0.0, SECTION_RANGE)
+    sink.add_triangles("grass", _triangle(Vector3(10, 0, 10)), normals, uvs, 0.0, CELL_RANGE)
+    sink.add_triangles("grass", _triangle(Vector3(600, 0, 600)), normals, uvs, 0.0, CELL_RANGE)
+    sink.add_triangles("grass", _triangle(Vector3(1100, 0, 10)), normals, uvs, 0.0, CELL_RANGE)
+    var descriptors:Array = sink.finish()
+    assert_eq(descriptors.size(), 4, "a chunk each: the section's ground and three cells' grass")
+    assert_eq(DirAccess.get_files_at(DIRECTORY).size(), 2, "a file a section")
+    for descriptor:Dictionary in descriptors:
+        var sector:MaszynaTrianglesSector = ResourceLoader.load(descriptor["path"])
+        var chunk:MaszynaTrianglesChunkGeometry = sector.chunks[descriptor["index"]]
+        assert_eq(chunk.origin, descriptor["position"], "the descriptor's index finds its chunk")

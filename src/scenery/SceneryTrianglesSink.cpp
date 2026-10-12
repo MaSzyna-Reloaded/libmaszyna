@@ -1,6 +1,7 @@
 #include "scenery/SceneryTrianglesSink.hpp"
 
 #include "cache/ResourceCache.hpp"
+#include "legacy/scenery/MaszynaTrianglesSector.hpp"
 
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -119,27 +120,6 @@ namespace godot {
         return packed;
     }
 
-    static void append_packed(std::vector<float> &p_values, const PackedFloat32Array &p_packed) {
-        p_values.reserve(p_values.size() + static_cast<size_t>(p_packed.size()));
-        for (const float value: p_packed) {
-            p_values.push_back(value);
-        }
-    }
-
-    /// Positions appended moved by p_offset - from the origin they are relative to onto another one;
-    /// p_positions a std::vector<float> or a PackedFloat32Array
-    template<typename Positions>
-    static void append_positions(std::vector<float> &p_values, const Positions &p_positions, const Vector3 &p_offset) {
-        const auto count = static_cast<int64_t>(p_positions.size());
-        p_values.reserve(p_values.size() + static_cast<size_t>(count));
-        for (int64_t index = 0; index + 2 < count; index += MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS) {
-            p_values.insert(
-                    p_values.end(), {p_positions[index] + static_cast<float>(p_offset.x),
-                                     p_positions[index + 1] + static_cast<float>(p_offset.y),
-                                     p_positions[index + 2] + static_cast<float>(p_offset.z)});
-        }
-    }
-
     Ref<SceneryTrianglesSink> SceneryTrianglesSink::create(
             const String &p_directory, const Callable &p_translucency, const int64_t p_budget_bytes) {
         Ref<SceneryTrianglesSink> sink;
@@ -183,81 +163,130 @@ namespace godot {
     }
 
     /// Under the mutex
-    SceneryTrianglesSink::Chunk &
-    SceneryTrianglesSink::_get_section_chunk(const String &p_texture, const Vector2i &p_section) {
-        const String separator = "|";
-        const String key =
-                p_texture + separator + String::num_int64(p_section.x) + separator + String::num_int64(p_section.y);
-        if (const int *found = section_chunks.getptr(key); found != nullptr) {
+    SceneryTrianglesSink::Chunk &SceneryTrianglesSink::_get_chunk(
+            const String &p_key, const String &p_texture, const float p_range_min, const float p_range_max,
+            const Vector3 &p_origin) {
+        if (const int *found = chunk_indices.getptr(p_key); found != nullptr) {
             return chunks[*found];
         }
-        section_chunks[key] = static_cast<int>(chunks.size());
-        Chunk &chunk = chunks.emplace_back();
-        chunk.texture = p_texture;
-        chunk.origin = cell_get_origin(p_section);
-        chunk.centre = chunk.origin;
-        return chunk;
-    }
-
-    /// Under the mutex. basic_cell::insert() (scene.cpp:279-296): the first chunk of the cell with the
-    /// same texture and range and a centre closer than MERGE_DISTANCE_M takes the shape, and its
-    /// centre moves towards the shape's by the shape's share of the vertices (shape_node::merge(),
-    /// scenenode.cpp:436-439); otherwise the shape starts a chunk of its own
-    SceneryTrianglesSink::Chunk &SceneryTrianglesSink::_get_cell_chunk(
-            const String &p_texture, const float p_range_min, const float p_range_max, const Vector3 &p_centre,
-            const int64_t p_vertex_count) {
-        const Vector2i cell(
-                static_cast<int>(Math::floor(p_centre.x / CELL_SIZE_M)),
-                static_cast<int>(Math::floor(p_centre.z / CELL_SIZE_M)));
-        std::vector<int> &indices = cell_chunks[cell];
-        for (const int index: indices) {
-            Chunk &chunk = chunks[index];
-            if (chunk.texture == p_texture && chunk.range_min == p_range_min && chunk.range_max == p_range_max &&
-                chunk.centre.distance_squared_to(p_centre) < MERGE_DISTANCE_M * MERGE_DISTANCE_M) {
-                chunk.centre = chunk.centre.lerp(
-                        p_centre,
-                        static_cast<real_t>(p_vertex_count) / static_cast<real_t>(p_vertex_count + chunk.vertex_count));
-                chunk.vertex_count += p_vertex_count;
-                return chunk;
-            }
-        }
-        indices.push_back(static_cast<int>(chunks.size()));
+        chunk_indices[p_key] = static_cast<int>(chunks.size());
         Chunk &chunk = chunks.emplace_back();
         chunk.texture = p_texture;
         chunk.range_min = p_range_min;
         chunk.range_max = p_range_max;
-        chunk.origin = p_centre;
-        chunk.centre = p_centre;
-        chunk.vertex_count = p_vertex_count;
+        chunk.origin = p_origin;
         return chunk;
     }
 
-    int64_t SceneryTrianglesSink::_get_bytes(const Chunk &p_chunk) {
-        return static_cast<int64_t>(
-                (p_chunk.vertices.size() + p_chunk.normals.size() + p_chunk.uvs.size()) * sizeof(float));
+    /// Under the mutex. A section's chunk is one group, centred on the section, without a range: the
+    /// original draws a section's shapes whatever their range (Render(shape, true),
+    /// opengl33renderer.cpp:2495)
+    SceneryTrianglesSink::Chunk &
+    SceneryTrianglesSink::_get_section_chunk(const String &p_texture, const Vector2i &p_section) {
+        const String separator = "|";
+        Chunk &chunk = _get_chunk(
+                String("section") + separator + p_texture + separator + String::num_int64(p_section.x) + separator +
+                        String::num_int64(p_section.y),
+                p_texture, 0.0, 0.0, cell_get_origin(p_section));
+        if (chunk.groups.empty()) {
+            chunk.groups.emplace_back().centre = chunk.origin;
+        }
+        return chunk;
     }
 
-    /// The chunk's vertices moved from its origin to p_origin
-    Ref<MaszynaTrianglesChunkGeometry>
-    SceneryTrianglesSink::_to_geometry(const Chunk &p_chunk, const Vector3 &p_origin) {
+    /// Under the mutex: the chunk of the CELL_SIZE_M cell the centre is in (basic_section::cell(),
+    /// scene.cpp:849-852)
+    SceneryTrianglesSink::Chunk &SceneryTrianglesSink::_get_cell_chunk(
+            const String &p_texture, const float p_range_min, const float p_range_max, const Vector3 &p_centre) {
+        const Vector2i cell(
+                static_cast<int>(Math::floor(p_centre.x / CELL_SIZE_M)),
+                static_cast<int>(Math::floor(p_centre.z / CELL_SIZE_M)));
+        const String separator = "|";
+        const Vector3 origin(
+                static_cast<real_t>((static_cast<double>(cell.x) + 0.5) * CELL_SIZE_M), 0.0,
+                static_cast<real_t>((static_cast<double>(cell.y) + 0.5) * CELL_SIZE_M));
+        return _get_chunk(
+                String("cell") + separator + p_texture + separator + String::num_int64(cell.x) + separator +
+                        String::num_int64(cell.y) + separator + String::num(p_range_min) + separator +
+                        String::num(p_range_max),
+                p_texture, p_range_min, p_range_max, origin);
+    }
+
+    /// basic_cell::insert() (scene.cpp:279-296): the first group of the cell's chunk - the same
+    /// texture and range - whose centre is closer than MERGE_DISTANCE_M takes the shape, and its
+    /// centre moves towards the shape's by the shape's share of the vertices (shape_node::merge(),
+    /// scenenode.cpp:436-439); otherwise the shape starts a group of its own
+    SceneryTrianglesSink::Group &
+    SceneryTrianglesSink::_get_group(Chunk &p_chunk, const Vector3 &p_centre, const int64_t p_vertex_count) {
+        for (Group &group: p_chunk.groups) {
+            if (group.centre.distance_squared_to(p_centre) < MERGE_DISTANCE_M * MERGE_DISTANCE_M) {
+                group.centre = group.centre.lerp(
+                        p_centre,
+                        static_cast<real_t>(p_vertex_count) / static_cast<real_t>(p_vertex_count + group.vertex_count));
+                group.vertex_count += p_vertex_count;
+                return group;
+            }
+        }
+        Group &group = p_chunk.groups.emplace_back();
+        group.centre = p_centre;
+        group.vertex_count = p_vertex_count;
+        return group;
+    }
+
+    int64_t SceneryTrianglesSink::_get_bytes(const Group &p_group) {
+        return static_cast<int64_t>(
+                (p_group.vertices.size() + p_group.normals.size() + p_group.uvs.size()) * sizeof(float));
+    }
+
+    /// The groups one after another, their centres relative to the chunk's origin
+    Ref<MaszynaTrianglesChunkGeometry> SceneryTrianglesSink::_to_geometry(const Chunk &p_chunk) {
+        std::vector<float> vertices;
+        std::vector<float> normals;
+        std::vector<float> uvs;
+        PackedVector3Array centres;
+        PackedInt32Array ends;
+        for (const Group &group: p_chunk.groups) {
+            vertices.insert(vertices.end(), group.vertices.begin(), group.vertices.end());
+            normals.insert(normals.end(), group.normals.begin(), group.normals.end());
+            uvs.insert(uvs.end(), group.uvs.begin(), group.uvs.end());
+            centres.push_back(group.centre - p_chunk.origin);
+            ends.push_back(static_cast<int32_t>(vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
+        }
         Ref<MaszynaTrianglesChunkGeometry> geometry;
         geometry.instantiate();
         geometry->set_texture(p_chunk.texture);
-        geometry->set_origin(p_origin);
+        geometry->set_origin(p_chunk.origin);
         geometry->set_range_min(p_chunk.range_min);
         geometry->set_range_max(p_chunk.range_max);
-        std::vector<float> vertices;
-        append_positions(vertices, p_chunk.vertices, p_chunk.origin - p_origin);
         geometry->set_vertices(to_packed(vertices));
-        geometry->set_normals(to_packed(p_chunk.normals));
-        geometry->set_uvs(to_packed(p_chunk.uvs));
+        geometry->set_normals(to_packed(normals));
+        geometry->set_uvs(to_packed(uvs));
+        geometry->set_group_centres(centres);
+        geometry->set_group_ends(ends);
         return geometry;
     }
 
-    void SceneryTrianglesSink::_append(Chunk &p_chunk, const Ref<MaszynaTrianglesChunkGeometry> &p_geometry) {
-        append_positions(p_chunk.vertices, p_geometry->get_vertices(), p_geometry->get_origin() - p_chunk.origin);
-        append_packed(p_chunk.normals, p_geometry->get_normals());
-        append_packed(p_chunk.uvs, p_geometry->get_uvs());
+    /// A part written by _spill(): its groups are the chunk's first ones, by their index
+    void SceneryTrianglesSink::_append_part(Chunk &p_chunk, const Ref<MaszynaTrianglesChunkGeometry> &p_part) {
+        const PackedFloat32Array vertices = p_part->get_vertices();
+        const PackedFloat32Array normals = p_part->get_normals();
+        const PackedFloat32Array uvs = p_part->get_uvs();
+        const PackedInt32Array ends = p_part->get_group_ends();
+        int64_t first = 0;
+        for (int64_t index = 0; index < ends.size() && index < static_cast<int64_t>(p_chunk.groups.size()); index++) {
+            Group &group = p_chunk.groups[index];
+            const int64_t last = ends[index];
+            for (int64_t vertex = first; vertex < last; vertex++) {
+                for (int axis = 0; axis < MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS; axis++) {
+                    group.vertices.push_back(vertices[(vertex * MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS) + axis]);
+                    group.normals.push_back(normals[(vertex * MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS) + axis]);
+                }
+                for (int axis = 0; axis < MaszynaTrianglesChunkGeometry::VECTOR2_FLOATS; axis++) {
+                    group.uvs.push_back(uvs[(vertex * MaszynaTrianglesChunkGeometry::VECTOR2_FLOATS) + axis]);
+                }
+            }
+            first = last;
+        }
     }
 
     String SceneryTrianglesSink::_get_part_path(const int p_chunk, const int p_part) const {
@@ -265,33 +294,39 @@ namespace godot {
                 String::num_int64(p_chunk) + String("_") + String::num_int64(p_part) + String(".res"));
     }
 
-    /// Under the mutex: the largest chunks go to disk until half the budget is left
+    /// Under the mutex: the largest chunks go to disk until half the budget is left; their groups
+    /// keep their centres and counts
     void SceneryTrianglesSink::_spill() {
+        std::vector<int64_t> sizes(chunks.size(), 0);
         std::vector<int> order(chunks.size());
         for (size_t index = 0; index < order.size(); index++) {
             order[index] = static_cast<int>(index);
+            for (const Group &group: chunks[index].groups) {
+                sizes[index] += _get_bytes(group);
+            }
         }
-        std::sort(order.begin(), order.end(), [this](const int p_left, const int p_right) {
-            return _get_bytes(chunks[p_left]) > _get_bytes(chunks[p_right]);
+        std::sort(order.begin(), order.end(), [&sizes](const int p_left, const int p_right) {
+            return sizes[p_left] > sizes[p_right];
         });
         for (const int index: order) {
             if (buffered_bytes <= budget_bytes / 2) {
                 return;
             }
             Chunk &chunk = chunks[index];
-            const Error error =
-                    ResourceCache::resource_save(_to_geometry(chunk, chunk.origin), _get_part_path(index, chunk.parts));
+            const Error error = ResourceCache::resource_save(_to_geometry(chunk), _get_part_path(index, chunk.parts));
             ERR_FAIL_COND_MSG(error != OK, "Cannot write a terrain chunk part to " + directory);
             chunk.parts++;
-            buffered_bytes -= _get_bytes(chunk);
-            std::vector<float>().swap(chunk.vertices);
-            std::vector<float>().swap(chunk.normals);
-            std::vector<float>().swap(chunk.uvs);
+            buffered_bytes -= sizes[index];
+            for (Group &group: chunk.groups) {
+                std::vector<float>().swap(group.vertices);
+                std::vector<float>().swap(group.normals);
+                std::vector<float>().swap(group.uvs);
+            }
         }
     }
 
-    /// A ranged shape is kept whole, as the original keeps it, around its centre - the mean of its
-    /// vertices (shape_node::compute_radius(), scenenode.cpp:405-411).
+    /// A ranged shape is kept whole, as the original keeps it, in the group around its centre - the
+    /// mean of its vertices (shape_node::compute_radius(), scenenode.cpp:405-411).
     ///
     /// A section's triangle is cut along the 1 km grid, each piece stored in its own section: a chunk
     /// is streamed and culled by its section (SceneryStreamingServer), so geometry reaching outside of
@@ -309,15 +344,16 @@ namespace godot {
                 centre += vertex;
             }
             centre /= static_cast<real_t>(p_vertices.size());
+            MutexLock lock(mutex);
+            Chunk &chunk = _get_cell_chunk(p_texture, p_range_min, p_range_max, centre);
+            Group &group = _get_group(chunk, centre, p_vertices.size());
             Piece shape{Vector2i(), {}, {}, {}};
             for (int64_t index = 0; index < p_vertices.size(); index++) {
-                append_vertex(shape, {p_vertices[index], p_normals[index], p_uvs[index]}, centre);
+                append_vertex(shape, {p_vertices[index], p_normals[index], p_uvs[index]}, chunk.origin);
             }
-            MutexLock lock(mutex);
-            Chunk &chunk = _get_cell_chunk(p_texture, p_range_min, p_range_max, centre, p_vertices.size());
-            append_positions(chunk.vertices, shape.vertices, centre - chunk.origin);
-            chunk.normals.insert(chunk.normals.end(), shape.normals.begin(), shape.normals.end());
-            chunk.uvs.insert(chunk.uvs.end(), shape.uvs.begin(), shape.uvs.end());
+            group.vertices.insert(group.vertices.end(), shape.vertices.begin(), shape.vertices.end());
+            group.normals.insert(group.normals.end(), shape.normals.begin(), shape.normals.end());
+            group.uvs.insert(group.uvs.end(), shape.uvs.begin(), shape.uvs.end());
             buffered_bytes += static_cast<int64_t>(
                     (shape.vertices.size() + shape.normals.size() + shape.uvs.size()) * sizeof(float));
             if (!directory.is_empty() && buffered_bytes > budget_bytes) {
@@ -397,12 +433,10 @@ namespace godot {
 
         MutexLock lock(mutex);
         for (const Piece &piece: pieces) {
-            // the range is dropped: the original draws a section's shapes whatever their range
-            // (Render(shape, true), opengl33renderer.cpp:2495)
-            Chunk &chunk = _get_section_chunk(p_texture, piece.cell);
-            chunk.vertices.insert(chunk.vertices.end(), piece.vertices.begin(), piece.vertices.end());
-            chunk.normals.insert(chunk.normals.end(), piece.normals.begin(), piece.normals.end());
-            chunk.uvs.insert(chunk.uvs.end(), piece.uvs.begin(), piece.uvs.end());
+            Group &group = _get_section_chunk(p_texture, piece.cell).groups[0];
+            group.vertices.insert(group.vertices.end(), piece.vertices.begin(), piece.vertices.end());
+            group.normals.insert(group.normals.end(), piece.normals.begin(), piece.normals.end());
+            group.uvs.insert(group.uvs.end(), piece.uvs.begin(), piece.uvs.end());
             buffered_bytes += static_cast<int64_t>(
                     (piece.vertices.size() + piece.normals.size() + piece.uvs.size()) * sizeof(float));
         }
@@ -411,94 +445,153 @@ namespace godot {
         }
     }
 
+    /// Each group of the geometry is a shape: a section's goes to the section of its origin, a
+    /// ranged one to the group of its centre
     void SceneryTrianglesSink::add_geometry(const Ref<MaszynaTrianglesChunkGeometry> &p_geometry) {
         ERR_FAIL_COND(p_geometry.is_null());
         const String texture = p_geometry->get_texture();
+        const float range_min = p_geometry->get_range_min();
+        const float range_max = p_geometry->get_range_max();
+        const bool ranged = shape_is_ranged(_is_translucent(texture), range_min, range_max);
         const Vector3 origin = p_geometry->get_origin();
-        const bool ranged =
-                shape_is_ranged(_is_translucent(texture), p_geometry->get_range_min(), p_geometry->get_range_max());
+        const PackedFloat32Array vertices = p_geometry->get_vertices();
+        const PackedFloat32Array normals = p_geometry->get_normals();
+        const PackedFloat32Array uvs = p_geometry->get_uvs();
+        const PackedVector3Array centres = p_geometry->get_group_centres();
+        const PackedInt32Array ends = p_geometry->get_group_ends();
         MutexLock lock(mutex);
-        Chunk &chunk =
-                ranged ? _get_cell_chunk(
-                                 texture, p_geometry->get_range_min(), p_geometry->get_range_max(), origin,
-                                 p_geometry->get_vertices().size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS)
-                       : _get_section_chunk(
-                                 texture, Vector2i(
-                                                  static_cast<int>(Math::floor(origin.x / CHUNK_SIZE_M)),
-                                                  static_cast<int>(Math::floor(origin.z / CHUNK_SIZE_M))));
-        const int64_t bytes = _get_bytes(chunk);
-        _append(chunk, p_geometry);
-        buffered_bytes += _get_bytes(chunk) - bytes;
+        int64_t first = 0;
+        for (int64_t index = 0; index < ends.size(); index++) {
+            const int64_t last = ends[index];
+            const Vector3 centre = origin + centres[index];
+            Chunk &chunk = ranged ? _get_cell_chunk(texture, range_min, range_max, centre)
+                                  : _get_section_chunk(
+                                            texture, Vector2i(
+                                                             static_cast<int>(Math::floor(origin.x / CHUNK_SIZE_M)),
+                                                             static_cast<int>(Math::floor(origin.z / CHUNK_SIZE_M))));
+            Group &group = ranged ? _get_group(chunk, centre, last - first) : chunk.groups[0];
+            const Vector3 offset = origin - chunk.origin;
+            for (int64_t vertex = first; vertex < last; vertex++) {
+                const int64_t vector3 = vertex * MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS;
+                const int64_t vector2 = vertex * MaszynaTrianglesChunkGeometry::VECTOR2_FLOATS;
+                group.vertices.insert(
+                        group.vertices.end(), {vertices[vector3] + static_cast<float>(offset.x),
+                                               vertices[vector3 + 1] + static_cast<float>(offset.y),
+                                               vertices[vector3 + 2] + static_cast<float>(offset.z)});
+                group.normals.insert(
+                        group.normals.end(), {normals[vector3], normals[vector3 + 1], normals[vector3 + 2]});
+                group.uvs.insert(group.uvs.end(), {uvs[vector2], uvs[vector2 + 1]});
+            }
+            buffered_bytes += static_cast<int64_t>(
+                    (last - first) *
+                    ((2 * MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS) +
+                     MaszynaTrianglesChunkGeometry::VECTOR2_FLOATS) *
+                    sizeof(float));
+            first = last;
+        }
         if (!directory.is_empty() && buffered_bytes > budget_bytes) {
             _spill();
         }
     }
 
     void SceneryTrianglesSink::add_geometry_file(const String &p_path) {
-        const Ref<MaszynaTrianglesChunkGeometry> geometry =
+        const Ref<MaszynaTrianglesSector> sector =
                 ResourceLoader::get_singleton()->load(p_path, "", ResourceLoader::CACHE_MODE_IGNORE);
-        ERR_FAIL_COND_MSG(geometry.is_null(), "Cannot read a terrain chunk: " + p_path);
-        add_geometry(geometry);
+        ERR_FAIL_COND_MSG(sector.is_null(), "Cannot read a terrain sector: " + p_path);
+        const TypedArray<MaszynaTrianglesChunkGeometry> sector_chunks = sector->get_chunks();
+        for (int64_t index = 0; index < sector_chunks.size(); index++) {
+            add_geometry(sector_chunks[index]);
+        }
     }
 
     TypedArray<MaszynaTrianglesChunkGeometry> SceneryTrianglesSink::get_geometries() const {
         MutexLock lock(mutex);
         TypedArray<MaszynaTrianglesChunkGeometry> geometries;
         for (const Chunk &chunk: chunks) {
-            geometries.append(_to_geometry(chunk, chunk.centre));
+            geometries.append(_to_geometry(chunk));
         }
         return geometries;
     }
 
-    /// One chunk at a time: its parts read back, joined with what is still in memory, written whole
+    /// One section at a time: each of its chunks' parts read back and joined with what is still in
+    /// memory, cut into pieces an upload each, and the section written as one file
     Array SceneryTrianglesSink::finish() {
         MutexLock lock(mutex);
         ERR_FAIL_COND_V_MSG(directory.is_empty(), Array(), "A sink without a directory keeps its chunks in memory");
-        Array descriptors;
+        // the chunks of each section, in the order they first appeared
+        std::vector<Vector2i> sections;
+        HashMap<Vector2i, std::vector<int>> section_chunks;
         for (int index = 0; index < static_cast<int>(chunks.size()); index++) {
-            Chunk &chunk = chunks[index];
-            Chunk whole;
-            whole.texture = chunk.texture;
-            whole.origin = chunk.origin;
-            whole.centre = chunk.centre;
-            whole.range_min = chunk.range_min;
-            whole.range_max = chunk.range_max;
-            for (int part = 0; part < chunk.parts; part++) {
-                const String part_path = _get_part_path(index, part);
-                const Ref<MaszynaTrianglesChunkGeometry> geometry =
-                        ResourceLoader::get_singleton()->load(part_path, "", ResourceLoader::CACHE_MODE_IGNORE);
-                if (geometry.is_valid()) {
-                    _append(whole, geometry);
-                }
-                DirAccess::remove_absolute(part_path);
+            const Vector3 &origin = chunks[index].origin;
+            const Vector2i section(
+                    static_cast<int>(Math::floor(origin.x / CHUNK_SIZE_M)),
+                    static_cast<int>(Math::floor(origin.z / CHUNK_SIZE_M)));
+            if (!section_chunks.has(section)) {
+                sections.push_back(section);
             }
-            whole.vertices.insert(whole.vertices.end(), chunk.vertices.begin(), chunk.vertices.end());
-            whole.normals.insert(whole.normals.end(), chunk.normals.begin(), chunk.normals.end());
-            whole.uvs.insert(whole.uvs.end(), chunk.uvs.begin(), chunk.uvs.end());
-            chunk = Chunk(); // its memory goes before the next chunk is read
+            section_chunks[section].push_back(index);
+        }
+        Array descriptors;
+        for (const Vector2i &section: sections) {
+            const String path = directory.path_join(
+                    String::num_int64(section.x) + String("_") + String::num_int64(section.y) + String(".res"));
+            TypedArray<MaszynaTrianglesChunkGeometry> sector_chunks;
+            Array sector_descriptors;
+            for (const int index: section_chunks[section]) {
+                Chunk &chunk = chunks[index];
+                Chunk whole;
+                whole.texture = chunk.texture;
+                whole.origin = chunk.origin;
+                whole.range_min = chunk.range_min;
+                whole.range_max = chunk.range_max;
+                for (const Group &group: chunk.groups) {
+                    Group &copy = whole.groups.emplace_back();
+                    copy.centre = group.centre;
+                    copy.vertex_count = group.vertex_count;
+                }
+                for (int part = 0; part < chunk.parts; part++) {
+                    const String part_path = _get_part_path(index, part);
+                    const Ref<MaszynaTrianglesChunkGeometry> geometry =
+                            ResourceLoader::get_singleton()->load(part_path, "", ResourceLoader::CACHE_MODE_IGNORE);
+                    if (geometry.is_valid()) {
+                        _append_part(whole, geometry);
+                    }
+                    DirAccess::remove_absolute(part_path);
+                }
+                for (size_t group = 0; group < chunk.groups.size(); group++) {
+                    const Group &rest = chunk.groups[group];
+                    Group &target = whole.groups[group];
+                    target.vertices.insert(target.vertices.end(), rest.vertices.begin(), rest.vertices.end());
+                    target.normals.insert(target.normals.end(), rest.normals.begin(), rest.normals.end());
+                    target.uvs.insert(target.uvs.end(), rest.uvs.begin(), rest.uvs.end());
+                }
+                chunk = Chunk(); // its memory goes before the next chunk is read
 
-            // a chunk is uploaded in one go when it is streamed: a large one goes as pieces
-            const TypedArray<MaszynaTrianglesChunkGeometry> pieces = _to_geometry(whole, whole.centre)->split();
-            for (int64_t piece = 0; piece < pieces.size(); piece++) {
-                const String path = directory.path_join(
-                        String::num_int64(index) + String("-") + String::num_int64(piece) + String(".res"));
-                const Error error = ResourceCache::resource_save(pieces[piece], path);
-                if (error != OK) {
-                    UtilityFunctions::push_error("[SceneryTrianglesSink] Cannot write a terrain chunk to " + path);
-                    continue;
+                // a chunk is uploaded in one go when it is streamed: a large one goes as pieces
+                const TypedArray<MaszynaTrianglesChunkGeometry> pieces = _to_geometry(whole)->split();
+                for (int64_t piece = 0; piece < pieces.size(); piece++) {
+                    Dictionary descriptor;
+                    descriptor["path"] = path;
+                    descriptor["index"] = sector_chunks.size();
+                    descriptor["position"] = whole.origin;
+                    descriptor["texture"] = whole.texture;
+                    descriptor["range_min"] = whole.range_min;
+                    descriptor["range_max"] = whole.range_max;
+                    sector_descriptors.append(descriptor);
+                    sector_chunks.append(pieces[piece]);
                 }
-                Dictionary descriptor;
-                descriptor["path"] = path;
-                descriptor["position"] = whole.centre;
-                descriptor["texture"] = whole.texture;
-                descriptor["range_min"] = whole.range_min;
-                descriptor["range_max"] = whole.range_max;
-                descriptors.append(descriptor);
             }
+            Ref<MaszynaTrianglesSector> sector;
+            sector.instantiate();
+            sector->set_chunks(sector_chunks);
+            if (ResourceCache::resource_save(sector, path) != OK) {
+                UtilityFunctions::push_error("[SceneryTrianglesSink] Cannot write a terrain sector to " + path);
+                continue;
+            }
+            descriptors.append_array(sector_descriptors);
         }
         chunks.clear();
-        section_chunks.clear();
-        cell_chunks.clear();
+        chunk_indices.clear();
         buffered_bytes = 0;
         return descriptors;
     }

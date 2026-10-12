@@ -59,6 +59,9 @@ anything. Open work belongs in `TODO.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* A structure ported from the original keeps its granularity on disk as well: one file per
+  section of the 1 km grid, as `basic_section`, with its cells and their merged shapes inside - a
+  file per merged shape was ten times the chunks. *(10-12 ten times the terrain chunks)*
 * A vehicle's place is its two axles (`iNumAxles = 2`, not `NAxles`): each counts on every track
   it crosses, the primary one - the second in the direction of travel - lists the vehicle and fires
   the track events, the body hangs between them. Never a single centre point. *(10-12 a vehicle is

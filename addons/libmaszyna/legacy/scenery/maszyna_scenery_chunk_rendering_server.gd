@@ -16,32 +16,35 @@ extends Node
 ## @deprecated: streaming glue for legacy "triangles" chunks, to be replaced by SceneryStreamingServer.
 
 class ChunkState:
-    ## ResourceLazyLoader's MaszynaTrianglesChunkGeometry, read on the streaming worker
+    ## ResourceLazyLoader's MaszynaTrianglesSector, read on the streaming worker and shared by the
+    ## chunks of the section
     var geometry:RID
-    ## RenderingServer's mesh, made from the worker's arrays as the chunk is built and freed as it is
-    ## cleared
-    var mesh:RID
+    ## RenderingServer's meshes and their instances, one per group of the chunk
+    ## (MaszynaTrianglesChunkGeometry), made from the worker's arrays as the chunk is built and freed
+    ## as it is cleared
+    var meshes:Array[RID] = []
+    var mesh_instances:Array[RID] = []
     var transform:Transform3D
     var material_name:String
     var range_min:float
     var range_max:float
     var scenario:RID
     var stream_rid:RID
-    var mesh_instance:RID
     ## MaterialManager only keeps a weakref (material_manager.gd), so the chunk holds the material
     ## for as long as it is built - like E3DInstanceData.materials does for models
     var material:Material
 
-## What the streaming worker reads of a chunk for the main thread
+## What the streaming worker reads of a chunk for the main thread, per group
 class PreloadedChunk:
-    var arrays:Array
-    ## The box Godot measures the visibility range to the centre of - the chunk's origin
-    var visibility_aabb:AABB
+    var arrays:Array[Array] = []
+    ## The box Godot measures the group's visibility range to the centre of - the group's centre
+    var visibility_aabbs:Array[AABB] = []
 
 var _chunks:Dictionary[RID, ChunkState] = {}
-## The geometry of each chunk, for _stream_preload() on the streaming worker, where _chunks is not
-## safe to read
+## The sector of each chunk and the chunk's index in it, for _stream_preload() on the streaming
+## worker, where _chunks is not safe to read
 var _geometries:Dictionary[RID, RID] = {}
+var _chunk_indices:Dictionary[RID, int] = {}
 var _geometries_mutex:Mutex = Mutex.new()
 var _next_id:int = 0
 var _stream_owner:int = -1
@@ -59,7 +62,8 @@ func _on_data_reload_requested() -> void:
 
 
 ## Registers a chunk for streaming; nothing is rendered until the camera comes within its range.
-## `geometry_loader() -> MaszynaTrianglesChunkGeometry` reads its triangles, on the streaming worker.
+## `geometry_loader() -> MaszynaTrianglesSector` reads its section's file, on the streaming worker -
+## registered by the file's path, so the chunks of a section read it once.
 func create_chunk(chunk:MaszynaTrianglesChunkData, scenario:RID, geometry_loader:Callable) -> RID:
     if _stream_owner < 0:
         _stream_owner = SceneryStreamingServer.owner_create("terrain", _stream_preload, _stream_build, _stream_clear)
@@ -77,6 +81,7 @@ func create_chunk(chunk:MaszynaTrianglesChunkData, scenario:RID, geometry_loader
     _chunks[rid] = state
     _geometries_mutex.lock()
     _geometries[rid] = state.geometry
+    _chunk_indices[rid] = chunk.chunk_index
     _geometries_mutex.unlock()
     state.stream_rid = SceneryStreamingServer.stream_register(
         _stream_owner, rid, chunk.position, chunk.range_max
@@ -85,16 +90,19 @@ func create_chunk(chunk:MaszynaTrianglesChunkData, scenario:RID, geometry_loader
 
 
 ## Terrain a SceneryStreamingProvider supplies: a chunk whose triangles are in memory already, and
-## held by it until the provider lets the cell go
+## held by it until the provider lets the cell go - a sector of its own, with the chunk alone
 func adopt_terrain(geometry:MaszynaTrianglesChunkGeometry, scenario:RID) -> RID:
     var chunk:MaszynaTrianglesChunkData = MaszynaTrianglesChunkData.new()
     # ResourceLazyLoader's key - the geometry has no file of its own
     chunk.geometry_path = "supplied://%d" % geometry.get_instance_id()
+    var sector:MaszynaTrianglesSector = MaszynaTrianglesSector.new()
+    var chunks:Array[MaszynaTrianglesChunkGeometry] = [geometry]
+    sector.chunks = chunks
     chunk.position = geometry.origin
     chunk.material_name = geometry.texture
     chunk.range_min = geometry.range_min
     chunk.range_max = maxf(geometry.range_max, 0.0)
-    return create_chunk(chunk, scenario, func() -> MaszynaTrianglesChunkGeometry: return geometry)
+    return create_chunk(chunk, scenario, func() -> MaszynaTrianglesSector: return sector)
 
 
 func free_chunk(rid:RID) -> void:
@@ -106,6 +114,7 @@ func free_chunk(rid:RID) -> void:
     _chunks.erase(rid)
     _geometries_mutex.lock()
     _geometries.erase(rid)
+    _chunk_indices.erase(rid)
     _geometries_mutex.unlock()
     ResourceLazyLoader.resource_free(state.geometry)
 
@@ -116,15 +125,18 @@ func free_chunk(rid:RID) -> void:
 func _stream_preload(rid:RID) -> Variant:
     _geometries_mutex.lock()
     var geometry_rid:RID = _geometries.get(rid, RID())
+    var chunk_index:int = _chunk_indices.get(rid, 0)
     _geometries_mutex.unlock()
     if not geometry_rid.is_valid():
         return null
-    var geometry:MaszynaTrianglesChunkGeometry = ResourceLazyLoader.resource_load(geometry_rid)
-    if not geometry:
+    var sector:MaszynaTrianglesSector = ResourceLazyLoader.resource_load(geometry_rid)
+    if not sector or chunk_index >= sector.chunks.size():
         return null
+    var geometry:MaszynaTrianglesChunkGeometry = sector.chunks[chunk_index]
     var preloaded:PreloadedChunk = PreloadedChunk.new()
-    preloaded.arrays = geometry.to_mesh_arrays()
-    preloaded.visibility_aabb = geometry.get_visibility_aabb()
+    for group:int in geometry.get_group_count():
+        preloaded.arrays.append(geometry.get_group_mesh_arrays(group))
+        preloaded.visibility_aabbs.append(geometry.get_group_visibility_aabb(group))
     return preloaded
 
 
@@ -132,43 +144,48 @@ func _stream_preload(rid:RID) -> Variant:
 func chunk_set_scenario(rid:RID, scenario:RID) -> void:
     var state:ChunkState = _chunks.get(rid)
     state.scenario = scenario
-    if state.mesh_instance.is_valid():
-        RenderingServer.instance_set_scenario(state.mesh_instance, scenario)
+    for mesh_instance:RID in state.mesh_instances:
+        RenderingServer.instance_set_scenario(mesh_instance, scenario)
 
 
+## A mesh and an instance per group: the original draws each merged shape of a cell by its own
+## range, measured from its own centre (opengl33renderer.cpp:2814); a chunk of a section is one
+## group without a range - the original draws those whatever their range (opengl33renderer.cpp:2495)
 func _stream_build(rid:RID, preloaded:PreloadedChunk) -> void:
     var state:ChunkState = _chunks.get(rid)
-    if not state or state.mesh_instance.is_valid() or not preloaded:
+    if not state or state.mesh_instances or not preloaded:
         return
     # an unresolved texture leaves nothing worth drawing, like a scenery model that fails to load
     var material:Material = MaterialManager.get_material("", state.material_name)
     if not material:
         return
-    state.mesh = RenderingServer.mesh_create()
-    RenderingServer.mesh_add_surface_from_arrays(state.mesh, RenderingServer.PRIMITIVE_TRIANGLES, preloaded.arrays)
-    state.mesh_instance = RenderingServer.instance_create()
-    RenderingServer.instance_set_base(state.mesh_instance, state.mesh)
-    RenderingServer.instance_set_scenario(state.mesh_instance, state.scenario)
-    RenderingServer.instance_set_transform(state.mesh_instance, state.transform)
     state.material = material
-    RenderingServer.instance_geometry_set_material_override(state.mesh_instance, material.get_rid())
-    # the chunk's own range still culls it inside the streamed area, measured from its origin as the
-    # original measures it from the shape's centre (opengl33renderer.cpp:2814); a chunk of a section
-    # has none - the original draws those whatever their range (opengl33renderer.cpp:2495)
-    if state.range_max > 0:
-        RenderingServer.instance_set_custom_aabb(state.mesh_instance, preloaded.visibility_aabb)
-        RenderingServer.instance_geometry_set_visibility_range(
-            state.mesh_instance, state.range_min, state.range_max, 0.0, 0.0,
-            RenderingServer.VISIBILITY_RANGE_FADE_DISABLED
-        )
+    for group:int in preloaded.arrays.size():
+        var mesh:RID = RenderingServer.mesh_create()
+        RenderingServer.mesh_add_surface_from_arrays(mesh, RenderingServer.PRIMITIVE_TRIANGLES, preloaded.arrays[group])
+        var mesh_instance:RID = RenderingServer.instance_create()
+        RenderingServer.instance_set_base(mesh_instance, mesh)
+        RenderingServer.instance_set_scenario(mesh_instance, state.scenario)
+        RenderingServer.instance_set_transform(mesh_instance, state.transform)
+        RenderingServer.instance_geometry_set_material_override(mesh_instance, material.get_rid())
+        if state.range_max > 0:
+            RenderingServer.instance_set_custom_aabb(mesh_instance, preloaded.visibility_aabbs[group])
+            RenderingServer.instance_geometry_set_visibility_range(
+                mesh_instance, state.range_min, state.range_max, 0.0, 0.0,
+                RenderingServer.VISIBILITY_RANGE_FADE_DISABLED
+            )
+        state.meshes.append(mesh)
+        state.mesh_instances.append(mesh_instance)
 
 
 func _stream_clear(rid:RID) -> void:
     var state:ChunkState = _chunks.get(rid)
-    if not state or not state.mesh_instance.is_valid():
+    if not state or not state.mesh_instances:
         return
-    RenderingServer.free_rid(state.mesh_instance)
-    state.mesh_instance = RID()
+    for mesh_instance:RID in state.mesh_instances:
+        RenderingServer.free_rid(mesh_instance)
+    for mesh:RID in state.meshes:
+        RenderingServer.free_rid(mesh)
+    state.mesh_instances.clear()
+    state.meshes.clear()
     state.material = null
-    RenderingServer.free_rid(state.mesh)
-    state.mesh = RID()
