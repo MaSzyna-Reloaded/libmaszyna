@@ -14,6 +14,8 @@ class_name MaszynaLegacyEventFactory
 ## `probability`, `trackoccupied`, `trackfree`; a track's `event0/1/2`, `eventall0/1/2` and the
 ## events named `<track>:<slot>` (Track.cpp:970-983); the isolated sections with their own memory and
 ## `<section>:busy/:free/:inc/:dec` events. The other types get an event without an action (TODO.md).
+## A name defined more than once runs its definitions as the scenery's `joinduplicatedevents`
+## says (MaszynaEventData.joined; see where the names defined more than once are set up).
 
 ## "Leave this field as it is" (Event.cpp:491-503)
 const FIELD_KEPT:String = "*"
@@ -36,6 +38,11 @@ const PASSENGER_STOP_POINT:String = "PassengerStopPoint:"
 ## What follows it in a stop's name only makes the name unique
 const STOP_POINT_UNIQUE:String = "#"
 const PASSIVE_GET_COMMANDS:Array[String] = ["SetVelocity", "ShuntVelocity", "SetProximityVelocity"]
+## A duplicate of a name like these is dropped whatever joinduplicatedevents says - the original's
+## "temporary" exceptions for W4 line info, horn warnings and SHP magnets
+## (event_manager::insert(), Event.cpp:2304-2321)
+const DROPPED_DUPLICATE_PREFIX:String = "#"
+const DROPPED_DUPLICATE_SUFFIXES:Array[String] = ["lineinfo:", "_warning", "_shp"]
 ## A launcher's HHMM (EvLaunch.cpp:139-140)
 const HHMM_HOUR:int = 100
 ## A launcher firing the first time it is in range (EvLaunch.cpp:182-186) - not ported (TODO.md)
@@ -179,22 +186,43 @@ static func build(
         for child:String in block.children:
             TrackServer.isolated_set_parent(sections[child], sections[block.name])
 
-    # every event exists before any refers to another
+    # the definitions of each name, in their order; a duplicate of some names is dropped
+    # (event_manager::insert(), Event.cpp:2304-2321)
+    var kept_events:Array[MaszynaEventData] = []
+    var definitions:Dictionary[String, Array] = {}
+    for event:MaszynaEventData in events:
+        var dropped:bool = event.name.begins_with(DROPPED_DUPLICATE_PREFIX)
+        for suffix:String in DROPPED_DUPLICATE_SUFFIXES:
+            dropped = dropped or event.name.ends_with(suffix)
+        if dropped and definitions.has(event.name):
+            continue
+        if not definitions.has(event.name):
+            definitions[event.name] = []
+        definitions[event.name].append(kept_events.size())
+        kept_events.append(event)
+
+    # every event exists before any refers to another. A name defined more than once is an event
+    # of its own, set up below once its definitions are built; they stay unnamed
     var event_rids:Array[RID] = []
     var events_by_name:Dictionary[String, RID] = {}
-    for event:MaszynaEventData in events:
+    for event:MaszynaEventData in kept_events:
         var rid:RID = ScenarioEventServer.event_create()
         root._event_rids.append(rid)
-        ScenarioEventServer.event_set_name(rid, event.name)
-        ScenarioEventServer.event_set_delay(rid, absf(event.delay))
-        ScenarioEventServer.event_set_random_delay(rid, event.random_delay)
-        ScenarioEventServer.event_set_departure_delay(rid, event.departure_delay)
         event_rids.append(rid)
-        events_by_name[event.name] = rid
+        if definitions[event.name].size() == 1:
+            ScenarioEventServer.event_set_name(rid, event.name)
+            _set_delays(rid, event)
+            events_by_name[event.name] = rid
+    for event_name:String in definitions:
+        if definitions[event_name].size() > 1:
+            var named:RID = ScenarioEventServer.event_create()
+            root._event_rids.append(named)
+            ScenarioEventServer.event_set_name(named, event_name)
+            events_by_name[event_name] = named
 
-    for index:int in events.size():
+    for index:int in kept_events.size():
         await SceneryInstancer.frame_budget_wait()
-        var event:MaszynaEventData = events[index]
+        var event:MaszynaEventData = kept_events[index]
         var rid:RID = event_rids[index]
         var event_memories:Array[RID] = _get_memories(event.targets, memories)
         var targets:Array[RID] = []
@@ -411,6 +439,77 @@ static func build(
         if conditioned:
             ScenarioEventServer.event_attach_condition(rid, condition)
 
+    # A name defined more than once runs its definitions in their order, each with its own
+    # condition, at the time and with the activator the name was queued with: the original hangs
+    # the later ones on the first and puts each in its place in the queue as it runs
+    # (event_manager::insert(), Event.cpp:2323-2334; CheckQuery(), :2471-2480). The name's event
+    # queues them, with no delay of their own, so they run on the next frame, in their order.
+    # A definition read without joinduplicatedevents disables the first (m_ignored, :2328-2334).
+    # What starts the scenery queued is set up at its end.
+    var chain_starts:Dictionary[int, RID] = {}
+    for event_name:String in definitions:
+        var indices:Array = definitions[event_name]
+        if indices.size() == 1:
+            continue
+        var head:MaszynaEventData = kept_events[indices[0]]
+        var head_rid:RID = event_rids[indices[0]]
+        var named:RID = events_by_name[event_name]
+        var ignored:bool = false
+        var chain:Array[RID] = []
+        for position:int in indices.size():
+            var definition:MaszynaEventData = kept_events[indices[position]]
+            chain.append(event_rids[indices[position]])
+            if position == 0:
+                continue
+            if not definition.joined:
+                ignored = true
+                push_warning("Bad scenario: duplicate event name \"%s\"" % event_name)
+            # one hung on another is queued (basic_event::append(), Event.cpp:393); a `getvalues`
+            # becomes passive again when it is initialised, after (:577-588)
+            if definition.type == "putvalues":
+                ScenarioEventServer.event_set_passive(event_rids[indices[position]], false)
+        # one queued by itself at the start runs the ones after it (InitEvents(), :2493-2499)
+        for position:int in range(1, indices.size()):
+            var definition:MaszynaEventData = kept_events[indices[position]]
+            if definition.delay < 0.0:
+                chain_starts[indices[position]] = _create_chain_event(root, definition, chain.slice(position))
+        # the first of an "onstart" name is queued as it is read, before any other of its name
+        # is (event_manager::insert(), :2338-2345)
+        var onstart:bool = ONSTART in event_name
+        if ScenarioEventServer.event_is_passive(head_rid):
+            # a passive first is never queued, so neither are the ones after it; drivers read it
+            # (AddToQuery(), :2383)
+            _set_delays(named, head)
+            ScenarioEventServer.event_attach_action(named, ScenarioEventServer.event_get_action(head_rid))
+            ScenarioEventServer.event_attach_condition(named, ScenarioEventServer.event_get_condition(head_rid))
+            ScenarioEventServer.event_set_passive(named, true)
+        elif head.type == "addvalues" and head.delay == 0.0:
+            # an instant first runs at once, and the next one is queued with its own delays; a
+            # disabled one does not run (AddToQuery(), :2388-2401). Read alone, it ran alone.
+            var next:MaszynaEventData = kept_events[indices[1]]
+            if ignored:
+                _set_chain(named, next, chain.slice(1))
+            else:
+                var tail:Array[RID] = [head_rid, _create_chain_event(root, next, chain.slice(1))]
+                _set_chain(named, head, tail)
+            if onstart:
+                chain_starts[indices[0]] = head_rid
+        elif ignored and not head.type == "multiple":
+            # a disabled first is never queued (AddToQuery(), :2402-2403); queued before it was
+            # disabled, it leaves its place in the queue to the next one (CheckQuery(), :2472-2480)
+            _set_delays(named, head)
+            if onstart:
+                chain_starts[indices[0]] = _create_chain_event(root, head, chain.slice(1))
+        else:
+            # a disabled `multiple` comes back without its memory comparison (multi_event::init(),
+            # :1218-1222)
+            var head_condition:MaszynaLegacyEventCondition = ScenarioEventServer.event_get_condition(head_rid)
+            if ignored and head_condition:
+                var compared:Array[RID] = []
+                head_condition.memories = compared
+            _set_chain(named, head, chain)
+            chain_starts[indices[0]] = named
+
     # the events a track names for its slots, and the ones named after the track and the slot
     for index:int in tracks.size():
         var track_data:MaszynaTrackData = tracks[index]
@@ -504,14 +603,43 @@ static func build(
             ))
 
     # queued at the start: a negative delay (InitEvents(), Event.cpp:2493-2499) and the first event
-    # of each name containing "onstart" (Event.cpp:2336-2345)
+    # of each name containing "onstart" (Event.cpp:2336-2345); of a name defined more than once,
+    # what its setup above left to start
     var started:Dictionary[String, bool] = {}
-    for index:int in events.size():
-        var event:MaszynaEventData = events[index]
+    for index:int in kept_events.size():
+        var event:MaszynaEventData = kept_events[index]
         var onstart:bool = ONSTART in event.name and not started.has(event.name)
         started[event.name] = true
-        if event.delay < 0.0 or onstart:
+        if not (event.delay < 0.0 or onstart):
+            continue
+        if definitions[event.name].size() == 1:
             ScenarioEventServer.event_queue(event_rids[index])
+        elif chain_starts.has(index):
+            ScenarioEventServer.event_queue(chain_starts[index])
+
+
+## The event runs as the definition says: its delay, random delay and departure delay
+static func _set_delays(rid:RID, definition:MaszynaEventData) -> void:
+    ScenarioEventServer.event_set_delay(rid, absf(definition.delay))
+    ScenarioEventServer.event_set_random_delay(rid, definition.random_delay)
+    ScenarioEventServer.event_set_departure_delay(rid, definition.departure_delay)
+
+
+## The event runs the chain of definitions of one name, in their order, with the delays of the
+## given definition (see the setup of the names defined more than once)
+static func _set_chain(rid:RID, definition:MaszynaEventData, chain:Array[RID]) -> void:
+    _set_delays(rid, definition)
+    var action:MaszynaLegacyMultipleAction = MaszynaLegacyMultipleAction.new()
+    action.events = chain
+    ScenarioEventServer.event_attach_action(rid, action)
+
+
+## A new, unnamed event running the chain (_set_chain())
+static func _create_chain_event(root:MaszynaIncludeNode, definition:MaszynaEventData, chain:Array[RID]) -> RID:
+    var rid:RID = ScenarioEventServer.event_create()
+    root._event_rids.append(rid)
+    _set_chain(rid, definition, chain)
+    return rid
 
 
 ## The fields a `<text> <value1> <value2>` triple sets or compares - all but those given as `*`

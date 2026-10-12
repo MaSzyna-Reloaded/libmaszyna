@@ -26,3 +26,8 @@ class_name MaszynaEventData
 ## The origin in effect where the event is defined - what a position among its parameters is
 ## relative to (`putvalues`, Event.cpp:709-712)
 @export var origin:Vector3 = Vector3.ZERO
+## The scenery's `joinduplicatedevents` where the event is defined
+## (MaszynaImporterContext.join_duplicated_events): a duplicate of a name defined while it is set
+## is joined to the first definition; one defined without it disables the first as well
+## (event_manager::insert(), Event.cpp:2323-2334)
+@export var joined:bool = false

@@ -6,6 +6,13 @@ class PendingInclude:
     var task_id:int = -1
     ## Sizes of the result lists when the include was reached
     var sizes:Dictionary[String, int] = {}
+    ## The changes of join_duplicated_events made in the file before the include
+    var join_changes_size:int = 0
+
+## A `config joinduplicatedevents` of the file: the events of the file it stood before, and its value
+class JoinChange:
+    var events_size:int = 0
+    var joined:bool = false
 
 const RESULT_LISTS:Array[String] = [
     "tracks", "traction", "power_sources", "models", "events", "memcells", "launchers", "sounds", "isolated_sections", "terrains",
@@ -51,6 +58,12 @@ var binary_terrain:bool = false
 ## The original's Global.file_binary_terrain_state: includes of "_ter.scm" files are left out
 ## (parser.cpp:330)
 var binary_terrain_state:bool = false
+## The original's Global.bJoinEvents, a scenery's `config joinduplicatedevents` (Globals.cpp:668-672,
+## off by default): whether a duplicate of an event name is joined to the first definition
+## (MaszynaEventData.joined). Like the original's, it holds for the rest of the load from where it
+## is set: an include inherits it, and what follows the include gets the value the include left
+## (merge_pending_includes())
+var join_duplicated_events:bool = false
 var dependencies:Dictionary = {}
 var cacheable:bool = true
 ## Objects parsed from the file (set by SceneryInstancer.parse_file_task())
@@ -68,6 +81,9 @@ var trainset:MaszynaTrainsetData = null
 var _rotates = []
 var _origins = []
 var _active_files:Dictionary = {}
+## join_duplicated_events where this file begins, and what the file's `config` changes it to
+var _joined_at_start:bool = false
+var _join_changes:Array[JoinChange] = []
 
 
 func register_dependency(path:String, size:int = -1) -> void:
@@ -124,6 +140,15 @@ func load_scenario_binary_terrain(scenario:String) -> void:
         load_binary_terrain(path)
 
 
+## `config joinduplicatedevents <yes|no>`: the events defined from here on (join_duplicated_events)
+func set_join_duplicated_events(joined:bool) -> void:
+    join_duplicated_events = joined
+    var change := JoinChange.new()
+    change.events_size = events.size()
+    change.joined = joined
+    _join_changes.append(change)
+
+
 func push_rotate(new_rotate: Vector3):
     _rotates.push_front(rotate)
     rotate = new_rotate
@@ -151,6 +176,7 @@ func get_state() -> Dictionary:
         "triangles_sink": triangles_sink,
         "binary_terrain": binary_terrain,
         "binary_terrain_state": binary_terrain_state,
+        "join_duplicated_events": join_duplicated_events,
         "active_files": _active_files.duplicate(),
     }
 
@@ -164,6 +190,8 @@ static func from_state(state:Dictionary) -> MaszynaImporterContext:
     context.triangles_sink = state["triangles_sink"]
     context.binary_terrain = state["binary_terrain"]
     context.binary_terrain_state = state["binary_terrain_state"]
+    context.join_duplicated_events = state["join_duplicated_events"]
+    context._joined_at_start = state["join_duplicated_events"]
     context._active_files = state["active_files"]
     return context
 
@@ -174,6 +202,7 @@ func submit_include(task:Callable, filename:String, parameters:Dictionary) -> Pe
     var pending := PendingInclude.new()
     for list_name:String in RESULT_LISTS:
         pending.sizes[list_name] = (get(list_name) as Array).size()
+    pending.join_changes_size = _join_changes.size()
     var state:Dictionary = get_state()
     state["include_depth"] = include_depth + 1
     # one bind() - chained binds prepend the later arguments
@@ -204,6 +233,26 @@ func merge_pending_includes() -> void:
             continue
         dependencies.merge(child.dependencies)
         cacheable = cacheable and child.cacheable
+
+    # the file's own events take join_duplicated_events where they stand, now that the includes
+    # (parsed beside the file) tell what they left it at; the file leaves its parent the last one
+    var joined:bool = _joined_at_start
+    var event_index:int = 0
+    var change_index:int = 0
+    for index:int in pendings.size() + 1:
+        var last:bool = index == pendings.size()
+        var events_end:int = events.size() if last else pendings[index].sizes["events"]
+        var changes_end:int = _join_changes.size() if last else pendings[index].join_changes_size
+        while event_index < events_end or change_index < changes_end:
+            if change_index < changes_end and _join_changes[change_index].events_size <= event_index:
+                joined = _join_changes[change_index].joined
+                change_index += 1
+                continue
+            events[event_index].joined = joined
+            event_index += 1
+        if not last and children[index]:
+            joined = children[index].join_duplicated_events
+    join_duplicated_events = joined
 
     objects = _merge_list(own_objects, object_sizes, children, "objects")
     for list_name:String in RESULT_LISTS:
