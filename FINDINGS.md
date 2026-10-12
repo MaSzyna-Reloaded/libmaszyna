@@ -380,6 +380,9 @@ anything. Open work belongs in `TODO.md`.
   built on a running train lowered its pantograph)*
 * A `.scn` key may repeat (`event2` twice): check the original's loader for a list before keeping
   a key in a Dictionary. *(09-29 a goods train left past its exit signal)*
+* An event name may have many definitions, joined in order or disabling the first by the
+  scenery's `joinduplicatedevents` where each is read: check the original's `insert()` before a
+  lookup by name stands for "the" event. *(10-12 the EN57 held at Ozimek, reports#31)*
 * An event the original clears once passed (a signal at proceed, `Point.Clear()`) is cleared in the
   port - kept, it holds on what it shows later. *(09-29 a signal closing behind the train braked
   it hard)*

@@ -591,8 +591,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   (`Event.cpp:538-548`), `bCommand`/`CommandCheck` and `:sent` (`MemCell.cpp:52-99`, `196-205`).
 * **`departuredelay`**: the original asks the vehicle's driver only when `primary()`
   (`Event.cpp:2431-2435`).
-* **Duplicate event names**: the later wins; the original joins them as siblings
-  (`Event.cpp:2296-2349`).
 * **Launchers**: numeric key codes, `-10000` (`EvLaunch.cpp:182-186`), `traintriggered`; a timed
   launcher of a radius is checked only at its minute, on a memory change and at the clock start.
 * **A click on a scenery model** is not hidden by what is in front; Alt picking toggle ignored

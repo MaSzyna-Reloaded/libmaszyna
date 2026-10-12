@@ -4865,3 +4865,34 @@ lighting or the trainset.
     off-main work), SURROUNDINGS 5.8 s, peak 4.49 GB, no OOM.
 * **Rule:** data read ahead on a worker is shared by key and held by its consumer, counted - never
   per user, and never taken back from a `WeakRef` on a thread that does not let it go.
+
+## 2026-10-12 The EN57 held at Ozimek
+
+* **Symptom:**
+  - reports#31 (libmaszyna#315): on `linia61_osobowy2.scn` the player's EN57 stood on Ozimek
+    track 1 at the exit signal's stop, minutes past its 06:44 departure.
+* **What proved it:**
+  - The report's `scenario.log`: `ozimek_odjazd` ran `ok_it1>fo1` (Ok_It1 := `Fo1 7 1`). Then
+    `ok_it1:loop` and `ok_it1_check` ran every ~10 s for four minutes, and `ok_it1)fo1` never
+    did.
+  - `ok_2011r.ctr` defines `Ok_It1_check` three times, one per route, the matching one first.
+  - The same log holds the control case. `lbc_it3_check` (eight definitions, the matching one
+    first) never passed. `jw_ite_check` (two, the matching one last) passed on every loop.
+  - The factory kept the last definition of a name (`events_by_name[event.name] = rid`), and the
+    config importer dropped `joinduplicatedevents`. The scenery sets it around its dispatcher
+    files (`l61_osobowy2_lbc.scm:4-10`, `ruch2011.ctr:53-88`). With it set, the original runs
+    every definition in order, each with its own condition (`Event.cpp:2323-2334`,
+    `2466-2490`).
+* **Fix:**
+  - `MaszynaImporterContext.join_duplicated_events` follows the flag in the order of the load. It
+    is carried past includes when they are merged, and into the subscene cache key.
+    `MaszynaEventData.joined` keeps the flag where each event is read.
+  - `MaszynaLegacyEventFactory` gives a name defined more than once one event of its own: a
+    `MaszynaLegacyMultipleAction` queuing the unnamed definitions in order, with no delay. It
+    also ports the original's rules for a duplicate read with the flag off, an instant or a
+    passive first, a later one of a negative delay, and the names whose duplicates are dropped
+    (`MASZYNA_ORIGINAL_QUIRKS.md`).
+  - `ScenarioEventServer` is not changed. The definitions run one frame after the name, where
+    the original runs them in the same pass.
+* **Rule:** an event name may have many definitions. Check `joinduplicatedevents` and the
+  original's `insert()` before a lookup by name stands for "the" event.

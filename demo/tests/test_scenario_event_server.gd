@@ -3,6 +3,7 @@ extends MaszynaGutTest
 const EventImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_event_importer.gd")
 const NodeImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_importer.gd")
 const IsolatedImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd")
+const ConfigImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_config_importer.gd")
 ## The scenery animation's turn [degrees] and its speed [degrees a simulated second]
 const QUARTER_TURN:float = 90.0
 const TURN_SPEED:float = 900.0
@@ -25,6 +26,11 @@ const EVENT_DELAY:float = 5.0
 const DEPARTURE_DELAY:float = -30.0
 const UNTIL_DEPARTURE:float = 600.0
 const RUN_TIME_EPSILON:float = 0.01
+## A name defined more than once queues its definitions, which queue their own events: three passes
+## of the queue, a step each
+const JOINED_CHAIN_SECONDS:float = 4.0 * TICK
+## A definition queued by itself at the start, by its negative delay [s]
+const START_DELAY:float = 0.1
 
 
 class RecordingAction extends ScenarioEventAction:
@@ -745,6 +751,180 @@ func test_the_queue_lists_the_queued_events_in_the_order_they_run() -> void:
     _free_events(rest)
 
 
+## reports#31: the dispatcher at Ozimek defines its check once per route; joined, the first one -
+## the route set - runs as well as the later ones (Event.cpp:2323-2334, 2466-2490)
+func test_a_name_defined_more_than_once_runs_every_definition_when_joined() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "config joinduplicatedevents yes endconfig "
+        + "node -1 0 route memcell 0 0 0 Fo1 7 1 none endmemcell "
+        + "node -1 0 exit memcell 0 0 0 none 0 0 none endmemcell "
+        + "event check multiple 0 route leave condition memcompare Fo1 7 * endevent "
+        + "event check multiple 0 route enter condition memcompare Fo1 6 * endevent "
+        + "event leave updatevalues 0 exit out * * endevent "
+        + "event enter updatevalues 0 exit in * * endevent "
+        + "config joinduplicatedevents no endconfig",
+        []
+    )
+    var exit:RID = ScenarioEventServer.memory_get_rid_by_name(&"exit")
+
+    ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"check"))
+    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(exit) == "out",
+            JOINED_CHAIN_SECONDS, "the first definition's route set"):
+        return
+    await step(2)
+    assert_eq(ScenarioEventServer.memory_get_text(exit), "out", "the second definition's condition fails")
+    root.free()
+
+
+## The definitions run in their order: the second compares what the first has just written
+func test_a_joined_definition_sees_what_the_one_before_it_wrote() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "config joinduplicatedevents yes endconfig "
+        + "node -1 0 track memcell 0 0 0 free 0 0 none endmemcell "
+        + "node -1 0 done memcell 0 0 0 none 0 0 none endmemcell "
+        + "event reserve updatevalues 0 track taken 2 * condition memcompare free * 0 endevent "
+        + "event reserve multiple 0 track mark condition memcompare taken 2 * endevent "
+        + "event mark updatevalues 0 done yes * * endevent",
+        []
+    )
+    var done:RID = ScenarioEventServer.memory_get_rid_by_name(&"done")
+
+    var track:RID = ScenarioEventServer.memory_get_rid_by_name(&"track")
+
+    ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"reserve"))
+    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(done) == "yes",
+            JOINED_CHAIN_SECONDS, "the reservation marked"):
+        return
+    assert_eq(ScenarioEventServer.memory_get_text(track), "taken", "the first definition wrote it")
+    root.free()
+
+
+## Without joinduplicatedevents the first definition is disabled: a `multiple` runs without its
+## memory comparison (Event.cpp:1218-1222), the later ones with theirs
+func test_a_duplicated_multiple_runs_without_its_comparison_when_not_joined() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "node -1 0 cell memcell 0 0 0 a 0 0 none endmemcell "
+        + "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
+        + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
+        + "event check multiple 0 cell set_first condition memcompare zzz * * endevent "
+        + "event check multiple 0 cell set_second condition memcompare a * * endevent "
+        + "event set_first updatevalues 0 first ran * * endevent "
+        + "event set_second updatevalues 0 second ran * * endevent",
+        []
+    )
+    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
+    var second:RID = ScenarioEventServer.memory_get_rid_by_name(&"second")
+
+    ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"check"))
+    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(second) == "ran",
+            JOINED_CHAIN_SECONDS, "the second definition run"):
+        return
+    assert_eq(ScenarioEventServer.memory_get_text(first), "ran", "the comparison of the first is dropped")
+    root.free()
+
+
+## Without joinduplicatedevents any other first definition is never queued, so the name does
+## nothing; an "onstart" one, queued before it was disabled, runs the later ones (Event.cpp:2402-2403,
+## 2472-2480)
+func test_a_duplicated_name_does_nothing_when_not_joined_but_its_onstart_runs_the_rest() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
+        + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
+        + "event set_cells updatevalues 0 first ran * * endevent "
+        + "event set_cells updatevalues 0 second ran * * endevent "
+        + "event cells_onstart updatevalues 0 first started * * endevent "
+        + "event cells_onstart updatevalues 0 second started * * endevent",
+        []
+    )
+    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
+    var second:RID = ScenarioEventServer.memory_get_rid_by_name(&"second")
+
+    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(second) == "started",
+            JOINED_CHAIN_SECONDS, "the later onstart definition run"):
+        return
+    assert_eq(ScenarioEventServer.memory_get_text(first), "none", "the disabled first does not run")
+
+    ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"set_cells"))
+    await step(roundi(JOINED_CHAIN_SECONDS / TICK))
+    assert_eq(ScenarioEventServer.memory_get_text(first), "none")
+    assert_eq(ScenarioEventServer.memory_get_text(second), "started", "the name does nothing")
+    root.free()
+
+
+## A duplicate of a magnet, a horn warning or line info is dropped, joined or not (Event.cpp:2304-2321)
+func test_a_duplicate_of_a_dropped_name_is_left_out() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "config joinduplicatedevents yes endconfig "
+        + "node -1 0 cell memcell 0 0 0 none 0 0 none endmemcell "
+        + "event magnet_shp updatevalues 0 cell first * * endevent "
+        + "event magnet_shp updatevalues 0 cell second * * endevent "
+        + "event horn_warning updatevalues 0 cell third * * endevent "
+        + "event horn_warning updatevalues 0 cell fourth * * endevent",
+        []
+    )
+    var cell:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell")
+
+    if not await _run_event(&"magnet_shp"):
+        return
+    await step(2)
+    assert_eq(ScenarioEventServer.memory_get_text(cell), "first")
+    if not await _run_event(&"horn_warning"):
+        return
+    await step(2)
+    assert_eq(ScenarioEventServer.memory_get_text(cell), "third")
+    root.free()
+
+
+## A later definition of a negative delay is queued by itself at the start and runs the ones after
+## it (InitEvents(), Event.cpp:2493-2499)
+func test_a_joined_definition_of_a_negative_delay_starts_the_ones_after_it() -> void:
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "config joinduplicatedevents yes endconfig "
+        + "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
+        + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
+        + "node -1 0 third memcell 0 0 0 none 0 0 none endmemcell "
+        + "event chain updatevalues %s first ran * * endevent " % NEVER
+        + "event chain updatevalues -%s second ran * * endevent " % START_DELAY
+        + "event chain updatevalues 0 third ran * * endevent",
+        []
+    )
+    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
+    var third:RID = ScenarioEventServer.memory_get_rid_by_name(&"third")
+
+    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(third) == "ran",
+            START_DELAY + JOINED_CHAIN_SECONDS, "the definitions after the started one run"):
+        return
+    assert_eq(ScenarioEventServer.memory_get_text(ScenarioEventServer.memory_get_rid_by_name(&"second")), "ran")
+    assert_eq(ScenarioEventServer.memory_get_text(first), "none", "the first is not started")
+    root.free()
+
+
+## joinduplicatedevents holds from where it is set for the rest of the load: an include parsed
+## beside its file inherits it, and what follows the include gets what the include left
+## (Globals.cpp:668-672)
+func test_join_duplicated_events_holds_past_the_include_that_sets_it() -> void:
+    var context:MaszynaImporterContext = MaszynaImporterContext.new()
+    context.queue = WorkerTaskQueue.new()
+    _parse("event before_include multiple 0 none endevent", context)
+    context.objects.append(context.submit_include(
+        _parse_include.bind("event inherited multiple 0 none endevent "
+            + "config joinduplicatedevents yes endconfig event in_include multiple 0 none endevent"),
+        "include.ctr", {}
+    ))
+    _parse("event after_include multiple 0 none endevent "
+        + "config joinduplicatedevents no endconfig event after_config multiple 0 none endevent", context)
+    context.merge_pending_includes()
+
+    var joined:Dictionary[String, bool] = {}
+    for event:MaszynaEventData in context.events:
+        joined[event.name] = event.joined
+    var expected:Dictionary[String, bool] = {
+        "before_include": false, "inherited": false, "in_include": true, "after_include": true, "after_config": false,
+    }
+    assert_eq(joined, expected)
+    assert_false(context.join_duplicated_events, "the file leaves what it set last")
+
+
 func _create_event(action:ScenarioEventAction, delay:float) -> RID:
     var event:RID = ScenarioEventServer.event_create()
     ScenarioEventServer.event_set_delay(event, delay)
@@ -787,15 +967,22 @@ func _build_scenery(
     return root
 
 
-func _parse(text:String) -> MaszynaImporterContext:
+func _parse(text:String, context:MaszynaImporterContext = MaszynaImporterContext.new()) -> MaszynaImporterContext:
     var parser:MaszynaParser = MaszynaParser.new()
     parser.initialize(text.to_utf8_buffer())
-    var context:MaszynaImporterContext = MaszynaImporterContext.new()
     parser.register_handler("event", func(p:MaszynaParser) -> Array: return EventImporter.new().import(p, context))
     parser.register_handler("node", func(p:MaszynaParser) -> Array: return NodeImporter.new().import(p, context))
     parser.register_handler("isolated", func(p:MaszynaParser) -> Array: return IsolatedImporter.new().import(p, context))
+    parser.register_handler("config", func(p:MaszynaParser) -> Array: return ConfigImporter.new().import(p, context))
     parser.parse()
     return context
+
+
+## An include's task (MaszynaImporterContext.submit_include()) parsing the text in the state it inherits
+func _parse_include(
+    _filename:String, _parameters:Dictionary, state:Dictionary, _queue:WorkerTaskQueue, text:String
+) -> MaszynaImporterContext:
+    return _parse(text, MaszynaImporterContext.from_state(state))
 
 
 ## Queues the scenery's event and waits for it to run - its delay, in simulated time; true when it ran
