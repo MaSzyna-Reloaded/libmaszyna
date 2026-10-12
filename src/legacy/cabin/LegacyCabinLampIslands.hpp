@@ -41,5 +41,9 @@ namespace godot {
             /// tinted by the material's albedo, brought to full brightness - the light's energy
             /// says how bright.
             static TypedArray<Dictionary> submodel_islands(Node3D *p_lamp);
+            /// The colour `lamp` shines with: all of its mesh as one piece, coloured as an island
+            /// is - the original draws a lit lamp as its texture times its diffuse
+            /// (shaders/light_common.glsl:164, the diffuse is param[0]), never the diffuse alone
+            static Color submodel_color(Node3D *p_lamp);
     };
 } // namespace godot

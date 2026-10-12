@@ -345,21 +345,16 @@ namespace godot {
         };
     } // namespace
 
-    void LegacyCabinLampIslands::_bind_methods() {
-        ClassDB::bind_static_method(
-                "LegacyCabinLampIslands", D_METHOD("submodel_islands", "lamp"),
-                &LegacyCabinLampIslands::submodel_islands);
-    }
-
-    TypedArray<Dictionary> LegacyCabinLampIslands::submodel_islands(Node3D *p_lamp) {
-        TypedArray<Dictionary> islands;
-        ERR_FAIL_NULL_V(p_lamp, islands);
+    /// The pieces of `p_lamp`'s mesh and of the meshes under it: triangles joined by a shared vertex
+    /// are one piece, each with its texture summed at COLOR_SAMPLES x COLOR_SAMPLES points over its
+    /// UV bounds and its material's albedo as the tint
+    static LocalVector<Piece> lamp_pieces(Node3D *p_lamp) {
+        LocalVector<Piece> pieces;
         TypedArray<Node> mesh_instances = p_lamp->find_children("", "MeshInstance3D", true, false);
         if (Object::cast_to<MeshInstance3D>(p_lamp) != nullptr) {
             mesh_instances.append(p_lamp);
         }
 
-        LocalVector<Piece> pieces;
         for (int node = 0; node < mesh_instances.size(); node++) {
             const MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(mesh_instances[node]);
             const Ref<Mesh> mesh = mesh_instance->get_mesh();
@@ -433,11 +428,13 @@ namespace godot {
                 const int height = sampler.get_height();
                 for (uint32_t index = surface_start; index < pieces.size(); index++) {
                     Piece &piece = pieces[index];
-                    for (int sample_x = 0; sample_x < COLOR_SAMPLES; sample_x++) {
-                        for (int sample_y = 0; sample_y < COLOR_SAMPLES; sample_y++) {
-                            const Vector2 uv = piece.uv_bounds.position +
-                                               piece.uv_bounds.size * Vector2((sample_x + 0.5) / COLOR_SAMPLES,
-                                                                              (sample_y + 0.5) / COLOR_SAMPLES);
+                    for (int sample_x = 0; sample_x < LegacyCabinLampIslands::COLOR_SAMPLES; sample_x++) {
+                        for (int sample_y = 0; sample_y < LegacyCabinLampIslands::COLOR_SAMPLES; sample_y++) {
+                            const Vector2 uv =
+                                    piece.uv_bounds.position +
+                                    piece.uv_bounds.size *
+                                            Vector2((sample_x + 0.5) / LegacyCabinLampIslands::COLOR_SAMPLES,
+                                                    (sample_y + 0.5) / LegacyCabinLampIslands::COLOR_SAMPLES);
                             const Color pixel = sampler.get_pixel(
                                     static_cast<int>(Math::posmod(
                                             static_cast<int64_t>(uv.x * width), static_cast<int64_t>(width))),
@@ -449,6 +446,37 @@ namespace godot {
                 }
             }
         }
+        return pieces;
+    }
+
+    /// A piece's colour: its texture's average weighted by alpha, tinted by its albedo - the tint
+    /// alone where no texture was sampled - brought to full brightness
+    static Color piece_color(const Piece &p_piece) {
+        Color color = p_piece.tint;
+        if (p_piece.color_sum.a > 0.0) {
+            color = Color(p_piece.color_sum.r / p_piece.color_sum.a, p_piece.color_sum.g / p_piece.color_sum.a,
+                          p_piece.color_sum.b / p_piece.color_sum.a) *
+                    p_piece.tint;
+        }
+        const float brightest = MAX(color.r, MAX(color.g, color.b));
+        if (brightest > 0.0) {
+            color = Color(color.r / brightest, color.g / brightest, color.b / brightest);
+        }
+        return color;
+    }
+
+    void LegacyCabinLampIslands::_bind_methods() {
+        ClassDB::bind_static_method(
+                "LegacyCabinLampIslands", D_METHOD("submodel_islands", "lamp"),
+                &LegacyCabinLampIslands::submodel_islands);
+        ClassDB::bind_static_method(
+                "LegacyCabinLampIslands", D_METHOD("submodel_color", "lamp"), &LegacyCabinLampIslands::submodel_color);
+    }
+
+    TypedArray<Dictionary> LegacyCabinLampIslands::submodel_islands(Node3D *p_lamp) {
+        TypedArray<Dictionary> islands;
+        ERR_FAIL_NULL_V(p_lamp, islands);
+        LocalVector<Piece> pieces = lamp_pieces(p_lamp);
 
         const int count = static_cast<int>(pieces.size());
         LocalVector<bool> alive;
@@ -525,22 +553,24 @@ namespace godot {
             if (!alive[index]) {
                 continue;
             }
-            const Piece &piece = pieces[index];
-            Color color = piece.tint;
-            if (piece.color_sum.a > 0.0) {
-                color = Color(piece.color_sum.r / piece.color_sum.a, piece.color_sum.g / piece.color_sum.a,
-                              piece.color_sum.b / piece.color_sum.a) *
-                        piece.tint;
-            }
-            const float brightest = MAX(color.r, MAX(color.g, color.b));
-            if (brightest > 0.0) {
-                color = Color(color.r / brightest, color.g / brightest, color.b / brightest);
-            }
             Dictionary island;
-            island["position"] = piece.bounds.get_center();
-            island["color"] = color;
+            island["position"] = pieces[index].bounds.get_center();
+            island["color"] = piece_color(pieces[index]);
             islands.append(island);
         }
         return islands;
+    }
+
+    Color LegacyCabinLampIslands::submodel_color(Node3D *p_lamp) {
+        ERR_FAIL_NULL_V(p_lamp, Color(1.0, 1.0, 1.0));
+        LocalVector<Piece> pieces = lamp_pieces(p_lamp);
+        if (pieces.is_empty()) {
+            return Color(1.0, 1.0, 1.0);
+        }
+        // all of it as one piece, as the backlight workaround merges them
+        for (uint32_t piece = 1; piece < pieces.size(); piece++) {
+            pieces[0].color_sum += pieces[piece].color_sum;
+        }
+        return piece_color(pieces[0]);
     }
 } // namespace godot

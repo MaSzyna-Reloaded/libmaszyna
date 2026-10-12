@@ -695,7 +695,7 @@ static func build_into(
             # matched submodel instance, not just the first, unlike every other instrument label
             # (which only ever has one real target mesh).
             _build_indicator_lights(
-                    descriptor, entry, vehicle_rid, submodel_index, model, generated_root,
+                    descriptor, entry, vehicle_rid, submodel_index, generated_root,
                     definition.cab_number, definition.driver_pos, sound_player, sound_events, vehicle_dir,
                     diagnostics)
             continue
@@ -1405,7 +1405,7 @@ static func _wire_mesh_path(
 ## EP09 uses base name "ca", so the real submodels there are "ca_on"/"ca_off").
 static func _build_indicator_lights(
         descriptor:MmdInstrumentDescriptor, entry:Dictionary, vehicle_rid:RID,
-        submodel_index:Dictionary, cab_model:E3DModelInstance, generated_root:Node3D, cab_number:int,
+        submodel_index:Dictionary, generated_root:Node3D, cab_number:int,
         driver_position:Vector3, sound_player:SfxPlayer3D, sound_events:Array[SfxEvent], vehicle_dir:String,
         diagnostics:Array[Dictionary]) -> void:
     var base_name:String = descriptor.submodel_name.validate_node_name().to_lower()
@@ -1490,7 +1490,7 @@ static func _build_indicator_lights(
                     _aim_spotlight_at_driver(island_light as SpotLight3D, generated_root, driver_position)
 
         # a lamp that is only its "_on" mesh also glows into the cab while it is lit, in its own
-        # colour (the diffuse that tints the greyscale lamp texture, Model3d.cpp:1918); entries with
+        # colour (its texture times its diffuse, light_common.glsl:164); entries with
         # a light of their own (i-cablight, i-radio) or with island lights keep those instead
         # (shining while INDICATOR_GLOW_ENABLED_SETTING is on - the glow follows it itself)
         if widget is CabinIndicator3D and not entry.has("light_widget_class") and not entry.has("island_lights"):
@@ -1501,9 +1501,7 @@ static func _build_indicator_lights(
             glow.energy_default = INDICATOR_GLOW_ENERGY_DEFAULT
             glow.range_setting = INDICATOR_GLOW_RANGE_SETTING
             glow.range_default = INDICATOR_GLOW_RANGE_DEFAULT
-            var glow_submodel:E3DSubModel = cab_model.model.get_node_or_null(cab_model.get_path_to(submodel))
-            if glow_submodel:
-                glow.light_color = glow_submodel.diffuse_color
+            glow.light_color = LegacyCabinLampIslands.submodel_color(submodel)
             glow.shadow_enabled = false
             glow.set_lit((widget as CabinIndicator3D).enabled)
             generated_root.add_child(glow)
@@ -1514,19 +1512,17 @@ static func _build_indicator_lights(
             var light_points:Array[Vector3] = []
             if entry.get("spread_light_along_submodel", false):
                 light_points = _light_points_along_submodel(submodel)
-            # the lamp's own colour: its diffuse tints the greyscale lamp texture (Model3d.cpp:1918,
-            # openglrenderer.cpp:2779); the node path from the instance is the submodel's path
-            var lamp_submodel:E3DSubModel = (
-                    cab_model.model.get_node_or_null(cab_model.get_path_to(submodel))
-                    if entry.get("light_color_from_submodel", false) else null)
+            # the lamp's own colour: its texture times its diffuse (light_common.glsl:164)
+            var lamp_color_taken:bool = entry.get("light_color_from_submodel", false)
+            var lamp_color:Color = LegacyCabinLampIslands.submodel_color(submodel) if lamp_color_taken else Color.WHITE
             for j:int in maxi(light_points.size(), 1):
                 var light:Light3D = entry["light_widget_class"].new()
                 light.name = "%s_%s_%d_light%s" % [
                         descriptor.label, descriptor.submodel_name, i, "_%d" % j if j else ""]
                 for field_name:String in entry["light_fixed_fields"]:
                     light.set(field_name, entry["light_fixed_fields"][field_name])
-                if lamp_submodel:
-                    light.light_color = lamp_submodel.diffuse_color
+                if lamp_color_taken:
+                    light.light_color = lamp_color
                 generated_root.add_child(light)
                 _position_at_submodel_instance(light, submodel)
                 if light_points:
