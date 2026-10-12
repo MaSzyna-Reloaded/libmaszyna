@@ -223,7 +223,10 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         return
     VehicleServer.vehicle_set_id(vehicle, dynamic.vehicle_id)
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
-    VehicleServer.vehicle_set_initial_velocity(vehicle, dynamic.velocity)
+    # the trainset's velocity along the vehicle's own front: a reversed one starts with it negated,
+    # or it drives against its neighbours (DynObj.cpp:1989, 2019 `iDirection ? fVel : -fVel`)
+    VehicleServer.vehicle_set_initial_velocity(vehicle,
+            -dynamic.velocity if dynamic.direction == TrackServer.DIRECTION_REVERSED else dynamic.velocity)
     RailVehicleServer.vehicle_attach(vehicle)
     var description:VehicleController = record.read["description"]
     # the cabins its MMD defines a cab for, and the scenery's driver at the controls of the front or

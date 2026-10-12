@@ -387,6 +387,9 @@ anything. Open work belongs in `TODO.md`.
   vehicle with its declaration goes by its place in the trainset, as the original couples
   (`AttachNext` by index), never by the id. *(10-12 the ET22 that left its wagons at Herby Nowe,
   reports#32)*
+* A reversed vehicle of a moving trainset starts with its velocity negated - the Mover's V runs
+  along the vehicle's own front (`iDirection ? fVel : -fVel`, DynObj.cpp:2019). *(10-12 the ET42
+  freight jammed at load, reports#32)*
 * An event the original clears once passed (a signal at proceed, `Point.Clear()`) is cleared in the
   port - kept, it holds on what it shows later. *(09-29 a signal closing behind the train braked
   it hard)*
