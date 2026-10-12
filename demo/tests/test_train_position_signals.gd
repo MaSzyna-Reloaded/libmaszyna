@@ -65,14 +65,14 @@ func test_vehicle_server_stops_relaying_a_detached_controller() -> void:
     assert_signal_not_emitted(VehicleServer, "vehicle_moved", "Should not relay a controller that left its handle")
 
 
-func _create_fixture(offset: float, train_id: String = "test_train") -> Dictionary:
+func _create_fixture(offset: float, vehicle_id: String = "test_train") -> Dictionary:
     var track_rid: RID = TrackServer.track_create()
     _created_tracks.append(track_rid)
     TrackServer.track_update_curves(track_rid, _curve(Vector3(0.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)), null)
     TrackServer.track_update(track_rid, TrackServer.TRACK_NORMAL, "start", 1.435)
     TrackServer.topology_rebuild()
 
-    var physics_node: VehiclePhysicsNode = build_vehicle_node(train_id)
+    var physics_node: VehiclePhysicsNode = build_vehicle_node(vehicle_id)
     var controller: VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     _created_vehicle_nodes.append(physics_node)
 

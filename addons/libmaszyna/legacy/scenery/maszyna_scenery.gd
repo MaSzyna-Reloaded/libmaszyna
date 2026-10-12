@@ -2,8 +2,8 @@
 extends MaszynaIncludeNode
 class_name MaszynaSceneryNode
 
-## Emitted after every load with the first vehicle's train_id ("" when the scenery has none)
-signal scenery_loaded(first_train_id:String)
+## Emitted after every load with the first vehicle's vehicle_id ("" when the scenery has none)
+signal scenery_loaded(first_vehicle_id:String)
 
 
 @export var title:String = ""
@@ -33,8 +33,8 @@ const START_TIME_DEFAULT:float = 10.5
 const FOG_END_MIN:float = 10.0
 const FOG_END_MAX:float = 25000.0
 
-## train_id of the first vehicle found in the loaded scenery
-var first_train_id:String = ""
+## vehicle_id of the first vehicle found in the loaded scenery
+var first_vehicle_id:String = ""
 ## "time" section - scenario clock, hours; START_TIME_DEFAULT without one
 var start_time:float = START_TIME_DEFAULT
 ## What else the loaded scenery declares about its environment; each *_defined says whether it does
@@ -68,7 +68,7 @@ func _exit_tree() -> void:
 
 func _clear_content(budget_msec:int = 0) -> void:
     await super._clear_content(budget_msec)
-    first_train_id = ""
+    first_vehicle_id = ""
     start_time = START_TIME_DEFAULT
     day_of_year_defined = false
     temperature_defined = false
@@ -81,12 +81,12 @@ func _load_content() -> void:
     # the load was given up: nothing of it is announced
     if is_load_given_up():
         return
-    first_train_id = _find_driver_train_id()
+    first_vehicle_id = _find_driver_vehicle_id()
     _read_environment_declarations()
     # a scenery loaded in the editor must not rewrite the environment saved with the edited scene
     if not Engine.is_editor_hint():
         _apply_environment_declarations()
-    scenery_loaded.emit(first_train_id)
+    scenery_loaded.emit(first_vehicle_id)
 
 
 ## A later section overrides an earlier one, like the original parsing the file top to bottom
@@ -170,14 +170,14 @@ func _date_from_day_of_year(year_day:int, year:int) -> Dictionary:
 
 ## The player belongs in a vehicle with a driver, not in whatever vehicle the scenery declares
 ## first (MaszynaDynamicData.driver_type)
-func _find_driver_train_id() -> String:
-    var reverse_driver_train_id:String = ""
+func _find_driver_vehicle_id() -> String:
+    var reverse_driver_vehicle_id:String = ""
     for vehicle:RID in get_vehicles():
         var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
         if dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_HEAD:
             return dynamic.name
-        if dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_REAR and not reverse_driver_train_id:
-            reverse_driver_train_id = dynamic.name
-    if reverse_driver_train_id:
-        return reverse_driver_train_id
+        if dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_REAR and not reverse_driver_vehicle_id:
+            reverse_driver_vehicle_id = dynamic.name
+    if reverse_driver_vehicle_id:
+        return reverse_driver_vehicle_id
     return MaszynaLegacyVehicleSystem.vehicle_get_dynamic(get_vehicles()[0]).name if get_vehicles() else ""
