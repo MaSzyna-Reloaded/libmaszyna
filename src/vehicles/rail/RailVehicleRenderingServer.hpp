@@ -1,5 +1,6 @@
 #pragma once
 #include "legacy/e3d/E3DModel.hpp"
+#include "utils/WorkerTaskQueue.hpp"
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
 #include "vehicles/rail/RailVehicleEnginePowerSource.hpp"
@@ -108,6 +109,16 @@ namespace godot {
                      * them hold, one per model */
                     HashMap<String, RID> model_resources;
                     Vector<RID> held_models;
+                    /* The cargo's and each end's coupler adapter's model file, registered as the
+                     * appearance's are */
+                    RID load_resource;
+                    String coupler_adapter_models[2];
+                    RID coupler_adapter_resources[2];
+                    /* What the preload loaded on a worker, by resource - taken by the next build,
+                     * which holds them (_get_model()) */
+                    HashMap<RID, Ref<Resource>> preloaded;
+                    /* The preload running for it in preload_queue, -1 for none */
+                    int preload_task = -1;
                     /* Waiting in pending_builds for its models to be built */
                     bool build_pending = false;
                     /* The appearance's model could not be loaded - not built again until another
@@ -204,6 +215,10 @@ namespace godot {
                     double distance = 0.0;
             };
             Vector<PendingBuild> pending_builds;
+            /* The vehicles' model files are loaded here, off the main thread (_preload()) - the
+             * loader is GDScript, so it is drained before the scripts go (preloads_drain()) */
+            Ref<WorkerTaskQueue> preload_queue;
+            HashMap<int, RID> preload_vehicles;
             bool processing = false;
             /* DETAIL_DISTANCE_SETTING, read when the settings change - not per vehicle visited */
             float detail_distance = DEFAULT_DETAIL_DISTANCE;
@@ -216,6 +231,14 @@ namespace godot {
             void _on_project_settings_changed();
             void _free_models(Visual &p_visual);
             static void _free_model_resources(Visual &p_visual);
+            static Vector<RID> _get_preload_resources(const Visual &p_visual);
+            static Dictionary _load_resources(const Array &p_resources);
+            void _preload(const RID &p_vehicle, Visual &p_visual);
+            void _on_preload_finished(int p_task);
+            void _apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Dictionary &p_loaded);
+            static bool _is_preloaded(const Visual &p_visual);
+            static Ref<E3DModel> _get_model(const Visual &p_visual, const RID &p_resource);
+            static void _register_coupler_adapters(const RID &p_vehicle, Visual &p_visual);
             void _create_models(const RID &p_vehicle, Visual &p_visual);
             void _bind_parts(const RID &p_vehicle, Visual &p_visual);
             Part _part(const Visual &p_visual, const String &p_submodel) const;
@@ -335,5 +358,8 @@ namespace godot {
             bool vehicle_is_editable(const RID &p_vehicle) const;
             /* The vehicles within the draw distance whose models still wait for their build */
             int builds_get_pending_count() const;
+            /* Drops the queued preloads and waits for the running ones. Called while the scene tree
+             * is still alive: a preload runs the GDScript model loader (E3DModelManager) */
+            void preloads_drain();
     };
 } // namespace godot

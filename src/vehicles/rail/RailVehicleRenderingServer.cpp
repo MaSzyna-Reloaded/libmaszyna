@@ -152,6 +152,10 @@ namespace godot {
 
     RailVehicleRenderingServer::RailVehicleRenderingServer() {
         singleton = this;
+        preload_queue.instantiate();
+        preload_queue->connect(
+                WorkerTaskQueue::task_finished_signal,
+                callable_mp(this, &RailVehicleRenderingServer::_on_preload_finished));
         _on_project_settings_changed();
         ProjectSettings::get_singleton()->connect(
                 "settings_changed", callable_mp(this, &RailVehicleRenderingServer::_on_project_settings_changed));
@@ -219,6 +223,144 @@ namespace godot {
         }
     }
 
+    void RailVehicleRenderingServer::preloads_drain() {
+        preload_queue->drain();
+        preload_vehicles.clear();
+        for (KeyValue<RID, Visual> &item: vehicles) {
+            item.value.preload_task = -1;
+        }
+    }
+
+    /* Every model file the vehicle's build takes: the appearance's, the cargo's and the coupler
+     * adapters' */
+    Vector<RID> RailVehicleRenderingServer::_get_preload_resources(const Visual &p_visual) {
+        Vector<RID> resources;
+        for (const KeyValue<String, RID> &resource: p_visual.model_resources) {
+            resources.push_back(resource.value);
+        }
+        for (const RID &resource:
+             {p_visual.load_resource, p_visual.coupler_adapter_resources[0], p_visual.coupler_adapter_resources[1]}) {
+            if (resource.is_valid()) {
+                resources.push_back(resource);
+            }
+        }
+        return resources;
+    }
+
+    /// On a preload worker: the files loaded by ResourceLazyLoader, which keeps them without lazy
+    /// loading and loads one file once however many vehicles ask for it
+    Dictionary RailVehicleRenderingServer::_load_resources(const Array &p_resources) {
+        Dictionary loaded;
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+        ERR_FAIL_NULL_V(lazy_loader, loaded);
+        for (const Variant &resource: p_resources) {
+            loaded[resource] = lazy_loader->resource_load(resource);
+        }
+        return loaded;
+    }
+
+    /* The vehicle's model files loaded off the main thread - the parse of a model stalled it for
+     * tens of milliseconds, a frame and more. What is resident already is taken at once, and so is
+     * everything with the dummy renderer, which loads on the main thread (ResourceLazyLoader) */
+    void RailVehicleRenderingServer::_preload(const RID &p_vehicle, Visual &p_visual) {
+        if (p_visual.preload_task >= 0) {
+            return;
+        }
+        const Vector<RID> resources = _get_preload_resources(p_visual);
+        Array requested;
+        bool resident = true;
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+        ERR_FAIL_NULL(lazy_loader);
+        for (const RID &resource: resources) {
+            requested.push_back(resource);
+            resident = resident && lazy_loader->resource_is_resident(resource);
+        }
+        // the dummy renderer takes no resource from another thread: loaded here (ResourceLazyLoader)
+        if (resident || !lazy_loader->get_loads_off_main_thread()) {
+            _apply_preloaded(p_vehicle, p_visual, _load_resources(requested));
+            return;
+        }
+        p_visual.preload_task =
+                preload_queue->submit(callable_mp_static(&RailVehicleRenderingServer::_load_resources).bind(requested));
+        preload_vehicles[p_visual.preload_task] = p_vehicle;
+    }
+
+    void RailVehicleRenderingServer::_on_preload_finished(const int p_task) {
+        const RID *vehicle = preload_vehicles.getptr(p_task);
+        if (vehicle == nullptr) {
+            return;
+        }
+        const RID vehicle_rid = *vehicle;
+        preload_vehicles.erase(p_task);
+        Visual *visual = vehicles.getptr(vehicle_rid);
+        const Dictionary loaded = preload_queue->wait(p_task);
+        if (visual == nullptr || visual->preload_task != p_task) {
+            return;
+        }
+        visual->preload_task = -1;
+        _apply_preloaded(vehicle_rid, *visual, loaded);
+    }
+
+    /* The loaded files wait for the build; what depends on the model file alone is done now - the
+     * pantographs' geometry, and the cargo and the adapters of a vehicle built already */
+    void
+    RailVehicleRenderingServer::_apply_preloaded(const RID &p_vehicle, Visual &p_visual, const Dictionary &p_loaded) {
+        p_visual.preloaded.clear();
+        for (const Variant &resource: p_loaded.keys()) {
+            p_visual.preloaded[resource] = p_loaded[resource];
+        }
+        _publish_pantographs(p_vehicle, p_visual);
+        if (p_visual.own_models && p_visual.model.is_valid()) {
+            _update_coupler_adapters(p_vehicle, p_visual);
+            _build_load(p_vehicle, p_visual);
+        }
+    }
+
+    bool RailVehicleRenderingServer::_is_preloaded(const Visual &p_visual) {
+        for (const RID &resource: _get_preload_resources(p_visual)) {
+            if (!p_visual.preloaded.has(resource)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /* The model of a registered file as the preload left it - never loaded here, on the main thread */
+    Ref<E3DModel> RailVehicleRenderingServer::_get_model(const Visual &p_visual, const RID &p_resource) {
+        const Ref<Resource> *loaded = p_visual.preloaded.getptr(p_resource);
+        return loaded != nullptr ? Ref<E3DModel>(*loaded) : Ref<E3DModel>();
+    }
+
+    /* Each end's adapter model file registered, as the appearance's are; the one fitted before is
+     * let go */
+    void RailVehicleRenderingServer::_register_coupler_adapters(const RID &p_vehicle, Visual &p_visual) {
+        const RailVehicleServer *server = RailVehicleServer::get_instance();
+        E3DRenderingServer *models = E3DRenderingServer::get_instance();
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+        ERR_FAIL_NULL(models);
+        ERR_FAIL_NULL(lazy_loader);
+        for (int end = 0; end < 2; ++end) {
+            const String model_name = server != nullptr
+                                              ? server->vehicle_get_coupler_adapter_model(
+                                                        p_vehicle, static_cast<RailVehicleController::CouplerEnd>(end))
+                                              : String();
+            if (model_name == p_visual.coupler_adapter_models[end]) {
+                continue;
+            }
+            if (p_visual.coupler_adapter_resources[end].is_valid()) {
+                lazy_loader->resource_free(p_visual.coupler_adapter_resources[end]);
+                p_visual.coupler_adapter_resources[end] = RID();
+            }
+            p_visual.coupler_adapter_models[end] = model_name;
+            // the original's model manager takes it under models/ (TModelsManager::GetModel())
+            if (!model_name.is_empty()) {
+                p_visual.coupler_adapter_resources[end] = lazy_loader->resource_register(
+                        String(COUPLER_ADAPTER_MODELS).path_join(model_name),
+                        callable_mp(models, &E3DRenderingServer::model_load).bind(COUPLER_ADAPTER_MODELS, model_name));
+            }
+        }
+    }
+
     int RailVehicleRenderingServer::builds_get_pending_count() const {
         return static_cast<int>(pending_builds.size());
     }
@@ -251,6 +393,7 @@ namespace godot {
     }
 
     RailVehicleRenderingServer::~RailVehicleRenderingServer() {
+        preloads_drain();
         while (!vehicles.is_empty()) {
             vehicle_detach(vehicles.begin()->key);
         }
@@ -261,6 +404,7 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_attach", "vehicle", "node_id"), &RailVehicleRenderingServer::vehicle_attach);
         ClassDB::bind_method(D_METHOD("vehicle_detach", "vehicle"), &RailVehicleRenderingServer::vehicle_detach);
+        ClassDB::bind_method(D_METHOD("preloads_drain"), &RailVehicleRenderingServer::preloads_drain);
         ClassDB::bind_method(
                 D_METHOD("vehicle_is_attached", "vehicle"), &RailVehicleRenderingServer::vehicle_is_attached);
         ClassDB::bind_method(
@@ -341,6 +485,14 @@ namespace godot {
         _cancel_build(p_vehicle, *visual);
         _free_models(*visual);
         _free_model_resources(*visual);
+        if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
+            for (const RID &resource:
+                 {visual->load_resource, visual->coupler_adapter_resources[0], visual->coupler_adapter_resources[1]}) {
+                if (resource.is_valid()) {
+                    lazy_loader->resource_free(resource);
+                }
+            }
+        }
         if (visual->load.is_valid()) {
             E3DRenderingServer::get_instance()->instance_free(visual->load);
         }
@@ -445,8 +597,9 @@ namespace godot {
         visual->model_missing = false;
         // models of its own replace the ones built from the last appearance, built once the
         // vehicle is within the draw distance (_update_detail()); handed-over ones stay. Its files
-        // are registered at once - without lazy loading, that loads them
-        if (p_appearance.is_valid() && !p_appearance->get_model_filename().is_empty()) {
+        // are registered at once and loaded on a worker (_preload())
+        const bool own_models = p_appearance.is_valid() && !p_appearance->get_model_filename().is_empty();
+        if (own_models) {
             _free_models(*visual);
             _free_model_resources(*visual);
             E3DRenderingServer *models = E3DRenderingServer::get_instance();
@@ -467,10 +620,15 @@ namespace godot {
                         data_path.path_join(filename),
                         callable_mp(models, &E3DRenderingServer::model_load).bind(data_path, filename));
             }
-            _build_load(p_vehicle, *visual);
+            _register_coupler_adapters(p_vehicle, *visual);
+            visual->preloaded.clear();
+            visual->preload_task = -1;
+            _preload(p_vehicle, *visual);
+        } else {
+            // a handed-over model is its owner's, built already
+            _publish_pantographs(p_vehicle, *visual);
         }
         _bind_parts(p_vehicle, *visual);
-        _publish_pantographs(p_vehicle, *visual);
         _update_detail(p_vehicle, *visual);
     }
 
@@ -509,7 +667,22 @@ namespace godot {
         ERR_FAIL_NULL(visual);
         visual->load_data_path = p_data_path;
         visual->load_model_filename = p_model_filename;
-        _build_load(p_vehicle, *visual);
+        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
+        E3DRenderingServer *models = E3DRenderingServer::get_instance();
+        ERR_FAIL_NULL(lazy_loader);
+        ERR_FAIL_NULL(models);
+        if (visual->load_resource.is_valid()) {
+            lazy_loader->resource_free(visual->load_resource);
+            visual->load_resource = RID();
+        }
+        if (!p_model_filename.is_empty()) {
+            visual->load_resource = lazy_loader->resource_register(
+                    p_data_path.path_join(p_model_filename),
+                    callable_mp(models, &E3DRenderingServer::model_load).bind(p_data_path, p_model_filename));
+        }
+        // the cargo is built from the preload, with the vehicle's models or at once when they are
+        visual->preload_task = -1;
+        _preload(p_vehicle, *visual);
     }
 
     /* The cargo is built while the vehicle's models are, and goes with them */
@@ -520,9 +693,8 @@ namespace godot {
             models->instance_free(p_visual.load);
             p_visual.load = RID();
         }
-        const Ref<E3DModel> model = !p_visual.model.is_valid() || p_visual.load_model_filename.is_empty()
-                                            ? Ref<E3DModel>()
-                                            : models->model_load(p_visual.load_data_path, p_visual.load_model_filename);
+        const Ref<E3DModel> model =
+                p_visual.model.is_valid() ? _get_model(p_visual, p_visual.load_resource) : Ref<E3DModel>();
         if (model.is_null()) {
             return;
         }
@@ -668,7 +840,7 @@ namespace godot {
                                 const E3DRenderingServer::Instancer p_instancer) {
             // held while built, as a streamed scenery placement holds its model
             const RID *resource = p_visual.model_resources.getptr(p_filename);
-            const Ref<Resource> loaded = resource != nullptr ? lazy_loader->resource_load(*resource) : Ref<Resource>();
+            const Ref<E3DModel> loaded = resource != nullptr ? _get_model(p_visual, *resource) : Ref<E3DModel>();
             if (loaded.is_null()) {
                 return RID();
             }
@@ -738,19 +910,12 @@ namespace godot {
         if (models == nullptr || !p_visual.own_models) {
             return;
         }
-        const RailVehicleServer *server = RailVehicleServer::get_instance();
         for (int end = 0; end < 2; ++end) {
             if (p_visual.coupler_adapters[end].is_valid()) {
                 models->instance_free(p_visual.coupler_adapters[end]);
                 p_visual.coupler_adapters[end] = RID();
             }
-            const String model_name = server != nullptr
-                                              ? server->vehicle_get_coupler_adapter_model(
-                                                        p_vehicle, static_cast<RailVehicleController::CouplerEnd>(end))
-                                              : String();
-            // the original's model manager takes it under models/ (TModelsManager::GetModel())
-            const Ref<E3DModel> model =
-                    model_name.is_empty() ? Ref<E3DModel>() : models->model_load(COUPLER_ADAPTER_MODELS, model_name);
+            const Ref<E3DModel> model = _get_model(p_visual, p_visual.coupler_adapter_resources[end]);
             if (model.is_null()) {
                 continue;
             }
@@ -874,8 +1039,9 @@ namespace godot {
         Ref<E3DModel> model;
         if (const RID *resource = p_visual.model_resources.getptr(appearance->get_model_filename());
             resource != nullptr) {
-            model = lazy_loader->resource_load(*resource);
-        } else if (p_visual.model.is_valid()) {
+            model = _get_model(p_visual, *resource);
+        }
+        if (model.is_null() && p_visual.model.is_valid()) {
             model = models->instance_get_model(p_visual.model);
         }
         if (model.is_null()) {
@@ -1547,6 +1713,14 @@ namespace godot {
             // and the loading screen waits for the builds within the draw distance
             if (drawn && !p_visual.model.is_valid() && !p_visual.model_missing) {
                 if (at_once) {
+                    // the editor's or an editable vehicle's models are wanted at once: loaded here
+                    if (!_is_preloaded(p_visual)) {
+                        Array resources;
+                        for (const RID &resource: _get_preload_resources(p_visual)) {
+                            resources.push_back(resource);
+                        }
+                        _apply_preloaded(p_vehicle, p_visual, _load_resources(resources));
+                    }
                     _build_models(p_vehicle, p_visual);
                 } else if (!p_visual.build_pending) {
                     int index = 0;
@@ -1598,6 +1772,8 @@ namespace godot {
         _create_models(p_vehicle, p_visual);
         _bind_parts(p_vehicle, p_visual);
         _build_load(p_vehicle, p_visual);
+        // the built models hold what they were built from (ResourceLazyLoader)
+        p_visual.preloaded.clear();
         _update_detail(p_vehicle, p_visual);
         UtilityFunctions::print("[RailVehicleRendering] built ", model_path);
     }
@@ -1794,9 +1970,12 @@ namespace godot {
         _on_vehicle_trainset_changed(p_vehicle);
     }
 
+    /* The new adapter's model is loaded on a worker, and fitted once it is (_apply_preloaded()) */
     void RailVehicleRenderingServer::_on_vehicle_coupler_adapter_changed(const RID &p_vehicle, const int64_t p_end) {
         if (Visual *visual = vehicles.getptr(p_vehicle); visual != nullptr) {
-            _update_coupler_adapters(p_vehicle, *visual);
+            _register_coupler_adapters(p_vehicle, *visual);
+            visual->preload_task = -1;
+            _preload(p_vehicle, *visual);
         }
     }
 
@@ -1854,10 +2033,17 @@ namespace godot {
         // the models of the vehicles that came within the draw distance, the nearest first
         const uint64_t deadline = Time::get_singleton()->get_ticks_msec() + BUILD_BUDGET_MSEC;
         const bool had_builds = !pending_builds.is_empty();
-        while (!pending_builds.is_empty() && Time::get_singleton()->get_ticks_msec() < deadline) {
-            const RID vehicle = pending_builds[0].vehicle;
-            pending_builds.remove_at(0);
+        // one whose files are still loading on a worker waits in its place (_preload())
+        int index = 0;
+        while (index < pending_builds.size() && Time::get_singleton()->get_ticks_msec() < deadline) {
+            const RID vehicle = pending_builds[index].vehicle;
             Visual &visual = vehicles[vehicle];
+            if (!_is_preloaded(visual)) {
+                _preload(vehicle, visual);
+                ++index;
+                continue;
+            }
+            pending_builds.remove_at(index);
             visual.build_pending = false;
             _build_models(vehicle, visual);
         }

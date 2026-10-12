@@ -40,6 +40,10 @@ class Vehicle:
     ## The person the scenery seats at the controls (MaszynaDynamicData.driver_type), freed with
     ## the vehicle; RID() for nobody
     var driver:RID = RID()
+    ## What _read_vehicle() read of its files, taken by its build; empty until read
+    var read:Dictionary = {}
+    ## Its cabs' models, read with its files and kept, so a cab is built of a resident model
+    var cab_models:Array[E3DModel] = []
 
 ## A mirror's glass is a submodel with nothing under it, named after a mirror - the data marks
 ## mirrors by name only: dynamic/pkp/elf_v1 "zwierciadlo", dynamic/pkp/impuls_v1 "szybka_lusterko_l"
@@ -49,6 +53,11 @@ const REAL_MIRRORS_SETTING:StringName = &"maszyna/rendering/real_mirrors"
 
 var _cache = ResourceCache.create("rail_vehicle")
 var _vehicles:Dictionary[RID, Vehicle] = {}
+## The vehicles' files are read here, off the main thread (_read_vehicle()) - GDScript, so drained
+## before the scripts go (_exit_tree())
+var _reads:WorkerTaskQueue = WorkerTaskQueue.new()
+## The vehicle whose files each task of _reads reads
+var _read_vehicles:Dictionary[int, RID] = {}
 ## Vehicles waiting for their build, in the order they were created; processed while it is not empty
 var _build_queue:Array[RID] = []
 var _auto_rewident:MaszynaLegacyAutoRewident = null
@@ -59,6 +68,7 @@ var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 ## The editor drives no vehicle and plays no sound: CabinSystem, TrainSoundSystem and DriverServer's
 ## drivers are the game's
 func _ready() -> void:
+    _reads.task_finished.connect(_on_read_finished)
     RailVehicleRenderingServer.vehicle_model_built.connect(_on_vehicle_model_built)
     ProjectSettings.settings_changed.connect(_on_project_settings_changed)
     if not Engine.is_editor_hint():
@@ -68,7 +78,16 @@ func _ready() -> void:
         add_child(_auto_rewident)
 
 
-## A vehicle of `dynamic`, drawn in the world of the scene node `scene_node_id`; built in its turn
+## The reads and the vehicles' model loads run GDScript on their workers: they stop while the
+## scripts are still there
+func _exit_tree() -> void:
+    _reads.drain()
+    RailVehicleRenderingServer.preloads_drain()
+
+
+## A vehicle of `dynamic`, drawn in the world of the scene node `scene_node_id`; its files read off
+## the main thread - unless the renderer cannot take resources from another thread
+## (ResourceLazyLoader) - and built in its turn
 func vehicle_create(dynamic:MaszynaDynamicData, scene_node_id:int) -> RID:
     var vehicle:RID = VehicleServer.vehicle_create()
     var record:Vehicle = Vehicle.new()
@@ -76,6 +95,10 @@ func vehicle_create(dynamic:MaszynaDynamicData, scene_node_id:int) -> RID:
     record.scene_node_id = scene_node_id
     record.controller = VehicleServer.controller_create()
     _vehicles[vehicle] = record
+    if ResourceLazyLoader.get_loads_off_main_thread():
+        _read_vehicles[_reads.submit(_read_vehicle.bind(dynamic))] = vehicle
+    else:
+        _take_read(record, _read_vehicle(dynamic))
     _build_queue.append(vehicle)
     if _build_queue.size() == 1:
         get_tree().process_frame.connect(_on_process_frame)
@@ -86,6 +109,9 @@ func vehicle_create(dynamic:MaszynaDynamicData, scene_node_id:int) -> RID:
 func vehicle_free(vehicle:RID) -> void:
     var record:Vehicle = _vehicles[vehicle]
     _vehicles.erase(vehicle)
+    for task:int in _read_vehicles.keys():
+        if _read_vehicles[task] == vehicle:
+            _read_vehicles.erase(task)
     if _build_queue.has(vehicle):
         _build_queue.erase(vehicle)
         if not _build_queue:
@@ -127,14 +153,63 @@ func clear_cache() -> void:
     _cache.clear()
 
 
+## In the order they were created, each once its files are read; one still being read waits in its
+## place
 func _on_process_frame() -> void:
     var deadline:int = Time.get_ticks_msec() + BUILD_BUDGET_MSEC
-    while _build_queue and Time.get_ticks_msec() < deadline:
-        var vehicle:RID = _build_queue.pop_front()
-        _build(vehicle, _vehicles[vehicle])
+    var index:int = 0
+    while index < _build_queue.size() and Time.get_ticks_msec() < deadline:
+        var vehicle:RID = _build_queue[index]
+        var record:Vehicle = _vehicles[vehicle]
+        if not record.read:
+            index += 1
+            continue
+        _build_queue.remove_at(index)
+        _build(vehicle, record)
         vehicle_built.emit(vehicle)
     if not _build_queue:
         get_tree().process_frame.disconnect(_on_process_frame)
+
+
+func _on_read_finished(task:int) -> void:
+    var vehicle:RID = _read_vehicles.get(task, RID())
+    _read_vehicles.erase(task)
+    var read:Dictionary = _reads.wait(task)
+    if _vehicles.has(vehicle):
+        _take_read(_vehicles[vehicle], read)
+
+
+func _take_read(record:Vehicle, read:Dictionary) -> void:
+    record.read = read
+    record.cab_models.assign(read.get("cab_models", []))
+
+
+## On a worker: what the vehicle's build takes from its files - its structure, its physics, its cab
+## logic and the models of its cabs (MaszynaRailVehicle3DInstancer, FizVehicleBuilder, MMD). The
+## build gets { "structure": null } for a vehicle whose data cannot be read
+func _read_vehicle(dynamic:MaszynaDynamicData) -> Dictionary:
+    var read:Dictionary = {"structure": null}
+    var structure:MaszynaVehicleStructure = _get_structure(dynamic)
+    if not structure:
+        return read
+    read["structure"] = structure
+    read["description"] = FizVehicleBuilder.build_description(structure.data_path, structure.file_name)
+    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(structure, dynamic.load_name)
+    if Engine.is_editor_hint():
+        return read
+    read["cab_logic"] = LegacyCabinLogic.from_mmd(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id)
+    var game_dir:String = UserSettings.get_maszyna_game_dir()
+    var relative_path:String = dynamic.data_path.trim_prefix("/").path_join(dynamic.file_name + ".mmd")
+    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
+    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(dynamic.vehicle_id, dynamic.file_name, dynamic.skin)
+    var cab_models:Array[E3DModel] = []
+    for kind:RailVehicleCabinKind.Kind in structure.cabin_kinds:
+        var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
+                abs_mmd_path, parameters, MmdCabinInstancer.cab_definition(kind), {})
+        if definition.model_relpath:
+            cab_models.append(E3DModelManager.load_model(dynamic.data_path, definition.model_relpath))
+    read["cab_models"] = cab_models
+    return read
 
 
 ## The vehicle's own: the scenery's values first - the controller takes them when its simulation
@@ -143,14 +218,14 @@ func _on_process_frame() -> void:
 func _build(vehicle:RID, record:Vehicle) -> void:
     record.built = true
     var dynamic:MaszynaDynamicData = record.dynamic
-    var structure:MaszynaVehicleStructure = _get_structure(dynamic)
+    var structure:MaszynaVehicleStructure = record.read["structure"]
     if not structure:
         return
     VehicleServer.vehicle_set_id(vehicle, dynamic.vehicle_id)
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
     VehicleServer.vehicle_set_initial_velocity(vehicle, dynamic.velocity)
     RailVehicleServer.vehicle_attach(vehicle)
-    var description:VehicleController = FizVehicleBuilder.build_description(structure.data_path, structure.file_name)
+    var description:VehicleController = record.read["description"]
     # the cabins its MMD defines a cab for, and the scenery's driver at the controls of the front or
     # the rear one - before its simulation starts, which takes the occupied cab with it
     # (DynObj.cpp:1940-1963)
@@ -206,14 +281,12 @@ func _build(vehicle:RID, record:Vehicle) -> void:
 
     RailVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
     RailVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
-    RailVehicleRenderingServer.vehicle_set_load_model(
-            vehicle, structure.data_path, MaszynaRailVehicle3DInstancer.load_model_filename(structure, dynamic.load_name))
+    RailVehicleRenderingServer.vehicle_set_load_model(vehicle, structure.data_path, record.read["load_model_filename"])
     MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, structure.appearance)
     if Engine.is_editor_hint():
         return
     if cabin_kinds:
-        CabinSystem.vehicle_attach_cab_logic(
-                vehicle, LegacyCabinLogic.from_mmd(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id))
+        CabinSystem.vehicle_attach_cab_logic(vehicle, record.read["cab_logic"])
     # last of the cab: the scene is what the driving player's cab is shown from, built on the cab
     # logic (CabinSystem.vehicle_cabin_scene_changed)
     CabinSystem.vehicle_set_cabin_scene(vehicle, structure.cabin_scene)

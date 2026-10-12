@@ -32,12 +32,10 @@ const FIZ_PARSER_FORMAT_VERSION := 46
 ## literal end-of-table token for table sections, "" for plain scalar sections. `parser ==
 ## null` means "recognized but not yet implemented / has no Godot class" - the section (and
 ## any table rows up to table_end, if set) is skipped with a single warning per vehicle.
-static var _sections: Array[Dictionary] = []
-
-
-## The section table is fixed - it is the FIZ grammar, not per-vehicle data - so it is built once
-## when the class is loaded rather than re-checked on every parse.
-static func _static_init() -> void:
+## A parse makes its own (FizImportContext.sections): the parsers keep the state of the table being
+## read (a LightsList's rows), and vehicles are read on several worker threads at once - one table
+## shared by every parse mixed two vehicles' rows and corrupted the heap.
+static func create_sections() -> Array[Dictionary]:
     var controller_parser := FizTrainControllerParser.new()
     var wheels_parser := FizTrainWheelsParser.new()
     var doors_parser := FizTrainDoorsParser.new()
@@ -61,7 +59,7 @@ static func _static_init() -> void:
     var universal_controller_parser := FizTrainUniversalControllerParser.new()
     var diesel_engine_parser := FizTrainDieselEngineParser.new()
 
-    _sections = [
+    var sections:Array[Dictionary] = [
         # controller-mapped
         {"prefix": "Param.", "parser": controller_parser, "table_end": ""},
         {"prefix": "Dimensions:", "parser": controller_parser, "table_end": ""},
@@ -115,6 +113,7 @@ static func _static_init() -> void:
         {"prefix": "ffBrakeList:", "parser": engine_parser.electric_induction_parser, "table_end": "endff"},
         {"prefix": "ffList:", "parser": engine_parser.electric_induction_parser, "table_end": "endff"},
     ]
+    return sections
 
 
 ## Parses a FIZ file into a fresh VehicleController: root-level properties (Param./Dimensions:/
@@ -129,6 +128,7 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     var context := FizImportContext.new()
     context.base_dir = fiz_path.get_base_dir()
     context.controller = target
+    context.sections = create_sections()
 
     var table_state: Dictionary = {"prefix": "", "parser": null, "end": ""}
     _parse_file(fiz_path, context.base_dir, context, table_state)
@@ -343,7 +343,7 @@ static func _parse_file(
             continue
 
         var matched_section: Dictionary = {}
-        for section: Dictionary in _sections:
+        for section: Dictionary in context.sections:
             if line.begins_with(section["prefix"]):
                 matched_section = section
                 break

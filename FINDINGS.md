@@ -479,6 +479,14 @@ anything. Open work belongs in `TODO.md`.
   *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
+* Code a worker runs keeps no state in a static or a lazily built table: one parse at a time got
+  away with `FizVehicleBuilder`'s shared section parsers and `_ensure_built()` catalogs; read on
+  several threads, they mixed two vehicles' rows. State lives in the call's own context. *(10-12
+  vehicles read off the main thread)*
+* A headless run renders with the dummy renderer whatever the rendering driver's name says
+  ("vulkan"); `DisplayServer.get_name() == "headless"` tells it, and with it no resource is made off
+  the main thread (`ResourceLazyLoader.get_loads_off_main_thread()`). *(10-12 vehicles read off the
+  main thread)*
 * A mesh that is saved, picked or read is an `E3DMesh` with its arrays in memory, never an
   `ArrayMesh`: saving or reading an `ArrayMesh` reads its buffers back from the GPU, a stall of
   every frame in flight, on the main thread. *(10-12 E3D models saved on the main thread)*

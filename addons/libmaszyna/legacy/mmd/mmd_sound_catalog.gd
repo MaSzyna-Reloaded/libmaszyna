@@ -21,14 +21,11 @@ class_name MmdSoundCatalog
 ## discipline as the cabin catalog.
 
 static var _catalog:Dictionary = {}
-static var _built:bool = false
 
 
-static func _ensure_built() -> void:
-    if _built:
-        return
-    _built = true
-
+## Built once, when the class is loaded - the catalog is read on several threads at once
+## (the vehicles' cab logic, MaszynaLegacyVehicleSystem._read_vehicle())
+static func _static_init() -> void:
     _catalog = {
         "oilpump": {
             "event_name": &"oil_pump",
@@ -279,10 +276,8 @@ static func _ensure_built() -> void:
 
 
 static func has_label(label:String) -> bool:
-    _ensure_built()
     return _catalog.has(label)
 
 
 static func get_entry(label:String) -> Dictionary:
-    _ensure_built()
     return _catalog.get(label, {})

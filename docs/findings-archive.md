@@ -4802,3 +4802,34 @@ lighting or the trainset.
     settled yet.
 * **Rule:** port the original's structure at its own granularity, on disk too: a section is a
   file, and a merged shape is a group inside it, never a file or a streaming entry of its own.
+
+## 2026-10-12 vehicles read off the main thread
+
+* **Symptom:** a vehicle's, cab's, cargo's or coupler adapter's model was parsed on the main
+  thread when the vehicle was built, mid-game for a coupling or a cab change - tens of
+  milliseconds a model, a hitch each.
+* **What proved it:**
+  - `RailVehicleRenderingServer` loaded the models at registration (`ResourceLazyLoader` without
+    lazy loading), and `model_load()` for the cargo and the adapters.
+  - `MaszynaLegacyVehicleSystem._build()` read the structure, the FIZ and the cab logic, all on
+    the main thread.
+  - Moving those reads to workers exposed shared state:
+    - `FizVehicleBuilder`'s section table held one set of parser instances for every parse, and
+      their table rows (`_lights_rows`) mixed two vehicles: `Parameter "_fp" is null` in
+      `FizTrainLightingParser.end_table()` and a crash;
+    - `MmdSemanticCatalog`/`MmdSoundCatalog` set `_built` before filling `_catalog`.
+  - The headless dummy renderer reports the project's driver name ("vulkan"). Detection by that
+    name sent the loads to workers in the tests.
+* **Fix:**
+  - `ResourceLazyLoader` loads on its caller's worker (`resource_load()`), one key at a time, and
+    keeps the copy without lazy loading. Registration loads on the main thread only in a headless
+    run (`get_loads_off_main_thread()`, `DisplayServer.get_name() == "headless"`).
+  - `RailVehicleRenderingServer` preloads a vehicle's files on a `WorkerTaskQueue`, and a build
+    waits for them. The cargo and the coupler adapters are registered like the appearance.
+    `preloads_drain()` runs before the scripts go.
+  - `MaszynaLegacyVehicleSystem` reads a vehicle's files on its own queue (`_read_vehicle()`),
+    including its cabs' models, so a cab is built from a resident model.
+  - Each FIZ parse makes its own section table (`FizImportContext.sections`).
+  - The MMD catalogs are built in `_static_init()`.
+* **Rule:** code a worker runs keeps no static or lazily built state. A headless run is told by
+  its display, not by the rendering driver's name.

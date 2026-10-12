@@ -5,11 +5,17 @@
 	</brief_description>
 	<description>
 		Holds the resources needed only while something near the camera uses them - a scenery's models, its terrain - so their memory, RAM and the VRAM of a mesh or a texture, goes back once nothing holds them. A resource is registered under a key with the [Callable] that loads it; one key is one resource, shared by everybody who registers it. [method resource_load] loads a copy, [method resource_hold] holds it, [method resource_release] lets it go. A copy not held is not shared: each load loads it anew. Everything held is let go when the game's data is unloaded ([signal GameDataServer.data_unload_requested]). Thread-safe.
-		With [member lazy_loading] a resource is loaded when it is wanted and let go once nobody holds it. Without it - the default - it is loaded when its key is registered first and kept until its last registration is freed; holding and releasing it then only says who builds from it.
+		With [member lazy_loading] a resource is loaded when it is wanted and let go once nobody holds it. Without it - the default - it is kept from its first load until its last registration is freed; holding and releasing it then only says who builds from it. A resource is loaded by [method resource_load] on its caller's worker thread, one key by one thread at a time, never at its registration - except in a headless run ([method get_loads_off_main_thread]).
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_loads_off_main_thread" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether resources are loaded on the callers' worker threads ([method resource_load]). [code]false[/code] in a headless run, whose dummy renderer cannot create resources off its own thread: then, without lazy loading, a resource is loaded at its registration, on the main thread.
+			</description>
+		</method>
 		<method name="resource_free">
 			<return type="void" />
 			<param index="0" name="resource" type="RID" />
