@@ -30,15 +30,17 @@ GODOT_VERSION:=4.7.2
 # The Linux release is therefore built in ci/docker/linux-sdk, Godot's own buildroot SDK
 # (glibc 2.34). The checkout is mounted at its own path and the build runs as the host user, so
 # the cmake cache and every output land exactly where a host build would put them; a game building
-# into its own project mounts its checkout, which holds this one (LINUX_SDK_MOUNT).
+# into its own project mounts its checkout (LINUX_SDK_MOUNT), and this one too when it is not
+# inside it (the game's make libmaszyna-local).
 # Published on ghcr.io and tagged by its Dockerfile: the CI pulls it rather than building it, and a
 # changed Dockerfile is a new tag, built here and published with make linux-sdk-image-push
 LINUX_SDK_IMAGE:=ghcr.io/maszyna-reloaded/linux-sdk:$(shell sha256sum ci/docker/linux-sdk/Dockerfile | cut -c1-12)
 LINUX_SDK_MOUNT?=$(CURDIR)
+LINUX_SDK_OWN_MOUNT:=$(if $(filter $(LINUX_SDK_MOUNT)/%,$(CURDIR)/.),,-v $(CURDIR):$(CURDIR))
 # The host's ccache directory, mounted, so the container's builds reuse and fill the same cache
 CCACHE_DIR?=$(HOME)/.cache/ccache
 LINUX_SDK_RUN=mkdir -p $(CCACHE_DIR) && docker run --rm --user $(shell id -u):$(shell id -g) \
-    -v $(LINUX_SDK_MOUNT):$(LINUX_SDK_MOUNT) -w $(CURDIR) -v $(CCACHE_DIR):/ccache -e CCACHE_DIR=/ccache \
+    -v $(LINUX_SDK_MOUNT):$(LINUX_SDK_MOUNT) $(LINUX_SDK_OWN_MOUNT) -w $(CURDIR) -v $(CCACHE_DIR):/ccache -e CCACHE_DIR=/ccache \
     -e CMAKE_C_COMPILER_LAUNCHER=ccache -e CMAKE_CXX_COMPILER_LAUNCHER=ccache $(LINUX_SDK_IMAGE)
 GODOT_SOURCE_DIR:=build-godot-$(GODOT_VERSION)
 GODOT_BIN:=$(GODOT_SOURCE_DIR)/bin
