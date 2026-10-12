@@ -108,7 +108,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     var carrier:RID = RailVehicleServer.vehicle_find_pantograph_carrier(vehicle)
     var pantograph_unit:Dictionary = VehicleServer.vehicle_dump_state(carrier) if carrier.is_valid() else controlled
 
-    result["name"] = VehicleServer.vehicle_get_name(vehicle)   # DynamicObject->asName
+    result["name"] = VehicleServer.vehicle_get_id(vehicle)   # DynamicObject->asName
     for key:String in STATE_KEYS:
         if STATE_KEYS[key] in state:
             result[key] = state[STATE_KEYS[key]]
@@ -197,7 +197,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         result["doors_r_%d" % car_number] = doors_right
         result["doorstep_l_%d" % car_number] = car_state.get("doors_left_step_position", 0.0) > 0.0
         result["doorstep_r_%d" % car_number] = car_state.get("doors_right_step_position", 0.0) > 0.0
-        result["car_name%d" % car_number] = VehicleServer.vehicle_get_name(car)
+        result["car_name%d" % car_number] = VehicleServer.vehicle_get_id(car)
         # the unit and the last letter of the vehicle's type (Train.cpp:895, 8687-8688)
         result["code_%d" % car_number] = "%d%s" % [unit_number, RailVehicleServer.vehicle_get_type_name(car).right(1)]
         result["slip_%d" % car_number] = car_state.get("slipping_wheels", false)

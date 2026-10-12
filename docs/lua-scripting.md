@@ -44,10 +44,11 @@ the game log.
 ## How a script works
 
 **Handles.** Everything a script works with - a vehicle, a track, an event, a memory cell, a signal
-head - is a handle of its kind, found by name (`maszyna.vehicle.find("SM42-982")`). A lookup that
+head - is a handle of its kind, found by name - a vehicle by its id, its scenery name in lower case
+(`maszyna.vehicle.find("sm42-982")`). A lookup that
 finds nothing returns `nil`. A function taking a vehicle refuses a track. Two handles of the same
 object are equal (`==`), but they are not the same Lua value: do not use a handle as a table key -
-use its name.
+use its name (a vehicle's id).
 
 **Callbacks.** A function given to `on_*`, `event.create`, `sim.after` or `sim.every` never runs
 inside the server that reported something. It runs as a scenario event, on the simulation clock:
@@ -86,10 +87,11 @@ The command and state names are the vehicle's own - the ones the console and the
 
 | Function | Returns / does |
 |---|---|
-| `find(name)` | the vehicle of the name; of several, one |
-| `find_all(name)` | every vehicle of the name |
+| `find(id)` | the vehicle of the id - its scenery name in lower case; of several, one |
+| `find_all(id)` | every vehicle of the id |
 | `all()` | every vehicle |
-| `name(v)`, `speed(v)`, `velocity(v)` | its name; km/h, never negative; km/h, negative backwards |
+| `id(v)`, `name(v)` | what `find` takes; its name as the scenery writes it, for the player (its id when it has none) |
+| `speed(v)`, `velocity(v)` | km/h, never negative; km/h, negative backwards |
 | `state(v, key)`, `config(v, key)` | one value of its state or configuration (`"brake/cylinder_pressure"`) |
 | `commands(v)` | the commands it takes |
 | `send_command(v, command, p1, p2)` | sends a command, returns the answer (`send_command(v, "battery", true)`) |
@@ -262,20 +264,19 @@ local crossing_2 = track.isolated_find("t2")
 -- the scenery's own event: stacja1_a_s1, stacja1_j-s1, stacja1_k-s1
 local signals_to_stop = event.find("keyctrl00")
 
--- by name: a handle is no table key
+-- by id: a handle is no table key
 local entered_at = {}
 
 track.on_isolated_occupied(crossing_1, function(v)
-    entered_at[vehicle.name(v)] = sim.time()
+    entered_at[vehicle.id(v)] = sim.time()
     log.info(string.format("%s enters crossing 1 at %.0f km/h", vehicle.name(v), vehicle.speed(v)))
 end)
 
 track.on_isolated_freed(crossing_2, function(v)
-    local name = vehicle.name(v)
-    local started = entered_at[name]
+    local started = entered_at[vehicle.id(v)]
     if started then
-        log.info(string.format("%s cleared both crossings in %.0f s", name, sim.time() - started))
-        entered_at[name] = nil
+        log.info(string.format("%s cleared both crossings in %.0f s", vehicle.name(v), sim.time() - started))
+        entered_at[vehicle.id(v)] = nil
     end
     event.queue(signals_to_stop)
 end)

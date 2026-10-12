@@ -24,7 +24,7 @@ func _ready() -> void:
 ## The console knows a vehicle by its scenery name only, so it goes through the server's name
 ## registry; a name that is empty, "none" or unknown reaches no vehicle.
 func _vehicle(train:String) -> RID:
-    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name(train)
+    var vehicle:RID = VehicleServer.vehicle_get_rid_by_id(train)
     if not vehicle.is_valid():
         console_print_error("No vehicle named \"%s\"" % train)
     return vehicle
@@ -53,10 +53,10 @@ func console_send(train, command, p1=null, p2=null):
         VehicleServer.vehicle_send_command(vehicle, command, p1, p2)
 
 func console_list_trains():
-    var names:PackedStringArray = []
+    var ids:PackedStringArray = []
     for vehicle:RID in VehicleServer.vehicle_get_rids():
-        names.append(VehicleServer.vehicle_get_name(vehicle))
-    Console.print_line("%s" % "\n".join(names))
+        ids.append(VehicleServer.vehicle_get_id(vehicle))
+    Console.print_line("%s" % "\n".join(ids))
 
 func console_list_train_commands():
     var commands:Dictionary[String, bool] = {}

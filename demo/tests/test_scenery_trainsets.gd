@@ -6,7 +6,7 @@ extends MaszynaGutTest
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## A trainset "express" of `first` (with a driver) and `second` on main_track, `lone` on
-## side_track, and `road_car` on a track the scenery does not have
+## side_track (written "Lone"), and `road_car` on a track the scenery does not have
 const SCENERY:String = "trainsets.scn"
 ## How exactly the second vehicle stands a vehicle's length behind the first [m]
 const PLACEMENT_TOLERANCE:float = 0.01
@@ -34,7 +34,7 @@ func test_a_loaded_scenery_has_no_node_for_a_vehicle_or_a_trainset() -> void:
 
     assert_eq(_scenery.find_children("", "RailVehicle3D", true, false).size(), 0)
     assert_eq(_scenery.find_children("", "TrainSet3D", true, false).size(), 0)
-    assert_eq(_names(_scenery.get_vehicles()), ["first", "second", "lone"],
+    assert_eq(_ids(_scenery.get_vehicles()), ["first", "second", "lone"],
             "its vehicles in the order of the file, without the one on a track that is not built")
     assert_eq(_scenery.get_trainsets().size(), 2, "the trainset, and the dynamic outside one")
     for vehicle:RID in _scenery.get_vehicles():
@@ -48,7 +48,7 @@ func test_the_trainset_stands_its_vehicles_in_order_and_couples_them() -> void:
     assert_eq(RailVehicleServer.trainset_get_name(trainset), "express")
     var vehicles:Array[RID] = []
     vehicles.assign(RailVehicleServer.trainset_get_vehicles(trainset))
-    assert_eq(_names(vehicles), ["first", "second"])
+    assert_eq(_ids(vehicles), ["first", "second"])
     var coupled:Array[RID] = []
     coupled.assign(RailVehicleServer.vehicle_get_coupled(
             vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER))
@@ -64,8 +64,20 @@ func test_the_vehicle_with_somebody_aboard_gets_its_driver() -> void:
     await _scenery.load()
 
     assert_eq(_scenery.first_vehicle_id, "first", "the player belongs in the vehicle with a driver")
-    assert_true(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("first")).is_valid())
-    assert_false(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("second")).is_valid())
+    assert_true(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_id("first")).is_valid())
+    assert_false(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_id("second")).is_valid())
+
+
+## A vehicle is found by its id - its name in lower case, as the original reads it - and shown by
+## its name as the .scn writes it (maszyna_node_importer.gd, simulationstateserializer.cpp:424-431)
+func test_a_vehicle_is_found_by_its_id_and_shown_by_its_name() -> void:
+    await _scenery.load()
+
+    var lone:RID = VehicleServer.vehicle_get_rid_by_id("lone")
+    assert_true(lone.is_valid(), "found by its id")
+    assert_eq(VehicleServer.vehicle_get_id(lone), "lone")
+    assert_eq(VehicleServer.vehicle_get_name(lone), "Lone", "shown as the .scn writes it")
+    assert_false(VehicleServer.vehicle_get_rid_by_id("Lone").is_valid(), "the name finds nothing")
 
 
 func test_a_skin_chosen_for_the_load_is_that_vehicles_alone() -> void:
@@ -94,7 +106,7 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
 
     var vehicles:Array[RID] = []
     vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
-    assert_eq(_names(vehicles), ["second", "first", "second_2"], "in the arranged order, the added one named")
+    assert_eq(_ids(vehicles), ["second", "first", "second_2"], "in the arranged order, the added one named")
     assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[1]).file_name, "animated")
     assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[0]).direction,
             TrackServer.DIRECTION_REVERSED, "the turned vehicle stands the other way round")
@@ -106,14 +118,14 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
     coupled.assign(RailVehicleServer.vehicle_get_coupled(
             vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER))
     assert_eq(coupled.size(), 3, "the three are coupled")
-    assert_true(VehicleServer.vehicle_get_rid_by_name("lone").is_valid(), "another trainset is left as declared")
+    assert_true(VehicleServer.vehicle_get_rid_by_id("lone").is_valid(), "another trainset is left as declared")
 
 
 func test_a_vehicle_left_out_of_the_arranged_trainset_is_not_built() -> void:
     _scenery.trainset_override.assign([_arranged("first", "dynamic/test/synthetic_v1", "synthetic", "none")])
     await _scenery.load()
 
-    assert_eq(_names(_scenery.get_vehicles()), ["first", "lone"])
+    assert_eq(_ids(_scenery.get_vehicles()), ["first", "lone"])
 
 
 func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
@@ -127,17 +139,17 @@ func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
     assert_eq(_scenery.get_trainsets().size(), 0)
     for vehicle:RID in vehicles:
         assert_false(MaszynaLegacyVehicleSystem.vehicle_exists(vehicle))
-    assert_false(VehicleServer.vehicle_get_rid_by_name("first").is_valid())
+    assert_false(VehicleServer.vehicle_get_rid_by_id("first").is_valid())
 
 
-func _names(vehicles:Array[RID]) -> Array:
-    return vehicles.map(func(vehicle:RID) -> String: return VehicleServer.vehicle_get_name(vehicle))
+func _ids(vehicles:Array[RID]) -> Array:
+    return vehicles.map(func(vehicle:RID) -> String: return VehicleServer.vehicle_get_id(vehicle))
 
 
 ## An entry of the player's trainset as the scenery selector arranges it
 func _arranged(vehicle_name:String, data_path:String, file_name:String, skin:String) -> MaszynaDynamicData:
     var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
-    dynamic.name = vehicle_name
+    dynamic.vehicle_id = vehicle_name
     dynamic.data_path = data_path
     dynamic.file_name = file_name
     dynamic.skin = skin

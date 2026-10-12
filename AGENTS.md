@@ -22,8 +22,10 @@ Code generation:
 * use english comments (if needed)
 * a vehicle is held by its `VehicleServer` RID and commanded with
   `VehicleServer.vehicle_send_command(vehicle_rid, ...)`; `RailVehicleServer` knows the same RID
-  for what is rail (track, couplers, rail component kinds). Its scenery name (`vehicle_id`) may be
-  empty or repeated and is only for finding it (`vehicle_get_rid_by_name`). Call a
+  for what is rail (track, couplers, rail component kinds). Its id (`vehicle_id`, the scenery
+  name in lower case) may be empty or repeated and is only for finding it
+  (`vehicle_get_rid_by_id`); its name (`vehicle_get_name()`, as the `.scn` writes it) is only
+  what the player reads - never one word for both. Call a
   `VehicleController` directly only where the composition already holds it (e.g. `VehicleComponent`s)
 * REQUIRED: **outside a vehicle's own composition an action on it is a command, never a method
   call** - a server, the cab, the player, the AI, a script or a test sends

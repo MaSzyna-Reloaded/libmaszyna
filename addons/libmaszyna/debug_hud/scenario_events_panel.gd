@@ -66,4 +66,4 @@ func _refresh() -> void:
 
 
 func _activator_suffix(activator:RID) -> String:
-    return " [%s]" % VehicleServer.vehicle_get_name(activator) if activator.is_valid() else ""
+    return " [%s]" % VehicleServer.vehicle_get_id(activator) if activator.is_valid() else ""

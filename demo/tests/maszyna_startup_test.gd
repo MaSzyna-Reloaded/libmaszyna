@@ -349,7 +349,7 @@ func enter_vehicle(scenery:String, vehicle:String) -> bool:
     # coupled yet never reaches the unit's motor car (SendCtrlToNext, Mover.cpp:2663)
     if not await wait_loaded(_scenery.scenery_loaded, scenery):
         return false
-    occupied = VehicleServer.vehicle_get_rid_by_name(vehicle)
+    occupied = VehicleServer.vehicle_get_rid_by_id(vehicle)
     if not occupied.is_valid():
         fail_test("%s is not in %s" % [vehicle, scenery])
         return false

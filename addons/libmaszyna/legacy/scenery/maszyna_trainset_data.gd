@@ -23,31 +23,33 @@ class_name MaszynaTrainsetData
 
 
 ## Its vehicles as `arranged` lists them (MaszynaIncludeNode.trainset_override) when the first
-## named vehicle there is one of its own, its declared ones otherwise. A named entry is that
-## vehicle with the entry's files, skin and direction - its couplings, crew and load stay. An
-## unnamed one is a vehicle added to it: the couplings and velocity of the vehicle before it (of
-## the first named one, when it comes first), nobody aboard, no load, no gap, and a name of its own.
+## vehicle with an id there is one of its own, its declared ones otherwise. An entry with an id is
+## that vehicle with the entry's files, skin and direction - its couplings, crew and load stay. One
+## without is a vehicle added to it: the couplings and velocity of the vehicle before it (of the
+## first one with an id, when it comes first), nobody aboard, no load, no gap, an id of its own and
+## no name.
 func get_arranged_dynamics(arranged:Array[MaszynaDynamicData]) -> Array[MaszynaDynamicData]:
-    var by_name:Dictionary[String, MaszynaDynamicData] = {}
+    var by_id:Dictionary[String, MaszynaDynamicData] = {}
     for dynamic:MaszynaDynamicData in dynamics:
-        by_name[dynamic.name] = dynamic
-    var first_named:String = ""
+        by_id[dynamic.vehicle_id] = dynamic
+    var first_id:String = ""
     for entry:MaszynaDynamicData in arranged:
-        if entry.name:
-            first_named = entry.name
+        if entry.vehicle_id:
+            first_id = entry.vehicle_id
             break
-    if not by_name.has(first_named):
+    if not by_id.has(first_id):
         return dynamics
     var result:Array[MaszynaDynamicData] = []
     for index:int in arranged.size():
         var entry:MaszynaDynamicData = arranged[index]
         var vehicle:MaszynaDynamicData
-        if by_name.has(entry.name):
-            vehicle = by_name[entry.name].duplicate()
+        if by_id.has(entry.vehicle_id):
+            vehicle = by_id[entry.vehicle_id].duplicate()
         else:
-            var before:MaszynaDynamicData = result.back() if result else by_name[first_named]
+            var before:MaszynaDynamicData = result.back() if result else by_id[first_id]
             vehicle = before.duplicate()
-            vehicle.name = "%s_%d" % [first_named, index]
+            vehicle.vehicle_id = "%s_%d" % [first_id, index]
+            vehicle.name = ""
             vehicle.driver_type = MaszynaDynamicData.DriverType.DRIVER_NOBODY
             vehicle.load_name = ""
             vehicle.load_amount = 0.0

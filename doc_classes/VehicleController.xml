@@ -7,7 +7,7 @@
 		Base train controller node.
 		It allows building behaviour of the train by adding child nodes of the [VehicleComponent] class.
 		The vehicle holds its own commands and is reached by its [RailVehicleServer] handle;
-		[member vehicle_id] is only its scenery name, registered with [method RailVehicleServer.vehicle_set_name].
+		[member vehicle_id] is only its id (its scenery name in lower case), set by [method VehicleServer.vehicle_set_id].
 	</description>
 	<tutorials>
 	</tutorials>

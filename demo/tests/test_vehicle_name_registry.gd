@@ -20,16 +20,16 @@ func after_each() -> void:
 func test_a_vehicle_is_found_by_the_name_the_scenery_gave_it() -> void:
     var rid:RID = _controller.get_rid()
     assert_eq(
-            VehicleServer.vehicle_get_name(rid), "name_registry_test",
+            VehicleServer.vehicle_get_id(rid), "name_registry_test",
             "the server knows what the scenery called this vehicle")
     assert_eq(
-            VehicleServer.vehicle_get_rid_by_name("name_registry_test"), rid,
+            VehicleServer.vehicle_get_rid_by_id("name_registry_test"), rid,
             "and hands back its handle when asked by that name")
 
 
 func test_a_name_nothing_carries_answers_with_no_handle() -> void:
     assert_false(
-            RID(VehicleServer.vehicle_get_rid_by_name("no_such_train")).is_valid(),
+            RID(VehicleServer.vehicle_get_rid_by_id("no_such_train")).is_valid(),
             "a name no vehicle carries is not a handle")
 
 
@@ -37,7 +37,7 @@ func test_a_freed_vehicle_takes_its_name_with_it() -> void:
     var rid:RID = _controller.get_rid()
     VehicleServer.vehicle_free(rid)
     assert_false(
-            RID(VehicleServer.vehicle_get_rid_by_name("name_registry_test")).is_valid(),
+            RID(VehicleServer.vehicle_get_rid_by_id("name_registry_test")).is_valid(),
             "the name of a vehicle that is gone leads nowhere")
 
 
@@ -47,7 +47,7 @@ func test_a_repeated_name_goes_to_the_later_vehicle_and_both_take_commands() -> 
     var later:VehicleController = build_vehicle("name_registry_test")
     await wait_idle_frames(2)
     assert_eq(
-            VehicleServer.vehicle_get_rid_by_name("name_registry_test"), later.get_rid(),
+            VehicleServer.vehicle_get_rid_by_id("name_registry_test"), later.get_rid(),
             "the name leads to the vehicle that took it last")
     for vehicle:VehicleController in [_controller, later]:
         assert_true(_takes_a_command(vehicle), "a vehicle sharing its name still takes commands by its handle")
@@ -58,7 +58,7 @@ func test_freeing_the_earlier_of_two_same_named_vehicles_keeps_the_name_on_the_l
     await wait_idle_frames(2)
     VehicleServer.vehicle_free(_controller.get_rid())
     assert_eq(
-            VehicleServer.vehicle_get_rid_by_name("name_registry_test"), later.get_rid(),
+            VehicleServer.vehicle_get_rid_by_id("name_registry_test"), later.get_rid(),
             "the earlier vehicle does not take the later one's name with it")
 
 
@@ -68,7 +68,7 @@ func test_a_vehicle_named_nothing_or_none_is_not_looked_up_but_takes_commands() 
         var vehicle:VehicleController = build_vehicle(name)
         await wait_idle_frames(2)
         assert_false(
-                RID(VehicleServer.vehicle_get_rid_by_name(name)).is_valid(),
+                RID(VehicleServer.vehicle_get_rid_by_id(name)).is_valid(),
                 "\"%s\" is not a name to look a vehicle up by" % name)
         assert_true(_takes_a_command(vehicle), "a vehicle without a name still takes commands by its handle")
 

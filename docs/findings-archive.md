@@ -4488,6 +4488,26 @@ lighting or the trainset.
   start-up test covers its own FIZ only: a vehicle of the same family with another FIZ needs its
   own.
 
+## 2026-10-12 A vehicle's id shown as its name
+
+* **Symptom:** the starter listed "st45-03" and "eu07-515", the HUD's vehicle card titled a TEM2
+  "tem2-234" over its skin "TEM2-234" - every vehicle name the player read was in lower case.
+* **What proved it:** b629fe38 read every node's name in lower case, as the original's parser
+  does (cParser::getTokens(), parser.h:71), and kept nothing else; dad8b997 did the same for the
+  starter. Since 34aa2040 `VehicleServer.vehicle_set_name()`/`vehicle_get_name()`/
+  `vehicle_get_rid_by_name()` held the vehicle's id (set_name wrote the controller's
+  `vehicle_id`), so the one value was both what finds a vehicle and what the HUD shows; the first
+  fix only added a `display_name` beside it in the starter - a second word for the name.
+* **Fix:** a vehicle has an id and a name. `vehicle_set_id()`/`vehicle_get_id()`/
+  `vehicle_get_rid_by_id()` hold the id - the lower-case name, what events, the console, Lua
+  `find`, the player's start and the logs use; `vehicle_set_name()`/`vehicle_get_name()` the name
+  as the `.scn` writes it (the id when it has none), what the HUD, the starter and the minimap
+  show. `MaszynaDynamicData` and `MaszynaSceneryInfo.Vehicle` carry both (`vehicle_id`, `name`);
+  Lua has `id(v)` and `name(v)`.
+* **Rule:** what the original lowers is an identity; the player reads what the data writes.
+  Never one word for both - a getter called `name` that returns the id is how the lower case
+  reached the screen.
+
 ## 2026-10-12 The stale scenery cache that looked like a name regression
 
 * **Symptom:** after the importers started lowercasing the trainset's track and the starter's

@@ -106,7 +106,7 @@ func _process(_delta:float) -> void:
 func _on_scenery_loaded(_first_vehicle_id:String) -> void:
     _initialization_state = InitializationState.WAITING_VEHICLE
     var vehicle_id:String = start_vehicle_id
-    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name(vehicle_id) if vehicle_id else RID()
+    var vehicle:RID = VehicleServer.vehicle_get_rid_by_id(vehicle_id) if vehicle_id else RID()
     var outside_transform:Transform3D = free_camera.global_transform
     if vehicle.is_valid():
         if CabinSystem.vehicle_get_cabin_scene(vehicle):
@@ -282,7 +282,7 @@ func _on_player_vehicle_changed(vehicle:RID, _previous:RID) -> void:
 ## The selected vehicle's cab scene became available after the scenery-loaded signal.
 func _on_vehicle_cabin_scene_changed(vehicle:RID) -> void:
     if _initialization_state == InitializationState.WAITING_VEHICLE \
-            and vehicle == VehicleServer.vehicle_get_rid_by_name(start_vehicle_id):
+            and vehicle == VehicleServer.vehicle_get_rid_by_id(start_vehicle_id):
         PlayerServer.player_take_over_vehicle(vehicle)
     if vehicle == PlayerServer.player_get_vehicle() and not _cabin_vehicle.is_valid() \
             and CabinSystem.vehicle_get_cabin_scene(vehicle):

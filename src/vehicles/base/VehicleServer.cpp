@@ -60,9 +60,11 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("vehicle_set_initial_velocity", "vehicle", "velocity"),
                 &VehicleServer::vehicle_set_initial_velocity);
+        ClassDB::bind_method(D_METHOD("vehicle_set_id", "vehicle", "id"), &VehicleServer::vehicle_set_id);
+        ClassDB::bind_method(D_METHOD("vehicle_get_id", "vehicle"), &VehicleServer::vehicle_get_id);
+        ClassDB::bind_method(D_METHOD("vehicle_get_rid_by_id", "id"), &VehicleServer::vehicle_get_rid_by_id);
         ClassDB::bind_method(D_METHOD("vehicle_set_name", "vehicle", "name"), &VehicleServer::vehicle_set_name);
         ClassDB::bind_method(D_METHOD("vehicle_get_name", "vehicle"), &VehicleServer::vehicle_get_name);
-        ClassDB::bind_method(D_METHOD("vehicle_get_rid_by_name", "name"), &VehicleServer::vehicle_get_rid_by_name);
         ClassDB::bind_method(D_METHOD("vehicle_get_rids"), &VehicleServer::vehicle_get_rids);
         ClassDB::bind_method(
                 D_METHOD("vehicle_is_simulation_ready", "vehicle"), &VehicleServer::vehicle_is_simulation_ready);
@@ -233,9 +235,9 @@ namespace godot {
             cabin_free(cabin);
         }
         const Vehicle *vehicle = vehicles.getptr(p_vehicle);
-        // the name may have passed to a later vehicle of the same name - that one keeps it
-        if (const RID *named = vehicles_by_name.getptr(vehicle->name); named != nullptr && *named == p_vehicle) {
-            vehicles_by_name.erase(vehicle->name);
+        // the id may have passed to a later vehicle of the same id - that one keeps it
+        if (const RID *found = vehicles_by_id.getptr(vehicle->id); found != nullptr && *found == p_vehicle) {
+            vehicles_by_id.erase(vehicle->id);
         }
         vehicles.erase(p_vehicle);
         _refresh_stepping();
@@ -311,7 +313,7 @@ namespace godot {
         vehicle->controller = p_controller;
         VehicleController *controller = slot->controller.ptr();
         controller->set_vehicle_rid(p_vehicle);
-        controller->set_vehicle_id(vehicle->name);
+        controller->set_vehicle_id(vehicle->id);
         controller->set_initial_velocity(vehicle->initial_velocity);
         vehicle->implementation = controller->get_implementation();
         if (!vehicle->implementation.is_empty()) {
@@ -398,40 +400,56 @@ namespace godot {
         emit_signal(vehicle_config_changed_signal, p_vehicle);
     }
 
+    void VehicleServer::vehicle_set_id(const RID &p_vehicle, const String &p_id) {
+        Vehicle *vehicle = vehicles.getptr(p_vehicle);
+        if (vehicle == nullptr) {
+            return;
+        }
+        if (const RID *found = vehicles_by_id.getptr(vehicle->id); found != nullptr && *found == p_vehicle) {
+            vehicles_by_id.erase(vehicle->id);
+        }
+        vehicle->id = p_id;
+        if (VehicleController *controller = _get_controller(p_vehicle); controller != nullptr) {
+            controller->set_vehicle_id(p_id);
+        }
+        // Names.h:29 basic_table::insert - a vehicle with the id "" or "none" is not looked up
+        if (p_id.is_empty() || p_id == "none") {
+            return;
+        }
+        /* Two vehicles of one id is a scenery's mistake, and the second one silently taking the
+         * id away from the first is how it stays invisible - an event or a console command then
+         * reaches a vehicle nobody meant. */
+        if (const RID *taken = vehicles_by_id.getptr(p_id); taken != nullptr && *taken != p_vehicle) {
+            UtilityFunctions::push_warning(
+                    vformat("Bad scenario: two vehicles with the id \"%s\" - the later one takes it", p_id));
+        }
+        vehicles_by_id[p_id] = p_vehicle;
+    }
+
+    String VehicleServer::vehicle_get_id(const RID &p_vehicle) const {
+        const Vehicle *vehicle = vehicles.getptr(p_vehicle);
+        return vehicle != nullptr ? vehicle->id : String();
+    }
+
+    RID VehicleServer::vehicle_get_rid_by_id(const String &p_id) const {
+        const RID *found = vehicles_by_id.getptr(p_id);
+        return found != nullptr ? *found : RID();
+    }
+
     void VehicleServer::vehicle_set_name(const RID &p_vehicle, const String &p_name) {
         Vehicle *vehicle = vehicles.getptr(p_vehicle);
         if (vehicle == nullptr) {
             return;
         }
-        if (const RID *named = vehicles_by_name.getptr(vehicle->name); named != nullptr && *named == p_vehicle) {
-            vehicles_by_name.erase(vehicle->name);
-        }
         vehicle->name = p_name;
-        if (VehicleController *controller = _get_controller(p_vehicle); controller != nullptr) {
-            controller->set_vehicle_id(p_name);
-        }
-        // Names.h:29 basic_table::insert - a vehicle named "" or "none" is not looked up by name
-        if (p_name.is_empty() || p_name == "none") {
-            return;
-        }
-        /* Two vehicles of one name is a scenery's mistake, and the second one silently taking the
-         * name away from the first is how it stays invisible - an event or a console command then
-         * reaches a vehicle nobody meant. */
-        if (const RID *taken = vehicles_by_name.getptr(p_name); taken != nullptr && *taken != p_vehicle) {
-            UtilityFunctions::push_warning(
-                    vformat("Bad scenario: two vehicles named \"%s\" - the later one takes the name", p_name));
-        }
-        vehicles_by_name[p_name] = p_vehicle;
     }
 
     String VehicleServer::vehicle_get_name(const RID &p_vehicle) const {
         const Vehicle *vehicle = vehicles.getptr(p_vehicle);
-        return vehicle != nullptr ? vehicle->name : String();
-    }
-
-    RID VehicleServer::vehicle_get_rid_by_name(const String &p_name) const {
-        const RID *found = vehicles_by_name.getptr(p_name);
-        return found != nullptr ? *found : RID();
+        if (vehicle == nullptr) {
+            return String();
+        }
+        return vehicle->name.is_empty() ? vehicle->id : vehicle->name;
     }
 
     TypedArray<RID> VehicleServer::vehicle_get_rids() const {

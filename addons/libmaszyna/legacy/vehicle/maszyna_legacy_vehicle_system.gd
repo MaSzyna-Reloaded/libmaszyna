@@ -146,6 +146,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     var structure:MaszynaVehicleStructure = _get_structure(dynamic)
     if not structure:
         return
+    VehicleServer.vehicle_set_id(vehicle, dynamic.vehicle_id)
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
     VehicleServer.vehicle_set_initial_velocity(vehicle, dynamic.velocity)
     RailVehicleServer.vehicle_attach(vehicle)
@@ -181,7 +182,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
                 RailVehicleServer.vehicle_add_machine_room(vehicle)
     if not dynamic.driver_type == MaszynaDynamicData.DriverType.DRIVER_NOBODY:
         # the driver goes by its vehicle's name, as the original's (OwnerName(), Driver.cpp:5968-5971)
-        record.driver = PersonServer.person_create(dynamic.name)
+        record.driver = PersonServer.person_create(dynamic.vehicle_id)
         var seated:Error = (
                 RailVehicleServer.person_enter_front_cabin(
                         record.driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
@@ -190,7 +191,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
                         record.driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER))
         if not seated == OK:
             push_warning("MaszynaLegacyVehicleSystem: %s has a driver but no cab to seat it in (%s)" % [
-                    dynamic.name, error_string(seated)])
+                    dynamic.vehicle_id, error_string(seated)])
     # the original's TypeName is the CHK/MMD name (DynObj.cpp:2019)
     RailVehicleServer.vehicle_set_type_name(vehicle, structure.file_name)
     RailVehicleServer.vehicle_set_load(vehicle, dynamic.load_name, dynamic.load_amount)
@@ -212,7 +213,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         return
     if cabin_kinds:
         CabinSystem.vehicle_attach_cab_logic(
-                vehicle, LegacyCabinLogic.from_mmd(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.name))
+                vehicle, LegacyCabinLogic.from_mmd(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id))
     # last of the cab: the scene is what the driving player's cab is shown from, built on the cab
     # logic (CabinSystem.vehicle_cabin_scene_changed)
     CabinSystem.vehicle_set_cabin_scene(vehicle, structure.cabin_scene)
@@ -234,7 +235,7 @@ func _get_structure(dynamic:MaszynaDynamicData) -> MaszynaVehicleStructure:
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
     var variant:String = dynamic.skin
     if MmdCabinInstancer.names_vehicle(abs_mmd_path):
-        variant += "|" + dynamic.name
+        variant += "|" + dynamic.vehicle_id
     var cache_path:String = normalized_data_path.path_join("%s_%s.res" % [dynamic.file_name, variant.md5_text()])
     # Only the .mmd's own mtime is checked - not every .e3d/.fiz file it transitively references -
     # matching FizVehicleBuilder._make_cache_hash()'s same simplification for FIZ `include`s.
@@ -244,7 +245,7 @@ func _get_structure(dynamic:MaszynaDynamicData) -> MaszynaVehicleStructure:
     var structure:MaszynaVehicleStructure = _cache.get(cache_path, cache_hash) as MaszynaVehicleStructure
     if not structure:
         structure = MaszynaRailVehicle3DInstancer.read_structure(
-                dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.name)
+                dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id)
         if structure:
             _cache.set(cache_path, structure, cache_hash)
     return structure
@@ -265,7 +266,7 @@ func _build_sounds(vehicle:RID) -> void:
     var no_random_choices:Dictionary = {}
     MmdSoundBankInstancer.build_into(
             record.sound_mount, vehicle, abs_mmd_path,
-            MmdCabinInstancer.vehicle_parameters(dynamic.name, dynamic.file_name, dynamic.skin), no_random_choices,
+            MmdCabinInstancer.vehicle_parameters(dynamic.vehicle_id, dynamic.file_name, dynamic.skin), no_random_choices,
             diagnostics)
     for diagnostic:Dictionary in diagnostics:
         if not diagnostic["severity"] == "info":

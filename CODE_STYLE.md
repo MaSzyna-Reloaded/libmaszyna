@@ -122,7 +122,7 @@ win.visible = not win.visible
 ```
 
 A name is for what has no owner to hold it - a HUD element a Lua script asks for, a vehicle found by
-its scenery `vehicle_id` - not for the owner's own children.
+its `vehicle_id` - not for the owner's own children.
 
 ### A case that every receiver branches on is not a parameter
 

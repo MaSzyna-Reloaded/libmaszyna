@@ -56,7 +56,7 @@ func _refresh() -> void:
         _power_source_vehicle = RID()
         return
 
-    var vehicle_id:String = VehicleServer.vehicle_get_name(rid)
+    var vehicle_id:String = VehicleServer.vehicle_get_id(rid)
     _rows["Vehicle"].text = vehicle_id if vehicle_id else "(no vehicle id)"
 
     var placement:Dictionary = RailVehicleServer.vehicle_get_track_position(rid)

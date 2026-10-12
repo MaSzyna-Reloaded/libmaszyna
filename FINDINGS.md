@@ -240,6 +240,9 @@ anything. Open work belongs in `TODO.md`.
 * A scenery shape's range applies only where the original tests it: a large opaque shape is drawn
   with its section whatever its range, and a ranged one is measured from its 25 m group's centre,
   never from a 1 km mesh. *(10-12 Całkowo's ground missing under its houses)*
+* What the original reads in lower case is an id, not what the player reads: a vehicle's
+  `vehicle_id` (lower case) finds it, its name as the `.scn` writes it (`vehicle_get_name()`) is
+  shown - never one word for both. *(10-12 the HUD showed "tem2-234" over "TEM2-234")*
 
 ## State, ownership, events
 * An operation somebody awaits is done only when everything its waiter relies on is; a signal

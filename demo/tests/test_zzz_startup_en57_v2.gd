@@ -73,7 +73,7 @@ func _walk_to_cab(action:StringName, vehicle_name:String, rear:bool) -> void:
         var vehicle:RID = PlayerServer.player_get_vehicle()
         var wanted:RID = RailVehicleServer.vehicle_get_rear_cabin(vehicle) if rear \
                 else RailVehicleServer.vehicle_get_front_cabin(vehicle)
-        if VehicleServer.vehicle_get_name(vehicle) == vehicle_name and RailVehicleServer.vehicle_get_driver_cabin(vehicle) == wanted:
+        if VehicleServer.vehicle_get_id(vehicle) == vehicle_name and RailVehicleServer.vehicle_get_driver_cabin(vehicle) == wanted:
             return
         await key_tap(action)
         await step(ticks(CAB_CHANGE_SECONDS))
