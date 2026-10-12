@@ -2,6 +2,7 @@
 
 #include "game_data/GameDataServer.hpp"
 
+#include <godot_cpp/classes/display_server.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/object.hpp>
@@ -11,6 +12,11 @@
 
 namespace godot {
     ResourceLazyLoader *ResourceLazyLoader::singleton = nullptr;
+
+    /// The display a headless run has: it renders with RasterizerDummy, whose RID storage is not
+    /// thread-safe (RID_Owner<DummyMesh>, servers/rendering/dummy/storage/mesh_storage.h:50). The
+    /// rendering driver's name stays the project's ("vulkan"), so it says nothing
+    constexpr const char *HEADLESS_DISPLAY = "headless";
 
     ResourceLazyLoader *ResourceLazyLoader::get_instance() {
         return singleton;
@@ -43,6 +49,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("resource_get_statistics"), &ResourceLazyLoader::resource_get_statistics);
         ClassDB::bind_method(D_METHOD("set_lazy_loading", "lazy_loading"), &ResourceLazyLoader::set_lazy_loading);
         ClassDB::bind_method(D_METHOD("get_lazy_loading"), &ResourceLazyLoader::get_lazy_loading);
+        ClassDB::bind_method(D_METHOD("get_loads_off_main_thread"), &ResourceLazyLoader::get_loads_off_main_thread);
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lazy_loading"), "set_lazy_loading", "get_lazy_loading");
     }
 
@@ -54,6 +61,12 @@ namespace godot {
     bool ResourceLazyLoader::get_lazy_loading() const {
         MutexLock lock(mutex);
         return lazy_loading;
+    }
+
+    /// Asked at each use: the DisplayServer singleton is not there yet when the extension creates
+    /// this one
+    bool ResourceLazyLoader::get_loads_off_main_thread() const {
+        return DisplayServer::get_singleton()->get_name() != HEADLESS_DISPLAY;
     }
 
     /// The new data is loaded anew; whoever holds a resource keeps holding it and gets the new one
@@ -68,8 +81,8 @@ namespace godot {
         }
     }
 
-    /// Without lazy loading the first registration of a key loads it, outside the mutex as
-    /// resource_load() does
+    /// Only a renderer that cannot create resources off its thread has the first registration of a
+    /// key load it, without lazy loading - outside the mutex, as resource_load() does
     RID ResourceLazyLoader::resource_register(const String &p_key, const Callable &p_loader) {
         RID rid;
         {
@@ -85,7 +98,7 @@ namespace godot {
             entry.registrations = 1;
             entry.resident_by_registration = !lazy_loading;
             keys[p_key] = rid;
-            if (lazy_loading || !p_loader.is_valid()) {
+            if (lazy_loading || get_loads_off_main_thread() || !p_loader.is_valid()) {
                 return rid;
             }
             UtilityFunctions::print_verbose("[ResourceLazyLoader] loading ", p_key);
@@ -113,14 +126,15 @@ namespace godot {
         entries.erase(p_resource);
     }
 
-    /// A copy not held is not shared: each load of it loads it anew. It used to be handed out again
-    /// from its ObjectID, but another thread may be dropping its last reference at that moment - the
-    /// object is then still in ObjectDB while it is destroyed, and taking it crashed (a segfault in
-    /// Object::is_class under _stream_preload, while _drop_stale_work freed the E3DModel). Two
-    /// workers preloading one model before it is built therefore load it twice; resource_hold()
-    /// keeps one copy and the other is freed with its build.
+    /// A copy neither held nor kept is not shared: each load of it loads it anew. It used to be
+    /// handed out again from its ObjectID, but another thread may be dropping its last reference at
+    /// that moment - the object is then still in ObjectDB while it is destroyed, and taking it
+    /// crashed (a segfault in Object::is_class under _stream_preload, while _drop_stale_work freed
+    /// the E3DModel). One key is loaded by one thread at a time (its load_mutex): a second one waits
+    /// and takes the copy the first kept, so a model is not parsed twice at once.
     Ref<Resource> ResourceLazyLoader::resource_load(const RID &p_resource) {
         Callable loader;
+        std::shared_ptr<Mutex> load_mutex;
         {
             MutexLock lock(mutex);
             const Entry *entry = entries.getptr(p_resource);
@@ -129,12 +143,26 @@ namespace godot {
                 return entry->resource;
             }
             loader = entry->loader;
+            load_mutex = entry->load_mutex;
+        }
+        MutexLock loading(*load_mutex);
+        {
+            MutexLock lock(mutex);
+            const Entry *entry = entries.getptr(p_resource);
+            ERR_FAIL_NULL_V(entry, Ref<Resource>());
+            if (entry->resource.is_valid()) {
+                return entry->resource;
+            }
             // names what a streamed piece loads (--verbose): a preload's piece is only its RID
             UtilityFunctions::print_verbose("[ResourceLazyLoader] loading ", entry->key);
         }
         Ref<Resource> resource = loader.call();
         MutexLock lock(mutex);
         load_count++;
+        if (Entry *entry = entries.getptr(p_resource);
+            entry != nullptr && entry->resident_by_registration && entry->resource.is_null()) {
+            entry->resource = resource;
+        }
         return resource;
     }
 

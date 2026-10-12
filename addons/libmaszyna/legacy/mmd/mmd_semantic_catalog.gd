@@ -37,14 +37,11 @@ enum IslandLights { GLOW, WIDGET_LIGHT }
 ## (LegacyCabinUnmodelledControls).
 
 static var _catalog:Dictionary = {}
-static var _built:bool = false
 
 
-static func _ensure_built() -> void:
-    if _built:
-        return
-    _built = true
-
+## Built once, when the class is loaded - the catalog is read on several threads at once
+## (the vehicles' cab logic, MaszynaLegacyVehicleSystem._read_vehicle())
+static func _static_init() -> void:
     _catalog = {
         "mainctrl": {
             # the original's handler acts on mvControlled
@@ -2652,17 +2649,14 @@ static func _ensure_built() -> void:
 
 
 static func get_labels() -> Array:
-    _ensure_built()
     return _catalog.keys()
 
 
 static func has_label(label:String) -> bool:
-    _ensure_built()
     return _catalog.has(label)
 
 
 static func get_entry(label:String) -> Dictionary:
-    _ensure_built()
     return _catalog.get(label, {})
 
 
