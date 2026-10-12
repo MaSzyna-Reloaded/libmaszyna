@@ -102,7 +102,7 @@ namespace godot {
     void MoverRailVehicleController::_initialize_simulation() {
         MaszynaMoverVehicleServer *implementation = MaszynaMoverVehicleServer::get_instance();
         ERR_FAIL_NULL(implementation);
-        // the vehicle used to be named by its node; what identifies one now is its train id
+        // the vehicle used to be named by its node; what identifies one now is its vehicle id
         mover_vehicle = get_rid();
         mover_implementation = ObjectID(implementation->get_instance_id());
         mover = implementation->mover_create(

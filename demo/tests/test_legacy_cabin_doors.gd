@@ -32,12 +32,12 @@ func after_each() -> void:
     SimulationServer.time_of_day = _clock
 
 
-func _build(train_id:String, auto_warning:bool) -> void:
+func _build(vehicle_id:String, auto_warning:bool) -> void:
     _clock = SimulationServer.time_of_day
     var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
     var doors:RailVehicleDoors = description.get_component(VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     doors.close_auto_close_warning = auto_warning
-    var train:VehicleController = build_vehicle(train_id, description, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()
     front_cabin = RailVehicleServer.vehicle_get_front_cabin(vehicle_rid)
     rear_cabin = RailVehicleServer.vehicle_get_rear_cabin(vehicle_rid)

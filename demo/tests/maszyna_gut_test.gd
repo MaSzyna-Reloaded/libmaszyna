@@ -99,20 +99,20 @@ func wait_streaming(frames:int) -> void:
 ## front one) - nobody's vehicle has no driver's cabin, so its cab cannot be activated
 ## (DynObj.cpp:1948-1964). The person is freed as the node leaves the tree; a test that needs it
 ## takes it from VehicleServer.vehicle_list_persons().
-func build_vehicle(train_id:String = "TestTrain", description:VehicleController = null,
+func build_vehicle(vehicle_id:String = "TestTrain", description:VehicleController = null,
         initial_velocity:float = 0.0,
         driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> VehicleController:
     return VehicleServer.vehicle_get_controller(
-            build_vehicle_node(train_id, description, initial_velocity, driver).get_vehicle_rid())
+            build_vehicle_node(vehicle_id, description, initial_velocity, driver).get_vehicle_rid())
 
 
 ## The node itself, for a test that needs a NodePath to the vehicle (RailVehicle3D.controller_path).
-func build_vehicle_node(train_id:String = "TestTrain", description:VehicleController = null,
+func build_vehicle_node(vehicle_id:String = "TestTrain", description:VehicleController = null,
         initial_velocity:float = 0.0,
         driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> VehiclePhysicsNode:
     var physics_node: RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
     physics_node.controller = description
-    physics_node.vehicle_id = train_id
+    physics_node.vehicle_id = vehicle_id
     physics_node.initial_velocity = initial_velocity
     # a rail vehicle, stepped by RailVehicleServer whether or not a RailVehicle3D places it
     add_child_autofree(physics_node)
@@ -172,13 +172,13 @@ func build_track(track_name:String, length:float) -> RID:
 ## A RailVehicle3D standing on the track at the offset, with a mass - a vehicle with none integrates
 ## to NaN (test_rail_vehicle_at_rest.gd). It takes its controller within a few frames; the test frees
 ## it, before its physics node goes with autofree.
-func build_rail_vehicle(train_id:String, track_name:String, offset:float,
+func build_rail_vehicle(vehicle_id:String, track_name:String, offset:float,
         driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> RailVehicle3D:
     var model:RailVehicleController = MoverRailVehicleController.new()
-    model.vehicle_id = train_id
+    model.vehicle_id = vehicle_id
     model.mass = RAIL_VEHICLE_MASS
     model.type_name = "test"
-    var physics_node:VehiclePhysicsNode = build_vehicle_node(train_id, model, 0.0, driver)
+    var physics_node:VehiclePhysicsNode = build_vehicle_node(vehicle_id, model, 0.0, driver)
     var vehicle:RailVehicle3D = RailVehicle3D.new()
     vehicle.start_track_name = track_name
     vehicle.start_track_offset = offset
@@ -190,10 +190,10 @@ func build_rail_vehicle(train_id:String, track_name:String, offset:float,
 
 ## A passenger car standing on the track at the offset, as build_rail_vehicle(), with doors and room
 ## for `capacity` passengers getting off and on `exchange_speed` a second through one open side
-func build_passenger_car(train_id:String, track_name:String, offset:float, capacity:float,
+func build_passenger_car(vehicle_id:String, track_name:String, offset:float, capacity:float,
         exchange_speed:float, initial_velocity:float = 0.0) -> RailVehicle3D:
     var model:RailVehicleController = MoverRailVehicleController.new()
-    model.vehicle_id = train_id
+    model.vehicle_id = vehicle_id
     model.mass = RAIL_VEHICLE_MASS
     model.type_name = "test"
     var doors:MoverRailVehicleDoors = MoverRailVehicleDoors.new()
@@ -206,7 +206,7 @@ func build_passenger_car(train_id:String, track_name:String, offset:float, capac
     var accepted:Array[String] = [PASSENGERS]
     load.accepted_loads = accepted
     model.add_component(load)
-    var physics_node:VehiclePhysicsNode = build_vehicle_node(train_id, model, initial_velocity)
+    var physics_node:VehiclePhysicsNode = build_vehicle_node(vehicle_id, model, initial_velocity)
     var vehicle:RailVehicle3D = RailVehicle3D.new()
     vehicle.start_track_name = track_name
     vehicle.start_track_offset = offset

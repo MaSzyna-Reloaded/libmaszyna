@@ -6,7 +6,7 @@ class_name MaszynaVehicleStructure
 ##
 ## Everything here is a property of the vehicle *type*, so it is shared by every vehicle of that
 ## data_path/file_name/skin - and of that name, when the MMD names its (p1): its appearance (the models the MMD names, the resolved skin slots, the
-## submodels that move), the models of its cargo and the cab. What says which *instance* a vehicle is - its train_id, its speed, who occupies it,
+## submodels that move), the models of its cargo and the cab. What says which *instance* a vehicle is - its vehicle_id, its speed, who occupies it,
 ## where it stands - is not here; it is applied to the vehicle that is built from this.
 ##
 ## Reading an MMD is the expensive part and a scenery repeats the same file across a whole

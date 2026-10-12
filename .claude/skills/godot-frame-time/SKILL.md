@@ -29,7 +29,7 @@ only meaningful this way - that one is a release build.
 
 No probe is needed: the game takes the original's command line, so
 `godot-double --path demo --audio-driver Dummy -- -s <scenery>.scn` loads the scenery from the
-game directory and puts the player in its first trainset (`-v <train_id>` for another one).
+game directory and puts the player in its first trainset (`-v <vehicle_id>` for another one).
 
 * Run it under `gamescope --backend headless -W 1920 -H 1080 -- ...` with `WAYLAND_DISPLAY`
   unset. That gives a real GPU and no window. Plain `--headless` crashes a big scenery on the dummy

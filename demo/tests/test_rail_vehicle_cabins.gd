@@ -28,8 +28,8 @@ func _create_person() -> RID:
 
 
 ## A rail vehicle nobody sits in, with a front and a rear cabin
-func _build_vehicle(train_id:String) -> RID:
-    var vehicle:RID = build_vehicle(train_id, SM42).get_rid()
+func _build_vehicle(vehicle_id:String) -> RID:
+    var vehicle:RID = build_vehicle(vehicle_id, SM42).get_rid()
     if not RailVehicleServer.vehicle_get_front_cabin(vehicle).is_valid():
         RailVehicleServer.vehicle_add_front_cabin(vehicle)
         RailVehicleServer.vehicle_add_rear_cabin(vehicle)

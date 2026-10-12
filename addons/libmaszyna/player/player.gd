@@ -103,24 +103,24 @@ func _process(_delta:float) -> void:
 
 ## The source announces this after the trainsets have been built, coupled and placed.
 ## CabinSystem shows the cabin synchronously; exterior models need streaming, not the reverse.
-func _on_scenery_loaded(_first_train_id:String) -> void:
+func _on_scenery_loaded(_first_vehicle_id:String) -> void:
     _initialization_state = InitializationState.WAITING_VEHICLE
-    var train_id:String = start_vehicle_id
-    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name(train_id) if train_id else RID()
+    var vehicle_id:String = start_vehicle_id
+    var vehicle:RID = VehicleServer.vehicle_get_rid_by_name(vehicle_id) if vehicle_id else RID()
     var outside_transform:Transform3D = free_camera.global_transform
     if vehicle.is_valid():
         if CabinSystem.vehicle_get_cabin_scene(vehicle):
             # in the game's log before and after: the cab, its screens and the streaming start here
-            print("[PlayerStart] taking over vehicle '%s'" % train_id)
+            print("[PlayerStart] taking over vehicle '%s'" % vehicle_id)
             PlayerServer.player_take_over_vehicle(vehicle)
-            print("[PlayerStart] vehicle '%s' taken over" % train_id)
+            print("[PlayerStart] vehicle '%s' taken over" % vehicle_id)
             if _cabin_vehicle == vehicle:
                 _initialization_complete()
                 return
         return
     else:
-        if train_id:
-            push_warning("Player initialization: vehicle '%s' is not registered; starting outside." % train_id)
+        if vehicle_id:
+            push_warning("Player initialization: vehicle '%s' is not registered; starting outside." % vehicle_id)
         print("[PlayerStart] starting outside")
         PlayerCameraServer.camera_set_mode(PlayerCameraServer.CAMERA_MODE_FREE)
         free_camera.global_transform = outside_transform

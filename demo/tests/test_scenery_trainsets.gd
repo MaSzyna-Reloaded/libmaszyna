@@ -63,7 +63,7 @@ func test_the_trainset_stands_its_vehicles_in_order_and_couples_them() -> void:
 func test_the_vehicle_with_somebody_aboard_gets_its_driver() -> void:
     await _scenery.load()
 
-    assert_eq(_scenery.first_train_id, "first", "the player belongs in the vehicle with a driver")
+    assert_eq(_scenery.first_vehicle_id, "first", "the player belongs in the vehicle with a driver")
     assert_true(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("first")).is_valid())
     assert_false(DriverServer.vehicle_get_driver(VehicleServer.vehicle_get_rid_by_name("second")).is_valid())
 

@@ -123,7 +123,7 @@ ordering defect: react to `simulation_configured`, do not raise a "try again nex
 
 **5. A vehicle is its handle, never its name.** Everything that holds a vehicle holds its
 `RailVehicleServer` RID and commands it with `vehicle_send_command(vehicle_rid, ...)`; a vehicle
-keeps its own commands (`VehicleController::register_command`). The scenery name (`train_id`) may
+keeps its own commands (`VehicleController::register_command`). The scenery name (`vehicle_id`) may
 be empty or repeated, and it lives only in the server's name registry: `vehicle_get_rid_by_name`
 leaves `""` and `"none"` unmapped and gives a repeated name to the later vehicle, as the original
 `basic_table::insert` does (`Names.h:27-40`). Only what knows a vehicle by name alone - a scenario,
@@ -202,7 +202,7 @@ relying on one.
 4. Read every `_process` the diff touches: no loop, no lookup, no wiring, nothing while idle.
    `grep -n 'vehicle_dump_' <changed files>` - no dump on a per-frame, per-step or per-tick path.
 5. Ask the placement question of each new field, out loud, and write the answer in the commit.
-6. `grep -rn 'train_id' addons src` - a scenery name is never a key a vehicle is held, cached or
+6. `grep -rn 'vehicle_id' addons src` - a scenery name is never a key a vehicle is held, cached or
    commanded by; only `vehicle_get_rid_by_name` turns a name into a vehicle.
 
 **And verify against the code, never against a document.** `TODO.md`'s stage list was written when
