@@ -1,53 +1,73 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="MaszynaTrianglesChunkGeometry" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		The triangles of one terrain chunk.
+		The triangles of one terrain chunk, in groups.
 	</brief_description>
 	<description>
-		Scenery [code]triangles[/code] nodes sharing a texture, a cell of the 1 km grid and a visibility range ([SceneryTrianglesSink]), a file of its own read only while the camera is within the chunk's range. Positions are relative to the cell's centre, stored as floats.
+		Scenery [code]triangles[/code] nodes merged as the original merges its shapes ([SceneryTrianglesSink], [MaszynaLegacySBTTerrainProvider]): a texture in a section of the 1 km grid, or a texture and a visibility range in a cell of the 250 m grid. Its triangles are groups one after another - the shapes the original merges within 25 m, each drawn by its own range measured from its own centre; a section's chunk is one group, drawn whatever its range. Kept in the file of its section ([MaszynaTrianglesSector]). Positions and the groups' centres are relative to [member origin], stored as floats.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_group_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				The number of groups.
+			</description>
+		</method>
+		<method name="get_group_mesh_arrays" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="group" type="int" />
+			<description>
+				[constant Mesh.ARRAY_MAX] arrays of the group's vertices, normals and UVs, for [method RenderingServer.mesh_add_surface_from_arrays].
+			</description>
+		</method>
+		<method name="get_group_visibility_aabb" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="group" type="int" />
+			<description>
+				The group's box widened to be centred on the group's centre: Godot measures a visibility range to the centre of the instance's box.
+			</description>
+		</method>
 		<method name="split">
 			<return type="MaszynaTrianglesChunkGeometry[]" />
 			<description>
-				The chunk as pieces of at most [constant MAX_VERTICES], cut between whole triangles - itself when it is no larger.
-			</description>
-		</method>
-		<method name="to_mesh_arrays" qualifiers="const">
-			<return type="Array" />
-			<description>
-				[constant Mesh.ARRAY_MAX] arrays with the vertices, normals and UVs, for [method ArrayMesh.add_surface_from_arrays].
+				The chunk as pieces of at most [constant MAX_VERTICES], cut between groups, and a larger group between whole triangles, each run keeping the group's centre - itself when it is no larger.
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="cell" type="Vector2i" setter="set_cell" getter="get_cell" default="Vector2i(0, 0)">
-			The cell of the grid.
+		<member name="group_centres" type="PackedVector3Array" setter="set_group_centres" getter="get_group_centres" default="PackedVector3Array()">
+			Each group's centre, relative to [member origin] - what its range is measured from.
+		</member>
+		<member name="group_ends" type="PackedInt32Array" setter="set_group_ends" getter="get_group_ends" default="PackedInt32Array()">
+			Each group's end: the vertex after its last.
 		</member>
 		<member name="normals" type="PackedFloat32Array" setter="set_normals" getter="get_normals" default="PackedFloat32Array()">
 			x, y, z per vertex.
 		</member>
+		<member name="origin" type="Vector3" setter="set_origin" getter="get_origin" default="Vector3(0, 0, 0)">
+			The centre of the chunk's cell or section, which the positions and the groups' centres are relative to.
+		</member>
 		<member name="range_max" type="float" setter="set_range_max" getter="get_range_max" default="0.0">
-			Visible up to this distance, 0 or less - no limit of its own.
+			Visible up to this distance from a group's centre; 0 or less for none.
 		</member>
 		<member name="range_min" type="float" setter="set_range_min" getter="get_range_min" default="0.0">
-			Visible from this distance.
+			Visible from this distance from a group's centre.
 		</member>
 		<member name="texture" type="String" setter="set_texture" getter="get_texture" default="&quot;&quot;">
-			The material's name.
+			The material of the triangles.
 		</member>
 		<member name="uvs" type="PackedFloat32Array" setter="set_uvs" getter="get_uvs" default="PackedFloat32Array()">
 			u, v per vertex.
 		</member>
 		<member name="vertices" type="PackedFloat32Array" setter="set_vertices" getter="get_vertices" default="PackedFloat32Array()">
-			x, y, z per vertex, relative to the cell's centre.
+			x, y, z per vertex, relative to [member origin], the groups one after another.
 		</member>
 	</members>
 	<constants>
 		<constant name="MAX_VERTICES" value="65536">
-			The most vertices a chunk is built of. A chunk is uploaded on the main thread in one go, and one build is never cut by [SceneryStreamingServer]'s frame budget - a dense section of a region file is ~700 000 vertices.
+			The most vertices a chunk is built of: its groups are uploaded on the main thread at once.
 		</constant>
 	</constants>
 </class>

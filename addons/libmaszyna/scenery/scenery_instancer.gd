@@ -164,6 +164,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
         for descriptor:Dictionary in (chunk_descriptors if chunk_descriptors else []):
             var chunk := MaszynaTrianglesChunkData.new()
             chunk.geometry_path = descriptor["path"]
+            chunk.chunk_index = descriptor["index"]
             chunk.position = descriptor["position"]
             chunk.material_name = descriptor["texture"]
             chunk.range_min = descriptor["range_min"]
@@ -683,9 +684,11 @@ func parse_subscene_task(
         return context
 
     var chunk_paths:PackedStringArray = []
+    # a section's file holds all its chunks, each with a descriptor of its own
     for descriptor:Dictionary in subscene_sink.finish():
-        chunk_paths.append(descriptor["path"])
-        scenery_sink.add_geometry_file(descriptor["path"])
+        if not descriptor["path"] in chunk_paths:
+            chunk_paths.append(descriptor["path"])
+            scenery_sink.add_geometry_file(descriptor["path"])
     if context.cacheable:
         var subscene := MaszynaCompiledSubscene.new()
         subscene.triangle_chunk_paths = chunk_paths

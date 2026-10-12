@@ -76,10 +76,9 @@ func test_loaded_scenery_writes_its_terrain_chunks_as_files() -> void:
     for directory:String in DirAccess.get_directories_at(_cache_dir):
         if not _existing_directories.has(directory):
             chunk_files += DirAccess.get_files_at(_cache_dir.path_join(directory)).size()
-    # one file per texture, cell and range: the scenery's four, and each cached subscene's own - big.scm
-    # at the origin straddles four cells but has area in three (the fourth it touches at a corner),
-    # at x = 100 two
-    assert_eq(chunk_files, 4 + 3 + 2, "one file per texture, cell and range")
+    # one file per section: the scenery's four, and each cached subscene's own - big.scm at the origin
+    # straddles four sections but has area in three (the fourth it touches at a corner), at x = 100 two
+    assert_eq(chunk_files, 4 + 3 + 2, "one file per section")
     scenery.free()
     assert_eq(ResourceLazyLoader.resource_get_statistics()["registered"], registered, "chunks left registered")
 
