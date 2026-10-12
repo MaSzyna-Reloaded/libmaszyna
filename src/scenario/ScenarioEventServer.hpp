@@ -91,6 +91,8 @@ namespace godot {
                     double value2 = 0.0;
                     RID track;
                     Vector3 position;
+                    /* The tracks whose friction it modifies (a track's `friction <memcell>`) */
+                    Vector<RID> friction_tracks;
             };
 
             struct LauncherData {
@@ -248,6 +250,9 @@ namespace godot {
             double memory_get_value2(const RID &p_memory) const;
             /// The track the memory stands at (TMemCell::Track, MemCell.h:76)
             void memory_set_track(const RID &p_memory, const RID &p_track);
+            /* The memory modifies the track's friction by its values from now on: friction * value1 +
+             * value2 (a track's `friction <memcell>`, Track.cpp:924, 2527-2533, 3526) */
+            void memory_add_friction_track(const RID &p_memory, const RID &p_track);
             RID memory_get_track(const RID &p_memory) const;
             /// Where the memory stands - sent with its command to the drivers it reaches
             void memory_set_position(const RID &p_memory, const Vector3 &p_position);

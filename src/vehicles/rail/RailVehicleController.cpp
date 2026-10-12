@@ -6,6 +6,7 @@ namespace godot {
     const char *RailVehicleController::coupler_attached_signal = "coupler_attached";
     const char *RailVehicleController::coupler_adapter_attached_signal = "coupler_adapter_attached";
     const char *RailVehicleController::coupler_adapter_removed_signal = "coupler_adapter_removed";
+    const char *RailVehicleController::derailed_signal = "derailed";
     const char *RailVehicleController::coupler_detached_signal = "coupler_detached";
 
     RailVehicleController::CouplerEnd RailVehicleController::opposite_end(const CouplerEnd p_end) {
@@ -19,6 +20,14 @@ namespace godot {
     TypedArray<VehicleComponent>
     RailVehicleController::find_rail_components(const RailVehicleComponentType::Type p_type) const {
         return _find_components_of_type(p_type);
+    }
+
+    void RailVehicleController::set_track_conditions(const TrackConditions &p_conditions) {
+        track_conditions = p_conditions;
+    }
+
+    double RailVehicleController::get_track_friction() const {
+        return track_conditions.friction;
     }
 
     void RailVehicleController::_bind_methods() {
@@ -147,6 +156,11 @@ namespace godot {
         ADD_SIGNAL(MethodInfo(coupler_detached_signal, coupling_flag));
         ADD_SIGNAL(MethodInfo(coupler_adapter_attached_signal, PropertyInfo(Variant::INT, "end")));
         ADD_SIGNAL(MethodInfo(coupler_adapter_removed_signal, PropertyInfo(Variant::INT, "end")));
+        ADD_SIGNAL(MethodInfo(
+                derailed_signal,
+                PropertyInfo(
+                        Variant::INT, "cause", PROPERTY_HINT_NONE, "",
+                        PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, "RailVehicleController.DerailCause")));
 
         BIND_ENUM_CONSTANT(POWER_SOURCE_NOT_DEFINED);
         BIND_ENUM_CONSTANT(POWER_SOURCE_INTERNAL);
@@ -192,6 +206,12 @@ namespace godot {
         BIND_ENUM_CONSTANT(TRAIN_TYPE_181);
         BIND_ENUM_CONSTANT(TRAIN_TYPE_DMU);
 
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_NONE);
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_NO_RAIL);
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_CURVE);
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_WIDE_GAUGE);
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_TRACK_CATEGORY);
+        BIND_ENUM_CONSTANT(DERAIL_CAUSE_COLLISION);
         BIND_ENUM_CONSTANT(START_MODE_DISABLED);
         BIND_ENUM_CONSTANT(START_MODE_MANUAL);
         BIND_ENUM_CONSTANT(START_MODE_AUTOMATIC);
@@ -202,6 +222,8 @@ namespace godot {
 
         ClassDB::bind_method(D_METHOD("get_direction_absolute"), &RailVehicleController::get_direction_absolute);
         ClassDB::bind_method(D_METHOD("get_train_damage"), &RailVehicleController::get_train_damage);
+        ClassDB::bind_method(D_METHOD("get_derail_cause"), &RailVehicleController::get_derail_cause);
+        ClassDB::bind_method(D_METHOD("get_track_friction"), &RailVehicleController::get_track_friction);
         ClassDB::bind_method(D_METHOD("get_mass_reduced"), &RailVehicleController::get_mass_reduced);
         ClassDB::bind_method(D_METHOD("get_coupler_stretched"), &RailVehicleController::get_coupler_stretched);
         ClassDB::bind_method(
@@ -275,6 +297,8 @@ namespace godot {
         }
         p_state["direction_absolute"] = get_direction_absolute();
         p_state["train_damage"] = get_train_damage();
+        p_state["derail_cause"] = get_derail_cause();
+        p_state["track_friction"] = get_track_friction();
         p_state["mass_reduced"] = get_mass_reduced();
         p_state["coupler_stretched"] = get_coupler_stretched();
         p_state["compartment_lights_enabled"] = get_compartment_lights_enabled();

@@ -69,12 +69,22 @@ namespace godot {
                 D_METHOD("track_update_curves", "track", "curve1", "curve2"), &TrackServer::track_update_curves);
         ClassDB::bind_method(D_METHOD("track_update", "track", "type", "name", "width"), &TrackServer::track_update);
         ClassDB::bind_method(
-                D_METHOD("track_update_properties", "track", "quality_flag", "environment", "sound_distance"),
+                D_METHOD(
+                        "track_update_properties", "track", "quality_flag", "damage_flag", "friction", "environment",
+                        "sound_distance"),
                 &TrackServer::track_update_properties);
         ClassDB::bind_method(D_METHOD("track_exists", "track"), &TrackServer::track_exists);
         ClassDB::bind_method(D_METHOD("track_get_rids"), &TrackServer::track_get_rids);
         ClassDB::bind_method(D_METHOD("track_get_width", "track"), &TrackServer::track_get_width);
         ClassDB::bind_method(D_METHOD("track_get_quality_flag", "track"), &TrackServer::track_get_quality_flag);
+        ClassDB::bind_method(D_METHOD("track_get_damage_flag", "track"), &TrackServer::track_get_damage_flag);
+        ClassDB::bind_method(
+                D_METHOD("track_set_damage_flag", "track", "damage_flag"), &TrackServer::track_set_damage_flag);
+        ClassDB::bind_method(D_METHOD("track_get_friction", "track"), &TrackServer::track_get_friction);
+        ClassDB::bind_method(
+                D_METHOD("track_set_friction_modifier", "track", "multiplier", "offset"),
+                &TrackServer::track_set_friction_modifier);
+        ClassDB::bind_method(D_METHOD("track_get_group", "track"), &TrackServer::track_get_group);
         ClassDB::bind_method(D_METHOD("track_get_environment", "track"), &TrackServer::track_get_environment);
         ClassDB::bind_method(D_METHOD("track_get_sound_distance", "track"), &TrackServer::track_get_sound_distance);
         ClassDB::bind_method(D_METHOD("track_set_velocity", "track", "velocity"), &TrackServer::track_set_velocity);
@@ -178,6 +188,8 @@ namespace godot {
         BIND_ENUM_CONSTANT(TRACK_TURN);
         BIND_ENUM_CONSTANT(TRACK_TABLE);
         BIND_ENUM_CONSTANT(ENVIRONMENT_UNKNOWN);
+        BIND_BITFIELD_FLAG(TRACK_DAMAGE_NONE);
+        BIND_BITFIELD_FLAG(TRACK_DAMAGE_NO_RAIL);
         BIND_ENUM_CONSTANT(ENVIRONMENT_FLAT);
         BIND_ENUM_CONSTANT(ENVIRONMENT_MOUNTAINS);
         BIND_ENUM_CONSTANT(ENVIRONMENT_CANYON);
@@ -674,13 +686,15 @@ namespace godot {
 
     // Track properties read by the running sounds (Track.cpp:449).
     void TrackServer::track_update_properties(
-            const RID &p_track, const int p_quality_flag, const TrackEnvironment p_environment,
-            const double p_sound_distance) {
+            const RID &p_track, const int p_quality_flag, const BitField<TrackDamage> p_damage_flag,
+            const double p_friction, const TrackEnvironment p_environment, const double p_sound_distance) {
         TrackSegment *track = tracks.getptr(p_track);
         if (track == nullptr) {
             return;
         }
         track->quality_flag = p_quality_flag;
+        track->damage_flag = p_damage_flag;
+        track->friction = p_friction;
         track->environment = p_environment;
         track->sound_distance = p_sound_distance;
     }
@@ -705,6 +719,45 @@ namespace godot {
     int TrackServer::track_get_quality_flag(const RID &p_track) const {
         const TrackSegment *track = tracks.getptr(p_track);
         return track != nullptr ? track->quality_flag : 0;
+    }
+
+    BitField<TrackServer::TrackDamage> TrackServer::track_get_damage_flag(const RID &p_track) const {
+        const TrackSegment *track = tracks.getptr(p_track);
+        return track != nullptr ? track->damage_flag : BitField<TrackDamage>(TRACK_DAMAGE_NONE);
+    }
+
+    void TrackServer::track_set_damage_flag(const RID &p_track, const BitField<TrackDamage> p_damage_flag) {
+        TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr) {
+            return;
+        }
+        track->damage_flag = p_damage_flag;
+    }
+
+    double TrackServer::track_get_friction(const RID &p_track) const {
+        const TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr) {
+            return DEFAULT_TRACK_FRICTION;
+        }
+        if (!track->friction_modified) {
+            return track->friction;
+        }
+        return CLAMP((track->friction * track->friction_modifier.x) + track->friction_modifier.y, 0.0, 1.0);
+    }
+
+    void
+    TrackServer::track_set_friction_modifier(const RID &p_track, const double p_multiplier, const double p_offset) {
+        TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr) {
+            return;
+        }
+        track->friction_modified = true;
+        track->friction_modifier = Vector2(p_multiplier, p_offset);
+    }
+
+    TrackServer::TrackTypeGroup TrackServer::track_get_group(const RID &p_track) const {
+        const TrackSegment *track = tracks.getptr(p_track);
+        return track != nullptr ? static_cast<TrackTypeGroup>(_track_type_group(track->type)) : GROUP_NONE;
     }
 
     TrackServer::TrackEnvironment TrackServer::track_get_environment(const RID &p_track) const {

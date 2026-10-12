@@ -2,7 +2,7 @@ extends MaszynaGutTest
 
 const WEATHER_CONTROLS_SCENE: PackedScene = preload("res://addons/libmaszyna/debug_hud/weather_controls.tscn")
 
-var _previous_weather: MaszynaEnvironment.Weather
+var _previous_weather: SimulationServer.Weather
 
 
 func before_each() -> void:
@@ -45,10 +45,10 @@ func test_controls_follow_weather_preset() -> void:
     controls.attach_environment(environment_node)
 
     controls.visible = true
-    environment_node.weather = MaszynaEnvironment.Weather.WEATHER_RAIN
+    environment_node.weather = SimulationServer.WEATHER_RAIN
     environment_node._process(0.0)
     controls._on_refresh_timeout()
 
     assert_almost_eq(controls._rain_slider.value, 0.8, 0.000001)
     assert_almost_eq(controls._cloud_slider.value, 0.9, 0.000001)
-    assert_eq(environment_node.weather, MaszynaEnvironment.Weather.WEATHER_RAIN)
+    assert_eq(environment_node.weather, SimulationServer.WEATHER_RAIN)

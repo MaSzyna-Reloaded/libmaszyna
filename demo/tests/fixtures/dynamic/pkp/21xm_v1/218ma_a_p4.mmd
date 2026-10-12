@@ -1,0 +1,331 @@
+//model pojazdu i definicje podmodeli:
+models: /main/sa132_a_p4.t3d#
+animations: 4 4 0 2 2 0 0 0 2 2 -1
+lowpolyinterior: /interior/218ma_a.t3d#
+//ruchome czesci (animations)
+//krecace sie kola (o srednicy jak w *.chk)
+animwheelprefix: wheel0
+animdoorprefix: door0
+animmirrorprefix: mirror
+animwiperprefix: wiper
+
+loads: 
+{
+passengers: passengers/passengers_218ma_a.t3d
+}
+endmodels
+
+locations:
+ doors: 0.68 both end
+ bogies: -6.843 10.2 end
+endlocations
+
+
+sounds:
+outernoise: { range: 90 amplitudefactor: 0.6 amplitudeoffset: 0.3 crossfade: 90 sound0: silence1.wav sound1: outernoise_z1_5.wav sound10: outernoise_z1_20.wav sound20: outernoise_z1_20.wav sound40: outernoise_z1_40.wav sound60: outernoise_z1_60.wav sound80: outernoise_z1_80.wav sound120: outernoise_z1_120.wav sound300: outernoise_z1_120.wav }
+wheel_clatter: 65
+-7.827 //os 1
+ { sound1: 26284_sa134_stukot-5_20.wav
+ sound20: 26284_sa134_stukot-5_20.wav
+ sound30: 26284_sa134_stukot-1_30.wav
+ sound40: 26284_sa134_stukot-1_40.wav
+sound60: 26284_sa134_stukot-1_60.wav
+sound70: 26284_sa134_stukot-1_70.wav
+sound100: 26284_sa134_stukot-1_100.wav
+sound200: 26284_sa134_stukot-1_100.wav crossfade: 65 }
+-5.827 //os 2
+ { sound1: 26284_sa134_stukot-6_20.wav
+ sound20: 26284_sa134_stukot-6_20.wav
+ sound30: 26284_sa134_stukot-2_30.wav
+ sound40: 26284_sa134_stukot-2_40.wav
+sound60: 26284_sa134_stukot-2_60.wav
+sound70: 26284_sa134_stukot-2_70.wav
+sound100: 26284_sa134_stukot-2_100.wav
+sound200: 26284_sa134_stukot-2_100.wav crossfade: 65 }
+9.23 //os 3
+ { sound1: 26284_sa134_stukot-5_20.wav
+ sound20: 26284_sa134_stukot-5_20.wav
+ sound30: 26284_sa134_stukot-1_30.wav
+ sound40: 26284_sa134_stukot-1_40.wav
+sound60: 26284_sa134_stukot-1_60.wav
+sound70: 26284_sa134_stukot-1_70.wav
+sound100: 26284_sa134_stukot-1_100.wav
+sound200: 26284_sa134_stukot-1_100.wav crossfade: 65 }
+end
+engine: { amplitudefactor: 0.35 amplitudeoffset: 0.65 range: 150 crossfade: 85 offset: [ 0, 0.75, 3.2 ] placement: external
+sound400: silence1.wav pitch400: 750
+sound800: 26284_mtu_6h1800_800rpm.wav pitch800: 800
+sound1260: [1007]sa132_1260.wav pitch1260: 1260
+sound1580: [1007]sa132_1580.wav pitch1580: 1580
+sound1870: [1007]sa132_1870.wav pitch1870: 1870
+sound2500: [1007]mtu_6h1800_r84_zf_1700rpm.wav pitch2500: 2500
+soundend: 26284_mtu_6h1800_stop.wav }
+turbo: { amplitudefactor: 1.00 amplitudeoffset: -0.5 frequencyfactor: 1.2 frequencyoffset: 0.0 range: 100 offset: [ 0, 0.75, 3.2 ] placement: external
+ crossfade: 85
+  soundproofing: [ 0.1 0.3 0.1 1 1 1 ]
+ sound40: cisza.wav pitch40: 40
+ sound73: 6h1800__turbo__8100.wav pitch73: 81
+ sound85: 6h1800__turbo__9900.wav pitch85: 99
+ sound170: cisza.wav pitch170: 168 }
+brake: {
+ amplitudefactor: 0.75
+ amplitudeoffset: 0.5 
+ range: 200
+ crossfade: 85
+ sound0: jbg_brake_3.wav
+ sound1: jbg_brake_3.wav
+ sound6: jbg_brake_6.wav
+ sound12: jbg_brake_12.wav
+ sound17: jbg_brake_17.wav
+ sound23: jbg_brake_22.wav
+ sound33: jbg_brake_27.wav
+ sound40: cisza.wav }
+battery: { soundbegin: 26284_sa132_battery-start.wav soundmain: 26284_sa132_battery-trwa.wav soundend: 26284_sa132_battery-stop.wav placement: internal offset: [1.0, 2.5, 7.5] range: 10 }
+unbrake: { soundmain: 26284_sa132_hamulec_dodatkowy_luzowanie-trwa.wav soundend: 26284_sa132_hamulec_dodatkowy_luzowanie-stop.wav amplitudefactor: 2.00 amplitudeoffset: 0.0 soundproofing: [ 0.2 0.3 0.2 1 1 1 ] offset: [1.0, 2.5, 7.5] }
+springbrake: { soundmain: 26284_sa132_hamulec_postojowy-on.wav range: 50 placement: internal offset: [1.0, 2.5, 7.5] }
+springbrakeoff: { soundmain: 26284_sa132_hamulec_postojowy-off.wav range: 50 placement: internal offset: [1.0, 2.5, 7.5] }
+brakeacc: brakeacc_pesobus.wav 50
+derail: derail.wav 200
+curve: { amplitudefactor: 1.35 amplitudeoffset: 1.35 range: 100 crossfade: 75 sound1: 20786_curve_111a.wav sound10: 20786_curve_111a.wav sound40: 20786_curve_111a.wav sound50: 20786_curve_111a.wav sound60: 697_et22_curve.wav sound80: silence1.wav }
+//converter: { amplitudeoffset: -0.5 soundmain: en57-przetw_statyczna.wav range: 10 offset: [ 0.6, 2, 7.85 ] }
+include [ horn_set1.inc horn_set2.inc horn_set3.inc horn_set4.inc horn_set5.inc horn_set6.inc ]
+-0.8
+7.75
+0.8
+7.75
+end
+compressor: {
+ frequencyfactor: 0.8
+ amplitudeoffset: 0.3
+ amplitudefactor: 0.0
+soundproofing: [ 0.6 0.7 0.6 0.7 0.7 0.7 ]
+ range: 50
+ crossfade: 80
+ offset: [ 0, 0.75, 3.2 ]
+ placement: internal
+ soundbegin: 214m_compressor_on.wav
+ sound1: silence1.wav pitch1: 1
+ sound100: 214m_compressor_1000.wav pitch100: 100
+ sound145: 214m_compressor_1450.wav pitch145: 145
+ sound200: 214m_compressor_2000.wav pitch200: 200
+ sound300: silence1.wav pitch300: 300
+ soundend: 214m_compressor_off.wav }
+compressoridle: {
+ frequencyfactor: 0.0
+ frequencyoffset: 1.0
+range: 50
+ offset: [ 0.8, 0.7, -8.0 ]
+ soundproofing: [ 0.1 0.1 0.1 1 1 1 ]
+ placement: external
+ soundbegin: 214mb_compressor_idle_on.wav
+ sound1: 214mb_compressor_idle.wav pitch1: 1
+ sound500: cisza.wav pitch500: 1
+ soundend: cisza.wav }
+}
+sand: { soundbegin: 26284_sa132_piasecznica-start.wav soundmain: 26284_sa132_piasecznica-trwa.wav soundend: 26284_sa132_piasecznica-stop.wav soundproofing: [ 1.0 1.0 1.0 0.5 0.5 0.5 ] range: 20 placement: internal offset: [1.0, 2.5, 7.5] } 
+radiatorfan1: {
+ range: 25
+ offset: [ -1.2, 0.75, 6.2 ]
+ soundmain: 218md_hydrostatyka.wav
+}
+releaser: releaser_1.wav releaser_2.wav releaser_3.wav 15 
+dooropen: { soundmain: 26284_sa132_door_open.wav placement: external }
+doorclose: { soundmain: 26284_sa132_door_close.wav placement: external }
+emergencybrake: { soundbegin: 26284_sa132_hamowanie_nagle-start.wav soundmain: 26284_sa132_hamowanie_nagle-trwa.wav soundend: 26284_sa132_hamowanie_nagle-stop.wav amplitudefactor: 1.0 placement: internal soundproofing: [ 1.0 1.0 1.0 1.0 1.0 1.0 ] range: 60 offset: [1.0, 2.5, 7.5] }
+announcements: {
+ chime: sip/jingiel_piksel
+  soundproofing: [ 0.1 0.2 0.1 0.0 0.0 0.0 ]
+ next_stop: sip/nastepna_stacja
+ stop: sip/stacja
+}
+endsounds
+
+
+internaldata:
+directionrelay_d: { soundmain: 26284_sa132_nawrotnik_pn_1.wav placement: internal range: 30 offset: [1.0, 2.5, 7.5 ] }
+directionrelay_n: silence1.wav
+directionrelay_r: { soundmain: 26284_sa132_nawrotnik_pn_2.wav placement: internal range: 30 offset: [1.0, 2.5, 7.5 ] }
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+ctrl: 20786_4e_control_5.wav
+buzzer: 20786_en62_buzzer.wav
+//switch: switch.wav
+relay: silence1.wav
+pneumaticrelay: pneumaticrelay.wav
+  couplerattach: [ couplerattach_v2.wav couplerattach_default.wav couplerattach.wav ]
+  couplerdetach: [ couplerdetach_v2.wav couplerdetach_default.wav couplerdetach.wav ]
+  brakehoseattach: brakehoseattach.wav  // przewod glowny hamulca zapiecie
+  brakehosedetach: mainhosedetach.wav  // przewod glowny hamulca rozpiecie
+  mainhoseattach: mainhoseattach.wav  // przewod zasilajacy zapiecie
+  mainhosedetach: mainhosedetach.wav  // przewod zasilajacy rozpiecie
+  controlattach: controlattach.wav // ukrotnienie zapiecie
+  controldetach: controldetach.wav // ukrotnienie rozpiecie
+  gangwayattach: gangwaydetach.wav // mostek zapiecie
+  gengwaydetach: gengwaydetach.wav // mostek rozpiecie
+  heatingattach: heatingattach.wav // ogrzewanie zapiecie
+  heatingdetach: heatingdetach.wav // ogrzewanie rozpiecie
+dooropen: 20786_switch_en57-1112.wav
+doorclose: 20786_switch_en57-1112.wav
+ignition: { soundmain: 26284_mtu_6h1800_start_v2.wav range: 150 placement: external amplitudefactor: 1.0 offset: [ 0, 0.75, 3.2 ] }
+brakesound: silence1.wav 1.0 0 0.2 0.9
+slipperysound: brake-slipp.wav 2.0 0.2
+//airsound:  { soundbegin: sa135_hamowanie_start.wav soundmain: sa135_hamowanie_petla.wav amplitudeoffset: -0.01 amplitudefactor: 2000.0 range: 20 offset: [-1.0, 2.5, -24.5] }
+airsound2: { soundmain: 26284_sa132_hamulec_dodatkowy_luzowanie-trwa.wav amplitudeoffset: -0.1 amplitudefactor: 1000.0 range: 20 offset: [1.0, 2.5, 7.5 ] }
+airsound3: silence1.wav 0.25 -0.01
+airsound4: silence1.wav 0.25  -0.01
+airsound5: silence1.wav 10.0 -0.01
+localbrakesound2: silence1.wav 0.25 -0.01
+localbrakesound: silence1.wav 0.25 -0.01
+runningnoise: {
+crossfade: 99
+amplitudefactor: 0.01
+amplitudeoffset: 0.35
+sound0: silence1.wav
+sound21: 1007_sa135_runningnoise_21.wav
+sound43: 1007_sa135_runningnoise_43.wav
+sound52: 1007_sa135_runningnoise_52.wav
+sound72: 1007_sa135_runningnoise_72.wav
+sound84: 1007_sa135_runningnoise_84.wav
+sound108: 1007_sa135_runningnoise_108.wav
+sound120: 1007_sa135_runningnoise_120.wav
+sound500: 1007_sa135_runningnoise_120.wav
+}
+
+maxtachovel: 120
+//bujanie kamery:
+//          springk, dampf, x,  y,  z, max, roll, pitch
+mechspring: 100      0.02 0.2 0.2 0.03 0.15  0.02   0.01
+// wyzerowac 3,4,5 parametr aby nie trzeslo
+// wyzerowac ostatnie dwa parametry aby kamera sie nie kiwala
+
+cab1definition:   //rozmiary kabiny po ktorej mozna chodzic
+-1.464 1.5 7.86 1.464 1.5 9.113
+driver1pos: // pozycja poczatkowa
+0 2.95 7.86
+driver1sitpos: // pozycja siedzaca
+0 2.65 8.45
+cab1model: kabina/sa132_pr_kabina_a.t3d //nazwa modelu kabiny a
+
+mainctrl: { zadajnik rot 0.036 -0.108 0.1
+sound0: 26284_sa13x_nastawnik_hamowanie_nagle.wav
+sound1: [ 26284_sa13x_nastawnik_hamowanie.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie2.wav 26284_sa13x_nastawnik_hamowanie3.wav ]
+sound2: [ 26284_sa13x_nastawnik_hamowanie.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie1.wav 26284_sa13x_nastawnik_hamowanie3.wav ]
+sound3: [ 26284_sa13x_nastawnik_neutralna.wav 26284_sa13x_nastawnik_neutralna1.wav 26284_sa13x_nastawnik_neutralna2.wav 26284_sa13x_nastawnik_neutralna3.wav ]
+sound4: 26284_sa13x_nastawnik_utrzymanie_mocy.wav
+sound5: 26284_sa13x_nastawnik_zadawanie_mocy.wav }
+dooralloff_sw: { bt-door_close mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+doorallon_sw: { bt-door_open mov -0.002 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+doorpermitpreset_sw: { sw-drzwi rot -0.0806 0.065 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav sound2: 20786_en62_switch_position_v2_3.wav sound3: 20786_en62_switch_position_2.wav } //programator zgody drzwi
+main_off_bt: { bt-stop mov -0.002 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+main_on_bt: { bt-start  mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+alarmchain: { bt-hamulec_bezpieczenstwa mov -0.004 0 0.1 soundinc: 26284_36wea_grzybek_on.wav sounddec: 26284_36wea_grzybek_off.wav }
+dirkey: { sw-kierunek rot 0.055 0.01 0.1 sound0: 26284_sa132_nawrotnik_przelacznik_1.wav sound1: 26284_sa132_nawrotnik_przelacznik_2.wav sound-1: 26284_sa132_nawrotnik_przelacznik_3.wav }
+hornhigh_bt: { bt-syrena_high mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+hornlow_bt: { bt-syrena_low mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+security_reset_bt: { bt-ca_shp mov -0.005 0 0.1 soundinc: 20786_en62_button_shp_ca_on.wav sounddec: 20786_en62_button_shp_ca_of.wav }
+sand_bt: { bt-piasecznica mov -0.002 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+lights_sw: { sw-reflektory rot -0.083 0 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav sound2: 20786_en62_switch_position_v2_3.wav sound3: 20786_en62_switch_position_2.wav sound4: 20786_en62_switch_position_2.wav }
+dimheadlights_sw: { sw-przyciemnienie_reflektorow rot 0.222 0 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav  }
+cablight_sw: { sw-oswietlenie_kab rot -0.1 0 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav }
+i-doors: i-door_open
+i-braking: i-hamulec_zespolony
+universalbrake1_bt: { bt-odblok_pg  mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+universalbrake2_bt: { bt-popelnianie_uderzeniowe mov -0.002 0 0.1 soundinc: 26284_sa13x_button1_on.wav sounddec: 26284_sa13x_button1_off.wav }
+localbrake: { hamulec_pom rot 0.02 -0.1 0.1
+sound0: 26284_sa13x_hamulec_fala.wav
+sound1: [ 26284_sa13x_hamulec_luzowanie-jazda.wav 26284_sa13x_hamulec_neutralna_na_luzowanie.wav ]
+sound2:  26284_sa13x_hamulec_jazda.wav
+sound5: [ 26284_sa13x_hamulec_neutralna.wav 26284_sa13x_hamulec_neutralna2.wav 26284_sa13x_hamulec_neutralna4.wav ]
+sound6: [ 26284_sa13x_hamulec_hamowanie.wav 26284_sa13x_hamulec_hamowanie1.wav 26284_sa13x_hamulec_hamowanie2.wav ]
+sound10: 26284_sa13x_hamulec_hamowanie_nagle.wav }
+springbraketoggle_bt: { bt-hamulec_postojowy mov -0.0018 0 0.1 soundinc: 26284_elf_button_stable_1-on.wav sounddec: 26284_elf_button_stable_1-off.wav } //za³¹czenie postojowego
+i-springbrakeactive:  i-hamulec_postojowy //sygnalizacja postojowego
+brakeopmode_sw: { sw-hamulec_zespolony rot -0.222 0 0.1 sound0: 26284_sa13x_pokretlo_ukrotnienia_2.wav sound1: 26284_sa13x_pokretlo_ukrotnienia_1.wav }
+wipers_sw: { sw-wycieraczki rot -0.1 0.1 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav sound2: 20786_en62_switch_position_v2_3.wav sound3: 20786_en62_switch_position_2.wav sound4: 20786_en62_switch_position_2.wav }
+//bt-odblok_petli_bezpieczenstwa
+//i-odblok_petli_bezpieczenstwa
+i-mainpipelock: i-odblok_pg
+i-cablight: i-cablight
+i-dashboardlight: i-pulpitlight
+universal1: { roleta_czolowa mov 0.45 0 0.2 soundinc: [1007]roleta_dol2.wav sounddec: [1007]roleta_gora2.wav }
+universal2: { okienko_przesuwne_r mov -0.5 0 0.1 soundinc: 20786_36wea_window_open.wav sounddec: 20786_36wea_window_close.wav }
+universal3: { okienko_przesuwne_l mov -0.5 0 0.1 soundinc: 20786_36wea_window_open.wav sounddec: 20786_36wea_window_close.wav }
+cabactivation_sw: { sw-aktywacja_kab rot -0.2 0 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav }
+//sw-lusterka
+compartmentlightson_sw: { bt-osw_cale mov -0.005 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+compartmentlightsoff_sw: { bt-osw_wyl mov -0.005 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+dashboardlight_sw: { sw-owietlenie_pulpitu rot -0.222 0.111 0.1 sound0: 20786_en62_switch_position_v2_1.wav sound1: 20786_en62_switch_position_2.wav }
+
+batteryon_sw: { bt-bateria_wl mov -0.005 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+batteryoff_sw: { bt-bateria_wyl mov -0.005 0 0.1 soundinc: 26284_sa13x_button2_on.wav sounddec: 26284_sa13x_button2_off.wav }
+i-battery: i-bateria_wl
+i-battery: i-interkom
+
+trainheating_sw: { bt-ogrzewanie mov -0.005 0 0.1 soundinc: 26284_elf_button_stable_1-on.wav sounddec: 26284_elf_button_stable_1-off.wav }
+i-trainheating: i-ogrzewanie
+
+brakepress: ws_a rot -1.03 -0.67 0.1
+brakepress: ws_b rot -1.09 -0.67 0.11
+brakes: 2 0 ws_c rot -1.03 -0.67 0.1
+compressor: ws_pz rot -0.66 -0.67 0.1
+pipepress: ws_pg rot -0.66 -0.67 0.1
+lvoltage: ws-woltomierz_baterii rot -0.00729 0.147 0.1
+i-security_aware: i-ca
+i-security_cabsignal: i-shp
+
+
+i-instrumentlight_l: podswietlenie_wskazowek
+brakepress: ws_a_p rot -1.03 -0.67 0.1
+brakepress: ws_b_p rot -1.09 -0.67 0.11
+brakes: 2 0 ws_c_p rot -1.03 -0.67 0.1
+compressor: ws_pz_p rot -0.66 -0.67 0.1
+pipepress: ws_pg_p rot -0.66 -0.67 0.1
+
+speedinc_bt: { bt-tempomat+ mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speeddec_bt: { bt-tempomat- mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton0: { bt-tempomat_0 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton1: { bt-tempomat_30 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton2: { bt-tempomat_40 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton3: { bt-tempomat_50 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton4: { bt-tempomat_60 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton5: { bt-tempomat_70 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton6: { bt-tempomat_80 mov -0.003 0 0.12  soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton7: { bt-tempomat_90 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton8: { bt-tempomat_100 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedbutton9: { bt-tempomat_120 mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedctrlpowerinc_bt: { bt-tempomat_opt+ mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+speedctrlpowerdec_bt: { bt-tempomat_opt- mov -0.003 0 0.12 soundinc: 24150_upz_wcisniecie.flac sounddec: 24150_upz_puszczenie.flac }
+tempomat_sw: { sw-tempomat rot -0.222 0 0.1 sound0: 26284_sa13x_pokretlo_ukrotnienia_2.wav sound1: 26284_sa13x_pokretlo_ukrotnienia_1.wav } //za³¹czenie tempomatu
+
+radiochannelprev_sw: { klawisz_4 rot 0 0 0 soundinc: 26284_koliber_klik.wav }
+radiochannelnext_sw: { klawisz_6 rot 0 0 0 soundinc: 26284_koliber_klik.wav }
+radiovolumeprev_sw: { klawisz_8 rot 0 0 0 soundinc: 26284_koliber_klik.wav }
+radiovolumenext_sw: { klawisz_2 rot 0 0 0 soundinc: 26284_koliber_klik.wav }
+radiostop_sw: { radiostop_off mov -0.001 0 0 soundinc: 24150_koliber_rs_wcisniecie.wav sounddec: 24150_koliber_rs_puszczenie.wav }
+radiocall3_sw: { klawisz_zew3 rot 0 0 0 soundinc: 26284_koliber_zew3.wav sounddec: silence1.wav }
+radio_sw: { klawisz_potw rot 0 0 0 soundinc: 26284_koliber_klik.wav sounddec: silence1.wav }
+i-radiostop: radiostop
+i-radio: { radio soundinc: 26284_koliber_zalaczenie.wav sounddec: 26284_koliber_wylaczenie.wav }
+i-radiomessage: { lampka1 soundinc: koliber_start.flac sounddec: koliber_koniec.flac }
+i-dashboardlight:  podswietlenie_blatu
+universal0: dotyk7 mov 0 0 0
+universal9: dotyk2 mov 0 0 0
+
+pyscreen: lokel screen_218md
+pyscreen: atm sa134_atm
+pyscreen: ekran_wlaczony scripts/koliber
+pyscreen: pixel scripts/pixel_xc4
+
+cab2definition:
+-1.464 1.5 -11.113 1.464 1.5 -10.23
+driver2pos:
+0 2.4 -10.622
+
+cab0definition:
+-0.3 1.5 -4.8 0.2 1.5 4.8
+driver0pos:
+0.0 2.7 1.0
+
+pydestinationsign: { scripts/led_impuls_n_3 parameters: kod_e=IC&kod_p=TLK&kod_o=R instance: name }
+destinationsignbackground: make:scripts/led_impuls_n_3?dummy=1
+
+

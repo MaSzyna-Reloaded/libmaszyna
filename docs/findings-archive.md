@@ -4463,3 +4463,82 @@ lighting or the trainset.
   as impulse. `test_train_switches.gd`, `test_mmd_semantic_catalog.gd`.
 * **Rule:** a cab button springs back or stays as the original's handler decides, with the
   original's own test of the vehicle's switch type.
+
+## 2026-10-11 The SA132 never moved off
+
+* **Symptom:** the player could not move an SA132 (pkp/21xm_v1, `218ma_a_p4.fiz`) off:
+  controller at 5, brakes released, the engine at full revolutions, no tractive force. The SA134
+  start-up test (`218mc_arp_a.fiz`) was green, so nothing looked wrong.
+* **What proved it:** a start-up test of the SA132 itself (`test_zzz_startup_21xm_v1.gd`, fixture
+  cut from `calkowo_sn61.scn`) stopped at "moved off" with `tractive_force=0` at position 5. The
+  SA132's gearbox is in `MotorParamTable0:` (5 gears, AutoSwitch); the SA134's is in
+  `MotorParamTable:`. The original reads `MotorParamTable0:` by engine type: a diesel's rows are
+  `mIsat fi0 fi mfi0 mfi Isat [AutoSwitch]` (readMPT0, Mover.cpp:9069-9103). The importer always
+  handed it to the series-motor parser, whose `end_table()` found no series engine and dropped
+  the rows. `MotorParam[]` stayed zero: `mIsat=0` makes `dizel_Momentum()` take `n = enrot`
+  (no drive), and `AutoSwitch=false` keeps `dizel_AutoGearCheck()` from leaving gear 0.
+  Affects 11 diesel FIZ files in the data (all of `21xm_v1`, `road/crafter_mk2`).
+* **Fix:** `MotorParamTable0:` goes through `FizTrainEngineParser` like `MotorParamTable:`, which
+  picks the parser by engine type; a diesel's rows are read by
+  `FizTrainEngineCommon.parse_diesel_gear_row0()`. `FIZ_PARSER_FORMAT_VERSION` 46.
+  `test_fiz_import.gd` `test_a_diesel_gearbox_of_motor_param_table0`, and the start-up test:
+  red before, green after.
+* **Rule:** a FIZ section is read by the engine type wherever the original's reader switches on
+  it - a section routed to one engine's parser is silently empty for every other. And a green
+  start-up test covers its own FIZ only: a vehicle of the same family with another FIZ needs its
+  own.
+
+## 2026-10-12 An SA132 driven from its B car stood at full power
+
+* **Symptom:** after walking through the unit to the B car's cab and activating it, the player
+  had the pipe charged, the brakes released, the controller at 5 and no movement.
+* **What proved it:** a hints test walking SA132 to the far cab (`test_zzz_driver_hints_sa132.gd`
+  of the game) showed three things in turn, each in the cars' dumps: both door permits on with
+  `eimic_real=0` (a deactivated cab grants them, `InactiveCabFlag` doorpermition, and an EIM
+  controller gives no power under a permit, `Mover.cpp:6758-6769`); the A car's independent brake
+  left applied (2.9 bar, it brakes its car whatever cab drives, `Mover.cpp:4025`); and with both
+  cleared, `tractive_force` +43.9 kN on the A car and -43.9 kN on the B car with `direction` -1 and
+  1. `CabActivisation()` sends the other cars `DirAbsolute` as their `DirActive`
+  (`Mover.cpp:2664`) - from a rear cab (`CabActive=-1`) with the reverser set, the opposite way.
+* **Fix:** `MoverRailVehicleController` sends `DirActive` again after every cab activation, as
+  every reverser step does; the hints tell the player to revoke the permits while asking for power
+  (on the preset switch) and to let off the independent brake left at the other end with the cab
+  deactivation there. The B car moves off in the test.
+* **Rule:** a value sent along the trainset is the one the receiver stores - check the receiving
+  `RunCommand` before trusting the sender's name for it.
+
+## 2026-10-12 No Pc1 from the second cab
+
+* **Symptom:** from the B car's cab of an SA132 the light selector never lit three white lamps;
+  "Pc1" showed red markers ahead.
+* **What proved it:** the hints test stepping the selector in the B car's cab (cab 2) and reading
+  the lamps of each end: preset 2 ("21 34") lit `rear_redmarker_left/right` at the outer (driven)
+  end. `SetLights()` takes `Lights[end of the occupied cab]` as the trainset's head and
+  `RaLightsSet()` puts it on the vehicle's end by its direction (DynObj.cpp:7326-7330, 7380) - the
+  two swaps cancel out, so the end driven from always gets the list's first column. The port did
+  the first swap alone.
+* **Fix:** `MoverRailVehicleLighting.apply_light_preset()` lights `Lights[front]` ahead and
+  `Lights[rear]` behind; `test_the_b_cars_cab_lights_pc1_ahead`.
+* **Rule:** a port of two functions that each swap by an end checks the composite on a rear cab -
+  porting one swap breaks every vehicle driven from cab 2.
+
+## 2026-10-12 The Mover never saw the track
+
+* **Symptom:** asked whether derailment is handled: only a collision ever derailed a vehicle.
+* **What proved it:** `MoverRailVehicleController::_integrate()` handed the Mover its own
+  `RunningShape`/`RunningTrack` back, never set since the constructor (Mover.cpp:521-528: R=0,
+  dHtrack=0, Width=TrackW). So no curve resistance (`Curvature`, Mover.cpp:4434), no grade force
+  (`TotalMassxg * dHtrack`, Mover.cpp:4601), no overturning on a curve, no derailment on a track
+  without rails, and a vehicle running off an open end froze there. The original fills `ts`/`tp`
+  from the axles' track every update (DynObj.cpp:3145-3240).
+* **Fix:** `RailVehicleServer._place_body()` hands the controller `TrackConditions` (curve, cant,
+  grade, gauge, friction, kind, damage); `TrackServer` keeps a track's friction and damage and
+  answers its kind; an open end flags the placement; the derailment is announced
+  (`vehicle_derailed`), heard (`derail:`), logged and shown; the body is drawn off the track. The
+  friction is the track's (a `friction <memcell>` modifying it, `ScenarioEventServer.memory_add_friction_track()`)
+  times `SimulationServer.friction` (Global.fFriction, the `friction` event,
+  `MaszynaEnvironmentNode.friction`) times the weather's factor (`SimulationServer.weather`, rain
+  0.85, snow 0.75), which the AI's braking distance and proximity margins take too.
+  `test_rail_vehicle_track_physics.gd`, `test_driver_weather.gd`.
+* **Rule:** a backend integrated by the wrapper gets every input its original caller gave it -
+  list the arguments of the original call and trace where each comes from.

@@ -262,6 +262,8 @@ static func _ensure_built() -> void:
                 "monostable": false,
                 "command": "heating",
                 "state_property": "heating_enabled",
+                # OnCommand_heatingtoggle's key (driverkeyboardinput.cpp:215)
+                "action": "heating_toggle",
             },
             "config_max_property": "",
             "mesh_path_field": "mesh_path",

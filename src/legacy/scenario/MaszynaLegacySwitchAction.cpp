@@ -24,7 +24,22 @@ namespace godot {
         ERR_FAIL_NULL(track_server);
         // the switch of each track is taken now: a track that changed type since has another one
         for (int i = 0; i < tracks.size(); i++) {
-            track_server->switch_set_active_track(track_server->track_get_switch(tracks[i]), active_track);
+            const RID switch_rid = track_server->track_get_switch(tracks[i]);
+            if (switch_rid.is_valid()) {
+                track_server->switch_set_active_track(switch_rid, active_track);
+                continue;
+            }
+            // a plain rail track switched is a derailer: its second position takes the rails away
+            // (TTrack::Switch(), Track.cpp:1846-1847)
+            if (track_server->track_get_group(tracks[i]) == TrackServer::GROUP_RAIL) {
+                BitField<TrackServer::TrackDamage> damage = track_server->track_get_damage_flag(tracks[i]);
+                if (active_track == TrackServer::TRACK_DIVERGING) {
+                    damage.set_flag(TrackServer::TRACK_DAMAGE_NO_RAIL);
+                } else {
+                    damage.clear_flag(TrackServer::TRACK_DAMAGE_NO_RAIL);
+                }
+                track_server->track_set_damage_flag(tracks[i], damage);
+            }
         }
     }
 

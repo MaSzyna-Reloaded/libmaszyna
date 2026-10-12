@@ -126,6 +126,7 @@ const VEHICLE_EVENT_INDICES:Dictionary[String, int] = {
     "pantograph_sound/down": 13,
     "coupler_sound/attach_adapter": 15,
     "coupler_sound/remove_adapter": 16,
+    "derail_sound/derailed": 17,
 }
 ## A coupling flag's place among the attach (and, offset, the detach) counts
 const COUPLING_EVENT_INDICES:Dictionary[int, int] = {
@@ -143,7 +144,9 @@ const BRAKE_ACCELERATOR_EVENT:int = 14
 ## A coupler adapter fitted and taken off (sound::attachadapter/removeadapter, DynObj.cpp:1785, 1806)
 const ADAPTER_ATTACH_EVENT:int = 15
 const ADAPTER_REMOVE_EVENT:int = 16
-const VEHICLE_EVENT_COUNT:int = 17
+## The vehicle left the rails (rsDerailment, DynObj.cpp:5207-5214)
+const DERAIL_EVENT:int = 17
+const VEHICLE_EVENT_COUNT:int = 18
 ## The cab's brake hisses sit at their handle, the local brake's at the driver's brake valve when the
 ## cab has no local brake handle (Train.cpp:9406-9421)
 const _BRAKE_VALVE_LABELS:Array[String] = ["airsound", "airsound2", "airsound3", "airsound4", "airsound5"]
@@ -190,6 +193,7 @@ func _ready() -> void:
     RailVehicleServer.vehicle_coupler_detached.connect(_on_coupler_detached)
     RailVehicleServer.vehicle_coupler_adapter_attached.connect(_on_coupler_adapter_attached)
     RailVehicleServer.vehicle_coupler_adapter_removed.connect(_on_coupler_adapter_removed)
+    RailVehicleServer.vehicle_derailed.connect(_on_derailed)
     VehicleServer.vehicle_controller_changed.connect(_on_vehicle_controller_changed)
     _on_simulation_current_speed_changed()
 
@@ -487,6 +491,11 @@ func _on_coupler_adapter_attached(vehicle_rid:RID, _end:int) -> void:
 func _on_coupler_adapter_removed(vehicle_rid:RID, _end:int) -> void:
     if _vehicle_events.has(vehicle_rid):
         _vehicle_events[vehicle_rid][ADAPTER_REMOVE_EVENT] += 1
+
+
+func _on_derailed(vehicle_rid:RID, _cause:RailVehicleController.DerailCause) -> void:
+    if _vehicle_events.has(vehicle_rid):
+        _vehicle_events[vehicle_rid][DERAIL_EVENT] += 1
 
 
 ## Both pantographs count as one event: the vehicle has one sound for them (sPantUp,

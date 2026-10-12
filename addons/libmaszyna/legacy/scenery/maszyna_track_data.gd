@@ -9,7 +9,8 @@ class_name MaszynaTrackData
 @export var diverging_curve:TrackCurve
 @export var length:float = 0.0
 @export var width:float = 1.5
-@export var friction:float = 0.0
+## TTrack::fFriction's default (Track.h:207)
+@export var friction:float = 0.15
 @export var quality_flag:int = 0
 ## Rail length between joints for the wheel clatter, -1 for none
 @export var sound_distance:float = -1.0

@@ -61,6 +61,9 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("memory_get_text", "memory"), &ScenarioEventServer::memory_get_text);
         ClassDB::bind_method(D_METHOD("memory_get_value1", "memory"), &ScenarioEventServer::memory_get_value1);
         ClassDB::bind_method(D_METHOD("memory_get_value2", "memory"), &ScenarioEventServer::memory_get_value2);
+        ClassDB::bind_method(
+                D_METHOD("memory_add_friction_track", "memory", "track"),
+                &ScenarioEventServer::memory_add_friction_track);
         ClassDB::bind_method(D_METHOD("memory_set_track", "memory", "track"), &ScenarioEventServer::memory_set_track);
         ClassDB::bind_method(D_METHOD("memory_get_track", "memory"), &ScenarioEventServer::memory_get_track);
         ClassDB::bind_method(
@@ -679,6 +682,11 @@ namespace godot {
         memory->text = p_text;
         memory->value1 = p_value1;
         memory->value2 = p_value2;
+        if (TrackServer *tracks = TrackServer::get_instance(); tracks != nullptr) {
+            for (const RID &track: memory->friction_tracks) {
+                tracks->track_set_friction_modifier(track, memory->value1, memory->value2);
+            }
+        }
         emit_signal(memory_values_changed_signal, p_memory);
         // a launcher waiting within its minute for its memory's condition
         _check_timed_launchers();
@@ -700,6 +708,15 @@ namespace godot {
         const MemoryData *memory = memories.getptr(p_memory);
         ERR_FAIL_NULL_V(memory, 0.0);
         return memory->value2;
+    }
+
+    void ScenarioEventServer::memory_add_friction_track(const RID &p_memory, const RID &p_track) {
+        MemoryData *memory = memories.getptr(p_memory);
+        ERR_FAIL_NULL(memory);
+        TrackServer *tracks = TrackServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        memory->friction_tracks.push_back(p_track);
+        tracks->track_set_friction_modifier(p_track, memory->value1, memory->value2);
     }
 
     void ScenarioEventServer::memory_set_track(const RID &p_memory, const RID &p_track) {

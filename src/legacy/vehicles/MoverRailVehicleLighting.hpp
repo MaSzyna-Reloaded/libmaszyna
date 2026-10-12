@@ -65,13 +65,15 @@ namespace godot {
             bool _light_enabled(const TMoverParameters *p_mover, LightEnd p_end, LightType p_type) const;
             static LightEnd _active_end(const TMoverParameters *p_mover);
             static LightEnd _opposite_end(const TMoverParameters *p_mover);
-            void _set_lights(TMoverParameters *p_mover) const;
 
         protected:
             void _apply_configuration() override;
             void _fill_config_dictionary(Dictionary &p_config) const override;
 
         public:
+            /* The occupied cab's light preset lit along the vehicles joined to it by control
+             * (TDynamicObject::SetLights(), DynObj.cpp:7322) */
+            void apply_light_preset() const;
             TypedArray<RailVehicleLightListItem> get_lights_list() override {
                 return light_position_list;
             };

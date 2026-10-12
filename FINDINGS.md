@@ -704,3 +704,15 @@ anything. Open work belongs in `TODO.md`.
 * Whatever a node puts into another object on entering the tree it takes out on leaving -
   detaching is not removing; a pointer kept in a member points only at its owner, parent,
   children, a singleton or a backend. *(10-10 a scripted component called its freed node)*
+* A FIZ section is read by the engine type wherever the original's reader switches on it
+  (`MotorParamTable0:` of a diesel is its gearbox); a start-up test covers its own FIZ only.
+  *(10-11 the SA132 never moved off)*
+* A value sent along the trainset (`SendCtrlToNext`) is the one the receiver stores - read the
+  receiving `RunCommand` (cab activation sent `DirAbsolute` as `DirActive`). *(10-12 an SA132 driven
+  from its B car stood at full power)*
+* The light list's first column lights the end driven from, whichever cab (SetLights() and
+  RaLightsSet() swap twice); check a two-swap port from a rear cab. *(10-12 no Pc1 from the second
+  cab)*
+* A backend integrated by the wrapper gets every input of the original call - the Mover went
+  without the track for its whole life here (no grade, curve, derailment). *(10-12 the Mover never
+  saw the track)*

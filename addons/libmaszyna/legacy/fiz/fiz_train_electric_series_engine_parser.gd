@@ -3,9 +3,10 @@ extends RefCounted
 class_name FizTrainElectricSeriesEngineParser
 
 ## RailVehicleElectricSeriesEngine's own subset of Engine: (EngineType=ElectricSeriesMotor, called
-## directly by FizTrainEngineParser once it creates the node), plus Circuit:, RList:+rows, and
-## MotorParamTable0:+rows (all registered directly in FizVehicleBuilder's section
-## table, using the standard parse()/parse_row()/end_table() interface) - all configure the
+## directly by FizTrainEngineParser once it creates the node), plus Circuit: and RList:+rows
+## (registered directly in FizVehicleBuilder's section table) and a series motor's
+## MotorParamTable0:/MotorParamTable:+rows (handed over by FizTrainEngineParser), using the
+## standard parse()/parse_row()/end_table() interface - all configure the
 ## same node created by FizTrainEngineParser. Series-motor branch of LoadFIZ_Engine:
 ## Mover.cpp:11119, LoadFIZ_Circuit: Mover.cpp:11416, LoadFIZ_RList: Mover.cpp:11444,
 ## readRList: Mover.cpp:9095, readMPT0: Mover.cpp:8948.
@@ -46,9 +47,8 @@ func apply_engine_fields(kv: Dictionary, node: RailVehicleElectricSeriesEngine) 
         node.max_rpm = FizLineUtil.get_float(kv, "nmax")
 
 
-## Standard section-parser interface, used for "Circuit:", "RList:", "MotorParamTable0:" and a series
-## motor's "MotorParamTable:" (FizTrainEngineParser picks it by the engine type)
-## (registered directly against this instance in FizVehicleBuilder's section table).
+## Standard section-parser interface, used for "Circuit:", "RList:" and a series motor's
+## "MotorParamTable0:"/"MotorParamTable:" (FizTrainEngineParser picks it by the engine type).
 func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> void:
     if prefix == "Circuit:":
         _parse_circuit(FizLineUtil.read_key_values(p), context)
