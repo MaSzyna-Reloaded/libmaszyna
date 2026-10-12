@@ -150,6 +150,14 @@ interface.
   (`InactiveCabFlag` doorpermition, `Mover.cpp:2690-2694`); the original hints the permits off only
   as its own driver departs (`Driver.cpp:4389-4392`). Wrapper: `DOOR_*_PERMIT_OFF` cued while the
   player asks for power, shown on the permit preset switch where the vehicle has one.
+* **A player's brake level is taken from the handle only while the engine is prepared.** The
+  driver's `BrakeCtrlPosition` follows the handle's running, cutoff and filling positions
+  (`Driver.cpp:2867-2878`) only in `PrepareEngine()`, which stops once the engine is ready; for a
+  player nothing else moves it (`trainbrakerelease` sets it only for the AI, `driverhints.cpp:797-800`).
+  An EN57 standing with its FVel6 handle at cutoff (6, `bh_NP`) is left lapped (`gbh_NP`) after the
+  player moves the handle to running: `trainbrakerelease` is done at once, `brakingforcedecrease`
+  never comes (`BrakeCtrlPosition >= 0`, `Driver.cpp:8096-8101`). Wrapper: the level is taken from
+  the handle on every braking decision of a vehicle the player drives.
 
 ## Scenario events (`world/Event.cpp`, `world/EvLaunch.cpp`)
 
