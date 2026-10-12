@@ -81,30 +81,30 @@ signal vehicle_built
             _dirty = true
             set_process(true)
 
-## A change of the data rebuilds the vehicle once, whatever else changes in the same frame; the node
-## processes only while a rebuild is pending
-var _dirty:bool = true
-## The vehicle this node made (MaszynaLegacyVehicleSystem), none before its first build
+## A change of the data in the tree rebuilds the vehicle once, whatever else changes in the same
+## frame; the node processes only while a rebuild is pending
+var _dirty:bool = false
+## The vehicle this node made (MaszynaLegacyVehicleSystem), none out of the tree
 var _vehicle:RID = RID()
 
 
+## The vehicle exists while the node is in the tree: made on entering it from what the node is set
+## to - the data set before is in it, so no rebuild is pending
 func _enter_tree() -> void:
     MaszynaLegacyVehicleSystem.vehicle_built.connect(_on_vehicle_built)
     VehicleServer.vehicle_freed.connect(_on_vehicle_freed)
     GameDataServer.data_unload_requested.connect(_on_data_unload_requested)
+    _create_vehicle()
+    _dirty = false
 
 
+## ... and freed on leaving it (the editor takes a scene out of the tree when another one's tab is
+## shown), while the node still hears of it (_on_vehicle_freed())
 func _exit_tree() -> void:
+    _free_vehicle()
     MaszynaLegacyVehicleSystem.vehicle_built.disconnect(_on_vehicle_built)
     VehicleServer.vehicle_freed.disconnect(_on_vehicle_freed)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
-
-
-## Out of the tree the vehicle stays (the editor takes a scene out of the tree when another one's
-## tab is shown); it goes with the node
-func _notification(what:int) -> void:
-    if what == NOTIFICATION_PREDELETE and _vehicle.is_valid():
-        MaszynaLegacyVehicleSystem.vehicle_free(_vehicle)
 
 
 ## false while a rebuild is pending - true once it ran, even when the vehicle failed to load
@@ -112,14 +112,18 @@ func is_built() -> bool:
     return not _dirty and (not _vehicle.is_valid() or MaszynaLegacyVehicleSystem.vehicle_is_built(_vehicle))
 
 
-## A change makes the vehicle anew from what the node is set to; MaszynaLegacyVehicleSystem builds
-## it in its turn
+## A change makes the vehicle anew
 func _process(_delta:float) -> void:
     set_process(false)
     if not _dirty:
         return
     _dirty = false
     _free_vehicle()
+    _create_vehicle()
+
+
+## The vehicle made from what the node is set to; MaszynaLegacyVehicleSystem builds it in its turn
+func _create_vehicle() -> void:
     var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
     dynamic.vehicle_id = vehicle_id
     dynamic.data_path = data_path
