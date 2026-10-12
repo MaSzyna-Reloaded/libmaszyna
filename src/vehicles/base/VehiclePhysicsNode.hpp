@@ -59,7 +59,7 @@ namespace godot {
              * joins, so a modder's component reaches the vehicle it sits under. */
             void add_component(const Ref<VehicleComponent> &p_component);
 
-            /* The vehicle's name (VehicleServer.vehicle_set_name()), set every time it is built. Not
+            /* The vehicle's id (VehicleServer.vehicle_set_id()), set every time it is built. Not
              * derived from whatever file the description came from - a scenery names its vehicles,
              * a .fiz does not. */
             void set_vehicle_id(const String &p_vehicle_id);

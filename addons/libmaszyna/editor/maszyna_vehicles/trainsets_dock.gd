@@ -69,8 +69,8 @@ func list_trainsets() -> void:
         for vehicle:RID in vehicles:
             if MaszynaLegacyVehicleSystem.vehicle_exists(vehicle):
                 var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
-                var tooltip:String = "%s (%s)" % [dynamic.name, dynamic.file_name]
-                _profile_queue.enqueue(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.name,
+                var tooltip:String = "%s (%s)" % [VehicleServer.vehicle_get_name(vehicle), dynamic.file_name]
+                _profile_queue.enqueue(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id,
                         row.show_profile.bind(row.add_vehicle_profile(tooltip),
                                 MaszynaVehicleProfileManager.get_profile_coupling_width(
                                         dynamic.data_path, dynamic.file_name)))

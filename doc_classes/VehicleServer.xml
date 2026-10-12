@@ -245,10 +245,18 @@
 			<description>
 			</description>
 		</method>
+		<method name="vehicle_get_id" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Returns the vehicle's id - its scenery name in lower case, as the original reads it. An event, the console or a script finds the vehicle by it ([method vehicle_get_rid_by_id]); it is not shown to the player ([method vehicle_get_name]).
+			</description>
+		</method>
 		<method name="vehicle_get_name" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Returns the vehicle's name as the scenery writes it, for the player to read - its id when it has none. Nothing is found by it.
 			</description>
 		</method>
 		<method name="vehicle_get_position" qualifiers="const">
@@ -258,10 +266,11 @@
 				Where the vehicle is in the world, as whichever server places it set it.
 			</description>
 		</method>
-		<method name="vehicle_get_rid_by_name" qualifiers="const">
+		<method name="vehicle_get_rid_by_id" qualifiers="const">
 			<return type="RID" />
-			<param index="0" name="name" type="String" />
+			<param index="0" name="id" type="String" />
 			<description>
+				Returns the vehicle with the id [param id] ([method vehicle_set_id]), or an invalid RID.
 			</description>
 		</method>
 		<method name="vehicle_get_rids" qualifiers="const">
@@ -317,7 +326,15 @@
 			<param index="2" name="p1" type="Variant" default="null" />
 			<param index="3" name="p2" type="Variant" default="null" />
 			<description>
-				Sends [param command] to [param vehicle] by its handle and returns what its handler answered (whether the command was accepted), or [code]null[/code] when the vehicle has no such command. A vehicle is reached by its handle whatever its scenery name - use [method vehicle_get_rid_by_name] to find one by name.
+				Sends [param command] to [param vehicle] by its handle and returns what its handler answered (whether the command was accepted), or [code]null[/code] when the vehicle has no such command. A vehicle is reached by its handle whatever its scenery name - use [method vehicle_get_rid_by_id] to find one by its id.
+			</description>
+		</method>
+		<method name="vehicle_set_id">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="id" type="String" />
+			<description>
+				Sets the vehicle's id, which [method vehicle_get_rid_by_id] finds it by and its controller takes as [member VehicleController.vehicle_id]. An empty id, or [code]"none"[/code], is not looked up.
 			</description>
 		</method>
 		<method name="vehicle_set_initial_velocity">
@@ -332,6 +349,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="name" type="String" />
 			<description>
+				Sets the vehicle's name as the scenery writes it, for the player to read ([method vehicle_get_name]).
 			</description>
 		</method>
 	</methods>

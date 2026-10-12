@@ -319,13 +319,13 @@ func unregister_process(cabin:RID, callable:Callable) -> void:
 ## Reports a manipulation of a cabin control; returns the handler's result (#43), or null when
 ## no handler is registered for the control.
 func act(cabin:RID, control_id:StringName, action:StringName, value:Variant = null) -> Variant:
-    var vehicle_name:String = VehicleServer.vehicle_get_name(VehicleServer.cabin_get_vehicle(cabin))
+    var vehicle_id:String = VehicleServer.vehicle_get_id(VehicleServer.cabin_get_vehicle(cabin))
     if not action in ACTIONS:
-        _log.error("%s: Unknown cabin action: %s" % [vehicle_name, action])
+        _log.error("%s: Unknown cabin action: %s" % [vehicle_id, action])
         return null
     var handler:Callable = _controls.get(cabin, {}).get(control_id, Callable())
     if not handler.is_valid():
-        _log.error("%s: Unknown cabin control: %s" % [vehicle_name, control_id])
+        _log.error("%s: Unknown cabin control: %s" % [vehicle_id, control_id])
         return null
     return handler.call(get_cabin_state(cabin), action, value)
 

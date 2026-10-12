@@ -44,7 +44,7 @@ const MASZYNA_VEHICLE_FRAME:Transform3D = Transform3D(Basis(Vector3.UP, PI), Vec
 ## opens and re-parses the MMD and loads the exterior model - and its result is what
 ## MaszynaLegacyVehicleSystem caches.
 static func read_structure(
-        data_path:String, file_name:String, skin:String, vehicle_name:String) -> MaszynaVehicleStructure:
+        data_path:String, file_name:String, skin:String, vehicle_id:String) -> MaszynaVehicleStructure:
     if not data_path or not file_name:
         return null
 
@@ -58,7 +58,7 @@ static func read_structure(
     var game_dir:String = UserSettings.get_maszyna_game_dir()
     var relative_mmd_path:String = normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_mmd_path))
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_name, file_name, skin)
+    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
 
     var structure := MaszynaVehicleStructure.new()
     structure.data_path = normalized_data_path
@@ -135,12 +135,12 @@ static func load_model_filename(structure:MaszynaVehicleStructure, load_name:Str
 ## children, drawn in its frame (DynObj.cpp:5384) - in the skin, drawn by RenderingServer instances
 ## (OPTIMIZED): a vehicle to look at - the vehicle viewer, a vehicle dragged into the editor's 3D
 ## view - not to run. Lies in the model's own frame; MASZYNA_VEHICLE_FRAME turns it as a vehicle.
-static func build_exterior(data_path:String, file_name:String, skin:String, vehicle_name:String) -> E3DModelInstance:
+static func build_exterior(data_path:String, file_name:String, skin:String, vehicle_id:String) -> E3DModelInstance:
     var normalized_data_path:String = data_path if data_path.begins_with("/") else "/" + data_path
     var game_dir:String = UserSettings.get_maszyna_game_dir()
     var relative_path:String = normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_name, file_name, skin)
+    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
     var body_model:String = MmdCabinInstancer.parse_body_model(abs_mmd_path, parameters)
     if not body_model:
         body_model = file_name

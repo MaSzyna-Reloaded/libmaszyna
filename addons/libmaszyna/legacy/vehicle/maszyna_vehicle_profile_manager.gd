@@ -68,14 +68,14 @@ func clear_cache() -> void:
 
 ## Side view of the vehicle with the given skin, null when its model cannot be read.
 ## Await it: a profile missing from the caches is rendered, which takes a frame.
-func get_profile(data_path:String, file_name:String, skin:String, vehicle_name:String) -> Texture2D:
+func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:String) -> Texture2D:
     # callers spell the path with or without the leading slash, it is the same vehicle
     var key:String = "%s:%s" % [data_path.to_lower().trim_prefix("/"), skin.to_lower()]
     var game_dir:String = UserSettings.get_maszyna_game_dir()
     var relative_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
     if MmdCabinInstancer.names_vehicle(abs_mmd_path):
-        key += ":" + vehicle_name
+        key += ":" + vehicle_id
     if _profiles.has(key):
         var kept:Texture2D = _profiles[key]
         _remember_profile(key, kept)
@@ -87,7 +87,7 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_name:S
         _remember_profile(key, cached)
         return cached
 
-    var rendered:Texture2D = await _render_profile(data_path, abs_mmd_path, file_name, skin, vehicle_name)
+    var rendered:Texture2D = await _render_profile(data_path, abs_mmd_path, file_name, skin, vehicle_id)
     if rendered:
         _remember_profile(key, rendered)
         _queue.submit(_cache.set.bind(cache_path, rendered, ""))
@@ -122,12 +122,12 @@ func _run_in_queue(task:Callable) -> Variant:
 
 ## One render at a time - the viewport holds a single model, only its skin changes between shots
 func _render_profile(
-        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_name:String) -> Texture2D:
+        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_id:String) -> Texture2D:
     while _rendering:
         await get_tree().process_frame
     _rendering = true
     var texture:Texture2D = null
-    if await _build_model(data_path, abs_mmd_path, file_name, skin, vehicle_name):
+    if await _build_model(data_path, abs_mmd_path, file_name, skin, vehicle_id):
         # the vehicle over black and over white gives its real transparency, whatever the
         # viewport does with its own background
         var over_black:Image = await _capture(Color.BLACK)
@@ -173,10 +173,10 @@ static func _extract_alpha(over_black:Image, over_white:Image) -> Image:
 ## The vehicle's exterior model and its attachments with the given skin, seen from the side by an
 ## orthogonal camera. Only the skin changes between the profiles of one vehicle.
 func _build_model(
-        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_name:String) -> bool:
+        data_path:String, abs_mmd_path:String, file_name:String, skin:String, vehicle_id:String) -> bool:
     # every vehicle path is used with a leading slash (see maszyna_rail_vehicle_3d_instancer.gd)
     var normalized_data_path:String = data_path if data_path.begins_with("/") else "/" + data_path
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_name, file_name, skin)
+    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
     var body_model:String = MmdCabinInstancer.parse_body_model(abs_mmd_path, parameters)
     if not body_model:
         body_model = file_name

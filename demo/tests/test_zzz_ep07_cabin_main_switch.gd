@@ -34,7 +34,7 @@ func before_each():
     # the scenery is announced once its vehicles are built
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
-    vehicle_rid = VehicleServer.vehicle_get_rid_by_name("ep07-424")
+    vehicle_rid = VehicleServer.vehicle_get_rid_by_id("ep07-424")
     controller = VehicleServer.vehicle_get_controller(vehicle_rid)
     if controller and not await wait_until(func() -> bool: return PlayerServer.player_get_vehicle() == vehicle_rid,
             TAKE_OVER_TIMEOUT):
@@ -170,7 +170,7 @@ func test_send_command_returns_result() -> void:
         return
     assert_true(VehicleServer.vehicle_send_command(vehicle_rid, "main_switch", true), "closing a closable breaker returns true")
     assert_false(VehicleServer.vehicle_send_command(vehicle_rid, "main_switch", true), "closing it again changes nothing")
-    assert_false(VehicleServer.vehicle_get_rid_by_name("no_such_train").is_valid(), "an unknown name reaches no vehicle")
+    assert_false(VehicleServer.vehicle_get_rid_by_id("no_such_train").is_valid(), "an unknown name reaches no vehicle")
 
 
 ## Console "cabin <train> toggle battery_sw" - no value flips the control, and a cabin widget of

@@ -121,13 +121,14 @@ violations of this cost a day each (`FINDINGS.md`, 2026-09-22).
 (`RailVehicleStepper`, `process_priority` = -100), and a value that is not there yet is an
 ordering defect: react to `simulation_configured`, do not raise a "try again next frame" flag.
 
-**5. A vehicle is its handle, never its name.** Everything that holds a vehicle holds its
+**5. A vehicle is its handle, never its id or name.** Everything that holds a vehicle holds its
 `RailVehicleServer` RID and commands it with `vehicle_send_command(vehicle_rid, ...)`; a vehicle
-keeps its own commands (`VehicleController::register_command`). The scenery name (`vehicle_id`) may
-be empty or repeated, and it lives only in the server's name registry: `vehicle_get_rid_by_name`
-leaves `""` and `"none"` unmapped and gives a repeated name to the later vehicle, as the original
-`basic_table::insert` does (`Names.h:27-40`). Only what knows a vehicle by name alone - a scenario,
-an event, the console - goes through it. A registry keyed by that name elsewhere is how the second
+keeps its own commands (`VehicleController::register_command`). Its id (`vehicle_id`, the scenery
+name in lower case) may be empty or repeated, and it lives only in the server's id registry:
+`vehicle_get_rid_by_id` leaves `""` and `"none"` unmapped and gives a repeated id to the later
+vehicle, as the original `basic_table::insert` does (`Names.h:27-40`). Only what knows a vehicle by
+its id alone - a scenario, an event, the console - goes through it. Its name (`vehicle_get_name()`,
+as the `.scn` writes it) is only shown to the player; nothing is found or compared by it. A registry keyed by that name elsewhere is how the second
 of two same-named vehicles lost its commands and its cab (TrainSystem, removed 2026-09-26).
 
 ## Where a new thing goes
@@ -202,8 +203,8 @@ relying on one.
 4. Read every `_process` the diff touches: no loop, no lookup, no wiring, nothing while idle.
    `grep -n 'vehicle_dump_' <changed files>` - no dump on a per-frame, per-step or per-tick path.
 5. Ask the placement question of each new field, out loud, and write the answer in the commit.
-6. `grep -rn 'vehicle_id' addons src` - a scenery name is never a key a vehicle is held, cached or
-   commanded by; only `vehicle_get_rid_by_name` turns a name into a vehicle.
+6. `grep -rn 'vehicle_id' addons src` - an id is never a key a vehicle is held, cached or
+   commanded by; only `vehicle_get_rid_by_id` turns an id into a vehicle.
 
 **And verify against the code, never against a document.** `TODO.md`'s stage list was written when
 the first part of each stage landed and went stale; this file will too. Every count and line

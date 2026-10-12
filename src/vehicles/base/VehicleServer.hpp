@@ -47,9 +47,12 @@ namespace godot {
                     Vector<RID> cabins;
                     /* The implementation that steps it, as its controller names it */
                     StringName implementation;
-                    /* What a scenery calls this vehicle. Only the things that know a vehicle by
-                     * name alone need it - an event, the console, the radio, a `.scn` command -
-                     * and they reach the vehicle through vehicle_get_rid_by_name(). */
+                    /* The vehicle's id - its `.scn` name in lower case, as the original reads it.
+                     * Only the things that know a vehicle by its id alone need it - an event, the
+                     * console, the radio, a `.scn` command - and they reach the vehicle through
+                     * vehicle_get_rid_by_id(). */
+                    String id;
+                    /* Its name as the `.scn` writes it, for the player to read */
                     String name;
                     /* The last dump handed out, and the controller's state serial it was built
                      * at. A cab is dozens of widgets asking the same vehicle in one frame, and
@@ -70,7 +73,7 @@ namespace godot {
             HashMap<RID, Cabin> cabins;
             /* The cabin each person aboard sits in - a person is in one cabin at a time */
             HashMap<RID, RID> person_cabins;
-            HashMap<String, RID> vehicles_by_name;
+            HashMap<String, RID> vehicles_by_id;
             int64_t next_vehicle_id = 0;
             HashMap<RID, Controller> controllers;
             int64_t next_controller_id = 0;
@@ -172,13 +175,17 @@ namespace godot {
             /* What the scenery placed the vehicle with - the velocity it starts with. Handed to its
              * controller when it is bound. */
             void vehicle_set_initial_velocity(const RID &p_vehicle, double p_velocity);
-            /* The scenery's name for this vehicle, and the way back from one. A name is what a
-             * `.scn`, an event or the console has; everything that holds the vehicle uses its
-             * handle and never comes through here (TrackServer::track_get_rid_by_name() is the
-             * same shape, for the same reason). */
+            /* The vehicle's id, and the way back from one. An id is what a `.scn`, an event or the
+             * console has; everything that holds the vehicle uses its handle and never comes
+             * through here (TrackServer::track_get_rid_by_name() is the same shape, for the same
+             * reason). */
+            void vehicle_set_id(const RID &p_vehicle, const String &p_id);
+            String vehicle_get_id(const RID &p_vehicle) const;
+            RID vehicle_get_rid_by_id(const String &p_id) const;
+            /* The vehicle's name as the `.scn` writes it - what the player reads. A vehicle
+             * without one is shown by its id. Nothing is found by it. */
             void vehicle_set_name(const RID &p_vehicle, const String &p_name);
             String vehicle_get_name(const RID &p_vehicle) const;
-            RID vehicle_get_rid_by_name(const String &p_name) const;
             TypedArray<RID> vehicle_get_rids() const;
             /* Whether the simulation behind the vehicle exists yet - nothing can be read off a
              * vehicle before it does */

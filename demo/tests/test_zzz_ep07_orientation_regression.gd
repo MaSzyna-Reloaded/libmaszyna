@@ -67,7 +67,7 @@ func _dump_orientation(label:String, vehicle:RID, controller:VehicleController) 
 
 
 func test_ep07_orientation_stays_stable_while_parked_and_while_driving() -> void:
-    var rail_vehicle:RID = VehicleServer.vehicle_get_rid_by_name("ep07-424")
+    var rail_vehicle:RID = VehicleServer.vehicle_get_rid_by_id("ep07-424")
     assert_true(VehicleServer.vehicle_is_simulation_ready(rail_vehicle), "EP07-424 should be a vehicle of the loaded scenery")
     if not VehicleServer.vehicle_is_simulation_ready(rail_vehicle):
         return

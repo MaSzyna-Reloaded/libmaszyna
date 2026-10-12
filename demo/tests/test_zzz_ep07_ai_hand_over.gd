@@ -36,7 +36,7 @@ func before_each():
     # the scenery is announced once its vehicles are built and its drivers given their AI
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
-    vehicle_rid = VehicleServer.vehicle_get_rid_by_name("ep07-424")
+    vehicle_rid = VehicleServer.vehicle_get_rid_by_id("ep07-424")
 
 
 func after_each():
