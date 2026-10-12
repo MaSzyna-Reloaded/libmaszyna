@@ -42,7 +42,7 @@ var region_files:Array[String] = []
 var terrains: Array = []
 ## Where the "triangles" nodes go as they are parsed - shared by the includes of one scenery, a
 ## subscene's own (SceneryInstancer.parse_subscene_task())
-var triangles_sink:SceneryTrianglesSink = SceneryTrianglesSink.create("")
+var triangles_sink:SceneryTrianglesSink = SceneryTrianglesSink.create("", MaterialManager.is_material_translucent)
 ## The original's Scratchpad.binary.terrain: the scenery's shapes come from a region file (.sbt),
 ## so its "triangles" nodes and terrain models are left out (simulationstateserializer.cpp:503-600).
 ## Like the original's, it holds for the rest of the load from where it is set: push_state() and

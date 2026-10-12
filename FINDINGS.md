@@ -237,6 +237,10 @@ anything. Open work belongs in `TODO.md`.
   test (`StLinSwitchType != "toggle"` is impulse, Train.cpp:5045) - never a catalog guess from the
   `_bt`/`_sw` suffix. *(10-10 the EP07's motor connectors stayed open)*
 
+* A scenery shape's range applies only where the original tests it: a large opaque shape is drawn
+  with its section whatever its range, and a ranged one is measured from its 25 m group's centre,
+  never from a 1 km mesh. *(10-12 Całkowo's ground missing under its houses)*
+
 ## State, ownership, events
 * An operation somebody awaits is done only when everything its waiter relies on is; a signal
   relayed after an `await` arrives after the call that caused it returned. *(10-03 the loading

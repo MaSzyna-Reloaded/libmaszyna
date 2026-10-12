@@ -106,11 +106,8 @@ namespace godot {
 
     } // namespace
 
-    /// The shapes of one section sharing a texture and a visibility range: one chunk of terrain
-    struct ShapeGroup {
-            String texture;
-            float range_min = 0.0F;
-            float range_max = 0.0F;
+    /// The vectors of a chunk of terrain, relative to its origin, as floats
+    struct ShapeGeometry {
             std::vector<float> vertices;
             std::vector<float> normals;
             std::vector<float> uvs;
@@ -122,6 +119,16 @@ namespace godot {
             Vector2 uv;
     };
 
+    /// One shape as the file holds it, in world space
+    struct Shape {
+            String texture;
+            float range_min = 0.0F;
+            float range_max = 0.0F;
+            /// What the original measures the shape's range from (bounding_area, scenenode.cpp:41)
+            Vector3 centre;
+            std::vector<ShapeVertex> vertices;
+    };
+
     static PackedFloat32Array to_packed(const std::vector<float> &p_values) {
         PackedFloat32Array packed;
         packed.resize(static_cast<int64_t>(p_values.size()));
@@ -129,24 +136,22 @@ namespace godot {
         return packed;
     }
 
-    /// shape_node::deserialize() (scenenode.cpp:139, :99): its triangles into the group of its texture
-    /// and range, relative to the cell's origin
-    static void read_shape(
-            SectionCursor &p_cursor, const Vector3 &p_cell_origin, std::vector<ShapeGroup> &p_groups,
-            HashMap<String, int> &p_group_indices) {
+    /// shape_node::deserialize() (scenenode.cpp:139, :99); false for a shape not drawn
+    static bool read_shape(SectionCursor &p_cursor, Shape &p_shape) {
         p_cursor.string(); // name
-        p_cursor.skip(AREA_BYTES);
+        p_shape.centre = p_cursor.dvec3();
+        p_cursor.f32(); // radius
         const double range_squared_min = p_cursor.f64();
         const double range_squared_max = p_cursor.f64();
         const bool visible = p_cursor.boolean();
         p_cursor.boolean(); // translucent - the material says it
         const bool has_userdata = p_cursor.boolean();
-        String texture = p_cursor.string();
+        p_shape.texture = p_cursor.string();
         p_cursor.skip(LIGHTING_BYTES);
         const Vector3 origin = p_cursor.dvec3();
         const uint32_t vertex_count = p_cursor.u32();
-        std::vector<ShapeVertex> shape_vertices;
-        shape_vertices.reserve(vertex_count);
+        p_shape.vertices.clear();
+        p_shape.vertices.reserve(vertex_count);
         for (uint32_t index = 0; index < vertex_count && !p_cursor.overrun; index++) {
             ShapeVertex vertex;
             vertex.position = origin + p_cursor.vec3();
@@ -157,33 +162,48 @@ namespace godot {
             if (has_userdata) {
                 p_cursor.skip(USERDATA_BYTES);
             }
-            shape_vertices.push_back(vertex);
+            p_shape.vertices.push_back(vertex);
         }
-        if (p_cursor.overrun || !visible || shape_vertices.empty()) {
-            return;
+        if (p_cursor.overrun || !visible || p_shape.vertices.empty()) {
+            return false;
         }
-        texture = texture.trim_prefix(TEXTURES_PREFIX);
-        const float range_min = static_cast<float>(Math::sqrt(range_squared_min));
-        const float range_max =
+        p_shape.texture = p_shape.texture.trim_prefix(TEXTURES_PREFIX);
+        p_shape.range_min = static_cast<float>(Math::sqrt(range_squared_min));
+        p_shape.range_max =
                 range_squared_max >= NO_RANGE_SQUARED ? NO_RANGE : static_cast<float>(Math::sqrt(range_squared_max));
-        const String key = texture + "|" + String::num(range_min) + "|" + String::num(range_max);
-        const int *found = p_group_indices.getptr(key);
-        if (found == nullptr) {
-            p_group_indices[key] = static_cast<int>(p_groups.size());
-            p_groups.push_back(ShapeGroup{texture, range_min, range_max, {}, {}, {}});
-        }
-        ShapeGroup &group = p_groups[p_group_indices[key]];
-        // turned around, as MaszynaTrianglesImporter turns a "triangles" node
-        for (auto vertex = shape_vertices.rbegin(); vertex != shape_vertices.rend(); ++vertex) {
-            const Vector3 position = vertex->position - p_cell_origin;
-            group.vertices.insert(
-                    group.vertices.end(),
+        return true;
+    }
+
+    /// The shape's triangles relative to p_origin, turned around as MaszynaTrianglesImporter turns a
+    /// "triangles" node
+    static void append_shape(ShapeGeometry &p_geometry, const Shape &p_shape, const Vector3 &p_origin) {
+        for (auto vertex = p_shape.vertices.rbegin(); vertex != p_shape.vertices.rend(); ++vertex) {
+            const Vector3 position = vertex->position - p_origin;
+            p_geometry.vertices.insert(
+                    p_geometry.vertices.end(),
                     {static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)});
-            group.normals.insert(
-                    group.normals.end(), {static_cast<float>(vertex->normal.x), static_cast<float>(vertex->normal.y),
-                                          static_cast<float>(vertex->normal.z)});
-            group.uvs.insert(group.uvs.end(), {static_cast<float>(vertex->uv.x), static_cast<float>(vertex->uv.y)});
+            p_geometry.normals.insert(
+                    p_geometry.normals.end(),
+                    {static_cast<float>(vertex->normal.x), static_cast<float>(vertex->normal.y),
+                     static_cast<float>(vertex->normal.z)});
+            p_geometry.uvs.insert(
+                    p_geometry.uvs.end(), {static_cast<float>(vertex->uv.x), static_cast<float>(vertex->uv.y)});
         }
+    }
+
+    static Ref<MaszynaTrianglesChunkGeometry> to_geometry(
+            const String &p_texture, const Vector3 &p_origin, const float p_range_min, const float p_range_max,
+            const ShapeGeometry &p_geometry) {
+        Ref<MaszynaTrianglesChunkGeometry> geometry;
+        geometry.instantiate();
+        geometry->set_texture(p_texture);
+        geometry->set_origin(p_origin);
+        geometry->set_range_min(p_range_min);
+        geometry->set_range_max(p_range_max);
+        geometry->set_vertices(to_packed(p_geometry.vertices));
+        geometry->set_normals(to_packed(p_geometry.normals));
+        geometry->set_uvs(to_packed(p_geometry.uvs));
+        return geometry;
     }
 
     /// lines_node::deserialize() (scenenode.cpp:550, :513) - read past, as "lines" nodes are
@@ -272,7 +292,11 @@ namespace godot {
     }
 
     /// basic_section::deserialize() (scene.cpp:811) and basic_cell::deserialize() (scene.cpp:227) of one
-    /// section: its shapes, one MaszynaTrianglesChunkGeometry per texture and range
+    /// section, drawn as the original draws it:
+    /// - the section's own shapes merged by texture, their range dropped - the original draws them
+    ///   whenever the section is in view (Render(shape, true), opengl33renderer.cpp:2495);
+    /// - each shape of a cell as it is, merged already when the file was written (basic_cell::insert(),
+    ///   scene.cpp:282-291), its range measured from its own centre (opengl33renderer.cpp:2814)
     Array MaszynaLegacySBTTerrainProvider::chunk_load(const Vector2i &p_cell, const ContentKind p_kind) {
         Array geometries;
         if (p_kind != CONTENT_TERRAIN) {
@@ -289,37 +313,43 @@ namespace godot {
             data = file->get_buffer(section->size);
         }
         SectionCursor cursor(data);
-        const Vector3 cell_origin = SceneryTrianglesSink::cell_get_origin(p_cell);
-        std::vector<ShapeGroup> groups;
-        HashMap<String, int> group_indices;
+        const Vector3 section_origin = SceneryTrianglesSink::cell_get_origin(p_cell);
+        std::vector<String> section_textures;
+        HashMap<String, ShapeGeometry> section_geometries;
+        Shape shape;
         cursor.skip(AREA_BYTES);
         for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
-            read_shape(cursor, cell_origin, groups, group_indices);
+            if (!read_shape(cursor, shape)) {
+                continue;
+            }
+            if (!section_geometries.has(shape.texture)) {
+                section_textures.push_back(shape.texture);
+            }
+            append_shape(section_geometries[shape.texture], shape, section_origin);
         }
         for (int cell = 0; cell < SECTION_CELL_COUNT && !cursor.overrun; cell++) {
             cursor.skip(AREA_BYTES);
             // opaque shapes, then translucent ones
             for (int kind = 0; kind < 2; kind++) {
                 for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
-                    read_shape(cursor, cell_origin, groups, group_indices);
+                    if (!read_shape(cursor, shape)) {
+                        continue;
+                    }
+                    ShapeGeometry shape_geometry;
+                    append_shape(shape_geometry, shape, shape.centre);
+                    geometries.append_array(
+                            to_geometry(shape.texture, shape.centre, shape.range_min, shape.range_max, shape_geometry)
+                                    ->split());
                 }
             }
             for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
                 skip_lines(cursor);
             }
         }
-        ERR_FAIL_COND_V_MSG(cursor.overrun, geometries, "Bad file: a region section ends early");
-        for (const ShapeGroup &group: groups) {
-            Ref<MaszynaTrianglesChunkGeometry> geometry;
-            geometry.instantiate();
-            geometry->set_texture(group.texture);
-            geometry->set_cell(p_cell);
-            geometry->set_range_min(group.range_min);
-            geometry->set_range_max(group.range_max);
-            geometry->set_vertices(to_packed(group.vertices));
-            geometry->set_normals(to_packed(group.normals));
-            geometry->set_uvs(to_packed(group.uvs));
-            geometries.append_array(geometry->split());
+        ERR_FAIL_COND_V_MSG(cursor.overrun, Array(), "Bad file: a region section ends early");
+        for (const String &texture: section_textures) {
+            geometries.append_array(
+                    to_geometry(texture, section_origin, 0.0F, NO_RANGE, section_geometries[texture])->split());
         }
         return geometries;
     }

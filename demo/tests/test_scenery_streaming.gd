@@ -118,13 +118,15 @@ func test_triangle_chunk_out_of_range_is_not_built() -> void:
 func test_camera_can_pause_registration_until_the_final_start_position() -> void:
     SceneryStreamingServer.streaming_set_camera(0)
     var owner:int = SceneryStreamingServer.owner_create("test", Callable(), _record_build, _record_clear)
+    # beyond the draw distance and the prefetch from the menu camera's chunk, whatever the project's
+    var cabin_position:Vector3 = Vector3(SceneryStreamingServer.streaming_get_draw_distance() + 2 * CHUNK_SIZE_M, 0, 0)
     var menu_rid:RID = _stream_register(owner, Vector3.ZERO)
-    var cabin_rid:RID = _stream_register(owner, Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    var cabin_rid:RID = _stream_register(owner, cabin_position)
 
     await wait_streaming(STREAMING_FRAMES)
     assert_eq(_build_order.size(), 0, "built scenery while streaming was paused")
 
-    _camera.global_position = Vector3(4 * CHUNK_SIZE_M, 0, 0)
+    _camera.global_position = cabin_position
     SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
     await wait_streaming(STREAMING_FRAMES)
     assert_has(_build_order, cabin_rid, "did not build around the final camera")

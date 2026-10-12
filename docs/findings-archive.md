@@ -4641,3 +4641,37 @@ lighting or the trainset.
   `test_legacy_cabin_lamp_islands.gd`, `test_mmd_cabin_instancer.gd`.
 * **Rule:** a lit E3D lamp is its texture times its diffuse; a light standing for it samples the
   texture, never takes the diffuse alone.
+
+## 2026-10-12 Całkowo's ground missing under its houses, grass vanishing up close
+
+* **Symptom:** the operator's screenshot (`calkowo_v2_pospwilb.scn`, free camera above Wilis): far
+  off, the houses and trees stood over the sky colour behind a straight edge where the ground
+  ended. Earlier report (2026-10-05, Linia053): grass and bushes popping in and out just ahead of
+  the train.
+* **What proved it:**
+  - A count of the scenery's `triangles` nodes with include multiplicity: all of its terrain
+    (`v2_terennowy.scm`, 177 160 nodes) and its fields declare `node 1000 0`.
+  - The sink merged every node of one texture and range in a 1 km cell into one mesh, placed at
+    the cell's centre. Godot measures a visibility range to the centre of the instance's box
+    (`renderer_scene_cull.cpp:1480`), so a 1000 m range hid the ground ~500 m inside its cell
+    while the models there stayed.
+  - The original does not apply that range at all. `basic_section::insert()` keeps a shape in a
+    250 m cell only when it is translucent, has a range of at most 300 m or a minimum range
+    (`scene.cpp:849-851`). Every other shape is merged into its 1 km section by material and drawn
+    with `Render(shape, true)`, without the range test (`opengl33renderer.cpp:2495`).
+  - The cell's shapes merge only within 25 m of the same range (`scene.cpp:282-291`), so their
+    range is measured from a nearby centre (`opengl33renderer.cpp:2814`), not from a kilometre-wide
+    mesh.
+* **Fix:**
+  - `SceneryTrianglesSink` merges as the original:
+    - a section's shapes cut along the 1 km grid, their range dropped;
+    - a cell's shapes whole, merged within `MERGE_DISTANCE_M` around their vertex-weighted centre.
+  - `MaszynaTrianglesChunkGeometry` keeps that centre as its `origin` (was `cell`).
+  - The chunk server sets a custom box centred on it (`get_visibility_aabb()`).
+  - `MaszynaLegacySBTTerrainProvider` reads the region file's own split the same way.
+  - Translucency is the original's "@ and alpha" rule, in one place:
+    `MaterialManager.is_material_translucent()` (`MASZYNA_ORIGINAL_QUIRKS.md`, "Scenery shapes").
+  - `draw_distance` 2500 as the original's `BaseDrawRange` (`Globals.h:141`).
+* **Rule:** port where the original keeps a shape and whether it tests its range, not only the
+  range. A range the original measures from a shape's centre is measured from a merged group of
+  that centre, never from a 1 km merged mesh.
