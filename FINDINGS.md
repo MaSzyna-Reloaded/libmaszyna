@@ -157,6 +157,9 @@ anything. Open work belongs in `TODO.md`.
 * Survey the data (a histogram) before mapping a parameter or trusting a "supported" list, and
   read the geometry drawn for a glow before adding a tuning constant. *(09-21 spot cone, street
   lamp; 09-20 missing shaders)*
+* A lit E3D lamp is drawn as its texture times its diffuse (opengl33, `light_common.glsl:164`) -
+  a light standing for it samples the texture (`LegacyCabinLampIslands.submodel_color()`), never
+  takes the diffuse alone. *(10-12 ST45's blue lamps glowed orange)*
 * When porting a contract consumed by scripts nobody here maintains, run the real scripts against
   it. *(09-24 Python cab screens)*
 * Check sun-altitude thresholds against a winter day. *(09-20 orange fog)*
