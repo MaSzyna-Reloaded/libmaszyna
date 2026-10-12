@@ -15,6 +15,10 @@ namespace godot {
             /* An EZT's automatic start thresholds (LoadFIZ_Param, Mover.cpp:10303-10304) */
             static constexpr int EZT_IMIN_LOW = 1;
             static constexpr int EZT_IMIN_HIGH = 2;
+            /* TTrack::iCategoryFlag's kinds (Track.cpp:396-432) */
+            static constexpr int TRACK_CATEGORY_RAIL = 1;
+            static constexpr int TRACK_CATEGORY_ROAD = 2;
+            static constexpr int TRACK_CATEGORY_WATER = 4;
             /* attach_coupler_adapter(): the neighbour's reach and the room asked for fitting the
              * adapter [m] (DynObj.cpp:1760, 1774) */
             static constexpr double COUPLER_ADAPTER_REACH = 25.0;
@@ -49,6 +53,11 @@ namespace godot {
             /* The coupled vehicle as this end's neighbour; false when the end is not coupled */
             bool _neighbour_from_coupler(CouplerEnd p_end);
             void _consume_coupler_events();
+            /* The Mover's event flag consumed: a derailment announced (derailed_signal) */
+            void _consume_events();
+            /* The reverser sent to the joined vehicles after a cab activation (cab_activation()) */
+            void _send_direction() const;
+            static int _track_category(TrackServer::TrackTypeGroup p_group);
 
         protected:
             static void _bind_methods();
@@ -57,6 +66,7 @@ namespace godot {
 
             Direction get_direction_absolute() const override;
             int get_train_damage() const override;
+            DerailCause get_derail_cause() const override;
             double get_mass_reduced() const override;
             bool get_coupler_stretched() const override;
 
@@ -68,6 +78,7 @@ namespace godot {
             TMoverParameters *get_mover() const;
 
             void cab_activation(bool p_enabled) override;
+            Vector2 get_body_offset() const override;
             void compartment_lights(bool p_enabled) override;
             void compartment_lights_switch_off(bool p_enabled) override;
             bool get_compartment_lights_enabled() const override;

@@ -117,6 +117,39 @@ interface.
   engine or not. Wrapper: the line breaker is the engine's (`RailVehicleEngine`); a car without
   an engine has none and is not counted (`MaszynaLegacyDriverTrainset`) - counted, it stood open
   for ever and the driver never took the unit ready.
+* **The locked brake pipe has no hint.** A vehicle whose pipe locks when it empties
+  (`Brake: LPOn= LPOff=`, SA132 `218ma_a_p4.fiz`) charges it again only while a universal brake
+  button with `ub_UnlockPipe` is held (`UBB1=2`). The AI holds it in `control_main_pipe()`
+  (`Driver.cpp:8252-8261`), only to go and only once ready, but no `driver_hint` cues it:
+  `trainbrakesetpipeunlock` is only the handle's `HandleUnlock` position (`Driver.cpp:8213-8218`).
+  Wrapper: `MaszynaLegacyDriverBraking.control_main_pipe()` runs on every update and cues
+  `MAIN_PIPE_UNLOCK` (the button's control) also while the handle stands at running, once the main
+  reservoir is full.
+* **"Neutral" and "release" contradict each other on a controller carrying the train brake.**
+  `mastercontrollersetzerospeed` is done at `MainCtrlPos <= UniCtrlNoPowerPos` (`driverhints.cpp:523-532`),
+  where an `IntegratedBrakePN` controller laps the train brake (SA132: 2), and `trainbrakerelease`
+  wants the handle at running, which moves the controller to 4 (`Mover.cpp:6689-6706`) - a player
+  following both went round them for ever. The original's own driver uses 4 as its neutral
+  (`CheckTimeControllers()` 5.1, `DecBrakeEIM()`). Wrapper: a universal controller's position of no
+  target power counts as neutral while `eimic_real` gives none.
+* **Deactivation is hinted in a cab that cannot do it.** `cabdeactivation` is cued in any cab where
+  `CabActive == -CabOccupied` or `!CabMaster` (`Driver.cpp:6017-6020`), but `CabDeactivisation()`
+  works only in the master cab (`IsCabMaster()`, `Mover.cpp:2684`). Wrapper:
+  `CAB_DEACTIVATION_OTHER_END` there, with `INDEPENDENT_BRAKE_RELEASE_OTHER_END` when a car left
+  holds its independent brake - it brakes its car whatever cab drives (`Mover.cpp:4025`), and
+  leaving the driving cab deactivates it (`Train.cpp:10950-10954`), so a second way back empties
+  the pipe (`InactiveCabFlag` emergencybrake).
+* **The cab signal alone hints nothing on a vehicle with one acknowledge button.**
+  `securitysystemreset` is cued while `is_blinking()` - the vigilance or the cab signal
+  (`Driver.cpp:6396-6403`) - but is done once `is_vigilance_blinking()` is false
+  (`driverhints.cpp:1206`), so an SHP flashing alone (SA132 after its cab is activated) is never
+  listed. Wrapper: done once neither flashes, the cab signal counted only without
+  `separate_acknowledge` (it has `shpsystemreset` then).
+* **A door permit takes an EIM controller's power, silently.** `eimic` is held at 0 while any
+  door has `open_permit` (`Mover.cpp:6758-6769`), and a deactivated cab grants both
+  (`InactiveCabFlag` doorpermition, `Mover.cpp:2690-2694`); the original hints the permits off only
+  as its own driver departs (`Driver.cpp:4389-4392`). Wrapper: `DOOR_*_PERMIT_OFF` cued while the
+  player asks for power, shown on the permit preset switch where the vehicle has one.
 
 ## Scenario events (`world/Event.cpp`, `world/EvLaunch.cpp`)
 
@@ -161,6 +194,28 @@ interface.
 
 ## Mover (`src/legacy/maszyna-mover`, vendored)
 
+* **A vehicle running off a track end continues on an invisible track.** `TTrackFollower` makes an
+  "auto_null" 450 m straight past an open end (`TTrack::NullCreate()`, Track.cpp:226-262) with
+  `dtrack_norail`, and the vehicle derails on it as it runs on. Wrapper: no track is made; the
+  vehicle stops at the end (`RailVehicleServer._move_placement()`) and the track it is handed
+  carries `TRACK_DAMAGE_NO_RAIL`, so it derails there, cause no rails.
+* **A derailment is told to nobody.** The original plays `derail:` and logs nothing ("Bad
+  driving" is commented out). Wrapper: `RailVehicleServer.vehicle_derailed(vehicle, cause)`, a
+  `vehicle ... derailed cause=` line of the gameplay log and "Vehicle derailed" with its cause on
+  the driving aid's tile.
+* **The free-rail derailment factor read a boolean.** `Track.DamageFlag && dtrack_freerail` in the
+  vendored copy (Mover.cpp:1346) where the original has `&` (Mover.cpp:1441). Fixed in the vendored
+  copy.
+* **A rear cab activated with the reverser set reverses the other cars.** `CabActivisation()`
+  sends `SendCtrlToNext("Direction", DirAbsolute, CabActive)` (`Mover.cpp:2664`, original 2907),
+  and the receiver takes the value as its `DirActive` (`Mover.cpp:9302-9304`); every other
+  reverser change sends `DirActive` (`Mover.cpp:670, 2973`). From an SA132's B-car cab both cars
+  pulled against each other. Wrapper: `MoverRailVehicleController` sends `DirActive` again after
+  every cab activation (`_send_direction()`).
+* **The light preset is not applied on cab (de)activation by the Mover.** `TTrain` calls
+  `SetLights()` after `CabActivisation()` and, with `InactiveCabFlag` redmarkers, after
+  `CabDeactivisation()` (`Train.cpp:3101-3104, 3134-3137`). Wrapper: `cab_activation()` calls
+  `MoverRailVehicleLighting.apply_light_preset()` the same way.
 * **A cab switched on sends itself only backwards.** `SendCtrlToNext()` picks the coupler from the
   sign of the cab (`d = (1 + Sign(dir)) / 2`, "wysyłanie tylko w tył"), and `CabActivisation()`
   does nothing when a cab is already active - so a cab switched on before the unit was coupled

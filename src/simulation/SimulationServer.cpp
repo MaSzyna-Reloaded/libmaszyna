@@ -114,6 +114,17 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_longitude"), &SimulationServer::get_longitude);
         ClassDB::bind_method(D_METHOD("set_cloud_cover", "cover"), &SimulationServer::set_cloud_cover);
         ClassDB::bind_method(D_METHOD("get_cloud_cover"), &SimulationServer::get_cloud_cover);
+        ClassDB::bind_method(D_METHOD("set_friction", "friction"), &SimulationServer::set_friction);
+        ClassDB::bind_method(D_METHOD("get_friction"), &SimulationServer::get_friction);
+        ClassDB::bind_method(D_METHOD("set_weather", "weather"), &SimulationServer::set_weather);
+        ClassDB::bind_method(D_METHOD("get_weather"), &SimulationServer::get_weather);
+        ClassDB::bind_method(
+                D_METHOD("simulation_get_weather_friction_factor"),
+                &SimulationServer::simulation_get_weather_friction_factor);
+        BIND_ENUM_CONSTANT(WEATHER_CLEAR);
+        BIND_ENUM_CONSTANT(WEATHER_CLOUDY);
+        BIND_ENUM_CONSTANT(WEATHER_RAIN);
+        BIND_ENUM_CONSTANT(WEATHER_SNOW);
         ClassDB::bind_method(D_METHOD("set_use_system_time", "use"), &SimulationServer::set_use_system_time);
         ClassDB::bind_method(D_METHOD("get_use_system_time"), &SimulationServer::get_use_system_time);
         ClassDB::bind_method(D_METHOD("environment_reset"), &SimulationServer::environment_reset);
@@ -121,6 +132,10 @@ namespace godot {
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "latitude"), "set_latitude", "get_latitude");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "longitude"), "set_longitude", "get_longitude");
         ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cloud_cover"), "set_cloud_cover", "get_cloud_cover");
+        ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "friction"), "set_friction", "get_friction");
+        ADD_PROPERTY(
+                PropertyInfo(Variant::INT, "weather", PROPERTY_HINT_ENUM, "Clear,Cloudy,Rain,Snow"), "set_weather",
+                "get_weather");
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_system_time"), "set_use_system_time", "get_use_system_time");
         ADD_SIGNAL(MethodInfo(time_of_day_hour_changed_signal));
         ADD_SIGNAL(MethodInfo(date_changed_signal));
@@ -383,6 +398,33 @@ namespace godot {
         return cloud_cover;
     }
 
+    void SimulationServer::set_friction(const double p_friction) {
+        friction = p_friction;
+    }
+
+    double SimulationServer::get_friction() const {
+        return friction;
+    }
+
+    void SimulationServer::set_weather(const Weather p_weather) {
+        weather = p_weather;
+    }
+
+    SimulationServer::Weather SimulationServer::get_weather() const {
+        return weather;
+    }
+
+    double SimulationServer::simulation_get_weather_friction_factor() const {
+        switch (weather) {
+            case WEATHER_RAIN:
+                return RAIN_FRICTION_FACTOR;
+            case WEATHER_SNOW:
+                return SNOW_FRICTION_FACTOR;
+            default:
+                return 1.0;
+        }
+    }
+
     /// Switched on, the time and the date are the system's at once; from then on the clock takes
     /// the system's time every slice and rolls the date at its midnight
     void SimulationServer::set_use_system_time(const bool p_use) {
@@ -412,6 +454,8 @@ namespace godot {
         latitude = DEFAULT_LATITUDE;
         longitude = DEFAULT_LONGITUDE;
         cloud_cover = DEFAULT_CLOUD_COVER;
+        friction = DEFAULT_FRICTION;
+        weather = WEATHER_CLEAR;
         air_temperature = DEFAULT_AIR_TEMPERATURE;
         date_set(DEFAULT_YEAR, DEFAULT_MONTH, DEFAULT_DAY);
         set_time_of_day(DEFAULT_TIME_OF_DAY);

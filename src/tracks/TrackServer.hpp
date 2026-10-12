@@ -54,6 +54,11 @@ namespace godot {
                 CURVE2_P2 = 3,
             };
 
+            /* A track's gauge [m] when it gives none */
+            static constexpr double DEFAULT_TRACK_WIDTH = 1.435;
+            /* TTrack::fFriction's default (Track.h:207) */
+            static constexpr double DEFAULT_TRACK_FRICTION = 0.15;
+
             /* Describes the logical type of a track segment. */
             enum TrackType {
                 TRACK_UNKNOWN = -1,
@@ -84,6 +89,14 @@ namespace godot {
                 GROUP_RAIL,
                 GROUP_ROAD,
                 GROUP_WATER,
+            };
+
+            /* A track's damage (TTrack::iDamageFlag, Track.cpp:452-458; dtrack_*, MOVER.h) - the bits a
+             * vehicle on it takes notice of */
+            enum TrackDamage {
+                TRACK_DAMAGE_NONE = 0,
+                /* rails taken away: a vehicle running onto it derails (dtrack_norail) */
+                TRACK_DAMAGE_NO_RAIL = 128,
             };
 
             /* Movement direction along the current track. */
@@ -132,7 +145,6 @@ namespace godot {
             /* A roll of this many degrees lifts the outer rail by sin(roll) * this (Segment.cpp:84). */
             static constexpr double ROLL_FIX_FACTOR = 0.75;
             /* Track.h:205 fTrackWidth */
-            static constexpr double DEFAULT_TRACK_WIDTH = 1.435;
 
             /* Both endpoints of one curve, read out of the GDScript resource once. */
             struct CurvePoints {
@@ -160,6 +172,12 @@ namespace godot {
                     Ref<Curve3D> domain_curve2;
                     double width = DEFAULT_TRACK_WIDTH;
                     int quality_flag = 0;
+                    BitField<TrackDamage> damage_flag = TRACK_DAMAGE_NONE;
+                    double friction = DEFAULT_TRACK_FRICTION;
+                    /* A memory cell's modifiers of the friction (TTrack::m_friction, Track.cpp:2527-2533):
+                     * friction * x + y, clamped to 0-1 - none while unset */
+                    bool friction_modified = false;
+                    Vector2 friction_modifier = Vector2(1.0, 0.0);
                     TrackEnvironment environment = ENVIRONMENT_FLAT;
                     double sound_distance = -1.0;
                     /* Speed limit in km/h, negative for none (TTrack::fVelocity, Track.cpp:851-858) */
@@ -325,11 +343,23 @@ namespace godot {
              * empty name takes the track's name away. */
             void track_update(const RID &p_track, TrackType p_type, const String &p_name, double p_width);
             void track_update_properties(
-                    const RID &p_track, int p_quality_flag, TrackEnvironment p_environment, double p_sound_distance);
+                    const RID &p_track, int p_quality_flag, BitField<TrackDamage> p_damage_flag, double p_friction,
+                    TrackEnvironment p_environment, double p_sound_distance);
             bool track_exists(const RID &p_track) const;
             TypedArray<RID> track_get_rids() const;
             double track_get_width(const RID &p_track) const;
             int track_get_quality_flag(const RID &p_track) const;
+            BitField<TrackDamage> track_get_damage_flag(const RID &p_track) const;
+            /* A derailer worked: the damage a scenario's switch event leaves on a plain track
+             * (TTrack::Switch(), Track.cpp:1846-1847) */
+            void track_set_damage_flag(const RID &p_track, BitField<TrackDamage> p_damage_flag);
+            /* The friction, as its memory cell modifies it (TTrack::Friction(), Track.cpp:2527-2533) */
+            double track_get_friction(const RID &p_track) const;
+            /* The friction times p_multiplier plus p_offset, clamped to 0-1 - what the scenery's
+             * `friction <memcell>` of a track makes of the cell's two values */
+            void track_set_friction_modifier(const RID &p_track, double p_multiplier, double p_offset);
+            /* What runs on it - rails, a road, water (TTrack::iCategoryFlag, Track.cpp:396-432) */
+            TrackTypeGroup track_get_group(const RID &p_track) const;
             TrackEnvironment track_get_environment(const RID &p_track) const;
             double track_get_sound_distance(const RID &p_track) const;
             /* Speed limit in km/h, negative for none (TTrack::VelocitySet()) */
@@ -412,5 +442,6 @@ VARIANT_ENUM_CAST(TrackServer::SwitchCommonPoint);
 VARIANT_ENUM_CAST(TrackServer::EndpointIndex);
 VARIANT_ENUM_CAST(TrackServer::TrackType);
 VARIANT_ENUM_CAST(TrackServer::TrackEnvironment);
+VARIANT_BITFIELD_CAST(TrackServer::TrackDamage);
 VARIANT_ENUM_CAST(TrackServer::TrackTypeGroup);
 VARIANT_ENUM_CAST(TrackServer::Direction);

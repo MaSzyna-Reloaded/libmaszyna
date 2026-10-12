@@ -168,7 +168,7 @@ func create(
     mmat: MaszynaMaterial,
     model_path: String = "",
     season: MaszynaEnvironment.Season = MaszynaEnvironment.Season.SEASON_SUMMER,
-    weather: MaszynaEnvironment.Weather = MaszynaEnvironment.Weather.WEATHER_CLEAR,
+    weather: SimulationServer.Weather = SimulationServer.WEATHER_CLEAR,
     options: MaterialManager.MaterialOptions = MaterialManager.MaterialOptions.new(),
 ) -> Material:
     var variant: MaszynaMaterial.MaszynaMaterialVariant = mmat.get_variant(season, weather)
@@ -191,7 +191,7 @@ func apply(
     mmat: MaszynaMaterial,
     model_path: String,
     season: MaszynaEnvironment.Season,
-    weather: MaszynaEnvironment.Weather,
+    weather: SimulationServer.Weather,
     options: MaterialManager.MaterialOptions = MaterialManager.MaterialOptions.new(),
 ) -> void:
     var variant: MaszynaMaterial.MaszynaMaterialVariant = mmat.get_variant(season, weather)

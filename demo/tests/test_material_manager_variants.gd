@@ -9,7 +9,7 @@ const WATER_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/water.
 
 var _previous_game_dir: String = ""
 var _previous_season: MaszynaEnvironment.Season
-var _previous_weather: MaszynaEnvironment.Weather
+var _previous_weather: SimulationServer.Weather
 
 
 func before_each() -> void:
@@ -18,7 +18,7 @@ func before_each() -> void:
     _previous_weather = MaterialManager.weather
     UserSettings.save_maszyna_game_dir(MATERIALS_GAME_DIR)
     MaterialManager.season = MaszynaEnvironment.Season.SEASON_SUMMER
-    MaterialManager.weather = MaszynaEnvironment.Weather.WEATHER_CLEAR
+    MaterialManager.weather = SimulationServer.WEATHER_CLEAR
     MaterialManager.clear_cache()
 
 
@@ -39,7 +39,7 @@ func test_variant_inherits_default_shader_when_season_has_no_shader() -> void:
     var material: MaszynaMaterial = MaterialManager.load_material("", MATERIAL_NAME)
     var variant: MaszynaMaterial.MaszynaMaterialVariant = material.get_variant(
         MaszynaEnvironment.Season.SEASON_SPRING,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR
+        SimulationServer.WEATHER_CLEAR
     )
 
     assert_eq(variant.shader, "normalmap")
@@ -50,7 +50,7 @@ func test_weather_shader_overrides_season_shader() -> void:
     var material: MaszynaMaterial = MaterialManager.load_material("", MATERIAL_NAME)
     var variant: MaszynaMaterial.MaszynaMaterialVariant = material.get_variant(
         MaszynaEnvironment.Season.SEASON_WINTER,
-        MaszynaEnvironment.Weather.WEATHER_RAIN
+        SimulationServer.WEATHER_RAIN
     )
 
     assert_eq(variant.shader, "water")
@@ -60,7 +60,7 @@ func test_weather_variant_merges_after_season_variant() -> void:
     var material: MaszynaMaterial = MaterialManager.load_material("", MATERIAL_NAME)
     var variant: MaszynaMaterial.MaszynaMaterialVariant = material.get_variant(
         MaszynaEnvironment.Season.SEASON_SPRING,
-        MaszynaEnvironment.Weather.WEATHER_CLOUDY
+        SimulationServer.WEATHER_CLOUDY
     )
 
     assert_eq(variant.get_texture_path("tex1"), "cloudy_diffuse")
@@ -82,7 +82,7 @@ func test_get_material_updates_existing_material_in_place_when_weather_changes()
     var original_rid: RID = material.get_rid()
 
     MaterialManager.season = MaszynaEnvironment.Season.SEASON_WINTER
-    MaterialManager.weather = MaszynaEnvironment.Weather.WEATHER_RAIN
+    MaterialManager.weather = SimulationServer.WEATHER_RAIN
 
     assert_same(material, MaterialManager.get_material("", MATERIAL_NAME))
     assert_eq(material.get_rid(), original_rid)
@@ -130,7 +130,7 @@ func test_create_sets_alpha_blending_for_e3d_translucent_submodel() -> void:
         mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR,
+        SimulationServer.WEATHER_CLEAR,
         options,
     ) as ShaderMaterial
 
@@ -148,7 +148,7 @@ func test_create_draws_a_transparent_material_opaque_for_the_optimized_instancer
         mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR,
+        SimulationServer.WEATHER_CLEAR,
         options,
     ) as ShaderMaterial
 
@@ -175,7 +175,7 @@ func test_create_uses_diffuse_color_for_default_shader_without_texture() -> void
         mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR,
+        SimulationServer.WEATHER_CLEAR,
         options
     ) as ShaderMaterial
 
@@ -196,7 +196,7 @@ func test_create_uses_diffuse_color_for_default_shader_with_texture() -> void:
         mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR,
+        SimulationServer.WEATHER_CLEAR,
         options
     ) as ShaderMaterial
 
@@ -213,7 +213,7 @@ func test_create_uses_diffuse_color_for_parallax_shader_without_texture() -> voi
         mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR,
+        SimulationServer.WEATHER_CLEAR,
         options
     ) as ShaderMaterial
 
@@ -230,7 +230,7 @@ func test_apply_updates_existing_material_transparency_state() -> void:
         nontransparent_mmat,
         "",
         MaszynaEnvironment.Season.SEASON_SUMMER,
-        MaszynaEnvironment.Weather.WEATHER_CLEAR
+        SimulationServer.WEATHER_CLEAR
     )
 
     assert_eq(material.get_shader_parameter("transparency"), MaterialManager.Transparency.Disabled)
@@ -286,10 +286,10 @@ func test_reflmap_shader_applies_reflection_parameter() -> void:
 func test_shaderless_material_with_second_texture_uses_reflmap() -> void:
     var mmat: MaszynaMaterial = MaterialManager.load_material("", "shaderless_two_textures_manager")
     var clear_material: ShaderMaterial = MaszynaMaterialFactory.create(
-        mmat, "", MaszynaEnvironment.Season.SEASON_SUMMER, MaszynaEnvironment.Weather.WEATHER_CLEAR
+        mmat, "", MaszynaEnvironment.Season.SEASON_SUMMER, SimulationServer.WEATHER_CLEAR
     ) as ShaderMaterial
     var rain_material: ShaderMaterial = MaszynaMaterialFactory.create(
-        mmat, "", MaszynaEnvironment.Season.SEASON_SUMMER, MaszynaEnvironment.Weather.WEATHER_RAIN
+        mmat, "", MaszynaEnvironment.Season.SEASON_SUMMER, SimulationServer.WEATHER_RAIN
     ) as ShaderMaterial
 
     assert_null(clear_material.get_shader_parameter("texture_metallic"))

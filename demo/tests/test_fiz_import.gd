@@ -222,3 +222,33 @@ func test_bare_coupler_sized_by_the_engine_after_it() -> void:
     assert_eq(doors.voltage, RailVehicleDoors.VOLTAGE_110)
     var master_controller: RailVehicleMasterController = built.get_rail_component(RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER)
     assert_eq(master_controller.tachometer_max_speed, 150.0)
+
+
+## A diesel's gearbox in MotorParamTable0: is read in readMPT0's DieselEngine layout (Mover.cpp:9083-9085):
+## SA132's automatic gearbox, gear 0 the one it starts from and shifts out of by itself - dropped, every gear
+## had a ratio of 0 and the engine drove nothing (FINDINGS.md)
+func test_a_diesel_gearbox_of_motor_param_table0() -> void:
+    var description: VehicleController = FizVehicleBuilder.build_description_at(
+            "res://tests/fixtures/dynamic/pkp/21xm_v1/218ma_a_p4.fiz")
+    var engine: RailVehicleDieselEngine = null
+    for component: VehicleComponent in description.components:
+        if component is RailVehicleDieselEngine:
+            engine = component
+    assert_not_null(engine, "SA132 has a diesel engine")
+    if engine == null:
+        return
+    var gears: Array = engine.motor_param_table
+    assert_eq(gears.size(), 6, "the gears 0-5")
+    if not gears.size() == 6:
+        return
+    var neutral: RailVehicleMotorParameter = gears[0]
+    assert_eq(neutral.saturation_current_multiplier, 0.0, "gear 0 drives nothing")
+    assert_eq(neutral.initial_voltage_constant_multiplier, -1.0, "and is shifted out of standing (mfi0)")
+    assert_true(neutral.auto_switch, "by the gearbox itself")
+    var first: RailVehicleMotorParameter = gears[1]
+    assert_almost_eq(first.saturation_current_multiplier, 2.81, 0.0001, "mIsat: the first gear's ratio")
+    assert_eq(first.initial_voltage_constant, -1.0, "fi0")
+    assert_eq(first.voltage_constant, -1.0, "fi")
+    assert_almost_eq(first.initial_voltage_constant_multiplier, 38.2, 0.0001, "mfi0")
+    assert_almost_eq(first.voltage_constant_multiplier, 42.4, 0.0001, "mfi")
+    assert_almost_eq(first.saturation_current, 0.18, 0.0001, "Isat")

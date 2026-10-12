@@ -812,8 +812,8 @@ static func _build_track(track_data:MaszynaTrackData, world_3d:World3D) -> Dicti
 
     TrackServer.track_update_curves(track_rid, track_data.curve, track_data.diverging_curve)
     TrackServer.track_update(track_rid, track_data.type, track_data.track_name, track_data.width)
-    TrackServer.track_update_properties(
-            track_rid, track_data.quality_flag, track_data.environment, track_data.sound_distance)
+    TrackServer.track_update_properties(track_rid, track_data.quality_flag, track_data.damage_flag,
+            track_data.friction, track_data.environment, track_data.sound_distance)
     # the speed limit a `trackvel` event changes (Track.cpp:851-858)
     TrackServer.track_set_velocity(track_rid, float(track_data.parameters.get("velocity", -1.0)))
 

@@ -1,5 +1,6 @@
 #include "MaszynaMoverVehicleServer.hpp"
 #include "MoverRailVehicleController.hpp"
+#include "MoverRailVehicleLighting.hpp"
 #include "legacy/maszyna-mover/utilities.h"
 #include "legacy/vehicles/MoverBackend.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -301,12 +302,21 @@ namespace godot {
             return;
         }
         TRotation rotation;
+        // the track as TDynamicObject::Update() hands it to the Mover (DynObj.cpp:3145-3240); the
+        // Mover keeps a derailed vehicle's own (ComputeMovement(), Mover.cpp:1271)
+        TTrackShape shape = mover->RunningShape;
+        shape.R = track_conditions.radius;
+        shape.dHtrack = track_conditions.grade;
+        shape.dHrail = track_conditions.cant;
+        TTrackParam track = mover->RunningTrack;
+        track.Width = track_conditions.gauge;
+        track.friction = track_conditions.friction;
+        track.CategoryFlag = _track_category(track_conditions.group);
+        track.DamageFlag = static_cast<int>(track_conditions.damage);
         if (p_integration == Integration::FULL) {
-            mover->ComputeMovement(
-                    p_delta, p_delta, mover->RunningShape, mover->RunningTrack, mover->RunningTraction, mover->Loc,
-                    rotation);
+            mover->ComputeMovement(p_delta, p_delta, shape, track, mover->RunningTraction, mover->Loc, rotation);
         } else {
-            mover->FastComputeMovement(p_delta, mover->RunningShape, mover->RunningTrack, mover->Loc, rotation);
+            mover->FastComputeMovement(p_delta, shape, track, mover->Loc, rotation);
         }
         // the vehicle is moved by this distance (DynObj.cpp:2439), front-relative
         mover->dMoveLen += mover->V * p_delta;
@@ -498,6 +508,19 @@ namespace godot {
     void MoverRailVehicleController::update_state() {
         if (mover != nullptr) {
             _consume_coupler_events();
+            _consume_events();
+        }
+    }
+
+    // Original engine: TDynamicObject's special events (DynObj.cpp:5207-5214) - the flag is
+    // consumed every update, a derailment (dtrain_out, set once by SetFlag()) announced with its cause
+    void MoverRailVehicleController::_consume_events() {
+        if (!mover->EventFlag) {
+            return;
+        }
+        mover->EventFlag = false;
+        if (TestFlag(mover->DamageFlag, dtrain_out)) {
+            emit_signal(derailed_signal, mover->DerailReason);
         }
     }
 
@@ -614,6 +637,12 @@ namespace godot {
         return mover != nullptr ? mover->DamageFlag : 0;
     }
 
+    RailVehicleController::DerailCause MoverRailVehicleController::get_derail_cause() const {
+        return mover != nullptr && TestFlag(mover->DamageFlag, dtrain_out)
+                       ? static_cast<DerailCause>(mover->DerailReason)
+                       : DERAIL_CAUSE_NONE;
+    }
+
     double MoverRailVehicleController::get_mass_reduced() const {
         return mover != nullptr ? mover->Mred : 0.0;
     }
@@ -665,21 +694,54 @@ namespace godot {
         return mover != nullptr && mover->CompartmentLights.is_active;
     }
 
+    Vector2 MoverRailVehicleController::get_body_offset() const {
+        return mover != nullptr ? Vector2(mover->OffsetTrackH, mover->OffsetTrackV) : Vector2();
+    }
+
+    // TTrack::iCategoryFlag of a track's kind: rails 1, a road 2, water 4 (Track.cpp:396-432)
+    int MoverRailVehicleController::_track_category(const TrackServer::TrackTypeGroup p_group) {
+        switch (p_group) {
+            case TrackServer::GROUP_RAIL:
+                return TRACK_CATEGORY_RAIL;
+            case TrackServer::GROUP_ROAD:
+                return TRACK_CATEGORY_ROAD;
+            case TrackServer::GROUP_WATER:
+                return TRACK_CATEGORY_WATER;
+            default:
+                return 0;
+        }
+    }
+
     // Original engine: OnCommand_cabactivationenable/disable (Train.cpp:2430-2472)
     void MoverRailVehicleController::cab_activation(const bool p_enabled) {
         ASSERT_MOVER(mover);
+        const Ref<VehicleComponent> component = get_component(VehicleComponentType::COMPONENT_LIGHTING);
+        const MoverRailVehicleLighting *lighting = Object::cast_to<MoverRailVehicleLighting>(component.ptr());
         if (p_enabled) {
-            mover->CabActivisation();
+            if (mover->CabActivisation()) {
+                _send_direction();
+            }
+            // the cab's preset lit (Train.cpp:3101-3104)
+            if (lighting != nullptr && mover->LightsPosNo > 0) {
+                lighting->apply_light_preset();
+            }
             return;
         }
         mover->CabDeactivisation();
+        // the red markers of an inactive cab lit (Train.cpp:3134-3137)
+        if (lighting != nullptr && mover->LightsPosNo > 0 &&
+            (mover->InactiveCabFlag & Maszyna::activation::redmarkers) != 0) {
+            lighting->apply_light_preset();
+        }
     }
 
     // Original engine: taking over a vehicle activates its cab if the FIZ allows automatic
     // activation (Train.cpp:9086, 9147); otherwise the driver uses cab_activation
     void MoverRailVehicleController::cab_activation_auto() {
         ASSERT_MOVER(mover);
-        mover->CabActivisationAuto(true);
+        if (mover->CabActivisationAuto(true)) {
+            _send_direction();
+        }
     }
 
     // Original engine: TTrain::CabChange() (Train.cpp:10336) switches the cab off before the change
@@ -740,7 +802,22 @@ namespace godot {
     void MoverRailVehicleController::cabin_enter() {
         ASSERT_MOVER(mover);
         mover->LimPipePress = mover->PipePress;
-        mover->CabActivisationAuto(true);
+        if (mover->CabActivisationAuto(true)) {
+            _send_direction();
+        }
+    }
+
+    /* Differs from the original: CabActivisation() sends the joined vehicles its DirAbsolute as their
+     * DirActive (Mover.cpp:2664), and they take DirAbsolute = DirActive * CabActive of their own
+     * (Mover.cpp:9302-9304) - from a rear cab with the reverser set every other vehicle drives the
+     * opposite way, and a unit stands with its cars pulling against each other (SA132 driven from
+     * the B car). Sent again as every reverser step sends it: DirActive (Mover.cpp:670, 2973) */
+    void MoverRailVehicleController::_send_direction() const {
+        // a cab, not the machine room: there CabActive 0 sends the unit neutral, as the original
+        // (test_zzz_startup_en57_v2.gd, a walk through the unit)
+        if (mover->CabActive != 0) {
+            mover->SendCtrlToNext("Direction", mover->DirActive, mover->CabActive);
+        }
     }
 
     /* CabActive counts as CabOccupied does: +1 the front cab, -1 the rear one, 0 none (Mover.cpp:2654) */

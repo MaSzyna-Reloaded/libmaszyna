@@ -10,6 +10,7 @@
 
 #include "logging/GameLog.hpp"
 #include "radio/RadioServer.hpp"
+#include "simulation/SimulationServer.hpp"
 #include "traction/TractionServer.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -26,6 +27,7 @@ namespace godot {
     const char *RailVehicleServer::vehicle_placed_signal = "vehicle_placed";
     const char *RailVehicleServer::vehicle_placement_changed_signal = "vehicle_placement_changed";
     const char *RailVehicleServer::vehicle_trainset_changed_signal = "vehicle_trainset_changed";
+    const char *RailVehicleServer::vehicle_derailed_signal = "vehicle_derailed";
     const char *RailVehicleServer::vehicle_driver_cabin_changed_signal = "vehicle_driver_cabin_changed";
     const char *RailVehicleServer::vehicle_coupler_attached_signal = "vehicle_coupler_attached";
     const char *RailVehicleServer::vehicle_coupler_detached_signal = "vehicle_coupler_detached";
@@ -253,6 +255,11 @@ namespace godot {
                         PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM,
                         "RailVehicleServer.PantographContactLoss")));
         ADD_SIGNAL(MethodInfo(vehicle_trainset_changed_signal, PropertyInfo(Variant::RID, "vehicle")));
+        ADD_SIGNAL(MethodInfo(
+                vehicle_derailed_signal, PropertyInfo(Variant::RID, "vehicle"),
+                PropertyInfo(
+                        Variant::INT, "cause", PROPERTY_HINT_NONE, "",
+                        PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_CLASS_IS_ENUM, "RailVehicleController.DerailCause")));
         ADD_SIGNAL(MethodInfo(
                 vehicle_driver_cabin_changed_signal, PropertyInfo(Variant::RID, "vehicle"),
                 PropertyInfo(Variant::RID, "cabin")));
@@ -988,6 +995,9 @@ namespace godot {
                 RailVehicleController::trainset_changed_signal,
                 callable_mp(this, &RailVehicleServer::_on_vehicle_trainset_changed).bind(p_vehicle));
         controller->connect(
+                RailVehicleController::derailed_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_derailed).bind(p_vehicle));
+        controller->connect(
                 RailVehicleController::coupler_attached_signal,
                 callable_mp(this, &RailVehicleServer::_on_vehicle_coupler_attached).bind(p_vehicle));
         controller->connect(
@@ -1014,6 +1024,9 @@ namespace godot {
         controller->disconnect(
                 RailVehicleController::trainset_changed_signal,
                 callable_mp(this, &RailVehicleServer::_on_vehicle_trainset_changed).bind(p_vehicle));
+        controller->disconnect(
+                RailVehicleController::derailed_signal,
+                callable_mp(this, &RailVehicleServer::_on_vehicle_derailed).bind(p_vehicle));
         controller->disconnect(
                 RailVehicleController::coupler_attached_signal,
                 callable_mp(this, &RailVehicleServer::_on_vehicle_coupler_attached).bind(p_vehicle));
@@ -1104,6 +1117,10 @@ namespace godot {
 
     void RailVehicleServer::_on_vehicle_trainset_changed(const RID &p_vehicle) {
         emit_signal(vehicle_trainset_changed_signal, p_vehicle);
+    }
+
+    void RailVehicleServer::_on_vehicle_derailed(const int64_t p_cause, const RID &p_vehicle) {
+        emit_signal(vehicle_derailed_signal, p_vehicle, p_cause);
     }
 
     void RailVehicleServer::_on_vehicle_coupler_attached(const int64_t p_flag, const RID &p_vehicle) {
@@ -1359,6 +1376,7 @@ namespace godot {
         double current_length = tracks->track_get_length(current_track, current_switch_track);
         double current_track_offset = CLAMP(p_placement.track_offset, 0.0, current_length);
         TrackServer::Direction current_track_direction = p_placement.track_direction;
+        bool beyond_track_end = false;
         double remaining = Math::abs(p_distance);
         const double request_sign = p_distance < 0.0 ? -1.0 : 1.0;
         Vector3 start_point;
@@ -1419,6 +1437,10 @@ namespace godot {
             RID next_track;
             int next_endpoint = 0;
             if (!_motion_connection(current_track, endpoint_index, p_force_switch_state, next_track, next_endpoint)) {
+                // nothing connected at all, not an ambiguous node: the vehicle runs off the rails
+                beyond_track_end = tracks->track_get_endpoint_connections(
+                                                 current_track, static_cast<TrackServer::EndpointIndex>(endpoint_index))
+                                           .is_empty();
                 break;
             }
 
@@ -1450,6 +1472,7 @@ namespace godot {
         p_placement.track_offset = current_track_offset;
         p_placement.track_direction = current_track_direction;
         p_placement.switch_track = current_switch_track;
+        p_placement.beyond_track_end = beyond_track_end;
         if (diagnostics && p_force_switch_state) {
             _check_movement(p_placement, start_point, Math::abs(p_distance) - remaining);
         }
@@ -1525,10 +1548,42 @@ namespace godot {
                 body = Transform3D(Basis(x_axis, y_axis, z_axis).orthonormalized(), (front.origin + rear.origin) * 0.5);
             }
         }
-        p_placement.body_transform = body;
         if (controller != nullptr) {
-            controller->set_world_transform(body);
+            // a derailed body beside its track, across it on the level, and below it
+            // (TDynamicObject::Move(), DynObj.cpp:2706-2709)
+            const Vector2 offset = controller->get_body_offset();
+            const Vector3 left = -body.basis.get_column(0);
+            body.origin += Vector3(left.x, 0.0, left.z) * offset.x + Vector3(0.0, offset.y, 0.0);
         }
+        p_placement.body_transform = body;
+        if (controller == nullptr) {
+            return;
+        }
+        controller->set_world_transform(body);
+        if (!on_track) {
+            return;
+        }
+        // the track under it for its physics, as TDynamicObject::Update() hands it to the Mover
+        // (DynObj.cpp:3145-3240): the curve between the bogies, the rise towards the front
+        // (ts.dHtrack = -vFront.y), and the track's own gauge, friction, kind and damage
+        RailVehicleController::TrackConditions conditions;
+        const Vector2 curve = _placement_curve(p_placement, spacing);
+        conditions.radius = curve.x;
+        conditions.cant = curve.y;
+        conditions.grade = body.basis.get_column(2).y;
+        conditions.gauge = tracks->track_get_width(p_placement.track);
+        // times the scenery's multiplier and the weather's (tp.friction, DynObj.cpp:3176)
+        const SimulationServer *simulation = SimulationServer::get_instance();
+        conditions.friction = tracks->track_get_friction(p_placement.track) *
+                              (simulation != nullptr ? simulation->get_friction() *
+                                                               simulation->simulation_get_weather_friction_factor()
+                                                     : 1.0);
+        conditions.group = tracks->track_get_group(p_placement.track);
+        conditions.damage = tracks->track_get_damage_flag(p_placement.track);
+        if (p_placement.beyond_track_end) {
+            conditions.damage.set_flag(TrackServer::TRACK_DAMAGE_NO_RAIL);
+        }
+        controller->set_track_conditions(conditions);
     }
 
     Transform3D
@@ -1695,8 +1750,15 @@ namespace godot {
             result["cant"] = 0.0;
             return result;
         }
-        const VehiclePlacement front = _sample_placement(*placement, 0.5 * p_bogie_pivot_spacing);
-        const VehiclePlacement rear = _sample_placement(*placement, -0.5 * p_bogie_pivot_spacing);
+        const Vector2 curve = _placement_curve(*placement, p_bogie_pivot_spacing);
+        result["radius"] = curve.x;
+        result["cant"] = curve.y;
+        return result;
+    }
+
+    Vector2 RailVehicleServer::_placement_curve(const VehiclePlacement &p_placement, const double p_spacing) {
+        const VehiclePlacement front = _sample_placement(p_placement, 0.5 * p_spacing);
+        const VehiclePlacement rear = _sample_placement(p_placement, -0.5 * p_spacing);
         const Vector3 front_forward = -_placement_transform(front).basis.get_column(2);
         const Vector3 rear_forward = -_placement_transform(rear).basis.get_column(2);
         double yaw_difference =
@@ -1704,14 +1766,17 @@ namespace godot {
         yaw_difference = Math::wrapf(yaw_difference, -Math::PI, Math::PI);
         double radius = 0.0;
         if (!Math::is_zero_approx(Math::sin(yaw_difference * 0.5))) {
-            radius = -0.5 * p_bogie_pivot_spacing / Math::sin(yaw_difference * 0.5);
+            radius = -0.5 * p_spacing / Math::sin(yaw_difference * 0.5);
         }
         if (Math::abs(radius) > CURVE_RADIUS_LIMIT) {
             radius = 0.0;
         }
-        result["radius"] = radius;
-        result["cant"] = Math::deg_to_rad(0.5 * (_placement_roll(front) + _placement_roll(rear)));
-        return result;
+        // a track run backwards has its roll the other way (TTrackFollower::Move(), TrkFoll.cpp:273-278)
+        const auto roll = [this](const VehiclePlacement &p_sample) {
+            return p_sample.track_direction == TrackServer::DIRECTION_REVERSED ? -_placement_roll(p_sample)
+                                                                               : _placement_roll(p_sample);
+        };
+        return Vector2(radius, Math::deg_to_rad(0.5 * (roll(front) + roll(rear))));
     }
 
     /* The next track (TrackServer::track_find_next()); entering a switch from a branch side

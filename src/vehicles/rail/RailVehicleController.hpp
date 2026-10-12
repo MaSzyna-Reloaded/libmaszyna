@@ -1,4 +1,5 @@
 #pragma once
+#include "tracks/TrackServer.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
 #include "vehicles/rail/RailVehicleComponentType.hpp"
@@ -50,6 +51,35 @@ namespace godot {
              * is_active) */
             virtual bool get_compartment_lights_enabled() const = 0;
             virtual bool get_compartment_lights_active() const = 0;
+
+            /* Why a vehicle left the rails (DerailReason, Mover.cpp:1242-1372) */
+            enum DerailCause {
+                DERAIL_CAUSE_NONE = 0,
+                DERAIL_CAUSE_NO_RAIL = 1,
+                DERAIL_CAUSE_CURVE = 2,
+                DERAIL_CAUSE_WIDE_GAUGE = 3,
+                DERAIL_CAUSE_TRACK_CATEGORY = 4,
+                DERAIL_CAUSE_COLLISION = 5,
+            };
+            /* Why the vehicle left the rails; none while it is on them (DerailReason) */
+            virtual DerailCause get_derail_cause() const = 0;
+
+            /* What the track under the vehicle is to it, handed down by RailVehicleServer as the vehicle
+             * moves (the original's TTrackShape and TTrackParam, TDynamicObject::Update(),
+             * DynObj.cpp:3145-3240) */
+            struct TrackConditions {
+                    /* [m], signed as the original's ts.R; 0 on a straight */
+                    double radius = 0.0;
+                    /* the mean cant of both bogies [rad] (ts.dHrail) */
+                    double cant = 0.0;
+                    /* the rise towards the vehicle's front, as a sine (ts.dHtrack) */
+                    double grade = 0.0;
+                    /* [m] */
+                    double gauge = TrackServer::DEFAULT_TRACK_WIDTH;
+                    double friction = TrackServer::DEFAULT_TRACK_FRICTION;
+                    TrackServer::TrackTypeGroup group = TrackServer::GROUP_RAIL;
+                    BitField<TrackServer::TrackDamage> damage = TrackServer::TRACK_DAMAGE_NONE;
+            };
 
             /* shared enum for every FIZ "...Start=" device activation mode field (Cntrl. section) */
             enum StartMode {
@@ -133,8 +163,19 @@ namespace godot {
             /// remove_coupler_adapter(), DynObj.cpp:1754-1810)
             static const char *coupler_adapter_attached_signal;
             static const char *coupler_adapter_removed_signal;
+            /// The vehicle left the rails, once (dtrain_out set, EventFlag; DynObj.cpp:5207-5214)
+            static const char *derailed_signal;
 
             virtual void cab_activation(bool p_enabled) = 0;
+            /* The track under the vehicle, as RailVehicleServer finds it where the vehicle stands -
+             * state its owner hands down, no command */
+            void set_track_conditions(const TrackConditions &p_conditions);
+            /* The body off its track [m]: x to the left, y up - a derailed vehicle's (OffsetTrackH,
+             * OffsetTrackV, Mover.cpp:1289-1293) */
+            virtual Vector2 get_body_offset() const = 0;
+            /* The rails' friction the wheels have now: the track's, times the scenery's and the
+             * weather's (tp.friction, DynObj.cpp:3176) */
+            double get_track_friction() const;
             /* The compartment lights switched on, or their "off" switch (CompartmentLightsSwitch(),
              * CompartmentLightsSwitchOff()) */
             virtual void compartment_lights(bool p_enabled) = 0;
@@ -217,6 +258,8 @@ namespace godot {
             virtual double get_coupler_adapter_fitted_height(CouplerEnd p_end) const = 0;
 
         protected:
+            /* The track under the vehicle, as RailVehicleServer last handed it down */
+            TrackConditions track_conditions;
             /* By the backend, when it fits an adapter to an end or takes it off ("") */
             void _set_coupler_adapter_fitted_model(CouplerEnd p_end, const String &p_model);
 
@@ -287,4 +330,5 @@ VARIANT_ENUM_CAST(RailVehicleController::TrainPowerType);
 VARIANT_ENUM_CAST(RailVehicleController::CouplerEnd);
 VARIANT_BITFIELD_CAST(RailVehicleController::CouplingFlags);
 VARIANT_ENUM_CAST(RailVehicleController::TrainType);
+VARIANT_ENUM_CAST(RailVehicleController::DerailCause);
 VARIANT_ENUM_CAST(RailVehicleController::StartMode);

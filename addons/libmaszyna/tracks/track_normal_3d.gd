@@ -102,7 +102,7 @@ func _update_track_data() -> void:
         track_name,
         width,
     )
-    TrackServer.track_update_properties(_track_rid, quality_flag, environment, sound_distance)
+    TrackServer.track_update_properties(_track_rid, quality_flag, damage_flag, friction, environment, sound_distance)
 
 func _process_dirty(_delta: float) -> void:
     super._process_dirty(_delta)

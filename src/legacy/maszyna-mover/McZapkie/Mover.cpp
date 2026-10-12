@@ -1343,7 +1343,7 @@ namespace Maszyna {
                 */
                     // wykolejanie na luku oraz z braku szyn
                     if (TestFlag(CategoryFlag, 1)) {
-                        if (FuzzyLogic((AccN / g) * (1.0 + 0.1 * (Track.DamageFlag && dtrack_freerail)), TrackW / Dim.H,
+                        if (FuzzyLogic((AccN / g) * (1.0 + 0.1 * (Track.DamageFlag & dtrack_freerail)), TrackW / Dim.H,
                                        1) ||
                             TestFlag(Track.DamageFlag, dtrack_norail))
                                 if (SetFlag(DamageFlag, dtrain_out)) {

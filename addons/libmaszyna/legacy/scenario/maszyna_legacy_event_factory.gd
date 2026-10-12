@@ -134,6 +134,12 @@ static func build(
         memories[memcell.name.to_lower()] = memory
         memory_positions[memcell.name.to_lower()] = memcell.position
 
+    # a track's `friction <memcell>`: the cell modifies its friction (Track.cpp:924, 3526-3529)
+    for index:int in tracks.size():
+        var friction_memory:String = str(tracks[index].parameters.get("friction", "")).to_lower()
+        if friction_memory and memories.has(friction_memory):
+            ScenarioEventServer.memory_add_friction_track(memories[friction_memory], track_rids[index])
+
     # the scenery's sounds, made audible only while the scenario runs (MaszynaLegacyScenario)
     root._scenery_sounds = MaszynaLegacyScenerySounds.new(sounds)
     root._scenery_radio = SceneryVirtualRadio.new()
@@ -257,6 +263,11 @@ static func build(
                 var action:MaszynaLegacyTrackVelocityAction = MaszynaLegacyTrackVelocityAction.new()
                 action.tracks = targets
                 action.velocity = float(event.parameters[0])
+                ScenarioEventServer.event_attach_action(rid, action)
+            "friction":
+                # the scenery's rail friction multiplier (friction_event, Event.cpp:2090-2104)
+                var action:MaszynaLegacyFrictionAction = MaszynaLegacyFrictionAction.new()
+                action.friction = float(event.parameters[0])
                 ScenarioEventServer.event_attach_action(rid, action)
             "voltage":
                 for target:String in event.targets:

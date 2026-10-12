@@ -1,5 +1,4 @@
 extends Object
 class_name MaszynaEnvironment
 
-enum Weather {WEATHER_CLEAR, WEATHER_CLOUDY, WEATHER_RAIN, WEATHER_SNOW}
 enum Season {SEASON_WINTER, SEASON_SPRING, SEASON_SUMMER, SEASON_AUTUMN}

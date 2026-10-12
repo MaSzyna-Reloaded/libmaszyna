@@ -19,16 +19,16 @@ const OVERCAST_FULL_PRECIPITATION: float = 0.4
 ## (simulationstateserializer.cpp:216)
 const FOG_RANGE_MAX: float = 25000.0
 const WEATHER_PRESETS: Dictionary = {
-    MaszynaEnvironment.Weather.WEATHER_CLEAR: {
+    SimulationServer.WEATHER_CLEAR: {
         "precipitation": 0.0, "cloudiness": 0.1, "fog_density": 0.075, "wind_strength": 0.2,
     },
-    MaszynaEnvironment.Weather.WEATHER_CLOUDY: {
+    SimulationServer.WEATHER_CLOUDY: {
         "precipitation": 0.0, "cloudiness": 0.7, "fog_density": 0.15, "wind_strength": 0.4,
     },
-    MaszynaEnvironment.Weather.WEATHER_RAIN: {
+    SimulationServer.WEATHER_RAIN: {
         "precipitation": 0.8, "cloudiness": 0.9, "fog_density": 0.3, "wind_strength": 0.6,
     },
-    MaszynaEnvironment.Weather.WEATHER_SNOW: {
+    SimulationServer.WEATHER_SNOW: {
         "precipitation": 0.0, "cloudiness": 0.9, "fog_density": 0.3, "wind_strength": 0.5,
     },
 }
@@ -124,12 +124,15 @@ const MAX_SIMULATION_SPEED: float = 100.0
 @export_category("Weather")
 ## Preset: changing it after the node is ready sets precipitation, cloudiness, fog density and
 ## wind strength (WEATHER_PRESETS); loading a scene keeps the saved values.
-@export var weather: MaszynaEnvironment.Weather = MaszynaEnvironment.Weather.WEATHER_CLEAR:
+## SimulationServer's: the rails' grip follows it (simulation_get_weather_friction_factor())
+@export var weather: SimulationServer.Weather = SimulationServer.WEATHER_CLEAR:
     set(value):
         if not value == weather:
-            weather = value
+            SimulationServer.weather = value
             _dirty_weather_preset = is_node_ready()
             _dirty_visuals = true
+    get:
+        return SimulationServer.weather
 
 @export_range(0.0, 1.0, 0.01) var cloudiness: float = 0.5:
     set(value):
@@ -137,6 +140,14 @@ const MAX_SIMULATION_SPEED: float = 100.0
         _dirty_visuals = true
     get:
         return SimulationServer.cloud_cover
+
+## The scenery's rail friction multiplier (Global.fFriction) - a "friction" event of the scenario
+## changes it as well
+@export_range(0.0, 2.0, 0.01) var friction: float = 1.0:
+    set(value):
+        SimulationServer.friction = value
+    get:
+        return SimulationServer.friction
 
 ## Compass bearing the wind blows towards, in degrees. A plain angle rather than a vector: the
 ## weather backends and the particle emitters only ever need a horizontal direction.
@@ -302,7 +313,7 @@ func _process_dirty() -> void:
         # while as bad looking: the wet texture ("rain: { texture2: ... }") is a reflection map and
         # was bound as a normal map back then (FINDINGS.md, "texture2: is not always the normal map").
         MaterialManager.weather = (
-            MaszynaEnvironment.Weather.WEATHER_RAIN if precipitation > 0.0 else weather
+            SimulationServer.WEATHER_RAIN if precipitation > 0.0 else weather
         )
         # rain_params of the "rain_windscreen" materials (opengl33renderer.cpp:752-754): the share of
         # active droplets and the time they take to return after a wiper pass

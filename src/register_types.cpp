@@ -19,6 +19,7 @@
 #include "legacy/parsers/maszyna_parser.hpp"
 #include "legacy/scenario/MaszynaLegacyAnimationAction.hpp"
 #include "legacy/scenario/MaszynaLegacyEventCondition.hpp"
+#include "legacy/scenario/MaszynaLegacyFrictionAction.hpp"
 #include "legacy/scenario/MaszynaLegacyLightsAction.hpp"
 #include "legacy/scenario/MaszynaLegacyMemoryAction.hpp"
 #include "legacy/scenario/MaszynaLegacyMultipleAction.hpp"
@@ -268,6 +269,7 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(MaszynaLegacySwitchAction);
         GDREGISTER_CLASS(MaszynaLegacyVoltageAction);
         GDREGISTER_CLASS(MaszynaLegacyTrackVelocityAction);
+        GDREGISTER_CLASS(MaszynaLegacyFrictionAction);
         GDREGISTER_CLASS(MaszynaLegacyAnimationAction);
         GDREGISTER_CLASS(MaszynaLegacyVehicleCommandAction);
         GDREGISTER_CLASS(TimetableEntry);
