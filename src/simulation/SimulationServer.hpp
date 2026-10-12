@@ -15,6 +15,15 @@ namespace godot {
     class SimulationServer : public Object {
             GDCLASS(SimulationServer, Object)
 
+        public:
+            /* What falls from the sky (Global.Weather, simulationenvironment.cpp:198) */
+            enum Weather {
+                WEATHER_CLEAR,
+                WEATHER_CLOUDY,
+                WEATHER_RAIN,
+                WEATHER_SNOW,
+            };
+
         private:
             static SimulationServer *singleton;
 
@@ -60,6 +69,9 @@ namespace godot {
             double longitude = DEFAULT_LONGITUDE;
             /* 0-1, the weather's; dims the daylight (simulationenvironment.cpp:163) */
             double cloud_cover = DEFAULT_CLOUD_COVER;
+            /* Global.fFriction: the scenery's rail friction multiplier (Globals.h:95) */
+            double friction = DEFAULT_FRICTION;
+            Weather weather = WEATHER_CLEAR;
             double air_temperature = DEFAULT_AIR_TEMPERATURE;
             /* The time of day and the date follow the system's clock instead of the simulation's */
             bool use_system_time = false;
@@ -125,6 +137,10 @@ namespace godot {
             static constexpr double DEFAULT_LATITUDE = 50.271;
             static constexpr double DEFAULT_LONGITUDE = 19.04;
             static constexpr double DEFAULT_CLOUD_COVER = 0.5;
+            static constexpr double DEFAULT_FRICTION = 1.0;
+            /* Global.FrictionWeatherFactor of rain and of snow (simulationenvironment.cpp:198-201) */
+            static constexpr double RAIN_FRICTION_FACTOR = 0.85;
+            static constexpr double SNOW_FRICTION_FACTOR = 0.75;
             static constexpr double DEFAULT_AIR_TEMPERATURE = 15.0;
 
             static SimulationServer *get_instance() {
@@ -188,6 +204,15 @@ namespace godot {
             /// 0-1
             void set_cloud_cover(double p_cover);
             double get_cloud_cover() const;
+            /// The scenery's rail friction multiplier (Global.fFriction; the scenery's "friction" event)
+            void set_friction(double p_friction);
+            double get_friction() const;
+            /// What falls from the sky
+            void set_weather(Weather p_weather);
+            Weather get_weather() const;
+            /// The rails' friction under the weather: wet and snowy rails grip less
+            /// (Global.FrictionWeatherFactor, simulationenvironment.cpp:198-201)
+            double simulation_get_weather_friction_factor() const;
             void set_use_system_time(bool p_use);
             bool get_use_system_time() const;
             /// The time of day, the date, the location, the cloud cover and the temperature back to
@@ -203,3 +228,5 @@ namespace godot {
     };
 
 } // namespace godot
+
+VARIANT_ENUM_CAST(SimulationServer::Weather);

@@ -76,7 +76,10 @@ func apply_engine_fields(kv: Dictionary, node: RailVehicleDieselElectricEngine) 
 ##
 ## "MotorParamTable:" is a plain diesel engine's gearbox as well (readMPT(), Mover.cpp:9107 - the
 ## reader by EngineType): its header carries the clutch (LoadFIZ_MotorParamTable, Mover.cpp:11394)
-## and its rows the gears (FizTrainEngineCommon.parse_diesel_gear_row()).
+## and its rows the gears (FizTrainEngineCommon.parse_diesel_gear_row()). "MotorParamTable0:" is
+## the gearbox with the gears' starting speeds (readMPT0(), Mover.cpp:9069 - SA132's automatic
+## gearbox): its header is not read (Mover.cpp:9977-9983), its rows are
+## FizTrainEngineCommon.parse_diesel_gear_row0().
 func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> void:
     # the header's key=value pairs (e.g. WWList's "Size=") - rows are self-terminating either way
     var kv: Dictionary = FizLineUtil.read_key_values(p)
@@ -85,8 +88,8 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
         var node: RailVehicleDieselEngine = context.get_part("RailVehicleEngine") as RailVehicleDieselEngine
         if node:
             FizTrainDieselEngineParser.apply_clutch(kv, node)
-    if prefix == "MotorParamTable:":
-        _active_table = "MotorParamTable"
+    if prefix == "MotorParamTable:" or prefix == "MotorParamTable0:":
+        _active_table = prefix.trim_suffix(":")
         _motor_param_rows = []
     else:
         _active_table = "WWList"
@@ -102,6 +105,7 @@ func parse_row(p: MaszynaParser, context: FizImportContext) -> void:
     match _active_table:
         "WWList": _parse_wwlist_row(p)
         "MotorParamTable": _parse_motor_param_row(p)
+        "MotorParamTable0": _parse_motor_param_row0(p)
 
 
 func _parse_wwlist_row(p: MaszynaParser) -> void:
@@ -124,6 +128,15 @@ func _parse_wwlist_row(p: MaszynaParser) -> void:
 func _parse_motor_param_row(p: MaszynaParser) -> void:
     var item: RailVehicleMotorParameter = FizTrainEngineCommon.parse_diesel_gear_row(p) if _diesel \
             else FizTrainEngineCommon.parse_motor_param_row(p, true)
+    if item:
+        _motor_param_rows.append(item)
+
+
+## readMPT0's row by EngineType (Mover.cpp:9081-9093): a diesel's gear, any other engine's
+## default layout
+func _parse_motor_param_row0(p: MaszynaParser) -> void:
+    var item: RailVehicleMotorParameter = FizTrainEngineCommon.parse_diesel_gear_row0(p) if _diesel \
+            else FizTrainEngineCommon.parse_motor_param_row(p)
     if item:
         _motor_param_rows.append(item)
 

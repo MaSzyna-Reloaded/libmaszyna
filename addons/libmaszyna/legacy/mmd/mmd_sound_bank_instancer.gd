@@ -250,7 +250,8 @@ static func _apply_original_defaults(definition:MmdSoundSourceDefinition, from_i
                 else &"internal")
     elif definition.label == "engine":
         definition.placement = &"engine"
-    elif definition.label in _HORN_LABELS:
+    elif definition.label in _HORN_LABELS or definition.label == "derail":
+        # rsDerailment { sound_placement::external } (DynObj.h:574)
         definition.placement = &"external"
     elif _RUNNING_PLACEMENTS.has(definition.label):
         definition.placement = _RUNNING_PLACEMENTS[definition.label]

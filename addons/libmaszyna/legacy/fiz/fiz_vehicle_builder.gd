@@ -21,7 +21,7 @@ const _INCLUDE_END_KEYWORD := "end"
 ## is otherwise silently served from a stale pre-fix cache entry until something touches that
 ## specific vehicle's file. Confirmed the hard way: a MotorParamTable0/nmax column-mapping fix
 ## had zero effect in a running game because of exactly this.
-const FIZ_PARSER_FORMAT_VERSION := 45
+const FIZ_PARSER_FORMAT_VERSION := 46
 
 ## Ordered (longest-prefix-first where ambiguity is possible) table of recognized FIZ section
 ## headers. `parser` is a section parser instance (see fiz_train_*_parser.gd) exposing
@@ -94,9 +94,9 @@ static func _static_init() -> void:
         {"prefix": "UCList:", "parser": universal_controller_parser, "table_end": "END-UCL"},
         # engine family
         {"prefix": "Engine:", "parser": engine_parser, "table_end": ""},
-        # MotorParamTable0: has the initial constants of a series motor (readMPT0); MotorParamTable:
-        # is read by the engine type (readMPT, Mover.cpp:9120) - FizTrainEngineParser picks the parser
-        {"prefix": "MotorParamTable0:", "parser": electric_series_parser, "table_end": "END-MPT"},
+        # MotorParamTable0: (readMPT0, Mover.cpp:9069) and MotorParamTable: (readMPT, Mover.cpp:9107)
+        # are both read by the engine type - FizTrainEngineParser picks the parser
+        {"prefix": "MotorParamTable0:", "parser": engine_parser, "table_end": "END-MPT"},
         {"prefix": "MotorParamTable:", "parser": engine_parser, "table_end": "END-MPT"},
         {"prefix": "Circuit:", "parser": electric_series_parser, "table_end": ""},
         {"prefix": "RList:", "parser": electric_series_parser, "table_end": "END-RL"},

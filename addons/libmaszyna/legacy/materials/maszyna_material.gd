@@ -20,11 +20,11 @@ static var SEASONS_MAP: Dictionary[MaszynaEnvironment.Season, String] = {
     MaszynaEnvironment.Season.SEASON_AUTUMN: SEASON_AUTUMN_KEY,
 }
 
-static var WEATHER_MAP: Dictionary[MaszynaEnvironment.Weather, String] = {
-    MaszynaEnvironment.Weather.WEATHER_CLEAR: WEATHER_CLEAR_KEY,
-    MaszynaEnvironment.Weather.WEATHER_CLOUDY: WEATHER_CLOUDY_KEY,
-    MaszynaEnvironment.Weather.WEATHER_RAIN: WEATHER_RAIN_KEY,
-    MaszynaEnvironment.Weather.WEATHER_SNOW: WEATHER_SNOW_KEY,
+static var WEATHER_MAP: Dictionary[SimulationServer.Weather, String] = {
+    SimulationServer.WEATHER_CLEAR: WEATHER_CLEAR_KEY,
+    SimulationServer.WEATHER_CLOUDY: WEATHER_CLOUDY_KEY,
+    SimulationServer.WEATHER_RAIN: WEATHER_RAIN_KEY,
+    SimulationServer.WEATHER_SNOW: WEATHER_SNOW_KEY,
 }
 
 class MaszynaMaterialVariant extends RefCounted:
@@ -108,7 +108,7 @@ var default: MaszynaMaterialVariant = MaszynaMaterialVariant.new()
 var variants: Dictionary[String, MaszynaMaterialVariant] = {}
 
 
-func get_variant(season: MaszynaEnvironment.Season, weather: MaszynaEnvironment.Weather) -> MaszynaMaterialVariant:
+func get_variant(season: MaszynaEnvironment.Season, weather: SimulationServer.Weather) -> MaszynaMaterialVariant:
     var output: MaszynaMaterialVariant = default.duplicate()
     var season_key := SEASONS_MAP[season]
     if season_key in variants:

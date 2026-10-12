@@ -1,0 +1,10 @@
+// sa132-006a (calkowo_sn61.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 sa132-006a dynamic pkp\21xm_v1 SA132-006a 218ma_a_p4 0 headdriver 183 0 enddynamic
+node -1 0 sa132-006b dynamic pkp\21xm_v1 SA132-006b 218ma_b_p4 0 nobody 0 0 enddynamic
+endtrainset

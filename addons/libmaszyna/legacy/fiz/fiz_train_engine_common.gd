@@ -155,3 +155,22 @@ static func parse_diesel_gear_row(p: MaszynaParser) -> RailVehicleMotorParameter
     return item
 
 
+## A gear of a plain diesel engine in MotorParamTable0: (readMPT0, Mover.cpp:9083-9085): idx, mIsat,
+## fi0, fi, mfi0, mfi, Isat - the gear's ratio, the speeds it is shifted down and up at, with the
+## starting ones (fi0, mfi0) for no power - then an optional flag of a gear the gearbox shifts by
+## itself (dizel_AutoGearCheck(), Mover.cpp:7719)
+static func parse_diesel_gear_row0(p: MaszynaParser) -> RailVehicleMotorParameter:
+    var tokens: Array = p.get_tokens(8)
+    if tokens.size() < 7:
+        return null
+    var item := RailVehicleMotorParameter.new()
+    item.saturation_current_multiplier = float(tokens[1])        # mIsat
+    item.initial_voltage_constant = float(tokens[2])             # fi0
+    item.voltage_constant = float(tokens[3])                     # fi
+    item.initial_voltage_constant_multiplier = float(tokens[4])  # mfi0
+    item.voltage_constant_multiplier = float(tokens[5])          # mfi
+    item.saturation_current = float(tokens[6])                   # Isat
+    item.auto_switch = tokens.size() >= 8 and int(tokens[7]) == 1
+    return item
+
+

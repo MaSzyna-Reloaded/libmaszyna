@@ -1,0 +1,3 @@
+shader: normalmap
+texture_diffuse: skins/sa132-006a
+texture_normalmap: skins/reflectionmap/sa132-006a_refl

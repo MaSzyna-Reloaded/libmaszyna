@@ -41,6 +41,8 @@ const _BARE_SINGLE_LABELS:Dictionary = {
     "brake": true,
     "brakesound": true,
     "unbrake": true,
+    # DynObj.cpp:6255-6259 - rsDerailment, sound_type::single with sound_parameters::range
+    "derail": true,
     "emergencybrake": true,
     "slipperysound": true,
     "airsound": true,
@@ -93,6 +95,7 @@ const _BARE_PARAMETERS:Dictionary = {
     "brakesound": [&"amplitude_factor", &"amplitude_offset", &"frequency_factor", &"frequency_offset"],
     "unbrake": [&"range"],
     "departuresignal": [&"range"],
+    "derail": [&"range"],
     "slipperysound": [&"amplitude_factor", &"amplitude_offset"],
     "airsound": [&"amplitude_factor", &"amplitude_offset"],
     "airsound2": [&"amplitude_factor", &"amplitude_offset"],

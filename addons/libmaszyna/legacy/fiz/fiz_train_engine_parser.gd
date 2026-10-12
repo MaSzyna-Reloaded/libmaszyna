@@ -18,13 +18,14 @@ var electric_series_parser: FizTrainElectricSeriesEngineParser = FizTrainElectri
 var diesel_electric_parser: FizTrainDieselElectricEngineParser = FizTrainDieselElectricEngineParser.new()
 var electric_induction_parser: FizTrainElectricInductionEngineParser = FizTrainElectricInductionEngineParser.new()
 var diesel_parser: FizTrainDieselEngineParser = FizTrainDieselEngineParser.new()
-## The parser of the MotorParamTable: being read - its rows' layout is the engine type's (readMPT,
-## Mover.cpp:9120): a series motor's own, a diesel-electric's or a plain diesel's gears
+## The parser of the MotorParamTable:/MotorParamTable0: being read - its rows' layout is the engine
+## type's (readMPT, Mover.cpp:9120; readMPT0, Mover.cpp:9081): a series motor's own, a
+## diesel-electric's or a plain diesel's gears
 var _motor_param_parser: RefCounted = null
 
 
 func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> void:
-    if prefix == "MotorParamTable:":
+    if prefix == "MotorParamTable:" or prefix == "MotorParamTable0:":
         _motor_param_parser = electric_series_parser \
                 if context.engine_type == RailVehicleEngine.ELECTRIC_SERIES_MOTOR else diesel_electric_parser
         _motor_param_parser.parse(p, context, prefix)

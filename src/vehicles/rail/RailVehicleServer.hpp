@@ -167,6 +167,9 @@ namespace godot {
                     double track_offset = 0.0;
                     TrackServer::Direction track_direction = TrackServer::DIRECTION_NORMAL;
                     TrackServer::SwitchTrack switch_track = TrackServer::TRACK_COMMON;
+                    /* The last move ran into an end of track nothing is connected to - past it are
+                     * no rails (TTrack::NullCreate(), Track.cpp:226-262: dtrack_norail) */
+                    bool beyond_track_end = false;
                     /* Whether `track` is a switch - part of describing the occupied track, and a
                      * track never turns into one, so it is asked when the vehicle changes track
                      * rather than on every step. */
@@ -312,6 +315,7 @@ namespace godot {
             RID
             _vehicle_find_cabin(const RID &p_vehicle, std::initializer_list<RailVehicleCabinKind::Kind> p_kinds) const;
             void _on_vehicle_trainset_changed(const RID &p_vehicle);
+            void _on_vehicle_derailed(int64_t p_cause, const RID &p_vehicle);
             void _on_vehicle_coupler_attached(int64_t p_flag, const RID &p_vehicle);
             void _on_vehicle_coupler_detached(int64_t p_flag, const RID &p_vehicle);
             void _on_vehicle_coupler_adapter_attached(int64_t p_end, const RID &p_vehicle);
@@ -326,6 +330,9 @@ namespace godot {
             void _place_body(VehiclePlacement &p_placement);
             Transform3D _placement_transform(const VehiclePlacement &p_placement) const;
             double _placement_roll(const VehiclePlacement &p_placement) const;
+            /* The curve under bogies `p_spacing` apart: radius [m] (ts.R) and mean cant [rad]
+             * (ts.dHrail) - DynObj.cpp:3145-3172 */
+            Vector2 _placement_curve(const VehiclePlacement &p_placement, double p_spacing);
             bool _motion_connection(
                     const RID &p_track, int p_endpoint_index, bool p_force_switch_state, RID &p_track_out,
                     int &p_endpoint_out);
@@ -358,6 +365,8 @@ namespace godot {
             static const char *vehicle_placement_changed_signal;
             /* The vehicles coupled to this one are others now (RailVehicleController::trainset_changed) */
             static const char *vehicle_trainset_changed_signal;
+            /* The vehicle left the rails (vehicle: RID, cause: RailVehicleController.DerailCause) */
+            static const char *vehicle_derailed_signal;
             /* The vehicle answers to the driver of another cabin now (vehicle: RID, cabin: RID,
              * RID() when nobody drives it) - vehicle_get_driver_cabin() */
             static const char *vehicle_driver_cabin_changed_signal;

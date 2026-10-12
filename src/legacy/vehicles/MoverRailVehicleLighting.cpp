@@ -236,7 +236,7 @@ namespace godot {
         }
         if (mover->LightsPos < mover->LightsPosNo || mover->LightsWrap) {
             mover->LightsPos = mover->LightsPos >= mover->LightsPosNo ? 1 : mover->LightsPos + 1;
-            _set_lights(mover);
+            apply_light_preset();
         }
     }
 
@@ -249,7 +249,7 @@ namespace godot {
         }
         if (mover->LightsPos > 1 || mover->LightsWrap) {
             mover->LightsPos = mover->LightsPos <= 1 ? mover->LightsPosNo : mover->LightsPos - 1;
-            _set_lights(mover);
+            apply_light_preset();
         }
     }
 
@@ -259,15 +259,22 @@ namespace godot {
      * one on the other, and nothing on an end coupled to another vehicle. The model's own lamp
      * inventory (iInventory) is not known here, so a rear end that could show either red markers
      * or plates shows the markers. */
-    void MoverRailVehicleLighting::_set_lights(TMoverParameters *p_mover) const {
+    void MoverRailVehicleLighting::apply_light_preset() const {
+        TMoverParameters *p_mover = get_mover();
+        ASSERT_MOVER(p_mover);
         const int lead_end = p_mover->CabOccupied >= 0 ? Maszyna::end::front : Maszyna::end::rear;
         const int preset = p_mover->LightsPos - 1;
         const int automatic_markers =
                 p_mover->CabActive == 0 && (p_mover->InactiveCabFlag & Maszyna::activation::redmarkers) != 0
                         ? Maszyna::light::redmarker_left + Maszyna::light::redmarker_right
                         : 0;
-        const int head_lights = automatic_markers > 0 ? automatic_markers : p_mover->Lights[lead_end][preset];
-        const int rear_lights = automatic_markers > 0 ? automatic_markers : p_mover->Lights[1 - lead_end][preset];
+        // the first column lights the end driven from, the second the other: SetLights() takes the
+        // occupied cab's end's column as the head of the trainset and RaLightsSet() puts it on the
+        // vehicle's end by its direction (DynObj.cpp:7326-7330, 7380) - from a rear cab the two
+        // swaps cancel out. Taken by the cab's end alone, the B car of an SA132 lit red ahead
+        const int head_lights =
+                automatic_markers > 0 ? automatic_markers : p_mover->Lights[Maszyna::end::front][preset];
+        const int rear_lights = automatic_markers > 0 ? automatic_markers : p_mover->Lights[Maszyna::end::rear][preset];
         const int end_of_train =
                 Maszyna::light::redmarker_left | Maszyna::light::redmarker_right | Maszyna::light::rearendsignals;
 

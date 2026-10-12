@@ -71,7 +71,7 @@ class MaterialOptions:
             season = x
             _refresh_managed_materials()
 
-@export var weather := MaszynaEnvironment.Weather.WEATHER_CLEAR:
+@export var weather := SimulationServer.WEATHER_CLEAR:
     set(x):
         if not x == weather:
             weather = x

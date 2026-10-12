@@ -124,6 +124,14 @@ static func _ensure_built() -> void:
         # the departure signal loops on each door speaker while the vehicle's door warning sounds
         # (DynObj.cpp:4768-4787); range 25 m unless the MMD says (DynObj.cpp:6359) - one event at
         # every `doors:` location, none without them (m_doorspeakers, DynObj.cpp:6359-6364, 6634)
+        # DynObj.cpp:5207-5214: played once as the vehicle leaves the rails, heard as far as
+        # 2 * EU07_SOUND_RUNNINGNOISECUTOFFRANGE (DynObj.h:574, sound.h:20)
+        "derail": {
+            "event_name": &"derail",
+            "state_property": "derail_sound/derailed",
+            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "range": 400.0,
+        },
         "departuresignal": {
             "event_name": &"departure_signal",
             "state_property": "doors_departure_signal_sounding",

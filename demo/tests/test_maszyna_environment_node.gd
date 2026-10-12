@@ -10,7 +10,7 @@ const SPEED_CHANGE_TIME_SETTING: String = "maszyna/simulation/speed_change_time"
 const OVERCAST_FACTOR: float = 0.65
 
 var _previous_season: MaszynaEnvironment.Season
-var _previous_weather: MaszynaEnvironment.Weather
+var _previous_weather: SimulationServer.Weather
 var _speed_change_time: Variant
 
 
@@ -47,19 +47,19 @@ func test_generated_environment_is_not_packed() -> void:
 func test_weather_preset_sets_weather_controls() -> void:
     var environment_node: MaszynaEnvironmentNode = _create_environment_node()
 
-    environment_node.weather = MaszynaEnvironment.Weather.WEATHER_RAIN
+    environment_node.weather = SimulationServer.WEATHER_RAIN
     environment_node._process(0.0)
 
     assert_almost_eq(environment_node.precipitation, 0.8, 0.000001)
     assert_almost_eq(environment_node.cloudiness, 0.9, 0.000001)
     assert_almost_eq(environment_node.fog_density, 0.3, 0.000001)
     assert_almost_eq(environment_node.wind_strength, 0.6, 0.000001)
-    assert_eq(MaterialManager.weather, MaszynaEnvironment.Weather.WEATHER_RAIN)
+    assert_eq(MaterialManager.weather, SimulationServer.WEATHER_RAIN)
 
-    environment_node.weather = MaszynaEnvironment.Weather.WEATHER_SNOW
+    environment_node.weather = SimulationServer.WEATHER_SNOW
     environment_node._process(0.0)
 
-    assert_eq(MaterialManager.weather, MaszynaEnvironment.Weather.WEATHER_SNOW)
+    assert_eq(MaterialManager.weather, SimulationServer.WEATHER_SNOW)
 
 
 ## The time the clock ran to stays when the speed changes - it is not set back to the configured one
@@ -89,12 +89,12 @@ func test_proxies_season_and_weather_to_material_manager() -> void:
     environment_node.precipitation = 0.0
     environment_node._process(0.0)
 
-    assert_eq(MaterialManager.weather, MaszynaEnvironment.Weather.WEATHER_CLEAR)
+    assert_eq(MaterialManager.weather, SimulationServer.WEATHER_CLEAR)
 
     environment_node.precipitation = 0.5
     environment_node._process(0.0)
 
-    assert_eq(MaterialManager.weather, MaszynaEnvironment.Weather.WEATHER_RAIN)
+    assert_eq(MaterialManager.weather, SimulationServer.WEATHER_RAIN)
 
 
 func test_sets_season_from_manual_date_thresholds() -> void:
