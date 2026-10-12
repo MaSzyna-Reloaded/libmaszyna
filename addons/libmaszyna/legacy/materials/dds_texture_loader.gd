@@ -21,9 +21,11 @@ static func has_alpha(path:String) -> bool:
     return fourcc == "DXT3" or fourcc == "DXT5"
 
 
-## Returns null on anything this loader doesn't handle (bad magic, unsupported fourCC,
-## a max_size too small to keep any mip level) - callers should fall back to load(path).
-static func load_texture(path:String, max_size:int) -> Texture2D:
+## The texture's Image, read on any thread - the RenderingServer's texture is made of it on the
+## main thread (ImageTexture.create_from_image()). Null on anything this loader doesn't handle (bad
+## magic, unsupported fourCC, a max_size too small to keep any mip level) - callers should fall
+## back to load(path).
+static func load_image(path:String, max_size:int) -> Image:
     var file:FileAccess = FileAccess.open(path, FileAccess.READ)
     if not file:
         return null
@@ -84,7 +86,4 @@ static func load_texture(path:String, max_size:int) -> Texture2D:
     file.seek(data_start + offset)
     var data:PackedByteArray = file.get_buffer(data_size)
 
-    var image:Image = Image.create_from_data(width, height, levels > 1, format, data)
-    if not image:
-        return null
-    return ImageTexture.create_from_image(image)
+    return Image.create_from_data(width, height, levels > 1, format, data)

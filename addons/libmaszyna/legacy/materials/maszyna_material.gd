@@ -70,6 +70,14 @@ class MaszynaMaterialVariant extends RefCounted:
         for alias in TEXTURE_ALIASES.get(name, []):
             _random_textures[alias] = paths
 
+    ## Every texture the variant names, each of a random set included - what a preload reads
+    func get_texture_paths() -> Array[String]:
+        var paths: Array[String] = []
+        paths.assign(_textures.values())
+        for random_paths: Array in _random_textures.values():
+            paths.append_array(random_paths)
+        return paths
+
     func get_texture_path(name: String) -> String:
         if name in _textures:
             return _textures[name]

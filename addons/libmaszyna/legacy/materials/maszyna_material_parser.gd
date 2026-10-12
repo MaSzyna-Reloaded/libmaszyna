@@ -98,7 +98,7 @@ func _update_variant(variant: MaszynaMaterial.MaszynaMaterialVariant, key: Strin
         if typeof(value) == TYPE_ARRAY:
             variant.require_transparency = (
                 variant.require_transparency
-                or value.map(_texture_requires_transparency).any(func(x): x)
+                or value.map(_texture_requires_transparency).any(func(x: bool) -> bool: return x)
             )
             cleaned_value = value.map(_clean_texture_path)
         else:

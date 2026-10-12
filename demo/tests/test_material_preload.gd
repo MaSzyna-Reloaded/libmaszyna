@@ -1,0 +1,48 @@
+extends MaszynaGutTest
+
+## MaterialManager.material_preload(): a worker reads a material's files - its .mat and its textures'
+## images - and the main thread makes the material of them while the preload is held, reading no file.
+
+## A game directory with a texture and no .mat
+const FIXTURES_GAME_DIR:String = "res://tests/fixtures/material_preload"
+## A material without a .mat: its texture is preloaded.dds, a 4x4 DXT5
+const MATERIAL_NAME:String = "preloaded"
+
+var _previous_game_dir:String = ""
+
+
+func before_each() -> void:
+    _previous_game_dir = UserSettings.get_maszyna_game_dir()
+    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    MaterialManager.clear_cache()
+
+
+func after_each() -> void:
+    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaterialManager.clear_cache()
+
+
+func test_a_preload_reads_the_material_and_its_textures() -> void:
+    var files:MaterialManager.MaterialPreload = MaterialManager.MaterialPreload.new()
+    MaterialManager.material_preload("", MATERIAL_NAME, MaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, files)
+    assert_eq(files.materials.size(), 1)
+    assert_eq(files.images.size(), 1, "the texture read as an image")
+
+
+func test_the_main_thread_takes_what_a_held_preload_read() -> void:
+    var files:MaterialManager.MaterialPreload = MaterialManager.MaterialPreload.new()
+    MaterialManager.material_preload("", MATERIAL_NAME, MaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, files)
+    assert_same(MaterialManager.load_material("", MATERIAL_NAME), files.materials[0], "the .mat parsed again")
+    var texture:Texture2D = MaterialManager.load_texture("", MATERIAL_NAME)
+    assert_true(texture is ImageTexture)
+    assert_eq(texture.get_size(), Vector2(files.images[0].get_size()), "made of the preloaded image")
+
+
+func test_a_material_without_a_preload_is_read_on_its_own() -> void:
+    var files:MaterialManager.MaterialPreload = MaterialManager.MaterialPreload.new()
+    MaterialManager.material_preload("", MATERIAL_NAME, MaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, files)
+    var preloaded_id:int = files.materials[0].get_instance_id()
+    files = null
+    var read:MaszynaMaterial = MaterialManager.load_material("", MATERIAL_NAME)
+    assert_not_null(read)
+    assert_ne(read.get_instance_id(), preloaded_id, "a preload let go keeps nothing")

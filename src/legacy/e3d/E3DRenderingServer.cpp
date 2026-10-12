@@ -152,6 +152,11 @@ namespace godot {
                 D_METHOD("material_set_resolver", "material_resolver"), &E3DRenderingServer::material_set_resolver);
         ClassDB::bind_method(D_METHOD("model_set_loader", "model_loader"), &E3DRenderingServer::model_set_loader);
         ClassDB::bind_method(
+                D_METHOD("material_set_preloader", "material_preloader"), &E3DRenderingServer::material_set_preloader);
+        ClassDB::bind_method(
+                D_METHOD("material_preload", "model", "data_path", "skins", "max_texture_size"),
+                &E3DRenderingServer::material_preload);
+        ClassDB::bind_method(
                 D_METHOD("smoke_set_source_resolver", "smoke_source_resolver"),
                 &E3DRenderingServer::smoke_set_source_resolver);
 
@@ -431,7 +436,7 @@ namespace godot {
             RID model_resource;
             {
                 MutexLock lock(models_mutex);
-                model_resource = stream_models[p_instance];
+                model_resource = stream_models[p_instance].resource;
                 stream_models.erase(p_instance);
             }
             if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
@@ -777,7 +782,7 @@ namespace godot {
                 callable_mp(this, &E3DRenderingServer::model_load).bind(p_data_path, p_model_filename));
         {
             MutexLock lock(models_mutex);
-            stream_models[rid] = model_resource;
+            stream_models[rid] = StreamModel{model_resource, p_data_path, p_skins};
         }
         instance.stream_rid = streaming->stream_register(stream_owner, rid, p_transform.origin, p_range_end);
         return rid;
@@ -810,21 +815,54 @@ namespace godot {
         return loader.is_valid() ? Ref<E3DModel>(loader.call(p_data_path, p_model_filename)) : Ref<E3DModel>();
     }
 
+    void E3DRenderingServer::material_set_preloader(const Callable &p_material_preloader) {
+        MutexLock lock(models_mutex);
+        material_preloader = p_material_preloader;
+    }
+
+    Variant E3DRenderingServer::material_preload(
+            const Ref<E3DModel> &p_model, const String &p_data_path, const PackedStringArray &p_skins,
+            const int p_max_texture_size) {
+        Callable preloader;
+        {
+            MutexLock lock(models_mutex);
+            preloader = material_preloader;
+        }
+        return preloader.is_valid() && p_model.is_valid()
+                       ? preloader.call(p_model, p_data_path, p_skins, p_max_texture_size)
+                       : Variant();
+    }
+
     /// The model resource of a registered instance, from the copy made by instance_register()
     RID E3DRenderingServer::_get_stream_model(const RID &p_instance) {
         MutexLock lock(models_mutex);
-        const RID *found = stream_models.getptr(p_instance);
-        return found != nullptr ? *found : RID();
+        const StreamModel *found = stream_models.getptr(p_instance);
+        return found != nullptr ? found->resource : RID();
     }
 
-    /// Streaming worker thread: loads the model, the build holds it
+    /// Streaming worker thread: loads the model and reads its materials' files, the build holds the
+    /// model and makes the materials of what was read - the main thread reads no file
+    /// (docs/findings-archive.md, 2026-10-02 streaming hitches). [model, what holds the materials' files]
     Variant E3DRenderingServer::_stream_preload(const RID &p_instance) {
-        const RID model_resource = _get_stream_model(p_instance);
+        StreamModel stream_model;
+        {
+            MutexLock lock(models_mutex);
+            const StreamModel *found = stream_models.getptr(p_instance);
+            if (found == nullptr) {
+                return Variant();
+            }
+            stream_model = *found;
+        }
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
-        if (!model_resource.is_valid() || lazy_loader == nullptr) {
+        if (lazy_loader == nullptr) {
             return Variant();
         }
-        return lazy_loader->resource_load(model_resource);
+        const Ref<E3DModel> model = lazy_loader->resource_load(stream_model.resource);
+        Array preloaded;
+        preloaded.push_back(model);
+        // a streamed placement draws with the project's texture size limit (instance_register())
+        preloaded.push_back(material_preload(model, stream_model.data_path, stream_model.skins, 0));
+        return preloaded;
     }
 
     void E3DRenderingServer::_stream_build(const RID &p_instance, const Variant &p_preloaded) {
@@ -833,7 +871,9 @@ namespace godot {
             return;
         }
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
-        const Ref<E3DModel> preloaded = p_preloaded;
+        // the materials' files the preload read are held by p_preloaded until the build is done
+        const Array loaded = p_preloaded;
+        const Ref<E3DModel> preloaded = loaded.is_empty() ? Ref<E3DModel>() : Ref<E3DModel>(loaded[0]);
         if (preloaded.is_null() || lazy_loader == nullptr) {
             return; // the loader already reported why
         }

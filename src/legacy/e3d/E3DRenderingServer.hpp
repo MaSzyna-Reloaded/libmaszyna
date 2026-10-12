@@ -239,10 +239,18 @@ namespace godot {
             /// The instances built now - the only ones whose lights a change of time or light reaches
             HashSet<RID> built_instances;
             Callable model_loader;
+            /// `material_preloader(model, data_path, skins, max_texture_size) -> Variant`, on a worker
+            Callable material_preloader;
             Callable smoke_source_resolver;
-            /// The ResourceLazyLoader resource of each registered instance's model - in a map of
-            /// its own, as _stream_preload() runs off the main thread, where instances is not safe
-            HashMap<RID, RID> stream_models;
+            /// What a registered instance's preload needs - its model's ResourceLazyLoader resource,
+            /// and what its materials are found by - in a map of its own, as _stream_preload() runs
+            /// off the main thread, where instances is not safe
+            struct StreamModel {
+                    RID resource;
+                    String data_path;
+                    PackedStringArray skins;
+            };
+            HashMap<RID, StreamModel> stream_models;
             Mutex models_mutex;
 
             E3DInstanceBackend &_get_backend(const E3DInstanceData &p_instance);
@@ -451,6 +459,14 @@ namespace godot {
 
             void material_set_resolver(const Callable &p_material_resolver);
             void model_set_loader(const Callable &p_model_loader);
+            /* `material_preloader(model: E3DModel, data_path: String, skins: PackedStringArray,
+             * max_texture_size: int) -> Variant` reads the files of the model's materials on the
+             * calling worker; what it returns holds them until the build has made the materials */
+            void material_set_preloader(const Callable &p_material_preloader);
+            /* The files of the model's materials read ahead, on the calling thread (material_preloader) */
+            Variant material_preload(
+                    const Ref<E3DModel> &p_model, const String &p_data_path, const PackedStringArray &p_skins,
+                    int p_max_texture_size);
             /// The model of a file, through the loader (shared by every instance of it while it lives)
             Ref<E3DModel> model_load(const String &p_data_path, const String &p_model_filename);
             void smoke_set_source_resolver(const Callable &p_smoke_source_resolver);

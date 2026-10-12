@@ -39,6 +39,8 @@ class PreloadedChunk:
     var arrays:Array[Array] = []
     ## The box Godot measures the group's visibility range to the centre of - the group's centre
     var visibility_aabbs:Array[AABB] = []
+    ## The chunk's material's files, read on the worker and held until the build makes the material
+    var material_files:MaterialManager.MaterialPreload = MaterialManager.MaterialPreload.new()
 
 var _chunks:Dictionary[RID, ChunkState] = {}
 ## The sector of each chunk and the chunk's index in it, for _stream_preload() on the streaming
@@ -137,6 +139,8 @@ func _stream_preload(rid:RID) -> Variant:
     for group:int in geometry.get_group_count():
         preloaded.arrays.append(geometry.get_group_mesh_arrays(group))
         preloaded.visibility_aabbs.append(geometry.get_group_visibility_aabb(group))
+    # a terrain chunk draws with the project's texture size limit, as get_material() gives it
+    MaterialManager.material_preload("", geometry.texture, MaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, preloaded.material_files)
     return preloaded
 
 

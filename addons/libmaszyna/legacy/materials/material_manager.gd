@@ -38,8 +38,29 @@ var _free_spotlight_material: ShaderMaterial = null
 var _managed_materials: Dictionary = {}
 ## Weak, like _managed_materials: a texture goes, from RAM and VRAM, with the last material using it
 var _dds_cache: Dictionary[String, WeakRef] = {}
+## What preloads read on workers (material_preload()), by the material's and the texture's keys
+## (_get_material_file_key(), _get_texture_key()): [the MaszynaMaterial or the Image, how many
+## MaterialPreloads hold it]. Taken by get_material() and load_texture() on the main thread instead
+## of the files; an entry goes with the last MaterialPreload holding it. Counted, not weak: a worker
+## never takes an object back from a WeakRef the main thread may be letting go (FINDINGS.md, an
+## object taken back from its ObjectID on another thread)
+static var _preloaded: Dictionary[String, Array] = {}
+## Guards _preloaded and _dds_cache's keys: the preloads read them on the streaming's workers
+static var _preload_mutex: Mutex = Mutex.new()
 
 enum Transparency { Disabled, Alpha, AlphaScissor }
+
+## The files of materials read ahead on a worker - their parsed .mat and their textures' images. Held
+## by the build that makes the materials of them; let go, the read data goes with it.
+class MaterialPreload:
+    var materials: Array[MaszynaMaterial] = []
+    var images: Array[Image] = []
+    ## The keys it holds in MaterialManager._preloaded
+    var keys: Array[String] = []
+
+    func _notification(what: int) -> void:
+        if what == NOTIFICATION_PREDELETE:
+            MaterialManager._release_preloaded(keys)
 
 ## A max texture size that takes the project's maszyna/import/dds_max_texture_size
 const MAX_TEXTURE_SIZE_PROJECT_DEFAULT: int = 0
@@ -86,6 +107,7 @@ func _ready() -> void:
     _apply_railway_lights_settings()
     ProjectSettings.settings_changed.connect(_apply_railway_lights_settings)
     E3DRenderingServer.material_set_resolver(get_submodel_material)
+    E3DRenderingServer.material_set_preloader(preload_model_materials)
     GameDataServer.cache_clear_requested.connect(clear_cache)
     GameDataServer.data_unload_requested.connect(_on_data_unload_requested)
     GameDataServer.data_reload_requested.connect(_on_data_reload_requested)
@@ -102,7 +124,10 @@ func _exit_tree() -> void:
 ## anew - none of them is handed out again
 func _on_data_unload_requested() -> void:
     _managed_materials.clear()
+    _preload_mutex.lock()
     _dds_cache.clear()
+    _preloaded.clear()
+    _preload_mutex.unlock()
 
 
 func _on_data_reload_requested() -> void:
@@ -130,11 +155,132 @@ func _apply_railway_lights_settings() -> void:
 
 
 func clear_cache() -> void:
+    _preload_mutex.lock()
     _dds_cache.clear()
+    _preload_mutex.unlock()
     _refresh_managed_materials()
 
+## The parsed .mat - the one a preload read, while its build holds it, else read now
 func load_material(model_path:String, material_name:String) -> MaszynaMaterial:
-    return MaszynaMaterialParser.parse(model_path, material_name)
+    var material:MaszynaMaterial = _get_preloaded(_get_material_file_key(model_path, material_name)) as MaszynaMaterial
+    return material if material else MaszynaMaterialParser.parse(model_path, material_name)
+
+
+## On a worker: the files of the materials of the model's submodels - found as
+## get_submodel_material() finds them - read into what is returned, which the build holds while it
+## makes the materials, so the main thread reads no file (docs/findings-archive.md, 2026-10-02
+## streaming hitches). E3DRenderingServer's material preloader.
+func preload_model_materials(
+    model:E3DModel, data_path:String, skins:PackedStringArray, max_texture_size:int,
+) -> MaterialPreload:
+    var files:MaterialPreload = MaterialPreload.new()
+    var unprefixed_model_path: String = "/".join(data_path.split("/").slice(1))
+    var names:Dictionary[String, bool] = {}
+    var submodels:Array[E3DSubModel] = []
+    submodels.assign(model.submodels)
+    while submodels:
+        var submodel:E3DSubModel = submodels.pop_back()
+        submodels.append_array(submodel.submodels)
+        if submodel.dynamic_material and submodel.dynamic_material_index < skins.size():
+            names[skins[submodel.dynamic_material_index]] = true
+        elif submodel.material_name and not submodel.material_colored:
+            names[submodel.material_name] = true
+    for material_name:String in names:
+        material_preload(unprefixed_model_path, material_name, max_texture_size, files)
+    return files
+
+
+## On a worker: the material's .mat parsed and the textures of its variant for the season and the
+## weather read as images, into `files`. A season or a weather changed meanwhile only leaves the
+## main thread reading what the new variant names
+func material_preload(
+    model_path:String, material_name:String, max_texture_size:int, files:MaterialPreload,
+) -> void:
+    var material_key:String = _get_material_file_key(model_path, material_name)
+    var material:MaszynaMaterial = _hold_preloaded(material_key, files) as MaszynaMaterial
+    if not material:
+        material = _put_preloaded(
+            material_key, MaszynaMaterialParser.parse(model_path, material_name), files) as MaszynaMaterial
+    files.materials.append(material)
+    var max_size:int = _get_max_texture_size(max_texture_size)
+    for texture_name:String in material.get_variant(season, weather).get_texture_paths():
+        var full_path:String = _get_texture_file(model_path, texture_name)
+        if not full_path:
+            continue
+        var texture_key:String = _get_texture_key(full_path, max_size)
+        # a texture made already is not read again, nor one another preload holds
+        _preload_mutex.lock()
+        var resident:bool = _dds_cache.has(texture_key)
+        _preload_mutex.unlock()
+        if resident:
+            continue
+        var image:Image = _hold_preloaded(texture_key, files) as Image
+        if not image:
+            image = DDSTextureLoader.load_image(full_path, max_size)
+            if not image:
+                continue
+            image = _put_preloaded(texture_key, image, files) as Image
+        files.images.append(image)
+
+
+## The preloaded value of the key, held by `files` as well; null when no preload holds it
+static func _hold_preloaded(key:String, files:MaterialPreload) -> RefCounted:
+    _preload_mutex.lock()
+    var entry:Array = _preloaded.get(key, [])
+    if entry:
+        entry[1] += 1
+        files.keys.append(key)
+    _preload_mutex.unlock()
+    return entry[0] if entry else null
+
+
+## The value put under the key, held by `files` - or the one another preload put first
+static func _put_preloaded(key:String, value:RefCounted, files:MaterialPreload) -> RefCounted:
+    _preload_mutex.lock()
+    var entry:Array = _preloaded.get(key, [])
+    if entry:
+        entry[1] += 1
+    else:
+        entry = [value, 1]
+        _preloaded[key] = entry
+    files.keys.append(key)
+    _preload_mutex.unlock()
+    return entry[0]
+
+
+## A MaterialPreload let go: its keys' entries go with their last holder
+static func _release_preloaded(keys:Array[String]) -> void:
+    _preload_mutex.lock()
+    for key:String in keys:
+        var entry:Array = _preloaded.get(key, [])
+        if not entry:
+            continue
+        entry[1] -= 1
+        if entry[1] <= 0:
+            _preloaded.erase(key)
+    _preload_mutex.unlock()
+
+
+static func _get_preloaded(key:String) -> RefCounted:
+    _preload_mutex.lock()
+    var entry:Array = _preloaded.get(key, [])
+    _preload_mutex.unlock()
+    return entry[0] if entry else null
+
+
+func _get_material_file_key(model_path:String, material_name:String) -> String:
+    return "%s|%s|%s" % [UserSettings.get_maszyna_game_dir(), model_path, material_name]
+
+
+func _get_texture_key(full_path:String, max_size:int) -> String:
+    return "%s:%d" % [full_path, max_size]
+
+
+## The texture size limit: MAX_TEXTURE_SIZE_PROJECT_DEFAULT takes the project's
+func _get_max_texture_size(max_texture_size:int) -> int:
+    if max_texture_size == MAX_TEXTURE_SIZE_PROJECT_DEFAULT:
+        return int(ProjectSettings.get_setting("maszyna/import/dds_max_texture_size", 1024))
+    return max_texture_size
 
 func get_material(
     model_path:String,
@@ -225,10 +371,7 @@ func load_texture(
     if not full_path:
         return UNKNOWN_TEXTURE
 
-    var max_size:int = max_texture_size
-    if max_size == MAX_TEXTURE_SIZE_PROJECT_DEFAULT:
-        max_size = int(ProjectSettings.get_setting("maszyna/import/dds_max_texture_size", 1024))
-    var texture:Texture2D = _load_dds_clamped(full_path, max_size)
+    var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))
     if not texture:
         texture = load(full_path) as Texture2D
     if texture:
@@ -278,15 +421,30 @@ func _get_texture_file(model_path:String, material_name:String) -> String:
 ## equivalent of. Cached by path+max_size since this bypasses Godot's own load() resource
 ## cache, and the same texture file is commonly referenced by several distinct materials
 ## (e.g. a shared normal map across dynamic skin slots).
+## The image a preload read is taken while its build holds it; the file is read here only without one.
 func _load_dds_clamped(full_path:String, max_size:int) -> Texture2D:
-    var cache_key:String = "%s:%d" % [full_path, max_size]
+    var cache_key:String = _get_texture_key(full_path, max_size)
+    _preload_mutex.lock()
     var cached:WeakRef = _dds_cache.get(cache_key)
+    _preload_mutex.unlock()
+    # on the main thread, which lets textures go: taken back from the WeakRef safely here
     var texture:Texture2D = cached.get_ref() as Texture2D if cached else null
     if texture:
         return texture
-    texture = DDSTextureLoader.load_texture(full_path, max_size)
-    if texture:
-        _dds_cache[cache_key] = weakref(texture)
+    if cached:
+        # gone: a preload reads its file again (material_preload())
+        _preload_mutex.lock()
+        _dds_cache.erase(cache_key)
+        _preload_mutex.unlock()
+    var image:Image = _get_preloaded(cache_key) as Image
+    if not image:
+        image = DDSTextureLoader.load_image(full_path, max_size)
+    if not image:
+        return null
+    texture = ImageTexture.create_from_image(image)
+    _preload_mutex.lock()
+    _dds_cache[cache_key] = weakref(texture)
+    _preload_mutex.unlock()
     return texture
 
 

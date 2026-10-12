@@ -162,6 +162,11 @@ var MATERIAL_SHADER_FACTORIES: Dictionary[String, MaszynaShaderMeta] = {
 var _shader_variants: Dictionary[String, Shader] = {}
 ## Turns on the specgloss texture (types/specgloss.gdshaderinc) in a type shader that offers it
 const SPECGLOSS_DEFINE: String = "MASZYNA_SPECGLOSS"
+## The image formats with an alpha channel - what the original's has_alpha is (_texture_has_alpha())
+const ALPHA_FORMATS: Array[Image.Format] = [
+    Image.FORMAT_DXT3, Image.FORMAT_DXT5, Image.FORMAT_LA8, Image.FORMAT_RGBA8, Image.FORMAT_RGBA4444,
+    Image.FORMAT_RGBAF, Image.FORMAT_RGBAH, Image.FORMAT_BPTC_RGBA, Image.FORMAT_ETC2_RGBA8,
+]
 
 
 func create(
@@ -595,31 +600,13 @@ func _roughness_from_glossiness(glossiness: float) -> float:
 
     return lerp(max_roughness, min_roughness, clamp(t, 0.0, 1.0))
 
+## The original's texture has_alpha: its data has an alpha channel - a .dds is DXT3 or DXT5, never
+## DXT1 (Texture.cpp:276, 618-621), another image has four channels. Told by the format alone: the
+## image's pixels are on the GPU, and reading them back stalled every frame in flight
 func _texture_has_alpha(texture:Texture2D) -> bool:
-    var img:Image = texture.get_image()
-    if not img:
-        return false
-    return not img.detect_alpha() == Image.ALPHA_NONE
-
-
-func _apply_alpha_override_from_texture(
-    material:BaseMaterial3D,
-) -> MaterialManager.Transparency:
-    var texture_alpha:bool = false
-    if material.albedo_texture:
-        texture_alpha = _texture_has_alpha(material.albedo_texture)
-
-    if not texture_alpha:
-        return MaterialManager.Transparency.Disabled
-
-    if MaterialManager.use_alpha_transparency:
-        return MaterialManager.Transparency.Alpha
-    return MaterialManager.Transparency.AlphaScissor
-
-
-func _apply_base_material_transparency(material:BaseMaterial3D, transparent:MaterialManager.Transparency) -> void:
-    match transparent:
-        MaterialManager.Transparency.AlphaScissor:
-            material.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-        MaterialManager.Transparency.Alpha:
-            material.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+    var format:Image.Format = Image.FORMAT_MAX
+    if texture is ImageTexture:
+        format = (texture as ImageTexture).get_format()
+    elif texture is CompressedTexture2D:
+        format = (texture as CompressedTexture2D).get_format()
+    return format in ALPHA_FORMATS
