@@ -493,15 +493,14 @@ static func _pack_objects(objects:Array) -> PackedScene:
             scene_root.add_child(object)
             object.owner = scene_root
 
-    var packed_scene := PackedScene.new()
-    var result:Error = packed_scene.pack(scene_root)
+    var packed_scene:PackedScene = ResourceCache.scene_pack(scene_root)
 
     for child:Node in scene_root.get_children():
         child.owner = null
         scene_root.remove_child(child)
     scene_root.free()
 
-    if not result == OK:
+    if not packed_scene:
         push_error("Cannot compile scenery cache")
         return null
     return packed_scene

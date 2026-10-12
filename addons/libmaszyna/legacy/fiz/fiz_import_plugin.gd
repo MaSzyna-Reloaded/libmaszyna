@@ -63,4 +63,4 @@ func _import(
     var description: VehicleController = FizVehicleBuilder.build_description_at(source_file)
     if description == null:
         return ERR_CANT_CREATE
-    return ResourceSaver.save(description, "%s.%s" % [save_path, _get_save_extension()])
+    return ResourceCache.resource_save(description, "%s.%s" % [save_path, _get_save_extension()])

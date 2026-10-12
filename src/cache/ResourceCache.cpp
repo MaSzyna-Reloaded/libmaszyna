@@ -16,8 +16,13 @@ namespace godot {
      * previous run compiled (a stale scenery cache cost a day: FINDINGS.md, 2026-10-12) */
     constexpr const char *CACHE_ENABLED_SETTING = "maszyna/cache/enabled";
 
+    Mutex ResourceCache::defaults_mutex;
+
     void ResourceCache::_bind_methods() {
         ClassDB::bind_static_method("ResourceCache", D_METHOD("create", "cache_dir"), &ResourceCache::create);
+        ClassDB::bind_static_method(
+                "ResourceCache", D_METHOD("resource_save", "resource", "path"), &ResourceCache::resource_save);
+        ClassDB::bind_static_method("ResourceCache", D_METHOD("scene_pack", "root"), &ResourceCache::scene_pack);
         ClassDB::bind_method(D_METHOD("has", "path", "hash"), &ResourceCache::has, DEFVAL(""));
         ClassDB::bind_method(D_METHOD("get", "path", "hash"), &ResourceCache::get, DEFVAL(""));
         ClassDB::bind_method(D_METHOD("set", "path", "resource", "hash"), &ResourceCache::set, DEFVAL(""));
@@ -48,6 +53,21 @@ namespace godot {
                     GameDataServer::cache_clear_requested_signal, callable_mp(cache.ptr(), &ResourceCache::clear));
         }
         return cache;
+    }
+
+    Error ResourceCache::resource_save(const Ref<Resource> &p_resource, const String &p_path) {
+        MutexLock lock(defaults_mutex);
+        return ResourceSaver::get_singleton()->save(p_resource, p_path);
+    }
+
+    Ref<PackedScene> ResourceCache::scene_pack(Node *p_root) {
+        Ref<PackedScene> scene;
+        scene.instantiate();
+        MutexLock lock(defaults_mutex);
+        if (scene->pack(p_root) != OK) {
+            return nullptr;
+        }
+        return scene;
     }
 
     String ResourceCache::_get_cache_path(const String &p_path) const {
@@ -111,7 +131,7 @@ namespace godot {
             DirAccess::make_dir_recursive_absolute(cache_dir);
         }
 
-        const Error err = ResourceSaver::get_singleton()->save(p_resource, cache_path);
+        const Error err = resource_save(p_resource, cache_path);
         if (err != OK) {
             UtilityFunctions::push_error("[ResourceCache] Failed to save cache: " + cache_path);
         } else {

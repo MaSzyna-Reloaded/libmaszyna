@@ -4713,3 +4713,37 @@ lighting or the trainset.
 * **Rule:** port where the original keeps a shape and whether it tests its range, not only the
   range. A range the original measures from a shape's centre is measured from a merged group of
   that centre, never from a 1 km merged mesh.
+
+## 2026-10-12 The crash at exit after a scenery parse
+
+* **Symptom:** headless runs that parse a scenery passed every test and then aborted at exit
+  (SIGABRT). Two stacks were seen:
+  - `ClassDB::deinitialize` → Godot's `GDExtension::_unregister_extension_class`;
+  - Godot's `main` cleanup, before the extension was deinitialized.
+
+  `test_scenery_subscene_cache.gd` alone did it in 7 runs of 15 with the cache kept, and 1 of 15
+  from an empty user directory.
+* **What proved it:**
+  - The build before the scenery-shapes commit (`55eac3d2`, its own worktree and build) crashed
+    the same way, so the commit was not the cause.
+  - gdb on a core with the debug extension: `ClassDB::deinitialize` died unregistering the class
+    with 16 methods, 7 properties and 1 constant, which is `MaszynaTrianglesChunkGeometry`. Godot
+    then erases the class's cached property defaults (`class_db.cpp:2294-2307`).
+  - Those defaults are filled by `ClassDB::class_get_default_property_value()`
+    (`class_db.cpp:2172-2207`): on a class's first lookup it instantiates the class and writes the
+    static `default_values` and `default_values_cached` maps, without a lock.
+  - `ResourceSaver` makes that lookup for every property it saves (`property_utils.cpp:177`).
+  - The sink saved its chunk files on several parse workers at once (`SceneryTrianglesSink`), and
+    so did `ResourceCache::set` for the subscenes. Two first saves at once corrupted the maps.
+  - `PackedScene.pack()` makes the same lookup for every node's properties
+    (`packed_scene.cpp:982`), and the subscenes pack their nodes on the parse workers
+    (`_pack_objects()`).
+    - The pre-commit build also died inside a test there: `handle_crash` named
+      `_compile_scenery` from `parse_subscene_task`.
+    - With saves locked but packing not, one run in 30 aborted mid-parse with
+      `malloc(): unaligned tcache chunk detected`.
+* **Fix:** one static mutex in `ResourceCache`, around `ResourceSaver::save()`
+  (`resource_save()`) and `PackedScene::pack()` (`scene_pack()`). The caches, the sink, the FIZ
+  import plugin, the scenery and cabin packing and the nodebank go only through them.
+* **Rule:** Godot's lazily filled class caches are not thread-safe. Every save and every pack of
+  the extension goes through the one lock, from whatever thread.
