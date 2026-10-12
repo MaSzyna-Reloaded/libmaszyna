@@ -58,6 +58,11 @@ namespace godot {
             /// A sensor's passage, sent with source_send_event(): {SOURCE_POLARITY_ARGUMENT: SourcePolarity}
             static constexpr const char *SOURCE_IMPULSE_EVENT = "impulse";
             static constexpr const char *SOURCE_POLARITY_ARGUMENT = "polarity";
+            /// The isolated section a source stands for came to be occupied - its first axle came onto
+            /// it - or free again, its last axle left (TIsolated::Modify(), Track.cpp:118-147, the
+            /// section's `:busy` and `:free`); sent with no arguments
+            static constexpr const char *SOURCE_OCCUPIED_EVENT = "occupied";
+            static constexpr const char *SOURCE_FREED_EVENT = "freed";
 
             static const char *signal_head_registered_signal;
             static const char *signal_head_unregistered_signal;
@@ -99,6 +104,8 @@ namespace godot {
             struct SourceData {
                     StringName name;
                     RID system;
+                    /// The TrackServer isolated section it reports, by the section's name
+                    StringName isolated;
             };
 
             struct RouteData {
@@ -139,6 +146,8 @@ namespace godot {
             HashMap<StringName, RID> routes_by_name;
             HashMap<StringName, RID> signal_heads_by_name;
             HashMap<StringName, RID> sources_by_name;
+            /// The source of each isolated section a source reports - one per section
+            HashMap<StringName, RID> sources_by_isolated;
             HashMap<StringName, RID> systems_by_name;
             HashMap<RID, RID> signal_heads_by_instance;
 
@@ -148,6 +157,11 @@ namespace godot {
             void _on_switch_movement_finished(const RID &p_switch, int p_active_track);
             void _on_switch_created(const RID &p_switch);
             void _on_switch_freed(const RID &p_switch, const String &p_name);
+            /// What an isolated section reports, sent on as its source's p_event
+            void _on_isolated_changed(const RID &p_isolated, const RID &p_vehicle, const StringName &p_event);
+            /// A source joined to both a system and a section that is occupied already: the section's
+            /// state is sent at once, as it changed before anything could hear it
+            void _send_isolated_occupied(const RID &p_source);
             /// The implementation of the system the switch of the name belongs to, null when none
             Ref<SignallingImplementation> _switch_implementation(const StringName &p_switch, RID &p_r_system) const;
             /// Drops the element from the definition of every route that names it
@@ -223,6 +237,11 @@ namespace godot {
             RID source_get_rid_by_name(const StringName &p_name) const;
             RID source_get_system(const RID &p_source) const;
             void source_send_event(const RID &p_source, const StringName &p_event, const Dictionary &p_arguments);
+            /// The source reports the TrackServer isolated section of the name: its system's
+            /// implementation gets SOURCE_OCCUPIED_EVENT and SOURCE_FREED_EVENT as the section's
+            /// axles come and go - held by name, so the section may come later than the source
+            void source_set_isolated(const RID &p_source, const StringName &p_isolated);
+            StringName source_get_isolated(const RID &p_source) const;
 
             RID route_create();
             void route_free(const RID &p_route);

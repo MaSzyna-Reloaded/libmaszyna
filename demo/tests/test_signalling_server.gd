@@ -83,6 +83,63 @@ func test_a_sensor_impulse_reaches_its_system_with_the_polarity() -> void:
     SignallingServer.system_free(system)
 
 
+func test_an_isolated_section_reports_through_its_source() -> void:
+    var system: RID = SignallingServer.system_create()
+    var recording: InterlockingRecording = InterlockingRecording.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    var track: RID = TrackServer.track_create()
+    var section: RID = TrackServer.isolated_create()
+    TrackServer.isolated_set_name(section, &"it1")
+    TrackServer.isolated_add_track(section, track)
+    var source: RID = SignallingServer.source_create()
+    SignallingServer.source_set_isolated(source, &"it1")
+    var vehicle: RID = SignallingServer.source_create() # stands in for a vehicle
+
+    # no system yet: nothing to report to
+    TrackServer.track_axle_entered(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
+    SignallingServer.system_add_source(system, source)
+    TrackServer.track_axle_entered(track, vehicle)
+    TrackServer.track_axle_entered(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
+    TrackServer.track_axle_left(track, vehicle)
+
+    assert_eq(SignallingServer.source_get_isolated(source), &"it1")
+    assert_eq(recording.calls, [
+        [&"source_event", system, source, &"occupied", {}],
+        [&"source_event", system, source, &"freed", {}],
+    ], "the first axle on, the last one off")
+    TrackServer.isolated_free(section)
+    TrackServer.track_free(track)
+    SignallingServer.source_free(source)
+    SignallingServer.source_free(vehicle)
+    SignallingServer.system_free(system)
+
+
+func test_a_source_joined_to_an_occupied_section_hears_it_at_once() -> void:
+    var system: RID = SignallingServer.system_create()
+    var recording: InterlockingRecording = InterlockingRecording.new()
+    SignallingServer.system_attach_implementation(system, recording)
+    var track: RID = TrackServer.track_create()
+    var section: RID = TrackServer.isolated_create()
+    TrackServer.isolated_set_name(section, &"it2")
+    TrackServer.isolated_add_track(section, track)
+    var vehicle: RID = SignallingServer.source_create() # stands in for a vehicle
+    TrackServer.track_axle_entered(track, vehicle)
+    var source: RID = SignallingServer.source_create()
+    SignallingServer.system_add_source(system, source)
+
+    SignallingServer.source_set_isolated(source, &"it2")
+
+    assert_eq(recording.calls, [[&"source_event", system, source, &"occupied", {}]])
+    TrackServer.track_axle_left(track, vehicle)
+    TrackServer.isolated_free(section)
+    TrackServer.track_free(track)
+    SignallingServer.source_free(source)
+    SignallingServer.source_free(vehicle)
+    SignallingServer.system_free(system)
+
+
 func test_a_switch_of_a_system_reports_where_it_came_to_lie() -> void:
     var switch_track: RID = _create_switch("test_switch_moved")
     var system: RID = SignallingServer.system_create()
