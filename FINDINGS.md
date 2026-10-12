@@ -479,6 +479,10 @@ anything. Open work belongs in `TODO.md`.
   *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
+* A worker never takes an object back from a `WeakRef` the main thread may be letting go: what
+  workers share with the main thread is held by a counted registry, and a worker only asks whether
+  a key is there. Data read ahead is shared by key, once, never a copy per user. *(10-12
+  materials read off the main thread)*
 * Code a worker runs keeps no state in a static or a lazily built table: one parse at a time got
   away with `FizVehicleBuilder`'s shared section parsers and `_ensure_built()` catalogs; read on
   several threads, they mixed two vehicles' rows. State lives in the call's own context. *(10-12
