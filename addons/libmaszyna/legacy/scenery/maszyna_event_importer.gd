@@ -22,6 +22,7 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
     var event:MaszynaEventData = MaszynaEventData.new()
     event.name = name
     event.origin = context.origin
+    event.joined = context.join_duplicated_events
     event.type = p.next_token().to_lower()
     event.delay = float(p.next_token())
     var targets:PackedStringArray = [p.next_token().to_lower()]

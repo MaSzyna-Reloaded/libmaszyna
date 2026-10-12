@@ -170,8 +170,31 @@ interface.
 * An event's passivity is decided at load time, from the command it has then.
 * `message` does nothing.
 * `traintriggered` computes a scaled radius and then compares against the unscaled one.
-* A duplicate event name makes the first definition `m_ignored` and the second its sibling
-  (`Event.cpp:2296-2349`). Wrapper: the factory joins them; the server keeps the later name.
+* **A name may be defined many times, and what that does depends on a flag the scenery switches
+  as it is read.** `config joinduplicatedevents yes|no` (`Globals.cpp:668-672`, off by default)
+  holds from where it is set for the rest of the load, out of the include that set it too
+  (Glinojeck, Galicja2000 and Braniewo turn it on in a `.ctr` and never off). Every later
+  definition is hung on the first (`basic_event::append()`, `Event.cpp:386-395`), and the queue
+  runs them all in order at the time and with the activator of the first, each with its own
+  condition (`CheckQuery()`, `:2466-2490`). Read with the flag off, a duplicate also disables
+  the first (`m_ignored`, `:2328-2334`, "Bad scenario: duplicate event name"):
+  * a `multiple` comes back on without its memory comparison (`multi_event::init()`,
+    `:1218-1222`);
+  * any other is never queued, so the name does nothing; an `onstart` one, queued as it was read
+    (`:2338-2345`), still hands its place in the queue to the later ones.
+
+  An instant first (`addvalues`, delay 0) runs at once and queues the second with its own delay
+  (`AddToQuery()`, `:2388-2401`). A passive first is never queued, so neither is anything hung on
+  it. A `putvalues` hung on another is no longer passive; a `getvalues` becomes passive again when
+  it is initialised. A later one of a negative delay is also queued by itself at the start and
+  runs the ones after it (`InitEvents()`, `:2493-2499`). A duplicate named `#...`, `*lineinfo:`,
+  `*_warning` or `*_shp` is dropped whatever the flag says (`:2304-2321`). The dispatchers of
+  linia61 depend on it: each defines one check per route, with the route that matches first
+  (reports#31). Wrapper: `MaszynaEventData.joined` keeps the flag where each event is read
+  (`MaszynaImporterContext.join_duplicated_events`, resolved past includes when they are merged).
+  The factory gives a name defined more than once one event of its own, which queues the unnamed
+  definitions with no delay, so they run one frame later than the original runs them, in their
+  order. `ScenarioEventServer` knows nothing of it.
 * **Setting the clock by hand can break a scenario.** A time-of-day launcher fires only in its
   exact minute (`EvLaunch.cpp:197-211`), so one jumped over never fires, and the timetables
   compare departures with the clock, so every train is late or early by the jump. Kept as is;

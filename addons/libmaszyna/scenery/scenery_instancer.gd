@@ -25,7 +25,7 @@ static var firstinit_importer = preload("res://addons/libmaszyna/legacy/scenery/
 static var isolated_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_lua_importer.gd").new()
-const CACHE_FORMAT_VERSION:int = 45
+const CACHE_FORMAT_VERSION:int = 46
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -630,7 +630,9 @@ func parse_file_task(
 
 ## parse_file_task() of a subscene (see maszyna_include_importer.gd), read from / saved to the
 ## cache. The cache key includes the inherited origin/rotate - parsed objects are already placed
-## in world coordinates - and whether a region file holds the terrain, which leaves its shapes out.
+## in world coordinates - whether a region file holds the terrain, which leaves its shapes out, and
+## the scenery's joinduplicatedevents, which its events are read with; the value the subscene
+## leaves it at is cached with it.
 ## The subscene's terrain is chunked in a sink of its own, cached with it,
 ## and added to the scenery's sink.
 func parse_subscene_task(
@@ -638,7 +640,10 @@ func parse_subscene_task(
 ) -> MaszynaImporterContext:
     var source_path:String = _get_source_path(filename)
     var state_hash:String = var_to_str(
-        [state["origin"], state["rotate"], state["binary_terrain"], state["binary_terrain_state"]]
+        [
+            state["origin"], state["rotate"], state["binary_terrain"], state["binary_terrain_state"],
+            state["join_duplicated_events"],
+        ]
     ).md5_text()
     var cache_path:String = _get_cache_path(source_path, state_hash)
     var scenery_sink:SceneryTrianglesSink = state["triangles_sink"]
@@ -656,6 +661,7 @@ func parse_subscene_task(
         cached.isolated_sections.assign(compiled.isolated_sections)
         cached.trainsets.assign(compiled.trainsets)
         cached.region_files.assign(compiled.region_files)
+        cached.join_duplicated_events = compiled.join_duplicated_events
         for chunk_path:String in compiled.triangle_chunk_paths:
             scenery_sink.add_geometry_file(chunk_path)
         cached.dependencies = compiled.dependencies.duplicate(true)
@@ -692,6 +698,7 @@ func parse_subscene_task(
     if context.cacheable:
         var subscene := MaszynaCompiledSubscene.new()
         subscene.triangle_chunk_paths = chunk_paths
+        subscene.join_duplicated_events = context.join_duplicated_events
         if _compile_scenery(source_path, state_hash, context, context.objects, subscene):
             _cache.set(cache_path, subscene)
     _saving_subscenes_mutex.lock()
