@@ -76,3 +76,11 @@ func test_a_slot_keeps_every_event_the_track_names_for_it() -> void:
     assert_eq(track.events.get("event2", PackedStringArray()),
             PackedStringArray(["krzyzowa_p2_sem_info", "Krzyzowa#p_stopinfo"]),
             "the signal and the W4 on one slot are both the track's")
+
+
+## A track's keywords are read in lower case, as the original reads every token (Track.cpp:810-928):
+## "Event2" is the event2 slot
+func test_a_keyword_with_capitals_is_its_slot() -> void:
+    var track:MaszynaTrackData = _import(TWO_EVENTS_SOURCE.replace("event2 krzyzowa_p2", "Event2 krzyzowa_p2"))[0]
+
+    assert_eq(track.events.get("event2", PackedStringArray()).size(), 2, "both events in event2")

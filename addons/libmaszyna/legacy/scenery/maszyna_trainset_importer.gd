@@ -10,9 +10,11 @@ func import(p:MaszynaParser, context: MaszynaImporterContext) -> Array:
         return []
 
     context.trainset = MaszynaTrainsetData.new()
-    context.trainset.name = tokens[0]
-    context.trainset.timetable = tokens[0]
-    context.trainset.track_name = tokens[1]
+    # the name and the track in lower case, as the original reads every token
+    # (simulationstateserializer.cpp:777-782)
+    context.trainset.name = tokens[0].to_lower()
+    context.trainset.timetable = tokens[0].to_lower()
+    context.trainset.track_name = tokens[1].to_lower()
     context.trainset.offset = float(tokens[2])
     context.trainset.velocity = float(tokens[3])
     context.trainsets.append(context.trainset)
