@@ -4747,3 +4747,32 @@ lighting or the trainset.
   import plugin, the scenery and cabin packing and the nodebank go only through them.
 * **Rule:** Godot's lazily filled class caches are not thread-safe. Every save and every pack of
   the extension goes through the one lock, from whatever thread.
+
+## 2026-10-12 E3D models saved on the main thread
+
+* **Symptom:** players complained of the game stuttering while they drove. A model met for the
+  first time, a scenery's under the camera or a vehicle's, cost a hitch.
+* **What proved it:** reading the save path down to the engine.
+  - A worker loading an E3D model handed its cache save to the main thread
+    (`_save_model.call_deferred`, findings 2026-10-02: off the main thread the save deadlocked).
+    A vehicle's or cab's model was loaded and saved on the main thread outright.
+  - `ResourceSaver` saves each submodel's `ArrayMesh`. `ArrayMesh::_get_surfaces()` reads every
+    surface back (`mesh.cpp:1512`), and on the RD renderer `mesh_get_surface` calls
+    `RD::buffer_get_data` for the vertex, attribute and index buffers
+    (`mesh_storage.cpp:641-686`). Each of those is `_flush_and_stall_for_all_frames()`
+    (`rendering_device.cpp:1316`).
+  - So the main thread stalled the GPU three times a submodel, outside any streaming budget.
+  - The parse kept no arrays (`E3DModelBuilder` made the `ArrayMesh` and dropped them), so there
+    was nothing else to save from.
+  - Picking, the cab's mirrors, lamp glows and screen glows read the same meshes back
+    (`get_faces()`, `surface_get_arrays()`).
+* **Fix:** `E3DMesh`, a `Mesh` of the extension:
+  - It keeps its one surface's arrays as floats and makes the RenderingServer mesh of them when
+    they are set: by the parse, or by the cache's loader.
+  - It answers `_get_rid()`, `_surface_get_arrays()` and `_get_aabb()` itself. Godot's own
+    `get_faces()` and `MeshInstance3D` therefore read memory, and a saved model writes its arrays.
+  - `E3DModelManager.load_model()` saves the cache on the thread that loaded the model, and the
+    deferred save is gone.
+  - `E3DModel.FORMAT_VERSION` 20261012.
+* **Rule:** never save or read back an `ArrayMesh` - its data lives on the GPU. Geometry the
+  extension saves or reads keeps its arrays in memory.

@@ -1,7 +1,8 @@
+#include "legacy/e3d/E3DMesh.hpp"
 #include "legacy/e3d/E3DModelBuilder.hpp"
 #include "legacy/e3d/E3DModelLightDefinition.hpp"
 #include "legacy/e3d/E3DModelSmokeSourceDefinition.hpp"
-#include <godot_cpp/classes/array_mesh.hpp>
+
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <algorithm>
@@ -16,6 +17,32 @@ namespace godot {
     static constexpr const char *LIGHT_ON_PREFIX = "light_on";
     static constexpr const char *LIGHT_OFF_PREFIX = "light_off";
     static constexpr const char *SMOKE_SOURCE_PREFIX = "smokesource_";
+
+    /// The vectors as floats, x y z after each other (E3DMesh keeps them so)
+    static PackedFloat32Array to_floats(const PackedVector3Array &p_vectors) {
+        PackedFloat32Array floats;
+        floats.resize(p_vectors.size() * E3DMesh::VECTOR3_FLOATS);
+        for (int64_t index = 0; index < p_vectors.size(); index++) {
+            const Vector3 &vector = p_vectors[index];
+            const int64_t first = index * E3DMesh::VECTOR3_FLOATS;
+            floats.set(first, static_cast<float>(vector.x));
+            floats.set(first + 1, static_cast<float>(vector.y));
+            floats.set(first + 2, static_cast<float>(vector.z));
+        }
+        return floats;
+    }
+
+    static PackedFloat32Array to_floats(const PackedVector2Array &p_vectors) {
+        PackedFloat32Array floats;
+        floats.resize(p_vectors.size() * E3DMesh::VECTOR2_FLOATS);
+        for (int64_t index = 0; index < p_vectors.size(); index++) {
+            const Vector2 &vector = p_vectors[index];
+            const int64_t first = index * E3DMesh::VECTOR2_FLOATS;
+            floats.set(first, static_cast<float>(vector.x));
+            floats.set(first + 1, static_cast<float>(vector.y));
+        }
+        return floats;
+    }
 
     Transform3D E3DModelBuilder::make_matrix(const std::array<float, 16> &p_m) {
         return {Basis(Vector3(p_m[0], p_m[1], p_m[2]), Vector3(p_m[4], p_m[5], p_m[6]),
@@ -168,11 +195,6 @@ namespace godot {
                 submodel->set_self_illumination(p_submodel.selfillum_color);
 
                 if (vertices_count > 0) {
-                    Ref<ArrayMesh> mesh;
-                    mesh.instantiate();
-                    Array triangles;
-                    triangles.resize(ArrayMesh::ARRAY_MAX);
-                    triangles.set(ArrayMesh::ARRAY_VERTEX, p_submodel.vertices);
                     // The data is wound CCW (opengl33renderer.cpp:419), Godot's front face is CW. A
                     // submodel without an IDX chunk is a plain triangle list and needs the same flip.
                     const bool indexed = p_submodel.indices.size() > 0;
@@ -190,20 +212,15 @@ namespace godot {
                         p_submodel.normals = _calculate_normals(p_submodel.vertices, p_submodel.indices);
                     }
 
-                    if (p_submodel.indices.size() > 0) {
-                        triangles.set(ArrayMesh::ARRAY_INDEX, p_submodel.indices);
-                    }
-
-                    if (p_submodel.normals.size() > 0) {
-                        triangles.set(ArrayMesh::ARRAY_NORMAL, p_submodel.normals);
-                    }
-
-                    if (p_submodel.tangents.size() > 0) {
-                        triangles.set(ArrayMesh::ARRAY_TANGENT, p_submodel.tangents);
-                    }
-
-                    triangles.set(ArrayMesh::ARRAY_TEX_UV, p_submodel.uvs);
-                    mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, triangles);
+                    Dictionary surface;
+                    surface[E3DMesh::SURFACE_VERTICES] = to_floats(p_submodel.vertices);
+                    surface[E3DMesh::SURFACE_NORMALS] = to_floats(p_submodel.normals);
+                    surface[E3DMesh::SURFACE_TANGENTS] = PackedFloat32Array(p_submodel.tangents);
+                    surface[E3DMesh::SURFACE_UVS] = to_floats(p_submodel.uvs);
+                    surface[E3DMesh::SURFACE_INDICES] = p_submodel.indices;
+                    Ref<E3DMesh> mesh;
+                    mesh.instantiate();
+                    mesh->set_surface(surface);
                     submodel->set_mesh(mesh);
                 }
 
