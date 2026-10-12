@@ -182,10 +182,9 @@ static func _build_cabin_scene(normalized_data_path:String, file_name:String, sk
     cabin.mmd_filename = file_name
     cabin.skin = skin
     cabin.transform = MASZYNA_VEHICLE_FRAME
-    var packed := PackedScene.new()
-    var err:Error = packed.pack(cabin)
+    var packed:PackedScene = ResourceCache.scene_pack(cabin)
     cabin.free()
-    if err != OK:
+    if not packed:
         push_error("MaszynaRailVehicle3DInstancer: could not pack cabin scene for %s/%s" % [normalized_data_path, file_name])
         return null
     return packed
