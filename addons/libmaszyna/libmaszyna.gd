@@ -152,7 +152,7 @@ func _enter_tree():
     # when the camera comes near and let go when it leaves; off, they are all loaded with the
     # scenery and kept, and the streaming only builds and clears their instances. The
     # --enable-lazy-loading command-line switch turns it on (read at startup)
-    add_custom_project_setting("maszyna/resources/lazy_loading", false, TYPE_BOOL)
+    add_custom_project_setting("maszyna/resources/lazy_loading", true, TYPE_BOOL)
     # E3DRenderingServer streams registered scenery models in and out around the camera; this caps
     # every node's own range and stands in for the nodes that declare none (read at startup)
     add_custom_project_setting(
