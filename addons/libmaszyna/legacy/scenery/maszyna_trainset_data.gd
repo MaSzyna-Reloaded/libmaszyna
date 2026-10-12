@@ -22,33 +22,36 @@ class_name MaszynaTrainsetData
 @export var dynamics:Array[MaszynaDynamicData] = []
 
 
-## Its vehicles as `arranged` lists them (MaszynaIncludeNode.trainset_override) when the first
-## vehicle with an id there is one of its own, its declared ones otherwise. An entry with an id is
-## that vehicle with the entry's files, skin and direction - its couplings, crew and load stay. One
-## without is a vehicle added to it: the couplings and velocity of the vehicle before it (of the
-## first one with an id, when it comes first), nobody aboard, no load, no gap, an id of its own and
-## no name.
+## Its vehicles as `arranged` lists them (MaszynaIncludeNode.trainset_override) when every declared
+## vehicle there stands at its place in this trainset, its declared ones otherwise. An entry is paired
+## with its declared vehicle by its place in the trainset (MaszynaDynamicData.trainset_index), as
+## the original couples a trainset by position (simulationstateserializer.cpp:818-834) - an id may
+## repeat (linia61's container wagons). A declared vehicle comes with the entry's files, skin and
+## direction - its couplings, crew and load stay. An added one (no place) gets the couplings and
+## velocity of the vehicle before it (of the first declared one, when it comes first), nobody
+## aboard, no load, no gap, an id of its own and no name.
 func get_arranged_dynamics(arranged:Array[MaszynaDynamicData]) -> Array[MaszynaDynamicData]:
-    var by_id:Dictionary[String, MaszynaDynamicData] = {}
-    for dynamic:MaszynaDynamicData in dynamics:
-        by_id[dynamic.vehicle_id] = dynamic
-    var first_id:String = ""
+    var first_declared:MaszynaDynamicData = null
     for entry:MaszynaDynamicData in arranged:
-        if entry.vehicle_id:
-            first_id = entry.vehicle_id
-            break
-    if not by_id.has(first_id):
+        if entry.trainset_index < 0:
+            continue
+        if (entry.trainset_index >= dynamics.size()
+                or not dynamics[entry.trainset_index].vehicle_id == entry.vehicle_id):
+            return dynamics
+        if not first_declared:
+            first_declared = dynamics[entry.trainset_index]
+    if not first_declared:
         return dynamics
     var result:Array[MaszynaDynamicData] = []
     for index:int in arranged.size():
         var entry:MaszynaDynamicData = arranged[index]
         var vehicle:MaszynaDynamicData
-        if by_id.has(entry.vehicle_id):
-            vehicle = by_id[entry.vehicle_id].duplicate()
+        if entry.trainset_index >= 0:
+            vehicle = dynamics[entry.trainset_index].duplicate()
         else:
-            var before:MaszynaDynamicData = result.back() if result else by_id[first_id]
+            var before:MaszynaDynamicData = result.back() if result else first_declared
             vehicle = before.duplicate()
-            vehicle.vehicle_id = "%s_%d" % [first_id, index]
+            vehicle.vehicle_id = "%s_%d" % [first_declared.vehicle_id, index]
             vehicle.name = ""
             vehicle.driver_type = MaszynaDynamicData.DriverType.DRIVER_NOBODY
             vehicle.load_name = ""

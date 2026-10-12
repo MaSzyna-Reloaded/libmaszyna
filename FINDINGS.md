@@ -383,6 +383,10 @@ anything. Open work belongs in `TODO.md`.
 * An event name may have many definitions, joined in order or disabling the first by the
   scenery's `joinduplicatedevents` where each is read: check the original's `insert()` before a
   lookup by name stands for "the" event. *(10-12 the EN57 held at Ozimek, reports#31)*
+* A vehicle's id may repeat within one trainset (linia61's 13 Sgs `31514541864-8`): what pairs a
+  vehicle with its declaration goes by its place in the trainset, as the original couples
+  (`AttachNext` by index), never by the id. *(10-12 the ET22 that left its wagons at Herby Nowe,
+  reports#32)*
 * An event the original clears once passed (a signal at proceed, `Point.Clear()`) is cleared in the
   port - kept, it holds on what it shows later. *(09-29 a signal closing behind the train braked
   it hard)*

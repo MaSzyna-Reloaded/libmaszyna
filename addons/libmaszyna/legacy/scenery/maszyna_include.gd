@@ -40,8 +40,10 @@ const SceneryEditor = preload("res://addons/libmaszyna/editor/scenery_toolbar/sc
 @export var autoload:bool = true
 @export var use_cache:bool = true
 ## The vehicles of one trainset as the player arranged them for this load (the scenery
-## selector), front first - MaszynaTrainsetData.get_arranged_dynamics(). The scenery cache holds
-## what the .scn declares; this only replaces it for this load. Empty: the trainsets as declared.
+## selector), front first, each declared one with its place in the declared trainset
+## (MaszynaDynamicData.trainset_index) - MaszynaTrainsetData.get_arranged_dynamics(). The scenery
+## cache holds what the .scn declares; this only replaces it for this load. Empty: the trainsets
+## as declared.
 @export var trainset_override:Array[MaszynaDynamicData] = []
 
 ## Off by default: loaded content gets no owner and stays unselectable in the editor (matches
