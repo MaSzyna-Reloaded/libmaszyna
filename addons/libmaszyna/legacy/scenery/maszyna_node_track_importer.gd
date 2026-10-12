@@ -48,11 +48,12 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> TrackData:
     data.curve = get_curve_from_tokens(p.get_tokens(15))
 
     var nt = ""
+    # the keywords in lower case, as the original reads every token (Track.cpp:810-928)
     if type_token == "switch":
         data.diverging_curve = get_curve_from_tokens(p.get_tokens(15))
-        nt = p.next_token()
+        nt = p.next_token().to_lower()
     else:
-        nt = p.next_token()
+        nt = p.next_token().to_lower()
 
     if not nt == "endtrack":
         var params: Dictionary = {}
@@ -72,7 +73,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> TrackData:
             else:
                 params[key] = value
 
-            key = p.next_token()
+            key = p.next_token().to_lower()
         data.parameters = params
     return data
 

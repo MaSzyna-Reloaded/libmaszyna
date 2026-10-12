@@ -250,8 +250,11 @@ static func read(filename:String) -> MaszynaSceneryInfo:
         match tokens[0].to_lower():
             "trainset":
                 trainset = Trainset.new()
-                trainset.name = tokens[1] if tokens.size() > 1 else ""
-                trainset.track = tokens[2] if tokens.size() > 2 else ""
+                # names in lower case, as the scenery's importer reads them - the arranged
+                # trainset and the player's vehicle are found by them
+                # (simulationstateserializer.cpp:425-430, 777-782)
+                trainset.name = tokens[1].to_lower() if tokens.size() > 1 else ""
+                trainset.track = tokens[2].to_lower() if tokens.size() > 2 else ""
                 mission_lines.clear()
                 info.trainsets.append(trainset)
             "endtrainset":
@@ -262,7 +265,7 @@ static func read(filename:String) -> MaszynaSceneryInfo:
             "node":
                 if trainset and tokens.size() > 9 and tokens[4].to_lower() == "dynamic":
                     var vehicle := Vehicle.new()
-                    vehicle.train_id = tokens[3]
+                    vehicle.train_id = tokens[3].to_lower()
                     vehicle.data_path = _resolve_data_path(tokens[5])
                     # spelled as the .scn spells them, like maszyna_node_dynamic_importer.gd - the
                     # files are found by MaszynaDataPath.resolve() whatever the letter case

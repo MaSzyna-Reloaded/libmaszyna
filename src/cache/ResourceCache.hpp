@@ -19,6 +19,9 @@ namespace godot {
         private:
             String cache_dir;
             String _get_hash_path(const String &p_path) const;
+            /* The project setting that switches every cache off (the tests: nothing read from a
+             * previous run, nothing written) */
+            static bool _enabled();
 
         protected:
             static void _bind_methods();

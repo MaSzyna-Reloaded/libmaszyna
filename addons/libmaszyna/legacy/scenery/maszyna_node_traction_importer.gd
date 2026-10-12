@@ -17,7 +17,8 @@ const TractionData = preload("res://addons/libmaszyna/legacy/scenery/maszyna_tra
 ## (scenery_instancer.gd's _build_traction()) instead of Traction3D nodes.
 func import(p:MaszynaParser, _context: MaszynaImporterContext) -> TractionData:
     var data := TractionData.new()
-    data.power_supply_name = p.next_token()
+    # in lower case, as the power source's node name (Traction.cpp:101-103)
+    data.power_supply_name = p.next_token().to_lower()
     data.nominal_voltage = float(p.next_token())
     data.max_current = float(p.next_token())
     data.resistivity = float(p.next_token())
@@ -42,7 +43,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> TractionData:
     data.visible = p.as_bool(p.next_token())
     var nt = p.next_token().to_lower()
     if nt == "parallel":
-        data.parallel = p.next_token()
+        data.parallel = p.next_token().to_lower() # Traction.cpp:147-148
         nt = p.next_token()
     if not nt == "endtraction":
         push_error("Invalid node::traction")

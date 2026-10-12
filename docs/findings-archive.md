@@ -4488,6 +4488,30 @@ lighting or the trainset.
   start-up test covers its own FIZ only: a vehicle of the same family with another FIZ needs its
   own.
 
+## 2026-10-12 The stale scenery cache that looked like a name regression
+
+* **Symptom:** after the importers started lowercasing the trainset's track and the starter's
+  names (as the original does), every start-up test said "en57-636ra is not in
+  startup_en57-636ra.scn" - but only when another test script ran before it in the process, which
+  read like a test-order leak. Each importer change alone passed, all of them together passed when
+  the start-up test ran alone.
+* **What proved it:** the logs. A run that compiles its scenery prints `[SceneryConvert] parsed`;
+  the failing runs printed it 0 times, the passing ones once. `MaszynaSceneryNode.use_cache`
+  defaults to true and the harness never switched it off, so the tests read
+  `user://cache/scenery_compiled`, keyed by `CACHE_FORMAT_VERSION:source:parameters`
+  (`scenery_instancer.gd:594`). The fixtures had been compiled at version 43 a few minutes earlier
+  by a short-lived variant of the importer that kept the names' case; the lowercase importer kept
+  43 and loaded those files. The "order" was which version each run happened to use: every run at
+  43 failed, every run at a fresh version compiled and passed.
+* **Fix:** `ResourceCache` reads the project setting `maszyna/cache/enabled` on every `has()`,
+  `get()` and `set()` - off, nothing is read or written. The GUT pre-run hooks
+  (`demo/tests/simulation_runtime_hook.gd`, the game's) switch it off, so no test of either repo
+  sees what a previous run compiled; the eleven stale files were deleted.
+* **Rule:** a test never reads a cache. And a cache keyed by a format version is only as fresh as
+  the discipline of bumping the version: the same number reused with other code hands the old data
+  out as the new, and a test then reports a regression where there is none - read the log for
+  what was compiled before believing a test-order theory.
+
 ## 2026-10-12 An SA132 driven from its B car stood at full power
 
 * **Symptom:** after walking through the unit to the B car's cab and activating it, the player

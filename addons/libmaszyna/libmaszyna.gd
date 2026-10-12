@@ -392,6 +392,8 @@ func _enter_tree():
         PROPERTY_HINT_RANGE, "16,8000,1"
     )
     add_custom_project_setting("maszyna/debug/physics_diagnostics", false, TYPE_BOOL)
+    # off, no ResourceCache is read or written (the tests' hooks switch it off)
+    add_custom_project_setting("maszyna/cache/enabled", true, TYPE_BOOL)
     add_custom_project_setting(
         "maszyna/import/dds_max_texture_size", 1024, TYPE_INT,
         PROPERTY_HINT_ENUM, "512:512,1024:1024,2048:2048,4096:4096,8192:8192"
