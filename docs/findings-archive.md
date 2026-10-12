@@ -2907,6 +2907,9 @@ lighting or the trainset.
 * **Rule:** a cache in memory that never evicts grows with the session, not with what is in view.
   Whatever is loaded for a streamed piece is held by that piece's build and let go by its clear,
   and a cache file holds data, not render resources.
+* **Since 2026-10-12:** lazy loading is on by default again: the loads run on the streaming's
+  workers, not on the main thread (findings 2026-10-12, vehicles and materials read off the main
+  thread).
 * **Since 2026-10-10:** this is lazy loading, an option (`maszyna/resources/lazy_loading`,
   `--enable-lazy-loading`), off by default at the operator's decision. Off, `ResourceLazyLoader`
   loads a resource when it is registered and keeps it until its last registration is freed - the
@@ -3906,9 +3909,8 @@ lighting or the trainset.
   it, never at load. What the simulation needs of the model is read off the model file, not off
   its drawing.
 * **Since 2026-10-10:** the model files of a vehicle's appearance go through `ResourceLazyLoader`
-  (registered in `vehicle_set_appearance()`, held by the build). Without lazy loading - the
-  default - they are loaded with the vehicle and kept; only the models built from them follow the
-  draw distance.
+  (registered in `vehicle_set_appearance()`, held by the build). Without lazy loading they are
+  loaded with the vehicle and kept; only the models built from them follow the draw distance.
 
 ## 2026-10-06 A cab change in the 36WEa froze the game for half a minute
 
