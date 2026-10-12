@@ -124,6 +124,9 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("source_send_event", "source", "event", "arguments"), &SignallingServer::source_send_event,
                 DEFVAL(Dictionary()));
+        ClassDB::bind_method(
+                D_METHOD("source_set_isolated", "source", "isolated"), &SignallingServer::source_set_isolated);
+        ClassDB::bind_method(D_METHOD("source_get_isolated", "source"), &SignallingServer::source_get_isolated);
 
         ClassDB::bind_method(D_METHOD("route_create"), &SignallingServer::route_create);
         ClassDB::bind_method(D_METHOD("route_free", "route"), &SignallingServer::route_free);
@@ -269,6 +272,35 @@ namespace godot {
                 callable_mp(this, &SignallingServer::_on_switch_movement_finished));
         tracks->connect(TrackServer::switch_created_signal, callable_mp(this, &SignallingServer::_on_switch_created));
         tracks->connect(TrackServer::switch_freed_signal, callable_mp(this, &SignallingServer::_on_switch_freed));
+        tracks->connect(
+                TrackServer::isolated_occupied_signal,
+                callable_mp(this, &SignallingServer::_on_isolated_changed).bind(StringName(SOURCE_OCCUPIED_EVENT)));
+        tracks->connect(
+                TrackServer::isolated_freed_signal,
+                callable_mp(this, &SignallingServer::_on_isolated_changed).bind(StringName(SOURCE_FREED_EVENT)));
+    }
+
+    void SignallingServer::_on_isolated_changed(
+            const RID &p_isolated, const RID & /* p_vehicle */, const StringName &p_event) {
+        const TrackServer *tracks = TrackServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        const RID *source = sources_by_isolated.getptr(tracks->isolated_get_name(p_isolated));
+        if (source != nullptr && sources.getptr(*source)->system.is_valid()) {
+            source_send_event(*source, p_event, Dictionary());
+        }
+    }
+
+    void SignallingServer::_send_isolated_occupied(const RID &p_source) {
+        const SourceData *source = sources.getptr(p_source);
+        const TrackServer *tracks = TrackServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        if (!source->system.is_valid()) {
+            return;
+        }
+        const RID isolated = tracks->isolated_get_rid_by_name(source->isolated);
+        if (isolated.is_valid() && tracks->isolated_is_occupied(isolated)) {
+            source_send_event(p_source, SOURCE_OCCUPIED_EVENT, Dictionary());
+        }
     }
 
     Ref<SignallingImplementation>
@@ -704,6 +736,7 @@ namespace godot {
         if (implementation.is_valid()) {
             implementation->source_added(p_system, p_source);
         }
+        _send_isolated_occupied(p_source);
     }
 
     void SignallingServer::system_remove_source(const RID &p_system, const RID &p_source) {
@@ -878,8 +911,10 @@ namespace godot {
             system_remove_source(source->system, p_source);
         }
         const StringName name = sources.getptr(p_source)->name;
+        const StringName isolated = sources.getptr(p_source)->isolated;
         sources.erase(p_source);
         names_rename(sources_by_name, name, StringName(), p_source);
+        names_rename(sources_by_isolated, isolated, StringName(), p_source);
         _forget_in_routes(p_source);
     }
 
@@ -906,6 +941,24 @@ namespace godot {
         const SourceData *source = sources.getptr(p_source);
         ERR_FAIL_NULL_V(source, RID());
         return source->system;
+    }
+
+    void SignallingServer::source_set_isolated(const RID &p_source, const StringName &p_isolated) {
+        SourceData *source = sources.getptr(p_source);
+        ERR_FAIL_NULL(source);
+        const RID *holder = sources_by_isolated.getptr(p_isolated);
+        ERR_FAIL_COND_MSG(
+                holder != nullptr && !(*holder == p_source), "Another source reports that isolated section already.");
+        const StringName previous = source->isolated;
+        source->isolated = p_isolated;
+        names_rename(sources_by_isolated, previous, p_isolated, p_source);
+        _send_isolated_occupied(p_source);
+    }
+
+    StringName SignallingServer::source_get_isolated(const RID &p_source) const {
+        const SourceData *source = sources.getptr(p_source);
+        ERR_FAIL_NULL_V(source, StringName());
+        return source->isolated;
     }
 
     /// A report of the source, handed to the implementation of the system it belongs to

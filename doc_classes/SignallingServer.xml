@@ -398,6 +398,13 @@
 				Frees the source, taking it out of its system.
 			</description>
 		</method>
+		<method name="source_get_isolated" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="source" type="RID" />
+			<description>
+				Returns the name of the [TrackServer] isolated section the source reports, or an empty name.
+			</description>
+		</method>
 		<method name="source_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="source" type="RID" />
@@ -426,6 +433,14 @@
 			<param index="2" name="arguments" type="Dictionary" default="{}" />
 			<description>
 				A report of the source, handed to the implementation of the system it belongs to ([method SignallingImplementation._handle_source_event]). The sender knows only its own source; which system and implementation receive it is the server's business. A source that belongs to no system refuses it.
+			</description>
+		</method>
+		<method name="source_set_isolated">
+			<return type="void" />
+			<param index="0" name="source" type="RID" />
+			<param index="1" name="isolated" type="StringName" />
+			<description>
+				The source reports the [TrackServer] isolated section of the name - one source per section. The implementation of its system gets the [code]"occupied"[/code] event when the section's first axle comes onto it and [code]"freed"[/code] when its last axle leaves (TIsolated::Modify(), Track.cpp:118-147, the section's [code]:busy[/code] and [code]:free[/code]), with no arguments; a source joined to a system and to a section that is occupied already gets [code]"occupied"[/code] at once. Held by name, so the section may be created after the source.
 			</description>
 		</method>
 		<method name="source_set_name">

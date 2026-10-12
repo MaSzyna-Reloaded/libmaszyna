@@ -542,7 +542,9 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 ## Signalling (#296)
 
-* **The isolated sections become the system's sources** (`SignallingServer.system_add_source`).
+* **No data joins an isolated section to a source**: `SignallingServer.source_set_isolated()`
+  reports a section through a source, but the legacy scenery has no interlocking, so nothing
+  creates those sources yet.
 * **Routes (USRK przebiegi)**: the server holds routes, switches, links and the sensor impulse
   (`SignallingServer.route_*`); no implementation sets a route yet. Left out: flank protection
   and switches set additionally (a table by switch, not by route), conditional switches, variant
