@@ -52,6 +52,36 @@ class TrackState:
     var resolved_trackbed_material_valid: bool = false
     var rail_visible: bool = true
     var ballast_visible: bool = true
+    ## Kept for the instances made when first needed (_ensure_instance())
+    var scenario: RID = RID()
+    var visible: bool = true
+    ## A streamed road is drawn by the road cell holding it, not by instances of its own
+    var road_cell: RID = RID()
+
+
+## The streamed roads of one square of the map in one scenario, drawn as one mesh of a surface per
+## material: a town has thousands of road segments, each a draw call or two of a few triangles
+## when drawn by itself. Measured on an imported Olkusz (2026-10-13, 3904 roads): 42-44 ms a frame
+## drawn by themselves against 27-36 ms without them; 5742 roads in cells: +375 draw calls, the
+## frame time of the scenery without roads, a cell built in 0.9 ms on average, 5.2 ms at most.
+class RoadCell:
+    var scenario: RID = RID()
+    var coords: Vector2i
+    ## Track render RIDs of the roads in the cell
+    var tracks: Dictionary[RID, bool] = {}
+    var stream_rid: RID = RID()
+    var streamed: bool = false
+    var instance: RID = RID()
+    var mesh: ArrayMesh
+    var rebuild_queued: bool = false
+
+
+## The geometry of one material, gathered from one road or a cell's roads
+class RoadGeometry:
+    var vertices: PackedVector3Array = PackedVector3Array()
+    var normals: PackedVector3Array = PackedVector3Array()
+    var uvs: PackedVector2Array = PackedVector2Array()
+    var indices: PackedInt32Array = PackedInt32Array()
 
 
 class TrackData:
@@ -98,12 +128,19 @@ var DEFAULT_RAIL_PROFILE:RailProfile = RailProfile.new(
     )
 
 var _tracks: Dictionary[RID, TrackState] = {}
+## Road cells by their RID, and by [scenario, cell coordinates]
+var _road_cells: Dictionary[RID, RoadCell] = {}
+var _road_cells_by_key: Dictionary = {}
+var _road_stream_owner: int = -1
+var _road_rebuild_pending: bool = false
 var _track_render_rids_by_track: Dictionary[RID, RID] = {}
 var _next_track_render_id: int = 0
 var _stream_owner: int = -1
 var _rail_profile_cache: Dictionary = {}
 ## Texture length ("size:" y) by material name, -1 for none - parsed once per material
 var _material_texture_lengths: Dictionary[String, float] = {}
+## Width/height of the texture by material name, read once per material (roads)
+var _material_texture_ratios: Dictionary[String, float] = {}
 var _rail_profile_regex: RegEx = RegEx.new()
 ## Created in _ready(): this autoload is instantiated before MaterialManager
 var _track_material_options: MaterialManager.MaterialOptions
@@ -116,6 +153,9 @@ const _TRACKBED_OLD_MAPPING_TEXTURE_LENGTH: float = 4.0
 const _TRACKBED_OLD_MAPPING_NORMAL_ANGLE: float = 75.0
 ## Original engine: Track.cpp:2869, 2877 - the old mapping's u at the slope's upper edges
 const _TRACKBED_OLD_MAPPING_BREAK_U: float = 0.33
+## Side of a road cell [m]: one cell is built in one go by the streaming, so it holds about as many
+## roads as one frame's build budget fits (a town's ~100 segments)
+const _ROAD_CELL_SIZE: float = 125.0
 
 func _init() -> void:
     _rail_profile_regex.compile("-?\\d+(?:\\.\\d+)?")
@@ -134,6 +174,7 @@ func _ready() -> void:
 func _on_data_unload_requested() -> void:
     _rail_profile_cache.clear()
     _material_texture_lengths.clear()
+    _material_texture_ratios.clear()
 
 
 ## Every track is built again, taking its materials again: a streamed one as it is streamed, one
@@ -145,22 +186,14 @@ func _on_data_reload_requested() -> void:
             rebuild_track(track_render_rid)
     if _stream_owner >= 0:
         SceneryStreamingServer.owner_rebuild(_stream_owner)
+    if _road_stream_owner >= 0:
+        SceneryStreamingServer.owner_rebuild(_road_stream_owner)
 
 
 func create_track(track_rid: RID) -> RID:
     var state: TrackState = TrackState.new()
     state.track_rid = track_rid
-    state.primary_rail_mesh_instance = RenderingServer.instance_create()
-    state.secondary_rail_mesh_instance = RenderingServer.instance_create()
-    state.primary_blade_mesh_instance = RenderingServer.instance_create()
-    state.secondary_blade_mesh_instance = RenderingServer.instance_create()
-    state.trackbed_mesh_instance = RenderingServer.instance_create()
-    # The trackbed casts no sun shadow: a 0.2 m bed barely shades the ground, but its slopes, lit
-    # at a grazing angle, shaded themselves - a dark band that read as a gap to the terrain
-    # (FINDINGS.md, 2026-09-28)
-    RenderingServer.instance_geometry_set_cast_shadows_setting(
-        state.trackbed_mesh_instance, RenderingServer.SHADOW_CASTING_SETTING_OFF
-    )
+    # the instances are made as the track is built, only those it draws (_ensure_instance())
 
     _next_track_render_id += 1
     var track_render_rid: RID = rid_from_int64(_next_track_render_id)
@@ -176,6 +209,8 @@ func free_track(track_render_rid: RID) -> void:
 
     if state.stream_rid.is_valid():
         SceneryStreamingServer.stream_free(state.stream_rid)
+    if state.road_cell.is_valid():
+        _road_cell_remove(track_render_rid, state)
     _reset_track_instances(state)
 
     if state.primary_rail_mesh_instance.is_valid():
@@ -220,11 +255,11 @@ func set_track_visible(track_rid: RID, visible: bool) -> void:
     if not state:
         return
 
-    RenderingServer.instance_set_visible(state.primary_rail_mesh_instance, visible)
-    RenderingServer.instance_set_visible(state.secondary_rail_mesh_instance, visible)
-    RenderingServer.instance_set_visible(state.primary_blade_mesh_instance, visible)
-    RenderingServer.instance_set_visible(state.secondary_blade_mesh_instance, visible)
-    RenderingServer.instance_set_visible(state.trackbed_mesh_instance, visible)
+    state.visible = visible
+    for instance: RID in _get_track_instances(state):
+        RenderingServer.instance_set_visible(instance, visible)
+    if state.road_cell.is_valid():
+        _queue_road_cell_rebuild(_road_cells[state.road_cell])
 
 
 func set_track_scenario(track_rid: RID, scenario: RID) -> void:
@@ -232,11 +267,43 @@ func set_track_scenario(track_rid: RID, scenario: RID) -> void:
     if not state:
         return
 
-    RenderingServer.instance_set_scenario(state.primary_rail_mesh_instance, scenario)
-    RenderingServer.instance_set_scenario(state.secondary_rail_mesh_instance, scenario)
-    RenderingServer.instance_set_scenario(state.primary_blade_mesh_instance, scenario)
-    RenderingServer.instance_set_scenario(state.secondary_blade_mesh_instance, scenario)
-    RenderingServer.instance_set_scenario(state.trackbed_mesh_instance, scenario)
+    state.scenario = scenario
+    for instance: RID in _get_track_instances(state):
+        RenderingServer.instance_set_scenario(instance, scenario)
+    if state.road_cell.is_valid():
+        # into the cell of its new scenario
+        _road_cell_remove(track_rid, state)
+        _road_cell_add(track_rid, state)
+
+
+## The instances the track has made so far
+func _get_track_instances(state: TrackState) -> Array[RID]:
+    var instances: Array[RID] = []
+    for instance: RID in [state.primary_rail_mesh_instance, state.secondary_rail_mesh_instance,
+            state.primary_blade_mesh_instance, state.secondary_blade_mesh_instance, state.trackbed_mesh_instance]:
+        if instance.is_valid():
+            instances.append(instance)
+    return instances
+
+
+## The instance of [param slot] (a TrackState "*_mesh_instance" field), made when the track first
+## draws something there: a plain track has no blades, a road no rails - five instances made
+## for every track at its creation were mostly never drawn
+func _ensure_instance(state: TrackState, slot: StringName) -> RID:
+    var instance: RID = state.get(slot)
+    if instance.is_valid():
+        return instance
+    instance = RenderingServer.instance_create()
+    if state.scenario.is_valid():
+        RenderingServer.instance_set_scenario(instance, state.scenario)
+    RenderingServer.instance_set_visible(instance, state.visible)
+    if slot == &"trackbed_mesh_instance":
+        # The trackbed casts no sun shadow: a 0.2 m bed barely shades the ground, but its slopes,
+        # lit at a grazing angle, shaded themselves - a dark band that read as a gap to the
+        # terrain (FINDINGS.md, 2026-09-28)
+        RenderingServer.instance_geometry_set_cast_shadows_setting(instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+    state.set(slot, instance)
+    return instance
 
 
 func set_switch_blade_offsets(track_render_rid: RID, f_offset1: float, f_offset2: float) -> void:
@@ -352,6 +419,9 @@ func stream_track(track_render_rid: RID) -> void:
     var track: TrackData = _get_track_data(state.track_rid)
     if not track.is_valid():
         return
+    if _is_road(state.track_rid, track):
+        _road_cell_add(track_render_rid, state)
+        return
     state.stream_rid = SceneryStreamingServer.stream_register(
         _stream_owner, track_render_rid, track.curve1.p1, 0.0
     )
@@ -399,6 +469,9 @@ func rebuild_track(track_render_rid: RID) -> void:
         return
     if state.stream_rid.is_valid() and not state.streamed:
         return # out of range: built by _stream_build() when the camera comes back
+    if state.road_cell.is_valid():
+        _queue_road_cell_rebuild(_road_cells[state.road_cell])
+        return
     if not TrackServer:
         return
     var track: TrackData = _get_track_data(state.track_rid)
@@ -415,6 +488,10 @@ func rebuild_track(track_render_rid: RID) -> void:
 
     var length: float = curve1.get_baked_length()
     if not length:
+        return
+
+    if _is_road(state.track_rid, track):
+        _build_road(state, track, curve1)
         return
 
     var rail_profile: RailProfile = _get_rail_profile(state.railprofile)
@@ -687,15 +764,15 @@ func rebuild_track(track_render_rid: RID) -> void:
             state.trackbed_mesh = _build_array_mesh(trackbed_vertices, trackbed_normals, trackbed_uvs, trackbed_indices)
 
     if state.primary_rail_mesh:
-        RenderingServer.instance_set_base(state.primary_rail_mesh_instance, state.primary_rail_mesh.get_rid())
+        RenderingServer.instance_set_base(_ensure_instance(state, &"primary_rail_mesh_instance"), state.primary_rail_mesh.get_rid())
     if state.secondary_rail_mesh:
-        RenderingServer.instance_set_base(state.secondary_rail_mesh_instance, state.secondary_rail_mesh.get_rid())
+        RenderingServer.instance_set_base(_ensure_instance(state, &"secondary_rail_mesh_instance"), state.secondary_rail_mesh.get_rid())
     if state.primary_blade_mesh:
-        RenderingServer.instance_set_base(state.primary_blade_mesh_instance, state.primary_blade_mesh.get_rid())
+        RenderingServer.instance_set_base(_ensure_instance(state, &"primary_blade_mesh_instance"), state.primary_blade_mesh.get_rid())
     if state.secondary_blade_mesh:
-        RenderingServer.instance_set_base(state.secondary_blade_mesh_instance, state.secondary_blade_mesh.get_rid())
+        RenderingServer.instance_set_base(_ensure_instance(state, &"secondary_blade_mesh_instance"), state.secondary_blade_mesh.get_rid())
     if state.trackbed_mesh:
-        RenderingServer.instance_set_base(state.trackbed_mesh_instance, state.trackbed_mesh.get_rid())
+        RenderingServer.instance_set_base(_ensure_instance(state, &"trackbed_mesh_instance"), state.trackbed_mesh.get_rid())
 
     # The second path of a switch carries its own rail texture; everything else, and a switch
     # that declares none, uses the track's own one.
@@ -730,9 +807,324 @@ func rebuild_track(track_render_rid: RID) -> void:
     set_switch_blade_offsets(track_render_rid, track.switch_f_offset1, track.switch_f_offset2)
 
 
+## A road drawn by itself (a hand-placed one, not streamed): its surface by the rail's instance,
+## its sides by the trackbed's
+func _build_road(state: TrackState, track: TrackData, curve: Curve3D) -> void:
+    var surface: RoadGeometry = RoadGeometry.new()
+    var sides: RoadGeometry = RoadGeometry.new()
+    _append_road_geometry(state, track, curve, surface, sides)
+    if state.material1 and not surface.vertices.is_empty():
+        state.primary_rail_mesh = _build_array_mesh(surface.vertices, surface.normals, surface.uvs, surface.indices)
+        RenderingServer.instance_set_base(_ensure_instance(state, &"primary_rail_mesh_instance"), state.primary_rail_mesh.get_rid())
+        RenderingServer.mesh_surface_set_material(state.primary_rail_mesh.get_rid(), 0, state.material1.get_rid())
+    if state.material2 and not sides.vertices.is_empty():
+        state.trackbed_mesh = _build_array_mesh(sides.vertices, sides.normals, sides.uvs, sides.indices)
+        RenderingServer.instance_set_base(_ensure_instance(state, &"trackbed_mesh_instance"), state.trackbed_mesh.get_rid())
+        RenderingServer.mesh_surface_set_material(state.trackbed_mesh.get_rid(), 0, state.material2.get_rid())
+
+
+## Port of the road drawing of TTrack::create_geometry() (Track.cpp:1479-1517): the surface of
+## material1 across the track's width into [param surface], then the shoulders - or the curbs and
+## sidewalks - of material2 on both sides into [param sides]; a slot without a material name
+## gets nothing. A road has no rails: its points are its surface (Track.cpp:552-559 lifts rail
+## tracks only).
+func _append_road_geometry(state: TrackState, track: TrackData, curve: Curve3D, surface: RoadGeometry, sides: RoadGeometry) -> void:
+    if not state.material1_name and not state.material2_name:
+        return
+    var curve_data: TrackCurve = track.curve1
+    var road: RoadLook = RoadLook.new()
+    road.width = track.width
+    road.tex_height = state.tex_height
+    road.tex_width = state.tex_width
+    road.tex_slope = state.tex_slope
+    # iTrapezoid & 2 (Track.cpp:355-372): the next road, joined at its start, differs in its look -
+    # this one turns into it along its length
+    var next_road: RoadLook = road
+    var next_connection: TrackEndpointRef = _get_unique_endpoint_connection(state.track_rid, TrackServer.CURVE1_P2)
+    if next_connection and next_connection.endpoint_index == TrackServer.CURVE1_P1:
+        var next_track: TrackData = _get_track_data(next_connection.track_rid)
+        var next_state: TrackState = _get_track_state_by_track_rid(next_connection.track_rid)
+        if (next_track.is_valid() and next_state and not _track_has_secondary_curve(next_track)
+                and TrackServer.track_get_group(next_connection.track_rid) == TrackServer.GROUP_ROAD):
+            next_road = RoadLook.new()
+            next_road.width = next_track.width
+            next_road.tex_height = next_state.tex_height
+            next_road.tex_width = next_state.tex_width
+            next_road.tex_slope = next_state.tex_slope
+            if next_road.same_as(road):
+                next_road = road
+    var roll1: float = deg_to_rad(curve_data.roll1)
+    var roll2: float = deg_to_rad(curve_data.roll2)
+    var transition: bool = not next_road == road or not is_zero_approx(roll1) or not is_zero_approx(roll2)
+
+    var surface_length: float = _get_road_texture_length(state, state.material1_name)
+    var surface_ratio: float = _get_material_texture_ratio(state.material1_name)
+    var surface_start: Array = _build_road_section(road.width, roll1, surface_length, surface_ratio)
+    var surface_end: Array = _build_road_section(next_road.width, roll2 if transition else roll1, surface_length, surface_ratio)
+
+    if state.material1_name:
+        _append_loft_geometry(surface.vertices, surface.normals, surface.uvs, surface.indices, curve,
+                _mirror_road_section(surface_start), _mirror_road_section(surface_end), surface_length, 0.0)
+
+    if state.material2_name:
+        var side_length: float = _get_road_texture_length(state, state.material2_name)
+        var side_ratio: float = _get_material_texture_ratio(state.material2_name)
+        var sides_start: Array = _build_road_side_sections(road, surface_start, side_length, side_ratio)
+        var sides_end: Array = _build_road_side_sections(next_road, surface_end, side_length, side_ratio)
+        # Track.cpp:1503-1514: a shoulder on both sides, a sidewalk only where it has a width
+        if road.tex_height >= 0.0 or not is_zero_approx(road.tex_slope):
+            _append_loft_geometry(sides.vertices, sides.normals, sides.uvs, sides.indices, curve,
+                    _mirror_road_section(sides_start[0]), _mirror_road_section(sides_end[0]), side_length, 0.0)
+        if road.tex_height >= 0.0 or not is_zero_approx(road.tex_width):
+            _append_loft_geometry(sides.vertices, sides.normals, sides.uvs, sides.indices, curve,
+                    _mirror_road_section(sides_start[1]), _mirror_road_section(sides_end[1]), side_length, 0.0)
+
+
+func _is_road(track_rid: RID, track: TrackData) -> bool:
+    return TrackServer.track_get_group(track_rid) == TrackServer.GROUP_ROAD and not track.curve2
+
+
+## Puts a streamed road into the cell of its scenario holding its start, the cell made and
+## registered with the streaming as its first road comes
+func _road_cell_add(track_render_rid: RID, state: TrackState) -> void:
+    var track: TrackData = _get_track_data(state.track_rid)
+    var coords: Vector2i = Vector2i(
+        floori(track.curve1.p1.x / _ROAD_CELL_SIZE), floori(track.curve1.p1.z / _ROAD_CELL_SIZE)
+    )
+    var key: Array = [state.scenario, coords]
+    var cell_rid: RID = _road_cells_by_key.get(key, RID())
+    var cell: RoadCell
+    if cell_rid.is_valid():
+        cell = _road_cells[cell_rid]
+    else:
+        cell = RoadCell.new()
+        cell.scenario = state.scenario
+        cell.coords = coords
+        _next_track_render_id += 1
+        cell_rid = rid_from_int64(_next_track_render_id)
+        _road_cells[cell_rid] = cell
+        _road_cells_by_key[key] = cell_rid
+        if _road_stream_owner < 0:
+            _road_stream_owner = SceneryStreamingServer.owner_create("roads", Callable(), _road_cell_build, _road_cell_clear)
+        var centre: Vector2 = (Vector2(coords) + Vector2(0.5, 0.5)) * _ROAD_CELL_SIZE
+        cell.stream_rid = SceneryStreamingServer.stream_register(
+            _road_stream_owner, cell_rid, Vector3(centre.x, track.curve1.p1.y, centre.y), 0.0
+        )
+    cell.tracks[track_render_rid] = true
+    state.road_cell = cell_rid
+    _queue_road_cell_rebuild(cell)
+
+
+func _road_cell_remove(track_render_rid: RID, state: TrackState) -> void:
+    var cell_rid: RID = state.road_cell
+    state.road_cell = RID()
+    var cell: RoadCell = _road_cells.get(cell_rid)
+    if not cell:
+        return
+    cell.tracks.erase(track_render_rid)
+    if not cell.tracks.is_empty():
+        _queue_road_cell_rebuild(cell)
+        return
+    SceneryStreamingServer.stream_free(cell.stream_rid)
+    _road_cell_clear(cell_rid)
+    if cell.instance.is_valid():
+        RenderingServer.free_rid(cell.instance)
+    _road_cells.erase(cell_rid)
+    _road_cells_by_key.erase([cell.scenario, cell.coords])
+
+
+## A built cell is built again once, at the end of the frame, however many of its roads changed
+## (a scenery puts hundreds into one cell as it loads)
+func _queue_road_cell_rebuild(cell: RoadCell) -> void:
+    if not cell.streamed or cell.rebuild_queued:
+        return
+    cell.rebuild_queued = true
+    if not _road_rebuild_pending:
+        _road_rebuild_pending = true
+        _rebuild_queued_road_cells.call_deferred()
+
+
+func _rebuild_queued_road_cells() -> void:
+    _road_rebuild_pending = false
+    for cell_rid: RID in _road_cells:
+        var cell: RoadCell = _road_cells[cell_rid]
+        if cell.rebuild_queued:
+            cell.rebuild_queued = false
+            if cell.streamed:
+                _build_road_cell(cell)
+
+
+func _road_cell_build(cell_rid: RID, _preloaded: Variant) -> void:
+    var cell: RoadCell = _road_cells.get(cell_rid)
+    if not cell:
+        return
+    cell.streamed = true
+    _build_road_cell(cell)
+
+
+func _road_cell_clear(cell_rid: RID) -> void:
+    var cell: RoadCell = _road_cells.get(cell_rid)
+    if not cell:
+        return
+    cell.streamed = false
+    cell.rebuild_queued = false
+    if cell.instance.is_valid():
+        RenderingServer.instance_set_base(cell.instance, RID())
+    cell.mesh = null
+
+
+## The cell's visible roads as one mesh, a surface per material
+func _build_road_cell(cell: RoadCell) -> void:
+    var geometries: Dictionary[String, RoadGeometry] = {}
+    for track_render_rid: RID in cell.tracks:
+        var state: TrackState = _tracks.get(track_render_rid)
+        if not state or not state.visible:
+            continue
+        var track: TrackData = _get_track_data(state.track_rid)
+        if not track.is_valid():
+            continue
+        var curve: Curve3D = _build_curve(track.curve1)
+        if not curve.get_baked_length():
+            continue
+        if state.material1_name and not geometries.has(state.material1_name):
+            geometries[state.material1_name] = RoadGeometry.new()
+        if state.material2_name and not geometries.has(state.material2_name):
+            geometries[state.material2_name] = RoadGeometry.new()
+        _append_road_geometry(state, track, curve,
+                geometries.get(state.material1_name, RoadGeometry.new()),
+                geometries.get(state.material2_name, RoadGeometry.new()))
+
+    var mesh: ArrayMesh = ArrayMesh.new()
+    for material_name: String in geometries:
+        var geometry: RoadGeometry = geometries[material_name]
+        if geometry.vertices.is_empty():
+            continue
+        var arrays: Array = []
+        arrays.resize(Mesh.ARRAY_MAX)
+        arrays[Mesh.ARRAY_VERTEX] = geometry.vertices
+        arrays[Mesh.ARRAY_NORMAL] = geometry.normals
+        arrays[Mesh.ARRAY_TEX_UV] = geometry.uvs
+        arrays[Mesh.ARRAY_INDEX] = geometry.indices
+        mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+        mesh.surface_set_material(
+            mesh.get_surface_count() - 1, MaterialManager.get_material("", material_name, _track_material_options)
+        )
+    cell.mesh = mesh
+    if not cell.instance.is_valid():
+        cell.instance = RenderingServer.instance_create()
+        RenderingServer.instance_set_scenario(cell.instance, cell.scenario)
+        # flat on the ground: a road's shadow is its shoulder's, and those shaded themselves as
+        # the trackbed's slopes did (_ensure_instance())
+        RenderingServer.instance_geometry_set_cast_shadows_setting(cell.instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+    RenderingServer.instance_set_base(cell.instance, mesh.get_rid() if mesh.get_surface_count() > 0 else RID())
+
+
+## The dimensions of a road that shape its cross-section - the ones whose change between two roads
+## makes the first turn into the second (Track.cpp:347-352)
+class RoadLook:
+    var width: float = 0.0
+    var tex_height: float = 0.0
+    var tex_width: float = 0.0
+    var tex_slope: float = 0.0
+
+    func same_as(other: RoadLook) -> bool:
+        return (width == other.width and tex_height == other.tex_height
+                and tex_width == other.tex_width and tex_slope == other.tex_slope)
+
+
+## Port of TTrack::create_road_profile() (Track.cpp:3008-3067) at one end of the road: its left
+## and right edges in the original's frame (x to the right of the road's direction), the texture
+## cut to the road's width - a texture is as wide as its length times its width/height ratio
+func _build_road_section(width: float, roll: float, texture_length: float, ratio: float) -> Array:
+    var half_width: float = 0.5 * abs(width)
+    var texture_width: float = ratio * texture_length
+    var map: float = half_width / texture_width if texture_width > 0.0 else 0.5
+    var left: Vector3 = Vector3(half_width * cos(roll), -half_width * sin(roll), 0.0)
+    return [
+        [left, Vector3.UP, 0.5 - map],
+        [-left, Vector3.UP, 0.5 + map],
+    ]
+
+
+## Port of TTrack::create_road_side_profile() (Track.cpp:3069-3256) at one end of the road: [right,
+## left], each a section in the original's frame. A non-negative texture height is a shoulder:
+## flat for tex_width, then down to -tex_height over tex_slope. A negative one is a sidewalk:
+## a curb as high, its face sloped 1:3.75, then a sidewalk tex_slope wide on the right and
+## tex_width wide on the left, mapped in proportion to its width.
+func _build_road_side_sections(road: RoadLook, surface: Array, texture_length: float, ratio: float) -> Array:
+    var half_width: float = 0.5 * abs(road.width)
+    var side: float = abs(road.tex_width)
+    var slope: float = abs(road.tex_slope)
+    var road_left: Vector3 = surface[0][0]
+    var road_right: Vector3 = surface[1][0]
+    if road.tex_height >= 0.0:
+        var outer: float = half_width + side + slope
+        return [
+            [
+                [Vector3(outer, -road.tex_height, 0.0), Vector3.RIGHT, 0.0],
+                [Vector3(road_left.x + side, road_left.y, 0.0), Vector3.UP, 0.5],
+                [road_left, Vector3.UP, 1.0],
+            ],
+            [
+                [road_right, Vector3.UP, 1.0],
+                [Vector3(road_right.x - side, road_right.y, 0.0), Vector3.UP, 0.5],
+                [Vector3(-outer, -road.tex_height, 0.0), Vector3.LEFT, 0.0],
+            ],
+        ]
+    # a curb 150 mm high leans 40 mm; the curbs are mapped from 31/64 to 32/64 and 32/64 to 33/64
+    var lean: float = -road.tex_height / 3.75
+    var texture_width: float = ratio * texture_length
+    var map_left: float = side / texture_width if texture_width > 0.0 else 0.484375
+    var map_right: float = slope / texture_width if texture_width > 0.0 else 0.484375
+    var height_right: float = -road.tex_height if slope > lean else 0.0
+    var height_left: float = -road.tex_height if side > lean else 0.0
+    return [
+        [
+            [Vector3(road_left.x + slope, road_left.y + height_right, 0.0), Vector3.UP, 0.515625 + map_right],
+            [Vector3(road_left.x + lean, road_left.y + height_right, 0.0), Vector3.UP, 0.515625],
+            [road_left, Vector3.LEFT, 0.515625 - lean / 2.56],
+        ],
+        [
+            [road_right, Vector3.RIGHT, 0.484375 + lean / 2.56],
+            [Vector3(road_right.x - lean, road_right.y + height_left, 0.0), Vector3.UP, 0.484375],
+            [Vector3(road_right.x - side, road_right.y + height_left, 0.0), Vector3.UP, 0.484375 - map_left],
+        ],
+    ]
+
+
+## A section of the original's frame (x to the right of the road's direction) in this server's loft
+## frame, which has x to the left (_build_rail_section): mirrored, and reversed so its faces still
+## face up
+func _mirror_road_section(section: Array) -> Array:
+    var mirrored: Array = []
+    for point: Array in section:
+        var position: Vector3 = point[0]
+        var normal: Vector3 = point[1]
+        mirrored.push_front([Vector3(-position.x, position.y, 0.0), Vector3(-normal.x, normal.y, 0.0), point[2]])
+    return mirrored
+
+
+## TTrack::texture_length() (Track.cpp:2484-2494): the material's size, else the track's own length
+func _get_road_texture_length(state: TrackState, material_name: String) -> float:
+    var size_length: float = _get_material_texture_length(material_name) if material_name else -1.0
+    return size_length if size_length >= 0.0 else state.tex_length
+
+
+## The width/height ratio of a material's texture - a road's surface is as wide as its texture's
+## length times it (fTexRatio, Track.cpp:610-621); 1 when the texture is not known
+func _get_material_texture_ratio(material_name: String) -> float:
+    if not _material_texture_ratios.has(material_name):
+        var size: Vector2i = MaterialManager.get_material_texture_size(material_name) if material_name else Vector2i.ZERO
+        _material_texture_ratios[material_name] = float(size.x) / size.y if size.y > 0 else 1.0
+    return _material_texture_ratios[material_name]
+
+
 func _on_topology_rebuilt() -> void:
     for state: TrackState in _tracks.values():
         state.resolved_trackbed_material_valid = false
+    # a road turns into the next one it is joined to
+    for cell: RoadCell in _road_cells.values():
+        _queue_road_cell_rebuild(cell)
 
 
 ## The blades follow the manager's animation step for every switch, scenery RIDs included -

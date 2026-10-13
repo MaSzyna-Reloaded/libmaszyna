@@ -33,14 +33,27 @@ event2 Krzyzowa#p_stopinfo
 endtrack
 """
 ## A track type the wrapper does not build yet.
-const ROAD_SOURCE:String = """
-road 10.0 8.0 0.15 25 25 0 flat vis
-road_asphalt 4.0 none 0.0 0.0 0.0
+const RIVER_SOURCE:String = """
+river 10.0 8.0 0.15 25 25 0 flat vis
+water 4.0 none 0.0 0.0 0.0
 0 0 0 0
 0 0 0
 0 0 0
 10 0 0 0
 0
+endtrack
+MARKER
+"""
+## td/drogi.scm's d1: a road with its surface and its shoulders
+const ROAD_SOURCE:String = """
+road 0 8 0.85 0 20 0 flat vis
+asphalt1_solidwhite 8 asphaltdark1_side1 0.38 0.38 0.38
+0 0 0 0
+0 0 0
+0 0 0
+40 0 0 0
+0
+velocity 45
 endtrack
 MARKER
 """
@@ -63,11 +76,27 @@ func test_none_trackbed_is_not_a_material_name() -> void:
 
 
 func test_unsupported_track_type_is_skipped_whole() -> void:
-    var result:Array = _import(ROAD_SOURCE)
+    var result:Array = _import(RIVER_SOURCE)
     var parser:MaszynaParser = result[1]
 
     assert_null(result[0])
     assert_eq(parser.next_token(), "MARKER", "the rejected node must be consumed up to endtrack")
+
+
+func test_a_road_is_read_as_a_road_track() -> void:
+    var result:Array = _import(ROAD_SOURCE)
+    var track:MaszynaTrackData = result[0]
+    var parser:MaszynaParser = result[1]
+
+    assert_not_null(track)
+    assert_eq(track.type, TrackServer.TRACK_ROAD)
+    assert_eq(track.width, 8.0)
+    assert_eq(track.material1, "asphalt1_solidwhite")
+    assert_eq(track.material2, "asphaltdark1_side1")
+    assert_eq(track.tex_height, 0.38)
+    assert_eq(track.curve.p2, Vector3(40, 0, 0))
+    assert_eq(track.parameters.get("velocity"), "45")
+    assert_eq(parser.next_token(), "MARKER", "the node is read up to endtrack")
 
 
 func test_a_slot_keeps_every_event_the_track_names_for_it() -> void:
