@@ -41,7 +41,8 @@ func set_use_editor_camera(value:bool) -> void:
         streaming_update_camera()
 
 
-func _ready() -> void:
+## Also on coming back: the editor takes a scene of a tab it leaves out of the tree
+func _enter_tree() -> void:
     streaming_update_camera()
 
 
@@ -54,6 +55,8 @@ func streaming_update_camera() -> void:
         SceneryStreamingServer.streaming_set_camera(streaming_camera.get_instance_id() if streaming_camera else 0)
 
 
+## The streaming stops, and active stays as the scene has it - a scene saved after it left the tree
+## kept active off and streamed nothing
 func _exit_tree() -> void:
     if active:
-        active = false
+        SceneryStreamingServer.streaming_set_camera(0)
