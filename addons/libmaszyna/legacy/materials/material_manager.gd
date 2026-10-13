@@ -394,6 +394,17 @@ func is_material_translucent(material_name:String) -> bool:
     return full_path and DDSTextureLoader.has_alpha(full_path)
 
 
+## The size in pixels of a material's diffuse texture, read from its file's header; zero when
+## there is no such file or it is not a .dds
+func get_material_texture_size(material_name:String) -> Vector2i:
+    var variant:MaszynaMaterial.MaszynaMaterialVariant = load_material("", material_name).default
+    var texture_name:String = variant.get_texture_path("diffuse")
+    if not texture_name:
+        texture_name = variant.get_texture_path("tex1")
+    var full_path:String = _get_texture_file("", texture_name if texture_name else material_name)
+    return DDSTextureLoader.get_size(full_path) if full_path else Vector2i.ZERO
+
+
 ## The texture's file in the game directory, empty when there is none
 func _get_texture_file(model_path:String, material_name:String) -> String:
     var project_data_dir:String = UserSettings.get_maszyna_game_dir()
