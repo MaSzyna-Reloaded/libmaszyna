@@ -84,8 +84,11 @@ signal vehicle_built
 ## A change of the data in the tree rebuilds the vehicle once, whatever else changes in the same
 ## frame; the node processes only while a rebuild is pending
 var _dirty:bool = false
-## The vehicle this node made (MaszynaLegacyVehicleSystem), none out of the tree
+## The vehicle this node made (MaszynaLegacyVehicleSystem), none out of the tree - or the one it
+## stands for (set_vehicle_instance())
 var _vehicle:RID = RID()
+## The node stands for a vehicle somebody else made and frees (set_vehicle_instance())
+var _proxy:bool = false
 
 
 ## The vehicle exists while the node is in the tree: made on entering it from what the node is set
@@ -94,17 +97,40 @@ func _enter_tree() -> void:
     MaszynaLegacyVehicleSystem.vehicle_built.connect(_on_vehicle_built)
     VehicleServer.vehicle_freed.connect(_on_vehicle_freed)
     GameDataServer.data_unload_requested.connect(_on_data_unload_requested)
-    _create_vehicle()
+    if _proxy:
+        set_vehicle(_vehicle)
+    else:
+        _create_vehicle()
     _dirty = false
 
 
 ## ... and freed on leaving it (the editor takes a scene out of the tree when another one's tab is
 ## shown), while the node still hears of it (_on_vehicle_freed())
 func _exit_tree() -> void:
-    _free_vehicle()
+    if not _proxy:
+        _free_vehicle()
     MaszynaLegacyVehicleSystem.vehicle_built.disconnect(_on_vehicle_built)
     VehicleServer.vehicle_freed.disconnect(_on_vehicle_freed)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
+
+
+## Makes the node stand for [param vehicle], made by somebody else (a scenery's dynamic): called
+## before the node enters the tree, it takes the vehicle's data into its own and neither makes nor
+## frees the vehicle. A change of the data stays in the node - the vehicle is its owner's, built
+## anew when the owner builds it from the changed data (a scenery written and loaded again).
+func set_vehicle_instance(vehicle:RID) -> void:
+    var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
+    vehicle_id = dynamic.vehicle_id
+    data_path = dynamic.data_path
+    file_name = dynamic.file_name
+    skin = dynamic.skin
+    initial_velocity = dynamic.velocity
+    driver_type = dynamic.driver_type
+    load_name = dynamic.load_name
+    load_amount = dynamic.load_amount
+    _proxy = true
+    _vehicle = vehicle
+    _dirty = false
 
 
 ## false while a rebuild is pending - true once it ran, even when the vehicle failed to load
@@ -112,12 +138,14 @@ func is_built() -> bool:
     return not _dirty and (not _vehicle.is_valid() or MaszynaLegacyVehicleSystem.vehicle_is_built(_vehicle))
 
 
-## A change makes the vehicle anew
+## A change makes the vehicle anew - a vehicle of the node's own (set_vehicle_instance())
 func _process(_delta:float) -> void:
     set_process(false)
     if not _dirty:
         return
     _dirty = false
+    if _proxy:
+        return
     _free_vehicle()
     _create_vehicle()
 
@@ -155,6 +183,8 @@ func _on_vehicle_freed(vehicle:RID) -> void:
 ## The vehicle goes at once with the data it was built of - nothing of it is built again from the new
 ## data before it is itself - and is built anew in the next frame
 func _on_data_unload_requested() -> void:
+    if _proxy:
+        return
     _free_vehicle()
     _dirty = true
     set_process(true)
