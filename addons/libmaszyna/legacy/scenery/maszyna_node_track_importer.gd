@@ -11,6 +11,13 @@ const ENVIRONMENTS:Dictionary[String, TrackServer.TrackEnvironment] = {
     "bridge": TrackServer.ENVIRONMENT_BRIDGE,
     "bank": TrackServer.ENVIRONMENT_BANK,
 }
+## The track types built so far; a road is read as a normal track (Track.cpp:397-438: road is
+## tt_Normal with the road category)
+const TYPES:Dictionary[String, TrackServer.TrackType] = {
+    "normal": TrackServer.TRACK_NORMAL,
+    "switch": TrackServer.TRACK_SWITCH,
+    "road": TrackServer.TRACK_ROAD,
+}
 const TrackData = preload("res://addons/libmaszyna/legacy/scenery/maszyna_track_data.gd")
 
 
@@ -21,14 +28,14 @@ const TrackData = preload("res://addons/libmaszyna/legacy/scenery/maszyna_track_
 ## benefits hand-authored scenes edited directly in demo_3d.tscn-style scenes.
 func import(p:MaszynaParser, _context: MaszynaImporterContext) -> TrackData:
     var type_token = p.next_token()
-    if type_token not in ["switch", "normal"]:
-        # road/river/cross/turn/table are not built yet - discard the whole node, otherwise the
+    if not TYPES.has(type_token):
+        # river/cross/turn/table are not built yet - discard the whole node, otherwise the
         # shared parser cursor stays inside it and keeps eating tokens until the next keyword.
         p.get_tokens_until("endtrack")
         return null
 
     var data := TrackData.new()
-    data.type = TrackServer.TRACK_SWITCH if type_token == "switch" else TrackServer.TRACK_NORMAL
+    data.type = TYPES[type_token]
 
     data.length = float(p.next_token())
     data.width = float(p.next_token())

@@ -504,13 +504,10 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   Track.cpp:226-259), where `RailVehicleServer::_walk_axle()` stops at the end and every later
   vehicle stacks there (RailVehicleServer.cpp:1585-1591); a switch entered from a branch while
   placing is thrown (`SwitchForced()`, TrkFoll.cpp:52-56), the port takes the branch and leaves it.
-* **Road, river and cross tracks are not imported** (#318) (`maszyna_node_track_importer.gd:23-28`
-  drops them whole, without a warning). Platforms built as roads are missing with them: Herby
-  Nowe platforms 3 and 4 (`l61_tory.scm:38837-38945`, `plateplatform2`, reports#32).
-  linia61_towarowy1.scn alone drops 964 road nodes, 39 river and 9 cross. Port: the road loft
-  with its sides (`Track.cpp:1479-1517`, `create_road_profile` :3010,
-  `create_road_side_profile` :3070, a kerb for `fTexHeight1 < 0` :3107), rivers drawn the same
-  way (:1686-1712), crossings (`tt_Cross`, :1520-1683).
+* **River and cross tracks are not imported** (#318) (`maszyna_node_track_importer.gd` drops them
+  whole, without a warning); linia61_towarowy1.scn drops 39 river and 9 cross. Port: rivers drawn
+  as roads (`Track.cpp:1686-1712`, `fTexHeight1` negated :507, `fTexLength` instead of the
+  material's length), crossings (`tt_Cross`, :1520-1683, the extra edge segments :771-787).
 * Tracks and traction have no worker `preload`.
 * A terrain chunk's material is looked up on the main thread (`.mat` parse, DDS decode, md5 key) -
   move to the worker preload once the streaming panel shows terrain dominated by it.
@@ -532,8 +529,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * In the editor streaming follows 3D viewport 0 only.
 * A freed streaming camera is not noticed: `SceneryStreamingServer::camera_id` stays set,
   `streaming_has_camera()` stays true and the streaming stops where it was, silently.
-* `maszyna_node_track_importer.gd` drops `road`, `river`, `cross`, `turn`, `table`
-  (`Track.cpp:1554` on).
+* `maszyna_node_track_importer.gd` drops `turn`, `table`.
 * Lamp head colour does not match its tinted pool - needs a flag in the `E3DMaterialResolver` key.
 * An economy-mode merged light takes the max `energy`, not the sum.
 * Scenery light brightness calibrated by eye (`scenery_light_*`).

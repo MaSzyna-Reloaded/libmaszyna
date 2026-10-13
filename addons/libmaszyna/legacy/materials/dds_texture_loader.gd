@@ -21,6 +21,18 @@ static func has_alpha(path:String) -> bool:
     return fourcc == "DXT3" or fourcc == "DXT5"
 
 
+## The width and height of a .dds, from its header; zero when it is not one
+static func get_size(path:String) -> Vector2i:
+    var file:FileAccess = FileAccess.open(path, FileAccess.READ)
+    if not file or not file.get_buffer(4).get_string_from_ascii() == "DDS ":
+        return Vector2i.ZERO
+    file.get_32()  # header size
+    file.get_32()  # flags
+    var height:int = file.get_32()
+    var width:int = file.get_32()
+    return Vector2i(width, height)
+
+
 ## The texture's Image, read on any thread - the RenderingServer's texture is made of it on the
 ## main thread (ImageTexture.create_from_image()). Null on anything this loader doesn't handle (bad
 ## magic, unsupported fourCC, a max_size too small to keep any mip level) - callers should fall
