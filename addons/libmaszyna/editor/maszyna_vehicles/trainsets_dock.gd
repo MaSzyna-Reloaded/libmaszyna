@@ -35,14 +35,46 @@ func set_scene_root(root:Node) -> void:
     _free_show_markers()
     _scene_root = root
     if root:
-        # the sceneries the scene itself holds; the includes of a scenery are its content
-        var includes:Array[Node] = root.find_children("", "MaszynaIncludeNode", true, true)
+        var includes:Array[Node] = root.find_children("", "MaszynaIncludeNode", true, false)
         if root is MaszynaIncludeNode:
             includes.append(root)
         for node:Node in includes:
-            (node as MaszynaIncludeNode).loaded.connect(list_trainsets)
-            _include_ids.append(node.get_instance_id())
+            if _is_scene_scenery(node):
+                (node as MaszynaIncludeNode).loaded.connect(list_trainsets)
+                _include_ids.append(node.get_instance_id())
     list_trainsets()
+
+
+## A scenery coming into the edited scene after it was set - the one a test scene shows (the
+## scenery importer's scenery_test.tscn)
+func add_scenery(include:MaszynaIncludeNode) -> void:
+    if not _is_scene_scenery(include) or _include_ids.has(include.get_instance_id()):
+        return
+    include.loaded.connect(list_trainsets)
+    _include_ids.append(include.get_instance_id())
+    list_trainsets()
+
+
+## A scenery leaving the edited scene - its trainsets go from the list
+func remove_scenery(include:MaszynaIncludeNode) -> void:
+    if not _include_ids.has(include.get_instance_id()):
+        return
+    include.loaded.disconnect(list_trainsets)
+    _include_ids.erase(include.get_instance_id())
+    list_trainsets()
+
+
+## A scenery of the edited scene: the scene's own, or one of a scene shown in it, made there without
+## an owner - but not an include inside another scenery, which is that scenery's content
+func _is_scene_scenery(include:Node) -> bool:
+    if not _scene_root or not (include == _scene_root or _scene_root.is_ancestor_of(include)):
+        return false
+    var node:Node = include
+    while not node == _scene_root:
+        node = node.get_parent()
+        if node is MaszynaIncludeNode:
+            return false
+    return true
 
 
 func list_trainsets() -> void:

@@ -20,12 +20,16 @@ func _enter_tree() -> void:
     add_control_to_bottom_panel(_trainsets_dock, "Trainsets")
     add_control_to_bottom_panel(_vehicles_panel, "Vehicles")
     scene_changed.connect(_trainsets_dock.set_scene_root)
+    get_tree().node_added.connect(_on_node_added)
+    get_tree().node_removed.connect(_on_node_removed)
     _trainsets_dock.spawn_requested.connect(_on_spawn_requested)
     _trainsets_dock.set_scene_root(EditorInterface.get_edited_scene_root())
 
 
 func _exit_tree() -> void:
     scene_changed.disconnect(_trainsets_dock.set_scene_root)
+    get_tree().node_added.disconnect(_on_node_added)
+    get_tree().node_removed.disconnect(_on_node_removed)
     _trainsets_dock.spawn_requested.disconnect(_on_spawn_requested)
     remove_control_from_bottom_panel(_trainsets_dock)
     remove_control_from_bottom_panel(_vehicles_panel)
@@ -33,6 +37,17 @@ func _exit_tree() -> void:
     _trainsets_dock = null
     _vehicles_panel.free()
     _vehicles_panel = null
+
+
+## A scenery shown in the edited scene after it was opened (a test scene's) is listed too
+func _on_node_added(node:Node) -> void:
+    if node is MaszynaIncludeNode:
+        _trainsets_dock.add_scenery(node)
+
+
+func _on_node_removed(node:Node) -> void:
+    if node is MaszynaIncludeNode:
+        _trainsets_dock.remove_scenery(node)
 
 
 func _on_spawn_requested() -> void:
