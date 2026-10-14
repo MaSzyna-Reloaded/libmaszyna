@@ -48,7 +48,8 @@ const EVENT_TIME_TOLERANCE:float = 0.25
 var _vehicle_rid:RID
 var _physics_node:VehiclePhysicsNode
 var _vehicle:RailVehicle3D
-var _camera:Camera3D
+## The view the player's camera looks through - moved, it takes the listener with it
+var _camera:Node3D
 var _sound:SfxPlayer3D
 
 
@@ -58,6 +59,17 @@ func after_each() -> void:
         remove_child(_vehicle)
         _vehicle.free()
     _vehicle = null
+
+
+## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
+## only now has its camera (MaszynaPlayer, initialization_ready)
+signal scenery_loaded(first_vehicle_id:String)
+
+## The player started outside, as after a scenery with no start vehicle: its camera is made only
+## then (MaszynaPlayer, initialization_ready)
+func _start_player(player:MaszynaPlayer) -> void:
+    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
+    scenery_loaded.emit("")
 
 
 ## A vehicle at the origin, not given its controller yet, and the player whose camera is the listener
@@ -70,8 +82,9 @@ func _build_vehicle() -> void:
 
     var player:MaszynaPlayer = PLAYER_SCENE.instantiate()
     add_child_autoqfree(player)
-    # on foot the player looks through the free camera
-    _camera = player.free_camera
+    _start_player(player)
+    # on foot the player looks through the free view
+    _camera = player.free_view
 
 
 func _attach_controller() -> void:

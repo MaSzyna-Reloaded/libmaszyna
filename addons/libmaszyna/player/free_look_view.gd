@@ -1,13 +1,21 @@
-# FreeCamera3D
+# FreeLookView
 #
 # Based on https://github.com/adamviola/simple-free-look-camera (MIT license)
 # FIXME: may not be optimized
 
-extends Camera3D
-class_name FreeCamera3D
+extends Node3D
+class_name FreeLookView
+## A view of the player's one camera that the keys move and the mouse turns: the head in the cab, or
+## the free flight outside (MaszynaPlayer). It is no camera - the player's camera looks through it
+## while it is the view shown, the only one then processed.
+
+## The wheel changed the field of view: the camera looking through this view takes it
+signal fov_changed(fov:float)
 
 enum AccelMode {NORMAL, MEDIUM, FAST}
 
+## The field of view of the camera looking through this view [degrees]
+@export var fov:float = 45.0
 @export var sensitivity:float = 0.25
 @export var key_forward = KEY_UP
 @export var key_backward = KEY_DOWN
@@ -84,10 +92,12 @@ func _input(event):
                     return
                 #velocity_multiplier = clamp(velocity_multiplier * 1.1, 0.2, 20)
                 fov = clamp(fov - 1, 1, 100)
+                fov_changed.emit(fov)
             MOUSE_BUTTON_WHEEL_DOWN:
                 if hovered_control:
                     return
                 fov = clamp(fov + 1, 1, 100)
+                fov_changed.emit(fov)
 
     # Receives key input
     if event is InputEventKey:
@@ -115,7 +125,7 @@ func _input(event):
     if _looking and event is InputEventMouseMotion:
         _pending_mouse_delta += event.relative
 
-## The camera stands still where it is put next: the look, the keys' and a glide's motion left over
+## The view stands still where it is put next: the look, the keys' and a glide's motion left over
 ## from before do not carry it on
 func stop_motion() -> void:
     _looking = false
@@ -125,7 +135,7 @@ func stop_motion() -> void:
     _glide_velocity = Vector3.ZERO
 
 
-## Keeps the camera moving at the velocity [m/s] another camera had when it handed over, slowing
+## Keeps the view moving at the velocity [m/s] another view had when it handed over, slowing
 ## down by deceleration until it stops - or, once the keys steer it, fading into their speed
 func glide(p_velocity:Vector3) -> void:
     _glide_velocity = p_velocity

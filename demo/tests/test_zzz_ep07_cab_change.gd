@@ -46,7 +46,7 @@ func test_cab_change_moves_camera_to_rear_cab_facing_backward() -> void:
     PlayerServer.player_take_over_vehicle(vehicle_rid)
     await step(3)
 
-    var camera:FreeCamera3D = get_viewport().get_camera_3d() as FreeCamera3D
+    var camera:FreeLookView = player.cabin_view
     var vehicle_forward:Vector3 = -vehicle.global_basis.z
     var cab1_z:float = vehicle.to_local(camera.global_position).z
     assert_true((-camera.global_basis.z).dot(vehicle_forward) > 0.99, "cab 1 camera should look forward")

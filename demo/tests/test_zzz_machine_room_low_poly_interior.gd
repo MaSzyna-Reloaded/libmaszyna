@@ -12,6 +12,8 @@ const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## cab0, cab1 and cab2 of the low-poly interior
 const LOW_POLY_CABS:int = 3
 
+signal scenery_loaded(first_vehicle_id:String)
+
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
 var player:MaszynaPlayer
@@ -23,7 +25,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-    # out of the cab before the vehicle goes: the player's cab camera is in it
+    # out of the cab before the vehicle goes: the player's cab view is in it
     PlayerServer.player_leave_vehicle()
     # the cab interior is freed at the end of the frame
     await wait_idle_frames(1)
@@ -53,6 +55,8 @@ func test_machine_room_without_cab_model_shows_low_poly_interior() -> void:
 
     player = PLAYER_SCENE.instantiate()
     add_child(player)
+    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
+    scenery_loaded.emit("")
     PlayerServer.player_take_over_vehicle(vehicle.get_rid())
     await wait_idle_frames(3)
     assert_false(_low_poly_cab_visible(1), "hi-fi cab 1 hides its low-poly counterpart")
@@ -60,8 +64,8 @@ func test_machine_room_without_cab_model_shows_low_poly_interior() -> void:
     RailVehicleServer.person_change_cabin(PlayerServer.player_get_person(), RailVehicleServer.CABIN_CHANGE_BACKWARD)
     await wait_idle_frames(3)
 
-    var cabin:Cabin3D = get_viewport().get_camera_3d().get_parent() as Cabin3D
-    assert_not_null(cabin, "camera should stay in the cabin in the machine room")
+    var cabin:Cabin3D = player.cabin_view.get_parent() as Cabin3D
+    assert_not_null(cabin, "cab view should stay in the cabin in the machine room")
     if not cabin:
         return
     assert_eq(RailVehicleServer.cabin_get_kind(cabin.get_cabin()), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE)

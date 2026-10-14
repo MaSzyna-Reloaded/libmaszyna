@@ -5,7 +5,9 @@ extends VBoxContainer
 ## handles) and those assembled by hand (TrainSet3D) - each with the side views of its vehicles,
 ## listed again whenever one of the scene's sceneries has loaded. "Show" centres the 3D view on the
 ## trainset's vehicles. A scenery's `dynamic` outside a `trainset` has no name and is not listed.
-## "Spawn..." asks for the browser of vehicles to add one to the scene.
+## "Spawn..." asks for the browser of vehicles to add one to the scene. "Set as start vehicle", while
+## the edited scene has a MaszynaPlayer, makes the trainset's first vehicle with a cab the player's
+## start_vehicle_id.
 
 ## "Spawn..." was pressed: the browser of vehicles is wanted
 signal spawn_requested
@@ -23,6 +25,16 @@ var _profile_queue:VehicleProfileQueue = VehicleProfileQueue.new()
 ## a marker node where each vehicle of the trainset stands, selects those, and takes them away at
 ## the next "Show" or another scene
 var _show_markers:Array[Node3D] = []
+
+
+func _enter_tree() -> void:
+    get_tree().node_added.connect(_on_node_added)
+    get_tree().node_removed.connect(_on_node_removed)
+
+
+func _exit_tree() -> void:
+    get_tree().node_added.disconnect(_on_node_added)
+    get_tree().node_removed.disconnect(_on_node_removed)
 
 
 ## The edited scene: its trainsets are listed now, and again whenever one of its sceneries loads
@@ -98,6 +110,13 @@ func list_trainsets() -> void:
         %Trainsets.add_child(row)
         row.set_trainset(trainset_name, vehicles)
         row.show_requested.connect(show_trainset)
+        row.start_vehicle_requested.connect(set_start_vehicle)
+        row.set_start_vehicle_enabled(not _find_player(null) == null)
+        var file_names:Array[String] = []
+        for vehicle:RID in vehicles:
+            if MaszynaLegacyVehicleSystem.vehicle_exists(vehicle):
+                file_names.append(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).file_name)
+        row.set_vehicle_types(file_names)
         for vehicle:RID in vehicles:
             if MaszynaLegacyVehicleSystem.vehicle_exists(vehicle):
                 var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
@@ -123,6 +142,58 @@ func show_trainset(vehicles:Array[RID]) -> void:
         _show_markers.append(marker)
         selection.add_node(marker)
     MaszynaEditorViewFocus.focus_selection()
+
+
+## The scene's player starts in the trainset's first vehicle with a cab (the first vehicle when
+## none has one) - as one action to undo
+func set_start_vehicle(vehicles:Array[RID]) -> void:
+    var player:MaszynaPlayer = _find_player(null)
+    if not player or not vehicles:
+        return
+    var vehicle:RID = vehicles[0]
+    # CabinSystem is not a tool script: in the editor only RailVehicleServer knows the cabins
+    for candidate:RID in vehicles:
+        if (RailVehicleServer.vehicle_get_front_cabin(candidate).is_valid()
+                or RailVehicleServer.vehicle_get_rear_cabin(candidate).is_valid()):
+            vehicle = candidate
+            break
+    var vehicle_id:String = VehicleServer.vehicle_get_id(vehicle)
+    if not vehicle_id:
+        push_warning("Trainsets: vehicle '%s' has no id to start in" % VehicleServer.vehicle_get_name(vehicle))
+        return
+    var undo_redo:EditorUndoRedoManager = EditorInterface.get_editor_undo_redo()
+    undo_redo.create_action("Set start vehicle %s" % vehicle_id)
+    undo_redo.add_do_property(player, "start_vehicle_id", vehicle_id)
+    undo_redo.add_undo_property(player, "start_vehicle_id", player.start_vehicle_id)
+    undo_redo.commit_action()
+
+
+## The edited scene's player, [param leaving] (a node leaving the tree) left out; null when it has none
+func _find_player(leaving:Node) -> MaszynaPlayer:
+    if not _scene_root:
+        return null
+    var nodes:Array[Node] = _scene_root.find_children("*", "", true, false)
+    nodes.append(_scene_root)
+    for node:Node in nodes:
+        if node is MaszynaPlayer and not node == leaving:
+            return node
+    return null
+
+
+## A player coming into or leaving the edited scene turns "Set as start vehicle" on or off
+func _on_node_added(node:Node) -> void:
+    if node is MaszynaPlayer:
+        _set_start_vehicle_enabled(not _find_player(null) == null)
+
+
+func _on_node_removed(node:Node) -> void:
+    if node is MaszynaPlayer:
+        _set_start_vehicle_enabled(not _find_player(node) == null)
+
+
+func _set_start_vehicle_enabled(enabled:bool) -> void:
+    for row:Node in %Trainsets.get_children():
+        (row as TrainsetRow).set_start_vehicle_enabled(enabled)
 
 
 func _free_show_markers() -> void:

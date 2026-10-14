@@ -1,11 +1,13 @@
 @tool
 extends HBoxContainer
 
-## One trainset of the edited scene: its name, "Show" and the side views of its vehicles in the
-## order they stand
+## One trainset of the edited scene: its name, its vehicles' types in words, "Show" and the side
+## views of its vehicles in the order they stand
 
 ## "Show" was pressed: the 3D view is to go to the trainset's vehicles (RailVehicleServer's)
 signal show_requested(vehicles:Array[RID])
+## "Set as start vehicle" was pressed: the scene's player is to start in one of these vehicles
+signal start_vehicle_requested(vehicles:Array[RID])
 
 ## Height of a vehicle's side view [px]
 const PROFILE_HEIGHT:float = 32.0
@@ -17,6 +19,22 @@ var _vehicles:Array[RID] = []
 func set_trainset(trainset_name:String, vehicles:Array[RID]) -> void:
     %Name.text = trainset_name
     _vehicles = vehicles
+
+
+## The vehicles' types (their .mmd/.fiz file names) in the order they stand, a run of one type as
+## "N× type": "4e-tv + 3× 111a"
+func set_vehicle_types(file_names:Array[String]) -> void:
+    var parts:Array[String] = []
+    var index:int = 0
+    while index < file_names.size():
+        var run_end:int = index
+        while run_end + 1 < file_names.size() and file_names[run_end + 1] == file_names[index]:
+            run_end += 1
+        var count:int = run_end - index + 1
+        parts.append(file_names[index] if count == 1 else "%d× %s" % [count, file_names[index]])
+        index = run_end + 1
+    %VehicleTypes.text = " + ".join(parts)
+    %VehicleTypes.tooltip_text = %VehicleTypes.text
 
 
 ## The place of the next vehicle's side view, empty until the view is rendered
@@ -49,3 +67,12 @@ func show_profile(texture:Texture2D, profile:TextureRect, coupling_width:float) 
 
 func _on_show_pressed() -> void:
     show_requested.emit(_vehicles)
+
+
+## "Set as start vehicle" can be pressed only while the scene has a player to start
+func set_start_vehicle_enabled(enabled:bool) -> void:
+    %StartVehicle.disabled = not enabled
+
+
+func _on_start_vehicle_pressed() -> void:
+    start_vehicle_requested.emit(_vehicles)
