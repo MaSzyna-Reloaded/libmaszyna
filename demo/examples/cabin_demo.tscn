@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libmaszyna/console/developer_console.tscn" id="1_ebs3d"]
 [ext_resource type="Script" uid="uid://dgifxvb2e4hww" path="res://addons/libmaszyna/legacy/e3d/e3d_model_instance.gd" id="1_o1540"]
 [ext_resource type="Shader" uid="uid://cer53we0fnelj" path="res://addons/libmaszyna/environment/sky.gdshader" id="2_x8lk3"]
-[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_camera.gd" id="3_xr1tx"]
+[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_look_view.gd" id="3_xr1tx"]
 [ext_resource type="PackedScene" uid="uid://do3s7mkbpv7es" path="res://vehicles/sm42/sm_42_cabin.tscn" id="8_1ye4a"]
 [ext_resource type="Script" path="res://examples/cabin_demo.gd" id="9_cabdm"]
 
@@ -102,7 +102,12 @@ directional_shadow_max_distance = 300.0
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=1182985648]
 environment = SubResource("Environment_y62w3")
 
-[node name="Camera3D" type="Camera3D" parent="Environment" unique_id=2145021518]
+[node name="FreeView" type="Node3D" parent="Environment" unique_id=2145021518]
 transform = Transform3D(-0.9997994, 0.0013620713, -0.019990351, 0, 0.9976868, 0.06797882, 0.020036694, 0.06796516, -0.99748623, -0.010132782, 3.3619225, -3.4189606)
 script = ExtResource("3_xr1tx")
 velocity_multiplier = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="Environment/FreeView"]
+fov = 45.0
+
+[connection signal="fov_changed" from="Environment/FreeView" to="Environment/FreeView/Camera3D" method="set_fov"]

@@ -172,6 +172,7 @@ func _on_tile_gui_input(event:InputEvent, vehicle:MaszynaVehiclesBank.Vehicle) -
         var preview:E3DModelInstance = MaszynaRailVehicle3DInstancer.build_exterior(
                 vehicle.data_path, vehicle.file_name, vehicle.skins[0], "")
         preview.transform = MaszynaRailVehicle3DInstancer.MASZYNA_VEHICLE_FRAME
+        %TrackDropHint.set_vehicle_category(vehicle.category)
         %ViewportDrop.start(preview, _on_vehicle_dropped)
 
 

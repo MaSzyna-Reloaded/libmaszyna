@@ -25,8 +25,11 @@ func _exit_tree() -> void:
 
 
 func _process(_delta:float) -> void:
-    # follows the cab/free camera or the external view camera, whichever is current
+    # follows the current camera - the player's, in whichever of its views; none before the player
+    # has started (MaszynaPlayer.initialization_ready)
     _camera = get_viewport().get_camera_3d()
+    if not _camera:
+        return
     global_transform = _camera.global_transform
     _refresh_context()
 
