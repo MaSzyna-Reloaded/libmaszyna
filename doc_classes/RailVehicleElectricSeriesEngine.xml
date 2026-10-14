@@ -12,6 +12,7 @@
 		<method name="get_circuit_imin" qualifiers="const">
 			<return type="float" />
 			<description>
+				The current the automatic start steps on below [lb]A[rb] ([code]Imin[/code]: [code]IminLo[/code], or [code]IminHi[/code] switched high).
 			</description>
 		</method>
 		<method name="get_circuit_imin_high_enabled" qualifiers="const">
@@ -24,11 +25,13 @@
 			<return type="float" />
 			<param index="0" name="main_controller" type="bool" />
 			<description>
+				The speed [km/h] above which the next position of the master controller (or, with [param main_controller] false, of the field shunt) keeps the motor current within its limit and the wheels within their adhesion ([code]TController::ESMVelocity()[/code], [code]Driver.cpp:2344[/code]).
 			</description>
 		</method>
 		<method name="get_resistor_fan_rotation" qualifiers="const">
 			<return type="float" />
 			<description>
+				How fast the starting resistors' fan turns ([code]RventRot[/code]).
 			</description>
 		</method>
 	</methods>
@@ -89,10 +92,13 @@
 	</members>
 	<constants>
 		<constant name="FAN_TYPE_NONE" value="0" enum="FanType">
+			No resistor fan ([code]RVent=No[/code]).
 		</constant>
 		<constant name="FAN_TYPE_YES" value="1" enum="FanType">
+			A resistor fan ([code]RVent=Yes[/code]).
 		</constant>
 		<constant name="FAN_TYPE_AUTOMATIC" value="2" enum="FanType">
+			A resistor fan switched by itself ([code]RVent=Automatic[/code]).
 		</constant>
 	</constants>
 </class>

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="DriverServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		The AI drivers, by the person's handle.
 	</brief_description>
 	<description>
+		The drivers are [PersonServer] persons declared drivers of a named [DriverImplementation]. A driver takes the orders a scenario gives ([method driver_send_command]) and, through its implementation, what they mean; it drives the vehicle it sits in ([VehicleServer]) as a player does, through the cab, while it sits there in the driver's role. A player at the controls needs no driver.
+		The implementations are registered by name ([method implementation_register]), as [VehicleServer]'s are: whoever declares a driver (a scenery's trainset) names what it thinks with, and knows nothing of the class. A driver of a name nobody registered yet thinks with nothing - its orders are lost - until the implementation is registered, so it is registered before the drivers get their orders.
+		A driver acts in moments, as the original's does after its reaction time ([code]TController::ReactionTime[/code], [code]Driver.cpp:150-158[/code]): its implementation asks for the next one ([method driver_schedule_update]) and is called when it comes. The time is [SimulationServer]'s simulation time, which the physics and the events read too.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,12 +16,14 @@
 			<param index="0" name="driver" type="RID" />
 			<param index="1" name="implementation" type="StringName" />
 			<description>
+				The person [param driver] becomes a driver thinking with the implementation registered as [param implementation] ([method implementation_register]), as soon as there is one; an empty name makes it none.
 			</description>
 		</method>
 		<method name="driver_get_implementation" qualifiers="const">
 			<return type="DriverImplementation" />
 			<param index="0" name="driver" type="RID" />
 			<description>
+				What [param driver] thinks with; null while nothing is registered under its name.
 			</description>
 		</method>
 		<method name="driver_get_rids" qualifiers="const">
@@ -59,6 +65,7 @@
 			<param index="0" name="driver" type="RID" />
 			<param index="1" name="seconds" type="float" />
 			<description>
+				The implementation of [param driver] is updated in [param seconds] of simulated time; a later call replaces the one pending.
 			</description>
 		</method>
 		<method name="driver_send_command">
@@ -69,6 +76,7 @@
 			<param index="3" name="value2" type="float" />
 			<param index="4" name="position" type="Vector3" default="Vector3(0, 0, 0)" />
 			<description>
+				An order for [param driver] - a scenario's [param command] with its two values, and the [param position] of what sent it.
 			</description>
 		</method>
 		<method name="implementation_register">
@@ -76,18 +84,21 @@
 			<param index="0" name="name" type="StringName" />
 			<param index="1" name="implementation" type="DriverImplementation" />
 			<description>
+				[param implementation] thinks for the drivers declared with [param name], from now on those declared before it as well; a name registered again is thought with by the new one.
 			</description>
 		</method>
 		<method name="implementation_unregister">
 			<return type="void" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				The drivers declared with [param name] think with nothing until it is registered again.
 			</description>
 		</method>
 		<method name="vehicle_get_driver" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The driver aboard [param vehicle], in whatever role (the original's [code]Mechanik[/code]); an empty RID for none.
 			</description>
 		</method>
 		<method name="vehicle_get_seconds_until_departure" qualifiers="const">
@@ -102,6 +113,7 @@
 			<return type="bool" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Whether the driver of [param vehicle] sits at its controls ([code]AIControllFlag[/code]) - not while it rides along in a cab a player drives from; it still takes its orders then, but touches no control. [code]false[/code] for a vehicle without a driver.
 			</description>
 		</method>
 	</methods>
@@ -115,7 +127,7 @@
 		<signal name="driver_freed">
 			<param index="0" name="driver" type="RID" />
 			<description>
-				The person is no driver any more: its implementation was taken ([method driver_attach_implementation] with null), or the person was freed (PersonServer).
+				The person is no driver anymore: its implementation was taken ([method driver_attach_implementation] with null), or the person was freed (PersonServer).
 			</description>
 		</signal>
 		<signal name="driver_order_changed">

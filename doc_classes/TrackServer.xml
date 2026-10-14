@@ -219,6 +219,13 @@
 				Returns the curve resource of [param branch]; the first curve where the track has no second one.
 			</description>
 		</method>
+		<method name="track_get_damage_flag" qualifiers="const">
+			<return type="int" enum="TrackServer.TrackDamage" is_bitfield="true" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				The damage to [param track] a vehicle on it takes notice of ([code]TTrack::iDamageFlag[/code], [code]Track.cpp:452-458[/code]).
+			</description>
+		</method>
 		<method name="track_get_domain_curve" qualifiers="const">
 			<return type="Curve3D" />
 			<param index="0" name="track" type="RID" />
@@ -255,6 +262,20 @@
 			<param index="0" name="track" type="RID" />
 			<description>
 				Returns what surrounds the track, for its running sounds.
+			</description>
+		</method>
+		<method name="track_get_friction" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				The friction of [param track], as its memory cell modifies it ([code]TTrack::Friction()[/code], [code]Track.cpp:2527-2533[/code]) - see [method track_set_friction_modifier].
+			</description>
+		</method>
+		<method name="track_get_group" qualifiers="const">
+			<return type="int" enum="TrackServer.TrackTypeGroup" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				What runs on [param track] - rails, a road, water ([code]TTrack::iCategoryFlag[/code], [code]Track.cpp:396-432[/code]).
 			</description>
 		</method>
 		<method name="track_get_length" qualifiers="const">
@@ -364,6 +385,23 @@
 				Returns [code]true[/code] when the diverging branch of the switch track turns right, seen from the common end.
 			</description>
 		</method>
+		<method name="track_set_damage_flag">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="damage_flag" type="int" enum="TrackServer.TrackDamage" is_bitfield="true" />
+			<description>
+				A derailer worked: the damage a scenario's switch event leaves on a plain track ([code]TTrack::Switch()[/code], [code]Track.cpp:1846-1847[/code]).
+			</description>
+		</method>
+		<method name="track_set_friction_modifier">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="multiplier" type="float" />
+			<param index="2" name="offset" type="float" />
+			<description>
+				From now on the friction of [param track] is its own times [param multiplier] plus [param offset], clamped to 0-1 - what the scenery's [code]friction &lt;memcell&gt;[/code] of a track makes of the cell's two values ([code]Track.cpp:2527-2533[/code]).
+			</description>
+		</method>
 		<method name="track_set_velocity">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
@@ -407,8 +445,10 @@
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="quality_flag" type="int" />
-			<param index="2" name="environment" type="int" enum="TrackServer.TrackEnvironment" />
-			<param index="3" name="sound_distance" type="float" />
+			<param index="2" name="damage_flag" type="int" enum="TrackServer.TrackDamage" is_bitfield="true" />
+			<param index="3" name="friction" type="float" />
+			<param index="4" name="environment" type="int" enum="TrackServer.TrackEnvironment" />
+			<param index="5" name="sound_distance" type="float" />
 			<description>
 				Sets what the running sounds read of the track (Track.cpp:449).
 			</description>
@@ -452,20 +492,6 @@
 		</member>
 	</members>
 	<signals>
-		<signal name="isolated_freed">
-			<param index="0" name="isolated" type="RID" />
-			<param index="1" name="vehicle" type="RID" />
-			<description>
-				The last axle left the isolated section ([code]:free[/code]); [param vehicle] is that axle's.
-			</description>
-		</signal>
-		<signal name="isolated_occupied">
-			<param index="0" name="isolated" type="RID" />
-			<param index="1" name="vehicle" type="RID" />
-			<description>
-				The first axle came onto the isolated section ([code]:busy[/code]); [param vehicle] is that axle's.
-			</description>
-		</signal>
 		<signal name="isolated_axle_entered">
 			<param index="0" name="isolated" type="RID" />
 			<param index="1" name="vehicle" type="RID" />
@@ -478,6 +504,20 @@
 			<param index="1" name="vehicle" type="RID" />
 			<description>
 				An axle of [param vehicle] left the isolated section ([code]:dec[/code]).
+			</description>
+		</signal>
+		<signal name="isolated_freed">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+				The last axle left the isolated section ([code]:free[/code]); [param vehicle] is that axle's.
+			</description>
+		</signal>
+		<signal name="isolated_occupied">
+			<param index="0" name="isolated" type="RID" />
+			<param index="1" name="vehicle" type="RID" />
+			<description>
+				The first axle came onto the isolated section ([code]:busy[/code]); [param vehicle] is that axle's.
 			</description>
 		</signal>
 		<signal name="switch_active_track_changed">
@@ -595,6 +635,12 @@
 		</constant>
 		<constant name="ENVIRONMENT_UNKNOWN" value="-1" enum="TrackEnvironment">
 			An environment the scenery names but the original does not know (Track.cpp:474-477).
+		</constant>
+		<constant name="TRACK_DAMAGE_NONE" value="0" enum="TrackDamage" is_bitfield="true">
+			The track is whole.
+		</constant>
+		<constant name="TRACK_DAMAGE_NO_RAIL" value="128" enum="TrackDamage" is_bitfield="true">
+			The rails are taken away: a vehicle running onto the track derails ([code]dtrack_norail[/code]).
 		</constant>
 		<constant name="ENVIRONMENT_FLAT" value="0" enum="TrackEnvironment">
 			Open, flat ground.

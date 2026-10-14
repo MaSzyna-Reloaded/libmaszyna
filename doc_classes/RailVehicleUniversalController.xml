@@ -21,6 +21,7 @@
 			Whether the train's (automatic) pneumatic brake is supported on this controller.
 		</member>
 		<member name="integrated_local_brake" type="bool" setter="set_integrated_local_brake" getter="get_integrated_local_brake" default="false">
+			The controller's braking positions work the local brake ([code]IntegratedLocBrake[/code]).
 		</member>
 		<member name="positions" type="RailVehicleUniversalControllerListItem[]" setter="set_positions" getter="get_positions" default="[]">
 			[code]UCList[/code]

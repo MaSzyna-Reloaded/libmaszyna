@@ -35,10 +35,13 @@
 	</members>
 	<constants>
 		<constant name="BRAKE_TYPE_PNEUMATIC" value="0" enum="BrakeType">
+			The row is for the pneumatic brake.
 		</constant>
 		<constant name="BRAKE_TYPE_ELECTRO_PNEUMATIC" value="1" enum="BrakeType">
+			The row is for the electro-pneumatic brake.
 		</constant>
 		<constant name="BRAKE_TYPE_INDIVIDUAL" value="2" enum="BrakeType">
+			The row is for an individual brake.
 		</constant>
 	</constants>
 </class>

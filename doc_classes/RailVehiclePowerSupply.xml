@@ -26,41 +26,49 @@
 		<method name="get_battery_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the battery is switched on ([code]Battery[/code]).
 			</description>
 		</method>
 		<method name="get_converter_allowed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the converter's switch is on ([code]ConverterAllow[/code]).
 			</description>
 		</method>
 		<method name="get_converter_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the converter runs ([code]ConverterFlag[/code]).
 			</description>
 		</method>
 		<method name="get_converter_time_to_start" qualifiers="const">
 			<return type="float" />
 			<description>
+				How long the converter still takes to start [s] ([code]ConverterStartDelayTimer[/code]).
 			</description>
 		</method>
 		<method name="get_live_battery_voltage" qualifiers="const">
 			<return type="float" />
 			<description>
+				The battery's voltage now [lb]V[rb] ([code]BatteryVoltage[/code]).
 			</description>
 		</method>
 		<method name="get_power24_available" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the 24 V circuit is live ([code]Power24vIsAvailable[/code]).
 			</description>
 		</method>
 		<method name="get_power24_voltage" qualifiers="const">
 			<return type="float" />
 			<description>
+				The 24 V circuit's voltage [lb]V[rb] ([code]Power24vVoltage[/code]).
 			</description>
 		</method>
 		<method name="get_power110_available" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the 110 V circuit is live ([code]Power110vIsAvailable[/code]).
 			</description>
 		</method>
 	</methods>

@@ -20,6 +20,7 @@
 			<return type="void" />
 			<param index="0" name="path" type="String" />
 			<description>
+				[method add_geometry] of every chunk of the sector file at [param path] another sink finished - read, added and let go of.
 			</description>
 		</method>
 		<method name="add_triangles">
@@ -56,6 +57,12 @@
 				Writes every section's chunks to one file, [code]&lt;directory&gt;/&lt;x&gt;_&lt;z&gt;.res[/code] ([MaszynaTrianglesSector]), and empties the sink. Returns a [Dictionary] per chunk: [code]path[/code] (its section's file), [code]index[/code] (in the file), [code]position[/code] (its origin), [code]texture[/code], [code]range_min[/code], [code]range_max[/code].
 			</description>
 		</method>
+		<method name="get_geometries" qualifiers="const">
+			<return type="MaszynaTrianglesChunkGeometry[]" />
+			<description>
+				The chunks kept in memory, in the order they first appeared.
+			</description>
+		</method>
 		<method name="shape_is_ranged" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="translucent" type="bool" />
@@ -63,12 +70,6 @@
 			<param index="2" name="range_max" type="float" />
 			<description>
 				Whether the original keeps such a shape in a 250 m cell and draws it by its range - translucent, a range of at most 300 m, or a minimum range ([code]basic_section::insert()[/code], scene.cpp:849-851) - rather than in its section, drawn whatever its range.
-			</description>
-		</method>
-		<method name="get_geometries" qualifiers="const">
-			<return type="MaszynaTrianglesChunkGeometry[]" />
-			<description>
-				The chunks kept in memory, in the order they first appeared.
 			</description>
 		</method>
 	</methods>

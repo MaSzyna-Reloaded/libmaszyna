@@ -1,31 +1,43 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Timetable" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		A train's timetable.
 	</brief_description>
 	<description>
+		What the train is, where it runs and when, station by station ([code]TTrainParameters[/code], [code]mtable.h:45-100[/code]). Data only: how far a train has got through it belongs to whoever drives the train.
 	</description>
 	<tutorials>
 	</tutorials>
 	<members>
 		<member name="brake_ratio" type="float" setter="set_brake_ratio" getter="get_brake_ratio" default="0.0">
+			The required braked weight, percent.
 		</member>
 		<member name="entries" type="TimetableEntry[]" setter="set_entries" getter="get_entries" default="[]">
+			The stations, in the order the train reaches them.
 		</member>
 		<member name="locomotive_load" type="float" setter="set_locomotive_load" getter="get_locomotive_load" default="0.0">
+			The tonnes the locomotive is rated to haul.
 		</member>
 		<member name="locomotive_series" type="String" setter="set_locomotive_series" getter="get_locomotive_series" default="&quot;&quot;">
+			The series of the train's locomotive.
 		</member>
 		<member name="relation_from" type="String" setter="set_relation_from" getter="get_relation_from" default="&quot;&quot;">
+			The station the train starts from.
 		</member>
 		<member name="relation_to" type="String" setter="set_relation_to" getter="get_relation_to" default="&quot;&quot;">
+			The station the train runs to.
 		</member>
 		<member name="train_category" type="String" setter="set_train_category" getter="get_train_category" default="&quot;&quot;">
+			The train's category.
 		</member>
 		<member name="train_label" type="String" setter="set_train_label" getter="get_train_label" default="&quot;&quot;">
+			The train's own name, if it has one.
 		</member>
 		<member name="train_name" type="String" setter="set_train_name" getter="get_train_name" default="&quot;&quot;">
+			The train number ([code]TNS654323[/code]).
 		</member>
 		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+			The train's speed limit when the timetable is only a number [km/h], negative when the stations give it ([code]TTrainParameters::LoadTTfile()[/code], [code]mtable.cpp:283-293[/code]).
 		</member>
 	</members>
 </class>

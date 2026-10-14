@@ -13,71 +13,85 @@
 			<return type="void" />
 			<param index="0" name="pressed" type="bool" />
 			<description>
+				[code]distancecounter_sw:[/code] pressed starts the distance counter anew ([code]Train.cpp:1552[/code]).
 			</description>
 		</method>
 		<method name="get_cabin" qualifiers="const">
 			<return type="int" />
 			<description>
+				The active cab ([code]CabActive[/code]): 1 the front, -1 the rear, 0 none.
 			</description>
 		</method>
 		<method name="get_cabin_controleable" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the active cab is the one in command ([code]IsCabMaster()[/code]).
 			</description>
 		</method>
 		<method name="get_distance_counter" qualifiers="const">
 			<return type="float" />
 			<description>
+				Metres since the distance counter was started, or -1 while it is off ([code]TTrain::m_distancecounter[/code], [code]Train.h:904[/code]).
 			</description>
 		</method>
 		<method name="get_joint_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The cab's joint handle: the main position, the shunt counted on with a coupled controller, and the local brake below zero ([code]Train.cpp:9410[/code]).
 			</description>
 		</method>
 		<method name="get_main_actual_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The position the master controller has actually reached ([code]MainCtrlActualPos[/code]).
 			</description>
 		</method>
 		<method name="get_main_delayed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the master controller waits on its first position for the line contactors ([code]DelayCtrlFlag[/code]).
 			</description>
 		</method>
 		<method name="get_main_no_power_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The last master controller position that gives no power ([code]MainCtrlNoPowerPos()[/code], [code]Mover.cpp:2694[/code]): 0, or the EIM controller's own.
 			</description>
 		</method>
 		<method name="get_main_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				Where the master controller stands ([code]MainCtrlPos[/code]).
 			</description>
 		</method>
 		<method name="get_second_actual_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The position the secondary controller has actually reached ([code]ScndCtrlActualPos[/code]).
 			</description>
 		</method>
 		<method name="get_second_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				Where the secondary (shunt) controller stands ([code]ScndCtrlPos[/code]).
 			</description>
 		</method>
 		<method name="get_tachometer_clock_speed" qualifiers="const">
 			<return type="float" />
 			<description>
+				The Hasler speed recorder's speed while its clock runs, 0 otherwise ([code]Train.cpp:10091-10103[/code]).
 			</description>
 		</method>
 		<method name="get_tachometer_speed" qualifiers="const">
 			<return type="float" />
 			<description>
+				The Hasler speed recorder's speed [km/h], from the powered wheels ([code]Train.cpp:8580-8611[/code]).
 			</description>
 		</method>
 		<method name="get_tachometer_speed_jump" qualifiers="const">
 			<return type="float" />
 			<description>
+				The Hasler speed recorder's needle with its once-a-second jitter ([code]Train.cpp:8580-8611[/code]).
 			</description>
 		</method>
 	</methods>

@@ -14,21 +14,25 @@
 		<method name="get_sweep_positions" qualifiers="const">
 			<return type="PackedFloat64Array" />
 			<description>
+				Where each wiper is: 0-1 sweeping out, 1-2 on the way back - the original's [code]wiper_pos[/code] of the scene uniforms ([code]opengl33renderer.cpp:762-766[/code]).
 			</description>
 		</method>
 		<method name="get_switch_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				Where the wiper switch stands.
 			</description>
 		</method>
 		<method name="switch_decrease">
 			<return type="void" />
 			<description>
+				The wiper switch one position back ([code]TTrain::OnCommand_wiperswitchdecrease[/code], [code]Train.cpp:2638-2661[/code]).
 			</description>
 		</method>
 		<method name="switch_increase">
 			<return type="void" />
 			<description>
+				The wiper switch one position on ([code]TTrain::OnCommand_wiperswitchincrease[/code], [code]Train.cpp:2638-2661[/code]).
 			</description>
 		</method>
 	</methods>
@@ -46,6 +50,7 @@
 			The wiper switch's position table.
 		</member>
 		<member name="wiper_count" type="int" setter="set_wiper_count" getter="get_wiper_count" default="0">
+			How many wipers the vehicle has; 0 counts them from the masks of the wiper list.
 		</member>
 	</members>
 </class>

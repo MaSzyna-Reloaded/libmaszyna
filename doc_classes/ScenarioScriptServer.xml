@@ -55,11 +55,13 @@
 			<return type="ScenarioScriptCabinImplementation" />
 			<param index="0" name="context" type="RID" />
 			<description>
+				How the scripts of [param context] reach the cabs ([method context_attach_cabin_implementation]); null for none.
 			</description>
 		</method>
 		<method name="context_get_rids" qualifiers="const">
 			<return type="RID[]" />
 			<description>
+				Every script context.
 			</description>
 		</method>
 		<method name="context_run_file">

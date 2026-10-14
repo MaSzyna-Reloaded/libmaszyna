@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="MaszynaLegacyLightsAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		The original's [code]lights[/code] event.
 	</brief_description>
 	<description>
+		The event is an aspect of each signal head it is aimed at ([MaszynaLegacySignalHeadKindFactory]); this hands it to the signal head's system, whose [MaszynaLegacySignallingImplementation] shows it (lights_event, [code]Event.cpp:1741-1803[/code]).
 	</description>
 	<tutorials>
 	</tutorials>
 	<members>
 		<member name="aspects" type="StringName[]" setter="set_aspects" getter="get_aspects" default="[]">
+			The aspect each of [member signal_heads] shows, in their order.
 		</member>
 		<member name="signal_heads" type="RID[]" setter="set_signal_heads" getter="get_signal_heads" default="[]">
+			The signal heads the event is aimed at.
 		</member>
 	</members>
 </class>

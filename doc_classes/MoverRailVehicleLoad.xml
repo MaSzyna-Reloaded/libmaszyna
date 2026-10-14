@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="MoverRailVehicleLoad" inherits="RailVehicleLoad" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		[RailVehicleLoad] on the vendored Mover.
 	</brief_description>
 	<description>
+		[RailVehicleLoad] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleLoad].
 	</description>
 	<tutorials>
 	</tutorials>

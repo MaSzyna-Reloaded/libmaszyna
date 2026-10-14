@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="PythonScreenServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Cab screens drawn by the original engine's Python 2 scripts.
 	</brief_description>
 	<description>
+		The [code]pyscreen:[/code] of an MMD. A script is a class named after its file, built with the directory it lives in; each update hands it a dictionary of the train state, [code]render()[/code] returns an RGBA buffer and [code]getCommands()[/code] the commands the screen sends back to the train ([code]PyInt.cpp:23-224[/code]).
+		CPython 2.7 runs in a process of its own, [code]maszyna-python-host[/code], which loads the game directory's runtime ([code]maszyna/python/home[/code]) the way the original does. Nothing the runtime does can end the game: when the host ends - a fatal Python error, a crash in an extension module, a runtime that is missing - what it printed and its exit code go to the log, [signal python_runtime_failed] is emitted once and the screens stay blank. One worker thread talks to the host, a request at a time. Screens of the same script share one instance of its class, as in the original ([code]python_taskqueue::fetch_renderer()[/code]).
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,12 +15,14 @@
 			<param index="0" name="script_path" type="String" />
 			<param index="1" name="commands_received" type="Callable" />
 			<description>
+				A screen drawn by the script at [param script_path] - its absolute path without [code].py[/code]; [param commands_received] is called with the commands the script returns ([PackedStringArray]), on the main thread.
 			</description>
 		</method>
 		<method name="screen_free">
 			<return type="void" />
 			<param index="0" name="screen" type="RID" />
 			<description>
+				Frees [param screen].
 			</description>
 		</method>
 		<method name="screen_get_average_color" qualifiers="const">
@@ -31,6 +36,7 @@
 			<return type="Texture2D" />
 			<param index="0" name="screen" type="RID" />
 			<description>
+				The texture of [param screen] - a blank one until the script has drawn the first frame.
 			</description>
 		</method>
 		<method name="screen_request_render">
@@ -38,6 +44,7 @@
 			<param index="0" name="screen" type="RID" />
 			<param index="1" name="state" type="Dictionary" />
 			<description>
+				Queues a render of [param screen] with [param state]; a render still waiting for the same screen is replaced, not repeated ([code]python_taskqueue::insert()[/code]).
 			</description>
 		</method>
 	</methods>
