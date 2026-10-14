@@ -51,21 +51,21 @@
 				Whether the whistle is pressed.
 			</description>
 		</method>
-		<method name="set_horn_high">
+		<method name="horn_high">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>
 				The high horn pressed or let go.
 			</description>
 		</method>
-		<method name="set_horn_low">
+		<method name="horn_low">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>
 				The low horn pressed or let go.
 			</description>
 		</method>
-		<method name="set_whistle">
+		<method name="whistle">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>

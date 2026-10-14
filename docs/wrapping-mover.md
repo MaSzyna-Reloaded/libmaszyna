@@ -343,11 +343,11 @@ But nothing more - Mover may contain unused code, which will be impossible to te
 
 * use new, readable names
 * qualify every key by what owns it - `heating_enabled`, never a bare `enabled`
-* a component that publishes a whole sub-device's block qualifies it with a namespace instead:
-  `spring_brake/cylinder_pressure`, `current_collector/max_voltage`
+* a component that publishes a whole sub-device's block prefixes it with the sub-device's name:
+  `spring_brake_cylinder_pressure`, `current_collector_max_voltage`
 * a key is the value's name, never the name of the accessor that produced it
 * a key the vehicle's variant does not have is not written, so `has()` keeps its meaning
-* use only `[a-z0-9_]`, plus `/` after a sub-device namespace
+* use only `[a-z0-9_]` - no `/`, as in a property name
 
 #### Commands
 

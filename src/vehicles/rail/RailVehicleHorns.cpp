@@ -2,9 +2,9 @@
 
 namespace godot {
     void RailVehicleHorns::_bind_methods() {
-        ClassDB::bind_method(D_METHOD("set_horn_low", "state"), &RailVehicleHorns::set_horn_low);
-        ClassDB::bind_method(D_METHOD("set_horn_high", "state"), &RailVehicleHorns::set_horn_high);
-        ClassDB::bind_method(D_METHOD("set_whistle", "state"), &RailVehicleHorns::set_whistle);
+        ClassDB::bind_method(D_METHOD("horn_low", "state"), &RailVehicleHorns::horn_low);
+        ClassDB::bind_method(D_METHOD("horn_high", "state"), &RailVehicleHorns::horn_high);
+        ClassDB::bind_method(D_METHOD("whistle", "state"), &RailVehicleHorns::whistle);
 
         ClassDB::bind_method(D_METHOD("get_low_pressed"), &RailVehicleHorns::get_low_pressed);
         ClassDB::bind_method(D_METHOD("get_high_pressed"), &RailVehicleHorns::get_high_pressed);
@@ -16,9 +16,9 @@ namespace godot {
     }
 
     void RailVehicleHorns::_register_commands() {
-        register_command("horn_low", callable_mp(this, &RailVehicleHorns::set_horn_low));
-        register_command("horn_high", callable_mp(this, &RailVehicleHorns::set_horn_high));
-        register_command("whistle", callable_mp(this, &RailVehicleHorns::set_whistle));
+        register_command("horn_low", callable_mp(this, &RailVehicleHorns::horn_low));
+        register_command("horn_high", callable_mp(this, &RailVehicleHorns::horn_high));
+        register_command("whistle", callable_mp(this, &RailVehicleHorns::whistle));
     }
 
     void RailVehicleHorns::_unregister_commands() {

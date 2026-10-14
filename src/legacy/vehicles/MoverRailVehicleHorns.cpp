@@ -7,7 +7,7 @@ namespace godot {
     void MoverRailVehicleHorns::_bind_methods() {}
 
 
-    void MoverRailVehicleHorns::set_horn_low(const bool p_state) {
+    void MoverRailVehicleHorns::horn_low(const bool p_state) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {
@@ -17,7 +17,7 @@ namespace godot {
         }
     }
 
-    void MoverRailVehicleHorns::set_horn_high(const bool p_state) {
+    void MoverRailVehicleHorns::horn_high(const bool p_state) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {
@@ -27,7 +27,7 @@ namespace godot {
         }
     }
 
-    void MoverRailVehicleHorns::set_whistle(const bool p_state) {
+    void MoverRailVehicleHorns::whistle(const bool p_state) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         if (p_state) {

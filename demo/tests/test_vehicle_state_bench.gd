@@ -51,7 +51,7 @@ const SOUND_KEYS: PackedStringArray = [
     "brake_edb_cylinder_pressure", "brake_handle_braking_flow", "brake_handle_release_flow",
     "brake_handle_emergency_flow", "brake_handle_control_chamber_flow",
     "brake_handle_timing_reservoir_flow",
-    "spring_brake/active", "slipping_wheels", "wheel_rotation_speed_rps",
+    "spring_brake_active", "slipping_wheels", "wheel_rotation_speed_rps",
     "battery_enabled", "compressor_enabled", "engine_rpm_ratio", "engine_power",
     "engine_type", "engine_rpm_count", "dynamic_brake_active", "motor_torque",
     "horn_low_active", "horn_high_active", "tachometer_clock_speed",

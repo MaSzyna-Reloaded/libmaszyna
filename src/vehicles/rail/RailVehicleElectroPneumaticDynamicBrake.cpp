@@ -3,8 +3,6 @@
 namespace godot {
     void RailVehicleElectroPneumaticDynamicBrake::_bind_methods() {
         ClassDB::bind_method(
-                D_METHOD("set_ep_brake_force", "value"), &RailVehicleElectroPneumaticDynamicBrake::set_ep_brake_force);
-        ClassDB::bind_method(
                 D_METHOD("switch_ep_fuse", "value"), &RailVehicleElectroPneumaticDynamicBrake::switch_ep_fuse);
 
         BIND_PROPERTY_W_HINT(
@@ -46,14 +44,11 @@ namespace godot {
     }
 
     void RailVehicleElectroPneumaticDynamicBrake::_register_commands() {
-        register_command(
-                "set_ep_brake_force", callable_mp(this, &RailVehicleElectroPneumaticDynamicBrake::set_ep_brake_force));
         register_command("switch_ep_fuse", callable_mp(this, &RailVehicleElectroPneumaticDynamicBrake::switch_ep_fuse));
         VehicleComponent::_register_commands();
     }
 
     void RailVehicleElectroPneumaticDynamicBrake::_unregister_commands() {
-        unregister_command("set_ep_brake_force");
         unregister_command("switch_ep_fuse");
         VehicleComponent::_unregister_commands();
     }

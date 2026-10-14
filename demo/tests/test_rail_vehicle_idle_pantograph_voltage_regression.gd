@@ -103,13 +103,13 @@ func test_parked_electric_locomotive_keeps_stable_wire_voltage_and_main_switch_c
     var voltage_reached:bool = false
     for i in range(60):
         await step(1)
-        if float(controller.get_state().get("current_collector/pantograph_first_voltage", 0.0)) > 100.0:
+        if float(controller.get_state().get("current_collector_pantograph_first_voltage", 0.0)) > 100.0:
             voltage_reached = true
             break
     assert_true(
         voltage_reached,
         "pantograph should read a real wire voltage from the overhead wire once raised, got %s" % [
-                controller.get_state().get("current_collector/pantograph_first_voltage", 0.0)],
+                controller.get_state().get("current_collector_pantograph_first_voltage", 0.0)],
     )
 
     controller.send_command("direction_increase")
@@ -133,13 +133,13 @@ func test_parked_electric_locomotive_keeps_stable_wire_voltage_and_main_switch_c
     var tripped:bool = false
     for i in range(300): # ~5s at 60fps
         await step(1)
-        var voltage:float = float(controller.get_state().get("current_collector/pantograph_first_voltage", 0.0))
+        var voltage:float = float(controller.get_state().get("current_collector_pantograph_first_voltage", 0.0))
         min_voltage = minf(min_voltage, voltage)
         if not bool(controller.get_state().get("main_switch_enabled", false)):
             tripped = true
             print(
                 "main switch tripped at frame %d, voltage=%s"
-                % [i, controller.get_state().get("current_collector/pantograph_first_voltage", 0.0)]
+                % [i, controller.get_state().get("current_collector_pantograph_first_voltage", 0.0)]
             )
             break
 
@@ -153,8 +153,8 @@ func test_parked_electric_locomotive_keeps_stable_wire_voltage_and_main_switch_c
 func _dump(controller:VehicleController) -> String:
     var keys:Array[String] = [
         "main_switch_enabled", "relay_novolt", "relay_overvoltage", "relay_ground",
-        "current_collector/pantograph_first_active", "current_collector/pantograph_first_voltage",
-        "current_collector/voltage", "converter_enabled", "fuse_active", "converter_overload",
+        "current_collector_pantograph_first_active", "current_collector_pantograph_first_voltage",
+        "current_collector_voltage", "converter_enabled", "fuse_active", "converter_overload",
         "train_damage", "battery_voltage", "direction",
     ]
     var line:String = ""

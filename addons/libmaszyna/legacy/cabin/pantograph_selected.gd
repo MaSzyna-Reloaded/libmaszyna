@@ -59,8 +59,8 @@ func _raise(state:CabinState, action:StringName, value:Variant) -> Variant:
         _presets.select_next(state)
         _presets.select_previous(state)
         state.set_value(RAISE, LEVER_UP)
-        if not _has_lower_button and (state.vehicle_state_value("current_collector/valve_enabled", false, TARGET)
-                or state.vehicle_state_value("current_collector/valve_active", false, TARGET)):
+        if not _has_lower_button and (state.vehicle_state_value("current_collector_valve_enabled", false, TARGET)
+                or state.vehicle_state_value("current_collector_valve_active", false, TARGET)):
             return _lower_selected(state)
         # Train.cpp:3472 - raise selected
         return state.send_vehicle_command("pantographs_valve_operate",

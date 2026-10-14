@@ -56,8 +56,9 @@ namespace godot {
             MAKE_GS(float, valve_cross_section_actuator_charge);
             MAKE_GS(float, valve_cross_section_pneumatic_brake);
             MAKE_GS(int, required_coupler_connection_method);
-            virtual void set_spring_brake_active(bool p_active) = 0;
-            virtual void set_spring_brake_enabled(bool p_enabled) = 0;
+            virtual void spring_brake_activate(bool p_active) = 0;
+            /* The spring brake's shut-off valve (SpringBrakeShutOff(), Train.cpp:6859) */
+            virtual void spring_brake_shut_off(bool p_shut_off) = 0;
             virtual void spring_brake_release() = 0;
     };
 } // namespace godot

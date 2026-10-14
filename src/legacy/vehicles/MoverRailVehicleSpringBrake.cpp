@@ -6,17 +6,16 @@ namespace godot {
     void MoverRailVehicleSpringBrake::_bind_methods() {}
 
 
-    void MoverRailVehicleSpringBrake::set_spring_brake_active(const bool p_active) {
+    void MoverRailVehicleSpringBrake::spring_brake_activate(const bool p_active) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
         mover->SpringBrakeActivate(p_active);
     }
 
-    void MoverRailVehicleSpringBrake::set_spring_brake_enabled(const bool p_enabled) {
+    void MoverRailVehicleSpringBrake::spring_brake_shut_off(const bool p_shut_off) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        // the backend takes the shut-off valve (Train.cpp:6859), the opposite of "enabled"
-        mover->SpringBrakeShutOff(!p_enabled);
+        mover->SpringBrakeShutOff(p_shut_off);
     }
 
     void MoverRailVehicleSpringBrake::spring_brake_release() {
@@ -87,11 +86,11 @@ namespace godot {
         if (get_mover() == nullptr) {
             return;
         }
-        p_state["spring_brake/is_ready"] = get_ready();
-        p_state["spring_brake/shut_off"] = get_shut_off();
-        p_state["spring_brake/active"] = get_active();
-        p_state["spring_brake/braking"] = get_braking();
-        p_state["spring_brake/cylinder_pressure"] = get_cylinder_pressure();
+        p_state["spring_brake_is_ready"] = get_ready();
+        p_state["spring_brake_shut_off"] = get_shut_off();
+        p_state["spring_brake_active"] = get_active();
+        p_state["spring_brake_braking"] = get_braking();
+        p_state["spring_brake_cylinder_pressure"] = get_cylinder_pressure();
     }
 
 

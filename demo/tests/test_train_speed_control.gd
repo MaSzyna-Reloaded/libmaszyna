@@ -27,8 +27,8 @@ func test_enabling_and_configuring_updates_state():
     speed_control.max_velocity = 100.0
     await wait_idle_frames(2)
 
-    assert_true(train.get_state().has("speed_control/active"))
-    assert_true(train.get_state().has("speed_control/desired_velocity"))
+    assert_true(train.get_state().has("speed_control_active"))
+    assert_true(train.get_state().has("speed_control_desired_velocity"))
 
 func test_oversized_preset_speeds_is_truncated_without_crashing():
     var presets := PackedFloat64Array()

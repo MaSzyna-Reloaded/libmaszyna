@@ -78,7 +78,7 @@ func _power_up() -> bool:
     # (303e-ep.fiz)
     if not await wait_simulated_until(
             func() -> bool: return VehicleServer.vehicle_dump_state(vehicle_rid).get(
-                    "current_collector/pantograph_first_voltage", 0.0) > 100.0,
+                    "current_collector_pantograph_first_voltage", 0.0) > 100.0,
             TICK, "the wire's voltage at the first pantograph"):
         return false
     # the ground relay only resets with a direction set (Mover.cpp:6038-6051)

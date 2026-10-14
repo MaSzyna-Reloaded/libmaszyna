@@ -35,7 +35,7 @@ func _drop_all(state:CabinState, action:StringName, value:Variant) -> Variant:
     if _button_type == CabinButton.ButtonType.TOGGLE:
         if action == &"release":
             return null
-        var dropped:bool = (not state.vehicle_state_value("current_collector/pantographs_dropped", false, TARGET)
+        var dropped:bool = (not state.vehicle_state_value("current_collector_pantographs_dropped", false, TARGET)
                 if value == null or action == &"hold" else bool(value))
         state.set_value(CONTROL, dropped)
         return state.send_vehicle_command("pantographs_drop_all", dropped, null, TARGET)

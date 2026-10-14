@@ -28,7 +28,6 @@ namespace godot {
             double get_ep_min_regenerative_braking() const override;
             double get_ep_force() const override;
             bool get_ep_fuse() const override;
-            void set_ep_brake_force(int p_value) override;
             void switch_ep_fuse(bool p_value) override;
 
         protected:

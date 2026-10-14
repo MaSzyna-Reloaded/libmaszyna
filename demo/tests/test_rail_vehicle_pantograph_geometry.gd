@@ -270,8 +270,8 @@ func test_a_pantograph_losing_its_wire_announces_the_loss() -> void:
 
 
 func _vehicle_voltage(controller:VehicleController) -> float:
-    return float(VehicleServer.vehicle_dump_state(controller.get_rid()).get("current_collector/voltage", 0.0))
+    return float(VehicleServer.vehicle_dump_state(controller.get_rid()).get("current_collector_voltage", 0.0))
 
 
 func _front_voltage(controller:VehicleController) -> float:
-    return float(VehicleServer.vehicle_dump_state(controller.get_rid()).get("current_collector/pantograph_first_voltage", 0.0))
+    return float(VehicleServer.vehicle_dump_state(controller.get_rid()).get("current_collector_pantograph_first_voltage", 0.0))
