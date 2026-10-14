@@ -35,6 +35,8 @@ enum Category {
     ## any other code, and a vehicle listed before a category line
     UNKNOWN,
 }
+## The categories that run on roads; every other one runs on rails
+const ROAD_CATEGORIES: Array[Category] = [Category.TRUCKS, Category.BUSES, Category.CARS]
 ## The lower case codes; an upper case letter is a carriage
 const CATEGORY_CODES: Dictionary[String, Category] = {
     "e": Category.ELECTRIC_LOCOS,

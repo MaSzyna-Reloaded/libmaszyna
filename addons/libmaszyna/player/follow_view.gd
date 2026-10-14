@@ -1,12 +1,12 @@
-extends Camera3D
-class_name ExternalCamera3D
+extends Node3D
+class_name FollowView
 
 ## External views of a vehicle (PlayerCameraServer.camera_set_follow_view(), cycled with Shift+F4) -
-## driver_mode::ExternalView() (drivermode.cpp:916-1037). The camera flies to the selected view like
+## driver_mode::ExternalView() (drivermode.cpp:916-1037). The view flies to the selected view like
 ## a drone and always looks at the vehicle. Dragging with the right mouse button orbits the view around
 ## the vehicle, the left/right arrows and PageUp/PageDown pan the view in the screen plane, the
-## up/down arrows and the mouse wheel bring it closer or farther. It is active while it is the
-## current camera.
+## up/down arrows and the mouse wheel bring it closer or farther. It is no camera - the player's one
+## camera looks through it while it is the view shown (MaszynaPlayer), the only time it is processed.
 
 enum View {TRAINSET_FRONT, TRAINSET_REAR, BOGIE, DRIVEBY}
 
@@ -24,6 +24,8 @@ const MAX_DISTANCE_DEFAULT:float = 200.0
 ## Where the view looks at first, ahead of the camera it takes over from [m]
 const LOOK_AHEAD:float = 10.0
 
+## The field of view of the camera looking through this view [degrees]
+@export var fov:float = 45.0
 ## How fast the drone follows its target (1/s)
 @export var response:float = 2.0
 ## Mouse orbit sensitivity (degrees per pixel)
@@ -40,7 +42,7 @@ var view:View = View.TRAINSET_FRONT:
         if not view == x:
             view = x
             _dirty = true
-## How fast the drone flies [m/s], for a camera taking over from it
+## How fast the drone flies [m/s], for a view taking over from it
 var velocity:Vector3 = Vector3.ZERO
 
 var _dirty:bool = false
@@ -85,12 +87,9 @@ func activate(p_vehicle:RID, p_from:Transform3D) -> void:
     global_transform = p_from
     _look_target = p_from.origin - p_from.basis.z * LOOK_AHEAD
     _dirty = true
-    make_current()
 
 
 func _input(event:InputEvent) -> void:
-    if not current:
-        return
     if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if event.pressed else Input.MOUSE_MODE_VISIBLE)
     elif event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -100,7 +99,7 @@ func _input(event:InputEvent) -> void:
 
 # the wheel is left to a HUD under the cursor first (the vehicle card scrolls with it)
 func _unhandled_input(event:InputEvent) -> void:
-    if not current or not event is InputEventMouseButton or not event.pressed:
+    if not event is InputEventMouseButton or not event.pressed:
         return
     if event.button_index == MOUSE_BUTTON_WHEEL_UP:
         _zoom_by(ZOOM_STEP)
@@ -109,7 +108,7 @@ func _unhandled_input(event:InputEvent) -> void:
 
 
 func _process(delta:float) -> void:
-    if not current or not vehicle.is_valid():
+    if not vehicle.is_valid():
         return
     if _dirty:
         _dirty = false
