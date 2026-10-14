@@ -41,8 +41,8 @@ namespace godot {
             virtual bool get_high_active() const = 0;
             virtual bool get_whistle_active() const = 0;
             virtual int get_horn() const = 0;
-            virtual void set_horn_low(bool p_state) = 0;
-            virtual void set_horn_high(bool p_state) = 0;
-            virtual void set_whistle(bool p_state) = 0;
+            virtual void horn_low(bool p_state) = 0;
+            virtual void horn_high(bool p_state) = 0;
+            virtual void whistle(bool p_state) = 0;
     };
 } // namespace godot

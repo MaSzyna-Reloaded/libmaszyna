@@ -78,7 +78,7 @@ func test_pantfront_sw_is_shaped_by_the_vehicles_switch_type():
     assert_eq(entry["widget_class"], CabinButton)
     assert_eq(entry["monostable_from_config"], "pantograph_switch_impulse")
     assert_false(entry["fixed_fields"].has("command"))
-    assert_eq(entry["fixed_fields"]["state_property"], "current_collector/pantograph_first_active")
+    assert_eq(entry["fixed_fields"]["state_property"], "current_collector_pantograph_first_active")
 
 
 func test_distcounter_binds_total_distance():
@@ -121,10 +121,10 @@ func test_brake_cylinder_and_driver_valve_control_reservoir_gauges():
 func test_spring_brake_indicators_show_the_spring_braking_and_its_inverse():
     var active:Dictionary = MmdSemanticCatalog.get_entry("i-springbrakeactive")
     var inactive:Dictionary = MmdSemanticCatalog.get_entry("i-springbrakeinactive")
-    assert_eq(active["fixed_fields"]["state_property"], "spring_brake/braking")
+    assert_eq(active["fixed_fields"]["state_property"], "spring_brake_braking")
     assert_false(active["fixed_fields"].get("invert_value", false))
     assert_eq(inactive["widget_class"], CabinIndicator3D)
-    assert_eq(inactive["fixed_fields"]["state_property"], "spring_brake/braking")
+    assert_eq(inactive["fixed_fields"]["state_property"], "spring_brake_braking")
     assert_true(inactive["fixed_fields"]["invert_value"])
 
 
@@ -153,16 +153,16 @@ func test_alerter_lights_each_of_its_lamps():
 
 func test_front_and_rear_light_indicators_bind_to_the_correct_ilights_bit():
     var expected:Dictionary = {
-        "i-upperlight": "lights/front_headlight_upper_enabled",
-        "i-leftlight": "lights/front_headlight_left_enabled",
-        "i-rightlight": "lights/front_headlight_right_enabled",
-        "i-leftend": "lights/front_redmarker_left_enabled",
-        "i-rightend": "lights/front_redmarker_right_enabled",
-        "i-rearupperlight": "lights/rear_headlight_upper_enabled",
-        "i-rearleftlight": "lights/rear_headlight_left_enabled",
-        "i-rearrightlight": "lights/rear_headlight_right_enabled",
-        "i-rearleftend": "lights/rear_redmarker_left_enabled",
-        "i-rearrightend": "lights/rear_redmarker_right_enabled",
+        "i-upperlight": "lights_front_headlight_upper_enabled",
+        "i-leftlight": "lights_front_headlight_left_enabled",
+        "i-rightlight": "lights_front_headlight_right_enabled",
+        "i-leftend": "lights_front_redmarker_left_enabled",
+        "i-rightend": "lights_front_redmarker_right_enabled",
+        "i-rearupperlight": "lights_rear_headlight_upper_enabled",
+        "i-rearleftlight": "lights_rear_headlight_left_enabled",
+        "i-rearrightlight": "lights_rear_headlight_right_enabled",
+        "i-rearleftend": "lights_rear_redmarker_left_enabled",
+        "i-rearrightend": "lights_rear_redmarker_right_enabled",
     }
     for label:String in expected:
         var entry:Dictionary = MmdSemanticCatalog.get_entry(label)
@@ -216,7 +216,7 @@ func test_brake_operation_mode_switch_shows_the_mode_position():
 
 func test_speed_control_buttons_are_lit_while_it_is_active():
     for label:String in ["speedinc_bt", "speeddec_bt", "speedctrlpowerinc_bt", "speedctrlpowerdec_bt", "speedbutton0", "speedbutton9"]:
-        assert_eq(MmdSemanticCatalog.get_entry(label)["state_light"]["state_property"], "speed_control/active", label)
+        assert_eq(MmdSemanticCatalog.get_entry(label)["state_light"]["state_property"], "speed_control_active", label)
     assert_eq(MmdSemanticCatalog.get_entry("speedbutton9")["fixed_fields"]["command_param"], 9)
 
 

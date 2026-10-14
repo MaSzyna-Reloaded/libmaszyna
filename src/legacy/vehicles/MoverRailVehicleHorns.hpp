@@ -36,8 +36,8 @@ namespace godot {
             bool get_high_active() const override;
             bool get_whistle_active() const override;
             int get_horn() const override;
-            void set_horn_low(bool p_state) override;
-            void set_horn_high(bool p_state) override;
-            void set_whistle(bool p_state) override;
+            void horn_low(bool p_state) override;
+            void horn_high(bool p_state) override;
+            void whistle(bool p_state) override;
     };
 } // namespace godot

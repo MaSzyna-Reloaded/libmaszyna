@@ -87,7 +87,7 @@ func test_ep07_main_switch_stays_closed_while_advancing_controller() -> void:
     # wire the step it goes up (RailVehicleServer::vehicle_collect_current()), its tank spawned
     # above MinPress (303e-ep.fiz).
     if not await wait_simulated_until(
-            func() -> bool: return controller.get_state().get("current_collector/pantograph_first_voltage", 0.0) > 100.0,
+            func() -> bool: return controller.get_state().get("current_collector_pantograph_first_voltage", 0.0) > 100.0,
             TICK, "the wire's voltage at the first pantograph"):
         return
     assert_true(power_supply.get_power24_available(), "the battery gives the low voltage")

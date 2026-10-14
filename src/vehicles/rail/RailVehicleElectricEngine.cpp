@@ -127,12 +127,12 @@ namespace godot {
         p_state["motor_connectors_open"] = get_motor_connectors_open();
         p_state["line_contactor_closed"] = is_line_contactor_closed();
         p_state["pressure_switch_tripped"] = is_pressure_switch_tripped();
-        p_state["indicators/contactors_active"] = get_contactors_active();
-        p_state["indicators/diff_relay_active"] = get_diff_relay_active();
-        p_state["indicators/resistors_active"] = get_resistors_active();
-        p_state["indicators/vent_overload_active"] = get_vent_overload_active();
-        p_state["indicators/highcurrent_active"] = get_highcurrent_active();
-        p_state["indicators/mainbreaker_active"] = get_mainbreaker_active();
+        p_state["indicators_contactors_active"] = get_contactors_active();
+        p_state["indicators_diff_relay_active"] = get_diff_relay_active();
+        p_state["indicators_resistors_active"] = get_resistors_active();
+        p_state["indicators_vent_overload_active"] = get_vent_overload_active();
+        p_state["indicators_highcurrent_active"] = get_highcurrent_active();
+        p_state["indicators_mainbreaker_active"] = get_mainbreaker_active();
     }
 
 

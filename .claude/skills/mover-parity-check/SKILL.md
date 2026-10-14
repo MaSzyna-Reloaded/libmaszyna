@@ -55,7 +55,7 @@ observation: which indicator lights, which doesn't, in what order, under
 what action. If a live session is available, prefer a runtime state dump
 (e.g. this project's console `get <vehicle-name>` command) over inference -
 it gives exact boolean/numeric field values (`relay_ground`, `main_switch_enabled`,
-`current_collector/pantograph_first_voltage`, etc.) matching this wrapper's
+`current_collector_pantograph_first_voltage`, etc.) matching this wrapper's
 `_do_fetch_state_from_mover()`-exposed dictionary keys.
 
 ## Step 2 — find the flag in the vendored engine

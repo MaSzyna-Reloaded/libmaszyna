@@ -36,12 +36,12 @@ namespace godot {
         if (mover == nullptr) {
             return;
         }
-        p_state["dcemued/coupler_check"] = get_coupler_check();
-        p_state["dcemued/ed_braking_ep_delay"] = get_ed_braking_ep_delay();
-        p_state["dcemued/ep_max_brake_engagement_speed"] = get_ep_max_brake_engagement_speed();
-        p_state["dcemued/ep_min_regenerative_braking"] = get_ep_min_regenerative_braking();
-        p_state["dcemued/ep_force"] = get_ep_force();
-        p_state["dcemued/ep_fuse"] = get_ep_fuse();
+        p_state["dcemued_coupler_check"] = get_coupler_check();
+        p_state["dcemued_ed_braking_ep_delay"] = get_ed_braking_ep_delay();
+        p_state["dcemued_ep_max_brake_engagement_speed"] = get_ep_max_brake_engagement_speed();
+        p_state["dcemued_ep_min_regenerative_braking"] = get_ep_min_regenerative_braking();
+        p_state["dcemued_ep_force"] = get_ep_force();
+        p_state["dcemued_ep_fuse"] = get_ep_fuse();
     }
 
 
@@ -61,12 +61,6 @@ namespace godot {
         p_mover->MED_EPVC = get_blending_velocity_correction();
         p_mover->MED_Ncor = get_blending_load_correction();
         p_mover->MED_MinBrakeReqED = get_blending_min_ed_brake_request();
-    }
-
-    void MoverRailVehicleElectroPneumaticDynamicBrake::set_ep_brake_force(const int p_value) {
-        TMoverParameters *mover = get_mover();
-        ASSERT_MOVER_BRAKE(mover);
-        mover->SwitchEPBrake(p_value);
     }
 
 

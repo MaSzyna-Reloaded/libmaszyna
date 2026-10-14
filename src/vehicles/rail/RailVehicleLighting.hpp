@@ -117,7 +117,7 @@ namespace godot {
             // (LightsPos + light_position_list) system above - sets/clears a single bit of
             // iLights directly, for debugging/testing individual bulbs regardless of what the
             // programator would normally compute. p_light matches the short name half of this
-            // class's own state keys (state key = "lights/" + p_light + "_enabled"): e.g.
+            // class's own state keys (state key = "lights_" + p_light + "_enabled"): e.g.
             // "front_headlight_left", "rear_redmarker_right".
             virtual void light(const String &p_light, bool p_enabled) = 0;
             // Whether the lamp light() names is lit, by the same name

@@ -13,15 +13,14 @@ script = ExtResource("1_jocun")
 [node name="EPFuse" parent="." unique_id=1082526957 instance=ExtResource("1_jn0wr")]
 layout_mode = 2
 label = "EP Fuse"
-state_property = "dcemued/ep_fuse"
+state_property = "dcemued_ep_fuse"
 command = "switch_ep_fuse"
 
-[node name="EPLevel" parent="." unique_id=83122987 instance=ExtResource("2_jocun")]
+[node name="EPBrake" parent="." unique_id=83122987 instance=ExtResource("1_jn0wr")]
 layout_mode = 2
-label = "EP Level"
-step = 0.05
-state_property = "dcemued/ep_force"
-command = "set_ep_brake_force"
+label = "EP Brake"
+state_property = "dcemued_ep_force"
+command = "ep_brake"
 
 [node name="Positions" type="HBoxContainer" parent="."]
 layout_mode = 2

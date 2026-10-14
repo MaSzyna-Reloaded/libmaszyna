@@ -31,7 +31,6 @@ namespace godot {
                 FRONT = 1,
                 BACK = 2,
             };
-            virtual void set_ep_brake_force(int p_value) = 0;
             virtual void switch_ep_fuse(bool p_value) = 0;
 
         protected:

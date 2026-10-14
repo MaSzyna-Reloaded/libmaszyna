@@ -23,6 +23,5 @@ func unregister() -> void:
 func _toggle(state:CabinState, action:StringName, _value:Variant) -> Variant:
     if not action == &"hold":
         return null
-    # the command takes "enabled", the opposite of the valve, so the valve's state is the new value
     return state.send_vehicle_command(
-            "set_spring_brake_enabled", bool(state.vehicle_state_value("spring_brake/shut_off", false)))
+            "spring_brake_shut_off", not bool(state.vehicle_state_value("spring_brake_shut_off", false)))
