@@ -51,10 +51,10 @@ func _pantograph_vehicle(master_valve_start:RailVehicleController.StartMode) -> 
 # low voltage, which is what lets an EP07 raise a pantograph from its own switch alone
 func test_the_pantographs_master_valve_is_automatic_by_default():
     var vehicle:VehicleController = await _pantograph_vehicle(RailVehicleController.START_MODE_AUTOMATIC)
-    assert_true(vehicle.get_state()["current_collector/valve_active"])
+    assert_true(vehicle.get_state()["current_collector_valve_active"])
 
 
 # PantEPValveStart=Manual (dynamic/pkp/e186_v2) - it waits for the pantograph lever
 func test_a_manual_master_valve_waits_for_the_lever():
     var vehicle:VehicleController = await _pantograph_vehicle(RailVehicleController.START_MODE_MANUAL)
-    assert_false(vehicle.get_state()["current_collector/valve_active"])
+    assert_false(vehicle.get_state()["current_collector_valve_active"])

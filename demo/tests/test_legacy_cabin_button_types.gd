@@ -117,11 +117,11 @@ func test_impulse_pantograph_switch_raises_and_lowers_through_its_valve():
         &"pantfront_sw": CabinButton.ButtonType.TOGGLE, &"pantfrontoff_sw": CabinButton.ButtonType.TOGGLE}
     await _build_cab(controls, null, _electric_components(true))
     CabinSystem.act(cabin, &"pantfront_sw", &"hold")
-    assert_true(train.get_state()["current_collector/pantograph_first_valve_enabled"], "held up")
+    assert_true(train.get_state()["current_collector_pantograph_first_valve_enabled"], "held up")
     CabinSystem.act(cabin, &"pantfront_sw", &"release")
-    assert_false(train.get_state()["current_collector/pantograph_first_valve_enabled"], "let go")
+    assert_false(train.get_state()["current_collector_pantograph_first_valve_enabled"], "let go")
     CabinSystem.act(cabin, &"pantfrontoff_sw", &"hold")
-    assert_false(train.get_state()["current_collector/pantograph_first_valve_enabled"])
+    assert_false(train.get_state()["current_collector_pantograph_first_valve_enabled"])
 
 
 # Train.cpp:3285 - an impulse type without the lowering button cannot lower from the cab
@@ -138,9 +138,9 @@ func test_two_state_pantograph_switch_keeps_its_valve():
         &"pantfront_sw": CabinButton.ButtonType.TOGGLE}
     await _build_cab(controls, null, _electric_components(false))
     CabinSystem.act(cabin, &"pantfront_sw", &"toggle", true)
-    assert_true(train.get_state()["current_collector/pantograph_first_valve_enabled"])
+    assert_true(train.get_state()["current_collector_pantograph_first_valve_enabled"])
     CabinSystem.act(cabin, &"pantfront_sw", &"toggle", false)
-    assert_false(train.get_state()["current_collector/pantograph_first_valve_enabled"])
+    assert_false(train.get_state()["current_collector_pantograph_first_valve_enabled"])
 
 
 # Train.cpp:2939-3070 - batteryon_sw/batteryoff_sw switch the battery on their press

@@ -36,7 +36,7 @@ func test_blending_round_trip_and_update():
     assert_true(ep_brake.blending_velocity_correction)
     assert_true(ep_brake.blending_load_correction)
     assert_eq(ep_brake.blending_min_ed_brake_request, 0.1)
-    assert_true(train.get_state().has("dcemued/ep_fuse"), "RailVehicleElectroPneumaticDynamicBrake should keep functioning after configuring blending")
+    assert_true(train.get_state().has("dcemued_ep_fuse"), "RailVehicleElectroPneumaticDynamicBrake should keep functioning after configuring blending")
 
 func test_fiz_dcemued_uses_canonical_electro_pneumatic_property():
     var context: FizImportContext = FizImportContext.new()

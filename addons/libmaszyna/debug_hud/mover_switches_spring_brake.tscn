@@ -15,14 +15,14 @@ layout_mode = 2
 [node name="Activate" parent="Activation" instance=ExtResource("2_button")]
 layout_mode = 2
 text = "On"
-command = "set_spring_brake_active"
+command = "spring_brake_activate"
 command_argument = "true"
 convert_argument_to_bool = true
 
 [node name="Deactivate" parent="Activation" instance=ExtResource("2_button")]
 layout_mode = 2
 text = "Off"
-command = "set_spring_brake_active"
+command = "spring_brake_activate"
 command_argument = "false"
 convert_argument_to_bool = true
 
@@ -32,15 +32,15 @@ layout_mode = 2
 [node name="Enable" parent="ShutOff" instance=ExtResource("2_button")]
 layout_mode = 2
 text = "Enable"
-command = "set_spring_brake_enabled"
-command_argument = "true"
+command = "spring_brake_shut_off"
+command_argument = "false"
 convert_argument_to_bool = true
 
 [node name="Disable" parent="ShutOff" instance=ExtResource("2_button")]
 layout_mode = 2
 text = "Disable"
-command = "set_spring_brake_enabled"
-command_argument = "false"
+command = "spring_brake_shut_off"
+command_argument = "true"
 convert_argument_to_bool = true
 
 [node name="Release" parent="." instance=ExtResource("2_button")]

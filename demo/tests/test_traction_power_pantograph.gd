@@ -37,13 +37,13 @@ func test_raised_pantograph_with_wire_voltage_reaches_mover_state():
     await step(2)
 
     assert_true(
-            power_source.get_state().get("current_collector/pantograph_first_active", false),
+            power_source.get_state().get("current_collector_pantograph_first_active", false),
             "pantograph should report raised once battery is on and it's been raised")
 
     power_source.set_pantograph_wire_voltage(RailVehicleEnginePowerSource.PANTOGRAPH_FIRST, 3600.0)
 
     assert_almost_eq(
-            float(power_source.get_state().get("current_collector/pantograph_first_voltage", 0.0)),
+            float(power_source.get_state().get("current_collector_pantograph_first_voltage", 0.0)),
             3600.0, 1.0,
             "raised pantograph should read back the wire voltage fed in this frame")
 
@@ -61,17 +61,17 @@ func test_repeated_wire_voltage_updates_keep_reaching_the_mover():
         power_source.set_pantograph_wire_voltage(RailVehicleEnginePowerSource.PANTOGRAPH_FIRST, 3000.0 + i * 100.0)
 
     assert_almost_eq(
-            float(power_source.get_state().get("current_collector/pantograph_first_voltage", 0.0)),
+            float(power_source.get_state().get("current_collector_pantograph_first_voltage", 0.0)),
             3400.0, 1.0,
             "the mover should reflect the latest wire voltage, not just the first one ever set")
 
 
 func test_lowered_pantograph_does_not_report_active():
-    # current_collector/pantograph_first_voltage is a raw echo of the last wire voltage fed in,
+    # current_collector_pantograph_first_voltage is a raw echo of the last wire voltage fed in,
     # not gated by is_active (pre-existing behavior, once of RailVehicleElectricEngine.cpp, unrelated to this
     # feature) - is_active is the actual gate EnginePowerSourceVoltage()/PantFrontVolt use, so
     # that's what this asserts instead of the echoed value.
     power_source.set_pantograph_wire_voltage(RailVehicleEnginePowerSource.PANTOGRAPH_FIRST, 3600.0)
     await step(2)
 
-    assert_false(power_source.get_state().get("current_collector/pantograph_first_active", false))
+    assert_false(power_source.get_state().get("current_collector_pantograph_first_active", false))

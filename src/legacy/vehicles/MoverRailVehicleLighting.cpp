@@ -194,26 +194,26 @@ namespace godot {
         p_state["any_light_enabled"] = get_any_light_enabled();
         p_state["light_power"] = get_power();
         p_state["light_power_source"] = get_power_source();
-        p_state["lights/front_headlight_upper_enabled"] = get_front_headlight_upper_enabled();
-        p_state["lights/front_headlight_left_enabled"] = get_front_headlight_left_enabled();
-        p_state["lights/front_headlight_right_enabled"] = get_front_headlight_right_enabled();
-        p_state["lights/front_redmarker_left_enabled"] = get_front_redmarker_left_enabled();
-        p_state["lights/front_redmarker_right_enabled"] = get_front_redmarker_right_enabled();
-        p_state["lights/rear_headlight_upper_enabled"] = get_rear_headlight_upper_enabled();
-        p_state["lights/rear_headlight_left_enabled"] = get_rear_headlight_left_enabled();
-        p_state["lights/rear_headlight_right_enabled"] = get_rear_headlight_right_enabled();
-        p_state["lights/rear_redmarker_left_enabled"] = get_rear_redmarker_left_enabled();
-        p_state["lights/rear_redmarker_right_enabled"] = get_rear_redmarker_right_enabled();
-        p_state["lights/active_headlight_upper_enabled"] = get_active_headlight_upper_enabled();
-        p_state["lights/active_headlight_left_enabled"] = get_active_headlight_left_enabled();
-        p_state["lights/active_headlight_right_enabled"] = get_active_headlight_right_enabled();
-        p_state["lights/active_redmarker_left_enabled"] = get_active_redmarker_left_enabled();
-        p_state["lights/active_redmarker_right_enabled"] = get_active_redmarker_right_enabled();
-        p_state["lights/opposite_headlight_upper_enabled"] = get_opposite_headlight_upper_enabled();
-        p_state["lights/opposite_headlight_left_enabled"] = get_opposite_headlight_left_enabled();
-        p_state["lights/opposite_headlight_right_enabled"] = get_opposite_headlight_right_enabled();
-        p_state["lights/opposite_redmarker_left_enabled"] = get_opposite_redmarker_left_enabled();
-        p_state["lights/opposite_redmarker_right_enabled"] = get_opposite_redmarker_right_enabled();
+        p_state["lights_front_headlight_upper_enabled"] = get_front_headlight_upper_enabled();
+        p_state["lights_front_headlight_left_enabled"] = get_front_headlight_left_enabled();
+        p_state["lights_front_headlight_right_enabled"] = get_front_headlight_right_enabled();
+        p_state["lights_front_redmarker_left_enabled"] = get_front_redmarker_left_enabled();
+        p_state["lights_front_redmarker_right_enabled"] = get_front_redmarker_right_enabled();
+        p_state["lights_rear_headlight_upper_enabled"] = get_rear_headlight_upper_enabled();
+        p_state["lights_rear_headlight_left_enabled"] = get_rear_headlight_left_enabled();
+        p_state["lights_rear_headlight_right_enabled"] = get_rear_headlight_right_enabled();
+        p_state["lights_rear_redmarker_left_enabled"] = get_rear_redmarker_left_enabled();
+        p_state["lights_rear_redmarker_right_enabled"] = get_rear_redmarker_right_enabled();
+        p_state["lights_active_headlight_upper_enabled"] = get_active_headlight_upper_enabled();
+        p_state["lights_active_headlight_left_enabled"] = get_active_headlight_left_enabled();
+        p_state["lights_active_headlight_right_enabled"] = get_active_headlight_right_enabled();
+        p_state["lights_active_redmarker_left_enabled"] = get_active_redmarker_left_enabled();
+        p_state["lights_active_redmarker_right_enabled"] = get_active_redmarker_right_enabled();
+        p_state["lights_opposite_headlight_upper_enabled"] = get_opposite_headlight_upper_enabled();
+        p_state["lights_opposite_headlight_left_enabled"] = get_opposite_headlight_left_enabled();
+        p_state["lights_opposite_headlight_right_enabled"] = get_opposite_headlight_right_enabled();
+        p_state["lights_opposite_redmarker_left_enabled"] = get_opposite_redmarker_left_enabled();
+        p_state["lights_opposite_redmarker_right_enabled"] = get_opposite_redmarker_right_enabled();
     }
 
     void MoverRailVehicleLighting::_fill_config_dictionary(Dictionary &p_config) const {

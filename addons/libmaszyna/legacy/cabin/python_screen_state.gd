@@ -30,11 +30,11 @@ const STATE_KEYS:Dictionary[String, String] = {
     "battery": "power24_available",                 # Power24vIsAvailable
     "converter": "power110_available",              # Power110vIsAvailable
     "direction": "direction",                       # DirActive
-    "speedctrl": "speed_control/selected_velocity", # SpeedCtrlValue
-    "speedctrlpower": "speed_control/desired_power", # SpeedCtrlUnit.DesiredPower
-    "speedctrlactive": "speed_control/active",      # SpeedCtrlUnit.IsActive
-    "speedctrlstandby": "speed_control/standby",    # SpeedCtrlUnit.Standby
-    "new_speed": "speed_control/set_velocity",      # NewSpeed
+    "speedctrl": "speed_control_selected_velocity", # SpeedCtrlValue
+    "speedctrlpower": "speed_control_desired_power", # SpeedCtrlUnit.DesiredPower
+    "speedctrlactive": "speed_control_active",      # SpeedCtrlUnit.IsActive
+    "speedctrlstandby": "speed_control_standby",    # SpeedCtrlUnit.Standby
+    "new_speed": "speed_control_set_velocity",      # NewSpeed
     "brake_delay_flag": "brake_delay_setting",      # BrakeDelayFlag
     "brake_op_mode_flag": "brake_operation_mode",   # BrakeOpModeFlag
     "emergency_brake": "alarm_chain_pulled",        # AlarmChainFlag
@@ -52,7 +52,7 @@ const STATE_KEYS:Dictionary[String, String] = {
     "slipping_wheels": "slipping_wheels",           # SlippingWheels
     "sanding": "sand_active",                       # SandDose
     "odometer": "total_distance",                   # DistCounter
-    "epfuse": "dcemued/ep_fuse",                    # EpFuse
+    "epfuse": "dcemued_ep_fuse",                    # EpFuse
 }
 ## Original key -> key of the controlled vehicle's state (mvControlled - the powered car of a
 ## multiple unit, TDynamicObject::FindPowered(), DynObj.cpp:7772)
@@ -86,7 +86,7 @@ const ENGINE_VOLTAGE_TYPES:Array[RailVehicleEngine.EngineType] = [
 ## Train.cpp:8699 - a compressor that turns
 const COMPRESSOR_SPEED_THRESHOLD:float = 0.00001
 ## A pantograph carrier publishes its collector (EnginePowerSource.SourceType == CurrentCollector)
-const COLLECTOR_KEY:String = "current_collector/pantograph_first_active"
+const COLLECTOR_KEY:String = "current_collector_pantograph_first_active"
 
 static var _neutral_state:Dictionary = {}
 
@@ -138,8 +138,8 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     result["main_init"] = main_countdown < controlled_config.get("main_init_time", 0.0) and main_countdown > 0.0
     var high_voltage:float = controlled.get("engine_voltage", 0.0)
     if not controlled.get("engine_type", RailVehicleEngine.NONE) in ENGINE_VOLTAGE_TYPES:
-        high_voltage = maxf(controlled.get("current_collector/voltage", 0.0),
-                controlled.get("current_collector/trainset_high_voltage", 0.0))
+        high_voltage = maxf(controlled.get("current_collector_voltage", 0.0),
+                controlled.get("current_collector_trainset_high_voltage", 0.0))
     result["main_ready"] = not controlled.get("main_switch_enabled", false) and high_voltage > 0.0 \
             and main_countdown <= 0.0
     # the train row (Train.cpp:8778-8787): the occupied vehicle's power, the controlled one's force
@@ -154,9 +154,9 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
             or result["eimp_t_pdb"] > ED_BRAKE_SHARE_THRESHOLD
     # GetEDBCP() is 0 for every brake but TLSt and TEStED, which is the original's typeid test
     result["indir_brake"] = state.get("brake_edb_cylinder_pressure", 0.0) > BRAKE_PRESSURE_THRESHOLD
-    result["pantpress"] = absf(pantograph_unit.get("current_collector/pantograph_tank_pressure", 0.0))
-    result["pant_compressor"] = pantograph_unit.get("current_collector/pantograph_compressor_enabled", false)
-    result["traction_voltage"] = absf(pantograph_unit.get("current_collector/voltage", 0.0))
+    result["pantpress"] = absf(pantograph_unit.get("current_collector_pantograph_tank_pressure", 0.0))
+    result["pant_compressor"] = pantograph_unit.get("current_collector_pantograph_compressor_enabled", false)
+    result["traction_voltage"] = absf(pantograph_unit.get("current_collector_voltage", 0.0))
     # mvOccupied->EnergyMeter (Train.cpp:810-811)
     result["power_drawn"] = state.get("power_drawn", 0.0)
     result["power_returned"] = state.get("power_returned", 0.0)
@@ -183,13 +183,13 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         result["eimp_pn%d_bc" % car_number] = car_state.get("brake_air_pressure", 0.0)   # BrakePress
         result["eimp_pn%d_bp" % car_number] = car_state.get("pipe_pressure", 0.0)   # PipePress
         result["eimp_pn%d_sp" % car_number] = car_state.get("feed_pipe_pressure", 0.0)   # ScndPipePress
-        result["eimp_pn%d_spring" % car_number] = car_state.get("spring_brake/cylinder_pressure", 0.0)   # SpringBrake.SBP
+        result["eimp_pn%d_spring" % car_number] = car_state.get("spring_brake_cylinder_pressure", 0.0)   # SpringBrake.SBP
         result["eimp_pn%d_cp" % car_number] = car_state.get("brake_control_pipe_pressure", 0.0)   # CntrlPipePress
         result["eimp_pn%d_rp" % car_number] = car_state.get("brake_reservoir_pressure", 0.0)   # GetBRP()
         # (TotalMass - Mred) * 0.001
         result["eimp_pn%d_mass" % car_number] = (car_state.get("mass_total", 0.0) - car_state.get("mass_reduced", 0.0)) / LibMaszynaUnits.KILOGRAMS_PER_TONNE  # Train.cpp:8679 - in tonnes
-        result["brakes_%d_spring_active" % car_number] = car_state.get("spring_brake/braking", false)   # IsActive
-        result["brakes_%d_spring_shutoff" % car_number] = car_state.get("spring_brake/shut_off", false)   # ShuttOff
+        result["brakes_%d_spring_active" % car_number] = car_state.get("spring_brake_braking", false)   # IsActive
+        result["brakes_%d_spring_shutoff" % car_number] = car_state.get("spring_brake_shut_off", false)   # ShuttOff
         var doors_left:bool = car_state.get("doors_left_position", 0.0) > 0.0
         var doors_right:bool = car_state.get("doors_right_position", 0.0) > 0.0
         result["doors_%d" % car_number] = doors_left or doors_right
@@ -203,8 +203,8 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         result["slip_%d" % car_number] = car_state.get("slipping_wheels", false)
         if unit_number <= EIM_CAR_COUNT:
             if COLLECTOR_KEY in car_state:
-                result["eimp_u%d_pf" % unit_number] = result["eimp_u%d_pf" % unit_number] or car_state.get("current_collector/pantograph_first_active", false)
-                result["eimp_u%d_pr" % unit_number] = result["eimp_u%d_pr" % unit_number] or car_state.get("current_collector/pantograph_second_active", false)
+                result["eimp_u%d_pf" % unit_number] = result["eimp_u%d_pf" % unit_number] or car_state.get("current_collector_pantograph_first_active", false)
+                result["eimp_u%d_pr" % unit_number] = result["eimp_u%d_pr" % unit_number] or car_state.get("current_collector_pantograph_second_active", false)
             # CompressorStart is never automatic here - the wrapper does not set it
             result["eimp_u%d_comp_a" % unit_number] = result["eimp_u%d_comp_a" % unit_number] or car_state.get("compressor_allowed", false)
         var brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(car, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
@@ -288,7 +288,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
 static func _light_bits(state:Dictionary, end:String) -> int:
     var bits:int = 0
     for lamp:String in LIGHT_BITS:
-        if state.get("lights/%s_%s" % [end, lamp], false):
+        if state.get("lights_%s_%s" % [end, lamp], false):
             bits |= LIGHT_BITS[lamp]
     return bits
 

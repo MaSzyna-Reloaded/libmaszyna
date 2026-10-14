@@ -25,14 +25,14 @@ size_flags_horizontal = 3
 [node name="PantographsValve" parent="Collector/Controls" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Pantographs valve"
-state_property = "current_collector/valve_enabled"
+state_property = "current_collector_valve_enabled"
 command = "pantographs_valve"
 target = 2
 
 [node name="PantographFirst" parent="Collector/Controls" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "First pantograph"
-state_property = "current_collector/pantograph_first_active"
+state_property = "current_collector_pantograph_first_active"
 command = "pantograph"
 target = 2
 command_argument = 0
@@ -40,7 +40,7 @@ command_argument = 0
 [node name="PantographSecond" parent="Collector/Controls" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Second pantograph"
-state_property = "current_collector/pantograph_second_active"
+state_property = "current_collector_pantograph_second_active"
 command = "pantograph"
 target = 2
 command_argument = 1
@@ -48,14 +48,14 @@ command_argument = 1
 [node name="PantographCompressorValve" parent="Collector/Controls" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Pantograph tank to compressor"
-state_property = "current_collector/pantograph_compressor_valve"
+state_property = "current_collector_pantograph_compressor_valve"
 command = "pantograph_compressor_valve"
 target = 1
 
 [node name="PantographCompressor" parent="Collector/Controls" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Pantograph compressor"
-state_property = "current_collector/pantograph_compressor_enabled"
+state_property = "current_collector_pantograph_compressor_enabled"
 command = "pantograph_compressor"
 target = 2
 
