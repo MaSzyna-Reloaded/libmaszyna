@@ -15,18 +15,21 @@
 			<param index="0" name="instance" type="RID" />
 			<param index="1" name="light_name" type="String" />
 			<description>
+				An addressable light [param light_name] of [param instance] that only switches the model's own [code]light_onNN[/code]/[code]light_offNN[/code] submodels.
 			</description>
 		</method>
 		<method name="environment_set_light_level">
 			<return type="void" />
 			<param index="0" name="level" type="float" />
 			<description>
+				How bright the scene is, 0-1 - what the [constant LIGHT_MODE_DARK] and [constant LIGHT_MODE_HOME] lights follow. Pushed by [code]MaszynaEnvironmentNode[/code].
 			</description>
 		</method>
 		<method name="environment_set_time">
 			<return type="void" />
 			<param index="0" name="hours" type="float" />
 			<description>
+				The time of day [param hours] - what the [constant LIGHT_MODE_HOME] lights follow. Pushed by [code]MaszynaEnvironmentNode[/code].
 			</description>
 		</method>
 		<method name="environment_set_wind">
@@ -94,6 +97,7 @@
 			<return type="int" />
 			<param index="0" name="instance" type="RID" />
 			<description>
+				How many lights of [param instance] are addressed by index ([code]light_on00[/code]...), 0 until the instance is built.
 			</description>
 		</method>
 		<method name="instance_get_model" qualifiers="const">
@@ -202,6 +206,7 @@
 			<param index="3" name="off_time" type="float" />
 			<param index="4" name="phase" type="float" />
 			<description>
+				The light [param light] of [param instance] blinks: [param on_time] seconds lit, [param off_time] dark, starting [param phase] into the cycle.
 			</description>
 		</method>
 		<method name="instance_set_light_mode">
@@ -210,6 +215,7 @@
 			<param index="1" name="light" type="int" />
 			<param index="2" name="mode" type="int" enum="E3DRenderingServer.LightMode" />
 			<description>
+				The light [param light] of [param instance] in [param mode], blinking at the default times.
 			</description>
 		</method>
 		<method name="instance_set_lights_colors">
@@ -217,6 +223,7 @@
 			<param index="0" name="instance" type="RID" />
 			<param index="1" name="colors" type="PackedColorArray" />
 			<description>
+				The scenery node's [code]lightcolors[/code] list of [param instance], in the order of its [code]lights[/code].
 			</description>
 		</method>
 		<method name="instance_set_lights_dimmed">
@@ -233,6 +240,7 @@
 			<param index="0" name="instance" type="RID" />
 			<param index="1" name="modes" type="PackedFloat32Array" />
 			<description>
+				The scenery node's [code]lights[/code] list of [param instance], by light index (light 0 is [code]"00"[/code], [code]AnimModel.cpp:303[/code]); a fraction of a mode is its own darkness threshold.
 			</description>
 		</method>
 		<method name="instance_set_lights_state">
@@ -322,6 +330,7 @@
 			<param index="2" name="degrees" type="Vector3" />
 			<param index="3" name="speed" type="float" />
 			<description>
+				Turns [param submodel] of [param instance] towards [param degrees] about its own x, y and z at [param speed] degrees per second (a scenery [code]animation ... rotate[/code] event, [code]TAnimContainer::SetRotateAnim()[/code]); [signal instance_submodel_animation_finished] when it gets there.
 			</description>
 		</method>
 		<method name="instance_set_submodel_translation">
@@ -331,6 +340,7 @@
 			<param index="2" name="offset" type="Vector3" />
 			<param index="3" name="speed" type="float" />
 			<description>
+				Moves [param submodel] of [param instance] towards [param offset] at [param speed] metres per second ([code]animation ... translate[/code], [code]TAnimContainer::SetTranslateAnim()[/code]); [signal instance_submodel_animation_finished] when it gets there.
 			</description>
 		</method>
 		<method name="instance_set_submodel_visible">
@@ -371,38 +381,27 @@
 			<return type="void" />
 			<param index="0" name="light" type="RID" />
 			<description>
+				Puts [param light] out, whatever its mode says.
 			</description>
 		</method>
 		<method name="light_enable">
 			<return type="void" />
 			<param index="0" name="light" type="RID" />
 			<description>
+				Lights [param light], whatever its mode says.
 			</description>
 		</method>
 		<method name="light_free">
 			<return type="void" />
 			<param index="0" name="light" type="RID" />
 			<description>
+				Frees [param light].
 			</description>
 		</method>
 		<method name="light_get_statistics" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-			</description>
-		</method>
-		<method name="material_set_resolver">
-			<return type="void" />
-			<param index="0" name="material_resolver" type="Callable" />
-			<description>
-				Called as [code]material_resolver(submodel: E3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int) -&gt; Material[/code] for every rendered submodel. Set by [code]MaterialManager[/code].
-			</description>
-		</method>
-		<method name="model_load">
-			<return type="E3DModel" />
-			<param index="0" name="data_path" type="String" />
-			<param index="1" name="model_filename" type="String" />
-			<description>
-				The model of a file, loaded once and shared by every instance of it.
+				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
 			</description>
 		</method>
 		<method name="material_preload">
@@ -422,6 +421,21 @@
 				Sets [code]material_preloader(model: E3DModel, data_path: String, skins: PackedStringArray, max_texture_size: int) -&gt; Variant[/code], called on the streaming's and the vehicles' preload workers ([code]MaterialManager.preload_model_materials[/code]).
 			</description>
 		</method>
+		<method name="material_set_resolver">
+			<return type="void" />
+			<param index="0" name="material_resolver" type="Callable" />
+			<description>
+				Called as [code]material_resolver(submodel: E3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int) -&gt; Material[/code] for every rendered submodel. Set by [code]MaterialManager[/code].
+			</description>
+		</method>
+		<method name="model_load">
+			<return type="E3DModel" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="model_filename" type="String" />
+			<description>
+				The model of a file, loaded once and shared by every instance of it.
+			</description>
+		</method>
 		<method name="model_set_loader">
 			<return type="void" />
 			<param index="0" name="model_loader" type="Callable" />
@@ -435,6 +449,7 @@
 			<param index="1" name="light_name" type="String" />
 			<param index="2" name="submodel_path" type="NodePath" />
 			<description>
+				An addressable light [param light_name] of [param instance] that also owns an omni [RenderingServer] light, made of the submodel at [param submodel_path].
 			</description>
 		</method>
 		<method name="smoke_get_statistics" qualifiers="const">
@@ -462,6 +477,7 @@
 			<param index="1" name="light_name" type="String" />
 			<param index="2" name="submodel_path" type="NodePath" />
 			<description>
+				An addressable light [param light_name] of [param instance] that also owns a spot [RenderingServer] light, made of the submodel at [param submodel_path].
 			</description>
 		</method>
 	</methods>
@@ -469,17 +485,20 @@
 		<signal name="instance_built">
 			<param index="0" name="instance" type="RID" />
 			<description>
+				[param instance] was built - its model, and so its lights, are known from now on.
 			</description>
 		</signal>
 		<signal name="instance_freed">
 			<param index="0" name="instance" type="RID" />
 			<description>
+				[param instance] was freed, so whatever refers to it can let go.
 			</description>
 		</signal>
 		<signal name="instance_submodel_animation_finished">
 			<param index="0" name="instance" type="RID" />
 			<param index="1" name="submodel" type="String" />
 			<description>
+				[param submodel] of [param instance] reached what [method instance_set_submodel_rotation] or [method instance_set_submodel_translation] sent it to ([code]TAnimContainer[/code]'s [code]evDone[/code], [code]AnimModel.cpp:112-120, 175-180[/code]).
 			</description>
 		</signal>
 	</signals>
@@ -509,14 +528,19 @@
 			Opaque whatever its texture's alpha - a forced submodel of the optimized instancer, which never draws in the alpha pass.
 		</constant>
 		<constant name="LIGHT_MODE_OFF" value="0" enum="LightMode">
+			The light is out ([code]TLightState[/code], [code]AnimModel.h:27-33[/code]).
 		</constant>
 		<constant name="LIGHT_MODE_ON" value="1" enum="LightMode">
+			The light is lit.
 		</constant>
 		<constant name="LIGHT_MODE_BLINK" value="2" enum="LightMode">
+			The light blinks.
 		</constant>
 		<constant name="LIGHT_MODE_DARK" value="3" enum="LightMode">
+			The light comes on by itself once it gets dark.
 		</constant>
 		<constant name="LIGHT_MODE_HOME" value="4" enum="LightMode">
+			Like [constant LIGHT_MODE_DARK], but out late at night ([code]AnimModel.cpp:601-607[/code]).
 		</constant>
 	</constants>
 </class>

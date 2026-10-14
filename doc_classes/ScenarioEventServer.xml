@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="ScenarioEventServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		RID based registry and queue of the scenario's events, its memory and its launchers.
 	</brief_description>
 	<description>
+		The original's event_manager, [code]simulation::Memory[/code] and [code]TEventLauncher[/code] ([code]Event.h:638[/code], [code]MemCell.h[/code], [code]EvLaunch.h[/code]).
+		An event is a delay, an optional condition ([ScenarioEventCondition]) and an action ([ScenarioEventAction]); the server knows no event types - what [code]updatevalues[/code] or [code]lights[/code] means is the business of an action. A queued event runs once its time comes: its condition is tested, then the action's [method ScenarioEventAction._run] or [method ScenarioEventAction._run_else] is called. The time is [SimulationServer]'s simulation time, in seconds, which the physics and the drivers read too.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -13,6 +16,7 @@
 			<param index="1" name="submodel" type="String" />
 			<param index="2" name="event" type="RID" />
 			<description>
+				Queues [param event] when [param submodel] of the [E3DRenderingServer] [param instance] finishes an animation ([code]TAnimContainer::EventAssign()[/code], [code]Event.cpp:1588-1592[/code]).
 			</description>
 		</method>
 		<method name="event_attach_action">
@@ -20,6 +24,7 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="action" type="ScenarioEventAction" />
 			<description>
+				Sets what [param event] does when it runs.
 			</description>
 		</method>
 		<method name="event_attach_condition">
@@ -27,77 +32,90 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="condition" type="ScenarioEventCondition" />
 			<description>
+				Sets what decides whether [param event] runs its action's [method ScenarioEventAction._run] or [method ScenarioEventAction._run_else]; a null condition always passes.
 			</description>
 		</method>
 		<method name="event_create">
 			<return type="RID" />
 			<description>
+				Creates an event: no delay, no condition, no action.
 			</description>
 		</method>
 		<method name="event_free">
 			<return type="void" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Frees [param event]; a queued one is taken off the queue ([signal event_dequeued]).
 			</description>
 		</method>
 		<method name="event_get_action" qualifiers="const">
 			<return type="ScenarioEventAction" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				What [param event] does when it runs.
 			</description>
 		</method>
 		<method name="event_get_condition" qualifiers="const">
 			<return type="ScenarioEventCondition" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				What decides how [param event] runs; null for none.
 			</description>
 		</method>
 		<method name="event_get_delay" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Seconds [param event] waits from being queued to running.
 			</description>
 		</method>
 		<method name="event_get_departure_delay" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Seconds from the departure of the queueing vehicle's train [param event] runs at, NAN for none (see [method event_set_departure_delay]).
 			</description>
 		</method>
 		<method name="event_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				The scenery name of [param event].
 			</description>
 		</method>
 		<method name="event_get_random_delay" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Up to this many seconds more [param event] waits, drawn each time it is queued.
 			</description>
 		</method>
 		<method name="event_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				The event of [param name]; an empty RID for none.
 			</description>
 		</method>
 		<method name="event_get_run_time" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				The simulation time ([method SimulationServer.simulation_get_time]) a queued [param event] runs at, negative when it is not queued.
 			</description>
 		</method>
 		<method name="event_is_passive" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Whether [param event] is never queued (see [method event_set_passive]).
 			</description>
 		</method>
 		<method name="event_is_queued" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="event" type="RID" />
 			<description>
+				Whether [param event] waits in the queue.
 			</description>
 		</method>
 		<method name="event_queue">
@@ -106,6 +124,7 @@
 			<param index="1" name="activator" type="RID" default="RID()" />
 			<param index="2" name="extra_delay" type="float" default="0.0" />
 			<description>
+				Queues [param event] to run after its delay plus [param extra_delay]; [param activator] is the vehicle that queued it. An event is queued once: while it waits, another request is refused and its activator is dropped ([code]event_manager::AddToQuery[/code], [code]Event.cpp:2380-2462[/code]). A passive event is refused. Returns whether it was queued.
 			</description>
 		</method>
 		<method name="event_set_delay">
@@ -113,6 +132,7 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="seconds" type="float" />
 			<description>
+				Seconds [param event] waits from being queued to running.
 			</description>
 		</method>
 		<method name="event_set_departure_delay">
@@ -128,6 +148,7 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="name" type="StringName" />
 			<description>
+				The scenery name [param event] is found by ([method event_get_rid_by_name]).
 			</description>
 		</method>
 		<method name="event_set_passive">
@@ -135,6 +156,7 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="passive" type="bool" />
 			<description>
+				A passive event is never queued - nothing runs it; drivers read it on the tracks ahead (the original's [code]m_passive[/code], [code]Event.cpp:2380-2384[/code]).
 			</description>
 		</method>
 		<method name="event_set_random_delay">
@@ -142,6 +164,7 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="seconds" type="float" />
 			<description>
+				Up to [param seconds] more [param event] waits, drawn each time it is queued.
 			</description>
 		</method>
 		<method name="isolated_add_event">
@@ -150,12 +173,14 @@
 			<param index="1" name="slot" type="int" enum="ScenarioEventServer.IsolatedEvent" />
 			<param index="2" name="event" type="RID" />
 			<description>
+				Queues [param event] when the [TrackServer] isolated section [param isolated] does what [param slot] says.
 			</description>
 		</method>
 		<method name="isolated_clear_events">
 			<return type="void" />
 			<param index="0" name="isolated" type="RID" />
 			<description>
+				Takes every event off [param isolated].
 			</description>
 		</method>
 		<method name="launcher_attach_condition">
@@ -163,76 +188,89 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="condition" type="ScenarioEventCondition" />
 			<description>
+				Sets what decides whether [param launcher] fires; a null condition always passes.
 			</description>
 		</method>
 		<method name="launcher_create">
 			<return type="RID" />
 			<description>
+				Creates a launcher that fires nothing.
 			</description>
 		</method>
 		<method name="launcher_fire">
 			<return type="void" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				Queues the event of [param launcher] if its condition passes.
 			</description>
 		</method>
 		<method name="launcher_fire_shift">
 			<return type="void" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				Queues the Shift event of [param launcher] if its condition passes.
 			</description>
 		</method>
 		<method name="launcher_free">
 			<return type="void" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				Frees [param launcher].
 			</description>
 		</method>
 		<method name="launcher_get_event" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				The event [param launcher] fires ([code]Event1[/code], [code]EvLaunch.h[/code]).
 			</description>
 		</method>
 		<method name="launcher_get_key" qualifiers="const">
 			<return type="int" enum="Key" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				The key that fires [param launcher].
 			</description>
 		</method>
 		<method name="launcher_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				The scenery name of [param launcher].
 			</description>
 		</method>
 		<method name="launcher_get_position" qualifiers="const">
 			<return type="Vector3" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				Where [param launcher] stands.
 			</description>
 		</method>
 		<method name="launcher_get_radius" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				How close its user has to be to [param launcher], negative for anywhere.
 			</description>
 		</method>
 		<method name="launcher_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				The launcher of [param name]; an empty RID for none.
 			</description>
 		</method>
 		<method name="launcher_get_rids" qualifiers="const">
 			<return type="RID[]" />
 			<description>
+				Every launcher.
 			</description>
 		</method>
 		<method name="launcher_get_shift_event" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="launcher" type="RID" />
 			<description>
+				The event [param launcher] fires with Shift ([code]Event2[/code], [code]EvLaunch.h[/code]).
 			</description>
 		</method>
 		<method name="launcher_set_events">
@@ -241,6 +279,7 @@
 			<param index="1" name="event" type="RID" />
 			<param index="2" name="shift_event" type="RID" />
 			<description>
+				The event [param launcher] fires, and the one it fires with Shift ([code]Event1[/code], [code]Event2[/code], [code]EvLaunch.h[/code]).
 			</description>
 		</method>
 		<method name="launcher_set_interval">
@@ -248,6 +287,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="seconds" type="float" />
 			<description>
+				[param launcher] fires every [param seconds] of simulated time, 0 for never.
 			</description>
 		</method>
 		<method name="launcher_set_key">
@@ -255,6 +295,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="key" type="int" enum="Key" />
 			<description>
+				The key that fires [param launcher].
 			</description>
 		</method>
 		<method name="launcher_set_name">
@@ -262,6 +303,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="name" type="StringName" />
 			<description>
+				The scenery name [param launcher] is found by ([method launcher_get_rid_by_name]).
 			</description>
 		</method>
 		<method name="launcher_set_position">
@@ -269,6 +311,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="position" type="Vector3" />
 			<description>
+				Where [param launcher] stands.
 			</description>
 		</method>
 		<method name="launcher_set_radio_call">
@@ -276,6 +319,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
 			<description>
+				[param launcher] fires when a vehicle's radio sends [param call] within its radius ([code]event_manager::queue_receivers()[/code], [code]Event.cpp:2255-2268[/code]).
 			</description>
 		</method>
 		<method name="launcher_set_radius">
@@ -283,6 +327,7 @@
 			<param index="0" name="launcher" type="RID" />
 			<param index="1" name="radius" type="float" />
 			<description>
+				How close its user has to be to [param launcher], negative for anywhere; a launcher of a radius fires only in reach of the camera ([code]scene.cpp:126-139[/code]).
 			</description>
 		</method>
 		<method name="launcher_set_time_of_day">
@@ -291,59 +336,77 @@
 			<param index="1" name="hour" type="int" />
 			<param index="2" name="minute" type="int" />
 			<description>
+				[param launcher] fires when the clock shows [param hour]:[param minute], every day; [param hour] -1 for never ([code]EvLaunch.cpp:197-211[/code]).
+			</description>
+		</method>
+		<method name="memory_add_friction_track">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="track" type="RID" />
+			<description>
+				[param memory] modifies the friction of [param track] by its values from now on: friction * value1 + value2 (a track's [code]friction &lt;memcell&gt;[/code], [code]Track.cpp:924, 2527-2533, 3526[/code]).
 			</description>
 		</method>
 		<method name="memory_create">
 			<return type="RID" />
 			<description>
+				Creates a memory cell: an empty text and both values 0.
 			</description>
 		</method>
 		<method name="memory_free">
 			<return type="void" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				Frees [param memory].
 			</description>
 		</method>
 		<method name="memory_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The scenery name of [param memory].
 			</description>
 		</method>
 		<method name="memory_get_position" qualifiers="const">
 			<return type="Vector3" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				Where [param memory] stands.
 			</description>
 		</method>
 		<method name="memory_get_rid_by_name" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				The memory of [param name]; an empty RID for none.
 			</description>
 		</method>
 		<method name="memory_get_text" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The text [param memory] holds.
 			</description>
 		</method>
 		<method name="memory_get_track" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The track [param memory] stands at; an empty RID for none.
 			</description>
 		</method>
 		<method name="memory_get_value1" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The first value [param memory] holds.
 			</description>
 		</method>
 		<method name="memory_get_value2" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The second value [param memory] holds.
 			</description>
 		</method>
 		<method name="memory_set_name">
@@ -351,6 +414,7 @@
 			<param index="0" name="memory" type="RID" />
 			<param index="1" name="name" type="StringName" />
 			<description>
+				The scenery name [param memory] is found by ([method memory_get_rid_by_name]).
 			</description>
 		</method>
 		<method name="memory_set_position">
@@ -358,6 +422,7 @@
 			<param index="0" name="memory" type="RID" />
 			<param index="1" name="position" type="Vector3" />
 			<description>
+				Where [param memory] stands - sent with its command to the drivers it reaches.
 			</description>
 		</method>
 		<method name="memory_set_track">
@@ -365,6 +430,7 @@
 			<param index="0" name="memory" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
+				The track [param memory] stands at ([code]TMemCell::Track[/code], [code]MemCell.h:76[/code]).
 			</description>
 		</method>
 		<method name="memory_set_values">
@@ -374,6 +440,7 @@
 			<param index="2" name="value1" type="float" />
 			<param index="3" name="value2" type="float" />
 			<description>
+				Sets the text and both values of [param memory]; the tracks whose friction it modifies follow, and [signal memory_values_changed] is emitted.
 			</description>
 		</method>
 		<method name="queue_get_events" qualifiers="const">
@@ -388,12 +455,14 @@
 			<param index="1" name="slot" type="int" enum="ScenarioEventServer.TrackEvent" />
 			<param index="2" name="event" type="RID" />
 			<description>
+				Queues [param event] when a vehicle does what [param slot] says on the [TrackServer] [param track].
 			</description>
 		</method>
 		<method name="track_clear_events">
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
 			<description>
+				Takes every event off [param track].
 			</description>
 		</method>
 		<method name="track_get_events" qualifiers="const">
@@ -401,6 +470,7 @@
 			<param index="0" name="track" type="RID" />
 			<param index="1" name="slot" type="int" enum="ScenarioEventServer.TrackEvent" />
 			<description>
+				The events of [param track] in [param slot].
 			</description>
 		</method>
 	</methods>
@@ -415,46 +485,62 @@
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="activator" type="RID" />
 			<description>
+				[param event], queued by [param activator], came to run - before its condition is tested.
 			</description>
 		</signal>
 		<signal name="event_queued">
 			<param index="0" name="event" type="RID" />
 			<param index="1" name="activator" type="RID" />
 			<description>
+				[param event] was queued by [param activator].
 			</description>
 		</signal>
 		<signal name="memory_values_changed">
 			<param index="0" name="memory" type="RID" />
 			<description>
+				The text or the values of [param memory] were set.
 			</description>
 		</signal>
 	</signals>
 	<constants>
 		<constant name="MEMORY_FIELD_TEXT" value="1" enum="MemoryField" is_bitfield="true">
+			A memory's text (the original's [code]text[/code] flag, [code]Event.h:29[/code]).
 		</constant>
 		<constant name="MEMORY_FIELD_VALUE1" value="2" enum="MemoryField" is_bitfield="true">
+			A memory's first value ([code]value1[/code], [code]Event.h:30[/code]).
 		</constant>
 		<constant name="MEMORY_FIELD_VALUE2" value="4" enum="MemoryField" is_bitfield="true">
+			A memory's second value ([code]value2[/code], [code]Event.h:31[/code]).
 		</constant>
 		<constant name="TRACK_EVENT0" value="0" enum="TrackEvent">
+			A vehicle with a driver stands on the track ([code]m_events0[/code], [code]Track.cpp:952[/code]).
 		</constant>
 		<constant name="TRACK_EVENT1" value="1" enum="TrackEvent">
+			A vehicle with a driver moves along the track towards its start.
 		</constant>
 		<constant name="TRACK_EVENT2" value="2" enum="TrackEvent">
+			A vehicle with a driver moves along the track towards its end.
 		</constant>
 		<constant name="TRACK_EVENTALL0" value="3" enum="TrackEvent">
+			Any vehicle stands on the track ([code]m_events0all[/code]).
 		</constant>
 		<constant name="TRACK_EVENTALL1" value="4" enum="TrackEvent">
+			Any vehicle moves along the track towards its start.
 		</constant>
 		<constant name="TRACK_EVENTALL2" value="5" enum="TrackEvent">
+			Any vehicle moves along the track towards its end.
 		</constant>
 		<constant name="ISOLATED_BUSY" value="0" enum="IsolatedEvent">
+			The first vehicle came onto the isolated section ([code]TIsolated::AssignEvents()[/code], [code]Track.cpp:110-116[/code]).
 		</constant>
 		<constant name="ISOLATED_FREE" value="1" enum="IsolatedEvent">
+			The last vehicle left the isolated section.
 		</constant>
 		<constant name="ISOLATED_INC" value="2" enum="IsolatedEvent">
+			A vehicle came onto the isolated section.
 		</constant>
 		<constant name="ISOLATED_DEC" value="3" enum="IsolatedEvent">
+			A vehicle left the isolated section.
 		</constant>
 	</constants>
 </class>

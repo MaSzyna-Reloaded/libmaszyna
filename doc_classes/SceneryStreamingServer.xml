@@ -98,6 +98,7 @@
 			<param index="0" name="provider" type="RID" />
 			<param index="1" name="scenario" type="RID" />
 			<description>
+				What [param provider] supplied goes, and is supplied again into [param scenario] as the camera comes near; an empty RID supplies nothing (its node out of the world).
 			</description>
 		</method>
 		<method name="stream_free">

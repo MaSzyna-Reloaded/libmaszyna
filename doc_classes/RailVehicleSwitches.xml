@@ -30,6 +30,7 @@
 		<method name="get_sand_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether sand is being dropped ([code]SandDose[/code]).
 			</description>
 		</method>
 		<method name="next_pantograph_preset">
@@ -50,6 +51,7 @@
 			<return type="void" />
 			<param index="0" name="active" type="bool" />
 			<description>
+				The sander's button held or let go - it drops sand only while held ([code]SandboxManual()[/code]; [code]sand_bt:[/code], [code]Train.cpp:1917-1939[/code]).
 			</description>
 		</method>
 		<method name="universal_relay_reset">

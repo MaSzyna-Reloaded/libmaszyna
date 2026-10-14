@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VehicleServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Every vehicle of the world, by its RID: its controller, its cabins, who sits in them and the commands it takes.
 	</brief_description>
 	<description>
+		A vehicle is held by its RID and commanded with [method vehicle_send_command]; only a command renews the state dump and announces itself ([signal vehicle_command_received]). Its id (the scenery name in lower case, [method vehicle_get_rid_by_id]) is only for finding it, its name ([method vehicle_get_name]) only for the player to read.
+		What simulates a vehicle is an implementation registered by name ([method implementation_register]) - the extension registers the Mover, an addon may register its own; the controller ([VehicleController]) names the one it runs on. The server steps every vehicle on [SimulationServer]'s clock ([method stepping_advance]).
+		A cabin ([method cabin_create]) is a place in a vehicle people sit in: [PersonServer] persons, each in one role ([enum VehiclePersonRole.Role]).
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,18 +14,21 @@
 		<method name="cabin_create">
 			<return type="RID" />
 			<description>
+				A place people sit in, of nothing yet; attached to a vehicle ([method vehicle_cabin_attach]) it can be entered. A vehicle without a cabin cannot be entered at all.
 			</description>
 		</method>
 		<method name="cabin_free">
 			<return type="void" />
 			<param index="0" name="cabin" type="RID" />
 			<description>
+				Frees [param cabin]; it is detached from its vehicle first, and whoever sits in it leaves.
 			</description>
 		</method>
 		<method name="cabin_get_vehicle" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="cabin" type="RID" />
 			<description>
+				The vehicle [param cabin] is attached to; an empty RID for none.
 			</description>
 		</method>
 		<method name="cabin_has_person_role" qualifiers="const">
@@ -29,6 +36,7 @@
 			<param index="0" name="cabin" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Whether somebody sits in [param cabin] in [param role] - anybody for [constant VehiclePersonRole.VEHICLE_PERSON_ROLE_ANY].
 			</description>
 		</method>
 		<method name="cabin_list_persons" qualifiers="const">
@@ -36,6 +44,7 @@
 			<param index="0" name="cabin" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Who sits in [param cabin] in [param role] - everybody for [constant VehiclePersonRole.VEHICLE_PERSON_ROLE_ANY].
 			</description>
 		</method>
 		<method name="cabin_person_change_role">
@@ -44,6 +53,7 @@
 			<param index="1" name="person" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person], sitting in [param cabin], takes [param role] there. Refused with [constant ERR_INVALID_PARAMETER] for a person not in the cabin or a role that is no role, and with [constant ERR_UNAVAILABLE] for the driver's role where somebody else drives.
 			</description>
 		</method>
 		<method name="cabin_person_enter">
@@ -52,6 +62,7 @@
 			<param index="1" name="person" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] sits down in [param cabin] in [param role]. Refused - with the reason, and nothing changed - for a person aboard already ([constant ERR_ALREADY_IN_USE]), a cabin of no vehicle or a role that is no role ([constant ERR_INVALID_PARAMETER]), and the driver's seat of a cabin somebody else drives from ([constant ERR_UNAVAILABLE]): one driver a cabin, and taking it over is that one's change of role first.
 			</description>
 		</method>
 		<method name="cabin_person_leave">
@@ -59,6 +70,7 @@
 			<param index="0" name="cabin" type="RID" />
 			<param index="1" name="person" type="RID" />
 			<description>
+				[param person] leaves [param cabin].
 			</description>
 		</method>
 		<method name="cabin_person_move">
@@ -74,22 +86,26 @@
 			<param index="0" name="controller" type="RID" />
 			<param index="1" name="description" type="VehicleController" />
 			<description>
+				The controller becomes a copy of [param description] (a [VehicleController] with its components - its stored configuration); a vehicle it drives is restarted on it.
 			</description>
 		</method>
 		<method name="controller_create">
 			<return type="RID" />
 			<description>
+				A controller of this server, empty until configured ([method controller_configure]).
 			</description>
 		</method>
 		<method name="controller_free">
 			<return type="void" />
 			<param index="0" name="controller" type="RID" />
 			<description>
+				Frees [param controller].
 			</description>
 		</method>
 		<method name="implementation_get_list" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
+				The names of the registered implementations.
 			</description>
 		</method>
 		<method name="implementation_register">
@@ -97,47 +113,55 @@
 			<param index="0" name="name" type="StringName" />
 			<param index="1" name="implementation_id" type="int" />
 			<description>
+				What simulates the vehicles whose controller names [param name], by the instance id of its [VehicleImplementationServer].
 			</description>
 		</method>
 		<method name="implementation_unregister">
 			<return type="void" />
 			<param index="0" name="name" type="StringName" />
 			<description>
+				Nothing simulates the vehicles whose controller names [param name] any more.
 			</description>
 		</method>
 		<method name="person_get_cabin" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				The cabin [param person] sits in; an empty RID for a person on foot.
 			</description>
 		</method>
 		<method name="person_get_role" qualifiers="const">
 			<return type="int" enum="VehiclePersonRole.Role" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				The role [param person] has where it sits, [constant VehiclePersonRole.VEHICLE_PERSON_ROLE_ANY] for a person on foot.
 			</description>
 		</method>
 		<method name="person_get_vehicle" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				The vehicle of the cabin [param person] sits in; an empty RID for a person on foot.
 			</description>
 		</method>
 		<method name="stepping_advance">
 			<return type="void" />
 			<param index="0" name="delta" type="float" />
 			<description>
+				One step of every vehicle by [param delta] seconds: each implementation is handed its own vehicles, at once. Driven by [SimulationServer]'s clock, and callable directly where the caller wants to decide when it happens.
 			</description>
 		</method>
 		<method name="stepping_is_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the vehicles are stepped.
 			</description>
 		</method>
 		<method name="stepping_set_enabled">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				Freezes the step while a scenery is torn down: the vehicles are freed one by one, and stepping a registry that is being emptied is work for nothing.
 			</description>
 		</method>
 		<method name="vehicle_bind_controller">
@@ -145,6 +169,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="controller" type="RID" />
 			<description>
+				[param vehicle] is driven by [param controller] from now on: the controller it had lets go of its simulation, this one takes the scenery's values and starts its own. An empty RID unbinds; binding the same pair again restarts the vehicle's simulation.
 			</description>
 		</method>
 		<method name="vehicle_broadcast_command">
@@ -161,6 +186,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="cabin" type="RID" />
 			<description>
+				Makes [param cabin] a part of [param vehicle].
 			</description>
 		</method>
 		<method name="vehicle_cabin_detach">
@@ -168,6 +194,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="cabin" type="RID" />
 			<description>
+				[param cabin] is no part of [param vehicle] any more; whoever sits in it leaves first.
 			</description>
 		</method>
 		<method name="vehicle_component_get" qualifiers="const">
@@ -175,35 +202,41 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="type" type="int" enum="VehicleComponentType.Type" />
 			<description>
+				The component of [param type], as a typed object - a live view on the vehicle, valid while the vehicle is (the shape [method PhysicsServer3D.body_get_direct_state] has). A per-frame reader takes it once and reads its getters; null for a vehicle without one.
 			</description>
 		</method>
 		<method name="vehicle_create">
 			<return type="RID" />
 			<description>
+				Creates a vehicle without a controller.
 			</description>
 		</method>
 		<method name="vehicle_dump_config" qualifiers="const">
 			<return type="Dictionary" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The configuration of [param vehicle], by name. Not cached: for a reader driven by a name out of the data, never per frame.
 			</description>
 		</method>
 		<method name="vehicle_dump_state">
 			<return type="Dictionary" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Everything [param vehicle] publishes, by name, in one [Dictionary]. Expensive on purpose: a console, a test or a diagnostic asks for it, never a per-frame reader - those take the component that owns the value ([method vehicle_component_get]). Cached until the next step or command.
 			</description>
 		</method>
 		<method name="vehicle_exists" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Whether [param vehicle] is a vehicle.
 			</description>
 		</method>
 		<method name="vehicle_free">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Frees [param vehicle] and its cabins.
 			</description>
 		</method>
 		<method name="vehicle_generic_component_find" qualifiers="const">
@@ -211,18 +244,21 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="tag" type="StringName" />
 			<description>
+				The scripted components of [param vehicle] carrying [param tag], a tag of the modder's own choosing.
 			</description>
 		</method>
 		<method name="vehicle_get_cabin_count" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				How many cabins [param vehicle] has.
 			</description>
 		</method>
 		<method name="vehicle_get_cabins" qualifiers="const">
 			<return type="RID[]" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The cabins of [param vehicle], in the order they were attached.
 			</description>
 		</method>
 		<method name="vehicle_get_commands" qualifiers="const">
@@ -243,6 +279,7 @@
 			<return type="Vector3" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Width (x), height (y) and length (z) of the body of [param vehicle] [m], in the vehicle's own frame.
 			</description>
 		</method>
 		<method name="vehicle_get_id" qualifiers="const">
@@ -283,12 +320,14 @@
 			<return type="float" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				How fast [param vehicle] moves [km/h], whichever way.
 			</description>
 		</method>
 		<method name="vehicle_get_velocity" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The velocity of [param vehicle] along its own front [m/s], negative backwards.
 			</description>
 		</method>
 		<method name="vehicle_has_command" qualifiers="const">
@@ -304,12 +343,14 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Whether somebody sits in any cabin of [param vehicle] in [param role] - anybody for [constant VehiclePersonRole.VEHICLE_PERSON_ROLE_ANY].
 			</description>
 		</method>
 		<method name="vehicle_is_simulation_ready" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Whether the simulation behind [param vehicle] exists yet - nothing can be read off a vehicle before it does.
 			</description>
 		</method>
 		<method name="vehicle_list_persons" qualifiers="const">
@@ -317,6 +358,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Who sits in any cabin of [param vehicle] in [param role] - everybody for [constant VehiclePersonRole.VEHICLE_PERSON_ROLE_ANY].
 			</description>
 		</method>
 		<method name="vehicle_send_command">
@@ -342,6 +384,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="velocity" type="float" />
 			<description>
+				What the scenery placed [param vehicle] with - the velocity it starts with, along its own front, negated for a reversed vehicle ([code]DynObj.cpp:2019[/code]). Handed to its controller when it is bound.
 			</description>
 		</method>
 		<method name="vehicle_set_name">
@@ -359,12 +402,14 @@
 			<param index="1" name="person" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] sat down in [param cabin], in [param role].
 			</description>
 		</signal>
 		<signal name="cabin_person_left">
 			<param index="0" name="cabin" type="RID" />
 			<param index="1" name="person" type="RID" />
 			<description>
+				[param person] left [param cabin].
 			</description>
 		</signal>
 		<signal name="cabin_person_moved">
@@ -372,6 +417,7 @@
 			<param index="1" name="cabin" type="RID" />
 			<param index="2" name="previous" type="RID" />
 			<description>
+				[param person] went over from the cabin [param previous] to [param cabin] - of the same vehicle or, through a gangway, of another one - in the role it had.
 			</description>
 		</signal>
 		<signal name="cabin_person_role_changed">
@@ -379,12 +425,14 @@
 			<param index="1" name="person" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] took [param role] in [param cabin].
 			</description>
 		</signal>
 		<signal name="vehicle_cabin_detached">
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="cabin" type="RID" />
 			<description>
+				[param cabin] is no part of [param vehicle] any more - detached or freed, everybody out first.
 			</description>
 		</signal>
 		<signal name="vehicle_command_received">
@@ -399,16 +447,19 @@
 		<signal name="vehicle_config_changed">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				A component of [param vehicle] (re)applied its configuration.
 			</description>
 		</signal>
 		<signal name="vehicle_configured">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The simulation behind [param vehicle] exists and carries its configuration.
 			</description>
 		</signal>
 		<signal name="vehicle_controller_changed">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Another controller drives [param vehicle] now - whoever relays its events reconnects.
 			</description>
 		</signal>
 		<signal name="vehicle_freed">

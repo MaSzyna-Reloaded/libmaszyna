@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="MaszynaTrianglesImporter" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Reads a scenery's [code]triangles[/code] node.
 	</brief_description>
 	<description>
+		Reads a [code]triangles[/code] node of a scenery, rotated and moved into place, into a [SceneryTrianglesSink] with its draw range.
 	</description>
 	<tutorials>
 	</tutorials>

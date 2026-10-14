@@ -12,26 +12,31 @@
 		<method name="clock_hold">
 			<return type="void" />
 			<description>
+				Somebody needs time to pass: the clock runs while anybody holds it, a runtime is attached and the simulation is not paused. Every hold is let go with [method clock_release].
 			</description>
 		</method>
 		<method name="clock_release">
 			<return type="void" />
 			<description>
+				Lets go of a hold taken with [method clock_hold].
 			</description>
 		</method>
 		<method name="date_get_day" qualifiers="const">
 			<return type="int" />
 			<description>
+				The day of the month the time of day belongs to ([method date_set]).
 			</description>
 		</method>
 		<method name="date_get_month" qualifiers="const">
 			<return type="int" />
 			<description>
+				The month the time of day belongs to ([method date_set]).
 			</description>
 		</method>
 		<method name="date_get_year" qualifiers="const">
 			<return type="int" />
 			<description>
+				The year the time of day belongs to ([method date_set]).
 			</description>
 		</method>
 		<method name="date_set">
@@ -53,6 +58,7 @@
 			<return type="void" />
 			<param index="0" name="frame_delta" type="float" />
 			<description>
+				One frame of the clock, [param frame_delta] real seconds ([code]Timer::UpdateTimers()[/code], [code]Timer.cpp:79-87[/code]): at most 0.25 s of it, times the simulation speed, in slices of at most 0.1 s - each added to the simulation time and the time of day, then [signal simulation_advanced]. Called by the clock's node, processed before every other.
 			</description>
 		</method>
 		<method name="simulation_get_current_speed" qualifiers="const">
@@ -64,6 +70,13 @@
 		<method name="simulation_get_time" qualifiers="const">
 			<return type="float" />
 			<description>
+				Simulated seconds so far ([code]fSimulationTime[/code], [code]Timer.cpp:87[/code]).
+			</description>
+		</method>
+		<method name="simulation_get_weather_friction_factor" qualifiers="const">
+			<return type="float" />
+			<description>
+				The rails' friction under the [member weather]: wet and snowy rails grip less - 0.85 in rain, 0.75 in snow, 1 otherwise ([code]Global.FrictionWeatherFactor[/code], [code]simulationenvironment.cpp:198-201[/code]).
 			</description>
 		</method>
 		<method name="simulation_is_paused" qualifiers="const">
@@ -98,6 +111,9 @@
 		<member name="cloud_cover" type="float" setter="set_cloud_cover" getter="get_cloud_cover" default="0.5">
 			0-1, the weather's; full cover dims the daylight by 0.65 ([code]simulationenvironment.cpp:163[/code]).
 		</member>
+		<member name="friction" type="float" setter="set_friction" getter="get_friction" default="1.0">
+			The scenery's rail friction multiplier ([code]Global.fFriction[/code], [code]Globals.h:95[/code]), set by the scenery's [code]friction[/code] event ([MaszynaLegacyFrictionAction]).
+		</member>
 		<member name="latitude" type="float" setter="set_latitude" getter="get_latitude" default="50.271">
 			Where the sun is seen from, decimal degrees north. The original's is a fixed 52 N ([code]sun.cpp:13[/code]).
 		</member>
@@ -108,6 +124,7 @@
 			Decimal degrees east. The original's is a fixed 19 E ([code]sun.cpp:13[/code]).
 		</member>
 		<member name="simulation_speed" type="float" setter="set_simulation_speed" getter="get_simulation_speed" default="1.0">
+			How many simulated seconds pass in one real second ([code]Global.fTimeSpeed[/code], [code]Timer.cpp:80[/code]) - the speed set; the clock gets to it like a tape's motor, over the [code]maszyna/simulation/speed_change_time[/code] Project Setting ([method simulation_get_current_speed]).
 		</member>
 		<member name="time_of_day" type="float" setter="set_time_of_day" getter="get_time_of_day" default="8.0">
 			Hours since midnight. Set, it jumps; running, it advances with the simulation and carries the date past midnight.
@@ -117,6 +134,9 @@
 		</member>
 		<member name="use_system_time" type="bool" setter="set_use_system_time" getter="get_use_system_time" default="false">
 			The time of day and the date follow the system's clock instead of the simulation's.
+		</member>
+		<member name="weather" type="int" setter="set_weather" getter="get_weather" enum="SimulationServer.Weather" default="0">
+			What falls from the sky ([code]Global.Weather[/code], [code]simulationenvironment.cpp:198[/code]); rain and snow lower the rails' friction ([method simulation_get_weather_friction_factor]).
 		</member>
 	</members>
 	<signals>
@@ -134,6 +154,7 @@
 		<signal name="simulation_advanced">
 			<param index="0" name="seconds" type="float" />
 			<description>
+				The clock moved on by [param seconds] of simulated time - one slice of a frame.
 			</description>
 		</signal>
 		<signal name="simulation_current_speed_changed">
@@ -148,6 +169,7 @@
 		</signal>
 		<signal name="simulation_speed_changed">
 			<description>
+				Another [member simulation_speed] was set.
 			</description>
 		</signal>
 		<signal name="simulation_unpaused">
@@ -166,4 +188,18 @@
 			</description>
 		</signal>
 	</signals>
+	<constants>
+		<constant name="WEATHER_CLEAR" value="0" enum="Weather">
+			A clear sky.
+		</constant>
+		<constant name="WEATHER_CLOUDY" value="1" enum="Weather">
+			Clouds, nothing falling.
+		</constant>
+		<constant name="WEATHER_RAIN" value="2" enum="Weather">
+			Rain: wet rails grip less.
+		</constant>
+		<constant name="WEATHER_SNOW" value="3" enum="Weather">
+			Snow: snowy rails grip least.
+		</constant>
+	</constants>
 </class>

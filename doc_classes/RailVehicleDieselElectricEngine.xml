@@ -15,52 +15,62 @@
 		<method name="fuse_reset">
 			<return type="void" />
 			<description>
+				The overload relay reset - "zbij nadmiarowy" ([code]FuseOn()[/code]).
 			</description>
 		</method>
 		<method name="get_circuit_imax" qualifiers="const">
 			<return type="float" />
 			<description>
+				The overload relay's current threshold in use [lb]A[rb] ([code]Imax[/code]).
 			</description>
 		</method>
 		<method name="get_dynamic_brake_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the dynamic brake works ([code]DynamicBrakeFlag[/code]).
 			</description>
 		</method>
 		<method name="get_engine_voltage" qualifiers="const">
 			<return type="float" />
 			<description>
+				The generator's voltage on the motors [lb]V[rb] ([code]EngineVoltage[/code]).
 			</description>
 		</method>
 		<method name="get_fuse_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the overload relay has tripped ([code]FuseFlag[/code]).
 			</description>
 		</method>
 		<method name="get_motor_connectors_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the traction motors' line contactors are held open ([code]StLinSwitchOff[/code]).
 			</description>
 		</method>
 		<method name="get_motor_current" qualifiers="const">
 			<return type="float" />
 			<description>
+				The traction motors' current [lb]A[rb] ([code]Im[/code]).
 			</description>
 		</method>
 		<method name="is_line_contactor_closed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the line contactors are closed ([code]StLinFlag[/code]).
 			</description>
 		</method>
 		<method name="is_pressure_switch_tripped" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the control pressure switch has tripped ([code]ControlPressureSwitch[/code]).
 			</description>
 		</method>
 		<method name="set_motor_connectors_open">
 			<return type="void" />
 			<param index="0" name="open" type="bool" />
 			<description>
+				The traction motors' line contactors held open, or let go ([code]StLinSwitchOff[/code]).
 			</description>
 		</method>
 	</methods>

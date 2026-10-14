@@ -12,36 +12,43 @@
 		<method name="get_angle_front_deg" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the front rolling wheels have turned [deg] - the vehicle's, not the simulation's ([code]TDynamicObject::Update[/code], [code]DynObj.cpp:3776-3792[/code]).
 			</description>
 		</method>
 		<method name="get_angle_powered_deg" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the powered wheels have turned [deg].
 			</description>
 		</method>
 		<method name="get_angle_rear_deg" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the rear rolling wheels have turned [deg].
 			</description>
 		</method>
 		<method name="get_flat" qualifiers="const">
 			<return type="float" />
 			<description>
+				The wheels' flat spot ([code]WheelFlat[/code]).
 			</description>
 		</method>
 		<method name="get_rotation_acceleration_rps2" qualifiers="const">
 			<return type="float" />
 			<description>
+				The powered axles' angular acceleration [rev/s²] ([code]nrot_eps[/code]).
 			</description>
 		</method>
 		<method name="get_rotation_speed_rps" qualifiers="const">
 			<return type="float" />
 			<description>
+				How fast the powered axles turn [rev/s] ([code]nrot[/code]).
 			</description>
 		</method>
 		<method name="get_slipping" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the wheels slip ([code]SlippingWheels[/code]).
 			</description>
 		</method>
 	</methods>
@@ -89,12 +96,16 @@
 	</members>
 	<constants>
 		<constant name="BOGIE_FRONT" value="0" enum="Bogie">
+			The front bogie ([method RailVehicleServer.vehicle_get_bogie_transform]).
 		</constant>
 		<constant name="BOGIE_REAR" value="1" enum="Bogie">
+			The rear bogie.
 		</constant>
 		<constant name="BEARING_TYPE_SLIDE" value="0" enum="BearingType">
+			Plain (sliding) bearings.
 		</constant>
 		<constant name="BEARING_TYPE_ROLL" value="1" enum="BearingType">
+			Roller bearings.
 		</constant>
 	</constants>
 </class>

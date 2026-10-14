@@ -51,61 +51,73 @@
 		<method name="get_left_door_closed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left door alone is fully closed, its step whatever ([code]is_door_closed[/code], [code]MOVER.h:965[/code]).
 			</description>
 		</method>
 		<method name="get_left_local_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left doors are opened from the vehicle itself ([code]local_open[/code]).
 			</description>
 		</method>
 		<method name="get_left_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left doors are open ([code]is_open[/code]).
 			</description>
 		</method>
 		<method name="get_left_open_permit" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left doors are permitted to open ([code]open_permit[/code]).
 			</description>
 		</method>
 		<method name="get_left_operating" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left doors are opening or closing.
 			</description>
 		</method>
 		<method name="get_left_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the left doors are open [m] ([code]position[/code]).
 			</description>
 		</method>
 		<method name="get_left_position_normalized" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the left doors are open, 0 closed .. 1 fully open.
 			</description>
 		</method>
 		<method name="get_left_remote_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left doors are opened from the cab ([code]remote_open[/code]).
 			</description>
 		</method>
 		<method name="get_left_step_operating" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left step is folding or unfolding.
 			</description>
 		</method>
 		<method name="get_left_step_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the left step is out ([code]step_position[/code]).
 			</description>
 		</method>
 		<method name="get_lock_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the vehicle's doors have a lock ([code]Doors.lock_enabled[/code]).
 			</description>
 		</method>
 		<method name="get_locked" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the doors are locked ([code]Doors.is_locked[/code]).
 			</description>
 		</method>
 		<method name="get_mirror_left_position" qualifiers="const">
@@ -129,11 +141,13 @@
 		<method name="get_open_control" qualifiers="const">
 			<return type="int" />
 			<description>
+				Who opens the doors, a [enum Controls] ([code]Doors.open_control[/code]).
 			</description>
 		</method>
 		<method name="get_permit_preset" qualifiers="const">
 			<return type="int" />
 			<description>
+				The selected door permit preset, 0-based ([code]Doors.permit_preset[/code]).
 			</description>
 		</method>
 		<method name="get_remote_only" qualifiers="const">
@@ -151,56 +165,67 @@
 		<method name="get_right_door_closed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right door alone is fully closed, its step whatever ([code]is_door_closed[/code], [code]MOVER.h:965[/code]).
 			</description>
 		</method>
 		<method name="get_right_local_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right doors are opened from the vehicle itself ([code]local_open[/code]).
 			</description>
 		</method>
 		<method name="get_right_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right doors are open ([code]is_open[/code]).
 			</description>
 		</method>
 		<method name="get_right_open_permit" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right doors are permitted to open ([code]open_permit[/code]).
 			</description>
 		</method>
 		<method name="get_right_operating" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right doors are opening or closing.
 			</description>
 		</method>
 		<method name="get_right_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the right doors are open [m] ([code]position[/code]).
 			</description>
 		</method>
 		<method name="get_right_position_normalized" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the right doors are open, 0 closed .. 1 fully open.
 			</description>
 		</method>
 		<method name="get_right_remote_open" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right doors are opened from the cab ([code]remote_open[/code]).
 			</description>
 		</method>
 		<method name="get_right_step_operating" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right step is folding or unfolding.
 			</description>
 		</method>
 		<method name="get_right_step_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				How far the right step is out ([code]step_position[/code]).
 			</description>
 		</method>
 		<method name="get_step_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the steps are let out with the doors ([code]Doors.step_enabled[/code]).
 			</description>
 		</method>
 		<method name="next_permit_preset">

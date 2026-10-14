@@ -13,22 +13,26 @@
 		<method name="get_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the train heating works ([code]Heating[/code]).
 			</description>
 		</method>
 		<method name="get_allowed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				The heating switch's own state ([code]HeatingAllow[/code]) - what [code]trainheating_sw:[/code] flips ([code]Train.cpp:6674[/code]).
 			</description>
 		</method>
 		<method name="get_power" qualifiers="const">
 			<return type="float" />
 			<description>
+				The heating's power ([code]HeatingPower[/code]).
 			</description>
 		</method>
 		<method name="heating">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The train heating switched on or off ([code]HeatingSwitch()[/code]; [code]OnCommand_heatingenable/disable[/code], [code]Train.cpp:5256-5296[/code]).
 			</description>
 		</method>
 	</methods>

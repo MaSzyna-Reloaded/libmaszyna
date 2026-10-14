@@ -12,46 +12,55 @@
 		<method name="get_beeping" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the security system's buzzer sounds ([code]is_beeping()[/code]).
 			</description>
 		</method>
 		<method name="get_blinking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the security system's lamp blinks - an alert waits to be acknowledged ([code]is_blinking()[/code]).
 			</description>
 		</method>
 		<method name="get_braking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the security system brakes the vehicle ([code]is_braking()[/code]).
 			</description>
 		</method>
 		<method name="get_cabsignal_beeping" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cab signal's buzzer sounds ([code]is_cabsignal_beeping()[/code]).
 			</description>
 		</method>
 		<method name="get_cabsignal_blinking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cab signal's lamp blinks - a cab signal waits to be acknowledged ([code]is_cabsignal_blinking()[/code]).
 			</description>
 		</method>
 		<method name="get_engine_blocked" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the security system holds the traction off ([code]is_engine_blocked()[/code]).
 			</description>
 		</method>
 		<method name="get_radiostop_available" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the security system takes Radio-Stop ([code]radiostop_available()[/code]).
 			</description>
 		</method>
 		<method name="get_separate_acknowledge" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cab signal is acknowledged by a button of its own ([code]has_separate_acknowledge()[/code]).
 			</description>
 		</method>
 		<method name="get_vigilance_blinking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the vigilance lamp blinks - the button held too long, or no reaction for too long ([code]is_vigilance_blinking()[/code]).
 			</description>
 		</method>
 		<method name="security_acknowledge">
@@ -65,17 +74,20 @@
 		<method name="security_cabsignal_acknowledge">
 			<return type="void" />
 			<description>
+				The cab signal acknowledged, where it has a button of its own ([code]cabsignal_reset()[/code]).
 			</description>
 		</method>
 		<method name="security_cabsignal_trigger">
 			<return type="void" />
 			<description>
+				The cab signal set off - the magnet of a track's [code]CabSignal[/code] event acting on the vehicle ([code]set_cabsignal()[/code]).
 			</description>
 		</method>
 		<method name="security_radiostop">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The security system's Radio-Stop switch set or released ([code]RadiostopSwitch()[/code]).
 			</description>
 		</method>
 	</methods>
@@ -147,10 +159,13 @@
 	</signals>
 	<constants>
 		<constant name="EMERGENCY_SIGNAL_SIREN_LOW_TONE" value="0" enum="EmergencySignal">
+			The low horn sounds the emergency signal.
 		</constant>
 		<constant name="EMERGENCY_SIGNAL_SIREN_HIGH_TONE" value="1" enum="EmergencySignal">
+			The high horn sounds the emergency signal.
 		</constant>
 		<constant name="EMERGENCY_SIGNAL_WHISTLE" value="2" enum="EmergencySignal">
+			The whistle sounds the emergency signal.
 		</constant>
 	</constants>
 </class>
