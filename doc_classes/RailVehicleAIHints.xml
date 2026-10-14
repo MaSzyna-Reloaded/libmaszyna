@@ -25,6 +25,7 @@
 	</members>
 	<constants>
 		<constant name="PANTOGRAPH_STATE_AUTOMATIC" value="0" enum="PantographState">
+			The driver's own choice: the pantograph at the rear the way it drives ([code]control_pantographs()[/code], [code]Driver.cpp:6258[/code]).
 		</constant>
 		<constant name="PANTOGRAPH_STATE_FRONT" value="1" enum="PantographState">
 			Drive on the front pantograph.

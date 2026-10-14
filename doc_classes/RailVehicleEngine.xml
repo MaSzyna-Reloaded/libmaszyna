@@ -18,119 +18,142 @@
 		<method name="get_circuit_nmax_rpm" qualifiers="const">
 			<return type="float" />
 			<description>
+				The engine's highest speed [rpm] ([code]nmax[/code]).
 			</description>
 		</method>
 		<method name="get_circuit_rlist_size" qualifiers="const">
 			<return type="int" />
 			<description>
+				How many positions the starting resistor table has ([code]RlistSize[/code]).
 			</description>
 		</method>
 		<method name="get_current0" qualifiers="const">
 			<return type="float" />
 			<description>
+				The engine's total ammeter [lb]A[rb] ([code]ShowCurrent(0)[/code]). A vehicle without an engine has none - its cab reads the powered vehicle's ([code]TTrain::mvControlled[/code], [code]Train.cpp:8638[/code]).
 			</description>
 		</method>
 		<method name="get_current1" qualifiers="const">
 			<return type="float" />
 			<description>
+				The ammeter of the first motor branch [lb]A[rb] ([code]ShowCurrent(1)[/code]).
 			</description>
 		</method>
 		<method name="get_current2" qualifiers="const">
 			<return type="float" />
 			<description>
+				The ammeter of the second motor branch [lb]A[rb] ([code]ShowCurrent(2)[/code]).
 			</description>
 		</method>
 		<method name="get_damage" qualifiers="const">
 			<return type="int" />
 			<description>
+				The engine's damage, as the original's bits ([code]EngDmgFlag[/code]).
 			</description>
 		</method>
 		<method name="get_eimic_real" qualifiers="const">
 			<return type="float" />
 			<description>
+				The traction an EIM controller actually asks for, -1-1 ([code]eimic_real[/code]).
 			</description>
 		</method>
 		<method name="get_main_no_power_pos" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the master controller stands at a position without power ([code]IsMainCtrlNoPowerPos()[/code]).
 			</description>
 		</method>
 		<method name="get_main_switch_closable" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the main switch can be closed now ([code]MainSwitchCheck()[/code]).
 			</description>
 		</method>
 		<method name="get_main_switch_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the main switch is closed ([code]Mains[/code]).
 			</description>
 		</method>
 		<method name="get_main_switch_time" qualifiers="const">
 			<return type="float" />
 			<description>
+				How long the main circuit still takes to get ready [s] ([code]MainsInitTimeCountdown[/code]).
 			</description>
 		</method>
 		<method name="get_motor_blowers_active" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				Whether the traction motors' blowers at [param end] work ([code]MotorBlowers[].is_active[/code]).
 			</description>
 		</method>
 		<method name="get_motor_blowers_disabled" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				Whether the "off" switch of the traction motors' blowers at [param end] is pressed ([code]MotorBlowers[].is_disabled[/code]).
 			</description>
 		</method>
 		<method name="get_motor_blowers_enabled" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				Whether the traction motors' blowers at [param end] are switched on ([code]MotorBlowers[].is_enabled[/code]).
 			</description>
 		</method>
 		<method name="get_motor_overload_relay_high_threshold" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the motors' overload relay is set to its high threshold ([code]MotorOverloadRelayHighThreshold[/code]).
 			</description>
 		</method>
 		<method name="get_motor_torque" qualifiers="const">
 			<return type="float" />
 			<description>
+				The traction motors' torque ([code]Mm[/code]).
 			</description>
 		</method>
 		<method name="get_power" qualifiers="const">
 			<return type="float" />
 			<description>
+				The engine's power output ([code]EnginePower[/code]).
 			</description>
 		</method>
 		<method name="get_relay_ground" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the ground relay lets the main circuit work ([code]GroundRelay[/code]).
 			</description>
 		</method>
 		<method name="get_relay_novolt" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the no-voltage relay lets the main circuit work ([code]NoVoltRelay[/code]).
 			</description>
 		</method>
 		<method name="get_relay_overvoltage" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the overvoltage relay lets the main circuit work ([code]OvervoltageRelay[/code]).
 			</description>
 		</method>
 		<method name="get_rpm_count" qualifiers="const">
 			<return type="float" />
 			<description>
+				How fast the engine turns [rev/s] ([code]enrot[/code]).
 			</description>
 		</method>
 		<method name="get_rpm_ratio" qualifiers="const">
 			<return type="float" />
 			<description>
+				How fast the engine turns, as a share of its highest speed ([code]EngineRPMRatio()[/code]).
 			</description>
 		</method>
 		<method name="get_tractive_force" qualifiers="const">
 			<return type="float" />
 			<description>
+				The tractive force at the coupler ([code]Ft[/code]).
 			</description>
 		</method>
 		<method name="get_transmission_ratio" qualifiers="const">
@@ -142,16 +165,19 @@
 		<method name="get_type" qualifiers="const">
 			<return type="int" enum="RailVehicleEngine.EngineType" />
 			<description>
+				Which kind of engine this is - what the simulation keys its own configuration off.
 			</description>
 		</method>
 		<method name="get_wheel_force" qualifiers="const">
 			<return type="float" />
 			<description>
+				The force at the wheels' rim ([code]Fw[/code]).
 			</description>
 		</method>
 		<method name="get_wheel_torque" qualifiers="const">
 			<return type="float" />
 			<description>
+				The torque at the wheels ([code]Mw[/code]).
 			</description>
 		</method>
 		<method name="main_switch">
@@ -166,6 +192,7 @@
 			<param index="0" name="enabled" type="bool" />
 			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				The traction motors' blowers at [param end] switched on or off ([code]MotorBlowersSwitch()[/code]).
 			</description>
 		</method>
 		<method name="motor_blowers_switch_off">
@@ -173,12 +200,14 @@
 			<param index="0" name="enabled" type="bool" />
 			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				The "off" switch of the traction motors' blowers at [param end] pressed or let go ([code]MotorBlowersSwitchOff()[/code]).
 			</description>
 		</method>
 		<method name="motor_overload_relay_threshold">
 			<return type="bool" />
 			<param index="0" name="high" type="bool" />
 			<description>
+				The motors' overload relay set to its high threshold, or the low one ([code]CurrentSwitch()[/code]); [code]true[/code] when it changed.
 			</description>
 		</method>
 	</methods>
@@ -209,6 +238,7 @@
 			Number of inverters powering the vehicle.
 		</member>
 		<member name="main_init_time" type="float" setter="set_main_init_time" getter="get_main_init_time">
+			How long the main circuit takes to get ready once it has power [s] ([code]MainsInitTime[/code], [code]Mover.cpp:10910[/code]).
 		</member>
 		<member name="maximum_traction_force" type="float" setter="set_maximum_traction_force" getter="get_maximum_traction_force">
 			[code]Engine:Ftmax[/code]

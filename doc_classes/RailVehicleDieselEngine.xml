@@ -22,171 +22,205 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The fuel pump's "off" switch pressed or let go ([code]FuelPumpSwitchOff()[/code]).
 			</description>
 		</method>
 		<method name="get_auxiliary_circuit_water_temperature" qualifiers="const">
 			<return type="float" />
 			<description>
+				The auxiliary water circuit's temperature [°C] - what the original's driver warms the engine up by ([code]PrepareHeating()[/code], [code]Driver.cpp:5040-5045[/code]).
 			</description>
 		</method>
 		<method name="get_clutch_desired" qualifiers="const">
 			<return type="float" />
 			<description>
+				The clutch engagement the master controller's position asks for ([code]RList[lb]MainCtrlPos[rb].Mn[/code]).
 			</description>
 		</method>
 		<method name="get_clutch_engagement" qualifiers="const">
 			<return type="float" />
 			<description>
+				How hard the gearbox's clutch is engaged ([code]dizel_engage[/code]).
 			</description>
 		</method>
 		<method name="get_engine_temperature" qualifiers="const">
 			<return type="float" />
 			<description>
+				The engine's temperature [°C] ([code]dizel_heat.Ts[/code]).
 			</description>
 		</method>
 		<method name="get_fill" qualifiers="const">
 			<return type="float" />
 			<description>
+				How much fuel the engine is given, 0-1 ([code]dizel_fill[/code]).
 			</description>
 		</method>
 		<method name="get_fill_desired" qualifiers="const">
 			<return type="float" />
 			<description>
+				The fuel fill the master controller's position asks for ([code]RList[lb]MainCtrlPos[rb].R[/code]).
 			</description>
 		</method>
 		<method name="get_fuel_pump_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the fuel pump works ([code]FuelPump.is_active[/code]).
 			</description>
 		</method>
 		<method name="get_fuel_pump_disabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the fuel pump's "off" switch is pressed ([code]FuelPump.is_disabled[/code]).
 			</description>
 		</method>
 		<method name="get_fuel_pump_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the fuel pump's switch is on ([code]FuelPump.is_enabled[/code]) - what a two-state switch flips ([code]Train.cpp:3891[/code]).
 			</description>
 		</method>
 		<method name="get_heat_malfunction" qualifiers="const">
 			<return type="bool" />
 			<description>
+				The engine overheat alarm ([code]dizel_heat.PA[/code], the [code]i-malfunction[/code] lamp, [code]Train.cpp:9210[/code]).
 			</description>
 		</method>
 		<method name="get_idle_rpm_count" qualifiers="const">
 			<return type="float" />
 			<description>
+				The speed the running engine idles at [rev/s], as [method RailVehicleEngine.get_rpm_count] counts it ([code]Driver.cpp:6187[/code], [code]Mover.cpp:7897[/code]).
 			</description>
 		</method>
 		<method name="get_ignition" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the engine's ignition is asked for ([code]dizel_ignition[/code]).
 			</description>
 		</method>
 		<method name="get_main_circuit_water_temperature" qualifiers="const">
 			<return type="float" />
 			<description>
+				The main water circuit's temperature [°C] - what the original's driver warms the engine up by ([code]PrepareHeating()[/code], [code]Driver.cpp:5040-5045[/code]).
 			</description>
 		</method>
 		<method name="get_max_rpm" qualifiers="const">
 			<return type="float" />
 			<description>
+				The engine's highest speed [rpm] ([code]EngineMaxRPM()[/code]).
 			</description>
 		</method>
 		<method name="get_oil_pump_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the oil pump works ([code]OilPump.is_active[/code]).
 			</description>
 		</method>
 		<method name="get_oil_pump_disabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the oil pump's "off" switch is pressed ([code]OilPump.is_disabled[/code]).
 			</description>
 		</method>
 		<method name="get_oil_pump_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the oil pump's switch is on ([code]OilPump.is_enabled[/code]) - what a two-state switch flips ([code]Train.cpp:3990[/code]).
 			</description>
 		</method>
 		<method name="get_oil_pump_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The oil pump's pressure ([code]OilPump.pressure[/code]).
 			</description>
 		</method>
 		<method name="get_oil_temperature" qualifiers="const">
 			<return type="float" />
 			<description>
+				The oil's temperature [°C] ([code]dizel_heat.To[/code]).
 			</description>
 		</method>
 		<method name="get_output_power" qualifiers="const">
 			<return type="float" />
 			<description>
+				The diesel engine's power now ([code]dizel_Power[/code]).
 			</description>
 		</method>
 		<method name="get_retarder_fill" qualifiers="const">
 			<return type="float" />
 			<description>
+				How full the hydrodynamic retarder is, 0-1 ([code]hydro_R_Fill[/code]).
 			</description>
 		</method>
 		<method name="get_rpm" qualifiers="const">
 			<return type="float" />
 			<description>
+				How fast the engine turns [rpm].
 			</description>
 		</method>
 		<method name="get_spinup" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the engine is spinning up to its idle speed ([code]dizel_spinup[/code]).
 			</description>
 		</method>
 		<method name="get_startup" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the engine's start-up is asked for ([code]dizel_startup[/code]).
 			</description>
 		</method>
 		<method name="get_torque" qualifiers="const">
 			<return type="float" />
 			<description>
+				The diesel engine's torque now ([code]dizel_Torque[/code]).
 			</description>
 		</method>
 		<method name="get_water_circuits_link" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the two water circuits are linked ([code]WaterCircuitsLink[/code]).
 			</description>
 		</method>
 		<method name="get_water_heater_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the water heater works ([code]WaterHeater.is_active[/code]).
 			</description>
 		</method>
 		<method name="get_water_heater_breaker" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the water heater's breaker is closed ([code]WaterHeater.breaker[/code]).
 			</description>
 		</method>
 		<method name="get_water_heater_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the water heater is switched on ([code]WaterHeater.is_enabled[/code]).
 			</description>
 		</method>
 		<method name="get_water_pump_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cooling water's pump works ([code]WaterPump.is_active[/code]).
 			</description>
 		</method>
 		<method name="get_water_pump_breaker" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cooling water pump's breaker is closed ([code]WaterPump.breaker[/code]).
 			</description>
 		</method>
 		<method name="get_water_pump_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cooling water's pump is switched on ([code]WaterPump.is_enabled[/code]).
 			</description>
 		</method>
 		<method name="get_water_temperature" qualifiers="const">
 			<return type="float" />
 			<description>
+				The main water circuit's temperature [°C] ([code]dizel_heat.Twy[/code]).
 			</description>
 		</method>
 		<method name="oil_pump">
@@ -200,53 +234,64 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The oil pump's "off" switch pressed or let go ([code]OilPumpSwitchOff()[/code]).
 			</description>
 		</method>
 		<method name="water_circuits_link">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The two water circuits linked or parted ([code]WaterCircuitsLinkSwitch()[/code]).
 			</description>
 		</method>
 		<method name="water_heater">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The water heater switched on or off ([code]WaterHeaterSwitch()[/code]).
 			</description>
 		</method>
 		<method name="water_heater_breaker">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The water heater's breaker closed or opened ([code]WaterHeaterBreakerSwitch()[/code]).
 			</description>
 		</method>
 		<method name="water_pump">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The cooling water's pump switched on or off ([code]WaterPumpSwitch()[/code]).
 			</description>
 		</method>
 		<method name="water_pump_breaker">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The cooling water pump's breaker closed or opened ([code]WaterPumpBreakerSwitch()[/code]).
 			</description>
 		</method>
 		<method name="water_pump_switch_off">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The cooling water pump's "off" switch pressed or let go ([code]WaterPumpSwitchOff()[/code]).
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="clutch_diameter" type="float" setter="set_clutch_diameter" getter="get_clutch_diameter" default="0.5">
+			The clutch's diameter [m] ([code]engageDia[/code]).
 		</member>
 		<member name="clutch_friction" type="float" setter="set_clutch_friction" getter="get_clutch_friction" default="0.5">
+			The clutch's friction ([code]engagefriction[/code]).
 		</member>
 		<member name="clutch_max_force" type="float" setter="set_clutch_max_force" getter="get_clutch_max_force" default="6000.0">
+			The clutch's greatest pressing force [lb]N[rb] ([code]engageMaxForce[/code]).
 		</member>
 		<member name="clutch_min_velocity_full_engage" type="float" setter="set_clutch_min_velocity_full_engage" getter="get_clutch_min_velocity_full_engage" default="0.0">
+			The speed above which the clutch holds without slip [km/h] ([code]minVelfullengage[/code]).
 		</member>
 		<member name="cooling_fan_speed" type="float" setter="set_cooling_fan_speed" getter="get_cooling_fan_speed" default="0.075">
 			[code]Engine:WaterCoolingFanSpeed[/code]
@@ -364,18 +409,25 @@
 			Minimum engine speed, in RPM.
 		</member>
 		<member name="mechanical_min_rpm_hydro_drive" type="float" setter="set_mechanical_min_rpm_hydro_drive" getter="get_mechanical_min_rpm_hydro_drive" default="0.0">
+			The idle speed while driving on the torque converter [1/s] ([code]nmin_hdrive[/code]).
 		</member>
 		<member name="mechanical_min_rpm_hydro_drive_factor" type="float" setter="set_mechanical_min_rpm_hydro_drive_factor" getter="get_mechanical_min_rpm_hydro_drive_factor" default="0.0">
+			The rise of [member mechanical_min_rpm_hydro_drive] with the power asked for [1/s] ([code]nmin_hdrive_factor[/code]).
 		</member>
 		<member name="mechanical_min_rpm_retarder" type="float" setter="set_mechanical_min_rpm_retarder" getter="get_mechanical_min_rpm_retarder" default="0.0">
+			The engine's speed while the retarder brakes [1/s] ([code]nmin_retarder[/code]).
 		</member>
 		<member name="mechanical_nominal_max_rpm" type="float" setter="set_mechanical_nominal_max_rpm" getter="get_mechanical_nominal_max_rpm" default="0.0">
+			The engine's top speed [1/s] ([code]nmax[/code] of [code]Engine:[/code], not DList's).
 		</member>
 		<member name="mechanical_regulator_acceleration" type="float" setter="set_mechanical_regulator_acceleration" getter="get_mechanical_regulator_acceleration" default="999.0">
+			How fast the governor raises the speed [1/s²] ([code]nreg_acc[/code]).
 		</member>
 		<member name="mechanical_rpm_decrease_rate" type="float" setter="set_mechanical_rpm_decrease_rate" getter="get_mechanical_rpm_decrease_rate" default="2.0">
+			How fast the engine slows down ([code]RPMDecRate[/code]).
 		</member>
 		<member name="mechanical_shunt_mode_ratio" type="float" setter="set_mechanical_shunt_mode_ratio" getter="get_mechanical_shunt_mode_ratio" default="0.0">
+			The extra gear of a shunting mode (2Ls150), 0 without one ([code]ShuntMode[/code]).
 		</member>
 		<member name="oil_pump_pressure_maximum" type="float" setter="set_oil_pump_pressure_maximum" getter="get_oil_pump_pressure_maximum" default="0.65">
 			[code]Engine:OilMaxPressure[/code]
@@ -389,10 +441,13 @@
 			[code]Cntrl.OilStart[/code]
 		</member>
 		<member name="retarder_clutch" type="bool" setter="set_retarder_clutch" getter="get_retarder_clutch" default="false">
+			The retarder has its own clutch ([code]R_IsClutch[/code]).
 		</member>
 		<member name="retarder_clutch_speed" type="float" setter="set_retarder_clutch_speed" getter="get_retarder_clutch_speed" default="10.0">
+			How fast the retarder's clutch engages ([code]R_ClutchSpeed[/code]).
 		</member>
 		<member name="retarder_engage_velocity" type="float" setter="set_retarder_engage_velocity" getter="get_retarder_engage_velocity" default="1.0">
+			The speed the retarder engages above [km/h] ([code]R_EngageVel[/code]).
 		</member>
 		<member name="retarder_fill_rate_decrease" type="float" setter="set_retarder_fill_rate_decrease" getter="get_retarder_fill_rate_decrease" default="1.0">
 			[code]Engine:R_FRD[/code]
@@ -427,6 +482,7 @@
 			Retarder torque constant proportional to the square of input RPM.
 		</member>
 		<member name="retarder_with_individual" type="bool" setter="set_retarder_with_individual" getter="get_retarder_with_individual" default="false">
+			The retarder brakes with the independent brake too ([code]R_WithIndividual[/code]).
 		</member>
 		<member name="throttle_table_max_rpm_torque" type="float" setter="set_throttle_table_max_rpm_torque" getter="get_throttle_table_max_rpm_torque" default="2.0">
 			[code]DList:Mnmax[/code]
@@ -515,6 +571,7 @@
 			Velocity threshold at which the lockup clutch releases.
 		</member>
 		<member name="torque_converter_unlock_velocity" type="float" setter="set_torque_converter_unlock_velocity" getter="get_torque_converter_unlock_velocity" default="3.0">
+			The speed below which the torque converter disengages [km/h] ([code]MaxVelANS[/code]).
 		</member>
 		<member name="torque_table" type="VehicleCurvePointItem[]" setter="set_torque_table" getter="get_torque_table" default="[]">
 			[code]DMList[/code]
@@ -526,6 +583,7 @@
 			The master controller position from which the turbocharger is heard; 0 without it (LoadFIZ_TurboPos, Mover.cpp:10714; DynObj.cpp:8267).
 		</member>
 		<member name="vel2nmax_table" type="VehicleCurvePointItem[]" setter="set_vel2nmax_table" getter="get_vel2nmax_table" default="[]">
+			The engine's highest speed by the vehicle's speed ([code]V2NList[/code], [code]dizel_vel2nmax_Table[/code]).
 		</member>
 		<member name="water_pump_start_mode" type="int" setter="set_water_pump_start_mode" getter="get_water_pump_start_mode" enum="RailVehicleController.StartMode" default="1">
 			[code]Cntrl.WaterStart[/code]

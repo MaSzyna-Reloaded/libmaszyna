@@ -61,6 +61,7 @@
 			<param index="1" name="caption" type="String" />
 			<param index="2" name="vehicle" type="RID" />
 			<description>
+				A click on the model of the [E3DRenderingServer] [param instance], with or without Shift, emits [signal vehicle_pressed] with [param vehicle] - a [RailVehicleServer] handle; [param caption] is what the tooltip shows.
 			</description>
 		</method>
 	</methods>
@@ -80,6 +81,7 @@
 		<signal name="vehicle_pressed">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				A vehicle's model was clicked ([method vehicle_pickable_create]).
 			</description>
 		</signal>
 	</signals>

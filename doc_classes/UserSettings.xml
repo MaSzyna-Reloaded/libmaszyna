@@ -16,6 +16,7 @@
 			<param index="0" name="section" type="String" />
 			<param index="1" name="key" type="String" />
 			<description>
+				The player's value of [param key] in [param section] goes, in memory like [method set_setting]: a key with a default takes the default, a project setting the project's own value.
 			</description>
 		</method>
 		<method name="find_maszyna_game_dirs" qualifiers="const">
@@ -71,6 +72,7 @@
 		<method name="save_config">
 			<return type="void" />
 			<description>
+				Writes the configuration as it is in memory to the player's settings file.
 			</description>
 		</method>
 		<method name="save_maszyna_game_dir">
@@ -97,6 +99,7 @@
 			<param index="1" name="key" type="String" />
 			<param index="2" name="value" type="Variant" />
 			<description>
+				Sets [param key] of [param section] to [param value], in memory and in effect at once; saved by [method save_config], dropped by [method load_config].
 			</description>
 		</method>
 	</methods>

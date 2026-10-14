@@ -22,6 +22,7 @@
 			The base color of the submodel's material.
 		</member>
 		<member name="dynamic_hidden" type="bool" setter="set_dynamic_hidden" getter="get_dynamic_hidden" default="false">
+			A [code]&lt;name&gt;_on[/code]/[code]&lt;name&gt;_xon[/code] submodel: a control in its lit state, hidden by default only in a dynamic (vehicle) model ([code]Model3d.cpp:275, 2221[/code]).
 		</member>
 		<member name="dynamic_material" type="bool" setter="set_dynamic_material" getter="get_dynamic_material" default="false">
 			If [code]true[/code], the submodel uses a dynamic material that can change based on the environment or seasonal settings.
@@ -39,6 +40,7 @@
 			The attenuation factor of the light source.
 		</member>
 		<member name="light_energy" type="float" setter="set_light_energy" getter="get_light_energy" default="0.0">
+			The light's power, as the model file gives it.
 		</member>
 		<member name="light_range" type="float" setter="set_light_range" getter="get_light_range" default="0.0">
 			The maximum range of the light source.
@@ -56,6 +58,7 @@
 			The transformation matrix applied to the UV coordinates of the material.
 		</member>
 		<member name="material_transparent" type="bool" setter="set_material_transparent" getter="get_material_transparent" default="false">
+			The submodel's material is translucent (bit 5 of the submodel's flags) - drawn with the blended variant.
 		</member>
 		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
 			The geometry of this submodel - an [E3DMesh] when read from a model file, keeping its arrays in memory.

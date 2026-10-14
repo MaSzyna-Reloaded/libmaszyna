@@ -15,17 +15,12 @@
 				How many vehicles within the streaming's draw distance still wait for their models to be built. A vehicle's models are built once it stands within the draw distance of the streaming camera, the nearest first, and freed beyond it.
 			</description>
 		</method>
-		<method name="preloads_drain">
-			<return type="void" />
-			<description>
-				Drops the queued loads of the vehicles' model files and waits for the running ones. The loads run the GDScript model loader on worker threads, so this is called while the scene tree is still alive ([code]MaszynaLegacyVehicleSystem._exit_tree()[/code]).
-			</description>
-		</method>
 		<method name="cabin_set_light_level">
 			<return type="void" />
 			<param index="0" name="cabin" type="RID" />
 			<param index="1" name="level" type="float" />
 			<description>
+				The level (0-1) of the light of the [VehicleServer] [param cabin] its low-poly cab - of the cabin's kind ([RailVehicleServer]) - is lit at ([code]TDynamicObject::set_cab_lights()[/code], [code]DynObj.cpp:841-853[/code]); with [code]jointcabs:[/code] every cab at the brightest.
 			</description>
 		</method>
 		<method name="detection_area_get_vehicle" qualifiers="const">
@@ -33,6 +28,12 @@
 			<param index="0" name="area" type="RID" />
 			<description>
 				The vehicle a detection area ([PhysicsServer3D]) finds - what a shape cast of the player hits; an empty RID for an area that is no vehicle's.
+			</description>
+		</method>
+		<method name="preloads_drain">
+			<return type="void" />
+			<description>
+				Drops the queued loads of the vehicles' model files and waits for the running ones. The loads run the GDScript model loader on worker threads, so this is called while the scene tree is still alive ([code]MaszynaLegacyVehicleSystem._exit_tree()[/code]).
 			</description>
 		</method>
 		<method name="vehicle_attach">
@@ -147,6 +148,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="scenario" type="RID" />
 			<description>
+				The world the vehicle's scene node is in, an empty RID out of it: the models this server built for [param vehicle] are drawn there - the node's [constant Node3D.NOTIFICATION_ENTER_WORLD]/[constant Node3D.NOTIFICATION_EXIT_WORLD], as [VisualInstance3D]'s.
 			</description>
 		</method>
 		<method name="vehicle_set_transform">

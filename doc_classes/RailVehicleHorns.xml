@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="RailVehicleHorns" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		The vehicle's horns and whistle.
 	</brief_description>
 	<description>
+		Exactly three fixed slots - the low horn, the high horn and the whistle - the original's warning signal bits 1, 2 and 4 ([code]WarningSignal[/code]; [code]Train.cpp[/code]'s [code]OnCommand_hornlowactivate[/code] and the rest, [code]DynObj.cpp[/code]'s dispatch to [code]horn1:[/code]-[code]horn3:[/code]). The original has no FIZ setting for the horns: which a vehicle has is implied by the MMD's buttons and sounds. Whether a cab's key reaches a horn is the cab's business; the vehicle sounds whatever it is told.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,54 +12,64 @@
 		<method name="get_high_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the high horn sounds - pressed, or the alarm chain's emergency signal of a moving vehicle.
 			</description>
 		</method>
 		<method name="get_high_pressed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the high horn is pressed.
 			</description>
 		</method>
 		<method name="get_horn" qualifiers="const">
 			<return type="int" />
 			<description>
+				The horn pressed: 1 the low one, -1 the high one, 0 none.
 			</description>
 		</method>
 		<method name="get_low_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the low horn sounds - pressed, or the alarm chain's emergency signal of a moving vehicle.
 			</description>
 		</method>
 		<method name="get_low_pressed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the low horn is pressed.
 			</description>
 		</method>
 		<method name="get_whistle_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the whistle sounds - pressed, or the alarm chain's emergency signal of a moving vehicle.
 			</description>
 		</method>
 		<method name="get_whistle_pressed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the whistle is pressed.
 			</description>
 		</method>
 		<method name="set_horn_high">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>
+				The high horn pressed or let go.
 			</description>
 		</method>
 		<method name="set_horn_low">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>
+				The low horn pressed or let go.
 			</description>
 		</method>
 		<method name="set_whistle">
 			<return type="void" />
 			<param index="0" name="state" type="bool" />
 			<description>
+				The whistle pressed or let go.
 			</description>
 		</method>
 	</methods>

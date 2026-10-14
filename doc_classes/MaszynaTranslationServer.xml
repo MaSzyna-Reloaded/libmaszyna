@@ -26,6 +26,7 @@
 	</methods>
 	<members>
 		<member name="language" type="String" setter="set_language" getter="get_language" default="&quot;en&quot;">
+			The language of the game's strings, by the name of its catalogue in the game directory's [code]lang/[/code] ([method translation_get_languages]).
 		</member>
 	</members>
 	<signals>

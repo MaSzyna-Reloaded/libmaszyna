@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="TimetableEntry" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		One station of a [Timetable].
 	</brief_description>
 	<description>
+		One line of the table ([code]TMTableLine[/code], [code]mtable.h:23-39[/code]). Times are hours since midnight, fractional; a negative arrival means the train passes without stopping.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,27 +12,37 @@
 		<method name="is_stop" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the train stops here - an arrival time is given ([code]TTrainParameters::IsStop()[/code]).
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="arrival" type="float" setter="set_arrival" getter="get_arrival" default="-1.0">
+			When the train arrives, hours since midnight; -1 when it passes without stopping.
 		</member>
 		<member name="departure" type="float" setter="set_departure" getter="get_departure" default="-1.0">
+			When the train departs, or passes, hours since midnight; -1 when left out.
 		</member>
 		<member name="facilities" type="String" setter="set_facilities" getter="get_facilities" default="&quot;&quot;">
+			The station's type and equipment, comma separated ([code]R4,RT,H,PP[/code], [code]@[/code] for a change of direction there).
 		</member>
 		<member name="kilometre" type="float" setter="set_kilometre" getter="get_kilometre" default="0.0">
+			Where the station is on the line [km].
 		</member>
 		<member name="radio_channel" type="int" setter="set_radio_channel" getter="get_radio_channel" default="-1">
+			The radio channel used from this station on, -1 for none given.
 		</member>
 		<member name="station_name" type="String" setter="set_station_name" getter="get_station_name" default="&quot;&quot;">
+			The station's name, [code]_[/code] in place of spaces, as the table writes it.
 		</member>
 		<member name="track_count" type="int" setter="set_track_count" getter="get_track_count" default="1">
+			The tracks of the line, 1 or 2.
 		</member>
 		<member name="travel_minutes" type="float" setter="set_travel_minutes" getter="get_travel_minutes" default="0.0">
+			The running time to this station, minutes.
 		</member>
 		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+			The timetable speed on the way to this station [km/h]; negative when unknown.
 		</member>
 	</members>
 </class>

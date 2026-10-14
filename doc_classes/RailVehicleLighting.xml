@@ -4,6 +4,7 @@
 		Class used for handling settings for headlight in front of both vehicle cabins
 	</brief_description>
 	<description>
+		The head lights and red markers at both ends of the vehicle, the light selector (the original's light programmer, [code]LightsPos[/code]) that sets them, and the headlights' dimmer.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -17,26 +18,31 @@
 		<method name="get_active_headlight_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left headlight at the end of the active cab is lit.
 			</description>
 		</method>
 		<method name="get_active_headlight_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right headlight at the end of the active cab is lit.
 			</description>
 		</method>
 		<method name="get_active_headlight_upper_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the upper headlight at the end of the active cab is lit.
 			</description>
 		</method>
 		<method name="get_active_redmarker_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left red marker at the end of the active cab is lit.
 			</description>
 		</method>
 		<method name="get_active_redmarker_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right red marker at the end of the active cab is lit.
 			</description>
 		</method>
 		<method name="get_any_light_enabled" qualifiers="const">
@@ -48,102 +54,122 @@
 		<method name="get_front_headlight_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left headlight at the vehicle's front is lit.
 			</description>
 		</method>
 		<method name="get_front_headlight_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right headlight at the vehicle's front is lit.
 			</description>
 		</method>
 		<method name="get_front_headlight_upper_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the upper headlight at the vehicle's front is lit.
 			</description>
 		</method>
 		<method name="get_front_redmarker_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left red marker at the vehicle's front is lit.
 			</description>
 		</method>
 		<method name="get_front_redmarker_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right red marker at the vehicle's front is lit.
 			</description>
 		</method>
 		<method name="get_headlights_dimmed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the headlights are dimmed ([code]DimHeadlights[/code]; [code]dimheadlights_sw:[/code], [code]Train.cpp:6125[/code]).
 			</description>
 		</method>
 		<method name="get_opposite_headlight_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left headlight at the end opposite the active cab is lit.
 			</description>
 		</method>
 		<method name="get_opposite_headlight_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right headlight at the end opposite the active cab is lit.
 			</description>
 		</method>
 		<method name="get_opposite_headlight_upper_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the upper headlight at the end opposite the active cab is lit.
 			</description>
 		</method>
 		<method name="get_opposite_redmarker_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left red marker at the end opposite the active cab is lit.
 			</description>
 		</method>
 		<method name="get_opposite_redmarker_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right red marker at the end opposite the active cab is lit.
 			</description>
 		</method>
 		<method name="get_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The light selector's position ([code]LightsPos[/code]).
 			</description>
 		</method>
 		<method name="get_power" qualifiers="const">
 			<return type="float" />
 			<description>
+				The power the lights draw ([code]LightPower[/code]).
 			</description>
 		</method>
 		<method name="get_power_source" qualifiers="const">
 			<return type="int" />
 			<description>
+				What feeds the lights, a [enum RailVehicleController.TrainPowerSource] ([code]LightPowerSource[/code]).
 			</description>
 		</method>
 		<method name="get_rear_headlight_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left headlight at the vehicle's rear is lit.
 			</description>
 		</method>
 		<method name="get_rear_headlight_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right headlight at the vehicle's rear is lit.
 			</description>
 		</method>
 		<method name="get_rear_headlight_upper_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the upper headlight at the vehicle's rear is lit.
 			</description>
 		</method>
 		<method name="get_rear_redmarker_left_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the left red marker at the vehicle's rear is lit.
 			</description>
 		</method>
 		<method name="get_rear_redmarker_right_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the right red marker at the vehicle's rear is lit.
 			</description>
 		</method>
 		<method name="headlights_dim">
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				The headlights' dimmer switched on or off ([code]dimheadlights_sw:[/code], [code]Train.cpp:6125[/code]).
 			</description>
 		</method>
 		<method name="increase_light_selector_position">
@@ -157,12 +183,14 @@
 			<param index="0" name="light" type="String" />
 			<param index="1" name="enabled" type="bool" />
 			<description>
+				Lights or puts out one lamp at a fixed end, whatever the selector would set - for debugging and testing single bulbs. [param light] is the short name of the lamp's state key, e.g. [code]"front_headlight_left"[/code], [code]"rear_redmarker_right"[/code].
 			</description>
 		</method>
 		<method name="light_is_enabled" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="light" type="String" />
 			<description>
+				Whether the lamp [method light] names is lit, by the same name.
 			</description>
 		</method>
 		<method name="light_switch">
@@ -170,6 +198,7 @@
 			<param index="0" name="light" type="String" />
 			<param index="1" name="enabled" type="bool" />
 			<description>
+				The cab's light switch [param light] - the MMD label's suffix, e.g. [code]"upper"[/code], [code]"left"[/code], [code]"leftend"[/code], [code]"rearupper"[/code] - flipped; which end it lights follows the active cab ([code]upperlight_sw:[/code] and the rest).
 			</description>
 		</method>
 	</methods>
@@ -190,6 +219,7 @@
 			Multiplier of headlights intensity
 		</member>
 		<member name="instrument_type" type="int" setter="set_instrument_type" getter="get_instrument_type" default="0">
+			Not read by anything yet.
 		</member>
 		<member name="light_alternative_capacity" type="float" setter="set_light_alternative_capacity" getter="get_light_alternative_capacity" default="0.0">
 			Specifies the capacity of the alternative light source, typically measured in units like Ampere-hours (Ah). Represents the total amount of energy the alternative light source can store

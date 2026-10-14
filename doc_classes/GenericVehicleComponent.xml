@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		Generic VehicleComponent
-		This class allows to implement a custom VehicleComponent in GDScript.
+		This class allows implementing a custom VehicleComponent in GDScript.
 		You need to implement [code]_get_component_state()[/code] returning a [Dictionary] of the actual state of this component.
 		You also need to implement [code]_process_component(delta)[/code] if you need to compute a custom behaviour of this component. The vehicle calls it on every tick while the component is enabled.
 	</description>
@@ -15,6 +15,7 @@
 		<method name="get_vehicle_state">
 			<return type="Dictionary" />
 			<description>
+				The whole state of the vehicle this component belongs to, by name ([method VehicleController.get_state]).
 			</description>
 		</method>
 	</methods>

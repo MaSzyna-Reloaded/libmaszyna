@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="RailVehicleServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		Where a rail vehicle is, and what ties it to the railway.
 	</brief_description>
 	<description>
+		Which track a vehicle occupies, how far along it, which way round, and which branch of a switch. Movement along the route, crossing endpoints, forcing switch blades and the resulting world transform all live here.
+		What the vehicle [i]does[/i] - forces, integration, couplers - belongs to its [VehicleController] and the simulation behind it. The vehicle itself - its handle, name, commands and components - is [VehicleServer]'s; this server takes a vehicle created there ([method vehicle_attach]), moves it and ties it to the tracks, the traction wires and the other servers. It knows the same RID for what is rail: the track, the couplers, the cabins by kind and the railway's component kinds. The step itself is the implementation's ([MaszynaMoverVehicleServer]), which calls the per-vehicle rail operations in its phases.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -11,6 +14,7 @@
 			<return type="int" enum="RailVehicleCabinKind.Kind" />
 			<param index="0" name="cabin" type="RID" />
 			<description>
+				What [param cabin] is in its rail vehicle: the front cab, the rear one or the machine room; [constant RailVehicleCabinKind.RAIL_VEHICLE_CABIN_NONE] for a cabin this server did not add.
 			</description>
 		</method>
 		<method name="load_add">
@@ -53,6 +57,7 @@
 			<param index="1" name="vehicle" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] sits down in the front cab of [param vehicle] in [param role] ([method VehicleServer.cabin_person_enter]); [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="person_enter_machine_room">
@@ -61,6 +66,7 @@
 			<param index="1" name="vehicle" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] sits down in the machine room of [param vehicle] in [param role] ([method VehicleServer.cabin_person_enter]); [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="person_enter_rear_cabin">
@@ -69,24 +75,28 @@
 			<param index="1" name="vehicle" type="RID" />
 			<param index="2" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				[param person] sits down in the rear cab of [param vehicle] in [param role] ([method VehicleServer.cabin_person_enter]); [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="person_move_to_front_cabin">
 			<return type="int" enum="Error" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				[param person] goes over to the front cab of the vehicle it is in, in the role it has; [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="person_move_to_machine_room">
 			<return type="int" enum="Error" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				[param person] goes over to the machine room of the vehicle it is in, in the role it has; [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="person_move_to_rear_cabin">
 			<return type="int" enum="Error" />
 			<param index="0" name="person" type="RID" />
 			<description>
+				[param person] goes over to the rear cab of the vehicle it is in, in the role it has; [constant ERR_DOES_NOT_EXIST] for a vehicle without one.
 			</description>
 		</method>
 		<method name="trainset_add_vehicle">
@@ -208,24 +218,28 @@
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Adds the front cab (the MMD's [code]cab1definition:[/code]) to [param vehicle] - a [VehicleServer] cabin this server knows the kind of. One of each kind.
 			</description>
 		</method>
 		<method name="vehicle_add_machine_room">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Adds the machine room (the MMD's [code]cab0definition:[/code]) to [param vehicle].
 			</description>
 		</method>
 		<method name="vehicle_add_rear_cabin">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Adds the rear cab (the MMD's [code]cab2definition:[/code]) to [param vehicle].
 			</description>
 		</method>
 		<method name="vehicle_attach">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				A [VehicleServer] vehicle becomes a rail vehicle: it gets a place on the route and is stepped - called by whatever makes it one ([RailVehicle3D], a FIZ vehicle). A vehicle freed by [VehicleServer] is detached on its own.
 			</description>
 		</method>
 		<method name="vehicle_component_get" qualifiers="const">
@@ -233,6 +247,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="type" type="int" enum="RailVehicleComponentType.Type" />
 			<description>
+				The railway component of [param type], as [method VehicleServer.vehicle_component_get] answers the kinds every vehicle has; null for a vehicle without one.
 			</description>
 		</method>
 		<method name="vehicle_couple">
@@ -243,12 +258,14 @@
 			<param index="3" name="other_end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<param index="4" name="coupling" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
 			<description>
+				Couples [param end] of [param vehicle] to [param other_end] of [param other] by [param coupling] ([code]TMoverParameters::Attach()[/code], [code]Mover.cpp:548[/code]).
 			</description>
 		</method>
 		<method name="vehicle_detach">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				[param vehicle] is no rail vehicle any more: it leaves its tracks as it would by driving off.
 			</description>
 		</method>
 		<method name="vehicle_find_pantograph_carrier" qualifiers="const">
@@ -279,6 +296,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Whether somebody sits in the front cab of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_front_cabin_list_persons" qualifiers="const">
@@ -286,6 +304,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Who sits in the front cab of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_get_bogie_transform" qualifiers="const">
@@ -302,6 +321,7 @@
 			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<param index="2" name="flags" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
 			<description>
+				The vehicles joined to [param vehicle] by every one of [param flags], in order: from the last of them beyond [param end] back through this one to the last on the other side ([code]TDynamicObject::GetFirstDynamic()[/code] + [code]Next()[/code], [code]DynObj.cpp:501[/code]).
 			</description>
 		</method>
 		<method name="vehicle_get_coupler_adapter_height" qualifiers="const">
@@ -344,7 +364,7 @@
 				The couplings an end of [param vehicle] and the neighbour beyond it can join (see [method RailVehicleController.get_coupler_joinable_flags]).
 			</description>
 		</method>
-		<method name="vehicle_get_curve">
+		<method name="vehicle_get_curve" qualifiers="const">
 			<return type="Dictionary" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
@@ -362,18 +382,21 @@
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The front cab of [param vehicle]; an empty RID for none.
 			</description>
 		</method>
 		<method name="vehicle_get_leading_cabin">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The cabin to take [param vehicle], nobody driving it, over in: the one facing the way it moves, standing the way its reverser points, else the front one - the other end when it lacks that one, then the machine room; an empty RID for a vehicle without cabins.
 			</description>
 		</method>
 		<method name="vehicle_get_machine_room" qualifiers="const">
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The machine room of [param vehicle]; an empty RID for none.
 			</description>
 		</method>
 		<method name="vehicle_get_pantograph_position" qualifiers="const">
@@ -396,6 +419,7 @@
 			<return type="RID" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The rear cab of [param vehicle]; an empty RID for none.
 			</description>
 		</method>
 		<method name="vehicle_get_rids_in_rect" qualifiers="const">
@@ -416,18 +440,21 @@
 			<return type="Transform3D" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Where the body of [param vehicle] stands in the world, as its placement on the route gives it; the identity for a vehicle on no track.
 			</description>
 		</method>
 		<method name="vehicle_get_type_name" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The type of [param vehicle] - the original's CHK/MMD name ([code]TMoverParameters::TypeName[/code]).
 			</description>
 		</method>
 		<method name="vehicle_is_attached" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				Whether [param vehicle] is a rail vehicle ([method vehicle_attach]).
 			</description>
 		</method>
 		<method name="vehicle_is_coupler_automatic" qualifiers="const">
@@ -443,6 +470,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Whether somebody sits in the machine room of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_machine_room_list_persons" qualifiers="const">
@@ -450,6 +478,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Who sits in the machine room of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_move">
@@ -457,6 +486,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="distance" type="float" />
 			<description>
+				Moves [param vehicle] [param distance] metres along the route, its leading axle first ([code]TDynamicObject::Move()[/code], [code]DynObj.cpp:2645-2670[/code]), reporting every track an axle crosses - a deliberate move, outside the step.
 			</description>
 		</method>
 		<method name="vehicle_process_movement">
@@ -464,6 +494,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="delta" type="float" />
 			<description>
+				Walks [param vehicle] the distance its own simulation asked for. The step does this for every vehicle; on its own it is how a single vehicle is advanced deliberately.
 			</description>
 		</method>
 		<method name="vehicle_rear_cabin_has_person_role" qualifiers="const">
@@ -471,6 +502,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Whether somebody sits in the rear cab of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_rear_cabin_list_persons" qualifiers="const">
@@ -478,6 +510,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="role" type="int" enum="VehiclePersonRole.Role" />
 			<description>
+				Who sits in the rear cab of [param vehicle] in [param role].
 			</description>
 		</method>
 		<method name="vehicle_set_load">
@@ -486,6 +519,7 @@
 			<param index="1" name="load_name" type="String" />
 			<param index="2" name="load_amount" type="float" />
 			<description>
+				What [param vehicle] carries when the scenery places it ([code]loadtype[/code], [code]loadcount[/code] of a [code]dynamic[/code]). Handed to its controller when it is bound.
 			</description>
 		</method>
 		<method name="vehicle_set_pantograph_geometry">
@@ -510,6 +544,7 @@
 			<param index="2" name="track_offset" type="float" />
 			<param index="3" name="track_direction" type="int" enum="TrackServer.Direction" />
 			<description>
+				Puts [param vehicle] on [param track], [param track_offset] metres along it, standing the way [param track_direction] says; [signal vehicle_placed] follows.
 			</description>
 		</method>
 		<method name="vehicle_set_type_name">
@@ -517,6 +552,7 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="type_name" type="String" />
 			<description>
+				The type of [param vehicle] - the original's CHK/MMD name ([code]TMoverParameters::TypeName[/code], [code]DynObj.cpp:2019[/code]). Handed to its controller when it is bound.
 			</description>
 		</method>
 		<method name="vehicle_trace_route">
@@ -548,23 +584,34 @@
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="flag" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
 			<description>
+				[param vehicle] was joined to its neighbour by the coupling [param flag] (see [signal RailVehicleController.coupler_attached]).
 			</description>
 		</signal>
 		<signal name="vehicle_coupler_detached">
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="flag" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
 			<description>
+				The coupling [param flag] of [param vehicle] to its neighbour was undone (see [signal RailVehicleController.coupler_detached]).
+			</description>
+		</signal>
+		<signal name="vehicle_derailed">
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="cause" type="int" enum="RailVehicleController.DerailCause" />
+			<description>
+				[param vehicle] left the rails, for [param cause] (see [signal RailVehicleController.derailed]).
 			</description>
 		</signal>
 		<signal name="vehicle_driver_cabin_changed">
 			<param index="0" name="vehicle" type="RID" />
 			<param index="1" name="cabin" type="RID" />
 			<description>
+				[param vehicle] answers to the driver of [param cabin] now, an empty RID when nobody drives it ([method vehicle_get_driver_cabin]).
 			</description>
 		</signal>
 		<signal name="vehicle_emergency_signal_received">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				A Radio-Stop reached [param vehicle] and braked it ([code]TDynamicObject::RadioStop[/code], [code]DynObj.cpp:7229[/code]).
 			</description>
 		</signal>
 		<signal name="vehicle_heading_to_track_end">
@@ -618,6 +665,7 @@
 		<signal name="vehicle_trainset_changed">
 			<param index="0" name="vehicle" type="RID" />
 			<description>
+				The vehicles coupled to [param vehicle] are others now ([signal RailVehicleController.trainset_changed]).
 			</description>
 		</signal>
 	</signals>

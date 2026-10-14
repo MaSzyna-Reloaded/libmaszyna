@@ -19,6 +19,7 @@
 		<method name="player_get_person" qualifiers="const">
 			<return type="RID" />
 			<description>
+				The player as a person ([PersonServer]) - where it sits and in what role is [VehicleServer]'s.
 			</description>
 		</method>
 		<method name="player_get_vehicle" qualifiers="const">
@@ -30,6 +31,7 @@
 		<method name="player_hand_over_vehicle">
 			<return type="void" />
 			<description>
+				The driver aboard the player's vehicle drives it from the player's cabin, the player rides along ([code]aidriverenable[/code], [code]Train.cpp:1088-1118[/code]); [method player_take_back_vehicle] takes it back. Nothing without a driver aboard.
 			</description>
 		</method>
 		<method name="player_leave_vehicle">
@@ -41,6 +43,7 @@
 		<method name="player_take_back_vehicle">
 			<return type="void" />
 			<description>
+				The player takes the controls of its vehicle back from the driver aboard ([code]aidriverdisable[/code]) - only the roles change, the view stays where it is; [method player_take_over_vehicle] of the same vehicle also puts the player back in the cab.
 			</description>
 		</method>
 		<method name="player_take_over_vehicle">
