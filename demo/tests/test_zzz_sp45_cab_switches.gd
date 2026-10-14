@@ -11,7 +11,7 @@ const SCENERY:String = "startup_sp45_v1.scn"
 const VEHICLE:String = "301db-152"
 
 var _previous_game_dir:String = ""
-var _scenery:MaszynaSceneryNode
+var _scenery:MaszynaLegacySceneryNode
 var _vehicle:RID
 var _cabin:RID
 var _engine:RailVehicleDieselEngine
@@ -20,7 +20,7 @@ var _engine:RailVehicleDieselEngine
 func before_each() -> void:
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
-    _scenery = MaszynaSceneryNode.new()
+    _scenery = MaszynaLegacySceneryNode.new()
     _scenery.filename = SCENERY
     add_child(_scenery)
     # announced once its vehicles are built

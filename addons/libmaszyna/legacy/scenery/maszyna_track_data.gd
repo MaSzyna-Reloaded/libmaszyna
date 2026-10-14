@@ -28,3 +28,12 @@ class_name MaszynaTrackData
 ## The events the track names for each of its slots, by the slot's key: a slot may name several,
 ## every `event2 <name>` line one more (Track.cpp:815-858, m_events2.emplace_back)
 @export var events:Dictionary[String, PackedStringArray] = {}
+
+
+## A copy of the track moved by `offset` (both its curves)
+func translated(offset:Vector3) -> MaszynaTrackData:
+    var moved:MaszynaTrackData = duplicate() as MaszynaTrackData
+    moved.curve = curve.translated(offset)
+    if diverging_curve:
+        moved.diverging_curve = diverging_curve.translated(offset)
+    return moved

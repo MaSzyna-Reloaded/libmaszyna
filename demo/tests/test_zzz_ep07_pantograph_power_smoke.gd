@@ -14,13 +14,13 @@ const SCENERY:String = "ep07.scn"
 const MIN_WIRE_VOLTAGE:float = 100.0
 
 var _previous_game_dir:String = ""
-var scenery:MaszynaSceneryNode
+var scenery:MaszynaLegacySceneryNode
 
 
 func before_each():
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
-    scenery = MaszynaSceneryNode.new()
+    scenery = MaszynaLegacySceneryNode.new()
     scenery.filename = SCENERY
     add_child(scenery)
     # announced once its vehicles are built

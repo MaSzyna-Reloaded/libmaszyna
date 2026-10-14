@@ -1,7 +1,7 @@
 @tool
 extends EditorProperty
 
-## The `filename` of a scenery (MaszynaIncludeNode) in the inspector: the name as text, and
+## The `filename` of a scenery (MaszynaLegacyIncludeNode) in the inspector: the name as text, and
 ## "Browse" to pick a scenery file of the game directory - the name is kept relative to its
 ## `scenery` directory, as the scenery reads it.
 

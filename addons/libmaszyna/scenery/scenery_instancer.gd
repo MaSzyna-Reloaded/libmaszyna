@@ -106,14 +106,13 @@ static func clear_cache() -> void:
 ## builds each piece only while the camera is within its visibility range of the 1 km chunk
 ## holding it. baltyk_skm1.scn alone places 8 487 models, 90 228 "triangles" nodes (41% of them
 ## with no range at all), 2 340 tracks and 1 163 traction spans.
-func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
+func instantiate(root: MaszynaLegacyIncludeNode, parameters: Dictionary = {}) -> void:
     # what is loaded is what the scenery was set to when the load began
     var filename:String = root.filename
     var source_path:String = _get_source_path(filename)
     var parameters_hash:String = _get_parameters_hash(parameters)
     var cache_path:String = _get_cache_path(source_path, parameters_hash)
     print("[SceneryLoad] SCENERY %s" % source_path)
-    var world_3d:World3D = root.get_world_3d()
     var measurement := SceneryLoadMeasurement.new(root)
     var compiled:MaszynaCompiledScenery
     if root.use_cache:
@@ -121,7 +120,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
         # frames (loading screen, the selector dissolving into it) instead of freezing
         compiled = await _run_on_worker(
             root, _load_cached.bind(cache_path, source_path, parameters_hash), 0.0,
-            MaszynaIncludeNode.LoadStage.FILES, "Reading cache"
+            MaszynaSceneryContentNode.LoadStage.FILES, "Reading cache"
         ) as MaszynaCompiledScenery
         if _is_load_given_up(root):
             return
@@ -141,11 +140,11 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
         SceneryLoadMeasurement.print_process(CONVERT_TAG, "parsed")
         await _run_on_worker(
             root, assign_signal_head_kinds.bind(context.models, context.events), PARSE_PROGRESS,
-            MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
+            MaszynaSceneryContentNode.LoadStage.FILES, tr("Parsing %s") % filename
         )
         SceneryLoadMeasurement.print_process(CONVERT_TAG, "signal heads")
         var chunk_descriptors:Variant = await _run_on_worker(
-            root, triangles_sink.finish, PARSE_PROGRESS, MaszynaIncludeNode.LoadStage.FILES, "Building terrain"
+            root, triangles_sink.finish, PARSE_PROGRESS, MaszynaSceneryContentNode.LoadStage.FILES, "Building terrain"
         )
         SceneryLoadMeasurement.print_process(CONVERT_TAG, "terrain written")
         compiled = _compile_scenery(source_path, parameters_hash, context, context.objects)
@@ -172,14 +171,23 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
             compiled.triangle_chunks.append(chunk)
         if root.use_cache and cacheable:
             await _run_on_worker(
-                root, _cache.set.bind(cache_path, compiled), PARSE_PROGRESS, MaszynaIncludeNode.LoadStage.FILES,
+                root, _cache.set.bind(cache_path, compiled), PARSE_PROGRESS, MaszynaSceneryContentNode.LoadStage.FILES,
                 "Saving cache"
             )
             SceneryLoadMeasurement.print_process(CONVERT_TAG, "saved")
 
     if _is_load_given_up(root):
         return
-    await _report_progress(root, PARSE_PROGRESS, MaszynaIncludeNode.LoadStage.INFRASTRUCTURE, "Registering tracks and traction")
+    await instantiate_compiled(root, compiled, measurement)
+
+
+## Registers what `compiled` holds with the servers and populates root with it - the scenery read by
+## instantiate(), or composed of a world's sectors (MaszynaWorld). `measurement` is finished with it.
+func instantiate_compiled(
+    root:MaszynaSceneryContentNode, compiled:MaszynaCompiledScenery, measurement:SceneryLoadMeasurement
+) -> void:
+    var world_3d:World3D = root.get_world_3d()
+    await _report_progress(root, PARSE_PROGRESS, MaszynaSceneryContentNode.LoadStage.INFRASTRUCTURE, "Registering tracks and traction")
     await _instantiate_server_data(
         root,
         world_3d,
@@ -197,7 +205,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
     )
     if _is_load_given_up(root):
         return
-    await _report_progress(root, 0.6, MaszynaIncludeNode.LoadStage.TERRAIN, "Registering terrain")
+    await _report_progress(root, 0.6, MaszynaSceneryContentNode.LoadStage.TERRAIN, "Registering terrain")
     await _build_triangle_chunks(root, compiled.triangle_chunks, world_3d)
     if _is_load_given_up(root):
         return
@@ -206,13 +214,13 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
     for region_file:String in compiled.region_files:
         var provider:MaszynaLegacySBTTerrainProvider = MaszynaLegacySBTTerrainProvider.new()
         var opened:bool = await _run_on_worker(
-            root, provider.open.bind(region_file), 0.6, MaszynaIncludeNode.LoadStage.TERRAIN, "Registering terrain"
+            root, provider.open.bind(region_file), 0.6, MaszynaSceneryContentNode.LoadStage.TERRAIN, "Registering terrain"
         )
         if _is_load_given_up(root):
             return
         if opened:
             root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
-    await _report_progress(root, 0.7, MaszynaIncludeNode.LoadStage.OBJECTS, "Instancing objects")
+    await _report_progress(root, 0.7, MaszynaSceneryContentNode.LoadStage.OBJECTS, "Instancing objects")
     await _attach_objects(root, _instantiate_cached_nodes(compiled.nodes), 0.7, 0.9)
     if _is_load_given_up(root):
         return
@@ -231,8 +239,8 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
 
 
 ## The load is not to go on: its scenery is gone - the editor frees a scene it reopens, mid-load -
-## or was told to stop (MaszynaIncludeNode.stop_loading()). Asked after every wait of a load.
-## `root` is untyped: a parameter typed MaszynaIncludeNode refuses a freed scenery at the call,
+## or was told to stop (MaszynaSceneryContentNode.stop_loading()). Asked after every wait of a load.
+## `root` is untyped: a parameter typed MaszynaSceneryContentNode refuses a freed scenery at the call,
 ## before is_instance_valid() could say so.
 static func _is_load_given_up(root:Variant) -> bool:
     return not is_instance_valid(root) or root.is_load_given_up()
@@ -242,7 +250,7 @@ static func _is_load_given_up(root:Variant) -> bool:
 ## `message` is a msgid the loading screen's Label translates; one composed with a value is
 ## translated before the value goes in.
 static func _report_progress(
-    root:MaszynaIncludeNode, progress:float, stage:MaszynaIncludeNode.LoadStage, message:String
+    root:MaszynaSceneryContentNode, progress:float, stage:MaszynaSceneryContentNode.LoadStage, message:String
 ) -> void:
     root.load_progress.emit(progress, stage, message)
     await root.get_tree().process_frame
@@ -251,7 +259,7 @@ static func _report_progress(
 
 ## _report_progress() for loops over many objects - reports only after FRAME_BUDGET_MSEC
 static func _report_progress_throttled(
-    root:MaszynaIncludeNode, progress:float, stage:MaszynaIncludeNode.LoadStage, message:String
+    root:MaszynaSceneryContentNode, progress:float, stage:MaszynaSceneryContentNode.LoadStage, message:String
 ) -> void:
     if Time.get_ticks_msec() - _last_report_msec < FRAME_BUDGET_MSEC:
         return
@@ -272,8 +280,8 @@ static func frame_budget_wait() -> void:
 ## stands its vehicles on its track and couples them (trainset_place(), "endtrainset"), and only
 ## then the drivers are given their orders - what a driver does first is sent along the couplers
 ## (simulationstateserializer.cpp:818-848). Every track is registered by now.
-static func _build_trainsets(root:MaszynaIncludeNode, trainsets:Array[MaszynaTrainsetData]) -> void:
-    await _report_progress(root, VEHICLES_PROGRESS, MaszynaIncludeNode.LoadStage.VEHICLES, "Instancing vehicles")
+static func _build_trainsets(root:MaszynaSceneryContentNode, trainsets:Array[MaszynaTrainsetData]) -> void:
+    await _report_progress(root, VEHICLES_PROGRESS, MaszynaSceneryContentNode.LoadStage.VEHICLES, "Instancing vehicles")
     # A trainset on a track that is not built - a road car, roads are not built yet
     # (maszyna_node_track_importer.gd) - could never be placed, and still cost whole vehicles:
     # their physics stepped, their drivers and cab logic run (docs/findings-archive.md, 2026-10-03
@@ -312,7 +320,7 @@ static func _build_trainsets(root:MaszynaIncludeNode, trainsets:Array[MaszynaTra
             # the frame its last vehicle is built
             await _report_progress_throttled(
                     root, lerpf(VEHICLES_PROGRESS, 1.0, float(built_count) / vehicle_count),
-                    MaszynaIncludeNode.LoadStage.VEHICLES, "Instancing vehicles")
+                    MaszynaSceneryContentNode.LoadStage.VEHICLES, "Instancing vehicles")
             if _is_load_given_up(root):
                 return
             while not MaszynaLegacyVehicleSystem.vehicle_is_built(vehicle):
@@ -350,11 +358,11 @@ static func _build_trainsets(root:MaszynaIncludeNode, trainsets:Array[MaszynaTra
             DriverServer.driver_send_command(
                     trainset_driver, TIMETABLE_ORDER + trainset_data.timetable,
                     trainset_data.velocity, 0.0)
-    root.load_progress.emit(1.0, MaszynaIncludeNode.LoadStage.VEHICLES, "")
+    root.load_progress.emit(1.0, MaszynaSceneryContentNode.LoadStage.VEHICLES, "")
 
 
 static func _instantiate_server_data(
-    root:MaszynaIncludeNode,
+    root:MaszynaSceneryContentNode,
     world_3d:World3D,
     tracks:Array[MaszynaTrackData],
     traction:Array[MaszynaTractionData],
@@ -379,7 +387,7 @@ static func _instantiate_server_data(
         track_rids.append(built["track_rid"])
         root._track_render_rids.append(built["track_render_rid"])
         built_count += 1
-        await _report_progress_throttled(root, lerpf(progress_from, progress_to, built_count / total), MaszynaIncludeNode.LoadStage.INFRASTRUCTURE, "Registering tracks")
+        await _report_progress_throttled(root, lerpf(progress_from, progress_to, built_count / total), MaszynaSceneryContentNode.LoadStage.INFRASTRUCTURE, "Registering tracks")
         if _is_load_given_up(root):
             return
 
@@ -391,7 +399,7 @@ static func _instantiate_server_data(
         root._traction_rids.append(traction_rid)
         root._wire_power_rids.append(_build_wire_power(traction_data))
         built_count += 1
-        await _report_progress_throttled(root, lerpf(progress_from, progress_to, built_count / total), MaszynaIncludeNode.LoadStage.INFRASTRUCTURE, "Registering traction")
+        await _report_progress_throttled(root, lerpf(progress_from, progress_to, built_count / total), MaszynaSceneryContentNode.LoadStage.INFRASTRUCTURE, "Registering traction")
         if _is_load_given_up(root):
             return
     if root._wire_power_rids.size() > 0:
@@ -403,7 +411,7 @@ static func _instantiate_server_data(
     # the original's signal heads: every lit model, driven by the scenery's own `lights` events
     var signalling_system:RID = SignallingServer.system_create()
     SignallingServer.system_attach_implementation(signalling_system, MaszynaLegacySignallingImplementation.new())
-    SignallingServer.system_set_name(signalling_system, root.filename)
+    SignallingServer.system_set_name(signalling_system, root.get_scenery_name())
     root._signalling_system_rids.append(signalling_system)
     for model_data:MaszynaModelData in models:
         var e3d_rid:RID = _build_model(model_data, world_3d, signalling_system)
@@ -412,7 +420,7 @@ static func _instantiate_server_data(
             root._e3d_rids.append(e3d_rid)
         built_count += 1
         await _report_progress_throttled(
-            root, lerpf(progress_from, progress_to, built_count / total), MaszynaIncludeNode.LoadStage.INFRASTRUCTURE,
+            root, lerpf(progress_from, progress_to, built_count / total), MaszynaSceneryContentNode.LoadStage.INFRASTRUCTURE,
             TranslationServer.translate("Registering %s") % model_data.model_filename
         )
         if _is_load_given_up(root):
@@ -428,7 +436,7 @@ static func _instantiate_server_data(
 ## geometry read from its file, only while the camera is within range of their chunk (see the
 ## server's doc comment for why)
 static func _build_triangle_chunks(
-    root:MaszynaIncludeNode, chunks:Array[MaszynaTrianglesChunkData], world_3d:World3D
+    root:MaszynaSceneryContentNode, chunks:Array[MaszynaTrianglesChunkData], world_3d:World3D
 ) -> void:
     for chunk:MaszynaTrianglesChunkData in chunks:
         root._triangle_chunk_rids.append(MaszynaSceneryChunkRenderingServer.create_chunk(
@@ -440,7 +448,7 @@ static func _build_triangle_chunks(
 ## Adds objects to root, reporting the object being attached (see _report_progress_throttled())
 ## with progress going from progress_from to progress_to.
 static func _attach_objects(
-    root:MaszynaIncludeNode, objects:Array, progress_from:float, progress_to:float
+    root:MaszynaSceneryContentNode, objects:Array, progress_from:float, progress_to:float
 ) -> void:
     for i:int in objects.size():
         var node:Node = objects[i] as Node
@@ -448,7 +456,7 @@ static func _attach_objects(
             continue
         root.add_child(node)
         var progress:float = lerpf(progress_from, progress_to, float(i) / float(objects.size()))
-        await _report_progress_throttled(root, progress, MaszynaIncludeNode.LoadStage.OBJECTS, TranslationServer.translate("Instancing %s") % node.name)
+        await _report_progress_throttled(root, progress, MaszynaSceneryContentNode.LoadStage.OBJECTS, TranslationServer.translate("Instancing %s") % node.name)
         if _is_load_given_up(root):
             return
 
@@ -523,7 +531,7 @@ static func _instantiate_cached_nodes(packed_scene:PackedScene) -> Array:
 ## Runs `task` on a WorkerTaskQueue worker while the main thread keeps drawing frames, the
 ## progress reported; its result, null when the load is cancelled (cancel_loading())
 static func _run_on_worker(
-    root:MaszynaIncludeNode, task:Callable, progress:float, stage:MaszynaIncludeNode.LoadStage, message:String
+    root:MaszynaSceneryContentNode, task:Callable, progress:float, stage:MaszynaSceneryContentNode.LoadStage, message:String
 ) -> Variant:
     var queue := WorkerTaskQueue.new()
     _active_queues.append(queue)
@@ -711,7 +719,7 @@ func parse_subscene_task(
 ## progress as they finish, at most once per FRAME_BUDGET_MSEC: finished tasks / tasks submitted
 ## so far.
 func _parse_file_with_progress(
-    root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:SceneryTrianglesSink
+    root:MaszynaLegacyIncludeNode, filename:String, parameters:Dictionary, triangles_sink:SceneryTrianglesSink
 ) -> MaszynaImporterContext:
     var root_context := MaszynaImporterContext.new()
     root_context.rotate = root.context_rotate
@@ -736,7 +744,7 @@ func _parse_file_with_progress(
         _file_in_parse_mutex.unlock()
         root.load_files_parsed.emit(queue.get_completed_count(), file_in_parse)
         root.load_progress.emit(
-            PARSE_PROGRESS * parsed, MaszynaIncludeNode.LoadStage.FILES, tr("Parsing %s") % filename
+            PARSE_PROGRESS * parsed, MaszynaSceneryContentNode.LoadStage.FILES, tr("Parsing %s") % filename
         )
     var context:MaszynaImporterContext = queue.wait(task_id) as MaszynaImporterContext
     _active_queues.erase(queue)

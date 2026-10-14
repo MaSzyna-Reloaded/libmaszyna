@@ -19,7 +19,7 @@ var _include_ids:Array[int] = []
 ## The edited scene: the loads of its sceneries are shown
 func set_scene_root(root:Node) -> void:
     for include_id:int in _include_ids:
-        var include:MaszynaIncludeNode = instance_from_id(include_id) as MaszynaIncludeNode
+        var include:MaszynaSceneryContentNode = instance_from_id(include_id) as MaszynaSceneryContentNode
         if include:
             include.load_progress.disconnect(_on_load_progress)
             include.load_ended.disconnect(_on_load_ended)
@@ -30,11 +30,11 @@ func set_scene_root(root:Node) -> void:
     if not root:
         return
     # the sceneries the scene itself holds; the includes of a scenery are its content
-    var includes:Array[Node] = root.find_children("", "MaszynaIncludeNode", true, true)
-    if root is MaszynaIncludeNode:
+    var includes:Array[Node] = root.find_children("", "MaszynaSceneryContentNode", true, true)
+    if root is MaszynaSceneryContentNode:
         includes.append(root)
     for node:Node in includes:
-        var include:MaszynaIncludeNode = node as MaszynaIncludeNode
+        var include:MaszynaSceneryContentNode = node as MaszynaSceneryContentNode
         include.load_progress.connect(_on_load_progress)
         include.load_ended.connect(_on_load_ended)
         include.clear_progress.connect(_on_clear_progress)
@@ -43,7 +43,7 @@ func set_scene_root(root:Node) -> void:
         _include_ids.append(include.get_instance_id())
 
 
-func _on_load_progress(progress:float, _stage:MaszynaIncludeNode.LoadStage, message:String) -> void:
+func _on_load_progress(progress:float, _stage:MaszynaSceneryContentNode.LoadStage, message:String) -> void:
     visible = true
     %Progress.value = progress
     %Message.text = tr(message) if message else CAPTION
@@ -62,4 +62,4 @@ func _on_load_ended() -> void:
 ## "Stop": the load under way is given up (a scenery that is not loading has nothing to stop)
 func _on_stop_pressed() -> void:
     for include_id:int in _include_ids:
-        (instance_from_id(include_id) as MaszynaIncludeNode).stop_loading()
+        (instance_from_id(include_id) as MaszynaSceneryContentNode).stop_loading()

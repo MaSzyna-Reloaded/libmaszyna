@@ -41,12 +41,12 @@ func _exit_tree() -> void:
 
 ## A scenery shown in the edited scene after it was opened (a test scene's) is listed too
 func _on_node_added(node:Node) -> void:
-    if node is MaszynaIncludeNode:
+    if node is MaszynaSceneryContentNode:
         _trainsets_dock.add_scenery(node)
 
 
 func _on_node_removed(node:Node) -> void:
-    if node is MaszynaIncludeNode:
+    if node is MaszynaSceneryContentNode:
         _trainsets_dock.remove_scenery(node)
 
 

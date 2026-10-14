@@ -105,7 +105,7 @@ const ANIMATION_MODES:Dictionary[String, MaszynaLegacyAnimationAction.Mode] = {
 
 
 static func build(
-    root:MaszynaIncludeNode,
+    root:MaszynaSceneryContentNode,
     events:Array[MaszynaEventData],
     memcells:Array[MaszynaMemcellData],
     launchers:Array[MaszynaEventLauncherData],
@@ -635,7 +635,7 @@ static func _set_chain(rid:RID, definition:MaszynaEventData, chain:Array[RID]) -
 
 
 ## A new, unnamed event running the chain (_set_chain())
-static func _create_chain_event(root:MaszynaIncludeNode, definition:MaszynaEventData, chain:Array[RID]) -> RID:
+static func _create_chain_event(root:MaszynaSceneryContentNode, definition:MaszynaEventData, chain:Array[RID]) -> RID:
     var rid:RID = ScenarioEventServer.event_create()
     root._event_rids.append(rid)
     _set_chain(rid, definition, chain)

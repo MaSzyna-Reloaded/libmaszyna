@@ -18,7 +18,7 @@ const MOUNT_TOLERANCE:float = 1.0
 const LISTEN_SECONDS:float = 10.0
 
 var _previous_game_dir:String = ""
-var scenery:MaszynaSceneryNode
+var scenery:MaszynaLegacySceneryNode
 
 
 ## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
@@ -79,7 +79,7 @@ func test_ep07_mmd_builds_positioned_running_sound_events() -> void:
 ## Starts a second EP07 already rolling (initial_velocity, the scenery's own trainset velocity) - the
 ## sounds only need the vehicle to move along the track, not the whole cab start-up sequence.
 func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> void:
-    scenery = MaszynaSceneryNode.new()
+    scenery = MaszynaLegacySceneryNode.new()
     scenery.filename = SCENERY
     add_child(scenery)
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):

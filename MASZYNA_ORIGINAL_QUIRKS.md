@@ -460,7 +460,7 @@ interface.
   (`simulation/simulationtime.h:21`) and `Time.init()` takes it after the load
   (`simulationtime.cpp:30-51`), whatever the timetables say. Zwierzyniec, `zwierzyniec_osob.scn`,
   has none (its RPE58102 is due at Pawianowo at 10:37); `zwierzyniec_posp.scn` sets 15:30.
-  Wrapper: `MaszynaSceneryNode.START_TIME_DEFAULT`.
+  Wrapper: `MaszynaLegacySceneryNode.START_TIME_DEFAULT`.
 * **File names in the data ignore letter case.** The datapack is made on Windows: the scenery
   says `PKP\SN61_V2 SN61-179 SN61_v2` and `2M62-0571-A`, the files on disk are
   `pkp/sn61_v2/sn61_v2.mmd` - or, the other way round, uppercase `2M62-0571-A.fiz` exist as

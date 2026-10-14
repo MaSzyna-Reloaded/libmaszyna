@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 
-class TestScenery extends MaszynaIncludeNode:
+class TestScenery extends MaszynaLegacyIncludeNode:
     var imports:int = 0
 
     func _load_content() -> void:

@@ -606,7 +606,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   (`drivermode.cpp:493-500`).
 * The `queueevent` console command.
 * Station announcements (`load_sounds()`, `mtable.cpp:644-671`).
-* Events of one include cannot refer to events of another `MaszynaIncludeNode`.
+* Events of one include cannot refer to events of another `MaszynaLegacyIncludeNode`.
 * Proxy nodes for editor-built scenes (`ScenarioEventNode`, `ScenarioMemoryNode`,
   `ScenarioLauncherNode`).
 

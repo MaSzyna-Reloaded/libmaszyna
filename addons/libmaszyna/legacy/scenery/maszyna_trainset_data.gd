@@ -22,7 +22,7 @@ class_name MaszynaTrainsetData
 @export var dynamics:Array[MaszynaDynamicData] = []
 
 
-## Its vehicles as `arranged` lists them (MaszynaIncludeNode.trainset_override) when every declared
+## Its vehicles as `arranged` lists them (MaszynaSceneryContentNode.trainset_override) when every declared
 ## vehicle there stands at its place in this trainset, its declared ones otherwise. An entry is paired
 ## with its declared vehicle by its place in the trainset (MaszynaDynamicData.trainset_index), as
 ## the original couples a trainset by position (simulationstateserializer.cpp:818-834) - an id may

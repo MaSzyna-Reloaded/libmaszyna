@@ -2,8 +2,8 @@ extends RefCounted
 class_name MaszynaLegacyScenario
 
 ## The scenario of a loaded scenery, running: its sounds audible and its `lua` scripts run. The
-## scenery only loads it (MaszynaIncludeNode); the game starts it once the scenery has loaded and
-## stops it when the scenery unloads (MaszynaIncludeNode.unloading), so a scenery loaded without a
+## scenery only loads it (MaszynaSceneryContentNode); the game starts it once the scenery has loaded and
+## stops it when the scenery unloads (MaszynaSceneryContentNode.unloading), so a scenery loaded without a
 ## game - in the editor - runs nothing.
 
 ## Where the scripts' relative paths start
@@ -17,7 +17,7 @@ var _script_context:RID = RID()
 ## parses the file (simulationstateserializer.cpp:346-356); here the parsing runs on workers. Every
 ## scenery gets a context, so that a script can be applied to it while it runs. `progressed` is
 ## told the share of the start done (0..1) - the scenery's sounds made, the longest of it.
-func start(scenery:MaszynaIncludeNode, progressed:Callable = Callable()) -> void:
+func start(scenery:MaszynaSceneryContentNode, progressed:Callable = Callable()) -> void:
     # each step in the game's log before it runs: a crash with no message is found by the last one
     print("[ScenarioStart] building the scenery's sounds")
     _scenery_sounds = scenery.get_scenery_sounds()

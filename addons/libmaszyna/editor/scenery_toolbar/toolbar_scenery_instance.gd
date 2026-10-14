@@ -2,11 +2,11 @@
 extends HBoxContainer
 
 ## "Edit SCN" switched on for the scenery - its sectors are shown (scenery_sector_inspector.gd)
-signal editing_started(scenery:MaszynaIncludeNode)
+signal editing_started(scenery:MaszynaSceneryContentNode)
 ## "Edit SCN" switched off
 signal editing_stopped
 
-var _selected_scenery:MaszynaIncludeNode
+var _selected_scenery:MaszynaSceneryContentNode
 
 @onready var btn = $Editable
 
@@ -24,7 +24,7 @@ func _find_parent_scenery(node: Node):
     if not node:
         return null
 
-    if node is MaszynaIncludeNode:
+    if node is MaszynaSceneryContentNode:
         return node
     return _find_parent_scenery(node.get_parent())
 

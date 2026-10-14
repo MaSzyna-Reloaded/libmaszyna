@@ -3,7 +3,7 @@ extends Node
 class_name MaszynaAtmoNode
 
 ## Marker produced by a scenery's "atmo" section (deserialize_atmo(),
-## simulationstateserializer.cpp:198); MaszynaSceneryNode applies the values after a load.
+## simulationstateserializer.cpp:198); MaszynaLegacySceneryNode applies the values after a load.
 
 ## Fog range in metres; the original picks a random visibility between the two
 @export var fog_range_start:float = 0.0

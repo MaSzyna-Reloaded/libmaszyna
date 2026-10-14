@@ -66,7 +66,7 @@ func test_subscenes_are_cached_per_origin_and_match_in_place_parsing() -> void:
 ## from those files (ResourceLazyLoader), letting go of every one as it is freed
 func test_loaded_scenery_writes_its_terrain_chunks_as_files() -> void:
     var registered:int = ResourceLazyLoader.resource_get_statistics()["registered"]
-    var scenery := MaszynaIncludeNode.new()
+    var scenery := MaszynaLegacyIncludeNode.new()
     scenery.use_cache = false
     scenery.filename = ROOT
     add_child(scenery)

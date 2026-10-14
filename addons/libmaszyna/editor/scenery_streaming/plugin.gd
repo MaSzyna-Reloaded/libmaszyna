@@ -3,7 +3,7 @@ extends EditorPlugin
 
 ## Shows streaming diagnostics and loading progress in the editor. The scene's SceneryStreamer
 ## owns the streaming camera and its active property; the editor supplies a temporary view camera
-## without changing the scene's configured camera. A scene of a scenery alone - a MaszynaIncludeNode
+## without changing the scene's configured camera. A scene of a scenery alone - a MaszynaSceneryContentNode
 ## and no SceneryStreamer, as the scenery importer makes it - is streamed around the editor's view by
 ## the plugin itself; a scene with a SceneryStreamer, active or not, never is.
 
@@ -54,7 +54,7 @@ func set_scene_root(root:Node) -> void:
         var streamer:SceneryStreamer = node as SceneryStreamer
         streamer.editor_camera = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
         _streamer_ids.append(streamer.get_instance_id())
-    if not streamers and (root is MaszynaIncludeNode or root.find_children("", "MaszynaIncludeNode", true, true)):
+    if not streamers and (root is MaszynaSceneryContentNode or root.find_children("", "MaszynaSceneryContentNode", true, true)):
         _streams_edited_scene = true
         SceneryStreamingServer.streaming_set_camera(EditorInterface.get_editor_viewport_3d(0).get_camera_3d().get_instance_id())
 

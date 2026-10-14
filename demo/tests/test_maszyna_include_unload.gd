@@ -2,7 +2,7 @@ extends MaszynaGutTest
 
 ## A scenery that unloads - reloaded in place (another file set on the same node) or freed -
 ## stops what runs on its content before freeing it: the streaming's preloads in flight are
-## joined, and its scenario is told to stop (MaszynaIncludeNode.unloading).
+## joined, and its scenario is told to stop (MaszynaLegacyIncludeNode.unloading).
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const SCENERY_FILE:String = "no_time.scn"
@@ -53,7 +53,7 @@ func test_a_reload_in_place_joins_the_preloads_in_flight() -> void:
         await wait_idle_frames(1)
     assert_gt(_get_preloads_started(), 0, "the streaming started no preload")
 
-    var include:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    var include:MaszynaLegacyIncludeNode = MaszynaLegacyIncludeNode.new()
     include.autoload = false
     add_child_autofree(include)
     await include.load()
@@ -67,7 +67,7 @@ func test_a_reload_in_place_joins_the_preloads_in_flight() -> void:
 ## Out of the tree the content stays (the editor takes a scene out of the tree when another tab is
 ## shown); it goes when the node is freed
 func test_unloading_is_announced_on_a_reload_and_when_the_node_is_freed() -> void:
-    var include:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    var include:MaszynaLegacyIncludeNode = MaszynaLegacyIncludeNode.new()
     include.autoload = false
     add_child(include)
     include.unloading.connect(_count_unload)
@@ -84,7 +84,7 @@ func test_unloading_is_announced_on_a_reload_and_when_the_node_is_freed() -> voi
 ## "Load" pressed again while a scenery loads - the editor, after the file was changed - gives the
 ## load under way up, and what the scenery is set to now is loaded instead
 func test_a_load_asked_for_during_a_load_gives_that_one_up() -> void:
-    var scenery:MaszynaSceneryNode = MaszynaSceneryNode.new()
+    var scenery:MaszynaLegacySceneryNode = MaszynaLegacySceneryNode.new()
     scenery.autoload = false
     scenery.filename = SCENERY_FILE
     add_child_autofree(scenery)
@@ -102,7 +102,7 @@ func test_a_load_asked_for_during_a_load_gives_that_one_up() -> void:
 
 ## "Stop": the load under way ends without a scenery, and what it had built is freed
 func test_a_stopped_load_leaves_nothing_loaded() -> void:
-    var scenery:MaszynaSceneryNode = MaszynaSceneryNode.new()
+    var scenery:MaszynaLegacySceneryNode = MaszynaLegacySceneryNode.new()
     scenery.autoload = false
     scenery.filename = SCENERY_FILE
     add_child_autofree(scenery)
@@ -120,7 +120,7 @@ func test_a_stopped_load_leaves_nothing_loaded() -> void:
 
 ## "Clear": what is loaded is freed, and the scenery stays set to its file
 func test_clearing_frees_what_is_loaded_and_keeps_the_file() -> void:
-    var scenery:MaszynaSceneryNode = MaszynaSceneryNode.new()
+    var scenery:MaszynaLegacySceneryNode = MaszynaLegacySceneryNode.new()
     scenery.autoload = false
     scenery.filename = TRAINSETS_SCENERY_FILE
     add_child_autofree(scenery)
@@ -138,7 +138,7 @@ func test_clearing_frees_what_is_loaded_and_keeps_the_file() -> void:
 ## The scenario runs only once started, and stops when its scenery unloads - as the game's world
 ## wires it (world.gd)
 func test_a_scenario_runs_from_its_start_until_its_scenery_unloads() -> void:
-    var scenery:MaszynaSceneryNode = MaszynaSceneryNode.new()
+    var scenery:MaszynaLegacySceneryNode = MaszynaLegacySceneryNode.new()
     scenery.filename = SCENERY_FILE
     add_child_autofree(scenery)
     if not await wait_loaded(scenery.scenery_loaded, scenery.filename):

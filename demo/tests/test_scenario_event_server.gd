@@ -358,7 +358,7 @@ func test_a_timed_launcher_of_a_radius_fires_only_near_the_camera() -> void:
 
 func test_a_passenger_stop_is_named_as_the_timetable_names_it() -> void:
     var models:Array[MaszynaModelData] = []
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "event w4_stopinfo putvalues 0 none 1 2 3 PassengerStopPoint:Jawor#2 -4 151 endevent", models
     )
     var event:RID = ScenarioEventServer.event_get_rid_by_name(&"w4_stopinfo")
@@ -371,7 +371,7 @@ func test_a_passenger_stop_is_named_as_the_timetable_names_it() -> void:
 
 func test_a_departure_delay_is_read_from_the_scenery() -> void:
     var models:Array[MaszynaModelData] = []
-    var root:MaszynaIncludeNode = await _build_scenery("event odjazd multiple 2 none endevent "
+    var root:MaszynaLegacyIncludeNode = await _build_scenery("event odjazd multiple 2 none endevent "
             + "event odjazd_signal multiple 0 none departuredelay %s endevent" % DEPARTURE_DELAY, models)
 
     assert_eq(ScenarioEventServer.event_get_departure_delay(ScenarioEventServer.event_get_rid_by_name(&"odjazd_signal")),
@@ -382,7 +382,7 @@ func test_a_departure_delay_is_read_from_the_scenery() -> void:
 
 
 func test_scenery_memcells_and_value_events() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "node -1 0 Cell1 memcell 0 0 0 Start 1 2 none endmemcell "
         + "node -1 0 cell2 memcell 0 0 0 Other 7 8 none endmemcell "
         + "event set_cell updatevalues 0 cell1 Go * 5 endevent "
@@ -416,7 +416,7 @@ func test_scenery_memcells_and_value_events() -> void:
 
 
 func test_scenery_onstart_and_negative_delay_events_are_queued() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "event scenery_onstart updatevalues 0.0 none a 0 0 endevent "
         + "event at_start updatevalues -30 none b 0 0 endevent "
         + "event later updatevalues 30 none c 0 0 endevent",
@@ -445,7 +445,7 @@ func test_scenery_lights_event_shows_the_aspect() -> void:
     var model_data:MaszynaModelData = MaszynaModelData.new()
     model_data.name = "Sem_A"
     var models:Array[MaszynaModelData] = [model_data]
-    var root:MaszynaIncludeNode = await _build_scenery("event sem_a_sem_ligh1 lights 0 sem_a 1 endevent", models)
+    var root:MaszynaLegacyIncludeNode = await _build_scenery("event sem_a_sem_ligh1 lights 0 sem_a 1 endevent", models)
 
     if not await _run_event(&"sem_a_sem_ligh1"):
         return
@@ -579,7 +579,7 @@ func test_scenery_animation_turns_the_submodel() -> void:
     model_data.name = "rog1"
     var models:Array[MaszynaModelData] = [model_data]
     var instances:Dictionary[String, RID] = {"rog1": instance.get_e3d_instance()}
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "node -1 0 c1 memcell 0 0 0 moving 0 0 none endmemcell "
         + "event rog1on animation 0 rog1 rotate ramie01 0 0 %.0f %.0f endevent " % [QUARTER_TURN, TURN_SPEED]
         + "event rog1.ramie01:done updatevalues 0 c1 done * * endevent",
@@ -604,7 +604,7 @@ func test_scenery_animation_turns_the_submodel() -> void:
 func test_scenery_voltage_event_sets_the_power_source() -> void:
     var power_source:RID = TractionServer.power_source_create()
     TractionServer.power_source_set_params(power_source, "Pwr1", 3000.0, 0.0, 0.2, 1000.0, 1.0, 3, 60.0, false)
-    var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    var root:MaszynaLegacyIncludeNode = MaszynaLegacyIncludeNode.new()
     root.autoload = false
     add_child(root)
     var power_source_data:MaszynaPowerSourceData = MaszynaPowerSourceData.new()
@@ -650,7 +650,7 @@ func test_scenery_isolated_section_fires_busy_and_marks_its_memory() -> void:
     var vehicle:RID = ScenarioEventServer.memory_create() # stands in for a vehicle
     var tracks:Dictionary[String, RID] = {"t1": track}
     var models:Array[MaszynaModelData] = []
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "node -1 0 c1 memcell 0 0 0 idle 0 0 none endmemcell "
         + "isolated s1 t1 endisolated "
         + "event s1:busy updatevalues 0 c1 busy * * endevent",
@@ -754,7 +754,7 @@ func test_the_queue_lists_the_queued_events_in_the_order_they_run() -> void:
 ## reports#31: the dispatcher at Ozimek defines its check once per route; joined, the first one -
 ## the route set - runs as well as the later ones (Event.cpp:2323-2334, 2466-2490)
 func test_a_name_defined_more_than_once_runs_every_definition_when_joined() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "config joinduplicatedevents yes endconfig "
         + "node -1 0 route memcell 0 0 0 Fo1 7 1 none endmemcell "
         + "node -1 0 exit memcell 0 0 0 none 0 0 none endmemcell "
@@ -778,7 +778,7 @@ func test_a_name_defined_more_than_once_runs_every_definition_when_joined() -> v
 
 ## The definitions run in their order: the second compares what the first has just written
 func test_a_joined_definition_sees_what_the_one_before_it_wrote() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "config joinduplicatedevents yes endconfig "
         + "node -1 0 track memcell 0 0 0 free 0 0 none endmemcell "
         + "node -1 0 done memcell 0 0 0 none 0 0 none endmemcell "
@@ -802,7 +802,7 @@ func test_a_joined_definition_sees_what_the_one_before_it_wrote() -> void:
 ## Without joinduplicatedevents the first definition is disabled: a `multiple` runs without its
 ## memory comparison (Event.cpp:1218-1222), the later ones with theirs
 func test_a_duplicated_multiple_runs_without_its_comparison_when_not_joined() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "node -1 0 cell memcell 0 0 0 a 0 0 none endmemcell "
         + "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
         + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
@@ -827,7 +827,7 @@ func test_a_duplicated_multiple_runs_without_its_comparison_when_not_joined() ->
 ## nothing; an "onstart" one, queued before it was disabled, runs the later ones (Event.cpp:2402-2403,
 ## 2472-2480)
 func test_a_duplicated_name_does_nothing_when_not_joined_but_its_onstart_runs_the_rest() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
         + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
         + "event set_cells updatevalues 0 first ran * * endevent "
@@ -853,7 +853,7 @@ func test_a_duplicated_name_does_nothing_when_not_joined_but_its_onstart_runs_th
 
 ## A duplicate of a magnet, a horn warning or line info is dropped, joined or not (Event.cpp:2304-2321)
 func test_a_duplicate_of_a_dropped_name_is_left_out() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "config joinduplicatedevents yes endconfig "
         + "node -1 0 cell memcell 0 0 0 none 0 0 none endmemcell "
         + "event magnet_shp updatevalues 0 cell first * * endevent "
@@ -878,7 +878,7 @@ func test_a_duplicate_of_a_dropped_name_is_left_out() -> void:
 ## A later definition of a negative delay is queued by itself at the start and runs the ones after
 ## it (InitEvents(), Event.cpp:2493-2499)
 func test_a_joined_definition_of_a_negative_delay_starts_the_ones_after_it() -> void:
-    var root:MaszynaIncludeNode = await _build_scenery(
+    var root:MaszynaLegacyIncludeNode = await _build_scenery(
         "config joinduplicatedevents yes endconfig "
         + "node -1 0 first memcell 0 0 0 none 0 0 none endmemcell "
         + "node -1 0 second memcell 0 0 0 none 0 0 none endmemcell "
@@ -942,9 +942,9 @@ func _free_events(events:Array[RID]) -> void:
 func _build_scenery(
     text:String, models:Array[MaszynaModelData], model_instances:Dictionary[String, RID] = {},
     tracks:Dictionary[String, RID] = {}
-) -> MaszynaIncludeNode:
+) -> MaszynaLegacyIncludeNode:
     var context:MaszynaImporterContext = _parse(text)
-    var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    var root:MaszynaLegacyIncludeNode = MaszynaLegacyIncludeNode.new()
     root.autoload = false
     add_child(root)
     var model_rids:Array[RID] = []

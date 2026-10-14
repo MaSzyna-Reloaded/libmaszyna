@@ -2,7 +2,7 @@
 class_name SceneryLoadMeasurement
 extends RefCounted
 
-## What a scenery load costs, stage by stage (MaszynaIncludeNode.LoadStage): how long the stage
+## What a scenery load costs, stage by stage (MaszynaSceneryContentNode.LoadStage): how long the stage
 ## took, its longest frame - the main thread blocked, and nothing on the loading screen moves - and
 ## the peak of the process's resident memory (ProcessMemory) and of Godot's own count of it.
 ## Started by SceneryInstancer.instantiate() for one load; a stage is printed as it ends, so a load
@@ -12,8 +12,8 @@ extends RefCounted
 const STAGE_NAMES: PackedStringArray = ["FILES", "INFRASTRUCTURE", "TERRAIN", "OBJECTS", "VEHICLES"]
 const BYTES_PER_GB: float = 1024.0 * 1024.0 * 1024.0
 
-var _root: MaszynaIncludeNode = null
-var _stage: MaszynaIncludeNode.LoadStage = MaszynaIncludeNode.LoadStage.FILES
+var _root: MaszynaSceneryContentNode = null
+var _stage: MaszynaSceneryContentNode.LoadStage = MaszynaSceneryContentNode.LoadStage.FILES
 var _stage_started_usec: int = 0
 var _frame_usec: int = 0
 var _durations_usec: PackedInt64Array = []
@@ -22,7 +22,7 @@ var _peaks_static_bytes: PackedInt64Array = []
 var _peaks_resident_bytes: PackedInt64Array = []
 
 
-func _init(root: MaszynaIncludeNode) -> void:
+func _init(root: MaszynaSceneryContentNode) -> void:
     _root = root
     _durations_usec.resize(STAGE_NAMES.size())
     _longest_frames_usec.resize(STAGE_NAMES.size())
@@ -41,7 +41,7 @@ func finish() -> void:
     _close_stage()
 
 
-func _on_load_progress(_progress: float, stage: MaszynaIncludeNode.LoadStage, _message: String) -> void:
+func _on_load_progress(_progress: float, stage: MaszynaSceneryContentNode.LoadStage, _message: String) -> void:
     if stage == _stage:
         return
     _close_stage()
@@ -72,7 +72,7 @@ func _close_stage() -> void:
 static func print_scenery(compiled: MaszynaCompiledScenery) -> void:
     print("[SceneryMemory] models %d, events %d, tracks %d, traction %d, terrain chunks %d, packed nodes %d" % [
         compiled.models.size(), compiled.events.size(), compiled.tracks.size(), compiled.traction.size(),
-        compiled.triangle_chunks.size(), compiled.nodes.get_state().get_node_count(),
+        compiled.triangle_chunks.size(), compiled.nodes.get_state().get_node_count() if compiled.nodes else 0,
     ])
 
 

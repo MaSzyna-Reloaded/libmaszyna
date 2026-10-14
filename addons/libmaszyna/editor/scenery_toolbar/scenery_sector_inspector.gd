@@ -11,14 +11,14 @@ extends RefCounted
 ## A sector is named after its chunk (SceneryStreamingServer)
 const SECTOR_NAME:String = "Sector %d,%d"
 
-var _scenery:MaszynaIncludeNode = null
+var _scenery:MaszynaSceneryContentNode = null
 var _sectors:Dictionary[Vector2i, Node3D] = {}
 ## Every proxy of the sectors, by the model it stands for
 var _proxies:Dictionary[RID, E3DModelInstance] = {}
 
 
 ## Inspects the scenery, and nothing else from now on: the sector of the camera's chunk is shown
-func inspect(scenery:MaszynaIncludeNode) -> void:
+func inspect(scenery:MaszynaSceneryContentNode) -> void:
     stop()
     _scenery = scenery
     SceneryStreamingServer.streaming_camera_chunk_changed.connect(show_sector)

@@ -78,6 +78,7 @@
 #include "scenario/Timetable.hpp"
 #include "scenario/TimetableEntry.hpp"
 #include "scenery/SceneryHUDMouseServer.hpp"
+#include "scenery/SceneryMeshRenderingServer.hpp"
 #include "scenery/SceneryModelPlacement.hpp"
 #include "scenery/ScenerySoundPlacement.hpp"
 #include "scenery/SceneryStreamingProvider.hpp"
@@ -186,6 +187,7 @@ RailVehicleServer *rail_vehicle_server_singleton = nullptr;
 RailVehicleRenderingServer *rail_vehicle_rendering_server_singleton = nullptr;
 TractionServer *traction_server_singleton = nullptr;
 SceneryStreamingServer *scenery_streaming_server_singleton = nullptr;
+SceneryMeshRenderingServer *scenery_mesh_rendering_server_singleton = nullptr;
 PythonScreenServer *python_screen_server_singleton = nullptr;
 MaszynaTranslationServer *maszyna_translation_server_singleton = nullptr;
 CabinHUDMouseSystem *cabin_hud_mouse_system_singleton = nullptr;
@@ -291,6 +293,7 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(SceneryModelPlacement);
         GDREGISTER_CLASS(ScenerySoundPlacement);
         GDREGISTER_CLASS(SceneryStreamingServer);
+        GDREGISTER_CLASS(SceneryMeshRenderingServer);
         GDREGISTER_CLASS(PythonScreenServer);
         GDREGISTER_CLASS(SceneryTrianglesSink);
         GDREGISTER_CLASS(OggVorbisFormatLoader);
@@ -405,8 +408,12 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         // after SceneryStreamingServer is registered: the constructor takes the models providers supply
         e3d_rendering_server_singleton = memnew(E3DRenderingServer);
         Engine::get_singleton()->register_singleton("E3DRenderingServer", e3d_rendering_server_singleton); // 6
-        Engine::get_singleton()->register_singleton("SimulationServer", simulation_server_singleton);      // 7
-        Engine::get_singleton()->register_singleton("TrackServer", track_server_singleton);                // 8
+        // after SceneryStreamingServer is registered: the constructor makes its streaming owner
+        scenery_mesh_rendering_server_singleton = memnew(SceneryMeshRenderingServer);
+        Engine::get_singleton()->register_singleton(
+                "SceneryMeshRenderingServer", scenery_mesh_rendering_server_singleton);               // 6b
+        Engine::get_singleton()->register_singleton("SimulationServer", simulation_server_singleton); // 7
+        Engine::get_singleton()->register_singleton("TrackServer", track_server_singleton);           // 8
         /* after SimulationServer is registered and before VehicleServer: the constructor follows
          * its clock first, so a slice ticks the power sources before the vehicles draw from them -
          * the original's order (simulation.cpp:115-116) */
@@ -633,6 +640,14 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
     if (traction_server_singleton != nullptr) {
         memdelete(traction_server_singleton);
         traction_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("SceneryMeshRenderingServer")) {
+        Engine::get_singleton()->unregister_singleton("SceneryMeshRenderingServer"); // 6b
+    }
+    if (scenery_mesh_rendering_server_singleton != nullptr) {
+        memdelete(scenery_mesh_rendering_server_singleton);
+        scenery_mesh_rendering_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("E3DRenderingServer")) {

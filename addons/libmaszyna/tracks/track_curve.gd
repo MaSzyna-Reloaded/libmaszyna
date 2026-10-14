@@ -37,3 +37,11 @@ class_name TrackCurve
         if not radius == x:
             radius = x
             changed.emit()
+
+
+## A copy of the curve moved by `offset` - its handles are relative to its ends
+func translated(offset:Vector3) -> TrackCurve:
+    var moved:TrackCurve = duplicate() as TrackCurve
+    moved.p1 += offset
+    moved.p2 += offset
+    return moved

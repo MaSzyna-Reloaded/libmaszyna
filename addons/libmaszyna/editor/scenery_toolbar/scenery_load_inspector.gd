@@ -3,7 +3,7 @@ extends EditorInspectorPlugin
 
 ## The inspector of a scenery: its `filename` gets "Browse" for the sceneries of the game
 ## directory, and "Load" and "Clear" stand side by side where the "Load" tool button
-## (MaszynaSceneryNode.load_action) would stand alone
+## (MaszynaSceneryContentNode.load_action) would stand alone
 
 const SceneryLoadButtons = preload("./scenery_load_buttons.gd")
 const LOAD_BUTTONS:PackedScene = preload("./scenery_load_buttons.tscn")
@@ -14,7 +14,7 @@ const LOAD_ACTION:String = "load_action"
 
 
 func _can_handle(object:Object) -> bool:
-    return object is MaszynaIncludeNode
+    return object is MaszynaSceneryContentNode
 
 
 func _parse_property(
@@ -25,7 +25,7 @@ func _parse_property(
         return true
     if name == LOAD_ACTION:
         var buttons:SceneryLoadButtons = LOAD_BUTTONS.instantiate()
-        buttons.set_scenery(object as MaszynaSceneryNode)
+        buttons.set_scenery(object as MaszynaSceneryContentNode)
         add_custom_control(buttons)
         return true
     return false

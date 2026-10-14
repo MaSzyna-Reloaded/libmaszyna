@@ -15,7 +15,7 @@ const TAKE_OVER_TIMEOUT:float = 1.0
 const SHORT_PRESS_SECONDS:float = 0.2
 
 var _previous_game_dir:String = ""
-var scenery:MaszynaSceneryNode
+var scenery:MaszynaLegacySceneryNode
 var player:MaszynaPlayer
 var controller:VehicleController
 var vehicle_rid:RID
@@ -27,7 +27,7 @@ func before_each():
     player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
     player.start_vehicle_id = "ep07-424"
     add_child(player)
-    scenery = MaszynaSceneryNode.new()
+    scenery = MaszynaLegacySceneryNode.new()
     scenery.filename = SCENERY
     scenery.scenery_loaded.connect(player._on_scenery_loaded)
     add_child(scenery)

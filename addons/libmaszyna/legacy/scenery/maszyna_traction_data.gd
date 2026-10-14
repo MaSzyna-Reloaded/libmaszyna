@@ -20,3 +20,13 @@ class_name MaszynaTractionData
 @export var wire_offset:float = 0.0
 @export var visible:bool = true
 @export var parallel:String = ""
+
+
+## A copy of the span moved by `offset`
+func translated(offset:Vector3) -> MaszynaTractionData:
+    var moved:MaszynaTractionData = duplicate() as MaszynaTractionData
+    moved.contact_p1 += offset
+    moved.contact_p2 += offset
+    moved.support_p1 += offset
+    moved.support_p2 += offset
+    return moved

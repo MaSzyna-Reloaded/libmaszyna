@@ -24,3 +24,10 @@ class_name MaszynaModelData
 ## Set when the model is a signal head - a lit model or one a `lights` event is aimed at
 ## (see SceneryInstancer.assign_signal_head_kinds())
 @export var signal_head_kind:SignalHeadKind = null
+
+
+## A copy of the model placed `offset` further
+func translated(offset:Vector3) -> MaszynaModelData:
+    var moved:MaszynaModelData = duplicate() as MaszynaModelData
+    moved.position += offset
+    return moved

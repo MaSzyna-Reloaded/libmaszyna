@@ -10,7 +10,7 @@ const SCENERY_WITHOUT_TIME:String = "no_time.scn"
 const EVENING_START_TIME:float = 18.75
 
 var _previous_game_dir:String = ""
-var _scenery:MaszynaSceneryNode
+var _scenery:MaszynaLegacySceneryNode
 
 
 func before_each() -> void:
@@ -26,7 +26,7 @@ func after_each() -> void:
 func test_a_scenery_without_a_time_section_starts_at_half_past_ten() -> void:
     await _load(SCENERY_WITHOUT_TIME)
 
-    assert_eq(_scenery.start_time, MaszynaSceneryNode.START_TIME_DEFAULT)
+    assert_eq(_scenery.start_time, MaszynaLegacySceneryNode.START_TIME_DEFAULT)
 
 
 func test_a_scenery_starts_at_its_time_section() -> void:
@@ -36,7 +36,7 @@ func test_a_scenery_starts_at_its_time_section() -> void:
 
 
 func _load(scenery_file:String) -> void:
-    _scenery = MaszynaSceneryNode.new()
+    _scenery = MaszynaLegacySceneryNode.new()
     _scenery.filename = scenery_file
     add_child(_scenery)
     if not await wait_loaded(_scenery.scenery_loaded, _scenery.filename):

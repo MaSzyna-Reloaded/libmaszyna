@@ -40,26 +40,26 @@ func _exit_tree() -> void:
 ## The edited scene: its trainsets are listed now, and again whenever one of its sceneries loads
 func set_scene_root(root:Node) -> void:
     for include_id:int in _include_ids:
-        var include:MaszynaIncludeNode = instance_from_id(include_id) as MaszynaIncludeNode
+        var include:MaszynaSceneryContentNode = instance_from_id(include_id) as MaszynaSceneryContentNode
         if include:
             include.loaded.disconnect(list_trainsets)
     _include_ids.clear()
     _free_show_markers()
     _scene_root = root
     if root:
-        var includes:Array[Node] = root.find_children("", "MaszynaIncludeNode", true, false)
-        if root is MaszynaIncludeNode:
+        var includes:Array[Node] = root.find_children("", "MaszynaSceneryContentNode", true, false)
+        if root is MaszynaSceneryContentNode:
             includes.append(root)
         for node:Node in includes:
             if _is_scene_scenery(node):
-                (node as MaszynaIncludeNode).loaded.connect(list_trainsets)
+                (node as MaszynaSceneryContentNode).loaded.connect(list_trainsets)
                 _include_ids.append(node.get_instance_id())
     list_trainsets()
 
 
 ## A scenery coming into the edited scene after it was set - the one a test scene shows (the
 ## scenery importer's scenery_test.tscn)
-func add_scenery(include:MaszynaIncludeNode) -> void:
+func add_scenery(include:MaszynaSceneryContentNode) -> void:
     if not _is_scene_scenery(include) or _include_ids.has(include.get_instance_id()):
         return
     include.loaded.connect(list_trainsets)
@@ -68,7 +68,7 @@ func add_scenery(include:MaszynaIncludeNode) -> void:
 
 
 ## A scenery leaving the edited scene - its trainsets go from the list
-func remove_scenery(include:MaszynaIncludeNode) -> void:
+func remove_scenery(include:MaszynaSceneryContentNode) -> void:
     if not _include_ids.has(include.get_instance_id()):
         return
     include.loaded.disconnect(list_trainsets)
@@ -84,7 +84,7 @@ func _is_scene_scenery(include:Node) -> bool:
     var node:Node = include
     while not node == _scene_root:
         node = node.get_parent()
-        if node is MaszynaIncludeNode:
+        if node is MaszynaSceneryContentNode:
             return false
     return true
 
@@ -99,7 +99,7 @@ func list_trainsets() -> void:
     for node:Node in _scene_root.find_children("", "TrainSet3D", true, false):
         trainsets.append((node as TrainSet3D).get_rid())
     for include_id:int in _include_ids:
-        trainsets.append_array((instance_from_id(include_id) as MaszynaIncludeNode).get_trainsets())
+        trainsets.append_array((instance_from_id(include_id) as MaszynaSceneryContentNode).get_trainsets())
     for trainset:RID in trainsets:
         var trainset_name:String = RailVehicleServer.trainset_get_name(trainset)
         if not trainset_name:

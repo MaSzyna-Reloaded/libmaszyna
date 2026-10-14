@@ -128,7 +128,7 @@ func test_a_scenery_model_fires_the_launcher_of_its_name_that_has_it_in_range() 
         + "event zwr2+ multiple %s none endevent " % NEVER
         + "event zwr2- multiple %s none endevent " % NEVER
     )
-    var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    var root:MaszynaLegacyIncludeNode = MaszynaLegacyIncludeNode.new()
     root.autoload = false
     add_child(root)
     var tracks:Array[MaszynaTrackData] = []

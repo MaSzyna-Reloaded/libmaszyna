@@ -17,7 +17,7 @@ fog_enabled = false
 fog_distance = 174.0
 metadata/_custom_type_script = "uid://b0r5vydn7ve4l"
 
-[node name="MaszynaSceneryNode" type="Node3D" parent="." unique_id=2088471628]
+[node name="MaszynaLegacySceneryNode" type="Node3D" parent="." unique_id=2088471628]
 script = ExtResource("1_y7igu")
 filename = "td.scn"
 metadata/_custom_type_script = "uid://b1awg5iad35ss"

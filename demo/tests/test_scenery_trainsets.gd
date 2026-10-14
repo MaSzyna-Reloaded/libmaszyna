@@ -24,13 +24,13 @@ const COUPLED_DRIFT_TOLERANCE:float = 0.1
 const PLACEMENT_TOLERANCE:float = 0.01
 
 var _previous_game_dir:String = ""
-var _scenery:MaszynaSceneryNode
+var _scenery:MaszynaLegacySceneryNode
 
 
 func before_each() -> void:
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
-    _scenery = MaszynaSceneryNode.new()
+    _scenery = MaszynaLegacySceneryNode.new()
     _scenery.filename = SCENERY
     _scenery.autoload = false
     add_child(_scenery)

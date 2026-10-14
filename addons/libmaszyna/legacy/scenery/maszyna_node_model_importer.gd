@@ -16,25 +16,10 @@ func import(p:MaszynaParser, context: MaszynaImporterContext) -> MaszynaModelDat
     var loc_z = p.next_token()
     var rot_y = p.next_token()
     var filename:String = p.next_token().replace("\\", "/")
-    var data_path:String = filename.get_base_dir()
 
     var obj := MaszynaModelData.new()
     obj.model_filename = filename.get_file().get_basename()
-    var game_dir:String = UserSettings.get_maszyna_game_dir()
-    var lookups:Array[String] = []
-    for extension:String in MODEL_EXTENSIONS:
-        for directory:String in [data_path, MODELS_DIRECTORY.path_join(data_path)]:
-            lookups.append(directory.path_join(obj.model_filename + "." + extension))
-    var found:String = ""
-    for lookup:String in lookups:
-        var file:String = MaszynaDataPath.resolve(game_dir, lookup)
-        if FileAccess.file_exists(game_dir.path_join(file)):
-            found = file
-            break
-    # a model found nowhere keeps the models/ path, for the loader to report
-    obj.data_path = (
-        found.get_base_dir() if found else MaszynaDataPath.resolve(game_dir, MODELS_DIRECTORY.path_join(data_path))
-    )
+    obj.data_path = find_data_path(filename)
 
     obj.position = Vector3(float(loc_x), float(loc_y), float(loc_z))
     obj.rotation = Vector3(0.0, deg_to_rad(float(rot_y)), 0.0)
@@ -76,6 +61,21 @@ func import(p:MaszynaParser, context: MaszynaImporterContext) -> MaszynaModelDat
         token = p.next_token().to_lower()
 
     return obj
+
+
+## The directory, under the game's, of the model `filename` names as a scenery does ("dir/name.t3d",
+## from the game directory or under models/); a model found nowhere keeps the models/ path, for
+## the loader to report
+static func find_data_path(filename:String) -> String:
+    var data_path:String = filename.get_base_dir()
+    var model_filename:String = filename.get_file().get_basename()
+    var game_dir:String = UserSettings.get_maszyna_game_dir()
+    for extension:String in MODEL_EXTENSIONS:
+        for directory:String in [data_path, MODELS_DIRECTORY.path_join(data_path)]:
+            var file:String = MaszynaDataPath.resolve(game_dir, directory.path_join(model_filename + "." + extension))
+            if FileAccess.file_exists(game_dir.path_join(file)):
+                return file.get_base_dir()
+    return MaszynaDataPath.resolve(game_dir, MODELS_DIRECTORY.path_join(data_path))
 
 
 ## A `lightcolors` entry is an RGB hex literal; -1 keeps the colour the model carries

@@ -14,3 +14,10 @@ class_name MaszynaPowerSourceData
 @export var slow_fuse_timeout:float = 0.0
 @export var is_section:bool = false
 @export var recuperation:bool = false
+
+
+## A copy of the power source moved by `offset`
+func translated(offset:Vector3) -> MaszynaPowerSourceData:
+    var moved:MaszynaPowerSourceData = duplicate() as MaszynaPowerSourceData
+    moved.position += offset
+    return moved

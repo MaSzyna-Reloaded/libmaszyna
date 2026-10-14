@@ -126,6 +126,9 @@ var trainsets:Array[Trainset] = []
 ## without the words an earlier one already has - the file name is what tells apart the scenarios
 ## of one scenery ("baltyk_skm1.scn" with "//$l Bałtyk" and "//$n Bałtyk" -> "Bałtyk · SKM1").
 static func read_display_name(filename:String) -> String:
+    # a world of the game's own format names itself (MaszynaWorld.read_description())
+    if filename.get_extension().to_lower() == MaszynaWorld.DESCRIPTION_EXTENSION:
+        return MaszynaWorld.read_description(filename).get("title", humanize_name(filename.get_basename()))
     var scenery_dir:String = UserSettings.get_maszyna_game_dir().path_join("scenery")
     var file:FileAccess = FileAccess.open(
         scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)), FileAccess.READ
@@ -217,6 +220,14 @@ static func _has_digit(word:String) -> bool:
 ## Reads the header of scenery/<filename> and the trainsets declared in it
 static func read(filename:String) -> MaszynaSceneryInfo:
     var info := MaszynaSceneryInfo.new()
+    if filename.get_extension().to_lower() == MaszynaWorld.DESCRIPTION_EXTENSION:
+        info.title = read_display_name(filename)
+        info.description = MaszynaWorld.read_description(filename).get("description", "")
+        var scenario:MaszynaCompiledScenery = MaszynaWorld.read_scenario(filename)
+        if scenario:
+            for data:MaszynaTrainsetData in scenario.trainsets:
+                info.trainsets.append(_trainset_of(data))
+        return info
     var scenery_dir:String = UserSettings.get_maszyna_game_dir().path_join("scenery")
     var file:FileAccess = FileAccess.open(
         scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)), FileAccess.READ
@@ -293,6 +304,33 @@ static func read(filename:String) -> MaszynaSceneryInfo:
                     trainset.vehicles.append(vehicle)
     info.description = "\n".join(description_lines)
     return info
+
+
+## A world's trainset (MaszynaWorld.read_scenario()) as a .scn's block reads: its name in lower case,
+## its vehicles' driver types in the .scn's words
+static func _trainset_of(data:MaszynaTrainsetData) -> Trainset:
+    var trainset := Trainset.new()
+    trainset.name = data.name.to_lower()
+    trainset.track = data.track_name.to_lower()
+    for dynamic:MaszynaDynamicData in data.dynamics:
+        var vehicle := Vehicle.new()
+        vehicle.vehicle_id = dynamic.vehicle_id
+        vehicle.name = dynamic.name
+        # as a .scn's reads ("dynamic/pkp/4e_v1"; the world keeps "/dynamic/pkp/4e_v1")
+        vehicle.data_path = _resolve_data_path(dynamic.data_path)
+        vehicle.skin = dynamic.skin
+        vehicle.file_name = dynamic.file_name
+        vehicle.reversed = dynamic.direction == TrackServer.DIRECTION_REVERSED
+        match dynamic.driver_type:
+            MaszynaDynamicData.DriverType.DRIVER_HEAD:
+                vehicle.driver_type = "headdriver"
+            MaszynaDynamicData.DriverType.DRIVER_REAR:
+                vehicle.driver_type = "reardriver"
+            _:
+                vehicle.driver_type = "nobody"
+        vehicle.trainset_index = dynamic.trainset_index if dynamic.trainset_index >= 0 else trainset.vehicles.size()
+        trainset.vehicles.append(vehicle)
+    return trainset
 
 
 ## "PKP\\SU42_V1" -> "dynamic/pkp/su42_v1", same as maszyna_node_dynamic_importer.gd

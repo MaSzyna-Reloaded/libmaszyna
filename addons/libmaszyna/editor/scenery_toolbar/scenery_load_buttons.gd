@@ -4,10 +4,10 @@ extends HBoxContainer
 ## "Load" and "Clear" of a scenery, side by side in the inspector, in place of its "Load" button
 ## (scenery_load_inspector.gd)
 
-var _scenery:MaszynaSceneryNode = null
+var _scenery:MaszynaSceneryContentNode = null
 
 
-func set_scenery(scenery:MaszynaSceneryNode) -> void:
+func set_scenery(scenery:MaszynaSceneryContentNode) -> void:
     _scenery = scenery
 
 

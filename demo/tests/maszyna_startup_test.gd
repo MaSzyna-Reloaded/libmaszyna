@@ -87,7 +87,7 @@ const MOVED_OFF_SPEED:float = 1.0
 const MAX_CONTROLLER_STEPS:int = 10
 
 var _previous_game_dir:String = ""
-var _scenery:MaszynaSceneryNode
+var _scenery:MaszynaLegacySceneryNode
 var _player:MaszynaPlayer
 ## The car whose cab the player sits in
 var occupied:RID
@@ -339,7 +339,7 @@ func enter_vehicle(scenery:String, vehicle:String) -> bool:
     _player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
     _player.start_vehicle_id = vehicle
     add_child(_player)
-    _scenery = MaszynaSceneryNode.new()
+    _scenery = MaszynaLegacySceneryNode.new()
     _scenery.filename = scenery
     _scenery.scenery_loaded.connect(_player._on_scenery_loaded)
     add_child(_scenery)

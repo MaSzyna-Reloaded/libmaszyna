@@ -18,7 +18,7 @@ const AI_DRIVING_SECONDS:float = 3.0
 const TAKE_BACK_WATCH_SECONDS:float = 2.0
 
 var _previous_game_dir:String = ""
-var scenery:MaszynaSceneryNode
+var scenery:MaszynaLegacySceneryNode
 var player:MaszynaPlayer
 var vehicle_rid:RID
 
@@ -29,7 +29,7 @@ func before_each():
     player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
     player.start_vehicle_id = "ep07-424"
     add_child(player)
-    scenery = MaszynaSceneryNode.new()
+    scenery = MaszynaLegacySceneryNode.new()
     scenery.filename = SCENERY
     scenery.scenery_loaded.connect(player._on_scenery_loaded)
     add_child(scenery)
