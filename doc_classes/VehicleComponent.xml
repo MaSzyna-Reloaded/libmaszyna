@@ -24,11 +24,13 @@
 		<method name="get_config">
 			<return type="Dictionary" />
 			<description>
+				This component's share of the vehicle's configuration dump. Unlike the state, the configuration is the wrapper's own - its properties and enums are the authoring source of truth and the backend is configured from them.
 			</description>
 		</method>
 		<method name="get_controller" qualifiers="const">
 			<return type="VehicleController" />
 			<description>
+				The vehicle this component belongs to.
 			</description>
 		</method>
 		<method name="get_state">
@@ -100,6 +102,7 @@
 	</methods>
 	<members>
 		<member name="component_tag" type="StringName" setter="set_component_tag" getter="get_component_tag" default="&amp;&quot;&quot;">
+			A scripted component's own kind, chosen by whoever wrote it ([method VehicleServer.vehicle_generic_component_find]). Empty on the built-in ones, which are found by their [enum VehicleComponentType.Type].
 		</member>
 		<member name="enabled" type="bool" setter="set_enabled" getter="get_enabled" default="true">
 			If true, this train part will be processed by [VehicleController] during updating and fetching the simulation's state.
@@ -108,10 +111,12 @@
 	<signals>
 		<signal name="component_disabled">
 			<description>
+				The component was switched off: its commands are given back.
 			</description>
 		</signal>
 		<signal name="component_enabled">
 			<description>
+				The component was switched on: its commands are registered.
 			</description>
 		</signal>
 		<signal name="config_changed">

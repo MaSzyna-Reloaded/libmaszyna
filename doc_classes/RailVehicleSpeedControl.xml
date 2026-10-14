@@ -13,63 +13,75 @@
 		<method name="get_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the speed control works ([code]SpeedCtrlUnit.IsActive[/code]).
 			</description>
 		</method>
 		<method name="get_desired_power" qualifiers="const">
 			<return type="float" />
 			<description>
+				The power the speed control is allowed ([code]SpeedCtrlUnit.DesiredPower[/code]).
 			</description>
 		</method>
 		<method name="get_desired_velocity" qualifiers="const">
 			<return type="float" />
 			<description>
+				The speed the speed control holds [km/h] ([code]SpeedCtrlUnit.DesiredVelocity[/code]).
 			</description>
 		</method>
 		<method name="get_selected_velocity" qualifiers="const">
 			<return type="float" />
 			<description>
+				The speed selected on the speed control [km/h] ([code]SpeedCtrlValue[/code]).
 			</description>
 		</method>
 		<method name="get_set_velocity" qualifiers="const">
 			<return type="float" />
 			<description>
+				The speed set by an impulse lever, in tens ([code]NewSpeed[/code]).
 			</description>
 		</method>
 		<method name="get_standby" qualifiers="const">
 			<return type="bool" />
 			<description>
+				The speed control is on but waiting, holding no power ([code]SpeedCtrlUnit.Standby[/code]).
 			</description>
 		</method>
 		<method name="speed_control_button">
 			<return type="void" />
 			<param index="0" name="button" type="int" />
 			<description>
+				One of the speed buttons pressed: its speed selected ([code]SpeedCtrlButton()[/code]; [code]OnCommand_speedcontrol*[/code], [code]Train.cpp:6887-6974[/code]).
 			</description>
 		</method>
 		<method name="speed_control_decrease">
 			<return type="void" />
 			<description>
+				The selected speed one step lower ([code]SpeedCtrlDec()[/code]).
 			</description>
 		</method>
 		<method name="speed_control_increase">
 			<return type="void" />
 			<description>
+				The selected speed one step higher ([code]SpeedCtrlInc()[/code]).
 			</description>
 		</method>
 		<method name="speed_control_power_decrease">
 			<return type="void" />
 			<description>
+				The power the speed control is allowed one step lower ([code]SpeedCtrlPowerDec()[/code]).
 			</description>
 		</method>
 		<method name="speed_control_power_increase">
 			<return type="void" />
 			<description>
+				The power the speed control is allowed one step higher ([code]SpeedCtrlPowerInc()[/code]).
 			</description>
 		</method>
 		<method name="speed_control_set">
 			<return type="void" />
 			<param index="0" name="velocity" type="float" />
 			<description>
+				The speed set outright [km/h], as a driver's order ([code]RunCommand("SpeedCntrl")[/code], [code]Mover.cpp:12695[/code]).
 			</description>
 		</method>
 	</methods>

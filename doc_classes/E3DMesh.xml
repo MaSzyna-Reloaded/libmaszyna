@@ -9,7 +9,7 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="surface" type="Dictionary" setter="set_surface" getter="get_surface" default="{}">
+		<member name="surface" type="Dictionary" setter="set_surface" getter="get_surface" default="{ &quot;indices&quot;: PackedInt32Array(), &quot;normals&quot;: PackedFloat32Array(), &quot;tangents&quot;: PackedFloat32Array(), &quot;uvs&quot;: PackedFloat32Array(), &quot;vertices&quot;: PackedFloat32Array() }">
 			The surface's arrays: [code]vertices[/code], [code]normals[/code], [code]tangents[/code] (optional) and [code]uvs[/code] as [PackedFloat32Array], [code]indices[/code] as [PackedInt32Array] of clockwise triangles. Setting it makes the [RenderingServer] mesh of them on the calling thread.
 		</member>
 	</members>

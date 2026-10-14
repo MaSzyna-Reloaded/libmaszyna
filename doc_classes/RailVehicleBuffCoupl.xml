@@ -13,6 +13,7 @@
 			<return type="float" />
 			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
 			<description>
+				The coupler's strength at [param end] [lb]N[rb], as the simulation made it of the configuration ([code]FmaxC[/code]).
 			</description>
 		</method>
 	</methods>
@@ -24,6 +25,7 @@
 			Bitmask defining which connections are established automatically during coupling.
 		</member>
 		<member name="buffer_location" type="int" setter="set_buffer_location" getter="get_buffer_location" enum="RailVehicleBuffCoupl.BufferLocation" default="0">
+			Which end this buffers and coupler section describes - the front, the rear or both.
 		</member>
 		<member name="buffer_max_compression_tolerance" type="float" setter="set_buffer_max_compression_tolerance" getter="get_buffer_max_compression_tolerance" default="0.1">
 			Maximum allowed compression distance for the buffer (in meters).
@@ -76,10 +78,13 @@
 			Articulated connection (permanent or semi-permanent).
 		</constant>
 		<constant name="BUFFER_LOCATION_FRONT" value="0" enum="BufferLocation">
+			The front end.
 		</constant>
 		<constant name="BUFFER_LOCATION_BACK" value="1" enum="BufferLocation">
+			The rear end.
 		</constant>
 		<constant name="BUFFER_LOCATION_BOTH" value="2" enum="BufferLocation">
+			Both ends.
 		</constant>
 	</constants>
 </class>

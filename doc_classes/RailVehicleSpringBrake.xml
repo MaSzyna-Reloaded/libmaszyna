@@ -14,26 +14,31 @@
 		<method name="get_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the spring brake is switched on ([code]SpringBrake.Activate[/code]).
 			</description>
 		</method>
 		<method name="get_braking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the spring actually brakes, from the cylinder pressure ([code]SpringBrake.IsActive[/code]).
 			</description>
 		</method>
 		<method name="get_cylinder_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The spring brake cylinder's pressure ([code]SpringBrake.SBP[/code]).
 			</description>
 		</method>
 		<method name="get_ready" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the spring brake is ready to brake - the cylinder armed, the spring tensioned ([code]SpringBrake.IsReady[/code]).
 			</description>
 		</method>
 		<method name="get_shut_off" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the spring brake is shut off ([code]SpringBrake.ShuttOff[/code]).
 			</description>
 		</method>
 		<method name="set_spring_brake_active">

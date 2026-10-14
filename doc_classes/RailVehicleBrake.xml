@@ -16,18 +16,21 @@
 			<return type="void" />
 			<param index="0" name="pulled" type="bool" />
 			<description>
+				The passengers' alarm chain pulled or let go ([code]AlarmChainSwitch()[/code], [code]Train.cpp:1839-1872[/code]).
 			</description>
 		</method>
 		<method name="auto_rewident">
 			<return type="void" />
 			<param index="0" name="brake_delay" type="int" />
 			<description>
+				Sets the brake delay to [param brake_delay] (a [enum BrakeDelaySetting]), releases the hand brake and the spring brake - what the original's driver does to the cars of a trainset it takes ([code]AutoRewident()[/code], [code]Driver.cpp:2154-2165[/code]).
 			</description>
 		</method>
 		<method name="brake_level_charging">
 			<return type="void" />
 			<param index="0" name="active" type="bool" />
 			<description>
+				The train brake handle held at the filling position while [param active]; let go, a self-returning handle (FVel6, MHZ_EN57, MHZ_K8P) goes back to drive.
 			</description>
 		</method>
 		<method name="brake_level_decrease">
@@ -62,11 +65,13 @@
 		<method name="brake_operation_mode_decrease">
 			<return type="void" />
 			<description>
+				The previous operation mode the brake has ([code]BrakeOpModeFlag[/code]; [code]OnCommand_trainbrakeoperationmodedecrease[/code], [code]Train.cpp:2445-2478[/code]).
 			</description>
 		</method>
 		<method name="brake_operation_mode_increase">
 			<return type="void" />
 			<description>
+				The next operation mode the brake has ([code]BrakeOpModeFlag[/code]; [code]OnCommand_trainbrakeoperationmodeincrease[/code], [code]Train.cpp:2445-2478[/code]).
 			</description>
 		</method>
 		<method name="brake_releaser">
@@ -95,76 +100,91 @@
 			<return type="bool" />
 			<param index="0" name="applied" type="bool" />
 			<description>
+				The electro-pneumatic brake applied or released ([code]SwitchEPBrake()[/code], [code]Mover.cpp:4153[/code]); [code]true[/code] when it changed.
 			</description>
 		</method>
 		<method name="get_air_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The brake cylinders' pressure [lb]MPa[rb] ([code]BrakePress[/code]).
 			</description>
 		</method>
 		<method name="get_alarm_chain_pulled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the alarm chain is pulled ([code]AlarmChainFlag[/code]).
 			</description>
 		</method>
 		<method name="get_compressor_allowed" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the compressor's switch is on ([code]CompressorAllow[/code]).
 			</description>
 		</method>
 		<method name="get_compressor_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the compressor runs ([code]CompressorFlag[/code]).
 			</description>
 		</method>
 		<method name="get_compressor_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The main reservoir's pressure [lb]MPa[rb] ([code]Compressor[/code]).
 			</description>
 		</method>
 		<method name="get_control_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The control reservoir of the independent brake valve [lb]MPa[rb] ([code]LocHandle-&gt;GetCP()[/code]).
 			</description>
 		</method>
 		<method name="get_control_reservoir_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The distributor's control reservoir [lb]MPa[rb] ([code]GetCRP()[/code]).
 			</description>
 		</method>
 		<method name="get_controller_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				Where the train brake handle stands, in the handle's own units ([code]fBrakeCtrlPos[/code]).
 			</description>
 		</method>
 		<method name="get_controller_position_normalized" qualifiers="const">
 			<return type="float" />
 			<description>
+				Where the train brake handle stands, 0 at its minimum and 1 at its maximum ([constant HANDLE_POSITION_MIN], [constant HANDLE_POSITION_MAX]).
 			</description>
 		</method>
 		<method name="get_delay_setting" qualifiers="const">
 			<return type="int" />
 			<description>
+				The delay setting in use, a [enum BrakeDelaySetting] ([code]BrakeDelayFlag[/code]).
 			</description>
 		</method>
 		<method name="get_edb_cylinder_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The cylinders' pressure the electrodynamic brake works against [lb]MPa[rb] ([code]Hamulec-&gt;GetEDBCP()[/code]).
 			</description>
 		</method>
 		<method name="get_emergency_valve_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow out of the emergency valve ([code]EmergencyValveFlow[/code]) - what its hiss follows.
 			</description>
 		</method>
 		<method name="get_feed_pipe_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The feed (main reservoir) pipe's pressure [lb]MPa[rb] ([code]ScndPipePress[/code]).
 			</description>
 		</method>
 		<method name="get_force" qualifiers="const">
 			<return type="float" />
 			<description>
+				The braking force of the vehicle [lb]kN[rb] ([code]Fb[/code]).
 			</description>
 		</method>
 		<method name="get_force_at" qualifiers="const">
@@ -172,163 +192,195 @@
 			<param index="0" name="ratio" type="float" />
 			<param index="1" name="velocity" type="float" />
 			<description>
+				The force the vehicle's brake would give [lb]N[rb] at [param ratio] of its full pressure and [param velocity] [km/h] ([code]BrakeForceR()[/code], [code]Mover.cpp:4606[/code]) - what a driver works out its braking from ([code]TController::CheckVehicles()[/code], [code]Driver.cpp:2286-2291[/code]).
 			</description>
 		</method>
 		<method name="get_force_ratio" qualifiers="const">
 			<return type="float" />
 			<description>
+				How much of its maximum force one brake block is making, 0-1.
 			</description>
 		</method>
 		<method name="get_handle_braking_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow of the driver's brake valve while it brakes, for its hiss ([code]Handle-&gt;GetSound()[/code], [code]hamulce.h:77-81[/code]).
 			</description>
 		</method>
 		<method name="get_handle_control_chamber_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The control chamber's wave outflow of the driver's brake valve, for its hiss.
 			</description>
 		</method>
 		<method name="get_handle_control_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The control reservoir of the driver's brake valve [lb]MPa[rb] ([code]Handle-&gt;GetCP()[/code], [code]Train.cpp:8908[/code]).
 			</description>
 		</method>
 		<method name="get_handle_emergency_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow of the driver's brake valve in emergency, for its hiss.
 			</description>
 		</method>
 		<method name="get_handle_ep_time_controlled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the EP brake is applied by how long the handle is held ([code]TDriverHandle::TimeEP[/code]).
 			</description>
 		</method>
 		<method name="get_handle_position" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="position" type="int" enum="RailVehicleBrake.HandlePosition" />
 			<description>
+				Where the named [param position] of the train brake handle stands, in the handle's own units - it depends on the handle's type ([code]TDriverHandle::GetPos()[/code]).
 			</description>
 		</method>
 		<method name="get_handle_release_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow of the driver's brake valve while it releases, for its hiss.
 			</description>
 		</method>
 		<method name="get_handle_time_controlled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the handle sets the pipe pressure by how long it is held, not by where it stands ([code]TDriverHandle::Time[/code]).
 			</description>
 		</method>
 		<method name="get_handle_timing_reservoir_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The timing reservoir's outflow of the driver's brake valve, for its hiss.
 			</description>
 		</method>
 		<method name="get_local_aeim_position" qualifiers="const">
 			<return type="float" />
 			<description>
+				The independent brake's EP position an asynchronous EMU sets ([code]LocalBrakePosAEIM[/code]).
 			</description>
 		</method>
 		<method name="get_local_position_normalized" qualifiers="const">
 			<return type="float" />
 			<description>
+				Where the independent brake handle stands, 0-1 ([code]LocalBrakePosA[/code]).
 			</description>
 		</method>
 		<method name="get_local_valve_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow through the independent brake valve ([code]dpLocalValve[/code]).
 			</description>
 		</method>
 		<method name="get_loco_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The independent (locomotive) brake's pressure [lb]MPa[rb] ([code]LocBrakePress[/code]).
 			</description>
 		</method>
 		<method name="get_main_pipe_locked" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the main pipe is cut off from the brake valve ([code]LockPipe[/code], the [code]i-mainpipelock[/code] lamp, [code]Train.cpp:11758[/code]).
 			</description>
 		</method>
 		<method name="get_main_valve_flow" qualifiers="const">
 			<return type="float" />
 			<description>
+				The flow through the driver's brake valve into or out of the pipe ([code]dpMainValve[/code]).
 			</description>
 		</method>
 		<method name="get_manual_position" qualifiers="const">
 			<return type="int" />
 			<description>
+				The hand brake's position ([code]ManualBrakePos[/code]).
 			</description>
 		</method>
 		<method name="get_operation_mode" qualifiers="const">
 			<return type="int" />
 			<description>
+				The operation mode the brake is set to, one bit of [member cntrl_brake_op_modes] ([code]BrakeOpModeFlag[/code]).
 			</description>
 		</method>
 		<method name="get_pipe_brake_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The pressure the brake pipe brakes the vehicle by [lb]MPa[rb] ([code]PipeBrakePress[/code]).
 			</description>
 		</method>
 		<method name="get_pipe_pressure" qualifiers="const">
 			<return type="float" />
 			<description>
+				The brake pipe's pressure [lb]MPa[rb] ([code]PipePress[/code]).
 			</description>
 		</method>
 		<method name="get_releaser_active" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the distributor's releaser is on ([code]Hamulec-&gt;Releaser()[/code]).
 			</description>
 		</method>
 		<method name="get_tank_volume" qualifiers="const">
 			<return type="float" />
 			<description>
+				The air in the brake's reservoir ([code]Volume[/code]).
 			</description>
 		</method>
 		<method name="get_unit_force" qualifiers="const">
 			<return type="float" />
 			<description>
+				The force of one brake block ([code]UnitBrakeForce[/code]).
 			</description>
 		</method>
 		<method name="is_braking" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cylinder is filling ([code]b_on[/code], [code]GetBrakeStatus()[/code], [code]hamulce.h:55-64[/code]).
 			</description>
 		</method>
 		<method name="is_cut_off" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the brake is cut off from the train brake ([code]b_dmg[/code]).
 			</description>
 		</method>
 		<method name="is_holding" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the cylinder holds its pressure ([code]b_hld[/code]).
 			</description>
 		</method>
 		<method name="local_brake_decrease">
 			<return type="void" />
 			<description>
+				The independent brake handle one notch back ([code]DecLocalBrakeLevel()[/code]); nothing where the local brake is the hand wheel ([code]Train.cpp:1724[/code]).
 			</description>
 		</method>
 		<method name="local_brake_increase">
 			<return type="void" />
 			<description>
+				The independent brake handle one notch on ([code]IncLocalBrakeLevel()[/code]); nothing where the local brake is the hand wheel ([code]Train.cpp:1724[/code]).
 			</description>
 		</method>
 		<method name="local_brake_set">
 			<return type="void" />
 			<param index="0" name="level" type="float" />
 			<description>
+				The independent brake handle at [param level], 0-1 ([code]LocalBrakePosA[/code]); nothing where the local brake is the hand wheel.
 			</description>
 		</method>
 		<method name="manual_brake_decrease">
 			<return type="void" />
 			<description>
+				The hand brake one position back ([code]DecManualBrakeLevel()[/code]).
 			</description>
 		</method>
 		<method name="manual_brake_increase">
 			<return type="void" />
 			<description>
+				The hand brake one position on ([code]IncManualBrakeLevel()[/code]), on a vehicle that has one.
 			</description>
 		</method>
 		<method name="universal_brake_button">
@@ -336,6 +388,7 @@
 			<param index="0" name="button" type="int" />
 			<param index="1" name="pressed" type="bool" />
 			<description>
+				One of the vehicle's universal brake buttons ([code]UBB1..3[/code] in the FIZ, [param button] 0-based) pressed or let go ([code]UniversalBrakeButton()[/code]).
 			</description>
 		</method>
 	</methods>
@@ -501,6 +554,7 @@
 			Main line blocking pressure
 		</member>
 		<member name="main_pipe_emergency_cuts_off_handle" type="bool" setter="set_main_pipe_emergency_cuts_off_handle" getter="get_main_pipe_emergency_cuts_off_handle" default="false">
+			An emergency valve venting the pipe cuts the driver's brake valve off it ([code]EmergencyCutsOffHandle[/code], [code]Mover.cpp:4033[/code]).
 		</member>
 		<member name="main_pipe_minimum_unblocking_handle_position" type="float" setter="set_main_pipe_minimum_unblocking_handle_position" getter="get_main_pipe_minimum_unblocking_handle_position" default="-3.0">
 			Minimum brake handle position in order to unblock the main pipe
@@ -573,6 +627,7 @@
 	<signals>
 		<signal name="accelerator_activated">
 			<description>
+				The distributor's accelerator fired ([code]sf_Acc[/code], [code]hamulce.cpp:555[/code]) - an event, once.
 			</description>
 		</signal>
 	</signals>
@@ -707,33 +762,46 @@
 			"G", "P", "R" and "Mg" delay settings.
 		</constant>
 		<constant name="HANDLE_POSITION_MIN" value="0" enum="HandlePosition">
+			The handle's lowest position ([code]bh_MIN[/code], [code]hamulce.h:111-121[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_MAX" value="1" enum="HandlePosition">
+			The handle's highest position ([code]bh_MAX[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_FILLING" value="2" enum="HandlePosition">
+			Filling - the pipe charged above its working pressure ([code]bh_FS[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_DRIVE" value="3" enum="HandlePosition">
+			Drive - the pipe at its working pressure ([code]bh_RP[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_CUTOFF" value="4" enum="HandlePosition">
+			Cut-off - the valve closed, the pipe held ([code]bh_NP[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_FIRST_STEP" value="5" enum="HandlePosition">
+			The first braking step ([code]bh_MB[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_FULL" value="6" enum="HandlePosition">
+			Full service braking ([code]bh_FB[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_EMERGENCY" value="7" enum="HandlePosition">
+			Emergency braking ([code]bh_EB[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_EP_RELEASE" value="8" enum="HandlePosition">
+			The EP brake released ([code]bh_EPR[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_EP_HOLD" value="9" enum="HandlePosition">
+			The EP brake held ([code]bh_EPN[/code]).
 		</constant>
 		<constant name="HANDLE_POSITION_EP_BRAKE" value="10" enum="HandlePosition">
+			The EP brake applied ([code]bh_EPB[/code]).
 		</constant>
 		<constant name="BRAKE_OP_MODE_NONE" value="0" enum="BrakeOperationMode">
+			The FIZ names no operation modes ([code]Mover.cpp:10743-10746[/code]).
 		</constant>
 		<constant name="BRAKE_OP_MODE_PN" value="3" enum="BrakeOperationMode">
 			Pneumatic control and leak test only.
 		</constant>
 		<constant name="BRAKE_OP_MODE_PNEP" value="7" enum="BrakeOperationMode">
+			The PS, PN and EP modes ([code]bom_PS | bom_PN | bom_EP[/code], [code]MOVER.h:328-330[/code]).
 		</constant>
 		<constant name="BRAKE_OP_MODE_PNEPMED" value="15" enum="BrakeOperationMode">
 			Pneumatic, electro-pneumatic, electro-dynamic control and leak test.

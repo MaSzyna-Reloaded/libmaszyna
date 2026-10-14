@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="DriverImplementation" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
+		The behaviour of a [DriverServer] driver.
 	</brief_description>
 	<description>
+		What a driver makes of the orders it gets, and how it drives. A driver is always the same object of the system; what differs between the original's AI driver and any other is its implementation. Implement it in C++ by overriding the virtual methods, or in GDScript by overriding their script counterparts.
+		Every callback carries the driver: a [Resource] is shared, so one implementation serves several drivers and keeps what it needs per driver RID. An implementation drives the vehicle only the way a player does, through the cab.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -11,18 +14,21 @@
 			<return type="void" />
 			<param index="0" name="driver" type="RID" />
 			<description>
+				[param driver] drives its vehicle again - it sits at the controls ([VehicleServer]'s driver's role) after a player left them; the vehicle is as the player left it.
 			</description>
 		</method>
 		<method name="_driver_attached" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="driver" type="RID" />
 			<description>
+				[param driver] thinks with this implementation from now on.
 			</description>
 		</method>
 		<method name="_driver_detached" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="driver" type="RID" />
 			<description>
+				[param driver] no longer thinks with this implementation - it was given another, or the person was freed.
 			</description>
 		</method>
 		<method name="_get_seconds_until_departure" qualifiers="virtual const">
@@ -55,12 +61,14 @@
 			<param index="3" name="value2" type="float" />
 			<param index="4" name="position" type="Vector3" />
 			<description>
+				An order for [param driver]: a scenario's [param command] with its two values, and the [param position] of what sent it.
 			</description>
 		</method>
 		<method name="_update" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="driver" type="RID" />
 			<description>
+				The time [param driver] asked for has come ([method DriverServer.driver_schedule_update]).
 			</description>
 		</method>
 	</methods>

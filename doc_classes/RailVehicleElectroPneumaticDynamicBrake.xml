@@ -12,26 +12,31 @@
 		<method name="get_ed_braking_ep_delay" qualifiers="const">
 			<return type="float" />
 			<description>
+				How long the EP brake waits before it joins electrodynamic braking [s] ([code]DCEMUED_EP_delay[/code]).
 			</description>
 		</method>
 		<method name="get_ep_force" qualifiers="const">
 			<return type="float" />
 			<description>
+				The EP brake's force ([code]EpForce[/code]).
 			</description>
 		</method>
 		<method name="get_ep_fuse" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Whether the EP brake's fuse is on ([code]EpFuse[/code]).
 			</description>
 		</method>
 		<method name="get_ep_max_brake_engagement_speed" qualifiers="const">
 			<return type="float" />
 			<description>
+				The speed above which the EP brake stays off while the electrodynamic brake works [km/h] ([code]DCEMUED_EP_max_Vel[/code], [code]Mover.cpp:4215[/code]).
 			</description>
 		</method>
 		<method name="get_ep_min_regenerative_braking" qualifiers="const">
 			<return type="float" />
 			<description>
+				The motor current above which the EP brake stays off while the electrodynamic brake works [lb]A[rb] ([code]DCEMUED_EP_min_Im[/code], [code]Mover.cpp:4217[/code]).
 			</description>
 		</method>
 		<method name="set_ep_brake_force">
@@ -96,10 +101,13 @@
 	</members>
 	<constants>
 		<constant name="NONE" value="0" enum="CouplerCheck">
+			The electrodynamic brake of no neighbour is checked ([code]DCEMUED_CC[/code]).
 		</constant>
 		<constant name="FRONT" value="1" enum="CouplerCheck">
+			The electrodynamic brake of the neighbour at the front coupler is checked, over the control line ([code]Mover.cpp:1544[/code]).
 		</constant>
 		<constant name="BACK" value="2" enum="CouplerCheck">
+			The electrodynamic brake of the neighbour at the rear coupler is checked, over the control line ([code]Mover.cpp:1547[/code]).
 		</constant>
 	</constants>
 </class>

@@ -13,21 +13,25 @@
 		<method name="get_field_current" qualifiers="const">
 			<return type="float" />
 			<description>
+				The motors' field current [lb]A[rb] ([code]eimv[eimv_If][/code]).
 			</description>
 		</method>
 		<method name="get_force_full" qualifiers="const">
 			<return type="float" />
 			<description>
+				The full force at the current speed [lb]kN[rb] ([code]eimv[eimv_Fful][/code]).
 			</description>
 		</method>
 		<method name="get_force_max" qualifiers="const">
 			<return type="float" />
 			<description>
+				The force the motors are set to [lb]kN[rb], negative when braking ([code]eimv[eimv_Fmax][/code]).
 			</description>
 		</method>
 		<method name="get_motor_voltage" qualifiers="const">
 			<return type="float" />
 			<description>
+				The voltage the inverters feed the motors with [lb]V[rb] ([code]eimv[eimv_U][/code]).
 			</description>
 		</method>
 	</methods>
@@ -49,10 +53,13 @@
 			Ratio converting current to motor torque.
 		</member>
 		<member name="electrodynamic_brake_cylinder_ratio" type="float" setter="set_electrodynamic_brake_cylinder_ratio" getter="get_electrodynamic_brake_cylinder_ratio" default="0.0">
+			How much the electrodynamic brake does per the brake cylinders' pressure; 0 lets the pneumatic brake switch it off ([code]abed[/code], [code]eimc[eimc_p_abed][/code], [code]Mover.cpp:5700-5719[/code]).
 		</member>
 		<member name="electrodynamic_ep_ratio" type="float" setter="set_electrodynamic_ep_ratio" getter="get_electrodynamic_ep_ratio" default="1.5">
+			The FIZ [code]edep[/code] ([code]eimc[eimc_p_eped][/code]); 1.5, the original's default, when absent.
 		</member>
 		<member name="flat_force_characteristic" type="bool" setter="set_flat_force_characteristic" getter="get_flat_force_characteristic" default="false">
+			The force asked for is held flat over the speed, not as a share of the full force ([code]Flat[/code], [code]Mover.cpp:5737[/code]).
 		</member>
 		<member name="force_drop_rate" type="float" setter="set_force_drop_rate" getter="get_force_drop_rate" default="0.0">
 			[code]Engine:a1[/code]
@@ -63,6 +70,7 @@
 			Initial (starting) traction force, in kN.
 		</member>
 		<member name="inverter_control_coupler_flag" type="int" setter="set_inverter_control_coupler_flag" getter="get_inverter_control_coupler_flag" default="4">
+			The coupling ([enum RailVehicleController.CouplingFlags]) a vehicle needs to control the inverters of another ([code]InvCtrCplFlag[/code]); 4, the control line, when absent.
 		</member>
 		<member name="inverter_uf_setpoint" type="float" setter="set_inverter_uf_setpoint" getter="get_inverter_uf_setpoint" default="0.0">
 			[code]Engine:fcfu[/code]
@@ -77,6 +85,7 @@
 			Voltage drop across the inverter.
 		</member>
 		<member name="logarithmic_force_control" type="bool" setter="set_logarithmic_force_control" getter="get_logarithmic_force_control" default="false">
+			The controller sets the force on a logarithmic scale ([code]eimclf[/code], [code]EIMCLogForce[/code]).
 		</member>
 		<member name="max_braking_force" type="float" setter="set_max_braking_force" getter="get_max_braking_force" default="0.0">
 			[code]Engine:Fh[/code]
@@ -121,6 +130,7 @@
 			Nominal U/f ratio of the motor.
 		</member>
 		<member name="nominal_voltage" type="float" setter="set_nominal_voltage" getter="get_nominal_voltage" default="0.0">
+			The engine's nominal voltage [lb]V[rb] ([code]Volt[/code]).
 		</member>
 		<member name="pole_pairs" type="float" setter="set_pole_pairs" getter="get_pole_pairs" default="0.0">
 			[code]Engine:p[/code]
@@ -131,6 +141,7 @@
 			Ratio of motor current to the difference between field and motor speed.
 		</member>
 		<member name="wwlist" type="RailVehicleWWListItem[]" setter="set_wwlist" getter="get_wwlist" default="[]">
+			The engine's table by position ([code]WWList[/code]); its speed and power fill the simulation's [code]DElist[/code], which the inverters' frequency is computed from ([code]Mover.cpp:5895-5908[/code]).
 		</member>
 	</members>
 </class>

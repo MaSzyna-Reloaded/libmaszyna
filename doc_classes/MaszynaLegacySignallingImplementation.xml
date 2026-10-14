@@ -4,6 +4,7 @@
 		The original engine's signal heads: shows the aspect a scenery [code]lights[/code] event stands for.
 	</brief_description>
 	<description>
+		The original's signal heads: there is no state machine, the scenery's own events drive the lights (a [code]lights[/code] event calls [code]TAnimModel::LightSet()[/code], [code]Event.cpp:1741-1803[/code]). Each such event is an aspect of the signal head's kind ([MaszynaLegacySignalHeadKindFactory]); this implementation shows it on the [code]lights[/code] event, [code]{"signal_head": RID, "aspect": StringName}[/code]. It keeps no state, the aspect is the server's.
 	</description>
 	<tutorials>
 	</tutorials>
