@@ -150,7 +150,7 @@ static func _static_init() -> void:
         # sSmallCompressor runs while PantCompFlag is set (DynObj.cpp:4506)
         "small-compressor": {
             "event_name": &"small_compressor",
-            "state_property": "current_collector/pantograph_compressor_enabled",
+            "state_property": "current_collector_pantograph_compressor_enabled",
             "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
         },
         # A pantograph touching the wire and dropping (DynObj.cpp:3881-3934, 4007-4036),

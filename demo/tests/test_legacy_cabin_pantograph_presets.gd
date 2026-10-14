@@ -10,8 +10,8 @@ extends MaszynaGutTest
 const EP07_PATH:String = "res://tests/fixtures/dynamic/pkp/303e_v1/303e-ep-tv-pantselect.fiz"
 ## The same EP07 with no Switches: section
 const EP07_WITHOUT_SWITCHES_PATH:String = "res://tests/fixtures/dynamic/pkp/303e_v1/303e-ep-tv.fiz"
-const FIRST_VALVE:String = "current_collector/pantograph_first_valve_enabled"
-const SECOND_VALVE:String = "current_collector/pantograph_second_valve_enabled"
+const FIRST_VALVE:String = "current_collector_pantograph_first_valve_enabled"
+const SECOND_VALVE:String = "current_collector_pantograph_second_valve_enabled"
 ## pantvalves_sw: down, at rest, up (Train.cpp:3575, 3587, 3610)
 const LEVER_OFF:int = 0
 const LEVER_REST:int = 1

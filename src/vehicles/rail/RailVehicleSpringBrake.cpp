@@ -18,9 +18,9 @@ namespace godot {
         BIND_PROPERTY(RailVehicleSpringBrake, Variant::INT, required_coupler_connection_method)
 
         ClassDB::bind_method(
-                D_METHOD("set_spring_brake_active", "active"), &RailVehicleSpringBrake::set_spring_brake_active);
+                D_METHOD("spring_brake_activate", "active"), &RailVehicleSpringBrake::spring_brake_activate);
         ClassDB::bind_method(
-                D_METHOD("set_spring_brake_enabled", "enabled"), &RailVehicleSpringBrake::set_spring_brake_enabled);
+                D_METHOD("spring_brake_shut_off", "shut_off"), &RailVehicleSpringBrake::spring_brake_shut_off);
         ClassDB::bind_method(D_METHOD("spring_brake_release"), &RailVehicleSpringBrake::spring_brake_release);
 
         ClassDB::bind_method(D_METHOD("get_ready"), &RailVehicleSpringBrake::get_ready);
@@ -31,16 +31,14 @@ namespace godot {
     }
 
     void RailVehicleSpringBrake::_register_commands() {
-        register_command(
-                "set_spring_brake_active", callable_mp(this, &RailVehicleSpringBrake::set_spring_brake_active));
-        register_command(
-                "set_spring_brake_enabled", callable_mp(this, &RailVehicleSpringBrake::set_spring_brake_enabled));
+        register_command("spring_brake_activate", callable_mp(this, &RailVehicleSpringBrake::spring_brake_activate));
+        register_command("spring_brake_shut_off", callable_mp(this, &RailVehicleSpringBrake::spring_brake_shut_off));
         register_command("spring_brake_release", callable_mp(this, &RailVehicleSpringBrake::spring_brake_release));
     }
 
     void RailVehicleSpringBrake::_unregister_commands() {
-        unregister_command("set_spring_brake_active");
-        unregister_command("set_spring_brake_enabled");
+        unregister_command("spring_brake_activate");
+        unregister_command("spring_brake_shut_off");
         unregister_command("spring_brake_release");
     }
 } // namespace godot

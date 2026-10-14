@@ -138,11 +138,11 @@ namespace godot {
         if (get_mover() == nullptr) {
             return;
         }
-        p_state["speed_control/active"] = get_active();
-        p_state["speed_control/desired_velocity"] = get_desired_velocity();
-        p_state["speed_control/desired_power"] = get_desired_power();
-        p_state["speed_control/selected_velocity"] = get_selected_velocity();
-        p_state["speed_control/set_velocity"] = get_set_velocity();
-        p_state["speed_control/standby"] = get_standby();
+        p_state["speed_control_active"] = get_active();
+        p_state["speed_control_desired_velocity"] = get_desired_velocity();
+        p_state["speed_control_desired_power"] = get_desired_power();
+        p_state["speed_control_selected_velocity"] = get_selected_velocity();
+        p_state["speed_control_set_velocity"] = get_set_velocity();
+        p_state["speed_control_standby"] = get_standby();
     }
 } // namespace godot

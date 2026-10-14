@@ -57,11 +57,11 @@ func test_ep07_pantograph_draws_wire_voltage_from_td_scn() -> void:
     # the fixture's EP07 has no pantograph arms in its model: the raised pantograph samples the wire
     # where it stands, on the step after the command (RailVehicleServer, "a model without the arms")
     await wait_simulated_until(func() -> bool:
-            return controller.get_state().get("current_collector/pantograph_first_active", false) \
-                    and controller.get_state().get("current_collector/pantograph_first_voltage", 0.0) > MIN_WIRE_VOLTAGE,
+            return controller.get_state().get("current_collector_pantograph_first_active", false) \
+                    and controller.get_state().get("current_collector_pantograph_first_voltage", 0.0) > MIN_WIRE_VOLTAGE,
             TICK, "the pantograph at the wire")
-    var active:bool = controller.get_state().get("current_collector/pantograph_first_active", false)
-    var voltage:float = controller.get_state().get("current_collector/pantograph_first_voltage", 0.0)
+    var active:bool = controller.get_state().get("current_collector_pantograph_first_active", false)
+    var voltage:float = controller.get_state().get("current_collector_pantograph_first_voltage", 0.0)
 
     assert_true(active, "pantograph should report raised once battery+valves are on")
     assert_true(

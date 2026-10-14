@@ -39,35 +39,35 @@ text = "Front end"
 [node name="HeadlightUpper" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Upper headlight"
-state_property = "lights/front_headlight_upper_enabled"
+state_property = "lights_front_headlight_upper_enabled"
 command = "light"
 command_argument = "front_headlight_upper"
 
 [node name="HeadlightLeft" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Left headlight"
-state_property = "lights/front_headlight_left_enabled"
+state_property = "lights_front_headlight_left_enabled"
 command = "light"
 command_argument = "front_headlight_left"
 
 [node name="HeadlightRight" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Right headlight"
-state_property = "lights/front_headlight_right_enabled"
+state_property = "lights_front_headlight_right_enabled"
 command = "light"
 command_argument = "front_headlight_right"
 
 [node name="RedmarkerLeft" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Left red marker"
-state_property = "lights/front_redmarker_left_enabled"
+state_property = "lights_front_redmarker_left_enabled"
 command = "light"
 command_argument = "front_redmarker_left"
 
 [node name="RedmarkerRight" parent="EndLights/FrontLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Right red marker"
-state_property = "lights/front_redmarker_right_enabled"
+state_property = "lights_front_redmarker_right_enabled"
 command = "light"
 command_argument = "front_redmarker_right"
 
@@ -81,34 +81,34 @@ text = "Rear end"
 [node name="HeadlightUpper" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Upper headlight"
-state_property = "lights/rear_headlight_upper_enabled"
+state_property = "lights_rear_headlight_upper_enabled"
 command = "light"
 command_argument = "rear_headlight_upper"
 
 [node name="HeadlightLeft" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Left headlight"
-state_property = "lights/rear_headlight_left_enabled"
+state_property = "lights_rear_headlight_left_enabled"
 command = "light"
 command_argument = "rear_headlight_left"
 
 [node name="HeadlightRight" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Right headlight"
-state_property = "lights/rear_headlight_right_enabled"
+state_property = "lights_rear_headlight_right_enabled"
 command = "light"
 command_argument = "rear_headlight_right"
 
 [node name="RedmarkerLeft" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Left red marker"
-state_property = "lights/rear_redmarker_left_enabled"
+state_property = "lights_rear_redmarker_left_enabled"
 command = "light"
 command_argument = "rear_redmarker_left"
 
 [node name="RedmarkerRight" parent="EndLights/RearLights" instance=ExtResource("2_switch")]
 layout_mode = 2
 label = "Right red marker"
-state_property = "lights/rear_redmarker_right_enabled"
+state_property = "lights_rear_redmarker_right_enabled"
 command = "light"
 command_argument = "rear_redmarker_right"

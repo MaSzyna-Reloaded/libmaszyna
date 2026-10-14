@@ -262,44 +262,44 @@ namespace godot {
         }
         p_state["power_source"] = get_source_type();
         if (has_accumulator()) {
-            p_state["accumulator/recharge_source"] = get_accumulator_recharge_source();
+            p_state["accumulator_recharge_source"] = get_accumulator_recharge_source();
         }
-        p_state["current_collector/max_voltage"] = get_collector_max_voltage();
-        p_state["current_collector/max_current"] = get_collector_max_current();
-        p_state["current_collector/max_collector_lifting"] = get_collector_max_lifting();
-        p_state["current_collector/min_collector_lifting"] = get_collector_min_lifting();
-        p_state["current_collector/collector_sliding_width"] = get_collector_sliding_width();
-        p_state["current_collector/min_main_switch_voltage"] = get_collector_min_main_switch_voltage();
-        p_state["current_collector/min_pantograph_tank_pressure"] = get_collector_min_pantograph_tank_pressure();
-        p_state["current_collector/max_pantograph_tank_pressure"] = get_collector_max_pantograph_tank_pressure();
-        p_state["current_collector/pantograph_tank_pressure"] = get_collector_pantograph_tank_pressure();
-        p_state["current_collector/pantograph_pressure_switch_armed"] =
+        p_state["current_collector_max_voltage"] = get_collector_max_voltage();
+        p_state["current_collector_max_current"] = get_collector_max_current();
+        p_state["current_collector_max_collector_lifting"] = get_collector_max_lifting();
+        p_state["current_collector_min_collector_lifting"] = get_collector_min_lifting();
+        p_state["current_collector_collector_sliding_width"] = get_collector_sliding_width();
+        p_state["current_collector_min_main_switch_voltage"] = get_collector_min_main_switch_voltage();
+        p_state["current_collector_min_pantograph_tank_pressure"] = get_collector_min_pantograph_tank_pressure();
+        p_state["current_collector_max_pantograph_tank_pressure"] = get_collector_max_pantograph_tank_pressure();
+        p_state["current_collector_pantograph_tank_pressure"] = get_collector_pantograph_tank_pressure();
+        p_state["current_collector_pantograph_pressure_switch_armed"] =
                 get_collector_pantograph_pressure_switch_armed();
-        p_state["current_collector/pantograph_pressure_lock_active"] = get_collector_pantograph_pressure_lock_active();
-        p_state["current_collector/pantograph_compressor_valve"] = get_collector_pantograph_compressor_valve();
-        p_state["current_collector/pantograph_compressor_enabled"] = get_collector_pantograph_compressor_enabled();
-        p_state["current_collector/overvoltage_relay"] = get_collector_overvoltage_relay();
-        p_state["current_collector/required_main_switch_voltage"] = get_collector_required_main_switch_voltage();
-        p_state["current_collector/valve_active"] = get_collector_valve_active();
-        p_state["current_collector/valve_enabled"] = get_collector_valve_enabled();
-        p_state["current_collector/pantographs_dropped"] = get_collector_pantographs_dropped();
-        p_state["current_collector/pantograph_first_active"] = get_collector_pantograph_first_active();
-        p_state["current_collector/pantograph_first_valve_enabled"] = get_collector_pantograph_first_valve_enabled();
-        p_state["current_collector/pantograph_second_valve_enabled"] = get_collector_pantograph_second_valve_enabled();
+        p_state["current_collector_pantograph_pressure_lock_active"] = get_collector_pantograph_pressure_lock_active();
+        p_state["current_collector_pantograph_compressor_valve"] = get_collector_pantograph_compressor_valve();
+        p_state["current_collector_pantograph_compressor_enabled"] = get_collector_pantograph_compressor_enabled();
+        p_state["current_collector_overvoltage_relay"] = get_collector_overvoltage_relay();
+        p_state["current_collector_required_main_switch_voltage"] = get_collector_required_main_switch_voltage();
+        p_state["current_collector_valve_active"] = get_collector_valve_active();
+        p_state["current_collector_valve_enabled"] = get_collector_valve_enabled();
+        p_state["current_collector_pantographs_dropped"] = get_collector_pantographs_dropped();
+        p_state["current_collector_pantograph_first_active"] = get_collector_pantograph_first_active();
+        p_state["current_collector_pantograph_first_valve_enabled"] = get_collector_pantograph_first_valve_enabled();
+        p_state["current_collector_pantograph_second_valve_enabled"] = get_collector_pantograph_second_valve_enabled();
         p_state["pantograph_first_valve_active"] = get_collector_pantograph_first_valve_active();
         p_state["pantograph_second_valve_active"] = get_collector_pantograph_second_valve_active();
-        p_state["current_collector/pantograph_first_voltage"] = get_collector_pantograph_first_voltage();
-        p_state["current_collector/pantograph_second_active"] = get_collector_pantograph_second_active();
-        p_state["current_collector/pantograph_second_voltage"] = get_collector_pantograph_second_voltage();
-        p_state["current_collector/voltage"] = get_collector_voltage();
-        p_state["current_collector/trainset_high_voltage"] = get_collector_trainset_high_voltage();
+        p_state["current_collector_pantograph_first_voltage"] = get_collector_pantograph_first_voltage();
+        p_state["current_collector_pantograph_second_active"] = get_collector_pantograph_second_active();
+        p_state["current_collector_pantograph_second_voltage"] = get_collector_pantograph_second_voltage();
+        p_state["current_collector_voltage"] = get_collector_voltage();
+        p_state["current_collector_trainset_high_voltage"] = get_collector_trainset_high_voltage();
         // Train.cpp:810
         p_state["power_drawn"] = get_energy_drawn();
         p_state["power_returned"] = get_energy_returned();
-        p_state["transducer/input_voltage"] = get_transducer_input_voltage();
+        p_state["transducer_input_voltage"] = get_transducer_input_voltage();
         if (has_power_cable()) {
-            p_state["power_cable/source"] = get_power_cable_source();
-            p_state["power_cable/steam_pressure"] = get_power_cable_steam_pressure();
+            p_state["power_cable_source"] = get_power_cable_source();
+            p_state["power_cable_steam_pressure"] = get_power_cable_steam_pressure();
         }
     }
     void RailVehicleEnginePowerSource::set_current_collector_pantograph_type(const PantographType p_value) {

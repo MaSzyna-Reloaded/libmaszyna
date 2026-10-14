@@ -26,9 +26,9 @@ const SWITCHES:Dictionary[StringName, Array] = {
 ## pantograph -> its switch, its lowering button and its state keys
 const PANTOGRAPHS:Dictionary[RailVehicleEnginePowerSource.PantographSelector, Array] = {
     RailVehicleEnginePowerSource.PANTOGRAPH_FIRST: [&"pantfront_sw", &"pantfrontoff_sw",
-            "current_collector/pantograph_first_valve_enabled", "current_collector/pantograph_first_active"],
+            "current_collector_pantograph_first_valve_enabled", "current_collector_pantograph_first_active"],
     RailVehicleEnginePowerSource.PANTOGRAPH_SECOND: [&"pantrear_sw", &"pantrearoff_sw",
-            "current_collector/pantograph_second_valve_enabled", "current_collector/pantograph_second_active"],
+            "current_collector_pantograph_second_valve_enabled", "current_collector_pantograph_second_active"],
 }
 ## control -> whether the cab models it (m_controlmapper.contains)
 var _present:Dictionary[StringName, bool] = {}

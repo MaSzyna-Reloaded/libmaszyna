@@ -39,13 +39,6 @@
 				The motor current above which the EP brake stays off while the electrodynamic brake works [lb]A[rb] ([code]DCEMUED_EP_min_Im[/code], [code]Mover.cpp:4217[/code]).
 			</description>
 		</method>
-		<method name="set_ep_brake_force">
-			<return type="void" />
-			<param index="0" name="value" type="int" />
-			<description>
-				Sets Electro Pneumatic braking force to a desired level
-			</description>
-		</method>
 		<method name="switch_ep_fuse">
 			<return type="void" />
 			<param index="0" name="value" type="bool" />

@@ -108,7 +108,7 @@ func test_ep07_orientation_stays_stable_while_parked_and_while_driving() -> void
     # goes up (RailVehicleServer::vehicle_collect_current()), its tank spawned above MinPress
     # (303e-ep.fiz)
     if not await wait_simulated_until(
-            func() -> bool: return controller.get_state().get("current_collector/pantograph_first_voltage", 0.0) > 100.0,
+            func() -> bool: return controller.get_state().get("current_collector_pantograph_first_voltage", 0.0) > 100.0,
             TICK, "the wire's voltage at the first pantograph"):
         return
     controller.send_command("direction_increase")

@@ -26,10 +26,10 @@ func test_the_rear_cab_lights_its_own_end_switched_off():
     train.send_command("light_switch", "rearleft", true)
 
     var state:Dictionary = train.get_state()
-    assert_true(state["lights/rear_headlight_right_enabled"], "its own end's right lamp")
-    assert_false(state["lights/front_headlight_right_enabled"], "not the front end's")
-    assert_true(state["lights/front_headlight_left_enabled"], "the far end's left lamp")
-    assert_false(state["lights/rear_headlight_left_enabled"], "not its own end's")
+    assert_true(state["lights_rear_headlight_right_enabled"], "its own end's right lamp")
+    assert_false(state["lights_front_headlight_right_enabled"], "not the front end's")
+    assert_true(state["lights_front_headlight_left_enabled"], "the far end's left lamp")
+    assert_false(state["lights_rear_headlight_left_enabled"], "not its own end's")
 
 
 ## The headlights dimmer (dimheadlights_sw:, Train.cpp:6146-6195) is the vehicle's: it holds what it
