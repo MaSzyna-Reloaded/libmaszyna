@@ -146,10 +146,9 @@ shadow_enabled = true
 transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, -18.508982, 1.959, 168.0919)
 sfx_bank = ExtResource("player_sfx_bank")
 
-[node name="SceneryStreamer" type="Node" parent="." unique_id=197017765 node_paths=PackedStringArray("camera")]
+[node name="SceneryStreamer" type="Node" parent="." unique_id=197017765]
 script = ExtResource("scenery_streamer")
 active = true
-camera = NodePath("../Player/FreeCamera3D")
 
 [node name="ImpulsTrainset" type="Node3D" parent="." unique_id=1580396332]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)

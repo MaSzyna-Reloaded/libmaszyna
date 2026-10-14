@@ -21,6 +21,17 @@ var _previous_game_dir:String = ""
 var scenery:MaszynaSceneryNode
 
 
+## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
+## only now has its camera (MaszynaPlayer, initialization_ready)
+signal scenery_loaded(first_vehicle_id:String)
+
+## The player started outside, as after a scenery with no start vehicle: its camera is made only
+## then (MaszynaPlayer, initialization_ready)
+func _start_player(player:MaszynaPlayer) -> void:
+    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
+    scenery_loaded.emit("")
+
+
 func before_each():
     _previous_game_dir = UserSettings.get_maszyna_game_dir()
     UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
@@ -98,10 +109,11 @@ func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> v
         return
     var controller:VehicleController = rail_vehicle.get_controller()
     # the sound is built once a listener is near the vehicle - on foot the player listens through
-    # the free camera
+    # the free view
     var player:MaszynaPlayer = PLAYER_SCENE.instantiate()
     add_child_autofree(player)
-    player.free_camera.global_position = rail_vehicle.global_position
+    _start_player(player)
+    player.free_view.global_position = rail_vehicle.global_position
     # the vehicle's sound players are built under a node riding on it, of the system that built it -
     # the machine's work over a few frames once the listener is near; an array, as a lambda takes a
     # local by value

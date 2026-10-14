@@ -7,8 +7,9 @@ class_name MaszynaEditorViewportDrop
 ## stands where the point of the 3D view under the mouse lands (MaszynaEditorViewportPoint);
 ## released over the view, the drop is called with that point. Processes only while dragging.
 
-## The dragged thing is over the 3D view, above world_position - every frame it is
-signal dragged(world_position:Vector3)
+## The dragged thing is over the 3D view, above world_position, the mouse's ray from the view's
+## camera starting at ray_origin in ray_direction - every frame it is
+signal dragged(world_position:Vector3, ray_origin:Vector3, ray_direction:Vector3)
 ## The drag ended, dropped or not
 signal drag_stopped
 
@@ -53,7 +54,9 @@ func _process(_delta:float) -> void:
         _preview.visible = over_view
         _preview.global_position = world_position
     if over_view:
-        dragged.emit(world_position)
+        var camera:Camera3D = viewport.get_camera_3d()
+        dragged.emit(world_position, camera.project_ray_origin(mouse_position),
+                camera.project_ray_normal(mouse_position))
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
         return
     # dropped while whoever follows the drag still knows what it was over

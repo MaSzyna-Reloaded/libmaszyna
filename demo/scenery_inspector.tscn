@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libmaszyna/player/player.tscn" id="1_qu2xm"]
 [ext_resource type="Script" uid="uid://b1awg5iad35ss" path="res://addons/libmaszyna/legacy/scenery/maszyna_scenery.gd" id="1_y7igu"]
 [ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="5_7xkf5"]
-[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_camera.gd" id="5_qu2xm"]
+[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_look_view.gd" id="5_qu2xm"]
 [ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="streamer"]
 
 [node name="SceneryInspector" type="Node3D" unique_id=2049876890]
@@ -22,15 +22,18 @@ script = ExtResource("1_y7igu")
 filename = "td.scn"
 metadata/_custom_type_script = "uid://b1awg5iad35ss"
 
-[node name="FreeCamera3D" type="Camera3D" parent="." unique_id=456953431]
+[node name="FreeView" type="Node3D" parent="." unique_id=456953431]
 script = ExtResource("5_qu2xm")
 enabled = false
 metadata/_custom_type_script = "uid://cqet31gklr3sb"
 
+[node name="Camera3D" type="Camera3D" parent="FreeView"]
+fov = 45.0
+
 [node name="SceneryStreamer" type="Node" parent="." unique_id=771436232 node_paths=PackedStringArray("camera")]
 script = ExtResource("streamer")
 active = true
-camera = NodePath("../FreeCamera3D")
+camera = NodePath("../FreeView/Camera3D")
 
 [node name="eaos_vrz-99" type="RailVehicle3D" parent="." unique_id=2115983144]
 start_track_name = "start"
@@ -60,3 +63,5 @@ file_name = "182_pl7"
 skin = "182_115-6'17"
 
 [node name="SimulationRuntime" type="SimulationRuntime" parent="." unique_id=600815869]
+
+[connection signal="fov_changed" from="FreeView" to="FreeView/Camera3D" method="set_fov"]

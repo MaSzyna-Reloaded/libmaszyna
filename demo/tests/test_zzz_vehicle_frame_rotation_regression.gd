@@ -94,8 +94,8 @@ func test_cabin_camera_sits_in_exterior_cab_and_looks_forward() -> void:
     PlayerServer.player_take_over_vehicle(vehicle.get_rid())
     await wait_idle_frames(3)
 
-    var camera:FreeCamera3D = get_viewport().get_camera_3d() as FreeCamera3D
-    assert_true(camera.get_parent() is Cabin3D, "camera should have moved into the cabin")
+    var camera:FreeLookView = player.cabin_view
+    assert_true(camera.get_parent() is Cabin3D, "the cab view should have moved into the cabin")
     var camera_local:Vector3 = vehicle.to_local(camera.global_position)
     var exterior_cab_z:float = _exterior_cab_z()
     assert_true(
@@ -120,7 +120,7 @@ func test_ctrl_and_the_right_button_sit_the_driver_back_down() -> void:
     add_child(player)
     PlayerServer.player_take_over_vehicle(vehicle.get_rid())
     await wait_idle_frames(3)
-    var camera:FreeCamera3D = get_viewport().get_camera_3d() as FreeCamera3D
+    var camera:FreeLookView = player.cabin_view
     var seat:Transform3D = camera.global_transform
     camera.position += WALK_AWAY
     camera.rotate_y(TURN_AWAY)
