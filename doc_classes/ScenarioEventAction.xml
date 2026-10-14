@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenarioEventAction" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a [ScenarioEventServer] event does when it runs.
+	</brief_description>
+	<description>
+		The server knows only the queue, the time and the condition; the effect of an event (setting a memory, lighting a signal head, throwing a switch, queueing other events) is its action. Implement it in C++ by overriding the virtual methods, or in GDScript by overriding [method _run] and [method _run_else].
+		Every callback carries the event: a [Resource] is shared by default, so one action may serve several events. The activator is the [RailVehicleServer] vehicle that queued the event, empty when nothing did. An action changes state only through the servers' APIs.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_run" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" />
+			<description>
+				The event's condition passed, or it has none. [param event] is the event running, [param activator] the vehicle that queued it.
+			</description>
+		</method>
+		<method name="_run_else" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" />
+			<description>
+				The event's condition failed (the original's [code]else[/code], [code]Event.cpp:1266-1296[/code]).
+			</description>
+		</method>
+	</methods>
+</class>

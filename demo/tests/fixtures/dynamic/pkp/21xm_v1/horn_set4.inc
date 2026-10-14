@@ -1,0 +1,2 @@
+horn1: { soundbegin: 26284_sa133-012_horn_low-start.wav soundmain: 26284_sa133-012_horn_low-trwa.wav soundend: 26284_sa133-012_horn_low-stop.wav range: 1000 offset: [ (p1), 3.74 , (p2) ] }
+horn2: { soundbegin: 26284_sa133-012_horn_high-start.wav soundmain: 26284_sa133-012_horn_high-trwa.wav soundend: 26284_sa133-012_horn_high-stop.wav range: 1000 offset: [ (p3), 3.74, (p4) ] }

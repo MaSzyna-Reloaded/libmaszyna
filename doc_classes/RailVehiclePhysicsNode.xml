@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehiclePhysicsNode" inherits="VehiclePhysicsNode" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A rail vehicle's presence in the scene tree.
+	</brief_description>
+	<description>
+		A [VehiclePhysicsNode] whose vehicle is a rail one - placed on the route and stepped there ([RailVehicleServer]), with the type and the load the scenery gives it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="load_amount" type="float" setter="set_load_amount" getter="get_load_amount" default="0.0">
+			How much the vehicle carries when the scenery places it ([code]loadcount[/code]).
+		</member>
+		<member name="load_name" type="String" setter="set_load_name" getter="get_load_name" default="&quot;&quot;">
+			What the vehicle carries when the scenery places it ([code]loadtype[/code]).
+		</member>
+		<member name="type_name" type="String" setter="set_type_name" getter="get_type_name" default="&quot;&quot;">
+			The name of the vehicle's type - the original's CHK/MMD name [code]TMoverParameters[/code] keeps as [code]TypeName[/code] ([code]DynObj.cpp:2019[/code]).
+		</member>
+	</members>
+</class>

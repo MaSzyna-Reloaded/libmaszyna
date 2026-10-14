@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""Assemble the Jekyll site in docs/ into one Markdown book for pandoc (make docs-pdf).
+
+The book is the home page, the guides in the order of the site's menu (header_pages of
+docs/_config.yml) and the class reference last: <book dir>/api, generated there by
+scripts/make-api-docs, in the order of its index. What only Jekyll understands is turned into
+pandoc's own: the front matter becomes the chapter's heading, a kramdown `{: #id}` line the
+heading's id, a `{% ... %}` tag goes. Every id is prefixed with its page, so the pages' own
+anchors (`#member-position` is on dozens of classes) stay apart, and every link between pages
+points into the book. A mermaid block is written out as <book dir>/diagram-<n>.mmd and replaced
+by the picture mermaid-cli renders from it (diagram-<n>.png).
+
+Usage: scripts/make-docs-book <book dir>
+"""
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DOCS_DIR = ROOT / "docs"
+CONFIG = DOCS_DIR / "_config.yml"
+API_PAGE = "api/index.md"
+BOOK_FILE = "book.md"
+HOME_TITLE = "Introduction"
+API_TITLE = "API reference"
+# a class page is a section of the API reference chapter, one level below the guides' chapters
+API_CLASS_LEVEL = 2
+# A table row cannot break across pages: a longer cell (a default value spelled out in full) goes
+# under its member's heading, and the table points there
+MAX_TABLE_CELL_LENGTH = 300
+
+FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+FENCE = re.compile(r"^(```|~~~)")
+HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+ATTRIBUTES = re.compile(r"^\{:\s*(.*?)\}\s*$")
+ATTRIBUTE_ID = re.compile(r"#([\w-]+)")
+LINK = re.compile(r"(\]\()([^)\s]+)(\))")
+# kramdown's id on a span of text (a constant in a list): `NAME = 0`{: #constant-name}
+INLINE_ATTRIBUTES = re.compile(r"(`[^`]*`)\{:\s*#([\w-]+)\}")
+ROW_ANCHOR = re.compile(r"\]\(#([\w-]+)\)")
+
+
+def slug(text):
+    """The id kramdown gives a heading: lower case, punctuation gone, spaces as hyphens"""
+    text = re.sub(r"[^\w\s-]", "", text.replace("`", "")).strip().lower()
+    return re.sub(r"\s+", "-", text)
+
+
+class Page:
+    def __init__(self, path, book_id, title, level):
+        self.path = path
+        self.book_id = book_id
+        self.title = title
+        self.level = level
+        # the page's location as its links name it, relative to docs/ (or to the book's api/)
+        self.site_path = path.relative_to(path.parents[1] if path.parent.name == "api" else path.parent)
+
+
+def front_matter(text):
+    match = FRONT_MATTER.match(text)
+    if not match:
+        return {}, text
+    values = {}
+    for line in match.group(1).splitlines():
+        key, _, value = line.partition(":")
+        values[key.strip()] = value.strip().strip('"')
+    return values, text[match.end():]
+
+
+def menu_pages():
+    """header_pages of the site's menu, as listed"""
+    pages = []
+    listing = False
+    for line in CONFIG.read_text().splitlines():
+        if line.startswith("header_pages:"):
+            listing = True
+        elif listing and line.strip().startswith("- "):
+            pages.append(line.strip()[2:].strip())
+        elif listing and line.strip():
+            listing = False
+    return pages
+
+
+def api_class_names(index_text):
+    """The classes in the order of the reference's index, each once"""
+    names = []
+    for target in re.findall(r"\]\(([\w]+)\.html\)", index_text):
+        if target not in names:
+            names.append(target)
+    return names
+
+
+def link_target(page, target, pages_by_site_path):
+    """A link of the page, pointing into the book when it points to a page of it"""
+    if "://" in target or target.startswith("mailto:"):
+        return target
+    path, _, fragment = target.partition("#")
+    if not path:
+        return "#%s-%s" % (page.book_id, fragment)
+    resolved = (Path(page.site_path).parent / path).as_posix()
+    resolved = re.sub(r"\.(html|md)$", "", resolved).rstrip("/")
+    resolved = re.sub(r"^\./", "", resolved)
+    target_page = pages_by_site_path.get(resolved) or pages_by_site_path.get(resolved + "/index")
+    if not target_page:
+        return target
+    return "#%s-%s" % (target_page.book_id, fragment) if fragment else "#" + target_page.book_id
+
+
+def heading_levels(lines):
+    """The levels of the headings outside the code blocks"""
+    fence = None
+    for line in lines:
+        if fence:
+            fence = None if line.startswith(fence) else fence
+            continue
+        fence_match = FENCE.match(line)
+        if fence_match:
+            fence = fence_match.group(1)
+            continue
+        heading = HEADING.match(line)
+        if heading:
+            yield len(heading.group(1))
+
+
+def move_long_cells(lines):
+    """The table rows with their long cells replaced by a link to the member; returns the rows
+    and the moved values by the member's id"""
+    moved = {}
+    rows = []
+    for line in lines:
+        anchor = ROW_ANCHOR.search(line) if line.startswith("|") else None
+        if not anchor:
+            rows.append(line)
+            continue
+        cells = line.split(" | ")
+        for index, cell in enumerate(cells):
+            if len(cell) > MAX_TABLE_CELL_LENGTH:
+                moved[anchor.group(1)] = cell.strip(" |`")
+                cells[index] = "[below](#%s)" % anchor.group(1) + (" |" if cell.endswith("|") else "")
+        rows.append(" | ".join(cells))
+    return rows, moved
+
+
+def convert(page, text, pages_by_site_path, diagrams, book_dir):
+    lines, moved = move_long_cells(text.splitlines())
+    output = ["", "%s %s {#%s}" % ("#" * page.level, page.title, page.book_id), ""]
+    # the page's top headings go one level below its title
+    shift = page.level + 1 - min(heading_levels(lines), default=page.level + 1)
+    used_ids = set()
+    fence = None
+    diagram = None
+    for index, line in enumerate(lines):
+        if fence:
+            if line.startswith(fence):
+                fence = None
+                if diagram is not None:
+                    number = len(diagrams) + 1
+                    (book_dir / ("diagram-%d.mmd" % number)).write_text("\n".join(diagram) + "\n")
+                    diagrams.append(number)
+                    output.append("![](diagram-%d.png){width=100%%}" % number)
+                    diagram = None
+                    continue
+            if diagram is not None:
+                diagram.append(line)
+                continue
+            output.append(line)
+            continue
+        fence_match = FENCE.match(line)
+        if fence_match:
+            fence = fence_match.group(1)
+            if line.strip() == fence + "mermaid":
+                diagram = []
+                continue
+            output.append(line)
+            continue
+        attributes = ATTRIBUTES.match(line)
+        if attributes:
+            explicit = ATTRIBUTE_ID.search(attributes.group(1))
+            if explicit and explicit.group(1) in moved:
+                output.extend(["", "Default:", "", "```", moved[explicit.group(1)], "```", ""])
+            continue
+        if "{%" in line:
+            continue
+        heading = HEADING.match(line)
+        if heading:
+            following = lines[index + 1] if index + 1 < len(lines) else ""
+            attributes = ATTRIBUTES.match(following)
+            explicit = ATTRIBUTE_ID.search(attributes.group(1)) if attributes else None
+            base_id = explicit.group(1) if explicit else slug(heading.group(2))
+            heading_id = base_id
+            count = 0
+            while heading_id in used_ids:
+                count += 1
+                heading_id = "%s-%d" % (base_id, count)
+            used_ids.add(heading_id)
+            level = min(len(heading.group(1)) + shift, 6)
+            # an underscore is literal in kramdown's headings (_act(...)); in pandoc's it may open
+            # emphasis, which swallows the heading's id
+            text = heading.group(2).replace("_", "\\_")
+            line = "%s %s {#%s-%s}" % ("#" * level, text, page.book_id, heading_id)
+        # pandoc's empty span with an id is the anchor
+        line = INLINE_ATTRIBUTES.sub(lambda m: "[]{#%s-%s}%s" % (page.book_id, m.group(2), m.group(1)), line)
+        output.append(LINK.sub(lambda m: m.group(1) + link_target(page, m.group(2), pages_by_site_path) + m.group(3), line))
+    return "\n".join(output) + "\n"
+
+
+def main():
+    if not len(sys.argv) == 2:
+        sys.exit(__doc__)
+    book_dir = Path(sys.argv[1]).resolve()
+    api_dir = book_dir / "api"
+    pages = [Page(DOCS_DIR / "index.md", "introduction", HOME_TITLE, 1)]
+    for name in menu_pages():
+        if name == API_PAGE:
+            continue
+        values, _ = front_matter((DOCS_DIR / name).read_text())
+        pages.append(Page(DOCS_DIR / name, Path(name).stem, values.get("title", Path(name).stem), 1))
+    index_text = (api_dir / "index.md").read_text()
+    pages.append(Page(api_dir / "index.md", "api-index", API_TITLE, 1))
+    for name in api_class_names(index_text):
+        pages.append(Page(api_dir / (name + ".md"), "api-" + name.lower(), name, API_CLASS_LEVEL))
+    pages_by_site_path = {re.sub(r"\.md$", "", page.site_path.as_posix()): page for page in pages}
+
+    diagrams = []
+    book = []
+    for page in pages:
+        _, body = front_matter(page.path.read_text())
+        book.append(convert(page, body, pages_by_site_path, diagrams, book_dir))
+    (book_dir / BOOK_FILE).write_text("\n".join(book))
+    print("%s: %d pages, %d diagrams" % (book_dir / BOOK_FILE, len(pages), len(diagrams)))
+
+
+if __name__ == "__main__":
+    main()

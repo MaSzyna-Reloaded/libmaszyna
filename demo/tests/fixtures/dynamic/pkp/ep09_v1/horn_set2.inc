@@ -1,0 +1,2 @@
+horn1: { soundbegin: 20786_104e_v3_horn_1.wav soundmain: 20786_104e_v3_horn_2.wav soundend: 20786_104e_v3_horn_3.wav range: 1000 }
+horn2: { soundbegin: 20786_104e_v3_horn_4.wav soundmain: 20786_104e_v3_horn_5.wav soundend: 20786_104e_v3_horn_6.wav range: 1000 }

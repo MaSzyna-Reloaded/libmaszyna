@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/editor/scenery_toolbar/scenery_load_buttons.gd" id="1_buttons"]
+
+[node name="SceneryLoadButtons" type="HBoxContainer"]
+script = ExtResource("1_buttons")
+
+[node name="Load" type="Button" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Load"
+
+[node name="Clear" type="Button" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Clear"
+
+[connection signal="pressed" from="Load" to="." method="_on_load_pressed"]
+[connection signal="pressed" from="Clear" to="." method="_on_clear_pressed"]

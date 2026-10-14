@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenarioEventCondition" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Decides whether a [ScenarioEventServer] event runs and whether a launcher fires.
+	</brief_description>
+	<description>
+		Decides whether an event runs its action's [method ScenarioEventAction._run] or [method ScenarioEventAction._run_else], and whether a launcher fires. Implement it in C++ by overriding [code]test()[/code], or in GDScript by overriding [method _test]. A condition that implements neither passes.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_test" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" />
+			<description>
+				Whether the condition passes for [param event], about to run, and its [param activator].
+			</description>
+		</method>
+	</methods>
+</class>

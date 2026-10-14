@@ -1,96 +1,57 @@
 #ifndef MACROS_HPP
 #define MACROS_HPP
-#include "core/utils.hpp"
-
+#include "utils/utils.hpp"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <algorithm>
+#include <initializer_list>
+#include <utility>
+
 /**
- * Macro for generating private members with their setters and getters
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
+ * Builds a PROPERTY_HINT_ENUM hint string from real enum constants instead of hand-typed
+ * integer literals, so a property's inspector labels can never drift out of sync with the
+ * enum's actual (possibly non-sequential/bitflag) values.
+ * <example>
+ * enum_hint({{"Train", CATEGORY_TRAIN}, {"Road", CATEGORY_ROAD}, {"Ship", CATEGORY_SHIP}, {"Airplane",
+ * CATEGORY_AIRPLANE}})
+ * </example>
  */
-#define MAKE_MEMBER_GS(type, name, default_value)                                                                      \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
+inline godot::String enum_hint(std::initializer_list<std::pair<const char *, int64_t>> p_entries) {
+    godot::String result;
+    bool first = true;
+    for (const auto &entry: p_entries) {
+        if (!first) {
+            result += ",";
+        }
+        result += godot::String(entry.first) + ":" + godot::String::num_int64(entry.second);
+        first = false;
+    }
+    return result;
+}
+/**
+ * Getter and setter of a field declared by hand, the getter returning a const reference. Declares
+ * no field and changes no section: the field stands in private:, the macro where the accessors
+ * belong (public:).
+ * @param type Field type
+ * @param name Field name
+ */
+#define MAKE_GS(type, name)                                                                                            \
     const type &get_##name() const {                                                                                   \
         return name;                                                                                                   \
     }                                                                                                                  \
     void set_##name(const type &value) {                                                                               \
         name = value;                                                                                                  \
     }
-/**
- * Macro for generating private members with their setters and getters without any default value
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
- */
-#define MAKE_MEMBER_GS_NO_DEF(type, name)                                                                              \
-private:                                                                                                               \
-    type name;                                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    const type &get_##name() const {                                                                                   \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(const type &value) {                                                                               \
-        name = value;                                                                                                  \
-    }
 
 /**
- * Macro for generating private synchronized members with their setters and getters. Those members will ALWAYS be
- * synchronized with internal mover
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
+ * MAKE_GS with the getter returning a copy and the setter taking one - for the types cheap to copy
+ * or shared already (enums, TypedArray, Ref)
+ * @param type Field type
+ * @param name Field name
  */
-#define MAKE_MEMBER_GS_DIRTY(type, name, default_value)                                                                \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    const type &get_##name() const {                                                                                   \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(const type &value) {                                                                               \
-        name = value;                                                                                                  \
-        dirty = true;                                                                                                  \
-    }
-
-/**
- * Macro for generating private members with their setters and getters without a const reference
- * @param type Member type
- * @param name Member name
- * @param default_value Default value
- */
-#define MAKE_MEMBER_GS_NR(type, name, default_value)                                                                   \
-private:                                                                                                               \
-    type name = default_value;                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
-    type get_##name() const {                                                                                          \
-        return name;                                                                                                   \
-    }                                                                                                                  \
-    void set_##name(type value) {                                                                                      \
-        name = value;                                                                                                  \
-    }
-
-/**
- * Macro for generating private members with their setters and getters without a const reference
- * and without default value
- * @param type Member type
- * @param name Member name
- */
-
-#define MAKE_MEMBER_GS_NR_NO_DEF(type, name)                                                                           \
-private:                                                                                                               \
-    type name;                                                                                                         \
-                                                                                                                       \
-public:                                                                                                                \
+#define MAKE_GS_NR(type, name)                                                                                         \
     type get_##name() const {                                                                                          \
         return name;                                                                                                   \
     }                                                                                                                  \
@@ -176,8 +137,8 @@ namespace libmaszyna::internal {
  * Binds a property and its conventionally named setter and getter. An optional slash-separated grouping path accepts
  * a group and a subgroup. Group markers are generated from the path automatically.
  * <example>
- * BIND_PROPERTY(TrainWheels, Variant::FLOAT, bogie_pivot_spacing);
- * BIND_PROPERTY(TrainBrake, Variant::FLOAT, brake_force_max, "brake_force");
+ * BIND_PROPERTY(RailVehicleWheels, Variant::FLOAT, bogie_pivot_spacing);
+ * BIND_PROPERTY(RailVehicleBrake, Variant::FLOAT, brake_force_max, "brake_force");
  * </example>
  */
 #define INTERNAL_BIND_PROPERTY(p_class, p_type, p_name)                                                                \

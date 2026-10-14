@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bjxjkd5x1ulqf"
+path="res://.godot/imported/218ma_b_p4.fiz-b994644c2064ffad7d0719e4e810d8f8.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/21xm_v1/218ma_b_p4.fiz"
+dest_files=["res://.godot/imported/218ma_b_p4.fiz-b994644c2064ffad7d0719e4e810d8f8.res"]
+
+[params]
+

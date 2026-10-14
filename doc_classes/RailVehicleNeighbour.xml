@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleNeighbour" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The nearest vehicle along the route from one end of a vehicle.
+	</brief_description>
+	<description>
+		What [method RailVehicleServer.vehicle_find_vehicle] found (the original's [code]neighbour_data[/code], [code]DynObj.h[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
+			How far the vehicle found is [m], as [method RailVehicleServer.vehicle_find_vehicle] measures it.
+		</member>
+		<member name="end" type="int" setter="set_end" getter="get_end" enum="RailVehicleController.CouplerEnd" default="0">
+			The end of the vehicle found facing the one searched from.
+		</member>
+		<member name="vehicle_rid" type="RID" setter="set_vehicle_rid" getter="get_vehicle_rid" default="RID()">
+			The vehicle found.
+		</member>
+	</members>
+</class>

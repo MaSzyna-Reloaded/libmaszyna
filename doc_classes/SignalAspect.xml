@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalAspect" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		One aspect of a [SignalHeadKind]: what each light does when the signal head shows it.
+	</brief_description>
+	<description>
+		One aspect of a [SignalHeadKind]: what each light does when the signal head shows it, light 0 first. A light past the list, or one set to [constant LIGHT_KEEP], is left as it is. Blink times missing from their lists are the kind's.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="lights" type="PackedInt32Array" setter="set_lights" getter="get_lights" default="PackedInt32Array()">
+			What each light does, a [enum LightCommand] per light, light 0 first.
+		</member>
+		<member name="off_times" type="PackedFloat32Array" setter="set_off_times" getter="get_off_times" default="PackedFloat32Array()">
+			How long each blinking light stays dark [s], light 0 first; the kind's [member SignalHeadKind.blink_off_time] where missing.
+		</member>
+		<member name="on_times" type="PackedFloat32Array" setter="set_on_times" getter="get_on_times" default="PackedFloat32Array()">
+			How long each blinking light stays lit [s], light 0 first; the kind's [member SignalHeadKind.blink_on_time] where missing.
+		</member>
+		<member name="phases" type="PackedFloat32Array" setter="set_phases" getter="get_phases" default="PackedFloat32Array()">
+			Where in its cycle each blinking light starts [s], light 0 first.
+		</member>
+	</members>
+	<constants>
+		<constant name="LIGHT_OFF" value="0" enum="LightCommand">
+			The light goes out.
+		</constant>
+		<constant name="LIGHT_ON" value="1" enum="LightCommand">
+			The light is lit.
+		</constant>
+		<constant name="LIGHT_BLINK" value="2" enum="LightCommand">
+			The light blinks.
+		</constant>
+		<constant name="LIGHT_KEEP" value="3" enum="LightCommand">
+			The light is left as it is.
+		</constant>
+	</constants>
+</class>

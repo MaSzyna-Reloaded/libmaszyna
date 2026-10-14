@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleImplementationServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What simulates vehicles.
+	</brief_description>
+	<description>
+		Registered with [VehicleServer] under a name a vehicle's controller names ([member VehicleController.implementation]). [VehicleServer] hands it the step of its own vehicles, all at once: how they are stepped together - in which phases, with what sub-steps - is the implementation's business.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

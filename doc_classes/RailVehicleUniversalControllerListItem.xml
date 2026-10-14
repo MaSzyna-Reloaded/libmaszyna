@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleUniversalControllerListItem" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Resource representing a single position in a [RailVehicleUniversalController].
+	</brief_description>
+	<description>
+		[RailVehicleUniversalControllerListItem] defines the behavior for a specific position of a train's universal
+		controller. Its index within [member RailVehicleUniversalController.positions] corresponds to the position number
+		(column A) in the [code]UCList[/code] table.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="bounce_back_position" type="int" setter="set_bounce_back_position" getter="get_bounce_back_position" default="0">
+			[code]UCList:H[/code]
+			The position index to which the controller automatically bounces back. Not implemented by the mover as
+			of exe190909, per the wiki.
+		</member>
+		<member name="decrease_speed" type="float" setter="set_decrease_speed" getter="get_decrease_speed" default="0.0">
+			[code]UCList:G[/code]
+			The rate at which the target value decreases.
+		</member>
+		<member name="increase_speed" type="float" setter="set_increase_speed" getter="get_increase_speed" default="0.0">
+			[code]UCList:F[/code]
+			The rate at which the target value increases.
+		</member>
+		<member name="max_percentage" type="float" setter="set_max_percentage" getter="get_max_percentage" default="0.0">
+			[code]UCList:D[/code]
+			The maximum percentage value for this position.
+		</member>
+		<member name="min_percentage" type="float" setter="set_min_percentage" getter="get_min_percentage" default="0.0">
+			[code]UCList:C[/code]
+			The minimum percentage value for this position.
+		</member>
+		<member name="nearest_stable_down" type="int" setter="set_nearest_stable_down" getter="get_nearest_stable_down" default="0">
+			[code]UCList:J[/code]
+			The nearest stable position index when moving downwards.
+		</member>
+		<member name="nearest_stable_up" type="int" setter="set_nearest_stable_up" getter="get_nearest_stable_up" default="0">
+			[code]UCList:K[/code]
+			The nearest stable position index when moving upwards.
+		</member>
+		<member name="pneumatic_brake_position" type="int" setter="set_pneumatic_brake_position" getter="get_pneumatic_brake_position" default="-1">
+			[code]UCList:B[/code]
+			The pneumatic brake position (from the brake pressure table) associated with this universal controller
+			position.
+		</member>
+		<member name="target_value" type="float" setter="set_target_value" getter="get_target_value" default="0.0">
+			[code]UCList:E[/code]
+			The target percentage value the controller aims to reach at this position.
+		</member>
+	</members>
+</class>

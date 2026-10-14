@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryModelPlacement" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A decoration model supplied by a [SceneryStreamingProvider].
+	</brief_description>
+	<description>
+		An item of [constant SceneryStreamingProvider.CONTENT_MODELS]: a model drawn while its cell is supplied, registered with [method E3DRenderingServer.instance_register] and streamed by its own range. It is named by nothing, so no event or signal reaches it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="data_path" type="String" setter="set_data_path" getter="get_data_path" default="&quot;&quot;">
+			Where the model and its textures are, relative to the game directory.
+		</member>
+		<member name="model_filename" type="String" setter="set_model_filename" getter="get_model_filename" default="&quot;&quot;">
+			The model file, without its extension.
+		</member>
+		<member name="range_max" type="float" setter="set_range_max" getter="get_range_max" default="0.0">
+			The distance it is drawn up to [m]; [code]0[/code] or less is no limit of its own (the streaming's draw distance).
+		</member>
+		<member name="range_min" type="float" setter="set_range_min" getter="get_range_min" default="0.0">
+			The distance it is drawn from [m].
+		</member>
+		<member name="skins" type="PackedStringArray" setter="set_skins" getter="get_skins" default="PackedStringArray()">
+			The model's replaceable materials, by number.
+		</member>
+		<member name="transform" type="Transform3D" setter="set_transform" getter="get_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">
+			Where the model stands in the world.
+		</member>
+	</members>
+</class>

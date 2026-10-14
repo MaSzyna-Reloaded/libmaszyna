@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PersonServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The people of the world - the player and every AI driver - by their handles and names.
+	</brief_description>
+	<description>
+		A person is only a handle and a name here: where it sits and in what role is [VehicleServer]'s, what an AI driver thinks is [DriverServer]'s, the player is [PlayerServer]'s.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="person_create">
+			<return type="RID" />
+			<param index="0" name="name" type="String" default="&quot;&quot;" />
+			<description>
+				Creates a person of [param name] and emits [signal person_created].
+			</description>
+		</method>
+		<method name="person_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="person" type="RID" />
+			<description>
+				Whether [param person] is a person.
+			</description>
+		</method>
+		<method name="person_free">
+			<return type="void" />
+			<param index="0" name="person" type="RID" />
+			<description>
+				Emits [signal person_freed], then frees [param person].
+			</description>
+		</method>
+		<method name="person_get_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="person" type="RID" />
+			<description>
+				The name of [param person].
+			</description>
+		</method>
+		<method name="person_set_name">
+			<return type="void" />
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="name" type="String" />
+			<description>
+				Gives [param person] another name; [signal person_name_changed] when it is another one.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="person_created">
+			<param index="0" name="person" type="RID" />
+			<description>
+				[param person] came to be.
+			</description>
+		</signal>
+		<signal name="person_freed">
+			<param index="0" name="person" type="RID" />
+			<description>
+				[param person] is going - whoever keeps something of it lets it go; its name can still be read.
+			</description>
+		</signal>
+		<signal name="person_name_changed">
+			<param index="0" name="person" type="RID" />
+			<param index="1" name="previous" type="String" />
+			<description>
+				[param person] has another name; [param previous] is the one it had.
+			</description>
+		</signal>
+	</signals>
+</class>

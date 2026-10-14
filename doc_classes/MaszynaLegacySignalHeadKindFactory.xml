@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacySignalHeadKindFactory" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Makes the kind of an original scenery signal head out of the [code]lights[/code] events aimed at it.
+	</brief_description>
+	<description>
+		The original has no kinds of signal heads: what a signal head shows is whatever [code]lights[/code] events the scenery aims at its model ([code]Event.cpp:1741-1803[/code]), each one a list of [code]TAnimModel::LightSet()[/code] values. Every such event is made an aspect of the kind here, named after the event without the signal head's own name - [code](p1)_sem_ligh1[/code] aimed at [code](p1)[/code] is [code]sem_ligh1[/code] - so every copy of one include has the same kind.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_kind" qualifiers="static">
+			<return type="SignalHeadKind" />
+			<param index="0" name="aspects" type="Dictionary" />
+			<description>
+				A kind of [param aspects]: aspect name to a [PackedFloat32Array] of the event's values.
+			</description>
+		</method>
+		<method name="get_aspect_name" qualifiers="static">
+			<return type="StringName" />
+			<param index="0" name="event_name" type="String" />
+			<param index="1" name="signal_head_name" type="String" />
+			<description>
+				The aspect the [code]lights[/code] event [param event_name] is for the signal head [param signal_head_name] it is aimed at.
+			</description>
+		</method>
+	</methods>
+</class>

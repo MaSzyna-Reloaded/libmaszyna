@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrackRouteSegment" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		One track of a traced route.
+	</brief_description>
+	<description>
+		What [method TrackServer.track_trace_route] and [method RailVehicleServer.vehicle_trace_route] answer with, track by track.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="branch" type="int" setter="set_branch" getter="get_branch" default="0">
+			The switch's branch the route takes.
+		</member>
+		<member name="branch_from_setting" type="bool" setter="set_branch_from_setting" getter="get_branch_from_setting" default="false">
+			The branch is the switch's setting (entered at its common end), not the one entered on: throwing the switch changes the route from here.
+		</member>
+		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
+			From the vehicle to where the track is entered [m], negative for the one it stands on.
+		</member>
+		<member name="length" type="float" setter="set_length" getter="get_length" default="0.0">
+			The track's length [m].
+		</member>
+		<member name="line_end" type="bool" setter="set_line_end" getter="get_line_end" default="false">
+			Nothing follows the track.
+		</member>
+		<member name="toward_end" type="bool" setter="set_toward_end" getter="get_toward_end" default="false">
+			The track is driven towards its end (event2), not its start (event1).
+		</member>
+		<member name="track_rid" type="RID" setter="set_track_rid" getter="get_track_rid" default="RID()">
+			The track.
+		</member>
+		<member name="track_switch" type="bool" setter="set_track_switch" getter="get_track_switch" default="false">
+			The track is a switch, passed as it is set.
+		</member>
+		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+			The track's speed limit [km/h], -1 for none.
+		</member>
+	</members>
+</class>

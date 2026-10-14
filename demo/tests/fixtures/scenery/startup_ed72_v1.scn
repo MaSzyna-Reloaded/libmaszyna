@@ -1,0 +1,12 @@
+// ed72_v1 (quarkmce2007.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.0
+node -1 0 ED72-010ra dynamic pkp\ed72_v1 ed72-010-ra 5bs-ra 0 headdriver -119 0 enddynamic
+node -1 0 ED72-010sa dynamic pkp\ed72_v1 ed72-010-sa 6bs-sa 0 nobody -127 0 enddynamic //3 pantstate
+node -1 0 ED72-010sb dynamic pkp\ed72_v1 ed72-010-sb 6bs-sb 0 nobody -119 0 enddynamic
+node -1 0 ED72-010rb dynamic pkp\ed72_v1 ed72-010-rb 5bs-rb 0 nobody 1 0 enddynamic
+endtrainset

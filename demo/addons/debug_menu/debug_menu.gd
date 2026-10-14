@@ -50,18 +50,16 @@ var style := Style.HIDDEN:
             Style.VISIBLE_COMPACT, Style.VISIBLE_DETAILED:
                 visible = true
                 frame_number.visible = style == Style.VISIBLE_DETAILED
-                $DebugMenu/VBoxContainer/FrameTimeHistory.visible = style == Style.VISIBLE_DETAILED
-                $DebugMenu/VBoxContainer/FPSGraph.visible = style == Style.VISIBLE_DETAILED
-                $DebugMenu/VBoxContainer/TotalGraph.visible = style == Style.VISIBLE_DETAILED
-                $DebugMenu/VBoxContainer/CPUGraph.visible = style == Style.VISIBLE_DETAILED
-                $DebugMenu/VBoxContainer/GPUGraph.visible = style == Style.VISIBLE_DETAILED
+                $DebugMenu/Chip/VBoxContainer/FrameTimeHistory.visible = style == Style.VISIBLE_DETAILED
+                $DebugMenu/Chip/VBoxContainer/FPSGraph.visible = style == Style.VISIBLE_DETAILED
+                $DebugMenu/Chip/VBoxContainer/TotalGraph.visible = style == Style.VISIBLE_DETAILED
+                $DebugMenu/Chip/VBoxContainer/CPUGraph.visible = style == Style.VISIBLE_DETAILED
+                $DebugMenu/Chip/VBoxContainer/GPUGraph.visible = style == Style.VISIBLE_DETAILED
                 information.visible = style == Style.VISIBLE_DETAILED
                 settings.visible = style == Style.VISIBLE_DETAILED
 
 # Value of `Time.get_ticks_usec()` on the previous frame.
 var last_tick := 0
-
-var thread := Thread.new()
 
 ## Returns the sum of all values of an array (use as a parameter to `Array.reduce()`).
 var sum_func := func avg(accum: float, number: float) -> float: return accum + number
@@ -113,35 +111,18 @@ func _ready() -> void:
 
     get_viewport().size_changed.connect(update_settings_label)
 
-    # Display loading text while information is being queried,
-    # in case the user toggles the full debug menu just after starting the project.
-    information.text = "Loading hardware information...\n\n "
-    settings.text = "Loading project information..."
-    thread.start(
-        func():
-            # Disable thread safety checks as they interfere with this add-on.
-            # This only affects this particular thread, not other thread instances in the project.
-            # See <https://github.com/godotengine/godot/pull/78000> for details.
-            # Use a Callable so that this can be ignored on Godot 4.0 without causing a script error
-            # (thread safety checks were added in Godot 4.1).
-            if Engine.get_version_info()["hex"] >= 0x040100:
-                Callable(Thread, "set_thread_safety_checks_enabled").call(false)
-
-            # Enable required time measurements to display CPU/GPU frame time information.
-            # These lines are time-consuming operations, so run them in a separate thread.
-            RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
-            update_information_label()
-            update_settings_label()
-    )
+    # On the main thread: the information asks the RenderingServer, which answers through the main
+    # thread - a thread asking it never finished once the main loop had stopped, and the game hung
+    # at exit joining it
+    RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+    update_information_label()
+    update_settings_label()
 
 
-func _input(event: InputEvent) -> void:
-    if event.is_action_pressed("cycle_debug_menu"):
-        style = wrapi(style + 1, 0, Style.MAX) as Style
-
-
-func _exit_tree() -> void:
-    thread.wait_to_finish()
+## The next style - hidden, compact, detailed - as the HUD's "Diagnostics" entry and its key
+## (cycle_debug_menu) ask
+func cycle_style() -> void:
+    style = wrapi(style + 1, 0, Style.MAX) as Style
 
 
 ## Update hardware information label (this can change at runtime based on window
@@ -191,14 +172,14 @@ func update_settings_label() -> void:
         var antialiasing_3d_string := ""
         if viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2:
             # The FSR2 scaling mode includes its own temporal antialiasing implementation.
-            antialiasing_3d_string += (" + " if not antialiasing_3d_string.is_empty() else "") + "FSR 2.2"
+            antialiasing_3d_string += (" + " if antialiasing_3d_string else "") + "FSR 2.2"
         if viewport.scaling_3d_mode != Viewport.SCALING_3D_MODE_FSR2 and viewport.use_taa:
             # Godot's own TAA is ignored when using FSR2 scaling mode, as FSR2 provides its own TAA implementation.
-            antialiasing_3d_string += (" + " if not antialiasing_3d_string.is_empty() else "") + "TAA"
+            antialiasing_3d_string += (" + " if antialiasing_3d_string else "") + "TAA"
         if viewport.msaa_3d >= Viewport.MSAA_2X:
-            antialiasing_3d_string += (" + " if not antialiasing_3d_string.is_empty() else "") + "%d× MSAA" % pow(2, viewport.msaa_3d)
+            antialiasing_3d_string += (" + " if antialiasing_3d_string else "") + "%d× MSAA" % pow(2, viewport.msaa_3d)
         if viewport.screen_space_aa == Viewport.SCREEN_SPACE_AA_FXAA:
-            antialiasing_3d_string += (" + " if not antialiasing_3d_string.is_empty() else "") + "FXAA"
+            antialiasing_3d_string += (" + " if antialiasing_3d_string else "") + "FXAA"
 
         settings.text += "3D scale (%s): %d%% = %d×%d" % [
                 scaling_3d_mode_string,
@@ -207,7 +188,7 @@ func update_settings_label() -> void:
                 viewport_render_size.y * viewport.scaling_3d_scale,
         ]
 
-        if not antialiasing_3d_string.is_empty():
+        if antialiasing_3d_string:
             settings.text += "\n3D Antialiasing: %s" % antialiasing_3d_string
 
         var environment := viewport.get_camera_3d().get_world_3d().environment
@@ -232,7 +213,7 @@ func update_settings_label() -> void:
     if viewport.msaa_2d >= Viewport.MSAA_2X:
         antialiasing_2d_string = "%d× MSAA" % pow(2, viewport.msaa_2d)
 
-    if not antialiasing_2d_string.is_empty():
+    if antialiasing_2d_string:
         settings.text += "\n2D Antialiasing: %s" % antialiasing_2d_string
 
 
@@ -450,12 +431,12 @@ func _process(_delta: float) -> void:
                 fps_cap = mini(Engine.max_fps, low_processor_max_fps)
             frame_time.text += " (cap: " + str(fps_cap) + " FPS"
 
-            if not vsync_string.is_empty():
+            if vsync_string:
                 frame_time.text += " + " + vsync_string
 
             frame_time.text += ")"
         else:
-            if not vsync_string.is_empty():
+            if vsync_string:
                 frame_time.text += " (" + vsync_string + ")"
 
         frame_number.text = "Frame: " + str(Engine.get_frames_drawn())

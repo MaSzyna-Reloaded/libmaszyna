@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignallingImplementation" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Interface of a signalling system's behaviour: its state machine, implemented in C++ or GDScript.
+	</brief_description>
+	<description>
+		A system is always the same [SignallingServer] object; what differs between signalling systems - the original's scenery events, an automatic block, an interlocking - is its implementation: its state machine and the vocabulary of its aspects. Override the virtual methods in GDScript or C++. Every callback carries the system: a Resource is shared by default, so one implementation may serve several systems and keeps its state per system RID. An implementation drives the lights, the routes' state and the switches only through the servers' API.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_handle_event" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="event" type="StringName" />
+			<param index="2" name="arguments" type="Dictionary" />
+			<description>
+				A command to the system as a whole: [method SignallingServer.system_send_event] - a script, a dispatcher, a scenery event, a linked system.
+			</description>
+		</method>
+		<method name="_handle_source_event" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<param index="2" name="event" type="StringName" />
+			<param index="3" name="arguments" type="Dictionary" />
+			<description>
+				A report of one of the system's sources: [method SignallingServer.source_send_event]. A sensor's passage is the [code]"impulse"[/code] event with [code]{"polarity": SignallingServer.SourcePolarity}[/code]. An isolated section's source ([method SignallingServer.source_set_isolated]) sends [code]"occupied"[/code] and [code]"freed"[/code] with no arguments.
+			</description>
+		</method>
+		<method name="_route_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route joined the system - also every route the system already holds, when the implementation is attached.
+			</description>
+		</method>
+		<method name="_route_cancel_requested" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route is asked to be cancelled before the train is let onto it ([method SignallingServer.route_request_cancel]).
+			</description>
+		</method>
+		<method name="_route_emergency_release_requested" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route is asked to be released at once ([method SignallingServer.route_request_emergency_release]); the release is to be recorded.
+			</description>
+		</method>
+		<method name="_route_release_requested" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route is asked to be released by hand, with the delay its kind has ([method SignallingServer.route_request_release]).
+			</description>
+		</method>
+		<method name="_route_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route left the system.
+			</description>
+		</method>
+		<method name="_route_set_requested" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="route" type="RID" />
+			<description>
+				The route is asked to be set ([method SignallingServer.route_request_set]). The implementation checks it, moves its switches through [TrackServer] and moves its state with [method SignallingServer.route_set_state].
+			</description>
+		</method>
+		<method name="_signal_head_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				The signal head joined the system - also every signal head the system already holds, when the implementation is attached.
+			</description>
+		</method>
+		<method name="_signal_head_aspect_changed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<param index="2" name="aspect" type="StringName" />
+			<description>
+				One of the system's signal heads now shows [param aspect] ([method SignallingServer.signal_head_set_aspect]).
+			</description>
+		</method>
+		<method name="_signal_head_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="signal_head" type="RID" />
+			<description>
+				The signal head left the system.
+			</description>
+		</method>
+		<method name="_source_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				The source joined the system - also every source the system already holds, when the implementation is attached.
+			</description>
+		</method>
+		<method name="_source_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				The source left the system.
+			</description>
+		</method>
+		<method name="_switch_added" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				The switch of the name joined the system - whether [TrackServer] has it yet or not; also every switch the system already holds, when the implementation is attached.
+			</description>
+		</method>
+		<method name="_switch_created" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				[TrackServer] created the system's switch of the name: its track became a switch.
+			</description>
+		</method>
+		<method name="_switch_freed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				[TrackServer] freed the system's switch of the name: its track became another type or was freed. The system has no control of it any more.
+			</description>
+		</method>
+		<method name="_switch_movement_finished" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<param index="2" name="active_track" type="int" />
+			<description>
+				The system's switch of the name came to lie on [param active_track] ([enum TrackServer.SwitchTrack]).
+			</description>
+		</method>
+		<method name="_switch_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="switch" type="StringName" />
+			<description>
+				The switch of the name left the system.
+			</description>
+		</method>
+		<method name="_system_attached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				The implementation was attached to the system; the system's elements follow, each with its own callback.
+			</description>
+		</method>
+		<method name="_system_detached" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<description>
+				The implementation was detached from the system, or the system freed.
+			</description>
+		</method>
+		<method name="_system_linked" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				The system was linked to [param other] ([method SignallingServer.system_link]); also every linked system, when the implementation is attached.
+			</description>
+		</method>
+		<method name="_system_unlinked" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="system" type="RID" />
+			<param index="1" name="other" type="RID" />
+			<description>
+				The link of the system to [param other] was removed.
+			</description>
+		</method>
+	</methods>
+</class>

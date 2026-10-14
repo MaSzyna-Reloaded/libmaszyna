@@ -1,0 +1,107 @@
+name: godot-engine
+
+# Godot publishes no double precision build, so the editor and the export templates are built here,
+# once per engine version (GODOT_VERSION in the Makefile), and kept as the assets of the release
+# godot-<version>-double. The workflows that need it call this one first: when the release is
+# already there it ends at the check, and only after a GODOT_VERSION bump does it build.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      missing: ${{ steps.release.outputs.missing }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Look for godot-<version>-double
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="godot-$(make -s godot-version)-double"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.missing == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - files: godot.linuxbsd.editor.double.x86_64
+          - files: godot.linuxbsd.template_release.double.x86_64
+          - files: godot.linuxbsd.template_debug.double.x86_64
+          - files: godot.windows.template_release.double.x86_64.exe
+            toolchain: mingw
+          - files: godot.windows.template_debug.double.x86_64.exe
+            toolchain: mingw
+          - files: android_release.apk android_debug.apk
+            toolchain: android
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      # the Linux files are built in ci/docker/linux-sdk, which brings its own scons
+      - name: Install scons
+        if: matrix.toolchain
+        run: pipx install scons
+
+      - name: Install MinGW
+        if: matrix.toolchain == 'mingw'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-x86-64
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - uses: actions/setup-java@v6
+        if: matrix.toolchain == 'android'
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build ${{ matrix.files }}
+        id: build
+        run: |
+          paths=$(for file in ${{ matrix.files }}; do echo "build-godot-$(make -s godot-version)/bin/$file"; done)
+          # shellcheck disable=SC2086 # one file per word
+          make $paths
+          { echo "paths<<EOF"; echo "$paths"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ strategy.job-index }}
+          path: ${{ steps.build.outputs.paths }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: engine
+          merge-multiple: true
+
+      - name: Publish godot-<version>-double
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="godot-$(make -s godot-version)-double"
+          # a rerun finds the release already there and only replaces its files
+          gh release create "$tag" --prerelease --title "$tag" \
+              --notes "Double precision Godot for CI, built by the godot-engine workflow" \
+            || gh release view "$tag" > /dev/null
+          gh release upload "$tag" engine/* --clobber

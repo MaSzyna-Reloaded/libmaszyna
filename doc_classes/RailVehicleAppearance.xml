@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleAppearance" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a kind of rail vehicle looks like.
+	</brief_description>
+	<description>
+		The models a kind of rail vehicle is drawn with and the submodels of its exterior model that move - bogies, wheels, pantograph arms, wipers, mirrors. Shared by every vehicle of the kind and handed to [RailVehicleRenderingServer]. Submodels are named as the model names them; a missing one is an empty name.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="attachment_model_filenames" type="PackedStringArray" setter="set_attachment_model_filenames" getter="get_attachment_model_filenames" default="PackedStringArray()">
+			Models drawn with the exterior, in its frame and with its skins - the MMD's [code]attachments:[/code] (DynObj.cpp:5384), named by the vehicle's [code](p1)[/code]-[code](p3)[/code].
+		</member>
+		<member name="data_path" type="String" setter="set_data_path" getter="get_data_path" default="&quot;&quot;">
+			Where the model files are.
+		</member>
+		<member name="door_steps" type="PackedStringArray" setter="set_door_steps" getter="get_door_steps" default="PackedStringArray()">
+			Every door step of [code]animstepprefix:[/code], numbered as the doors (DynObj.cpp:5763-5790).
+		</member>
+		<member name="doors" type="PackedStringArray" setter="set_doors" getter="get_doors" default="PackedStringArray()">
+			Every door of [code]animdoorprefix:[/code], numbered from 1 - odd on the left, even on the right - each with its first submodel below and that one's, which a folding door turns as well; a name the model has not got is empty (DynObj.cpp:592-622, 5721-5760).
+		</member>
+		<member name="front_bogie" type="String" setter="set_front_bogie" getter="get_front_bogie" default="&quot;&quot;">
+			The front bogie submodel.
+		</member>
+		<member name="front_rolling_wheels" type="PackedStringArray" setter="set_front_rolling_wheels" getter="get_front_rolling_wheels" default="PackedStringArray()">
+			The front rolling wheel submodels.
+		</member>
+		<member name="head_display_submodel" type="String" setter="set_head_display_submodel" getter="get_head_display_submodel" default="&quot;tablice_relacyjne&quot;">
+			The submodel the head display material is drawn on.
+		</member>
+		<member name="joint_cabs" type="bool" setter="set_joint_cabs" getter="get_joint_cabs" default="false">
+			One low-poly cab for both ends (jointcabs:).
+		</member>
+		<member name="low_poly_emission_energy" type="float" setter="set_low_poly_emission_energy" getter="get_low_poly_emission_energy" default="0.2">
+			How bright the low-poly interior glows with the roof light on.
+		</member>
+		<member name="low_poly_emission_fade_time" type="float" setter="set_low_poly_emission_fade_time" getter="get_low_poly_emission_fade_time" default="0.2">
+			How fast the low-poly interior follows the roof light [s].
+		</member>
+		<member name="low_poly_model_filename" type="String" setter="set_low_poly_model_filename" getter="get_low_poly_model_filename" default="&quot;&quot;">
+			The low-poly interior seen through the windows.
+		</member>
+		<member name="mirrors" type="PackedStringArray" setter="set_mirrors" getter="get_mirrors" default="PackedStringArray()">
+			The mirrors in the original's order, odd on the left, even on the right.
+		</member>
+		<member name="model_filename" type="String" setter="set_model_filename" getter="get_model_filename" default="&quot;&quot;">
+			The exterior model.
+		</member>
+		<member name="model_transform" type="Transform3D" setter="set_model_transform" getter="get_model_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">
+			Where every model of the vehicle sits in the vehicle's own frame.
+		</member>
+		<member name="pantograph_factors" type="PackedFloat64Array" setter="set_pantograph_factors" getter="get_pantograph_factors" default="PackedFloat64Array()">
+			[code]pantfactors:[/code] - the first and the second pantograph's place along the vehicle, then their slider heights, for a pantograph the model cannot be measured by (DynObj.cpp:5577-5633); empty without the key.
+		</member>
+		<member name="pantograph_front_arms" type="PackedStringArray" setter="set_pantograph_front_arms" getter="get_pantograph_front_arms" default="PackedStringArray()">
+			Lower arm, its pair, upper arm, its pair and slider of the front pantograph.
+		</member>
+		<member name="pantograph_rear_arms" type="PackedStringArray" setter="set_pantograph_rear_arms" getter="get_pantograph_rear_arms" default="PackedStringArray()">
+			Lower arm, its pair, upper arm, its pair and slider of the rear pantograph.
+		</member>
+		<member name="passengers_model_filename" type="String" setter="set_passengers_model_filename" getter="get_passengers_model_filename" default="&quot;&quot;">
+			The passengers.
+		</member>
+		<member name="pendulum_amplitude" type="float" setter="set_pendulum_amplitude" getter="get_pendulum_amplitude" default="0.0">
+			[code]pendulumamplitude:[/code] - how far the pendulums swing [deg] (DynObj.cpp:5714-5718).
+		</member>
+		<member name="pendulums" type="PackedStringArray" setter="set_pendulums" getter="get_pendulums" default="PackedStringArray()">
+			[code]animpendulumprefix:[/code] 1 to 4, swinging about their x by [member pendulum_amplitude] times the cosine of the engine's turn while the MMD declares levers (DynObj.cpp:1121-1125, 5702-5719).
+		</member>
+		<member name="powered_wheels" type="PackedStringArray" setter="set_powered_wheels" getter="get_powered_wheels" default="PackedStringArray()">
+			The powered wheel submodels.
+		</member>
+		<member name="rear_bogie" type="String" setter="set_rear_bogie" getter="get_rear_bogie" default="&quot;&quot;">
+			The rear bogie submodel.
+		</member>
+		<member name="rear_rolling_wheels" type="PackedStringArray" setter="set_rear_rolling_wheels" getter="get_rear_rolling_wheels" default="PackedStringArray()">
+			The rear rolling wheel submodels.
+		</member>
+		<member name="skins" type="PackedStringArray" setter="set_skins" getter="get_skins" default="PackedStringArray()">
+			The skins of the models' replaceable materials, by number.
+		</member>
+		<member name="wiper_arms" type="PackedStringArray" setter="set_wiper_arms" getter="get_wiper_arms" default="PackedStringArray()">
+			Arm 1, arm 2 and blade of every wiper.
+		</member>
+	</members>
+</class>

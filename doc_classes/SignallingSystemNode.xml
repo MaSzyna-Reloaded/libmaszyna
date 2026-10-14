@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignallingSystemNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A node proxy of a signalling system: creates it with an implementation and groups signal heads by name.
+	</brief_description>
+	<description>
+		A [SignallingServer] system in a scene: creates it on entering the tree with the [member implementation] set here and groups the signal heads listed by name (also those registered later). A scenery creates its systems on the server directly; this node is for hand-built scenes.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_system" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The [SignallingServer] system this node created.
+			</description>
+		</method>
+		<method name="send_event">
+			<return type="void" />
+			<param index="0" name="event" type="StringName" />
+			<param index="1" name="arguments" type="Dictionary" default="{}" />
+			<description>
+				Sends [param event] with [param arguments] to the system ([method SignallingServer.system_send_event]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="implementation" type="SignallingImplementation" setter="set_implementation" getter="get_implementation">
+			What drives the system's signal heads.
+		</member>
+		<member name="signal_head_names" type="PackedStringArray" setter="set_signal_head_names" getter="get_signal_head_names" default="PackedStringArray()">
+			The signal heads the system groups, by name - also those registered later.
+		</member>
+	</members>
+</class>

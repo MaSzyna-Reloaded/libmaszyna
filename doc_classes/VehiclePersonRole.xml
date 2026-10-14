@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehiclePersonRole" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a person aboard a vehicle is there for.
+	</brief_description>
+	<description>
+		A class of its own, holding nothing, for the reason [VehicleComponentType] is one: GDScript sees an enum's constants only as members of a registered class, and [VehicleServer] and [VehiclePerson] both name it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="VEHICLE_PERSON_ROLE_ANY" value="0" enum="Role">
+			Not a role anybody has - a query's filter matching every role.
+		</constant>
+		<constant name="VEHICLE_PERSON_ROLE_DRIVER" value="1" enum="Role">
+			At the controls of the cabin; one a cabin.
+		</constant>
+		<constant name="VEHICLE_PERSON_ROLE_OBSERVER" value="2" enum="Role">
+			Aboard, touching nothing.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,15 @@
+// a trainset starting at 40 km/h with its middle vehicle reversed - it starts with the velocity
+// negated, along its own front (DynObj.cpp:2019)
+node -1 0 main_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+0.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+0.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+trainset moving main_track 150 40
+node -1 0 head dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+node -1 0 reversed dynamic test/synthetic_v1 none synthetic -1 nobody 3 0 enddynamic
+node -1 0 tail dynamic test/synthetic_v1 none synthetic 0 nobody 0 0 enddynamic
+endtrainset

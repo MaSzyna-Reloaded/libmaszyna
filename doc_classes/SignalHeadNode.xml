@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalHeadNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A node proxy of one signal head: its kind, aspect and lights, read from and written to [SignallingServer].
+	</brief_description>
+	<description>
+		One signal head of [SignallingServer], driven freely - no state machine. With a [member model] set, the node registers that model's lights as the signal head itself; without one, it attaches to the signal head already registered under its name (a scenery's).
+		The properties are proxies of the signal head on the server: they read and change it there, so a change made by a system shows here as well. Only the kind and the aspect a registered signal head starts with are kept on the node, for the scene to set. A signal head that belongs to a system is still changed from here, and the system overwrites it with its next event.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="blink_light">
+			<return type="void" />
+			<param index="0" name="light" type="int" />
+			<param index="1" name="on_time" type="float" />
+			<param index="2" name="off_time" type="float" />
+			<param index="3" name="phase" type="float" />
+			<description>
+				The light [param light] blinks: [param on_time] seconds lit, [param off_time] dark, starting [param phase] into the cycle.
+			</description>
+		</method>
+		<method name="disable_light">
+			<return type="void" />
+			<param index="0" name="light" type="int" />
+			<description>
+				Puts the light [param light] out.
+			</description>
+		</method>
+		<method name="enable_light">
+			<return type="void" />
+			<param index="0" name="light" type="int" />
+			<description>
+				Lights the light [param light].
+			</description>
+		</method>
+		<method name="get_aspect" qualifiers="const">
+			<return type="StringName" />
+			<description>
+				The aspect the signal head shows.
+			</description>
+		</method>
+		<method name="get_aspects" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				The aspects the signal head's kind can show.
+			</description>
+		</method>
+		<method name="get_light_state" qualifiers="const">
+			<return type="int" enum="SignallingServer.LightState" />
+			<param index="0" name="light" type="int" />
+			<description>
+				What the light [param light] does.
+			</description>
+		</method>
+		<method name="get_signal_head" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The [SignallingServer] signal head this node drives; an empty RID while none is registered.
+			</description>
+		</method>
+		<method name="set_aspect">
+			<return type="void" />
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+				The signal head shows [param aspect]; the aspect a registered signal head starts with.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="kind" type="SignalHeadKind" setter="set_kind" getter="get_kind">
+			What the signal head can show - kept on the node, for the scene to set.
+		</member>
+		<member name="light_count" type="int" setter="" getter="get_light_count" default="0">
+			How many lights the signal head has.
+		</member>
+		<member name="model" type="Node" setter="set_model" getter="get_model">
+			The model whose lights are the signal head; without one the node attaches to the signal head already registered under its name.
+		</member>
+		<member name="signal_head_name" type="StringName" setter="set_signal_head_name" getter="get_signal_head_name" default="&amp;&quot;&quot;">
+			The name the signal head is registered under in [SignallingServer].
+		</member>
+	</members>
+	<signals>
+		<signal name="aspect_changed">
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+				The signal head shows [param aspect] now.
+			</description>
+		</signal>
+		<signal name="light_state_changed">
+			<param index="0" name="light" type="int" />
+			<param index="1" name="state" type="int" />
+			<description>
+				The light [param light] of the signal head does [param state] now (a [enum SignallingServer.LightState]).
+			</description>
+		</signal>
+		<signal name="signal_head_registered">
+			<description>
+				A signal head was registered under [member signal_head_name]: this node drives it from now on.
+			</description>
+		</signal>
+		<signal name="signal_head_unregistered">
+			<description>
+				The signal head this node drove was unregistered.
+			</description>
+		</signal>
+	</signals>
+</class>

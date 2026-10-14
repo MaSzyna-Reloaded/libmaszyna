@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpatialIndex" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A uniform grid over the XZ plane.
+	</brief_description>
+	<description>
+		Every item is filed in each cell its bounding rectangle touches, and a query returns the items of the touched cells. Shared by [TrackServer] and by [TractionServer].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add">
+			<return type="void" />
+			<param index="0" name="item" type="RID" />
+			<param index="1" name="aabb" type="Rect2" />
+			<description>
+				Files [param item] in every cell [param aabb] (on the XZ plane) touches.
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+				Takes every item out.
+			</description>
+		</method>
+		<method name="query" qualifiers="const">
+			<return type="RID[]" />
+			<param index="0" name="aabb" type="Rect2" />
+			<description>
+				The items filed in the cells [param aabb] touches, each once - those of the cells, not only the ones whose own rectangle overlaps it.
+			</description>
+		</method>
+		<method name="remove">
+			<return type="void" />
+			<param index="0" name="item" type="RID" />
+			<description>
+				Takes [param item] out of every cell it is filed in.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cell_size" type="float" setter="set_cell_size" getter="get_cell_size" default="1.0">
+			The edge length of one grid cell. Set once, before the first item is added - changing it with items filed would leave them in cells of the previous size.
+		</member>
+	</members>
+</class>

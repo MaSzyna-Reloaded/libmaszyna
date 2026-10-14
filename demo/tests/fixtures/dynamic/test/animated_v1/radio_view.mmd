@@ -1,0 +1,25 @@
+// the cab radio's Radio-Stop alarm (internaldata:'s radiostop:, Train.cpp:10340) and the driver's
+// view (driverNangle:, driverNpos:, driverNsitpos:, Train.cpp:10527-10560), a rotvar gauge's end
+// value and scale (Gauge.cpp:116-122), a gauge of the second car's brake pipe (Train.cpp:12158)
+models: animated.t3d
+endmodels
+
+internaldata:
+radiostop: test_loop.ogg
+
+cab1definition:
+-1.0 1.5 4.0 1.0 3.0 6.0
+driver1angle: 165 -10
+driver1pos: 0.0 2.5 5.0
+driver1sitpos: 0.3 2.2 5.1
+cab1model: none
+tachometern: wskazowka rotvar 0.0045 0 0 140 0.004457
+brakes: 2 1 ws-cyl2 rot 1.25 0 0.1
+
+cab2definition:
+-1.0 1.5 -6.0 1.0 3.0 -4.0
+driver2pos: 0.0 2.5 -5.0
+cab2model: none
+
+cab0definition:
+-0.5 1.5 -2.0 0.5 3.0 2.0

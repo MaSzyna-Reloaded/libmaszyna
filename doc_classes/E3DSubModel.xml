@@ -4,7 +4,7 @@
 		Represents a single subcomponent of an E3D model, containing geometry and metadata.
 	</brief_description>
 	<description>
-		[E3DSubModel] is a resource that stores the data for a specific part of an [E3DModel]. It contains the [ArrayMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
+		[E3DSubModel] is a resource that stores the data for a specific part of an [E3DModel]. It contains the [E3DMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -20,6 +20,9 @@
 		</member>
 		<member name="diffuse_color" type="Color" setter="set_diffuse_color" getter="get_diffuse_color" default="Color(1, 1, 1, 1)">
 			The base color of the submodel's material.
+		</member>
+		<member name="dynamic_hidden" type="bool" setter="set_dynamic_hidden" getter="get_dynamic_hidden" default="false">
+			A [code]&lt;name&gt;_on[/code]/[code]&lt;name&gt;_xon[/code] submodel: a control in its lit state, hidden by default only in a dynamic (vehicle) model ([code]Model3d.cpp:275, 2221[/code]).
 		</member>
 		<member name="dynamic_material" type="bool" setter="set_dynamic_material" getter="get_dynamic_material" default="false">
 			If [code]true[/code], the submodel uses a dynamic material that can change based on the environment or seasonal settings.
@@ -37,6 +40,7 @@
 			The attenuation factor of the light source.
 		</member>
 		<member name="light_energy" type="float" setter="set_light_energy" getter="get_light_energy" default="0.0">
+			The light's power, as the model file gives it.
 		</member>
 		<member name="light_range" type="float" setter="set_light_range" getter="get_light_range" default="0.0">
 			The maximum range of the light source.
@@ -54,9 +58,10 @@
 			The transformation matrix applied to the UV coordinates of the material.
 		</member>
 		<member name="material_transparent" type="bool" setter="set_material_transparent" getter="get_material_transparent" default="false">
+			The submodel's material is translucent (bit 5 of the submodel's flags) - drawn with the blended variant.
 		</member>
-		<member name="mesh" type="ArrayMesh" setter="set_mesh" getter="get_mesh">
-			The [ArrayMesh] containing the vertex data (positions, normals, UVs, colors) for this submodel.
+		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
+			The geometry of this submodel - an [E3DMesh] when read from a model file, keeping its arrays in memory.
 		</member>
 		<member name="near_attenuation_end" type="float" setter="set_near_attenuation_end" getter="get_near_attenuation_end" default="0.0">
 			Distance where the near attenuation ends.
@@ -66,6 +71,9 @@
 		</member>
 		<member name="self_illumination" type="Color" setter="set_self_illumination" getter="get_self_illumination" default="Color(1, 1, 1, 1)">
 			The emissive color of the submodel, used for lights and glowing parts.
+		</member>
+		<member name="skin_translucent" type="bool" setter="set_skin_translucent" getter="get_skin_translucent" default="false">
+			A replaceable skin drawn in the translucent phase - flags 1, 2, 4, 8 instead of 0x20 ([code]Model3d.cpp:421-441[/code]).
 		</member>
 		<member name="skip_rendering" type="bool" setter="set_skip_rendering" getter="get_skip_rendering" default="false">
 			If [code]true[/code], the submodel is excluded from the rendering pass but remains part of the model hierarchy and animation logic.

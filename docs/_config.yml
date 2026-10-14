@@ -11,5 +11,7 @@ baseurl: /MaSzyna-API-wrapper
 theme: minima
 
 header_pages:
-  - architecture.markdown
+  - architecture.md
+  - api/index.md
   - wrapping-mover.md
+  - lua-scripting.md

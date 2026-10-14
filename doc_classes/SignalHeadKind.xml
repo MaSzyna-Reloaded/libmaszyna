@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SignalHeadKind" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a kind of signal head can show: its aspects by name.
+	</brief_description>
+	<description>
+		What a kind of signal head can show: its aspects by name. A signal head is given its kind with [method SignallingServer.signal_head_set_kind]; the aspects are data, not code, so a new kind of signal head is a new resource.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_aspect" qualifiers="const">
+			<return type="SignalAspect" />
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+				The aspect named [param aspect]; null for none.
+			</description>
+		</method>
+		<method name="get_aspect_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				The aspect names, in the order they are declared.
+			</description>
+		</method>
+		<method name="has_aspect" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="aspect" type="StringName" />
+			<description>
+				Whether the kind has the aspect named [param aspect].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="aspects" type="Dictionary" setter="set_aspects" getter="get_aspects" default="{}">
+			The aspects, [SignalAspect] by name.
+		</member>
+		<member name="blink_off_time" type="float" setter="set_blink_off_time" getter="get_blink_off_time" default="0.5">
+			How long a blinking light stays dark [s], for an aspect that gives no time of its own - the original's default ([code]fOffTime[/code], [code]AnimModel.h:209[/code]).
+		</member>
+		<member name="blink_on_time" type="float" setter="set_blink_on_time" getter="get_blink_on_time" default="0.5">
+			How long a blinking light stays lit [s], for an aspect that gives no time of its own - the original's default ([code]fOnTime[/code], [code]AnimModel.h:208[/code]).
+		</member>
+	</members>
+</class>

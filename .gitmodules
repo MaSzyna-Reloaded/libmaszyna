@@ -7,3 +7,6 @@
 [submodule "vendor/gnd-sfx"]
     path = vendor/gnd-sfx
     url = https://github.com/GamesNotDeveloped/godot-sfx.git
+[submodule "vendor/lua"]
+    path = vendor/lua
+    url = https://github.com/lua/lua.git

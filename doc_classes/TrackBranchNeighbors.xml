@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TrackBranchNeighbors" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The tracks connected before and after one branch of a switch.
+	</brief_description>
+	<description>
+		What [method TrackServer.track_get_branch_neighbors] answers with.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="next_endpoint_index" type="int" setter="set_next_endpoint_index" getter="get_next_endpoint_index" default="0">
+			The endpoint of the track after the branch it meets the branch at.
+		</member>
+		<member name="next_track_rid" type="RID" setter="set_next_track_rid" getter="get_next_track_rid" default="RID()">
+			The track connected after the branch.
+		</member>
+		<member name="previous_endpoint_index" type="int" setter="set_previous_endpoint_index" getter="get_previous_endpoint_index" default="0">
+			The endpoint of the track before the branch it meets the branch at.
+		</member>
+		<member name="previous_track_rid" type="RID" setter="set_previous_track_rid" getter="get_previous_track_rid" default="RID()">
+			The track connected before the branch.
+		</member>
+	</members>
+</class>

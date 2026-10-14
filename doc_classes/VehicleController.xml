@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleController" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Base train controller controlling all train systems
+	</brief_description>
+	<description>
+		Base train controller node.
+		It allows building behaviour of the train by adding child nodes of the [VehicleComponent] class.
+		The vehicle holds its own commands and is reached by its [RailVehicleServer] handle;
+		[member vehicle_id] is only its id (its scenery name in lower case), set by [method VehicleServer.vehicle_set_id].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_component">
+			<return type="void" />
+			<param index="0" name="component" type="VehicleComponent" />
+			<description>
+				Takes [param component] into the vehicle and owns it from then on - it is ticked with the vehicle and freed with it (the shape [method Node.add_child] has, for the same reason).
+			</description>
+		</method>
+		<method name="apply_config" experimental="true">
+			<return type="void" />
+			<description>
+				Writes the vehicle's configuration into its simulation (should not be called directly)
+			</description>
+		</method>
+		<method name="apply_configuration">
+			<return type="void" />
+			<description>
+				Writes the wrapper's configuration - the vehicle's and every component's - to the backend, then announces that the backend carries it.
+			</description>
+		</method>
+		<method name="emit_config_changed">
+			<return type="void" />
+			<description>
+				One of this vehicle's components (re)applied its configuration.
+			</description>
+		</method>
+		<method name="emit_position_changed_if_needed">
+			<return type="void" />
+			<description>
+				Emits [signal position_changed] when the vehicle has moved at least 1 m since it was last emitted.
+			</description>
+		</method>
+		<method name="find_components" qualifiers="const">
+			<return type="VehicleComponent[]" />
+			<param index="0" name="type" type="int" enum="VehicleComponentType.Type" />
+			<description>
+				Every component of [param type] - a vehicle has two couplers, one per end.
+			</description>
+		</method>
+		<method name="find_generic_components" qualifiers="const">
+			<return type="VehicleComponent[]" />
+			<param index="0" name="tag" type="StringName" />
+			<description>
+				Every scripted component carrying [param tag] - modders add as many as they like.
+			</description>
+		</method>
+		<method name="get_acceleration" qualifiers="const">
+			<return type="float" />
+			<description>
+				The acceleration along the track [m/s²], every force counted ([code]AccS[/code]).
+			</description>
+		</method>
+		<method name="get_commands" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns the commands this vehicle answers to.
+			</description>
+		</method>
+		<method name="get_component" qualifiers="const">
+			<return type="VehicleComponent" />
+			<param index="0" name="type" type="int" enum="VehicleComponentType.Type" />
+			<description>
+				The component of [param type], or null when this vehicle has none. One per kind: a vehicle has one brake system and one engine, whatever kind it is.
+			</description>
+		</method>
+		<method name="get_config" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a dictionary with all config properties of the train.
+				The same as [method VehicleServer.vehicle_dump_config].
+			</description>
+		</method>
+		<method name="get_direction" qualifiers="const">
+			<return type="int" enum="VehicleController.Direction" />
+			<description>
+				The reverser, counted from the cab it is set in ([code]DirActive[/code]).
+			</description>
+		</method>
+		<method name="get_mass_total" qualifiers="const">
+			<return type="float" />
+			<description>
+				The vehicle's whole mass [kg], its load counted ([code]TotalMass[/code]).
+			</description>
+		</method>
+		<method name="get_speed" qualifiers="const">
+			<return type="float" />
+			<description>
+				How fast the vehicle moves [km/h], whichever way ([code]Vel[/code]) - straight from the backend, for the per-frame readers that want this one number.
+			</description>
+		</method>
+		<method name="get_state" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Everything this vehicle reports about itself, by name: its own values and those of every enabled component, in one flat dictionary, composed on each call. A reader every frame takes the cached [method VehicleServer.vehicle_dump_state] instead; a reader after a single value is better served by that value's component, see [method VehicleServer.vehicle_component_get].
+			</description>
+		</method>
+		<method name="get_state_serial" qualifiers="const">
+			<return type="int" />
+			<description>
+				Bumped by every step and every command - what tells a cached state dump ([method VehicleServer.vehicle_dump_state]) that it is stale.
+			</description>
+		</method>
+		<method name="get_total_distance" qualifiers="const">
+			<return type="float" />
+			<description>
+				How far the vehicle has run [km] ([code]DistCounter[/code]).
+			</description>
+		</method>
+		<method name="get_velocity" qualifiers="const">
+			<return type="float" />
+			<description>
+				The velocity along the vehicle's front [m/s], negative backwards ([code]V[/code]) - straight from the backend.
+			</description>
+		</method>
+		<method name="get_world_position" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Where the vehicle is in the world, as the server that places it handed it down.
+			</description>
+		</method>
+		<method name="get_world_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<description>
+				The vehicle's place in the world, as the server that places it handed it down.
+			</description>
+		</method>
+		<method name="initialize">
+			<return type="void" />
+			<description>
+				Brings the vehicle up: its simulation, its state and the signals whose initial value listeners expect. Called by whatever owns the vehicle, once it is built.
+			</description>
+		</method>
+		<method name="is_physics_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the simulation moves the vehicle - it switches a vehicle standing with nothing to do off ([code]PhysicActivation[/code]).
+			</description>
+		</method>
+		<method name="is_simulation_ready" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether this vehicle's simulation exists yet. A vehicle is a vehicle from the moment it is built, but nothing can be coupled to it or read off it until the backend behind it is there.
+			</description>
+		</method>
+		<method name="process_components">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				One tick of everything the vehicle is made of, after its physics has moved, by [param delta] seconds.
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="command" type="StringName" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+				Registers a command this vehicle answers to. A command registered twice is an error.
+			</description>
+		</method>
+		<method name="remove_component">
+			<return type="void" />
+			<param index="0" name="component" type="VehicleComponent" />
+			<description>
+				Lets [param component] go: it leaves the vehicle and is no longer processed with it nor read into its state and configuration. What a proxy node does when it leaves the tree.
+			</description>
+		</method>
+		<method name="send_command">
+			<return type="Variant" />
+			<param index="0" name="command" type="StringName" />
+			<param index="1" name="p1" type="Variant" default="null" />
+			<param index="2" name="p2" type="Variant" default="null" />
+			<description>
+				Runs a command of this vehicle and returns what its handler answered, or [code]null[/code] when the vehicle has no such command. See [method RailVehicleServer.vehicle_send_command].
+			</description>
+		</method>
+		<method name="set_vehicle_rid">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				This vehicle's handle in [VehicleServer], set when the server attaches it - what [method Resource.get_rid] answers, as a [Mesh] answers its [RenderingServer] handle.
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="command" type="StringName" />
+			<description>
+				Removes a command of this vehicle.
+			</description>
+		</method>
+		<method name="update_state" experimental="true">
+			<return type="void" />
+			<description>
+				Forces update of the state (should not be called directly)
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="category" type="int" setter="set_category" getter="get_category" enum="VehicleController.Category">
+			[code]Param.Category[/code]
+			The vehicle's category (train, road, ship, airplane).
+		</member>
+		<member name="components" type="VehicleComponent[]" setter="set_components" getter="get_components">
+			The vehicle's components as stored configuration: setting them lets go of the ones the vehicle had and takes these in, in their order ([method add_component]).
+		</member>
+		<member name="dimensions_drag_coefficient" type="float" setter="set_dimensions_drag_coefficient" getter="get_dimensions_drag_coefficient">
+			[code]Dimensions:Cx[/code]
+			Aerodynamic drag coefficient.
+		</member>
+		<member name="dimensions_floor_height" type="float" setter="set_dimensions_floor_height" getter="get_dimensions_floor_height">
+			[code]Dimensions:Floor[/code]
+			Floor height above the rail head, in meters; used to position universal cargo loads.
+		</member>
+		<member name="dimensions_height" type="float" setter="set_dimensions_height" getter="get_dimensions_height">
+			[code]Dimensions:H[/code]
+			Vehicle height, in meters.
+		</member>
+		<member name="dimensions_length" type="float" setter="set_dimensions_length" getter="get_dimensions_length">
+			[code]Dimensions:L[/code]
+			Vehicle length, in meters.
+		</member>
+		<member name="dimensions_width" type="float" setter="set_dimensions_width" getter="get_dimensions_width">
+			[code]Dimensions:W[/code]
+			Vehicle width, in meters.
+		</member>
+		<member name="implementation" type="StringName" setter="set_implementation" getter="get_implementation">
+			The name of what simulates this vehicle, as registered with [VehicleServer] ([method VehicleServer.implementation_register]) - the server hands that one the step.
+		</member>
+		<member name="initial_velocity" type="float" setter="set_initial_velocity" getter="get_initial_velocity">
+			The velocity the vehicle starts with [km/h], along its own front - the scenery line's velocity token. 0 leaves the vehicle not ready to depart, its battery off until switched on; any other value (0.1 for a standing but ready vehicle) turns the battery on as the FIZ says ([code]TDynamicObject::Init[/code]).
+		</member>
+		<member name="mass" type="float" setter="set_mass" getter="get_mass">
+			[code]Param.M[/code] Mass of the train
+		</member>
+		<member name="max_velocity" type="float" setter="set_max_velocity" getter="get_max_velocity">
+			[code]Param.Vmax[/code]
+		</member>
+		<member name="power" type="float" setter="set_power" getter="get_power">
+			[code]Param.PWR[/code]
+		</member>
+		<member name="vehicle_id" type="String" setter="set_vehicle_id" getter="get_vehicle_id">
+			The vehicle's id - its scenery name in lower case - only for finding it ([method VehicleServer.vehicle_get_rid_by_id]).
+		</member>
+	</members>
+	<signals>
+		<signal name="command_received">
+			<param index="0" name="command" type="String" />
+			<param index="1" name="p1" type="Variant" />
+			<param index="2" name="p2" type="Variant" />
+			<description>
+				Emitted when train receives a command
+			</description>
+		</signal>
+		<signal name="config_changed">
+			<description>
+				Train configuration changed
+			</description>
+		</signal>
+		<signal name="position_changed">
+			<param index="0" name="position" type="Vector3" />
+			<description>
+				The vehicle moved at least 1 m since this was last emitted; [param position] is where it is in the world.
+			</description>
+		</signal>
+		<signal name="simulation_configured">
+			<description>
+				The simulation now carries the vehicle's configuration - its own and every component's.
+			</description>
+		</signal>
+		<signal name="simulation_initialized">
+			<description>
+				The simulation behind the vehicle exists and carries its configuration.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="CATEGORY_TRAIN" value="1" enum="Category">
+			A railway vehicle.
+		</constant>
+		<constant name="CATEGORY_ROAD" value="2" enum="Category">
+			A road vehicle.
+		</constant>
+		<constant name="CATEGORY_SHIP" value="4" enum="Category">
+			A ship.
+		</constant>
+		<constant name="CATEGORY_AIRPLANE" value="8" enum="Category">
+			An aircraft.
+		</constant>
+		<constant name="DIRECTION_BACKWARD" value="-1" enum="Direction">
+			The reverser set backward.
+		</constant>
+		<constant name="DIRECTION_NEUTRAL" value="0" enum="Direction">
+			The reverser at neutral.
+		</constant>
+		<constant name="DIRECTION_FORWARD" value="1" enum="Direction">
+			The reverser set forward - forward from the cab it is set in.
+		</constant>
+	</constants>
+</class>

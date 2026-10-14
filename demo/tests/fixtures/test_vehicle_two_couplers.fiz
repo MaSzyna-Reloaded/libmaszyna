@@ -1,0 +1,22 @@
+// Minimal synthetic FIZ fixture for FizTrainControllerInstancer tests - not a real vehicle.
+Param.M=74000 Mred=2000 Vmax=90 PWR=590 Category=train Type=Default
+Dimensions:L=16.6 H=4.28 W=3.07 Cx=0.5
+Wheels:D=1.1 Tw=1.435 AIM=4000 Axle=Bo'Bo' Ad=2.6 Bd=7.524
+Brake:BrakeValve=W_Lu_L NBpA=2 MBF=250 MaxBP=3.8 BCN=4 BCR=0.114 BCD=0.05 BRE=0.85 Vv=0.8 BVV=200 MinCP=7.0 MaxCP=8.0 CompressorSpeed=0.057 CompressorPower=Engine
+Cntrl.BrakeSystem=Pneumatic BCPN=6 BDelay1=15 BDelay2=3 BDelay3=36 BDelay4=22 BrakeDelays=GP BrakeOpModes=PNEPMED BrakeHandle=FV4a LocBrakeHandle=FD1 ASB=Manual LocalBrake=PneumaticBrake ManualBrake=Yes AutomaticCabActivation=Yes BatteryStart=Manual ConverterStart=Automatic ConverterStartDelay=10 GroundRelayStart=Manual InactiveCabFlag=0
+-1 0.0 -1.0 0.0 P
+0 5.0 0.0 0.0 P
+3 3.5 3.8 0.0 P
+Doors:OpenCtrl=Passenger CloseCtrl=Passenger DoorStayOpen=3.0 OpenSpeed=1.0 CloseSpeed=1.0 DoorMaxShiftR=3.0 DoorOpenMethod=Rotate DoorVoltage=24
+BuffCoupl1. CType=Screw kC=2.5 DmaxC=0.11 FmaxC=1000 kB=1.2 DmaxB=0.08 FmaxB=1500 beta=0.3 AllowedFlag=63
+BuffCoupl2. CType=Automatic kC=6800 DmaxC=0.15 FmaxC=780 kB=4200 DmaxB=0.05 FmaxB=1740 beta=0.58 AllowedFlag=-119
+LightsList: Size=2 Wrap=Yes Default=2
+4	34
+17	64
+endL
+WiperList: Size=4 Angle=70
+    0    0.8    0.0    0.5
+    3    0.8    5.0    0.5
+	3    0.8    0.5    0.0
+	3    0.6    0.5    0.0
+endL

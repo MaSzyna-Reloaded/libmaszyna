@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Cabin3D" inherits="Node3D" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The root of a driver's cab.
+	</brief_description>
+	<description>
+		The interior of one [VehicleServer] cabin ([method set_cabin]). It knows one thing about the vehicle it sits in: its handle. Every read and every manipulation below it goes through [code]CabinSystem[/code], and the elements hold no path to a controller at all - the handle is handed down to them from here.
+		Native because of the shake: a fixed-step spring integration ([code]TDynamicObject::update_shake[/code], [code]DynObj.cpp:8048-8136[/code]) running every frame in every occupied cab.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_cabin" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The [VehicleServer] cabin this interior is of - set by whoever builds it; its vehicle comes with it.
+			</description>
+		</method>
+		<method name="get_camera_shake_offset" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				How far the shake has moved the driver's head.
+			</description>
+		</method>
+		<method name="get_camera_shake_roll" qualifiers="const">
+			<return type="float" />
+			<description>
+				How far the shake has rolled the driver's head [rad].
+			</description>
+		</method>
+		<method name="get_camera_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<description>
+				Where the driver's head is: the cab's transform moved to the driver's position.
+			</description>
+		</method>
+		<method name="get_sound_listener_context" qualifiers="const">
+			<return type="int" />
+			<description>
+				Which soundproofing of the cab the listener hears through - the original's [code]CabOccupied + 1[/code] ([code]sound.cpp:981-1008[/code]): 0 the rear cab, 1 the machine room, 2 the front cab, 3 an open window.
+			</description>
+		</method>
+		<method name="get_vehicle_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The vehicle this cab sits in - the vehicle of its cabin ([method set_cabin]).
+			</description>
+		</method>
+		<method name="is_cabin_ready" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the cab is ready ([signal cabin_ready] was emitted).
+			</description>
+		</method>
+		<method name="set_cabin">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<description>
+				The [VehicleServer] cabin this interior is of. Its vehicle comes with it ([method VehicleServer.cabin_get_vehicle]): when that changes, [signal vehicle_rid_changed] is emitted before [signal cabin_changed].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cab_window_open" type="bool" setter="set_cab_window_open" getter="get_cab_window_open" default="false">
+			Whether the cab's window is open - the listener then hears through it ([method get_sound_listener_context]).
+		</member>
+		<member name="camera_bound_enabled" type="bool" setter="set_camera_bound_enabled" getter="get_camera_bound_enabled" default="false">
+			Whether the cab camera is kept within [member camera_bound_min] and [member camera_bound_max].
+		</member>
+		<member name="camera_bound_max" type="Vector3" setter="set_camera_bound_max" getter="get_camera_bound_max" default="Vector3(0, 0, 0)">
+			The far corner of the box the cab camera stays in, in the cab's own space.
+		</member>
+		<member name="camera_bound_min" type="Vector3" setter="set_camera_bound_min" getter="get_camera_bound_min" default="Vector3(0, 0, 0)">
+			The near corner of the box the cab camera stays in, in the cab's own space.
+		</member>
+		<member name="driver_position" type="Vector3" setter="set_driver_position" getter="get_driver_position" default="Vector3(0, 0, 0)">
+			Where the cab camera starts - the driver's seat ([code]driverNsitpos:[/code], or [code]driverNpos:[/code] without it).
+		</member>
+		<member name="driver_view_angle" type="Vector2" setter="set_driver_view_angle" getter="get_driver_view_angle" default="Vector2(0, 0)">
+			The cab camera's start: yaw, then pitch, in degrees, from the way the cab faces ([code]driverNangle:[/code], Train.cpp:10529-10538).
+		</member>
+		<member name="engine_shake_fade_in_factor" type="float" setter="set_engine_shake_fade_in_factor" getter="get_engine_shake_fade_in_factor" default="0.3">
+			How quickly the engine's shake comes in above [member engine_shake_fade_in_rpm] ([code]EngineShake[/code], [code]DynObj.h:837-846[/code]).
+		</member>
+		<member name="engine_shake_fade_in_rpm" type="float" setter="set_engine_shake_fade_in_rpm" getter="get_engine_shake_fade_in_rpm" default="90.0">
+			The engine speed [rpm] the engine's shake starts at.
+		</member>
+		<member name="engine_shake_fade_out_factor" type="float" setter="set_engine_shake_fade_out_factor" getter="get_engine_shake_fade_out_factor" default="0.5">
+			How quickly the engine's shake dies away above [member engine_shake_fade_out_rpm].
+		</member>
+		<member name="engine_shake_fade_out_rpm" type="float" setter="set_engine_shake_fade_out_rpm" getter="get_engine_shake_fade_out_rpm" default="600.0">
+			The engine speed [rpm] the engine's shake starts dying away at.
+		</member>
+		<member name="engine_shake_scale" type="float" setter="set_engine_shake_scale" getter="get_engine_shake_scale" default="2.0">
+			How hard a running diesel engine shakes the cab.
+		</member>
+		<member name="has_cab_model" type="bool" setter="set_has_cab_model" getter="get_has_cab_model" default="true">
+			Whether the cab has a model of its own; without one the vehicle's low-poly cab stays drawn while the player looks from it.
+		</member>
+		<member name="shake_angle_scale" type="Vector2" setter="set_shake_angle_scale" getter="get_shake_angle_scale" default="Vector2(0.05, 0.1)">
+			How much the shake turns the driver's head; x scales its roll ([code]BaseShake[/code], [code]DynObj.h:837-846[/code]).
+		</member>
+		<member name="shake_jolt_limit" type="float" setter="set_shake_jolt_limit" getter="get_shake_jolt_limit" default="2.0">
+			How far the shake may throw the driver's head up or down before it bounces back.
+		</member>
+		<member name="shake_jolt_scale" type="Vector3" setter="set_shake_jolt_scale" getter="get_shake_jolt_scale" default="Vector3(0.2, 0.2, 0.1)">
+			How hard the track jolts the driver's head along each axis.
+		</member>
+		<member name="shake_spring_damping" type="float" setter="set_shake_spring_damping" getter="get_shake_spring_damping" default="0.002">
+			The damping of the spring the driver's head shakes on ([code]Spring.h:29[/code] nKd).
+		</member>
+		<member name="shake_spring_stiffness" type="float" setter="set_shake_spring_stiffness" getter="get_shake_spring_stiffness" default="125.0">
+			The stiffness of the spring the driver's head shakes on ([code]DynObj.cpp:2340[/code] [code]ShakeSpring.Init()[/code]).
+		</member>
+	</members>
+	<signals>
+		<signal name="cabin_changed">
+			<param index="0" name="cabin" type="RID" />
+			<description>
+				The interior is of another cabin of its vehicle now, [param cabin].
+			</description>
+		</signal>
+		<signal name="cabin_ready">
+			<description>
+				The cab is ready - it entered the tree for the first time.
+			</description>
+		</signal>
+		<signal name="camera_configuration_changed">
+			<description>
+				The cab's driver position and camera bounds were rebuilt.
+			</description>
+		</signal>
+		<signal name="vehicle_rid_changed">
+			<param index="0" name="vehicle_rid" type="RID" />
+			<description>
+				The cab now sits in another vehicle, [param vehicle_rid] - the vehicle of the cabin it was given. A subclass reacts to this rather than overriding the cabin's setter.
+			</description>
+		</signal>
+	</signals>
+</class>

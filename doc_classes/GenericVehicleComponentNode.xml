@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GenericVehicleComponentNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where a scripted vehicle component is authored.
+	</brief_description>
+	<description>
+		A component is not a node - it belongs to a vehicle, not to a scene - but a modder needs somewhere to put one and something to attach a script to. This is that place: put it under a [VehiclePhysicsNode], write [code]extends GenericVehicleComponentNode[/code], and the vehicle it sits under gets a [GenericVehicleComponent] that calls the script.
+		The methods a script overrides are the ones [GenericVehicleComponent] declares: [code]_process_component(delta)[/code], [code]_get_component_state()[/code], [code]_get_component_config()[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_component" qualifiers="const">
+			<return type="GenericVehicleComponent" />
+			<description>
+				The component this node put into the vehicle, for anything that wants it directly.
+			</description>
+		</method>
+		<method name="get_controller" qualifiers="const">
+			<return type="VehicleController" />
+			<description>
+				The vehicle the component belongs to - a shortcut to the component's own.
+			</description>
+		</method>
+		<method name="log_debug">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Writes [param line] to the game log at the debug level, as the component.
+			</description>
+		</method>
+		<method name="log_warning">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Writes [param line] to the game log at the warning level, as the component.
+			</description>
+		</method>
+		<method name="register_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+				The vehicle answers [param command] by calling [param callable] - a shortcut to the component's own.
+			</description>
+		</method>
+		<method name="unregister_command">
+			<return type="void" />
+			<param index="0" name="command" type="String" />
+			<description>
+				The vehicle no longer answers [param command] - a shortcut to the component's own.
+			</description>
+		</method>
+	</methods>
+</class>

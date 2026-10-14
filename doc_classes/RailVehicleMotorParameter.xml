@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleMotorParameter" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Defines motor parameters for a specific resistance position.
+	</brief_description>
+	<description>
+		This class represents a single row in a [code]MotorParamTable[/code], defining the motor parameters for a specific resistance position for locomotives with resistance start.  Each resistance position on the controller corresponds to a different set of motor parameters.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="auto_switch" type="bool" setter="set_auto_switch" getter="get_auto_switch" default="false">
+			If [code]true[/code], enables automatic switching.
+		</member>
+		<member name="initial_voltage_constant" type="float" setter="set_initial_voltage_constant" getter="get_initial_voltage_constant" default="0.0">
+			Initial voltage constant (V/rpm). For diesel engines, this represents the speed at the initial gear ratio.
+		</member>
+		<member name="initial_voltage_constant_multiplier" type="float" setter="set_initial_voltage_constant_multiplier" getter="get_initial_voltage_constant_multiplier" default="0.0">
+			Initial value for the voltage constant multiplier. This suggests that the motor might have different parameters depending on its state or operating mode. This parameter is linked to the gear ratio in diesel engines.
+		</member>
+		<member name="saturation_current" type="float" setter="set_saturation_current" getter="get_saturation_current" default="0.0">
+			Saturation current (A).
+		</member>
+		<member name="saturation_current_multiplier" type="float" setter="set_saturation_current_multiplier" getter="get_saturation_current_multiplier" default="0.0">
+			Saturation current multiplier. For diesel engines, this is equal to the gear ratio.
+		</member>
+		<member name="shunting_down" type="float" setter="set_shunting_down" getter="get_shunting_down" default="0.0">
+			Shunting down value.
+		</member>
+		<member name="shunting_up" type="float" setter="set_shunting_up" getter="get_shunting_up" default="0.0">
+			Shunting up value.
+		</member>
+		<member name="voltage_constant" type="float" setter="set_voltage_constant" getter="get_voltage_constant" default="0.0">
+			Voltage constant (V/rpm). Used in the approximation of back EMF (E) as a function of speed (n): E(n) = fi * n. For diesel engines, this represents the speed at the current gear ratio.
+		</member>
+		<member name="voltage_constant_multiplier" type="float" setter="set_voltage_constant_multiplier" getter="get_voltage_constant_multiplier" default="0.0">
+			Voltage constant multiplier. For diesel engines, this represents the speed at the current gear ratio.
+		</member>
+	</members>
+</class>

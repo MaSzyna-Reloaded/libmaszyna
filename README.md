@@ -125,6 +125,82 @@ Project documentation: https://maszyna-reloaded.github.io/MaSzyna-API-wrapper/
 
 If you have found any bug, have a suggestion or want to join us - feel free to open an [issue](https://github.com/MaSzyna-Reloaded/MaSzyna-API-wrapper/issues) or start a [discussion](https://github.com/MaSzyna-Reloaded/MaSzyna-API-wrapper/discussions)!
 
+### Simulation timing
+
+Two rules decide when the vehicle simulation runs, and both matter enough to be stated here: the
+scenario's events are driven by time, and multiplayer will be.
+
+**The simulation is stepped before anything that reads it.** `SimulationServer` advances its
+clock on `SceneTree`'s `process_frame`, which is emitted *before* every node's `_process`
+(measured on Godot 4.7.2, `FINDINGS.md`), and `VehicleServer::stepping_advance()` hands the frame
+to each vehicle implementation (`MaszynaMoverVehicleServer`). Drawing, the cabin, the HUD and the
+cameras therefore see the position of *this* frame.
+
+**No simulation time is ever dropped, and no sub-step is ever oversized.** A frame hands its whole
+delta to `step_frame()`, which integrates as much of it as it honestly can and *owes* the rest to
+the frames that follow:
+
+* the sub-step stays at or below `PHYSICS_STEP` (10 ms), because that is what the coupler springs
+  were tuned for - a stiff spring integrated with a much larger step kicks the trainset;
+* one frame can therefore take at most `MAX_PHYSICS_ITERATIONS * PHYSICS_STEP` (0.2 s);
+* every frame still integrates at least its own delta, so nothing is quantised and the motion is
+  as smooth as the frame rate.
+
+A stall of, say, half a second is not taken in one go: 0.2 s is integrated now and the remaining
+0.3 s over the next frames. The clock and the simulation stay together, and nothing jumps.
+
+**Past `maszyna/physics/catch_up_limit` (1 s by default) the debt is taken in one step instead.**
+At that point the machine is not stalling, it is too slow to simulate in real time, and spreading
+the debt would only add work to frames that are already late. The step is then larger than the
+couplers can stand and the trainset visibly jumps - deliberately, because a jump that can be seen
+beats a clock that silently lies to the scenario. It is written to `GameLog`, so it is not
+mistaken for a physics bug.
+
+### Rendering transparent elements
+
+E3D submodels flagged `material_transparent` (the original engine's own translucent-pass flag)
+render with a hard alpha-scissor cutout by default (`MaterialManager.Transparency.AlphaScissor`,
+threshold 0.5, no real blending) - this matches how most such content actually looks (window
+light masks, foliage) and avoids transparency sorting issues.
+
+Some content needs real alpha blending instead - most commonly a self-contained cabin interior,
+where the scissor cutout looks visibly wrong across the board (glass, instrument backlight glow).
+Two opt-in overrides exist on `E3DModelInstance` (`addons/libmaszyna/legacy/e3d/e3d_model_instance.gd`),
+both only affecting submodels already flagged `material_transparent` - opaque submodels are never
+pulled into the alpha-blended pass:
+
+- `force_alpha` (bool) - every `material_transparent` submodel in this model instance gets real
+  alpha blending. Set by `MmdCabinInstancer.build_into()` for every cabin's `CabModel`.
+- `force_alpha_submodel_paths` (`Array[NodePath]`) - a surgical alternative for forcing just one
+  named submodel subtree (and its descendants) within an otherwise alpha-scissor model. Submodel
+  names alone aren't unique across the tree, so entries are resolved via `E3DModel.get_node_or_null`.
+  `MmdCabinInstancer._resolve_force_alpha_submodel_paths()` populates this automatically for MMD
+  `i-*:` indicator descriptors whose `MmdSemanticCatalog` entry has `force_alpha: true` set (e.g.
+  `i-instrumentlight`'s `<base>_on`/`<base>_off` pair).
+
+Known limitation: the original engine's own shader (`mat_default.frag`) combines an alpha-test
+discard against a per-*material* `opacity` threshold with real per-pixel blending in the same
+pass; this port only has the discard (alpha-scissor) and the blend (alpha) as two separate,
+mutually exclusive modes, with no per-material threshold. Real alpha blending on content whose
+alpha channel isn't clean binary data (e.g. padding colors baked outside the intended cutout, or a
+channel repurposed for something else like a specular mask) can bleed through as an unwanted halo
+or partial see-through - which is why it isn't applied to all `material_transparent` E3D content
+by default, only where explicitly opted in above.
+
+### Texture size and filtering
+
+DDS textures larger than a limit drop their top mipmap levels when loaded, as the original's
+`maxtexturesize`/`maxcabtexturesize` do (Globals.h:164-165):
+
+- `maszyna/import/dds_max_texture_size` (default 1024) - scenery and vehicles,
+- `maszyna/import/dds_max_cab_texture_size` (default 4096, the original's) - the cab, whose
+  instruments need the full resolution (Train.cpp:660).
+
+Anisotropic filtering (the original uses 8x, Texture.cpp:1191) is Godot's global
+`rendering/textures/default_filters/anisotropic_filtering_level`. It acts only on samplers
+declared `*_anisotropic`; most material shaders in `addons/libmaszyna/legacy/materials/types/`
+use `filter_linear_mipmap`, so the setting does not reach them.
+
 ### Code Quality
 
 #### Formatting and style
@@ -141,12 +217,25 @@ To apply automatic formatting and clang-tidy fixes:
 make style-fix
 ```
 
-Both targets use the repository `.clang-format` and `.clang-tidy` configuration. They skip legacy/generated code under `src/maszyna` and `src/gen`.
+Both targets use the repository `.clang-format` and `.clang-tidy` configuration. They skip legacy/generated code under `src/legacy/maszyna-mover` and `src/gen`.
 
 To check or fix a single file, use `./scripts/style-check <path>` and `./scripts/style-fix <path>`.
 
 #### CI
 Clang-tidy checks are performed on CI. Those will fail automatically and publish results if any warning/error is found
+
+CI uses no Docker Hub image. The double precision Godot comes from the release
+`godot-<version>-double` (`ci/fetch-godot.sh`), and the Linux release library is built in the
+Linux SDK image `ghcr.io/maszyna-reloaded/linux-sdk`, which CI pulls. The image is tagged by the
+hash of `ci/docker/linux-sdk/Dockerfile`, so a changed Dockerfile is a new tag that is not on
+ghcr.io yet - CI then builds the image on every run. After changing the Dockerfile, build and
+publish the image yourself (a `gh` token with the `write:packages` scope:
+`gh auth refresh -h github.com -s write:packages`):
+
+```bash
+gh auth token | docker login ghcr.io -u <github user> --password-stdin
+make linux-sdk-image-push
+```
 
 ### Testing
 

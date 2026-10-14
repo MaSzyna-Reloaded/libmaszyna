@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleRadio" inherits="RailVehicleComponent" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The vehicle's train radio.
+	</brief_description>
+	<description>
+		The channel and the volume are the cab radio's own settings ([code]iRadioChannel[/code] and [code]m_radiovolume[/code] of the original's TTrain, [code]Train.h:918[/code]); whether the radio is on, powered, and what a Radio-Stop does to the vehicle are the backend's to answer.
+		It knows no server: what it sends it announces ([signal radio_stop_sent], [signal radio_call_sent]), and the vehicle's owner transmits it from the vehicle's radio in [RadioServer]; what that radio hears the owner hands down.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="channel_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The channel [param step] lower, within [member channel_min].
+			</description>
+		</method>
+		<method name="channel_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The channel [param step] higher, within [member channel_max].
+			</description>
+		</method>
+		<method name="channel_set">
+			<return type="void" />
+			<param index="0" name="channel" type="int" />
+			<description>
+				Tunes to [param channel], clamped to [member channel_min]-[member channel_max]; [signal channel_changed] when it is another.
+			</description>
+		</method>
+		<method name="get_channel" qualifiers="const">
+			<return type="int" />
+			<description>
+				The channel the radio is tuned to.
+			</description>
+		</method>
+		<method name="get_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the radio is switched on ([code]Radio[/code]).
+			</description>
+		</method>
+		<method name="get_powered" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the radio is switched on and has the low voltage to work.
+			</description>
+		</method>
+		<method name="get_radio_stop_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				The Radio-Stop received and not yet acknowledged ([code]RadioStopFlag[/code]).
+			</description>
+		</method>
+		<method name="get_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+				The radio's volume, 0-1.
+			</description>
+		</method>
+		<method name="radio">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				The radio switched on or off.
+			</description>
+		</method>
+		<method name="radio_call">
+			<return type="void" />
+			<param index="0" name="pressed" type="bool" />
+			<param index="1" name="call" type="int" enum="RailVehicleRadio.RadioCall" />
+			<description>
+				[code]radiocall1_sw:[/code]/[code]radiocall3_sw:[/code] pressed sends [param call] to whatever listens in range - on the press, from a powered radio on any channel but the one without calls ([code]TTrain::OnCommand_radiocall1send/3send[/code], [code]Train.cpp:8209-8236[/code]).
+			</description>
+		</method>
+		<method name="radio_stop">
+			<return type="void" />
+			<param index="0" name="pressed" type="bool" />
+			<description>
+				[code]radiostop_sw:[/code] pressed sends Radio-Stop to every vehicle in range - on the press, and only from a powered radio ([code]TTrain::OnCommand_radiostopsend[/code], [code]Train.cpp:8149[/code]).
+			</description>
+		</method>
+		<method name="volume_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The volume [param step] presses lower ([code]radiovolumeprev_sw:[/code], [code]Train.cpp:8252[/code]).
+			</description>
+		</method>
+		<method name="volume_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The volume [param step] presses higher ([code]radiovolumenext_sw:[/code], [code]Train.cpp:8252[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="channel_max" type="int" setter="set_channel_max" getter="get_channel_max" default="10">
+			The highest channel the radio tunes to.
+		</member>
+		<member name="channel_min" type="int" setter="set_channel_min" getter="get_channel_min" default="1">
+			The lowest channel the radio tunes to.
+		</member>
+	</members>
+	<signals>
+		<signal name="channel_changed">
+			<param index="0" name="channel" type="int" />
+			<description>
+				The radio was tuned to [param channel].
+			</description>
+		</signal>
+		<signal name="radio_call_sent">
+			<param index="0" name="call" type="int" />
+			<description>
+				A call to be transmitted on the radio's channel - the vehicle's owner transmits it from the vehicle's radio in [RadioServer].
+			</description>
+		</signal>
+		<signal name="radio_stop_sent">
+			<description>
+				Radio-Stop to be transmitted - pressed on a powered radio.
+			</description>
+		</signal>
+		<signal name="radio_toggled">
+			<param index="0" name="powered" type="bool" />
+			<description>
+				The radio came on or went off - powered, not only switched on.
+			</description>
+		</signal>
+		<signal name="transmission_received">
+			<param index="0" name="kind" type="int" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="payload" type="Variant" />
+			<description>
+				What the vehicle's radio heard, Radio-Stop aside - a message for the cab to play ([CabinRadio3D]).
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="RADIO_CALL1" value="0" enum="RadioCall">
+			The call 1 ([code]radiocall1_sw:[/code]; [code]radio_message[/code], [code]Globals.h[/code]).
+		</constant>
+		<constant name="RADIO_CALL3" value="1" enum="RadioCall">
+			The call 3 ([code]radiocall3_sw:[/code]).
+		</constant>
+		<constant name="CHANNEL_NO_CALLS" value="10">
+			On this channel the radio sends no calls (Train.cpp:8211, 8228).
+		</constant>
+	</constants>
+</class>

@@ -2,7 +2,7 @@
 
 entry_symbol = "libmaszyna_library_init"
 compatibility_minimum = "4.4"
-reloadable = true
+reloadable = false
 
 [libraries]
 
@@ -24,3 +24,12 @@ android.debug.x86_64 = "res://bin/libmaszyna/android/libmaszyna.debug.64.so"
 android.release.x86_64 = "res://bin/libmaszyna/android/libmaszyna.64.so"
 android.debug.arm64 = "res://bin/libmaszyna/android/libmaszyna.debug.arm64.so"
 android.release.arm64 = "res://bin/libmaszyna/android/libmaszyna.arm64.so"
+
+[dependencies]
+
+; maszyna-python-host, the process PythonScreenServer runs CPython in, beside the exported
+; executable (an empty target)
+windows.x86_64 = { "res://bin/libmaszyna/windows/maszyna-python-host.64.exe": "" }
+linux.x86_64 = { "res://bin/libmaszyna/linux/maszyna-python-host.64": "" }
+linux.arm64 = { "res://bin/libmaszyna/linux/maszyna-python-host.arm64": "" }
+linux.rv64 = { "res://bin/libmaszyna/linux/maszyna-python-host.rv64": "" }

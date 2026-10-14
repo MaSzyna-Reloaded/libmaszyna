@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bpfio72s8hhv7"
+path="res://.godot/imported/201em.fiz-85ff7e727ec294a607412676c4dafb87.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/et22-2000_v2/201em.fiz"
+dest_files=["res://.godot/imported/201em.fiz-85ff7e727ec294a607412676c4dafb87.res"]
+
+[params]
+

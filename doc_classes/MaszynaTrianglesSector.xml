@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrianglesSector" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The terrain of one section of the 1 km grid, as one file.
+	</brief_description>
+	<description>
+		As the original keeps a section ([code]basic_section[/code], scene.cpp:811): its own chunks - a texture each - and its cells' - a texture and a range in a 250 m cell each, its shapes merged within 25 m its groups ([MaszynaTrianglesChunkGeometry]). Each chunk is streamed and built on its own by its index here; the file is read once for all of them ([ResourceLazyLoader], keyed by its path).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="chunks" type="MaszynaTrianglesChunkGeometry[]" setter="set_chunks" getter="get_chunks" default="[]">
+			The section's chunks.
+		</member>
+	</members>
+</class>

@@ -1,7 +1,4 @@
 [gd_scene format=3 uid="uid://clt6kosjdfdfx"]
 
-[node name="ExampleTrain" type="TrainController" unique_id=180205831]
-train_id = "exampletrain"
-
-[node name="Brake" type="TrainBrake" parent="." unique_id=2067197281]
-process_priority = 1
+[node name="ExampleTrain" type="VehiclePhysicsNode" unique_id=180205831]
+vehicle_id = "exampletrain"

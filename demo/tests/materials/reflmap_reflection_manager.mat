@@ -1,0 +1,4 @@
+shader: reflmap
+texture_diffuse: refl_diffuse
+texture_reflmap: refl_reflection
+param_reflection: 0.25

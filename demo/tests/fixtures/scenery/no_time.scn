@@ -1,0 +1,2 @@
+// A scenery without a "time" section: its scenario clock is the original's default
+node -1 0 no_time_cell memcell 0 0 0 none 0 0 none endmemcell

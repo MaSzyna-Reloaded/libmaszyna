@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SceneryVirtualRadio" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The scenery's own radio, one a scenery.
+	</brief_description>
+	<description>
+		Whatever the scenario says on the radio - a signal box, the dispatcher, the scenery's Radio-Stop - is transmitted from where it is said. A transmitter only: it hears nothing. Its radio of [RadioServer] goes with it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="transmit">
+			<return type="void" />
+			<param index="0" name="position" type="Vector3" />
+			<param index="1" name="channel" type="int" />
+			<param index="2" name="reach" type="float" />
+			<param index="3" name="kind" type="int" enum="RadioServer.Kind" />
+			<param index="4" name="payload" type="Variant" default="null" />
+			<description>
+				[method RadioServer.radio_transmit], from [param position].
+			</description>
+		</method>
+	</methods>
+</class>

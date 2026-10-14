@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WorkerTaskQueue" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Multithreaded FIFO of tasks on worker threads of its own.
+	</brief_description>
+	<description>
+		Runs submitted [Callable]s on [code]max(processor count - 2, 1)[/code] worker threads of its own, started with the first task - never Godot's [WorkerThreadPool], which the engine's own loading waits for: a task there that waits for the main thread (a mesh read back from the [RenderingServer]) deadlocks it. A task may submit further tasks and [method wait] for them: the waiting thread runs the awaited task itself while it is still queued, so nested waiting does not deadlock. A finished task is announced on the main thread ([signal task_finished]), so the main thread awaits it rather than asking [method is_done] every frame. Used by [code]SceneryInstancer[/code] to parse every scenery include as a separate task, by [SceneryStreamingServer] to preload what it streams, and to read vehicle profiles. Queued tasks are dropped when the queue is freed; the queue must not be freed by its own task.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="drain">
+			<return type="void" />
+			<description>
+				Drops the queued tasks, announcing each with [signal task_finished], and joins the workers, finishing what they run. Call it while the scene tree is still alive: a task is GDScript, which goes away with the tree. A [method wait] for a dropped task returns [code]null[/code].
+			</description>
+		</method>
+		<method name="get_completed_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of finished tasks.
+			</description>
+		</method>
+		<method name="get_submitted_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of tasks submitted so far, including those submitted by other tasks.
+			</description>
+		</method>
+		<method name="get_worker_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Number of worker threads: [code]max(processor count - 2, 1)[/code].
+			</description>
+		</method>
+		<method name="is_done" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="task_id" type="int" />
+			<description>
+				Returns [code]true[/code] when the task has finished and its result can be taken with [method wait] without blocking.
+			</description>
+		</method>
+		<method name="submit">
+			<return type="int" />
+			<param index="0" name="task" type="Callable" />
+			<description>
+				Queues [param task] ([code]task() -&gt; Variant[/code]) and returns its id.
+			</description>
+		</method>
+		<method name="wait">
+			<return type="Variant" />
+			<param index="0" name="task_id" type="int" />
+			<description>
+				Returns the result of the task and forgets it. A task still queued is run by the calling thread; one running on a worker is waited for, the calling thread asleep until it is done.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="task_finished">
+			<param index="0" name="task_id" type="int" />
+			<description>
+				A task finished, or was dropped by [method drain]. Emitted on the main thread once the frame's deferred calls run, so whoever awaits it right after [method submit] hears it.
+			</description>
+		</signal>
+	</signals>
+</class>

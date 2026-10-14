@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyEventCondition" inherits="ScenarioEventCondition" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's event [code]condition[/code] and a launcher's memcell condition.
+	</brief_description>
+	<description>
+		[code]probability[/code], [code]trackoccupied[/code], [code]trackfree[/code], [code]memcompare[/code] and [code]memcompareex[/code] (event_conditions, [code]Event.cpp:44-254[/code]; [code]EvLaunch.cpp:100-130, 216-227[/code]). Every memory has to pass; a memory passes as its [member pass] mode combines the masked fields compared ([code]TMemCell::Compare()[/code], [code]MemCell.cpp:130-185[/code]), a text with a [code]*[/code] compared up to it. [code]memcompare[/code] is all fields [code]==[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mask" type="int" setter="set_mask" getter="get_mask" enum="ScenarioEventServer.MemoryField" is_bitfield="true" default="0">
+			The fields of the memories compared; a field left out is not.
+		</member>
+		<member name="memories" type="RID[]" setter="set_memories" getter="get_memories" default="[]">
+			The [ScenarioEventServer] memories every one of which has to pass.
+		</member>
+		<member name="pass" type="int" setter="set_pass" getter="get_pass" enum="MaszynaLegacyEventCondition.Pass" default="0">
+			How the compared fields of one memory combine.
+		</member>
+		<member name="probability" type="float" setter="set_probability" getter="get_probability" default="1.0">
+			Passes this often, 1 for always ([code]Event.cpp:68-78[/code]).
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
+			The text a memory's is compared with; with a [code]*[/code], only the part before it is.
+		</member>
+		<member name="text_operator" type="int" setter="set_text_operator" getter="get_text_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+			How a memory's text is compared with [member text].
+		</member>
+		<member name="track_test" type="int" setter="set_track_test" getter="get_track_test" enum="MaszynaLegacyEventCondition.TrackTest" default="0">
+			What every one of [member tracks] has to be.
+		</member>
+		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
+			[TrackServer] tracks every one of which has to be as [member track_test] says.
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+			The value a memory's first is compared with.
+		</member>
+		<member name="value1_operator" type="int" setter="set_value1_operator" getter="get_value1_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+			How a memory's first value is compared with [member value1].
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+			The value a memory's second is compared with.
+		</member>
+		<member name="value2_operator" type="int" setter="set_value2_operator" getter="get_value2_operator" enum="MaszynaLegacyEventCondition.Operator" default="0">
+			How a memory's second value is compared with [member value2].
+		</member>
+	</members>
+	<constants>
+		<constant name="OPERATOR_EQUAL" value="0" enum="Operator">
+			[code]==[/code]
+		</constant>
+		<constant name="OPERATOR_NOT_EQUAL" value="1" enum="Operator">
+			[code]!=[/code]
+		</constant>
+		<constant name="OPERATOR_LESS" value="2" enum="Operator">
+			[code]&lt;[/code]
+		</constant>
+		<constant name="OPERATOR_GREATER" value="3" enum="Operator">
+			[code]&gt;[/code]
+		</constant>
+		<constant name="OPERATOR_LESS_EQUAL" value="4" enum="Operator">
+			[code]&lt;=[/code]
+		</constant>
+		<constant name="OPERATOR_GREATER_EQUAL" value="5" enum="Operator">
+			[code]&gt;=[/code]
+		</constant>
+		<constant name="PASS_ALL" value="0" enum="Pass">
+			Every compared field has to match.
+		</constant>
+		<constant name="PASS_ANY" value="1" enum="Pass">
+			At least one compared field has to match.
+		</constant>
+		<constant name="PASS_NONE" value="2" enum="Pass">
+			No compared field may match.
+		</constant>
+		<constant name="TRACK_TEST_NONE" value="0" enum="TrackTest">
+			The tracks are not tested.
+		</constant>
+		<constant name="TRACK_TEST_OCCUPIED" value="1" enum="TrackTest">
+			Every track has to be occupied ([code]trackoccupied[/code]).
+		</constant>
+		<constant name="TRACK_TEST_FREE" value="2" enum="TrackTest">
+			Every track has to be free ([code]trackfree[/code]).
+		</constant>
+	</constants>
+</class>

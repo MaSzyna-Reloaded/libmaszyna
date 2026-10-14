@@ -1,0 +1,66 @@
+models: test_body.t3d
+animations: 4 0 0 4 2 0 -1
+loads: {
+passengers: loads/test_passengers.t3d
+}
+endmodels
+
+sounds:
+oilpump: some_sound.wav
+endsounds
+
+internaldata:
+
+mechspring: 200 0.02 0.2 0.2 0.03 0.15 0.02 0.01
+enginespring: 1.5 100 0.3 450 0.15
+
+cab1definition:
+-1.0 1.0 -2.0 1.0 2.0 -1.0
+driver1pos:
+0.5 3.0 -3.0
+cab1model: test_kabina.t3d
+
+cab2definition:
+-1.0 1.0 -2.0 1.0 2.0 -1.0
+driver2pos:
+-0.5 3.0 -3.0
+cab2model: test_kabina.t3d
+
+// a line comment, should be stripped entirely
+mainctrl: nastawnik rot -0.056 0.0 0.1
+dirkey:kier rot -0.09 0.01 0.1
+/* a block
+   comment */
+brakectrl: { zasadniczy rot 0.073 0.0 0.1 type: return soundinc: brake_inc.wav sounddec: brake_dec.wav }
+security_reset_bt: czuwak rot -0.2 0 0.1
+tachometer: predkosciomierz rot 0.00635 0.0 0
+tachometer: predkosciomierz2 rot 0.00635 0.0 0
+unknownlabel: somemesh rot 0.1 0 0
+main_on_bt: { start1 mov -0.004 0 0.1 sound1: click_pos1.wav sound-1: click_neg1.wav }
+fuelpump_sw: { pompka_paliwa rot -0.2 0 0.1 soundinc: [ variant_a.wav variant_b.wav variant_c.wav ] }
+oilpump_sw: { przodreflprawy17 rot -0.2 0 0.1 soundinc: { soundmain: nested_click.wav amplitudefactor: 0.5 range: 2.0 } }
+clock: analog
+i-security_aware: czuwak_lamp
+i-security_cabsignal: { i-shp soundinc: shp_on.wav sounddec: shp_off.wav }
+i-cablight: cab_lamp
+i-instrumentlight: instrument_lamp
+radiocall3_sw { radio_3 rot 0 0 0 soundinc: lost_colon.wav }
+radiostop_sw: { radio_rs rot 0 0 0 soundinc: after_lost_colon.wav }
+battery_sw: bat rot -0.2 0 0.1
+converter_sw: przetw rot -0.2 0 0.1
+compressor_sw: sprezarka rot -0.2 0 0.1
+radiochannel_sw: kanal rot -0.056 0 0.1
+radiochannelnext_sw: kanal_nast rot -0.2 0 0.1
+radiochannelprev_sw: kanal_poprz rot -0.2 0 0.1
+pantfront_sw: pant1 rot -0.2 0 0.1
+distcounter: licznik rot 0.001 0 0
+hvcurrent1: amperomierz1 rot 0.01 0 0
+i-radio: radio_lamp
+include TEST_CABIN_PARAMS.INC antenna end
+include [ test_cabin_random_a.inc test_cabin_random_b.inc ] end
+
+cab0definition:
+-1.0 1.0 5.0 1.0 1.5 5.5
+driver0pos:
+0.0 2.0 -5.0
+cab0model: none

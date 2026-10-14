@@ -1,0 +1,2 @@
+compressor: { soundset: [ 20786_et22_compressor_1.wav|20786_et22_compressor_2.wav|20786_et22_compressor_3.wav, et22_compressor_v2_on.wav|et22_compressor_v2_trwa.wav|et22_compressor_v2_off.wav ] range: 120 placement: custom }
+converter: { soundbegin:  et22_converter_v2_on.wav soundmain: et22_converter_v2_trwa.wav soundend: et22_converter_v2_off.wav range: 100 placement: custom }

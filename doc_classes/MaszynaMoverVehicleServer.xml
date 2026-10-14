@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverVehicleServer" inherits="VehicleImplementationServer" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The vehicles simulated by the vendored Mover.
+	</brief_description>
+	<description>
+		The vehicles simulated by the vendored Mover ([code]TMoverParameters[/code]), registered with [VehicleServer] as an implementation ([method VehicleServer.implementation_register]). It knows how its vehicles are stepped: all of them together, in the original's phases ([code]vehicle_table::update()[/code], [code]DynObj.cpp:8686-8724[/code]), with [RailVehicleServer] doing what the rail does for each of them.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

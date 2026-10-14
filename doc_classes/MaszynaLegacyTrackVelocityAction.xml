@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyTrackVelocityAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]trackvel[/code] event.
+	</brief_description>
+	<description>
+		Sets the speed limit of its tracks ([code]TTrack::VelocitySet()[/code]; track_event, [code]Event.cpp:1913-1956[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
+			The [TrackServer] tracks whose speed limit is set.
+		</member>
+		<member name="velocity" type="float" setter="set_velocity" getter="get_velocity" default="-1.0">
+			The speed limit [km/h]; negative for none.
+		</member>
+	</members>
+</class>

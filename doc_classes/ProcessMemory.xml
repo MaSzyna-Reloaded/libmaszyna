@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ProcessMemory" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The memory of the whole process, as the system sees it.
+	</brief_description>
+	<description>
+		Not Godot's own count of its allocations ([constant Performance.MEMORY_STATIC]), which misses native buffers and the memory the allocator keeps after it is freed.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_resident_bytes" qualifiers="static">
+			<return type="int" />
+			<description>
+				Resident set size in bytes; -1 where it is not known (Linux only).
+			</description>
+		</method>
+		<method name="release_unused" qualifiers="static">
+			<return type="void" />
+			<description>
+				Gives the memory the allocator keeps free back to the system (glibc only).
+			</description>
+		</method>
+	</methods>
+</class>

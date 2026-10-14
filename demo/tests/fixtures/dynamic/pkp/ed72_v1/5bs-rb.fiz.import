@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bx16ul84xm01y"
+path="res://.godot/imported/5bs-rb.fiz-c4541c5952e1a6a0434cf9b75b8547f9.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/ed72_v1/5bs-rb.fiz"
+dest_files=["res://.godot/imported/5bs-rb.fiz-c4541c5952e1a6a0434cf9b75b8547f9.res"]
+
+[params]
+

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLegacyMultipleAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]multiple[/code] event.
+	</brief_description>
+	<description>
+		Queues its events, handing them its activator (multi_event, [code]Event.cpp:1213-1321[/code]). The events listed after [code]else[/code] are queued instead when the condition fails.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="else_events" type="RID[]" setter="set_else_events" getter="get_else_events" default="[]">
+			The events queued when the condition fails.
+		</member>
+		<member name="events" type="RID[]" setter="set_events" getter="get_events" default="[]">
+			The events queued when the condition passes, or there is none.
+		</member>
+	</members>
+</class>

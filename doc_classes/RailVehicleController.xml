@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleController" inherits="VehicleController" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A railway vehicle.
+	</brief_description>
+	<description>
+		What [VehicleController] says of every vehicle, plus the railway's own: its cabs, couplers and trainset, the master controller and reverser, the relays, the low voltage, the battery and the converter, and the stepping [RailVehicleServer] runs it by. Railway components ([RailVehicleComponent]) belong to one of these.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="antislip">
+			<return type="void" />
+			<description>
+				The anti-slip brake pressed ([code]antislip[/code], [code]AntiSlippingButton()[/code]).
+			</description>
+		</method>
+		<method name="cab_activation">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				The cab switched on ([code]CabActivisation()[/code]) or off ([code]CabDeactivisation()[/code]) as [param enabled] says; the lighting takes the cab's preset ([code]Train.cpp:3101-3104, 3134-3137[/code]).
+			</description>
+		</method>
+		<method name="cab_activation_auto">
+			<return type="void" />
+			<description>
+				The cab switched on by itself, when the FIZ lets it ([code]CabActivisationAuto()[/code], [code]Mover.cpp:2672[/code]).
+			</description>
+		</method>
+		<method name="cab_controls_reset">
+			<return type="void" />
+			<description>
+				The controls a cab change leaves at rest - the brake handle at its neutral, the controllers at zero ([code]TMoverParameters::ChangeCab()[/code], [code]Mover.cpp:735-749[/code]).
+			</description>
+		</method>
+		<method name="cab_deactivation_auto">
+			<return type="void" />
+			<description>
+				The cab switched off as the vehicle switches it off by itself when the FIZ lets it ([code]CabDeactivisationAuto()[/code], [code]Train.cpp:10336[/code]).
+			</description>
+		</method>
+		<method name="cabin_enter">
+			<return type="void" />
+			<description>
+				A driver came over from another vehicle through a gangway: the cab switched on. Command [code]cabin_enter[/code], sent by [method RailVehicleServer.person_change_cabin].
+			</description>
+		</method>
+		<method name="cabin_leave">
+			<return type="void" />
+			<description>
+				Its driver went over to another vehicle through a gangway: the cab switched off, the brake handle at its neutral, the controllers at zero. Command [code]cabin_leave[/code], sent by [method RailVehicleServer.person_change_cabin].
+			</description>
+		</method>
+		<method name="compartment_lights">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				The passengers' compartment lights switched on or off ([code]CompartmentLightsSwitch()[/code]).
+			</description>
+		</method>
+		<method name="compartment_lights_switch_off">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				The compartment lights' "off" switch pressed or let go ([code]CompartmentLightsSwitchOff()[/code]).
+			</description>
+		</method>
+		<method name="compute_fast_movement">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				The quick integration of one physics step of [param delta] seconds on the track last handed down ([code]FastComputeMovement()[/code]); a vehicle whose physics is switched off is not moved at all.
+			</description>
+		</method>
+		<method name="compute_forces">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				The forces of one physics step of [param delta] seconds ([code]ComputeTotalForce()[/code]).
+			</description>
+		</method>
+		<method name="compute_movement">
+			<return type="void" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				The full integration of one physics step of [param delta] seconds on the track last handed down ([code]ComputeMovement()[/code]); a vehicle whose physics is switched off is not moved at all.
+			</description>
+		</method>
+		<method name="couple">
+			<return type="void" />
+			<param index="0" name="other" type="RailVehicleController" />
+			<param index="1" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<param index="2" name="other_end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<param index="3" name="coupling" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<description>
+				Couples [param end] of this vehicle to [param other_end] of [param other] by [param coupling] ([code]TMoverParameters::Attach()[/code]); both vehicles announce [signal trainset_changed].
+			</description>
+		</method>
+		<method name="coupler_adapter_attach">
+			<return type="bool" />
+			<param index="0" name="where" type="Variant" />
+			<description>
+				The adapter of the vehicle nearest beyond an end (its [member coupler_adapter_model], length and height) fitted to that end, as long as it stands within reach and leaves room for it (attach_coupler_adapter(), DynObj.cpp:1754-1789); [param where] as [method coupler_connect]'s. Command [code]coupler_adapter_attach[/code].
+			</description>
+		</method>
+		<method name="coupler_adapter_fit">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The adapter of the vehicle coupled at an end fitted to it whatever the room - a trainset the scenery couples (AttachNext(), DynObj.cpp:2740-2758).
+			</description>
+		</method>
+		<method name="coupler_adapter_remove">
+			<return type="bool" />
+			<param index="0" name="where" type="Variant" />
+			<description>
+				The adapter taken off an end, which is uncoupled first (remove_coupler_adapter(), DynObj.cpp:1791-1810). Command [code]coupler_adapter_remove[/code].
+			</description>
+		</method>
+		<method name="coupler_connect">
+			<return type="void" />
+			<param index="0" name="where" type="Variant" />
+			<description>
+				Joins one more coupling to the neighbour at an end - the coupler first, then the hoses, the control line, the gangway and the heating, what both couplers allow. [param where] is the end ([enum CouplerEnd]), or a world position the nearer end is taken by.
+			</description>
+		</method>
+		<method name="coupler_disconnect">
+			<return type="void" />
+			<param index="0" name="where" type="Variant" />
+			<description>
+				Uncouples an end, unless it is a permanent coupling or cannot be undone now ([code]DettachStatus()[/code]); [param where] as [method coupler_connect]'s.
+			</description>
+		</method>
+		<method name="direction_decrease">
+			<return type="void" />
+			<description>
+				Increase direction by one step
+			</description>
+		</method>
+		<method name="direction_increase">
+			<return type="void" />
+			<description>
+				Decrease direction by one step
+			</description>
+		</method>
+		<method name="find_rail_components" qualifiers="const">
+			<return type="VehicleComponent[]" />
+			<param index="0" name="type" type="int" enum="RailVehicleComponentType.Type" />
+			<description>
+				Every railway component of [param type] - a vehicle has two couplers, one per end.
+			</description>
+		</method>
+		<method name="get_compartment_lights_active" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the compartment lights are lit ([code]CompartmentLights.is_active[/code]).
+			</description>
+		</method>
+		<method name="get_compartment_lights_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the compartment lights are switched on ([code]CompartmentLights.is_enabled[/code]).
+			</description>
+		</method>
+		<method name="get_coupled_controller" qualifiers="const">
+			<return type="RailVehicleController" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The vehicle coupled at [param end]; null when none is.
+			</description>
+		</method>
+		<method name="get_coupled_end" qualifiers="const">
+			<return type="int" enum="RailVehicleController.CouplerEnd" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The end of the vehicle coupled at [param end] facing this one ([code]TCoupling::ConnectedNr[/code]); only while [method is_coupled].
+			</description>
+		</method>
+		<method name="get_coupler_adapter_fitted_height" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The height over the rail of the adapter fitted to an end [m].
+			</description>
+		</method>
+		<method name="get_coupler_adapter_fitted_length" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The length the adapter fitted to an end adds to it [m].
+			</description>
+		</method>
+		<method name="get_coupler_adapter_fitted_model" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The model of the adapter fitted to an end, empty without one.
+			</description>
+		</method>
+		<method name="get_coupler_joinable_flags" qualifiers="const">
+			<return type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The couplings this end and the neighbour beyond it can join: what both couplers allow, the control line only between equal control types; [constant COUPLING_FLAG_NONE] without a neighbour.
+			</description>
+		</method>
+		<method name="get_coupler_stretched" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether a coupler is pulled past its strength ([code]stretch_duration &gt; 0[/code], [code]Mover.cpp:5405[/code]).
+			</description>
+		</method>
+		<method name="get_derail_cause" qualifiers="const">
+			<return type="int" enum="RailVehicleController.DerailCause" />
+			<description>
+				Why the vehicle left the rails; [constant DERAIL_CAUSE_NONE] while it is on them ([code]DerailReason[/code]).
+			</description>
+		</method>
+		<method name="get_direction_absolute" qualifiers="const">
+			<return type="int" enum="VehicleController.Direction" />
+			<description>
+				The vehicle's own direction: the reverser times the active cab ([code]DirAbsolute[/code], [code]Mover.cpp:669[/code]).
+			</description>
+		</method>
+		<method name="get_mass_reduced" qualifiers="const">
+			<return type="float" />
+			<description>
+				The rotating masses' share of the vehicle's mass [kg] ([code]Mred[/code]) - as the simulation holds it, which the wheels may have derived from their own inertia.
+			</description>
+		</method>
+		<method name="get_rail_component" qualifiers="const">
+			<return type="VehicleComponent" />
+			<param index="0" name="type" type="int" enum="RailVehicleComponentType.Type" />
+			<description>
+				The railway component of [param type], or null when this vehicle has none.
+			</description>
+		</method>
+		<method name="get_track_friction" qualifiers="const">
+			<return type="float" />
+			<description>
+				The rails' friction the wheels have now: the track's, times the scenery's ([member SimulationServer.friction]) and the weather's ([method SimulationServer.simulation_get_weather_friction_factor]) ([code]tp.friction[/code], [code]DynObj.cpp:3176[/code]).
+			</description>
+		</method>
+		<method name="get_train_damage" qualifiers="const">
+			<return type="int" />
+			<description>
+				The vehicle's damage, as the original's bits ([code]DamageFlag[/code], [code]dtrain_*[/code], [code]MOVER.h:125-136[/code]) - [code]128[/code] is derailed.
+			</description>
+		</method>
+		<method name="ground_relay_reset">
+			<return type="void" />
+			<description>
+				The main circuit's ground relay reset ([code]maincircuitgroundreset[/code], [code]RelayReset()[/code], [code]Mover.cpp:6653[/code]).
+			</description>
+		</method>
+		<method name="is_coupled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				Whether a vehicle is coupled at [param end].
+			</description>
+		</method>
+		<method name="is_coupled_by" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<param index="1" name="flags" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<description>
+				Whether [param end] is joined by every one of [param flags] ([code]TestFlag(Couplers[end].CouplingFlag, ...)[/code]).
+			</description>
+		</method>
+		<method name="is_coupler_automatic" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				Whether an end couples as an automatic coupler, its adapter's or its own (TCoupling::type()).
+			</description>
+		</method>
+		<method name="main_controller_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				Decrease main controller position
+			</description>
+		</method>
+		<method name="main_controller_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				Increase main controller position
+			</description>
+		</method>
+		<method name="main_controller_set_position">
+			<return type="void" />
+			<param index="0" name="position" type="int" />
+			<description>
+				Put the main controller at [param position] at once, without stepping through the positions between - as the original's driver sets an EIM controller. A step restarts the controller's relay time, which an Elf's integrated control waits out before it raises the power.
+			</description>
+		</method>
+		<method name="opposite_end" qualifiers="static">
+			<return type="int" enum="RailVehicleController.CouplerEnd" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				The other end of the same vehicle.
+			</description>
+		</method>
+		<method name="process_movement">
+			<return type="float" />
+			<param index="0" name="delta" type="float" />
+			<description>
+				The distance [m] the vehicle's own simulation moves it in [param delta] seconds, along its front.
+			</description>
+		</method>
+		<method name="second_controller_decrease">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The second (shunt) controller [param step] positions back ([code]DecScndCtrl()[/code]).
+			</description>
+		</method>
+		<method name="second_controller_increase">
+			<return type="void" />
+			<param index="0" name="step" type="int" default="1" />
+			<description>
+				The second (shunt) controller [param step] positions on ([code]IncScndCtrl()[/code]).
+			</description>
+		</method>
+		<method name="uncouple">
+			<return type="void" />
+			<param index="0" name="end" type="int" enum="RailVehicleController.CouplerEnd" />
+			<description>
+				Undoes every coupling at [param end] ([code]Dettach()[/code]); both vehicles announce [signal trainset_changed].
+			</description>
+		</method>
+		<method name="update_location">
+			<return type="void" />
+			<description>
+				Hands the simulation the vehicle's place in the world, where it has moved ([code]Loc[/code], [code]DynObj.cpp:2334[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cntrl_automatic_cab_activation" type="bool" setter="set_cntrl_automatic_cab_activation" getter="get_cntrl_automatic_cab_activation" default="true">
+			[code]Cntrl.AutomaticCabActivation[/code]
+		</member>
+		<member name="cntrl_compartment_lights_start_mode" type="int" setter="set_cntrl_compartment_lights_start_mode" getter="get_cntrl_compartment_lights_start_mode" enum="RailVehicleController.StartMode" default="2">
+			[code]Cntrl.CompartmentLightsStart[/code]
+		</member>
+		<member name="cntrl_ground_relay_start_mode" type="int" setter="set_cntrl_ground_relay_start_mode" getter="get_cntrl_ground_relay_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.GroundRelayStart[/code]
+		</member>
+		<member name="cntrl_inactive_cab_flag" type="int" setter="set_cntrl_inactive_cab_flag" getter="get_cntrl_inactive_cab_flag" default="0">
+			[code]Cntrl.InactiveCabFlag[/code]
+			Bitmask of automatic actions performed on cab deactivation/activation.
+		</member>
+		<member name="coupler_adapter_height" type="float" setter="set_coupler_adapter_height" getter="get_coupler_adapter_height" default="0.95">
+			[code]coupleradapter:[/code] - the height over the rail of the adapter this vehicle hands a neighbour of another coupler type [m]; the original's own without the key (DynObj.cpp:1765-1769).
+		</member>
+		<member name="coupler_adapter_length" type="float" setter="set_coupler_adapter_length" getter="get_coupler_adapter_length" default="0.085">
+			[code]coupleradapter:[/code] - the length the adapter this vehicle hands a neighbour adds to its end [m].
+		</member>
+		<member name="coupler_adapter_model" type="String" setter="set_coupler_adapter_model" getter="get_coupler_adapter_model" default="&quot;tabor/polsprzeg&quot;">
+			[code]coupleradapter:[/code] - the model of that adapter, under [code]models/[/code].
+		</member>
+		<member name="heating_power" type="float" setter="set_heating_power" getter="get_heating_power" default="0.0">
+			[code]Param.HeatingP[/code]
+			Power drawn for heating, in kW.
+		</member>
+		<member name="light_power" type="float" setter="set_light_power" getter="get_light_power" default="0.0">
+			[code]Param.LightP[/code]
+			Power drawn for lighting, in kW.
+		</member>
+		<member name="load_amount" type="float" setter="set_load_amount" getter="get_load_amount" default="0.0">
+			How much the vehicle carries when the scenery places it ([code]loadcount[/code] of a [code]dynamic[/code]).
+		</member>
+		<member name="load_name" type="String" setter="set_load_name" getter="get_load_name" default="&quot;&quot;">
+			What the vehicle carries when the scenery places it ([code]loadtype[/code] of a [code]dynamic[/code]). The simulation reads more than cargo out of it: [code]pantstate[/code] is how scenery starts a locomotive with its pantographs already up.
+		</member>
+		<member name="reduced_mass" type="float" setter="set_reduced_mass" getter="get_reduced_mass" default="0.0">
+			[code]Param.Mred[/code]
+			Reduced (rotating) mass, added to [member mass] for braking calculations.
+		</member>
+		<member name="sand_capacity" type="float" setter="set_sand_capacity" getter="get_sand_capacity" default="0.0">
+			[code]Param.SandCap[/code]
+			Sand box capacity, in kg.
+		</member>
+		<member name="train_type" type="int" setter="set_train_type" getter="get_train_type" enum="RailVehicleController.TrainType" default="0">
+			[code]Param.Type[/code]
+			Bitmask identifying a vehicle's special-cased behavior family (e.g. EZT, ET22, ET40, ET42, EP05, DMU).
+			Not every value listed on the FIZ wiki is implemented by the simulation - only the ones it knows are exposed
+			here (notably, [code]182[/code] is missing).
+		</member>
+		<member name="type_name" type="String" setter="set_type_name" getter="get_type_name" default="&quot;&quot;">
+			The name of the vehicle's type - the original's CHK/MMD name [code]TMoverParameters[/code] keeps as [code]TypeName[/code] ([code]DynObj.cpp:2019[/code]).
+		</member>
+	</members>
+	<signals>
+		<signal name="coupler_adapter_attached">
+			<param index="0" name="end" type="int" />
+			<description>
+				A coupler adapter was fitted to [param end].
+			</description>
+		</signal>
+		<signal name="coupler_adapter_removed">
+			<param index="0" name="end" type="int" />
+			<description>
+				A coupler adapter was taken off [param end].
+			</description>
+		</signal>
+		<signal name="coupler_attached">
+			<param index="0" name="flag" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<description>
+				One coupling [param flag] was joined, once per event.
+			</description>
+		</signal>
+		<signal name="coupler_detached">
+			<param index="0" name="flag" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<description>
+				One coupling [param flag] was undone, once per event.
+			</description>
+		</signal>
+		<signal name="derailed">
+			<param index="0" name="cause" type="int" enum="RailVehicleController.DerailCause" />
+			<description>
+				The vehicle left the rails, for [param cause]; emitted once ([code]dtrain_out[/code], [code]DynObj.cpp:5207-5214[/code]).
+			</description>
+		</signal>
+		<signal name="trainset_changed">
+			<description>
+				The trainset this vehicle belongs to gained or lost a vehicle.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="POWER_SOURCE_NOT_DEFINED" value="0" enum="TrainPowerSource">
+			Indicates that the power source is not defined.
+		</constant>
+		<constant name="POWER_SOURCE_INTERNAL" value="1" enum="TrainPowerSource">
+			Represents an internal power source (e.g., battery).
+		</constant>
+		<constant name="POWER_SOURCE_TRANSDUCER" value="2" enum="TrainPowerSource">
+			Represents a power source via transducer.
+		</constant>
+		<constant name="POWER_SOURCE_GENERATOR" value="3" enum="TrainPowerSource">
+			Represents a power source via generator.
+		</constant>
+		<constant name="POWER_SOURCE_ACCUMULATOR" value="4" enum="TrainPowerSource">
+			Represents a power source via accumulator.
+		</constant>
+		<constant name="POWER_SOURCE_CURRENTCOLLECTOR" value="5" enum="TrainPowerSource">
+			Represents a power source via current collector.
+		</constant>
+		<constant name="POWER_SOURCE_POWERCABLE" value="6" enum="TrainPowerSource">
+			Represents a power source via power cable.
+		</constant>
+		<constant name="POWER_SOURCE_HEATER" value="7" enum="TrainPowerSource">
+			Represents a power source via heater.
+		</constant>
+		<constant name="POWER_SOURCE_MAIN" value="8" enum="TrainPowerSource">
+			Represents the main power source.
+		</constant>
+		<constant name="POWER_TYPE_NONE" value="0" enum="TrainPowerType">
+			Indicates no power type.
+		</constant>
+		<constant name="POWER_TYPE_BIO" value="1" enum="TrainPowerType">
+			Represents biofuel power.
+		</constant>
+		<constant name="POWER_TYPE_MECH" value="2" enum="TrainPowerType">
+			Represents mechanical power.
+		</constant>
+		<constant name="POWER_TYPE_ELECTRIC" value="3" enum="TrainPowerType">
+			Represents electric power.
+		</constant>
+		<constant name="POWER_TYPE_STEAM" value="4" enum="TrainPowerType">
+			Represents steam power.
+		</constant>
+		<constant name="COUPLER_END_FRONT" value="0" enum="CouplerEnd">
+			The vehicle's front end (end::front).
+		</constant>
+		<constant name="COUPLER_END_REAR" value="1" enum="CouplerEnd">
+			The vehicle's rear end (end::rear).
+		</constant>
+		<constant name="COUPLING_FLAG_NONE" value="0" enum="CouplingFlags" is_bitfield="true">
+			Nothing joined (the original's coupling::faux).
+		</constant>
+		<constant name="COUPLING_FLAG_COUPLER" value="1" enum="CouplingFlags" is_bitfield="true">
+			The coupler.
+		</constant>
+		<constant name="COUPLING_FLAG_BRAKEHOSE" value="2" enum="CouplingFlags" is_bitfield="true">
+			The brake hose.
+		</constant>
+		<constant name="COUPLING_FLAG_CONTROL" value="4" enum="CouplingFlags" is_bitfield="true">
+			The control line.
+		</constant>
+		<constant name="COUPLING_FLAG_HIGHVOLTAGE" value="8" enum="CouplingFlags" is_bitfield="true">
+			The high-voltage line.
+		</constant>
+		<constant name="COUPLING_FLAG_GANGWAY" value="16" enum="CouplingFlags" is_bitfield="true">
+			The gangway.
+		</constant>
+		<constant name="COUPLING_FLAG_MAINHOSE" value="32" enum="CouplingFlags" is_bitfield="true">
+			The main reservoir hose.
+		</constant>
+		<constant name="COUPLING_FLAG_HEATING" value="64" enum="CouplingFlags" is_bitfield="true">
+			The heating line.
+		</constant>
+		<constant name="COUPLING_FLAG_PERMANENT" value="128" enum="CouplingFlags" is_bitfield="true">
+			A permanent coupling, inside one unit.
+		</constant>
+		<constant name="COUPLING_FLAG_POWER_24V" value="256" enum="CouplingFlags" is_bitfield="true">
+			The 24 V line.
+		</constant>
+		<constant name="COUPLING_FLAG_POWER_110V" value="512" enum="CouplingFlags" is_bitfield="true">
+			The 110 V line.
+		</constant>
+		<constant name="COUPLING_FLAG_POWER_3X400V" value="1024" enum="CouplingFlags" is_bitfield="true">
+			The 3x400 V line.
+		</constant>
+		<constant name="TRAIN_TYPE_DEFAULT" value="0" enum="TrainType">
+			No special-cased behaviour ([code]Type=[/code] of the FIZ).
+		</constant>
+		<constant name="TRAIN_TYPE_EZT" value="1" enum="TrainType">
+			An electric multiple unit ([code]ezt[/code]).
+		</constant>
+		<constant name="TRAIN_TYPE_ET41" value="2" enum="TrainType">
+			The ET41 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_ET42" value="4" enum="TrainType">
+			The ET42 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_PSEUDODIESEL" value="8" enum="TrainType">
+			A diesel-electric locomotive simulated as an electric one ([code]pseudodiesel[/code]).
+		</constant>
+		<constant name="TRAIN_TYPE_ET22" value="16" enum="TrainType">
+			The ET22 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_SN61" value="32" enum="TrainType">
+			The SN61 railcar.
+		</constant>
+		<constant name="TRAIN_TYPE_EP05" value="64" enum="TrainType">
+			The EP05 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_ET40" value="128" enum="TrainType">
+			The ET40 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_181" value="256" enum="TrainType">
+			The 181 (E-181) locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_DMU" value="512" enum="TrainType">
+			A diesel multiple unit ([code]dmu[/code]).
+		</constant>
+		<constant name="DERAIL_CAUSE_NONE" value="0" enum="DerailCause">
+			The vehicle stands on the rails.
+		</constant>
+		<constant name="DERAIL_CAUSE_NO_RAIL" value="1" enum="DerailCause">
+			It ran onto a track without rails ([constant TrackServer.TRACK_DAMAGE_NO_RAIL]; [code]Mover.cpp:1354[/code]).
+		</constant>
+		<constant name="DERAIL_CAUSE_CURVE" value="2" enum="DerailCause">
+			It overturned in a curve, too fast for it ([code]Mover.cpp:1356[/code]).
+		</constant>
+		<constant name="DERAIL_CAUSE_WIDE_GAUGE" value="3" enum="DerailCause">
+			The track's gauge is too wide for its wheels ([code]Mover.cpp:1364[/code]).
+		</constant>
+		<constant name="DERAIL_CAUSE_TRACK_CATEGORY" value="4" enum="DerailCause">
+			The track is not one for its kind of vehicle - a train on a road ([code]Mover.cpp:1372[/code]).
+		</constant>
+		<constant name="DERAIL_CAUSE_COLLISION" value="5" enum="DerailCause">
+			Thrown off in a collision with another vehicle ([code]Mover.cpp:1174-1178[/code]).
+		</constant>
+		<constant name="START_MODE_DISABLED" value="0" enum="StartMode">
+			Device is disabled / not present.
+		</constant>
+		<constant name="START_MODE_MANUAL" value="1" enum="StartMode">
+			Device is started manually, with a switch.
+		</constant>
+		<constant name="START_MODE_AUTOMATIC" value="2" enum="StartMode">
+			Device starts automatically.
+		</constant>
+		<constant name="START_MODE_MANUAL_WITH_AUTO_FALLBACK" value="3" enum="StartMode">
+			Device is started manually, or automatically as a fallback.
+		</constant>
+		<constant name="START_MODE_CONVERTER" value="4" enum="StartMode">
+			Device starts together with the converter.
+		</constant>
+		<constant name="START_MODE_BATTERY" value="5" enum="StartMode">
+			Device starts together with the battery.
+		</constant>
+		<constant name="START_MODE_DIRECTION" value="6" enum="StartMode">
+			Device starts once a direction is selected.
+		</constant>
+	</constants>
+</class>

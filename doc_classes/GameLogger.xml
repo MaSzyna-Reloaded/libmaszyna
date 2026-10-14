@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GameLogger" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A named logger of [GameLog].
+	</brief_description>
+	<description>
+		Taken from [method GameLog.get_logger]; its lines go to its handlers, which [GameLog] attaches to it ([method GameLog.assign_handler]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="debug">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Logs [param line] at DEBUG level.
+			</description>
+		</method>
+		<method name="error">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Logs [param line] at ERROR level.
+			</description>
+		</method>
+		<method name="get_logger_id" qualifiers="const">
+			<return type="String" />
+			<description>
+				The logger's id.
+			</description>
+		</method>
+		<method name="info">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Logs [param line] at INFO level.
+			</description>
+		</method>
+		<method name="log">
+			<return type="void" />
+			<param index="0" name="loglevel" type="int" enum="GameLog.LogLevel" />
+			<param index="1" name="line" type="String" />
+			<description>
+				Logs [param line] at [param loglevel].
+			</description>
+		</method>
+		<method name="warning">
+			<return type="void" />
+			<param index="0" name="line" type="String" />
+			<description>
+				Logs [param line] at WARNING level.
+			</description>
+		</method>
+	</methods>
+</class>

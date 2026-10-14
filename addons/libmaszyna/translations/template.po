@@ -1,0 +1,155 @@
+# Strings of the wrapper's own that the game's catalogue (lang/*.po) does not have - the state of a
+# cab control shown under its caption, the development console, the scenery loading stages.
+# MaszynaTranslationServer merges them under the game's catalogue.
+# template.po lists every msgid, as the game's lang/template.po does, for a new language to start from.
+msgid ""
+msgstr ""
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "forward"
+msgstr ""
+
+msgid "neutral"
+msgstr ""
+
+msgid "backward"
+msgstr ""
+
+msgid "on"
+msgstr ""
+
+msgid "off"
+msgstr ""
+
+msgid "pressed"
+msgstr ""
+
+msgid "released"
+msgstr ""
+
+msgid "high tone"
+msgstr ""
+
+msgid "low tone"
+msgstr ""
+
+msgid "filling"
+msgstr ""
+
+msgid "drive"
+msgstr ""
+
+msgid "cutoff"
+msgstr ""
+
+msgid "first braking step"
+msgstr ""
+
+msgid "full braking"
+msgstr ""
+
+msgid "emergency braking"
+msgstr ""
+
+# the development console
+
+msgid "Development console."
+msgstr ""
+
+msgid "Enter \"help\" for instructions"
+msgstr ""
+
+msgid "Too few arguments! Required < %d >"
+msgstr ""
+
+msgid "Too many arguments! < %d > Max"
+msgstr ""
+
+msgid "Command not found."
+msgstr ""
+
+msgid "Exit game"
+msgstr ""
+
+msgid "Clear console"
+msgstr ""
+
+msgid "Delete console history"
+msgstr ""
+
+msgid "Print this help"
+msgstr ""
+
+msgid "Broadcast message to all trains"
+msgstr ""
+
+msgid "Send message to a train"
+msgstr ""
+
+msgid "List trains"
+msgstr ""
+
+msgid "List available train commands"
+msgstr ""
+
+msgid "Get train state / parameter"
+msgstr ""
+
+msgid "Get train config property"
+msgstr ""
+
+msgid "List train config properties"
+msgstr ""
+
+msgid "Occupied cabin: controls | state | get [control] | increase|decrease|hold|release|toggle|set <control> [value]"
+msgstr ""
+
+# loading a scenery, under the loading screen's progress bar
+
+msgid "Parsing %s"
+msgstr ""
+
+msgid "Reading cache"
+msgstr ""
+
+msgid "Saving cache"
+msgstr ""
+
+msgid "Registering tracks and traction"
+msgstr ""
+
+msgid "Registering tracks"
+msgstr ""
+
+msgid "Registering traction"
+msgstr ""
+
+msgid "Registering %s"
+msgstr ""
+
+msgid "Building terrain"
+msgstr ""
+
+msgid "Registering terrain"
+msgstr ""
+
+msgid "Instancing objects"
+msgstr ""
+
+msgid "Instancing %s"
+msgstr ""
+
+msgid "Instancing vehicles"
+msgstr ""
+
+msgid "cab activation"
+msgstr ""
+
+msgid "mirrors"
+msgstr ""
+
+msgid "radio call 1"
+msgstr ""

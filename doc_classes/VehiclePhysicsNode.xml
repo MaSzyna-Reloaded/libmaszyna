@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehiclePhysicsNode" inherits="Node" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A vehicle's presence in the scene tree.
+	</brief_description>
+	<description>
+		The vehicle itself is an object of [VehicleServer], addressed by a RID; this node owns that handle, builds the vehicle from a copy of its controller - a [VehicleController] with its components, the vehicle's stored configuration - and frees it. It is the anchor everything in the tree hangs off - a scripted component a modder adds, a cabin, a sound bank - so that "which vehicle am I part of" is answered by where a node sits, not by a path it carries.
+		It knows nothing about where the controller came from: it is given one, or a subclass builds one ([code]_build_controller()[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_build_controller" qualifiers="virtual const">
+			<return type="VehicleController" />
+			<description>
+				The controller a node that was given none builds its vehicle from, as it enters the tree - once, before anything can see the vehicle.
+			</description>
+		</method>
+		<method name="add_component">
+			<return type="void" />
+			<param index="0" name="component" type="VehicleComponent" />
+			<description>
+				Adds [param component] to this vehicle - what a proxy node in the tree calls when it joins, so a modder's component reaches the vehicle it sits under.
+			</description>
+		</method>
+		<method name="get_vehicle_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+				This vehicle's handle, for anything that talks to the servers.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="controller" type="VehicleController" setter="set_controller" getter="get_controller">
+			The vehicle's configuration, a VehicleController its simulation is built from a copy of; a new one rebuilds the vehicle. The running copy is the vehicle's ([method VehicleServer.vehicle_get_controller]).
+		</member>
+		<member name="initial_velocity" type="float" setter="set_initial_velocity" getter="get_initial_velocity" default="0.0">
+			The velocity the vehicle starts with ([method VehicleServer.vehicle_set_initial_velocity]), set every time it is built.
+		</member>
+		<member name="vehicle_id" type="String" setter="set_vehicle_id" getter="get_vehicle_id" default="&quot;&quot;">
+			The vehicle's id ([code]VehicleServer.vehicle_set_id()[/code]), set every time it is built. Not derived from whatever file the description came from - a scenery names its vehicles, a .fiz does not.
+		</member>
+	</members>
+	<signals>
+		<signal name="vehicle_changed">
+			<description>
+				The vehicle was built, or rebuilt on another controller.
+			</description>
+		</signal>
+	</signals>
+</class>

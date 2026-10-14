@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://dymhyx60cagro"
+path="res://.godot/imported/2ls150.fiz-4b23184b3b23abc1010ddfbf5b9d94c2.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/sm03_v1/2ls150.fiz"
+dest_files=["res://.godot/imported/2ls150.fiz-4b23184b3b23abc1010ddfbf5b9d94c2.res"]
+
+[params]
+

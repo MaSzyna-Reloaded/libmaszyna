@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://crtv5e7kemsbv"
+path="res://.godot/imported/6d1.fiz-ba9b406a7fe959f79c06618ecad94bbe.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/pkp/sm42_v1/6d1.fiz"
+dest_files=["res://.godot/imported/6d1.fiz-ba9b406a7fe959f79c06618ecad94bbe.res"]
+
+[params]
+

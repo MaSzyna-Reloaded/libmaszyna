@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RailVehicleCabinKind" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a cabin of a rail vehicle is.
+	</brief_description>
+	<description>
+		The railway's own words for the cabins [VehicleServer] knows only by their handles. A class of its own, holding nothing, as [VehicleComponentType] is: [RailVehicleServer] names it and [RailVehicleController] takes it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="RAIL_VEHICLE_CABIN_NONE" value="0" enum="Kind">
+			A cabin the railway has no word for, or no cabin.
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_FRONT" value="1" enum="Kind">
+			The front cab, the MMD's [code]cab1definition:[/code] ([code]CabOccupied[/code] 1).
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_MACHINE" value="2" enum="Kind">
+			The machine room, [code]cab0definition:[/code] ([code]CabOccupied[/code] 0).
+		</constant>
+		<constant name="RAIL_VEHICLE_CABIN_REAR" value="3" enum="Kind">
+			The rear cab, [code]cab2definition:[/code] ([code]CabOccupied[/code] -1).
+		</constant>
+	</constants>
+</class>

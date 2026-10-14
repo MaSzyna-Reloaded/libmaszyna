@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehiclePerson" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		One person aboard, as [VehicleServer] answered a query.
+	</brief_description>
+	<description>
+		Who, in which cabin, in what role. A snapshot - it does not follow the person; a holder asks again after the occupancy changed.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_cabin" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The cabin the person sat in.
+			</description>
+		</method>
+		<method name="get_person" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The [PersonServer] person.
+			</description>
+		</method>
+		<method name="get_role" qualifiers="const">
+			<return type="int" enum="VehiclePersonRole.Role" />
+			<description>
+				The role the person had there.
+			</description>
+		</method>
+	</methods>
+</class>

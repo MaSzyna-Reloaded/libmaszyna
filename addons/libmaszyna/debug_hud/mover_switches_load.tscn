@@ -1,0 +1,71 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/debug_hud/mover_switches_load.gd" id="1_load"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/not_applicable_label.tscn" id="not_applicable"]
+
+[node name="Load" type="VBoxContainer"]
+script = ExtResource("1_load")
+
+[node name="Values" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 2
+
+[node name="LoadNameLabel" type="Label" parent="Values"]
+layout_mode = 2
+text = "Cargo"
+
+[node name="LoadName" type="Label" parent="Values"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LoadAmountLabel" type="Label" parent="Values"]
+layout_mode = 2
+text = "Amount"
+
+[node name="LoadAmount" type="Label" parent="Values"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="UnloadingLabel" type="Label" parent="Values"]
+layout_mode = 2
+text = "Getting off"
+
+[node name="Unloading" type="Label" parent="Values"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LoadingLabel" type="Label" parent="Values"]
+layout_mode = 2
+text = "Getting on"
+
+[node name="Loading" type="Label" parent="Values"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ExchangeTimeLabel" type="Label" parent="Values"]
+layout_mode = 2
+text = "Exchange time"
+
+[node name="ExchangeTime" type="Label" parent="Values"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Unload" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Load" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RefreshTimer" type="Timer" parent="."]
+wait_time = 0.1
+autostart = true
+
+[node name="NotApplicable" parent="." instance=ExtResource("not_applicable")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="timeout" from="RefreshTimer" to="." method="_on_refresh_timer_timeout"]
+[connection signal="pressed" from="Unload" to="." method="_on_unload_pressed"]
+[connection signal="pressed" from="Load" to="." method="_on_load_pressed"]

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VehicleComponentType" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What any vehicle can be asked for.
+	</brief_description>
+	<description>
+		A kind of vehicle adds its own kinds after [constant COMPONENT_TYPE_MAX] ([RailVehicleComponentType]).
+		A consumer names the kind, not the implementation: [code]VehicleServer.vehicle_component_get(rid, VehicleComponentType.COMPONENT_ENGINE)[/code] answers with a [RailVehicleEngine] whether the vehicle is diesel or electric.
+		It is a class of its own, holding nothing, for two reasons: GDScript only sees an enum's constants as members of a registered class, and the component and the vehicle include each other, so neither of them can own it.
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="COMPONENT_NONE" value="0" enum="Type">
+			No component.
+		</constant>
+		<constant name="COMPONENT_GENERIC" value="1" enum="Type">
+			A scripted component ([GenericVehicleComponent]), found by its tag ([member VehicleComponent.component_tag]).
+		</constant>
+		<constant name="COMPONENT_ENGINE" value="2" enum="Type">
+			The engine.
+		</constant>
+		<constant name="COMPONENT_HEATING" value="3" enum="Type">
+			The train heating.
+		</constant>
+		<constant name="COMPONENT_LIGHTING" value="4" enum="Type">
+			The lights.
+		</constant>
+		<constant name="COMPONENT_LOAD" value="5" enum="Type">
+			What the vehicle carries.
+		</constant>
+		<constant name="COMPONENT_DOORS" value="6" enum="Type">
+			The doors.
+		</constant>
+		<constant name="COMPONENT_HORNS" value="7" enum="Type">
+			The horns and the whistle.
+		</constant>
+		<constant name="COMPONENT_WIPERS" value="8" enum="Type">
+			The wipers.
+		</constant>
+		<constant name="COMPONENT_RADIO" value="9" enum="Type">
+			The radio.
+		</constant>
+		<constant name="COMPONENT_WHEELS" value="10" enum="Type">
+			The wheels.
+		</constant>
+		<constant name="COMPONENT_TYPE_MAX" value="11" enum="Type">
+			Where a kind of vehicle's own kinds start.
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="T3DParser" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Low-level parser for the MaSzyna T3D text model format.
+	</brief_description>
+	<description>
+		[T3DParser] reads MaSzyna [code].t3d[/code] files - the text model format exported from 3ds Max - into the same [E3DModel] an [code].e3d[/code] gives. The geometry is turned into the scenery frame the way the original simulator does it before saving an [code].e3d[/code]. This class is primarily used internally by the C++ [E3DResourceFormatLoader], which picks it for the [code]t3d[/code] extension.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="parse" qualifiers="const">
+			<return type="E3DModel" />
+			<param index="0" name="file" type="FileAccess" />
+			<description>
+				Reads from the provided [FileAccess] handle and returns a fully constructed [E3DModel] representing the data in the file.
+			</description>
+		</method>
+	</methods>
+</class>
