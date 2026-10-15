@@ -7,7 +7,12 @@ class_name MaszynaWorld
 ## and its scenario's data. Its files are in packs in worlds/<name>/: WORLD_PACK holds what is
 ## loaded whole - the world's scene, its scenery (the sectors' tracks, traction and signals, moved
 ## from their corners to their places, add_sector()), its scenario - and a pack a block
-## (<block>.pck, block_of()) what is drawn of its sectors, sector by sector. The scenery is
+## (<block>.pck, block_of()) what is drawn of its sectors, sector by sector. No file of a world
+## refers to another of its own: a sector's file holds its roofs' orthophoto, the scenery and the
+## scenario are read beside the world's scene by their names (SCENERY_FILE, SCENARIO_FILE) - so its
+## files can be anywhere, in the packs or in the scenery editor's sources. What worlds share - the
+## terrain's atlas, the facades, the plants - is in packs of its own in the game's ASSETS_DIR
+## (common_*.pck), mounted with the world (mount()) and referred to by their paths. The scenery is
 ## registered the way a .scn's is (SceneryInstancer.instantiate_compiled()), never through
 ## SceneryInstancer's cache: it is already what a cache would hold. The sectors are loaded around
 ## the camera (sectors, MaszynaWorldSectors) from the world's sector_source and drawn while loaded
@@ -23,9 +28,13 @@ const DESCRIPTION_EXTENSION:String = "json"
 const PACK_EXTENSION:String = "pck"
 ## The pack of what is loaded whole, in the world's directory of packs
 const WORLD_PACK:String = "world.pck"
-## The .json's "format" the game reads. 4: the world in packs of blocks (block_of()), a sector's
-## decorations and wires drawn with it (SectorFile.DRAWN)
-const FORMAT:int = 4
+## The .json's "format" the game reads. 5: what worlds share in packs of ASSETS_DIR, the .json's
+## "assets"; no file of a world refers to another of its own
+const FORMAT:int = 5
+## The packs of what worlds share, under the game's directory: <pack>.pck, its files under
+## ASSETS_RESOURCES_DIR/<pack>/
+const ASSETS_DIR:String = "world_assets"
+const ASSETS_RESOURCES_DIR:String = "res://world_assets"
 ## Where a world's files are in the packs: RESOURCES_DIR/<name>/, its blocks' in BLOCKS_DIR/<block>/
 const RESOURCES_DIR:String = "res://worlds"
 const BLOCKS_DIR:String = "blocks"
@@ -51,15 +60,17 @@ const SECTOR_FILE_SUFFIXES:Dictionary[SectorFile, String] = {
 @export var world_name:String = ""
 ## The projected metres (east, north) of the world's origin - multiples of SECTOR_SIZE
 @export var origin:Vector2 = Vector2.ZERO
-## The sectors' data the simulation needs, in the world's coordinates (add_sector())
-@export var scenery:MaszynaCompiledScenery
-## The world's own data, of no sector: its trainsets, events, memory cells, sounds, scripts
-@export var scenario:MaszynaCompiledScenery
 ## The scenario clock the world declares for its start, hours
 @export var declared_start_time:float = START_TIME_DEFAULT
 ## The ids of the world's sectors (MaszynaWorldSector.id)
 @export var sector_ids:PackedStringArray = PackedStringArray()
 
+## The sectors' data the simulation needs, in the world's coordinates (add_sector()); read from
+## SCENERY_FILE beside the world's scene as it is loaded, unless given before
+var scenery:MaszynaCompiledScenery = null
+## The world's own data, of no sector: its trainsets, events, memory cells, sounds, scripts; read
+## from SCENARIO_FILE beside the world's scene as it is loaded, unless given before
+var scenario:MaszynaCompiledScenery = null
 ## Where the sectors' files come from; set before the world is loaded, the packs of its blocks
 ## (MaszynaWorldPackSectorSource) without one
 var sector_source:MaszynaWorldSectorSource = null
@@ -89,12 +100,17 @@ static func read_description(filename:String) -> Dictionary:
     return description
 
 
-## Mounts the WORLD_PACK of the world `description` describes (read_description()), its files under
-## the paths they have in it; false when it cannot be - the editor mounts none (the importer's
-## working copy of a world is under the same paths). Its blocks' packs are its sector_source's
+## Mounts the packs of what the world `description` describes (read_description()) shares with
+## others ("assets", ASSETS_DIR) and its WORLD_PACK, their files under the paths they have in them;
+## false when it cannot be - the editor mounts none (Godot's editor has packs off). Its blocks'
+## packs are its sector_source's
 static func mount(description:Dictionary) -> bool:
     if Engine.is_editor_hint() or not description.has("pck"):
         return false
+    for pack:String in description.get("assets", []):
+        if not ProjectSettings.load_resource_pack(UserSettings.get_maszyna_game_dir().path_join(ASSETS_DIR).path_join(
+                pack + "." + PACK_EXTENSION)):
+            push_error("World %s: no pack %s in %s" % [description["name"], pack, ASSETS_DIR])
     return ProjectSettings.load_resource_pack(
         UserSettings.get_maszyna_game_dir().path_join(WORLDS_DIR).path_join(description["pck"]))
 
@@ -130,10 +146,14 @@ static func block_of(sector_id:String) -> String:
             floori(cell.x / float(BLOCK_SECTORS)), floori(cell.y / float(BLOCK_SECTORS))]
 
 
+## Where the file `file` of the sector `sector_id` is in its world's directory
+static func sector_file(sector_id:String, file:SectorFile) -> String:
+    return BLOCKS_DIR.path_join(block_of(sector_id)).path_join(SECTORS_DIR).path_join(sector_id + SECTOR_FILE_SUFFIXES[file])
+
+
 ## Where the file `file` of the sector `sector_id` of the world `name` is in the packs
 static func sector_path(name:String, sector_id:String, file:SectorFile) -> String:
-    return RESOURCES_DIR.path_join(name).path_join(BLOCKS_DIR).path_join(block_of(sector_id)).path_join(
-            SECTORS_DIR).path_join(sector_id + SECTOR_FILE_SUFFIXES[file])
+    return RESOURCES_DIR.path_join(name).path_join(sector_file(sector_id, file))
 
 
 ## The data of `sector` the simulation needs - its tracks, traction and signals (the models named
@@ -175,6 +195,12 @@ func _has_source() -> bool:
 func _instantiate_content() -> void:
     var measurement:SceneryLoadMeasurement = SceneryLoadMeasurement.new(self)
     var compiled:MaszynaCompiledScenery = MaszynaCompiledScenery.new()
+    # beside the world's scene, wherever it is (the packs, the scenery editor's sources)
+    var dir:String = scene_file_path.get_base_dir()
+    if not scenery and dir and ResourceLoader.exists(dir.path_join(SCENERY_FILE)):
+        scenery = load(dir.path_join(SCENERY_FILE)) as MaszynaCompiledScenery
+    if not scenario and dir and ResourceLoader.exists(dir.path_join(SCENARIO_FILE)):
+        scenario = load(dir.path_join(SCENARIO_FILE)) as MaszynaCompiledScenery
     if scenario:
         compiled.trainsets.append_array(scenario.trainsets)
         compiled.events.append_array(scenario.events)
