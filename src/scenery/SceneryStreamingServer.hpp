@@ -359,6 +359,9 @@ namespace godot {
             /* What the provider supplied goes, and is supplied again into the new scenario as the
              * camera comes near; an empty RID supplies nothing (its node out of the world) */
             void provider_set_scenario(const RID &p_provider, const RID &p_scenario);
+            /* The provider's content of `p_cell` changed (a sector it lies in became available): what
+             * was supplied of it goes, and the cell is asked for again while the camera wants it */
+            void provider_refresh_cell(const RID &p_provider, const Vector2i &p_cell);
             /* The server taking a kind of supplied content: adopt(item, scenario) -> RID makes it
              * (registering its pieces), release(RID) frees it */
             void content_set_consumer(

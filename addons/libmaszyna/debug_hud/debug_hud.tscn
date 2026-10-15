@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://b1d2e3f4g5h6j" path="res://addons/libmaszyna/minimap/mini_map.tscn" id="11_minimap"]
 [ext_resource type="PackedScene" uid="uid://dqg8w15j37q0" path="res://addons/libmaszyna/debug_hud/mover_switches_controller.tscn" id="20_5crau"]
 [ext_resource type="PackedScene" uid="uid://cs3n2ry5tr34m" path="res://addons/libmaszyna/scenery/scenery_streaming_panel.tscn" id="21_streaming"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/scenery/world/maszyna_world_panel.tscn" id="24_world"]
 [ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/scenario_events_panel.tscn" id="23_scenario_events"]
 [ext_resource type="PackedScene" uid="uid://ctrktrct1on01" path="res://addons/libmaszyna/debug_hud/track_traction_panel.tscn" id="22_tracktrac"]
 [ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/weather_controls.tscn" id="5_weather_controls"]
@@ -251,6 +252,27 @@ metadata/_custom_type_script = "uid://bwbpde8e6vyk"
 layout_mode = 2
 
 [node name="SceneryStreamingPanel" parent="SceneryStreaming/SceneryStreamingScroll" unique_id=1011989969 instance=ExtResource("21_streaming")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="World" type="Container" parent="."]
+top_level = true
+custom_minimum_size = Vector2(100, 50)
+clip_contents = true
+layout_mode = 0
+offset_left = 1304.0
+offset_top = 8.0
+offset_right = 1704.0
+offset_bottom = 730.0
+script = ExtResource("9_window")
+title = "World"
+metadata/_custom_type_script = "uid://bwbpde8e6vyk"
+
+[node name="WorldScroll" type="ScrollContainer" parent="World"]
+layout_mode = 2
+
+[node name="WorldPanel" parent="World/WorldScroll" instance=ExtResource("24_world")]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 

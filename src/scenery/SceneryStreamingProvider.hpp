@@ -27,6 +27,7 @@ namespace godot {
                 CONTENT_MODELS,  ///< SceneryModelPlacement
                 CONTENT_SOUNDS,  ///< ScenerySoundPlacement
                 CONTENT_LINES,   ///< MaszynaLinesGeometry
+                CONTENT_MESHES,  ///< MaszynaMeshPlacement
                 CONTENT_KIND_MAX,
             };
 

@@ -37,6 +37,8 @@ namespace godot {
                 D_METHOD("provider_set_scenario", "provider", "scenario"),
                 &SceneryStreamingServer::provider_set_scenario);
         ClassDB::bind_method(
+                D_METHOD("provider_refresh_cell", "provider", "cell"), &SceneryStreamingServer::provider_refresh_cell);
+        ClassDB::bind_method(
                 D_METHOD("streaming_set_enabled", "enabled"), &SceneryStreamingServer::streaming_set_enabled);
         ClassDB::bind_method(D_METHOD("streaming_is_enabled"), &SceneryStreamingServer::streaming_is_enabled);
         ClassDB::bind_method(
@@ -284,6 +286,28 @@ namespace godot {
                 state.adopted = false;
             }
             provider->adopted_cells.clear();
+            content_dirty = true;
+        }
+        _release_content(released);
+    }
+
+    /// A load of the cell still in flight is of the revision the change replaces, so it is dropped
+    void SceneryStreamingServer::provider_refresh_cell(const RID &p_provider, const Vector2i &p_cell) {
+        std::array<Vector<RID>, CONTENT_KIND_COUNT> released;
+        {
+            MutexLock lock(mutex);
+            Provider *provider = providers.getptr(p_provider);
+            ERR_FAIL_NULL(provider);
+            ProviderCell *cell = provider->cells.getptr(p_cell);
+            if (cell == nullptr) {
+                return;
+            }
+            if (cell->adopted) {
+                released.swap(cell->adopted_rids);
+                cell->adopted = false;
+                provider->adopted_cells.erase(p_cell);
+            }
+            cell->queued_revision = 0;
             content_dirty = true;
         }
         _release_content(released);

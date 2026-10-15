@@ -67,10 +67,14 @@ static var _saving_subscenes:Dictionary = {}
 static var _saving_subscenes_mutex:Mutex = Mutex.new()
 
 
-## A region file's lines are drawn as the scenery's own (SceneryLines)
+## A region file's lines are drawn as the scenery's own (SceneryLines), a world's sector geometry
+## with the game's materials (MaszynaMeshPlacement)
 func _ready() -> void:
     SceneryStreamingServer.content_set_consumer(
         SceneryStreamingProvider.CONTENT_LINES, SceneryLines.create_mesh, SceneryMeshRenderingServer.mesh_free
+    )
+    SceneryStreamingServer.content_set_consumer(
+        SceneryStreamingProvider.CONTENT_MESHES, MaszynaMeshPlacement.create_mesh, SceneryMeshRenderingServer.mesh_free
     )
 
 

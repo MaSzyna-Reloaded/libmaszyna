@@ -80,7 +80,10 @@
 		<constant name="CONTENT_LINES" value="3" enum="ContentKind">
 			The scenery's lines - the wires of power lines: [MaszynaLinesGeometry] items, drawn by [code]SceneryLines.create_mesh[/code].
 		</constant>
-		<constant name="CONTENT_KIND_MAX" value="4" enum="ContentKind">
+		<constant name="CONTENT_MESHES" value="4" enum="ContentKind">
+			A world's sector geometry - buildings, platforms, bridges: [MaszynaMeshPlacement] items, drawn by [code]MaszynaMeshPlacement.create_mesh[/code].
+		</constant>
+		<constant name="CONTENT_KIND_MAX" value="5" enum="ContentKind">
 			The number of kinds.
 		</constant>
 	</constants>

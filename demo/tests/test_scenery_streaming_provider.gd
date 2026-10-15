@@ -96,6 +96,21 @@ func test_the_area_is_ready_once_the_cells_around_the_camera_are_supplied() -> v
     assert_eq(SceneryStreamingServer.streaming_get_statistics()["supplied_cells"], 1)
 
 
+func test_a_refreshed_cell_is_supplied_again_with_its_new_content() -> void:
+    var provider:TestProvider = _terrain_provider()
+    await _move_camera(Vector3.ZERO)
+    assert_eq(_adopted.size(), 1)
+
+    var geometry:MaszynaTrianglesChunkGeometry = MaszynaTrianglesChunkGeometry.new()
+    var terrain:Array = [geometry]
+    provider.items[SceneryStreamingProvider.CONTENT_TERRAIN] = terrain
+    SceneryStreamingServer.provider_refresh_cell(_providers[0], Vector2i.ZERO)
+    await wait_streaming(STREAMING_FRAMES)
+    assert_eq(_released.size(), 1, "the old content was not let go")
+    assert_eq(_adopted.size(), 2, "the cell was not supplied again")
+    assert_same(_adopted[1], geometry)
+
+
 func test_a_supplied_model_is_drawn_by_the_model_consumer() -> void:
     E3DRenderingServer.model_set_loader(_load_test_model)
     var placement:SceneryModelPlacement = SceneryModelPlacement.new()

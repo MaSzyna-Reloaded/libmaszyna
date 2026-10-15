@@ -93,6 +93,14 @@
 				Registers [param provider], whose content goes into [param scenario], and returns its handle for [method provider_free]. Its cells ([method SceneryStreamingProvider.get_chunk_cells]), their overhang and its kinds are asked for once, here: a provider's map does not change. From then on a cell is asked for ([method SceneryStreamingProvider.chunk_load], on the worker threads) as the camera comes within the draw distance plus the cell's overhang of it - 500[code] [/code]m ahead with the low prefetch budget - and let go one chunk past that.
 			</description>
 		</method>
+		<method name="provider_refresh_cell">
+			<return type="void" />
+			<param index="0" name="provider" type="RID" />
+			<param index="1" name="cell" type="Vector2i" />
+			<description>
+				The provider's content of [param cell] changed - a sector it lies in became available: what was supplied of the cell goes, and the cell is asked for again ([method SceneryStreamingProvider.chunk_load]) while the camera wants it. A load of the cell still in flight is dropped.
+			</description>
+		</method>
 		<method name="provider_set_scenario">
 			<return type="void" />
 			<param index="0" name="provider" type="RID" />

@@ -64,6 +64,11 @@ func attach_environment(environment: MaszynaEnvironmentNode) -> void:
     %WeatherControls.attach_environment(environment)
 
 
+## The world of the own format being shown, for the world window; null while there is none
+func attach_world(world: MaszynaWorld) -> void:
+    %WorldPanel.attach_world(world)
+
+
 ## The vehicle the player is driving, handed to every widget that shows something about it. The
 ## widgets used to be given a NodePath into the vehicle's own subtree and resolve it themselves,
 ## which reached across two scenes and could resolve before the vehicle had been built. They are
