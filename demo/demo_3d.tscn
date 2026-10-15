@@ -121,8 +121,9 @@ offset_bottom = 31.0
 unique_name_in_owner = true
 title = "Diagnostics"
 
-[node name="DebugHud" parent="." unique_id=194798435 instance=ExtResource("debug_hud_scene")]
+[node name="DebugHud" parent="." node_paths=PackedStringArray("environment") unique_id=194798435 instance=ExtResource("debug_hud_scene")]
 unique_name_in_owner = true
+environment = NodePath("../MaszynaEnvironmentNode")
 
 [node name="DeveloperConsole" parent="." unique_id=495569075 instance=ExtResource("2_ig825")]
 visible = null
@@ -1423,5 +1424,6 @@ autostart = true
 
 [connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="." method="_on_diagnostics_menu_index_pressed"]
 [connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="DebugHud" method="menu_index_pressed"]
+[connection signal="windows_visibility_changed" from="DebugHud" to="." method="_on_debug_hud_windows_visibility_changed"]
 [connection signal="camera_changed" from="Player" to="SceneryStreamer" method="set_camera"]
 [connection signal="timeout" from="AspectCycle" to="DemoBlock" method="send_event" binds= [&"next"]]

@@ -4,12 +4,26 @@ class_name DebugHud
 ## The diagnostic windows of the player's vehicle and of the scenery - each a HUDWindow child of
 ## this node, closed at the start. Whoever has a menu for them (the game's top bar, a demo scene)
 ## fills its own PopupMenu with fill_menu() and connects the menu's index_pressed to
-## menu_index_pressed() in its scene; entries it adds after them are its own.
+## menu_index_pressed() in its scene; entries it adds after them are its own. All the windows at
+## once are shown and hidden by this node itself, on hud_toggle (F12) or windows_toggle().
+
+## All the windows shown or hidden at once
+signal windows_visibility_changed(shown: bool)
+
+## The environment of the world being shown, for the weather and time window - a node of the scene
+## or one set when a world is made; null while there is no world (the menu)
+@export var environment: MaszynaEnvironmentNode = null:
+    set(value):
+        environment = value
+        if is_node_ready():
+            %WeatherControls.attach_environment(environment)
 
 ## Menu order snapshot - HUDWindow.move_to_front() reorders the children.
 var _windows: Array[HUDWindow] = []
 ## The menu entry of the developer console (Console), after the windows
 var _console_index: int = -1
+## Whether the last windows_toggle() showed the windows
+var _windows_shown: bool = false
 
 
 func _ready() -> void:
@@ -18,6 +32,7 @@ func _ready() -> void:
         var win: HUDWindow = child as HUDWindow
         win.visible = false
         _windows.append(win)
+    %WeatherControls.attach_environment(environment)
 
 
 func _exit_tree() -> void:
@@ -51,17 +66,19 @@ func menu_index_pressed(index: int) -> void:
     _propagate_vehicle(win, PlayerServer.player_get_vehicle())
 
 
-## All the windows shown or hidden at once
-func windows_set_visible(shown: bool) -> void:
+func _unhandled_input(event: InputEvent) -> void:
+    if event.is_action_pressed(&"hud_toggle", false, true):
+        windows_toggle()
+        get_viewport().set_input_as_handled()
+
+
+## All the windows shown, or all hidden when the last toggle showed them
+func windows_toggle() -> void:
+    _windows_shown = not _windows_shown
     for win: HUDWindow in _windows:
-        win.visible = shown
+        win.visible = _windows_shown
         _propagate_vehicle(win, PlayerServer.player_get_vehicle())
-
-
-## The environment of the world being shown, for the weather and time window; null while there is
-## no world (the menu)
-func attach_environment(environment: MaszynaEnvironmentNode) -> void:
-    %WeatherControls.attach_environment(environment)
+    windows_visibility_changed.emit(_windows_shown)
 
 
 ## The world of the own format being shown, for the world window; null while there is none
