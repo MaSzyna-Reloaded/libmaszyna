@@ -77,7 +77,10 @@
 		<constant name="CONTENT_SOUNDS" value="2" enum="ContentKind">
 			Ambient sounds: [ScenerySoundPlacement] items, looped by [code]ScenerySoundServer[/code] within their reach. Named by nothing - no event plays or stops them.
 		</constant>
-		<constant name="CONTENT_KIND_MAX" value="3" enum="ContentKind">
+		<constant name="CONTENT_LINES" value="3" enum="ContentKind">
+			The scenery's lines - the wires of power lines: [MaszynaLinesGeometry] items, drawn by [code]SceneryLines.create_mesh[/code].
+		</constant>
+		<constant name="CONTENT_KIND_MAX" value="4" enum="ContentKind">
 			The number of kinds.
 		</constant>
 	</constants>

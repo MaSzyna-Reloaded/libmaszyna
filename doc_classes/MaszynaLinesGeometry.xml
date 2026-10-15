@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaLinesGeometry" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The [code]lines[/code] nodes of one section of the 1 km grid, merged and made into a mesh.
+	</brief_description>
+	<description>
+		The scenery's [code]lines[/code], [code]line_strip[/code] and [code]line_loop[/code] nodes - the wires of power lines, mostly - of one section, merged as the original merges them in its 250 m cells ([code]basic_cell::insert()[/code], scene.cpp:302-326) and made into the mesh [code]scenery_lines.gdshader[/code] draws: a line a few pixels wide fading with the distance of its node's centre, as [code]opengl33renderer.cpp[/code] draws them. Filled by [code]SceneryLines[/code] from a scenery's nodes and by [MaszynaLegacySBTTerrainProvider] from a region file.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_lines">
+			<return type="void" />
+			<param index="0" name="points" type="PackedVector3Array" />
+			<param index="1" name="color" type="Color" />
+			<param index="2" name="width" type="float" />
+			<param index="3" name="range_min" type="float" />
+			<param index="4" name="range_max" type="float" />
+			<description>
+				Adds a node's lines, pairs of points in the world (an odd last one is left out); [param range_max] 0 is no limit. The node is merged into one of its cell with the same ranges, colour and width whose centre is closer than 10 m, as the original does.
+			</description>
+		</method>
+		<method name="build_mesh" qualifiers="const">
+			<return type="ArrayMesh" />
+			<description>
+				A quad per line, relative to [member origin]: the vertex one end, CUSTOM0 the other end and the side, CUSTOM1 the node's centre and radius, CUSTOM2 its width, range_min and range_max, COLOR its colour. No material.
+			</description>
+		</method>
+		<method name="get_node_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				The nodes left after merging.
+			</description>
+		</method>
+		<method name="get_range_end" qualifiers="const">
+			<return type="float" />
+			<description>
+				How far from the centre of the mesh's box the camera sees a line of it; 0 when one has no limit.
+			</description>
+		</method>
+		<method name="position_get_section_origin" qualifiers="static">
+			<return type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
+			<description>
+				The centre of the section of the 1 km grid holding [param position] - the origin of the geometry of the lines whose centre is there.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="origin" type="Vector3" setter="set_origin" getter="get_origin" default="Vector3(0, 0, 0)">
+			The section's centre, which the mesh is relative to.
+		</member>
+	</members>
+	<constants>
+		<constant name="QUAD_VERTICES" value="4">
+			The vertices of a line's quad.
+		</constant>
+		<constant name="QUAD_INDICES" value="6">
+			The indices of a line's two triangles.
+		</constant>
+	</constants>
+</class>

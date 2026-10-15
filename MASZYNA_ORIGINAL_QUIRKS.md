@@ -498,7 +498,7 @@ interface.
   in place, so a `terrain` line in it reaches the rest of the including file as the original's
   does; one in an include large enough to be parsed as a task of its own
   (`SceneryInstancer.INLINE_INCLUDE_MAX_SIZE`) reaches only what it includes itself - the datapack
-  has none. The region file's lines are left out, as `lines` nodes are.
+  has none. The region file's lines are drawn as the scenery's own `lines` nodes (`SceneryLines`).
 * A timetable file saved as UTF-8 rather than cp1250 keeps mangled Polish letters in its labels
   (`linia053/scenariusz_os`).
 * **A load count with no type behind it is not a load.** The `dynamic` line gives the count

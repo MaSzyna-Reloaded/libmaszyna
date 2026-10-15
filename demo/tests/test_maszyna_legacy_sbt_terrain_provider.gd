@@ -1,7 +1,8 @@
 extends MaszynaGutTest
 
 ## The original's binary region file (.sbt): its sections are listed as streaming cells, and a
-## cell's shapes are supplied as terrain chunks the way "triangles" nodes make them. With a region
+## cell's shapes are supplied as terrain chunks the way "triangles" nodes make them, its "lines"
+## nodes as the section's lines. With a region
 ## file the scenery's own "triangles", terrain models and "_ter.scm" includes are left out.
 
 const FIXTURES:String = "res://tests/fixtures/region"
@@ -45,7 +46,9 @@ func test_the_sections_are_listed_as_streaming_cells_without_being_read() -> voi
     var provider:MaszynaLegacySBTTerrainProvider = _provider()
     assert_eq(provider.get_chunk_cells(), [FIXTURE_CELL] as Array[Vector2i])
     assert_eq(provider.chunk_get_overhang(FIXTURE_CELL), 0.0, "a section of the default radius reaches out")
-    assert_eq(provider.get_content_kinds(), PackedInt32Array([SceneryStreamingProvider.CONTENT_TERRAIN]))
+    assert_eq(provider.get_content_kinds(), PackedInt32Array([
+        SceneryStreamingProvider.CONTENT_TERRAIN, SceneryStreamingProvider.CONTENT_LINES
+    ]))
 
 
 ## The section's own shapes are merged per texture around the section's centre, one group; a cell's
@@ -101,3 +104,20 @@ func test_a_missing_region_file_still_leaves_out_the_terrain_includes() -> void:
     assert_false(context.binary_terrain)
     assert_true(context.binary_terrain_state, "deserialize_terrain() sets it whatever the file")
     assert_eq(context.region_files, [] as Array[String])
+
+
+## A cell's "lines" nodes (lines_node::deserialize(), scenenode.cpp:513): the fixture's one, a white
+## line of width 2 within 1000 m - one geometry around the section's centre, its range the square
+## root of the file's
+func test_a_cells_lines_are_supplied_as_the_sections_lines() -> void:
+    var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_LINES)
+
+    assert_eq(geometries.size(), 1)
+    var geometry:MaszynaLinesGeometry = geometries[0]
+    assert_eq(geometry.origin, SceneryTrianglesSink.cell_get_origin(FIXTURE_CELL))
+    assert_eq(geometry.get_node_count(), 1)
+    var arrays:Array = geometry.build_mesh().surface_get_arrays(0)
+    assert_eq((arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)[0], -geometry.origin, "the point at the world's origin")
+    var looks:PackedFloat32Array = arrays[Mesh.ARRAY_CUSTOM2]
+    assert_eq(Vector3(looks[0], looks[1], looks[2]), Vector3(2, 0, 1000), "the width and the range")
+    assert_eq((arrays[Mesh.ARRAY_COLOR] as PackedColorArray)[0], Color.WHITE)

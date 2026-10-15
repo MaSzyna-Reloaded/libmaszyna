@@ -1,9 +1,11 @@
 #include "legacy/scenery/MaszynaLegacySBTTerrainProvider.hpp"
 
+#include "legacy/scenery/MaszynaLinesGeometry.hpp"
 #include "scenery/SceneryTrianglesSink.hpp"
 
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/core/math.hpp>
+#include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <godot_cpp/variant/packed_vector3_array.hpp>
@@ -219,7 +221,18 @@ namespace godot {
                 static_cast<int32_t>(p_geometry.vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
     }
 
-    /// lines_node::deserialize() (scenenode.cpp:550, :513) - read past, as "lines" nodes are
+    /// shape_node::deserialize() (scenenode.cpp:139, :99) read past - what read_shape() reads
+    static void skip_shape(SectionCursor &p_cursor) {
+        p_cursor.string(); // name
+        // area, range min and max, visible, translucent
+        p_cursor.skip(AREA_BYTES + (2 * sizeof(double)) + (2 * sizeof(uint16_t)));
+        const bool has_userdata = p_cursor.boolean();
+        p_cursor.string();                                    // texture
+        p_cursor.skip(LIGHTING_BYTES + (3 * sizeof(double))); // lighting, origin
+        p_cursor.skip(static_cast<int64_t>(p_cursor.u32()) * (VERTEX_BYTES + (has_userdata ? USERDATA_BYTES : 0)));
+    }
+
+    /// lines_node::deserialize() (scenenode.cpp:550, :513) read past, by the terrain
     static void skip_lines(SectionCursor &p_cursor) {
         p_cursor.string(); // name
         // area, range min and max, visible, line width, lighting, origin
@@ -229,6 +242,63 @@ namespace godot {
         p_cursor.skip(static_cast<int64_t>(p_cursor.u32()) * VERTEX_BYTES);
     }
 
+    /// lines_node::deserialize() (scenenode.cpp:550, :513): a node as the original merged it in its
+    /// cell, its lines added to p_geometry; a node not drawn is left out
+    static void read_lines(SectionCursor &p_cursor, const Ref<MaszynaLinesGeometry> &p_geometry) {
+        p_cursor.string();         // name
+        p_cursor.skip(AREA_BYTES); // the points give it again
+        const double range_squared_min = p_cursor.f64();
+        const double range_squared_max = p_cursor.f64();
+        const bool visible = p_cursor.boolean();
+        const float width = p_cursor.f32();
+        const float red = p_cursor.f32();
+        const float green = p_cursor.f32();
+        const float blue = p_cursor.f32();
+        p_cursor.f32(); // the diffuse's alpha, 1 (lines_node::import(), scenenode.cpp:578)
+        p_cursor.skip(LIGHTING_BYTES - (4 * sizeof(float))); // ambient, specular
+        const Vector3 origin = p_cursor.dvec3();
+        PackedVector3Array points;
+        for (uint32_t count = p_cursor.u32(); count > 0 && !p_cursor.overrun; count--) {
+            points.push_back(origin + p_cursor.vec3());
+            p_cursor.skip(VERTEX_BYTES - (3 * sizeof(float))); // normal, uv
+        }
+        if (p_cursor.overrun || !visible) {
+            return;
+        }
+        p_geometry->add_lines(
+                points, Color(red, green, blue), width, static_cast<float>(Math::sqrt(range_squared_min)),
+                range_squared_max >= NO_RANGE_SQUARED ? 0.0F : static_cast<float>(Math::sqrt(range_squared_max)));
+    }
+
+    /// The lines of a section's cells (basic_cell::deserialize(), scene.cpp:227), past the shapes:
+    /// one geometry around the section's centre
+    static Array read_section_lines(SectionCursor &p_cursor, const Vector2i &p_cell) {
+        Ref<MaszynaLinesGeometry> geometry;
+        geometry.instantiate();
+        geometry->set_origin(SceneryTrianglesSink::cell_get_origin(p_cell));
+        p_cursor.skip(AREA_BYTES);
+        for (uint32_t count = p_cursor.u32(); count > 0 && !p_cursor.overrun; count--) {
+            skip_shape(p_cursor);
+        }
+        for (int cell = 0; cell < MaszynaLegacySBTTerrainProvider::SECTION_CELL_COUNT && !p_cursor.overrun; cell++) {
+            p_cursor.skip(AREA_BYTES);
+            // opaque shapes, then translucent ones
+            for (int kind = 0; kind < 2; kind++) {
+                for (uint32_t count = p_cursor.u32(); count > 0 && !p_cursor.overrun; count--) {
+                    skip_shape(p_cursor);
+                }
+            }
+            for (uint32_t count = p_cursor.u32(); count > 0 && !p_cursor.overrun; count--) {
+                read_lines(p_cursor, geometry);
+            }
+        }
+        ERR_FAIL_COND_V_MSG(p_cursor.overrun, Array(), "Bad file: a region section ends early");
+        Array geometries;
+        if (geometry->get_node_count() > 0) {
+            geometries.push_back(geometry);
+        }
+        return geometries;
+    }
     void MaszynaLegacySBTTerrainProvider::_bind_methods() {
         ClassDB::bind_static_method(
                 "MaszynaLegacySBTTerrainProvider", D_METHOD("is_region", "path"),
@@ -301,6 +371,7 @@ namespace godot {
     PackedInt32Array MaszynaLegacySBTTerrainProvider::get_content_kinds() const {
         PackedInt32Array kinds;
         kinds.push_back(CONTENT_TERRAIN);
+        kinds.push_back(CONTENT_LINES);
         return kinds;
     }
 
@@ -313,7 +384,7 @@ namespace godot {
     ///   group of it whose range is measured from its own centre (opengl33renderer.cpp:2814)
     Array MaszynaLegacySBTTerrainProvider::chunk_load(const Vector2i &p_cell, const ContentKind p_kind) {
         Array geometries;
-        if (p_kind != CONTENT_TERRAIN) {
+        if (p_kind != CONTENT_TERRAIN && p_kind != CONTENT_LINES) {
             return geometries;
         }
         PackedByteArray data;
@@ -327,6 +398,9 @@ namespace godot {
             data = file->get_buffer(section->size);
         }
         SectionCursor cursor(data);
+        if (p_kind == CONTENT_LINES) {
+            return read_section_lines(cursor, p_cell);
+        }
         const Vector3 section_origin = SceneryTrianglesSink::cell_get_origin(p_cell);
         std::vector<String> section_textures;
         HashMap<String, ShapeGeometry> section_geometries;
@@ -388,4 +462,5 @@ namespace godot {
         }
         return geometries;
     }
+
 } // namespace godot

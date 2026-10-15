@@ -57,7 +57,7 @@
 			<param index="2" name="release" type="Callable" />
 			<description>
 				Sets the server that takes supplied content of [param kind]. [param adopt] is called as [code]adopt(item: Variant, scenario: RID) -&gt; RID[/code] on the main thread, within the per-frame budget, with an item of the type the [enum SceneryStreamingProvider.ContentKind] names: it makes it - registering its pieces with [method stream_register] - and returns its handle. [param release] is called as [code]release(rid: RID)[/code] with that handle once the cell is let go.
-				Consumers: [constant SceneryStreamingProvider.CONTENT_TERRAIN] - [code]MaszynaSceneryChunkRenderingServer.adopt_terrain[/code], [constant SceneryStreamingProvider.CONTENT_MODELS] - [E3DRenderingServer], [constant SceneryStreamingProvider.CONTENT_SOUNDS] - [code]ScenerySoundServer.adopt_sound[/code].
+				Consumers: [constant SceneryStreamingProvider.CONTENT_TERRAIN] - [code]MaszynaSceneryChunkRenderingServer.adopt_terrain[/code], [constant SceneryStreamingProvider.CONTENT_MODELS] - [E3DRenderingServer], [constant SceneryStreamingProvider.CONTENT_SOUNDS] - [code]ScenerySoundServer.adopt_sound[/code], [constant SceneryStreamingProvider.CONTENT_LINES] - [code]SceneryLines.create_mesh[/code].
 			</description>
 		</method>
 		<method name="owner_create">

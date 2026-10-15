@@ -29,6 +29,7 @@
 #include "legacy/scenario/MaszynaLegacyVehicleCommandAction.hpp"
 #include "legacy/scenario/MaszynaLegacyVoltageAction.hpp"
 #include "legacy/scenery/MaszynaLegacySBTTerrainProvider.hpp"
+#include "legacy/scenery/MaszynaLinesGeometry.hpp"
 #include "legacy/scenery/MaszynaTrianglesChunkGeometry.hpp"
 #include "legacy/scenery/MaszynaTrianglesImporter.hpp"
 #include "legacy/scenery/MaszynaTrianglesSector.hpp"
@@ -286,6 +287,7 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_CLASS(MaszynaTrianglesImporter);
         GDREGISTER_CLASS(MaszynaTrianglesChunkGeometry);
         GDREGISTER_CLASS(MaszynaTrianglesSector);
+        GDREGISTER_CLASS(MaszynaLinesGeometry);
         GDREGISTER_CLASS(WorkerTaskQueue);
         GDREGISTER_VIRTUAL_CLASS(SceneryStreamingProvider);
         // after the provider it implements

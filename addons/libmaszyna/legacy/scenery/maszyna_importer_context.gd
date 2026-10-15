@@ -16,7 +16,7 @@ class JoinChange:
 
 const RESULT_LISTS:Array[String] = [
     "tracks", "traction", "power_sources", "models", "events", "memcells", "launchers", "sounds", "isolated_sections", "terrains",
-    "scripts", "region_files", "trainsets"
+    "scripts", "region_files", "trainsets", "lines"
 ]
 
 ## The region file's extension (EU07_FILEEXTENSION_REGION, scene.cpp:27)
@@ -40,6 +40,8 @@ var memcells:Array[MaszynaMemcellData] = []
 var launchers:Array[MaszynaEventLauncherData] = []
 var sounds:Array[MaszynaSoundData] = []
 var isolated_sections:Array[MaszynaIsolatedData] = []
+## The "lines", "line_strip" and "line_loop" nodes, in the order of the file
+var lines:Array[MaszynaLinesData] = []
 ## The trainsets, each `dynamic` outside one a trainset of its own, in the order of the file
 var trainsets:Array[MaszynaTrainsetData] = []
 ## The `lua` scripts, relative to the scenery directory

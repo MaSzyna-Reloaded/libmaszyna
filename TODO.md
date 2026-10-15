@@ -477,6 +477,10 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `reflblend`; `shadowlessnormalmap` binds no normal map.
 * `rain_windscreen.gdshader`: droplets ignore speed and wind; transparent things behind the glass
   fade under the film; "down" not checked on a real cab glass.
+* Scenery lines (`scenery_lines.gdshader`): the distance is not divided by `Global.ZoomFactor` and
+  `Global.fDistanceFactor` (`opengl33renderer.cpp:4136`, both 1 by default); the colour is lit by
+  the scene's lights instead of the original's diffuse x `m_sunlight.ambient` (`:4150`); lines
+  cast no shadow (the original draws them in its shadow pass, `:4152`).
 
 ## Scenery loading
 

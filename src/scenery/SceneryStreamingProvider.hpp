@@ -26,6 +26,7 @@ namespace godot {
                 CONTENT_TERRAIN, ///< MaszynaTrianglesChunkGeometry
                 CONTENT_MODELS,  ///< SceneryModelPlacement
                 CONTENT_SOUNDS,  ///< ScenerySoundPlacement
+                CONTENT_LINES,   ///< MaszynaLinesGeometry
                 CONTENT_KIND_MAX,
             };
 

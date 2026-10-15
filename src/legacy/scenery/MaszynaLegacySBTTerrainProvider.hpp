@@ -14,7 +14,8 @@ namespace godot {
     /// scene.cpp:1141), supplied section by section as the camera comes near - a section is 1 km, the
     /// streaming's own cell. The file holds the "triangles" shapes of a scenery the original dumped,
     /// or the only copy of a terrain the datapack ships without its text (MASZYNA_ORIGINAL_QUIRKS.md,
-    /// "Terrain that exists only as an SBT"); its lines are left out, as "lines" nodes are.
+    /// "Terrain that exists only as an SBT") - and its "lines" nodes, the wires of power lines
+    /// (CONTENT_LINES, a MaszynaLinesGeometry of the section).
     class MaszynaLegacySBTTerrainProvider : public SceneryStreamingProvider {
             GDCLASS(MaszynaLegacySBTTerrainProvider, SceneryStreamingProvider)
 

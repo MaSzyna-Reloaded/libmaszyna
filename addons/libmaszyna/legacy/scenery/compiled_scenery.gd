@@ -17,6 +17,8 @@ class_name MaszynaCompiledScenery
 @export var launchers:Array[MaszynaEventLauncherData] = []
 @export var sounds:Array[MaszynaSoundData] = []
 @export var isolated_sections:Array[MaszynaIsolatedData] = []
+## The "lines" nodes, drawn by SceneryLines (not nodes, so not in [member nodes])
+@export var lines:Array[MaszynaLinesData] = []
 ## The trainsets and their vehicles, built through the servers (not nodes, so not in [member nodes])
 @export var trainsets:Array[MaszynaTrainsetData] = []
 ## The `lua` scripts, relative to the scenery directory

@@ -8,6 +8,7 @@ static var triangles_importer = preload("res://addons/libmaszyna/legacy/scenery/
 static var dynamic_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_dynamic_importer.gd").new()
 static var power_source_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_tractionpowersource_importer.gd").new()
 static var memcell_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_memcell_importer.gd").new()
+static var lines_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_lines_importer.gd").new()
 static var eventlauncher_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_eventlauncher_importer.gd").new()
 static var sound_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_sound_importer.gd").new()
 
@@ -94,9 +95,14 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
             memcell.name = name
             memcell.position = memcell.position.rotated(Vector3.UP, context.rotate.y) + context.origin
             context.memcells.append(memcell)
-        "lines":
-            p.get_tokens_until("endline")
-            #push_warning("Lines node is not supported yet")
+        "lines", "line_strip", "line_loop":
+            # with a region file the lines are the file's (simulationstateserializer.cpp:586-601)
+            if context.binary_terrain:
+                p.get_tokens_until("endline")
+            else:
+                var lines:MaszynaLinesData = lines_importer.import(p, context, type, range_min, maxf(range_max, 0.0))
+                if lines:
+                    context.lines.append(lines)
         _:
             #push_error("Unhandled node type: "+type)
             pass

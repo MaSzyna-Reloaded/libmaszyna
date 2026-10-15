@@ -25,7 +25,7 @@ static var firstinit_importer = preload("res://addons/libmaszyna/legacy/scenery/
 static var isolated_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/legacy/scenery/maszyna_lua_importer.gd").new()
-const CACHE_FORMAT_VERSION:int = 46
+const CACHE_FORMAT_VERSION:int = 47
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -65,6 +65,13 @@ static var _include_buffers_mutex:Mutex = Mutex.new()
 ## Cache paths of subscenes being saved by queue workers - one writer per file
 static var _saving_subscenes:Dictionary = {}
 static var _saving_subscenes_mutex:Mutex = Mutex.new()
+
+
+## A region file's lines are drawn as the scenery's own (SceneryLines)
+func _ready() -> void:
+    SceneryStreamingServer.content_set_consumer(
+        SceneryStreamingProvider.CONTENT_LINES, SceneryLines.create_mesh, SceneryMeshRenderingServer.mesh_free
+    )
 
 
 ## Stops every parse in flight and joins its workers. Called by a scenery leaving the tree: the
@@ -209,6 +216,7 @@ func instantiate_compiled(
     await _build_triangle_chunks(root, compiled.triangle_chunks, world_3d)
     if _is_load_given_up(root):
         return
+    root._mesh_rids.append_array(SceneryLines.create_meshes(compiled.lines, world_3d.scenario))
     # the terrain of a region file is supplied as the camera comes near; its sections are listed on
     # a worker - a file lists twenty thousand of them
     for region_file:String in compiled.region_files:
@@ -486,6 +494,7 @@ static func _compile_scenery(
     compiled.launchers = context.launchers
     compiled.sounds = context.sounds
     compiled.isolated_sections = context.isolated_sections
+    compiled.lines = context.lines
     compiled.trainsets = context.trainsets
     compiled.scripts = context.scripts
     compiled.region_files = context.region_files
@@ -667,6 +676,7 @@ func parse_subscene_task(
         cached.launchers.assign(compiled.launchers)
         cached.sounds.assign(compiled.sounds)
         cached.isolated_sections.assign(compiled.isolated_sections)
+        cached.lines.assign(compiled.lines)
         cached.trainsets.assign(compiled.trainsets)
         cached.region_files.assign(compiled.region_files)
         cached.join_duplicated_events = compiled.join_duplicated_events

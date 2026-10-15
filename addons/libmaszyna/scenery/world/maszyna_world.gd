@@ -99,6 +99,9 @@ func _instantiate_content() -> void:
             elif node is MaszynaModelsNode:
                 for model:MaszynaModelData in (node as MaszynaModelsNode).models:
                     compiled.models.append(model.translated(corner))
+            elif node is MaszynaLinesNode:
+                for lines:MaszynaLinesData in (node as MaszynaLinesNode).lines:
+                    compiled.lines.append(lines.translated(corner))
             elif node is MaszynaMeshesNode:
                 meshes.append(node as MaszynaMeshesNode)
                 mesh_corners.append(corner)
