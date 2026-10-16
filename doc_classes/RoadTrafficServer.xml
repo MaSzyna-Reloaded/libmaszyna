@@ -14,7 +14,7 @@
 			<return type="void" />
 			<param index="0" name="tracks" type="RID[]" />
 			<description>
-				Roads of [TrackServer] to drive on, connected to the roads given before where their ends meet; the tracks of another group and the unpaved roads - gripping less than an asphalt road ([method TrackServer.track_get_friction] below 0.7) - are passed over. The roads near the camera are filled with vehicles at once.
+				Roads of [TrackServer] to drive on, connected to the roads given before where their ends meet; the tracks of another group and the unpaved roads - gripping less than an asphalt road ([method TrackServer.track_get_friction] below 0.7, a road of the default friction counting as paved) - are passed over. The roads near the camera are filled with vehicles at once.
 			</description>
 		</method>
 		<method name="road_remove_many">

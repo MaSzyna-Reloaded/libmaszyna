@@ -21,6 +21,8 @@ const ROAD_WIDTH:float = 7.0
 ## importer - unpaved, no traffic
 const ASPHALT_FRICTION:float = 0.85
 const DIRT_FRICTION:float = 0.5
+## TrackServer's DEFAULT_TRACK_FRICTION (not bound): a road that gives none
+const DEFAULT_FRICTION:float = 0.15
 const LONG_ROAD:float = 500.0
 const DEAD_END_ROAD:float = 30.0
 ## The side of a square of four roads, each meeting the next at a corner
@@ -166,6 +168,14 @@ func test_no_vehicle_drives_on_an_unpaved_road() -> void:
     RoadTrafficServer.road_add_many(_roads)
     await step(ticks(2.0))
     assert_eq(RoadTrafficServer.vehicle_get_rids().size(), 0)
+
+
+func test_a_road_of_no_friction_given_is_driven_on() -> void:
+    await _start(1, 1.0)
+    _road(Vector3.ZERO, Vector3(LONG_ROAD, 0.0, 0.0), DEFAULT_FRICTION)
+    _camera.global_position = Vector3(LONG_ROAD / 2.0, 0.0, 0.0)
+    RoadTrafficServer.road_add_many(_roads)
+    assert_eq(RoadTrafficServer.vehicle_get_rids().size(), 1, "a world imported before its roads' surface")
 
 
 func test_roads_removed_take_their_vehicles_off() -> void:

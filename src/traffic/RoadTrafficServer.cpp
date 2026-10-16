@@ -175,8 +175,10 @@ namespace godot {
         HashSet<RID> added;
         for (int index = 0; index < p_tracks.size(); ++index) {
             const RID track = p_tracks[index];
+            const double friction = tracks->track_get_friction(track);
             if (roads.has(track) || tracks->track_get_group(track) != TrackServer::GROUP_ROAD ||
-                tracks->track_get_friction(track) < MIN_ROAD_FRICTION) {
+                (friction < MIN_ROAD_FRICTION &&
+                 !Math::is_equal_approx(friction, TrackServer::DEFAULT_TRACK_FRICTION))) {
                 continue;
             }
             const Ref<Curve3D> curve = tracks->track_get_domain_curve(track);

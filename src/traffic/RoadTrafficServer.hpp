@@ -63,7 +63,9 @@ namespace godot {
             static constexpr double MIN_GAP = 2.0;
             static constexpr double TIME_HEADWAY = 1.5;
             /* A road gripping less is unpaved and has no traffic: an asphalt road grips 0.85 (the
-             * original's `track road ... 0.85`), a dirt road of the importer 0.5 */
+             * original's `track road ... 0.85`), a dirt road of the importer 0.5. A road of the
+             * default friction (TrackServer::DEFAULT_TRACK_FRICTION) gives none - a world imported
+             * before its roads' surface was written - and is driven on */
             static constexpr double MIN_ROAD_FRICTION = 0.7;
             /* A road without a speed limit of its own is driven at this [km/h] - a built-up area's */
             static constexpr double DEFAULT_ROAD_VELOCITY = 50.0;
