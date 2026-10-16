@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/libmaszyna/scenery/world/maszyna_stations_panel.gd" id="1_stations"]
+
+[node name="MaszynaStationsPanel" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_stations")
+
+[node name="StationList" type="ItemList" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Show" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Show"
+
+[connection signal="pressed" from="Show" to="." method="show_selected"]
+[connection signal="item_activated" from="StationList" to="." method="show_selected" unbinds=1]

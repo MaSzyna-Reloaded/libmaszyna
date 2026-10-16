@@ -27,6 +27,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("camera_cycle_follow_view"), &PlayerCameraServer::camera_cycle_follow_view);
         ClassDB::bind_method(D_METHOD("camera_toggle_cabin"), &PlayerCameraServer::camera_toggle_cabin);
         ClassDB::bind_method(D_METHOD("camera_show_vehicle", "vehicle"), &PlayerCameraServer::camera_show_vehicle);
+        ClassDB::bind_method(D_METHOD("camera_place", "transform"), &PlayerCameraServer::camera_place);
         ClassDB::bind_method(
                 D_METHOD("camera_get_show_transform", "vehicle"), &PlayerCameraServer::camera_get_show_transform);
 
@@ -179,6 +180,12 @@ namespace godot {
         ERR_FAIL_COND(!vehicles->vehicle_exists(p_vehicle));
         // placed first: the free camera is where it is to be before the view is announced as free
         emit_signal(camera_placed_signal, camera_get_show_transform(p_vehicle));
+        camera_set_mode(CAMERA_MODE_FREE);
+    }
+
+    void PlayerCameraServer::camera_place(const Transform3D &p_transform) {
+        // placed first, as camera_show_vehicle(): the free camera is there before the view is free
+        emit_signal(camera_placed_signal, p_transform);
         camera_set_mode(CAMERA_MODE_FREE);
     }
 } // namespace godot

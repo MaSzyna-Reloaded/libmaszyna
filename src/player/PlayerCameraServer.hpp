@@ -78,6 +78,8 @@ namespace godot {
             void camera_show_vehicle(const RID &p_vehicle);
             /// Where camera_show_vehicle() puts the camera: beside the vehicle, looking at it
             Transform3D camera_get_show_transform(const RID &p_vehicle) const;
+            /// The free camera at p_transform (a place shown: a station of the HUD's list)
+            void camera_place(const Transform3D &p_transform);
     };
 } // namespace godot
 

@@ -81,9 +81,10 @@ func windows_toggle() -> void:
     windows_visibility_changed.emit(_windows_shown)
 
 
-## The world of the own format being shown, for the world window; null while there is none
+## The world of the own format being shown, for the world and stations windows; null while there is none
 func attach_world(world: MaszynaWorld) -> void:
     %WorldPanel.attach_world(world)
+    %StationsPanel.attach_world(world)
 
 
 ## The vehicle the player is driving, handed to every widget that shows something about it. The

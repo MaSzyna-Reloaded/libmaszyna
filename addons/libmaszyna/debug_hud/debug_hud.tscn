@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://dqg8w15j37q0" path="res://addons/libmaszyna/debug_hud/mover_switches_controller.tscn" id="20_5crau"]
 [ext_resource type="PackedScene" uid="uid://cs3n2ry5tr34m" path="res://addons/libmaszyna/scenery/scenery_streaming_panel.tscn" id="21_streaming"]
 [ext_resource type="PackedScene" path="res://addons/libmaszyna/scenery/world/maszyna_world_panel.tscn" id="24_world"]
+[ext_resource type="PackedScene" path="res://addons/libmaszyna/scenery/world/maszyna_stations_panel.tscn" id="25_stations"]
 [ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/scenario_events_panel.tscn" id="23_scenario_events"]
 [ext_resource type="PackedScene" uid="uid://ctrktrct1on01" path="res://addons/libmaszyna/debug_hud/track_traction_panel.tscn" id="22_tracktrac"]
 [ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/weather_controls.tscn" id="5_weather_controls"]
@@ -275,6 +276,23 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="Stations" type="Container" parent="."]
+top_level = true
+custom_minimum_size = Vector2(100, 50)
+clip_contents = true
+layout_mode = 0
+offset_left = 1304.0
+offset_top = 8.0
+offset_right = 1604.0
+offset_bottom = 508.0
+script = ExtResource("9_window")
+title = "Stations"
+metadata/_custom_type_script = "uid://bwbpde8e6vyk"
+
+[node name="StationsPanel" parent="Stations" instance=ExtResource("25_stations")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="TrackAndTraction" type="Container" parent="." unique_id=609847833]
 top_level = true

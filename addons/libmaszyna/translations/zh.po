@@ -153,3 +153,10 @@ msgstr "后视镜"
 
 msgid "radio call 1"
 msgstr "无线电1号频道呼叫"
+
+# the debug HUD's Stations window (MaszynaStationsPanel)
+msgid "Stations"
+msgstr "车站"
+
+msgid "Show"
+msgstr "显示"

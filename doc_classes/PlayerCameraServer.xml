@@ -61,6 +61,13 @@
 				The vehicle the following camera follows; following now, it follows this one. Cleared while following, the view becomes the free camera. A freed vehicle is cleared.
 			</description>
 		</method>
+		<method name="camera_place">
+			<return type="void" />
+			<param index="0" name="transform" type="Transform3D" />
+			<description>
+				The free camera at [param transform]: a place shown (a station picked in the debug HUD's Stations window). [signal camera_placed] comes before [signal camera_changed], as with [method camera_show_vehicle].
+			</description>
+		</method>
 		<method name="camera_show_vehicle">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />
