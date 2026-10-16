@@ -43,6 +43,19 @@ const SECTORS_DIR:String = "sectors"
 const SCENERY_FILE:String = "scenery.res"
 ## The world's scenario (its trainsets...) beside its scene: a MaszynaCompiledScenery
 const SCENARIO_FILE:String = "scenario.res"
+## The world's far terrain beside its scene: a low-poly mesh of the ground a block
+## (far_terrain_file()), in the world's coordinates, lying under the terrain it stands for - drawn
+## whole, past the terrain streamed around the camera and alone over the sectors exported as far
+## terrain only (whose block packs lack them: MaszynaWorldPackSectorSource)
+const FAR_TERRAIN_DIR:String = "far"
+## The pack of the far terrain in the world's directory of packs, mounted with the world (mount())
+const FAR_TERRAIN_PACK:String = "far.pck"
+const FAR_TERRAIN_SHADER:Shader = preload("far_terrain.gdshader")
+## How far the camera sees by default, the far terrain's mountains with it (the project setting
+## "maszyna/scenery/far_terrain_distance") [m]
+const FAR_TERRAIN_DISTANCE:float = 30000.0
+## The project setting of how far the camera sees
+const FAR_TERRAIN_DISTANCE_SETTING:String = "maszyna/scenery/far_terrain_distance"
 
 ## A sector's files (sector_path())
 enum SectorFile {
@@ -124,8 +137,11 @@ static func mount(description:Dictionary) -> bool:
         if not ProjectSettings.load_resource_pack(UserSettings.get_maszyna_game_dir().path_join(ASSETS_DIR).path_join(
                 pack + "." + PACK_EXTENSION)):
             push_error("World %s: no pack %s in %s" % [description["name"], pack, ASSETS_DIR])
-    return ProjectSettings.load_resource_pack(
-        UserSettings.get_maszyna_game_dir().path_join(WORLDS_DIR).path_join(description["pck"]))
+    var worlds_dir:String = UserSettings.get_maszyna_game_dir().path_join(WORLDS_DIR)
+    var far_pack:String = worlds_dir.path_join(String(description["pck"]).get_base_dir()).path_join(FAR_TERRAIN_PACK)
+    if FileAccess.file_exists(far_pack) and not ProjectSettings.load_resource_pack(far_pack):
+        push_error("World %s: cannot mount %s" % [description["name"], far_pack])
+    return ProjectSettings.load_resource_pack(worlds_dir.path_join(description["pck"]))
 
 
 ## The scenario of the world `filename` (worlds/<filename>): its pack mounted, its SCENARIO_FILE
@@ -162,6 +178,11 @@ static func block_of(sector_id:String) -> String:
 ## Where the file `file` of the sector `sector_id` is in its world's directory
 static func sector_file(sector_id:String, file:SectorFile) -> String:
     return BLOCKS_DIR.path_join(block_of(sector_id)).path_join(SECTORS_DIR).path_join(sector_id + SECTOR_FILE_SUFFIXES[file])
+
+
+## Where the far terrain of the block `block` (block_of()) is in its world's directory
+static func far_terrain_file(block:String) -> String:
+    return FAR_TERRAIN_DIR.path_join(block + ".res")
 
 
 ## Where the file `file` of the sector `sector_id` of the world `name` is in the packs
@@ -237,6 +258,23 @@ func _instantiate_content() -> void:
     await SceneryInstancer.instantiate_compiled(self, compiled, measurement)
     if is_load_given_up() or not sector_ids:
         return
+    # the far terrain of the sectors' blocks, beside the scene too; children of the content, freed
+    # with it
+    var blocks:Dictionary[String, bool] = {}
+    for id:String in sector_ids:
+        blocks[block_of(id)] = true
+    var far_material:ShaderMaterial = ShaderMaterial.new()
+    far_material.shader = FAR_TERRAIN_SHADER
+    for block:String in blocks:
+        var far_path:String = dir.path_join(far_terrain_file(block))
+        if not dir or not ResourceLoader.exists(far_path):
+            continue
+        var far:MeshInstance3D = MeshInstance3D.new()
+        far.name = "FarTerrain_" + block
+        far.mesh = load(far_path) as Mesh
+        far.material_override = far_material
+        far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        add_child(far)
     if not sector_source:
         sector_source = MaszynaWorldPackSectorSource.new(world_name)
     _provider = MaszynaWorldSectorProvider.new(origin, sector_ids, sector_source)

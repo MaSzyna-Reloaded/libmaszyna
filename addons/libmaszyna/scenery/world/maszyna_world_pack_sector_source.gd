@@ -4,8 +4,9 @@ class_name MaszynaWorldPackSectorSource
 ## The sectors of a world in the packs of its blocks on the disk (worlds/<world>/<block>.pck of
 ## the game's directory, MaszynaWorld.block_of()): a block's pack is mounted when the first of its
 ## sectors is asked for - mounting reads only its list of files, and a pack cannot be unmounted -
-## and its sectors are available at once. A block without a pack has none. The editor mounts
-## nothing: the importer's working copy of the world is under the same paths.
+## and its sectors are available at once. A block without a pack has none, nor has a sector its
+## block's pack lacks (one exported as far terrain only: MaszynaWorld.FAR_TERRAIN_DIR). The editor
+## mounts nothing: the importer's working copy of the world is under the same paths.
 
 ## The pack of the block `block` was mounted (or found missing: get_blocks())
 signal block_mounted(block:String)
@@ -31,7 +32,7 @@ func sector_request(id:String) -> void:
             "msec": Time.get_ticks_msec(),
         }
         block_mounted.emit(block)
-    if _blocks[block]["mounted"]:
+    if _blocks[block]["mounted"] and ResourceLoader.exists(sector_get_path(id, MaszynaWorld.SectorFile.DRAWN)):
         sector_available.emit(id)
 
 

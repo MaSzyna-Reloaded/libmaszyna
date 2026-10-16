@@ -145,6 +145,8 @@ func _initialization_complete() -> void:
     if not camera:
         camera = Camera3D.new()
         camera.name = "Camera"
+        # as far as a world's far terrain is seen (MaszynaWorld.FAR_TERRAIN_DIR)
+        camera.far = ProjectSettings.get_setting(MaszynaWorld.FAR_TERRAIN_DISTANCE_SETTING, MaszynaWorld.FAR_TERRAIN_DISTANCE)
         _mode_view().add_child(camera)
         CabinHUDMouseSystem.mouse_set_camera(camera.get_instance_id())
     _show_view(_mode_view())

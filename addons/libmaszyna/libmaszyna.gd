@@ -159,6 +159,13 @@ func _enter_tree():
         "maszyna/scenery/draw_distance", 3000.0, TYPE_FLOAT,
         PROPERTY_HINT_RANGE, "100.0,20000.0,10.0,suffix:m"
     )
+    # How far the camera sees: a world's far terrain (MaszynaWorld.FAR_TERRAIN_DIR) stands for its
+    # ground past the draw distance, its mountains seen from tens of kilometres (read when a camera
+    # is made)
+    add_custom_project_setting(
+        MaszynaWorld.FAR_TERRAIN_DISTANCE_SETTING, MaszynaWorld.FAR_TERRAIN_DISTANCE, TYPE_FLOAT,
+        PROPERTY_HINT_RANGE, "1000.0,100000.0,100.0,suffix:m"
+    )
     # A scenery light is streamed with a range of its own, shorter than the model's - a street lamp
     # is visible from half a kilometre and lights forty metres. This is how far the camera may be
     # from the light itself, not how far the light reaches. The densest 300 m of stary_jawor holds
