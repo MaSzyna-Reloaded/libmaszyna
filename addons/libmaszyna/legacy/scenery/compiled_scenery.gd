@@ -26,5 +26,8 @@ class_name MaszynaCompiledScenery
 ## The region files (.sbt) whose terrain is supplied as the camera comes near
 ## (MaszynaLegacySBTTerrainProvider), not read into triangle_chunks
 @export var region_files:Array[String] = []
+## The world's stations and signal boxes, for a list of them (not drawn)
+@export var stations:Array[MaszynaStationData] = []
+@export var signal_boxes:Array[MaszynaSignalBoxData] = []
 ## Merged triangle meshes, streamed by MaszynaSceneryChunkRenderingServer (not nodes, so not in [member nodes])
 @export var triangle_chunks:Array[MaszynaTrianglesChunkData] = []
