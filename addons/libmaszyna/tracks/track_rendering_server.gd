@@ -202,6 +202,13 @@ func create_track(track_rid: RID) -> RID:
     return track_render_rid
 
 
+## The tracks [param track_render_rids] freed in one go: a road cell they empty is freed, not built
+## again for every road taken out of it (its rebuild comes at the end of the frame, by then empty)
+func free_track_many(track_render_rids: Array[RID]) -> void:
+    for track_render_rid: RID in track_render_rids:
+        free_track(track_render_rid)
+
+
 func free_track(track_render_rid: RID) -> void:
     var state: TrackState = _tracks.get(track_render_rid)
     if not state:

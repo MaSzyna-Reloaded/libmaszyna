@@ -489,6 +489,10 @@ anything. Open work belongs in `TODO.md`.
   *(10-09 Python screens ended the game without a trace)*
 
 ## Threads and teardown
+* Freeing many of a server's items goes through one call for all of them (`track_free_many()`,
+  `free_track_many()`), never a loop over the one-item free: a free that resets or rebuilds what
+  every remaining item shares (the topology, a road cell, a listener's scan) costs O(N) each, O(N²)
+  for the whole. *(10-16 a world's tracks freed in 99 s)*
 * A worker never takes an object back from a `WeakRef` the main thread may be letting go: what
   workers share with the main thread is held by a counted registry, and a worker only asks whether
   a key is there. Data read ahead is shared by key, once, never a copy per user. *(10-12

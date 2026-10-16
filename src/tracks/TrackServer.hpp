@@ -304,6 +304,7 @@ namespace godot {
             void _set_switch_f_offset(const RID &p_switch, SwitchData &p_data, double p_value);
             /* Frees the track's switch, reporting it under the track's name */
             void _free_switch(TrackSegment &p_track);
+            void _erase_track(const RID &p_track);
             void _set_switch_processing(bool p_processing);
             void _process_switches();
 
@@ -349,6 +350,7 @@ namespace godot {
 
             RID track_create();
             void track_free(const RID &p_track);
+            void track_free_many(const TypedArray<RID> &p_tracks);
             RID track_get_rid_by_name(const String &p_name) const;
             double track_get_length(const RID &p_track, SwitchTrack p_branch = TRACK_COMMON) const;
             void track_update_curves(const RID &p_track, const Ref<Resource> &p_curve1, const Ref<Resource> &p_curve2);

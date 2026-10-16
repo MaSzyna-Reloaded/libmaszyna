@@ -243,27 +243,31 @@ func get_scenery_sounds() -> MaszynaLegacyScenerySounds:
 ## budget_msec > 0 spreads the freeing over frames, so whatever covers the screen (the loading
 ## spinner) keeps animating; 0 frees everything at once (the node freed)
 func _free_owned_rids(budget_msec:int = 0) -> void:
+    # [the RIDs, freeing one, freeing them all at once (or none)]
     var groups:Array = [
-        [_trainset_rids, RailVehicleServer.trainset_free],
-        [_vehicle_rids, MaszynaLegacyVehicleSystem.vehicle_free],
-        [_pickable_rids, SceneryHUDMouseServer.pickable_free],
-        [_launcher_rids, ScenarioEventServer.launcher_free],
-        [_event_rids, ScenarioEventServer.event_free],
-        [_memory_rids, ScenarioEventServer.memory_free],
-        [_event_track_rids, ScenarioEventServer.track_clear_events],
-        [_event_isolated_rids, ScenarioEventServer.isolated_clear_events],
-        [_isolated_rids, TrackServer.isolated_free],
-        [_track_render_rids, TrackRenderingServer.free_track],
-        [_track_rids, TrackServer.track_free],
-        [_traction_rids, TractionRenderingServer.free_traction],
-        [_wire_power_rids, TractionServer.wire_free],
-        [_power_source_rids, TractionServer.power_source_free],
-        [_e3d_rids, E3DRenderingServer.instance_free],
+        [_trainset_rids, RailVehicleServer.trainset_free, Callable()],
+        [_vehicle_rids, MaszynaLegacyVehicleSystem.vehicle_free, Callable()],
+        [_pickable_rids, SceneryHUDMouseServer.pickable_free, Callable()],
+        [_launcher_rids, ScenarioEventServer.launcher_free, Callable()],
+        [_event_rids, ScenarioEventServer.event_free, Callable()],
+        [_memory_rids, ScenarioEventServer.memory_free, Callable()],
+        [_event_track_rids, ScenarioEventServer.track_clear_events, Callable()],
+        [_event_isolated_rids, ScenarioEventServer.isolated_clear_events, Callable()],
+        [_isolated_rids, TrackServer.isolated_free, Callable()],
+        # the tracks all at once (free_track_many(), track_free_many()): one by one, each emptied a
+        # road cell rebuilt on the frames between and cleared every track's topology - a world of
+        # tens of thousands took 99 s
+        [_track_render_rids, Callable(), TrackRenderingServer.free_track_many],
+        [_track_rids, Callable(), TrackServer.track_free_many],
+        [_traction_rids, TractionRenderingServer.free_traction, Callable()],
+        [_wire_power_rids, TractionServer.wire_free, Callable()],
+        [_power_source_rids, TractionServer.power_source_free, Callable()],
+        [_e3d_rids, E3DRenderingServer.instance_free, Callable()],
         # after the instances, whose signal heads leave the system as they go
-        [_signalling_system_rids, SignallingServer.system_free],
-        [_provider_rids, SceneryStreamingServer.provider_free],
-        [_triangle_chunk_rids, MaszynaSceneryChunkRenderingServer.free_chunk],
-        [_mesh_rids, SceneryMeshRenderingServer.mesh_free],
+        [_signalling_system_rids, SignallingServer.system_free, Callable()],
+        [_provider_rids, SceneryStreamingServer.provider_free, Callable()],
+        [_triangle_chunk_rids, MaszynaSceneryChunkRenderingServer.free_chunk, Callable()],
+        [_mesh_rids, SceneryMeshRenderingServer.mesh_free, Callable()],
     ]
     var total:int = 0
     for group:Array in groups:
@@ -273,6 +277,13 @@ func _free_owned_rids(budget_msec:int = 0) -> void:
     for group:Array in groups:
         var rids:Array[RID] = group[0]
         var free_rid:Callable = group[1]
+        var free_all:Callable = group[2]
+        if free_all.is_valid():
+            var all:Array[RID] = rids.duplicate()
+            rids.clear()
+            free_all.call(all)
+            freed += all.size()
+            continue
         # Taken off the list before it is freed, not after the whole loop: the budgeted path
         # awaits a frame in the middle, and freeing the node during that await runs this again
         # when the node is freed over the very same RIDs - a double free.

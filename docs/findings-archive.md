@@ -4,6 +4,23 @@ The full entries behind the rules in `FINDINGS.md`: the symptom, what proved the
 and the rule. Headings keep their date and title, because comments in the code cite them
 (`see FINDINGS.md, 2026-09-23`). Open work belongs in `TODO.md`, not here.
 
+## 2026-10-16 - A world's tracks freed in 99 s
+
+* **Symptom:** closing the scenery importer's editor scene with a large world (trzebinia, 91 357
+  tracks and roads) took longer the bigger the world: `World.free()` 99 s, everything else
+  milliseconds.
+* **What proved it:** the scene's children freed one by one and timed (World 99 150 ms, the rest
+  under 20 ms); the tree had only 803 nodes.
+* **Cause:** `_free_owned_rids` freed every track with `TrackServer.track_free()`, which ran
+  `_clear_topology()` over every remaining track and emitted `topology_changed` and
+  `tracks_changed` each time (the minimap's `_sync_switch_handles` walks every track on it): O(N)
+  a track, O(N²) the world. Each road freed also queued its 125 m road cell, built again on every
+  frame the budgeted unload awaited.
+* **Fix:** `TrackServer.track_free_many()` erases them all and clears the topology and emits once;
+  `TrackRenderingServer.free_track_many()` frees them in one frame, the cells emptied freed, not
+  built again; `_free_owned_rids` frees both groups that way. World 99 s -> 1.3 s.
+* **Rule:** many of a server's items are freed in one call, never by a loop over the one-item free.
+
 ## 2026-10-09 - Mover configured five times, spring brake released
 
 * **Symptom:** none reported directly - the review of `REQUIRED_CLEANING` (RC-004) and the operator's

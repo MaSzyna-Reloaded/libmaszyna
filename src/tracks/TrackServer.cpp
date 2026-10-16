@@ -62,6 +62,7 @@ namespace godot {
     void TrackServer::_bind_methods() {
         ClassDB::bind_method(D_METHOD("track_create"), &TrackServer::track_create);
         ClassDB::bind_method(D_METHOD("track_free", "track"), &TrackServer::track_free);
+        ClassDB::bind_method(D_METHOD("track_free_many", "tracks"), &TrackServer::track_free_many);
         ClassDB::bind_method(D_METHOD("track_get_rid_by_name", "name"), &TrackServer::track_get_rid_by_name);
         ClassDB::bind_method(
                 D_METHOD("track_get_length", "track", "branch"), &TrackServer::track_get_length, DEFVAL(TRACK_COMMON));
@@ -543,10 +544,39 @@ namespace godot {
     }
 
     void TrackServer::track_free(const RID &p_track) {
-        TrackSegment *track = tracks.getptr(p_track);
-        if (track == nullptr) {
+        if (!tracks.has(p_track)) {
             return;
         }
+        _erase_track(p_track);
+        _clear_topology();
+        _mark_topology_changed();
+        emit_signal(tracks_changed_signal);
+    }
+
+    /* The tracks p_tracks freed at once: the topology cleared and the signals emitted once for all of
+     * them - track_free() each did both per track, over every track left, and a world's tens of
+     * thousands of tracks took 99 s to unload (2026-10-16, trzebinia) */
+    void TrackServer::track_free_many(const TypedArray<RID> &p_tracks) {
+        bool freed = false;
+        for (int64_t i = 0; i < p_tracks.size(); i++) {
+            const RID track = p_tracks[i];
+            if (tracks.has(track)) {
+                _erase_track(track);
+                freed = true;
+            }
+        }
+        if (!freed) {
+            return;
+        }
+        _clear_topology();
+        _mark_topology_changed();
+        emit_signal(tracks_changed_signal);
+    }
+
+    /* A track out of the server - its switch, name, place in the spatial index and isolated
+     * sections - its topology left to the caller */
+    void TrackServer::_erase_track(const RID &p_track) {
+        TrackSegment *track = tracks.getptr(p_track);
         if (track->switch_rid.is_valid()) {
             _free_switch(*track);
             track = tracks.getptr(p_track); // a listener may have rehashed the table
@@ -561,9 +591,6 @@ namespace godot {
             }
         }
         tracks.erase(p_track);
-        _clear_topology();
-        _mark_topology_changed();
-        emit_signal(tracks_changed_signal);
     }
 
     RID TrackServer::track_get_rid_by_name(const String &p_name) const {
