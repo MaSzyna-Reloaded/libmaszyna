@@ -37,6 +37,43 @@ func test_connects_normal_track_endpoints() -> void:
     assert_eq(second_connections[0].endpoint_index, TrackServer.CURVE1_P2)
 
 
+func test_connect_many_connects_the_tracks_among_themselves() -> void:
+    var first_rail_rid: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)))
+    var second_rail_rid: RID = _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var first_rid: RID = _register_track(_curve(Vector3(20.0, 0.0, 0.0), Vector3(30.0, 0.0, 0.0)))
+    var second_rid: RID = _register_track(_curve(Vector3(30.0, 0.0, 0.0), Vector3(40.0, 0.0, 0.0)))
+    var connected: Array[RID] = [first_rid, second_rid]
+
+    TrackServer.track_connect_many(connected)
+
+    var joint: Array[TrackEndpointRef] = TrackServer.track_get_endpoint_connections(first_rid, TrackServer.CURVE1_P2)
+    assert_eq(joint.size(), 1)
+    assert_eq(joint[0].track_rid, second_rid)
+    assert_eq(TrackServer.track_get_endpoint_connections(first_rid, TrackServer.CURVE1_P1).size(), 0,
+            "a track is connected only to the tracks connected with it")
+    assert_eq(TrackServer.track_get_endpoint_connections(first_rail_rid, TrackServer.CURVE1_P2)[0].track_rid,
+            second_rail_rid, "the other tracks keep their connections")
+    assert_eq(TrackServer.topology_get_summary().graphs.size(), 2)
+
+
+func test_free_many_keeps_the_other_tracks_connected() -> void:
+    var first_rail_rid: RID = _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)))
+    var second_rail_rid: RID = _register_track(_curve(Vector3(10.0, 0.0, 0.0), Vector3(20.0, 0.0, 0.0)))
+    TrackServer.topology_rebuild()
+    var freed: Array[RID] = [
+        _register_track(_curve(Vector3(20.0, 0.0, 0.0), Vector3(30.0, 0.0, 0.0))),
+        _register_track(_curve(Vector3(30.0, 0.0, 0.0), Vector3(40.0, 0.0, 0.0))),
+    ]
+    TrackServer.track_connect_many(freed)
+
+    TrackServer.track_free_many(freed)
+
+    assert_eq(TrackServer.track_get_endpoint_connections(first_rail_rid, TrackServer.CURVE1_P2)[0].track_rid,
+            second_rail_rid)
+    assert_eq(TrackServer.topology_get_summary().graphs.size(), 1, "a graph goes with its last track")
+
+
 func test_switch_branch_neighbors_with_common_start() -> void:
     var switch_rid: RID = _register_track(
         _curve(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 0.0)),

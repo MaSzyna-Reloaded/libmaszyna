@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/math.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
@@ -63,6 +64,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("track_create"), &TrackServer::track_create);
         ClassDB::bind_method(D_METHOD("track_free", "track"), &TrackServer::track_free);
         ClassDB::bind_method(D_METHOD("track_free_many", "tracks"), &TrackServer::track_free_many);
+        ClassDB::bind_method(D_METHOD("track_connect_many", "tracks"), &TrackServer::track_connect_many);
         ClassDB::bind_method(D_METHOD("track_get_rid_by_name", "name"), &TrackServer::track_get_rid_by_name);
         ClassDB::bind_method(
                 D_METHOD("track_get_length", "track", "branch"), &TrackServer::track_get_length, DEFVAL(TRACK_COMMON));
@@ -544,37 +546,68 @@ namespace godot {
     }
 
     void TrackServer::track_free(const RID &p_track) {
-        if (!tracks.has(p_track)) {
+        TypedArray<RID> freed;
+        freed.push_back(p_track);
+        track_free_many(freed);
+    }
+
+    /* The tracks p_tracks freed at once, the signals emitted once for all of them - one by one, a
+     * world's tens of thousands of tracks took 99 s to unload (2026-10-16, trzebinia). The tracks
+     * left keep their connections: a world's sector frees its roads as it unloads, and the rails
+     * stay connected */
+    void TrackServer::track_free_many(const TypedArray<RID> &p_tracks) {
+        HashSet<int> graphs;
+        for (int64_t i = 0; i < p_tracks.size(); i++) {
+            const RID track = p_tracks[i];
+            if (const TrackSegment *segment = tracks.getptr(track); segment != nullptr) {
+                graphs.insert(segment->graph_id);
+                _erase_track(track);
+            }
+        }
+        if (graphs.is_empty()) {
             return;
         }
-        _erase_track(p_track);
-        _clear_topology();
+        // a graph keeps the tracks left of it, and goes with its last one
+        for (const int graph_id: graphs) {
+            Vector<RID> *members = graph_members.getptr(graph_id);
+            if (members == nullptr) {
+                continue;
+            }
+            Vector<RID> left;
+            for (const RID &member: *members) {
+                if (tracks.has(member)) {
+                    left.push_back(member);
+                }
+            }
+            if (left.is_empty()) {
+                graph_members.erase(graph_id);
+            } else {
+                *members = left;
+            }
+        }
         _mark_topology_changed();
         emit_signal(tracks_changed_signal);
     }
 
-    /* The tracks p_tracks freed at once: the topology cleared and the signals emitted once for all of
-     * them - track_free() each did both per track, over every track left, and a world's tens of
-     * thousands of tracks took 99 s to unload (2026-10-16, trzebinia) */
-    void TrackServer::track_free_many(const TypedArray<RID> &p_tracks) {
-        bool freed = false;
+    /* The tracks p_tracks, connected to none yet, connected among themselves - the endpoints of
+     * theirs that meet made one node, the graphs they make given ids of their own - the topology of
+     * every other track left as it is: a world's sector connects its roads as it loads
+     * (MaszynaWorld), a graph of their own, and no rebuild of the world's topology */
+    void TrackServer::track_connect_many(const TypedArray<RID> &p_tracks) {
+        Vector<RID> connected;
         for (int64_t i = 0; i < p_tracks.size(); i++) {
             const RID track = p_tracks[i];
             if (tracks.has(track)) {
-                _erase_track(track);
-                freed = true;
+                connected.push_back(track);
             }
         }
-        if (!freed) {
-            return;
-        }
-        _clear_topology();
-        _mark_topology_changed();
+        _connect_tracks(connected);
+        _assign_graphs(connected);
         emit_signal(tracks_changed_signal);
     }
 
-    /* A track out of the server - its switch, name, place in the spatial index and isolated
-     * sections - its topology left to the caller */
+    /* A track out of the server - its switch, name, place in the spatial index, isolated sections
+     * and nodes - its graph left to the caller */
     void TrackServer::_erase_track(const RID &p_track) {
         TrackSegment *track = tracks.getptr(p_track);
         if (track->switch_rid.is_valid()) {
@@ -588,6 +621,20 @@ namespace godot {
         for (const RID &isolated: track->isolated) {
             if (IsolatedData *section = isolated_sections.getptr(isolated); section != nullptr) {
                 section->tracks.erase(p_track);
+            }
+        }
+        for (const int node_id: track->node_ids) {
+            TrackNode *node = _get_node(node_id);
+            if (node == nullptr) {
+                continue;
+            }
+            for (int64_t i = node->endpoint_refs.size() - 1; i >= 0; --i) {
+                if (node->endpoint_refs[i].track_rid == p_track) {
+                    node->endpoint_refs.remove_at(i);
+                }
+            }
+            if (node->endpoint_refs.is_empty()) {
+                _release_node(node_id);
             }
         }
         tracks.erase(p_track);
@@ -1406,24 +1453,29 @@ namespace godot {
 
     void TrackServer::topology_rebuild() {
         _clear_topology();
-        _connect_all_tracks();
-        _rebuild_graph_ids();
+        Vector<RID> all;
+        for (const KeyValue<RID, TrackSegment> &item: tracks) {
+            all.push_back(item.key);
+        }
+        _connect_tracks(all);
+        _assign_graphs(all);
         topology_changed_flag = false;
         emit_signal(topology_rebuilt_signal);
         emit_signal(tracks_changed_signal);
     }
 
-    void TrackServer::_rebuild_graph_ids() {
-        graph_members.clear();
+    /* The graphs the tracks p_tracks make, each given an id of its own; a track is followed only to
+     * the tracks it is connected to */
+    void TrackServer::_assign_graphs(const Vector<RID> &p_tracks) {
         HashMap<RID, bool> visited;
-        for (const KeyValue<RID, TrackSegment> &item: tracks) {
-            if (visited.has(item.key)) {
+        for (const RID &start: p_tracks) {
+            if (visited.has(start)) {
                 continue;
             }
             const int graph_id = next_graph_id;
             ++next_graph_id;
             Vector<RID> queue;
-            queue.push_back(item.key);
+            queue.push_back(start);
             while (!queue.is_empty()) {
                 const RID current_rid = queue[0];
                 queue.remove_at(0);
@@ -1475,11 +1527,17 @@ namespace godot {
             }
         }
         if (node_id == INVALID_NODE_ID) {
-            node_id = static_cast<int>(nodes.size());
             TrackNode new_node;
-            new_node.id = node_id;
             new_node.world_position = p_world_position;
-            nodes.push_back(new_node);
+            if (free_node_ids.is_empty()) {
+                new_node.id = static_cast<int>(nodes.size());
+                nodes.push_back(new_node);
+            } else {
+                new_node.id = free_node_ids[free_node_ids.size() - 1];
+                free_node_ids.remove_at(free_node_ids.size() - 1);
+                nodes.write[new_node.id] = new_node;
+            }
+            node_id = new_node.id;
         }
         EndpointPair pair;
         pair.track_rid = p_track_rid;
@@ -1495,8 +1553,16 @@ namespace godot {
         return &nodes.write[p_node_id];
     }
 
+    /* The node p_node_id answers for nothing any more, its id free for the next node made */
+    void TrackServer::_release_node(const int p_node_id) {
+        nodes.write[p_node_id].merged_away = true;
+        nodes.write[p_node_id].endpoint_refs.clear();
+        free_node_ids.push_back(p_node_id);
+    }
+
     void TrackServer::_clear_topology() {
         nodes.clear();
+        free_node_ids.clear();
         graph_members.clear();
         for (KeyValue<RID, TrackSegment> &item: tracks) {
             item.value.graph_id = -1;
@@ -1506,10 +1572,12 @@ namespace godot {
         }
     }
 
-    void TrackServer::_connect_all_tracks() {
+    /* The endpoints of the tracks p_tracks that meet made one node, a track's only with a track of
+     * its group (_track_type_group()) */
+    void TrackServer::_connect_tracks(const Vector<RID> &p_tracks) {
         // 1. a node per endpoint of every track
-        for (KeyValue<RID, TrackSegment> &item: tracks) {
-            TrackSegment &track = item.value;
+        for (const RID &track_rid: p_tracks) {
+            TrackSegment &track = tracks.get(track_rid);
             for (int &node_id: track.node_ids) {
                 node_id = INVALID_NODE_ID;
             }
@@ -1525,8 +1593,8 @@ namespace godot {
 
         // 2. collect the endpoints
         Vector<EndpointEntry> endpoints;
-        for (const KeyValue<RID, TrackSegment> &item: tracks) {
-            const TrackSegment &track = item.value;
+        for (const RID &track_rid: p_tracks) {
+            const TrackSegment &track = tracks.get(track_rid);
             for (int endpoint_index = CURVE1_P1; endpoint_index <= CURVE2_P2; ++endpoint_index) {
                 if (track.node_ids[endpoint_index] == INVALID_NODE_ID) {
                     continue;
@@ -1636,8 +1704,7 @@ namespace godot {
                 ref_track->node_ids[ref.endpoint_index] = first_node_id;
             }
         }
-        nodes.write[second_node_id].merged_away = true;
-        nodes.write[second_node_id].endpoint_refs.clear();
+        _release_node(second_node_id);
     }
 
     void TrackServer::_mark_topology_changed() {

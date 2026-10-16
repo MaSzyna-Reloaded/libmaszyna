@@ -5,9 +5,9 @@ class_name MaszynaWorld
 ## A world of the game's own format, described by worlds/<name>.json of the game's directory, of the
 ## squares of the grid (MaszynaWorldSector, sector_ids) in blocks of BLOCK_SECTORS x BLOCK_SECTORS
 ## and its scenario's data. Its files are in packs in worlds/<name>/: WORLD_PACK holds what is
-## loaded whole - the world's scene, its scenery (the sectors' tracks, traction and signals, moved
+## loaded whole - the world's scene, its scenery (the sectors' railways, traction and signals, moved
 ## from their corners to their places, add_sector()), its scenario - and a pack a block
-## (<block>.pck, block_of()) what is drawn of its sectors, sector by sector. No file of a world
+## (<block>.pck, block_of()) what is drawn of its sectors and their roads, sector by sector. No file of a world
 ## refers to another of its own: a sector's file holds its roofs' orthophoto, the scenery and the
 ## scenario are read beside the world's scene by their names (SCENERY_FILE, SCENARIO_FILE) - so its
 ## files can be anywhere, in the packs or in the scenery editor's sources. What worlds share - the
@@ -50,10 +50,14 @@ enum SectorFile {
     DRAWN,
     ## Its Terrain3D region
     TERRAIN,
+    ## Its roads (add_sector()): a MaszynaCompiledScenery of their tracks, in the world's
+    ## coordinates, registered while the sector is loaded
+    ROADS,
 }
 const SECTOR_FILE_SUFFIXES:Dictionary[SectorFile, String] = {
     SectorFile.DRAWN: ".drawn.scn",
     SectorFile.TERRAIN: ".terrain.res",
+    SectorFile.ROADS: ".roads.res",
 }
 
 ## The world's name: its .json and .pck, and its signalling system's (get_scenery_name())
@@ -79,6 +83,9 @@ var sectors:MaszynaWorldSectors = MaszynaWorldSectors.new()
 
 var _provider:MaszynaWorldSectorProvider = null
 var _provider_rid:RID = RID()
+## Sector id -> its roads registered while it is loaded: [Array[RID] of TrackServer, Array[RID] of
+## TrackRenderingServer]
+var _sector_roads:Dictionary[String, Array] = {}
 
 
 func get_scenery_name() -> String:
@@ -156,19 +163,24 @@ static func sector_path(name:String, sector_id:String, file:SectorFile) -> Strin
     return RESOURCES_DIR.path_join(name).path_join(sector_file(sector_id, file))
 
 
-## The data of `sector` the simulation needs - its tracks, traction and signals (the models named
+## The data of `sector` the simulation needs - its railways, traction and signals (the models named
 ## or lit: a signal's events reach them by name) - taken out of it, moved from its corner to its
-## place in the world and added to the world's scenery. What is left in the sector is what is only
+## place in the world and added to the world's scenery. Its roads are taken out and returned, moved
+## the same way, for the sector's own file (SectorFile.ROADS): they are registered only while the
+## sector is loaded, a graph of their own - a world's roads registered whole were tens of thousands
+## of tracks to free one by one (2026-10-16, trzebinia). What is left in the sector is what is only
 ## drawn - its geometry, the other models, the wires (SectorFile.DRAWN): the world draws it around
 ## the camera
-func add_sector(sector:MaszynaWorldSector) -> void:
+func add_sector(sector:MaszynaWorldSector) -> MaszynaCompiledScenery:
     if not scenery:
         scenery = MaszynaCompiledScenery.new()
+    var roads:MaszynaCompiledScenery = MaszynaCompiledScenery.new()
     var corner:Vector3 = sector_corner(origin, sector.get_cell())
     for node:Node in sector.get_children():
         if node is MaszynaTracksNode:
+            var taken:MaszynaCompiledScenery = roads if (node as MaszynaTracksNode).type == TrackServer.GROUP_ROAD else scenery
             for track:MaszynaTrackData in (node as MaszynaTracksNode).tracks:
-                scenery.tracks.append(track.translated(corner))
+                taken.tracks.append(track.translated(corner))
             sector.remove_child(node)
             node.free()
         elif node is MaszynaTractionNode:
@@ -186,6 +198,7 @@ func add_sector(sector:MaszynaWorldSector) -> void:
                 else:
                     drawn.append(model)
             (node as MaszynaModelsNode).models = drawn
+    return roads
 
 
 func _has_source() -> bool:
@@ -239,15 +252,49 @@ func _clear_content(budget_msec:int = 0) -> void:
     await super(budget_msec)
 
 
-## A sector loaded after its cells were supplied without it has them supplied again
+## The sectors' roads are drawn in the world the node is in, as its content is
+## (MaszynaSceneryContentNode), and go with the world - freed - before its content does
+## (NOTIFICATION_PREDELETE reaches the derived script first)
+func _notification(what:int) -> void:
+    match what:
+        NOTIFICATION_ENTER_WORLD, NOTIFICATION_EXIT_WORLD:
+            var scenario:RID = get_world_3d().scenario if what == NOTIFICATION_ENTER_WORLD else RID()
+            for roads:Array in _sector_roads.values():
+                for rid:RID in roads[1]:
+                    TrackRenderingServer.set_track_scenario(rid, scenario)
+        NOTIFICATION_PREDELETE:
+            if _provider:
+                sectors.stop()
+
+
+## A sector loaded after its cells were supplied without it has them supplied again. Its roads
+## (SectorFile.ROADS; a world written before has them in its scenery) are registered and connected
+## among themselves
 func _on_sector_loaded(id:String) -> void:
     _provider.sector_set_loaded(id, true)
     for cell:Vector2i in _provider.sector_get_cells(id):
         SceneryStreamingServer.provider_refresh_cell(_provider_rid, cell)
+    var path:String = sector_source.sector_get_path(id, SectorFile.ROADS)
+    if not ResourceLoader.exists(path):
+        return
+    var track_rids:Array[RID] = []
+    var track_render_rids:Array[RID] = []
+    for track_data:MaszynaTrackData in (ResourceLoader.load(path) as MaszynaCompiledScenery).tracks:
+        var built:Dictionary = SceneryInstancer.build_track(track_data, get_world_3d())
+        track_rids.append(built["track_rid"])
+        track_render_rids.append(built["track_render_rid"])
+    TrackServer.track_connect_many(track_rids)
+    _sector_roads[id] = [track_rids, track_render_rids]
 
 
+## A sector unloaded has its roads freed
 func _on_sector_unloaded(id:String) -> void:
     _provider.sector_set_loaded(id, false)
+    if not _sector_roads.has(id):
+        return
+    TrackRenderingServer.free_track_many(_sector_roads[id][1])
+    TrackServer.track_free_many(_sector_roads[id][0])
+    _sector_roads.erase(id)
 
 
 func _read_environment_declarations() -> void:

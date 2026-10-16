@@ -231,7 +231,8 @@ namespace godot {
 
             struct TrackNode {
                     int id = INVALID_NODE_ID;
-                    /* Merged into another node, so it answers for nothing any more */
+                    /* Merged into another node, or left by its last track, so it answers for nothing
+                     * any more; its id is given to the next node made (free_node_ids) */
                     bool merged_away = false;
                     Vector3 world_position;
                     Vector<EndpointPair> endpoint_refs;
@@ -267,6 +268,9 @@ namespace godot {
             int next_graph_id = 0;
             HashMap<int, Vector<RID>> graph_members;
             Vector<TrackNode> nodes;
+            /* The ids of the nodes merged away, taken again by the nodes made next: a world's
+             * sectors connect their roads as they load (track_connect_many()), over and over */
+            Vector<int> free_node_ids;
             /* The switches whose blade is moving - the tick is connected only while this is not
              * empty, and disconnected again when the last one arrives. */
             Vector<RID> moving_switches;
@@ -311,10 +315,11 @@ namespace godot {
             int _get_or_create_node(const Vector3 &p_world_position, const RID &p_track_rid, int p_endpoint_index);
             TrackNode *_get_node(int p_node_id);
             void _clear_topology();
-            void _connect_all_tracks();
+            void _connect_tracks(const Vector<RID> &p_tracks);
             void _merge_endpoint_nodes(
                     const RID &p_first_track, int p_first_endpoint, const RID &p_second_track, int p_second_endpoint);
-            void _rebuild_graph_ids();
+            void _assign_graphs(const Vector<RID> &p_tracks);
+            void _release_node(int p_node_id);
             void _mark_topology_changed();
 
         protected:
@@ -351,6 +356,7 @@ namespace godot {
             RID track_create();
             void track_free(const RID &p_track);
             void track_free_many(const TypedArray<RID> &p_tracks);
+            void track_connect_many(const TypedArray<RID> &p_tracks);
             RID track_get_rid_by_name(const String &p_name) const;
             double track_get_length(const RID &p_track, SwitchTrack p_branch = TRACK_COMMON) const;
             void track_update_curves(const RID &p_track, const Ref<Resource> &p_curve1, const Ref<Resource> &p_curve2);

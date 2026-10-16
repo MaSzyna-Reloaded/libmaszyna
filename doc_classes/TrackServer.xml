@@ -145,6 +145,13 @@
 				Reports that an axle of [param vehicle] left the track.
 			</description>
 		</method>
+		<method name="track_connect_many">
+			<return type="void" />
+			<param index="0" name="tracks" type="RID[]" />
+			<description>
+				Connects [param tracks], connected to none yet, among themselves: their endpoints that meet become one node, and each graph they make gets an id of its own. The topology of every other track is left as it is, with no [method topology_rebuild] - a world's sector connects its roads this way as it loads ([MaszynaWorld]).
+			</description>
+		</method>
 		<method name="track_create">
 			<return type="RID" />
 			<description>
@@ -162,7 +169,14 @@
 			<return type="void" />
 			<param index="0" name="track" type="RID" />
 			<description>
-				Frees the track, its switch first ([signal switch_freed]), and removes it from its isolated sections and the topology.
+				Frees the track, its switch first ([signal switch_freed]), and removes it from its isolated sections and the topology. The other tracks keep their connections.
+			</description>
+		</method>
+		<method name="track_free_many">
+			<return type="void" />
+			<param index="0" name="tracks" type="RID[]" />
+			<description>
+				Frees [param tracks] as [method track_free] does, emitting [signal topology_changed] and [signal tracks_changed] once for all of them. The other tracks keep their connections; a graph goes with its last track.
 			</description>
 		</method>
 		<method name="track_get_blade_boundary_offset" qualifiers="const">

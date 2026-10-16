@@ -104,7 +104,7 @@ static func clear_cache() -> void:
 ##
 ## Tracks, traction, models and merged terrain meshes are built directly against TrackServer/
 ## TrackRenderingServer/TractionRenderingServer/E3DRenderingServer/MaszynaSceneryChunkRenderingServer's
-## RID-based API (_build_track()/_build_traction()/_build_model()/_build_triangle_chunks() below)
+## RID-based API (build_track()/_build_traction()/_build_model()/_build_triangle_chunks() below)
 ## instead of instantiating TrackNormal3D/TrackSwitch3D/Traction3D/E3DModelInstance nodes -
 ## a real scenery can have thousands of these, and a Node per segment (each with its own @tool
 ## script and per-frame _process()) is overhead that only actually earns its keep for a handful of
@@ -394,7 +394,7 @@ static func _instantiate_server_data(
     var track_rids:Array[RID] = []
     var model_rids:Array[RID] = []
     for track_data:MaszynaTrackData in tracks:
-        var built:Dictionary = _build_track(track_data, world_3d)
+        var built:Dictionary = build_track(track_data, world_3d)
         root._track_rids.append(built["track_rid"])
         track_rids.append(built["track_rid"])
         root._track_render_rids.append(built["track_render_rid"])
@@ -838,7 +838,7 @@ static func _make_importer_callback(importer, context) -> Callable:
 ## _update_track_rendering() (addons/libmaszyna/tracks/track_normal_3d.gd,
 ## track_switch_3d.gd), minus the Node - see instantiate()'s doc comment for why. The rendering
 ## meshes are not built here: stream_track() leaves that to SceneryStreamingServer.
-static func _build_track(track_data:MaszynaTrackData, world_3d:World3D) -> Dictionary:
+static func build_track(track_data:MaszynaTrackData, world_3d:World3D) -> Dictionary:
     var track_rid:RID = TrackServer.track_create()
     var track_render_rid:RID = TrackRenderingServer.create_track(track_rid)
     TrackRenderingServer.set_track_scenario(track_render_rid, world_3d.scenario)

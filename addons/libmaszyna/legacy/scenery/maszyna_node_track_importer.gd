@@ -22,7 +22,7 @@ const TrackData = preload("res://addons/libmaszyna/legacy/scenery/maszyna_track_
 
 
 ## Plain data holder - scenery-loaded tracks are built directly against TrackServer/
-## TrackRenderingServer's RID-based API (see scenery_instancer.gd's _build_track()), not as
+## TrackRenderingServer's RID-based API (see SceneryInstancer.build_track()), not as
 ## TrackNormal3D/TrackSwitch3D nodes. A scenery can have thousands of these; a Node per segment
 ## (each with its own @tool script and _process()) is real, avoidable overhead that only actually
 ## benefits hand-authored scenes edited directly in demo_3d.tscn-style scenes.
