@@ -398,7 +398,7 @@ func _enter_tree():
         PROPERTY_HINT_RANGE, "0.0,1.0,0.05"
     )
     add_custom_project_setting(
-        "maszyna/traffic/max_vehicles", 60, TYPE_INT,
+        "maszyna/traffic/max_vehicles", 120, TYPE_INT,
         PROPERTY_HINT_RANGE, "0,300,1"
     )
     add_custom_project_setting("maszyna/debug/physics_diagnostics", false, TYPE_BOOL)

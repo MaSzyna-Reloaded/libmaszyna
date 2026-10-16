@@ -10,7 +10,7 @@ const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const DENSITY_SETTING:String = "maszyna/traffic/density"
 const DEFAULT_DENSITY:float = 0.5
 const MAX_VEHICLES_SETTING:String = "maszyna/traffic/max_vehicles"
-const DEFAULT_MAX_VEHICLES:int = 60
+const DEFAULT_MAX_VEHICLES:int = 120
 ## Any model of the fixtures stands for a car
 const DATA_PATH:String = "models/sem/karzelki"
 const MODEL:String = "ktmnb"
@@ -27,6 +27,10 @@ const LONG_ROAD:float = 500.0
 const DEAD_END_ROAD:float = 30.0
 ## The side of a square of four roads, each meeting the next at a corner
 const LOOP_SIDE:float = 100.0
+## Further than RoadTrafficServer's ACTIVE_RADIUS and DESPAWN_RADIUS (not bound) [m]
+const FAR_AWAY:float = 5000.0
+## RoadTrafficServer's SPAWN_INTERVAL (not bound) [s]
+const SPAWN_INTERVAL:float = 1.0
 ## How long the vehicles are watched [s]
 const DRIVE_TIME:float = 20.0
 
@@ -191,6 +195,18 @@ func test_no_vehicle_drives_at_no_density() -> void:
     _loop()
     await step(ticks(2.0))
     assert_eq(RoadTrafficServer.vehicle_get_rids().size(), 0)
+
+
+func test_roads_a_camera_comes_to_from_afar_are_filled_at_once() -> void:
+    await _start(3, 1.0)
+    _road(Vector3.ZERO, Vector3(LONG_ROAD, 0.0, 0.0))
+    # the roads come while the camera is far away - the player not in the vehicle yet
+    _camera.global_position = Vector3(0.0, 0.0, FAR_AWAY)
+    RoadTrafficServer.road_add_many(_roads)
+    assert_eq(RoadTrafficServer.vehicle_get_rids().size(), 0)
+    _camera.global_position = Vector3(LONG_ROAD / 2.0, 0.0, 0.0)
+    await wait_simulated_until(func() -> bool: return RoadTrafficServer.vehicle_get_rids().size() == 3,
+            SPAWN_INTERVAL * 2.0, "the road filled within a spawn's interval, not a few vehicles at a time")
 
 
 func test_the_fleet_bounds_the_traffic() -> void:

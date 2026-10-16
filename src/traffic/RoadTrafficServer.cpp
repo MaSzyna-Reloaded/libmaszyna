@@ -447,7 +447,10 @@ namespace godot {
         if (spawn_time >= SPAWN_INTERVAL && streaming != nullptr && streaming->streaming_has_camera()) {
             spawn_time = 0.0;
             const Vector3 camera = streaming->streaming_get_camera_position();
-            if (!active_roads_known || active_center.distance_to(camera) > ACTIVE_REFRESH_DISTANCE) {
+            // a camera come from beyond the traffic's reach (the player put into the vehicle after
+            // the world loaded, a jump) sees roads of no traffic yet: they are filled at once
+            const bool jumped = active_center.distance_to(camera) > ACTIVE_RADIUS;
+            if (jumped || !active_roads_known || active_center.distance_to(camera) > ACTIVE_REFRESH_DISTANCE) {
                 _refresh_active_roads(camera);
             }
             for (uint32_t index = 0; index < fleet.size(); ++index) {
@@ -456,7 +459,11 @@ namespace godot {
                     _release(index);
                 }
             }
-            _spawn(SPAWNS_PER_TICK, SPAWN_HIDDEN, camera);
+            if (jumped) {
+                _spawn(static_cast<int>(idle.size()), SPAWN_ANYWHERE, camera);
+            } else {
+                _spawn(SPAWNS_PER_TICK, SPAWN_HIDDEN, camera);
+            }
         }
         for (uint32_t index = 0; index < fleet.size(); ++index) {
             Vehicle &vehicle = fleet[index];

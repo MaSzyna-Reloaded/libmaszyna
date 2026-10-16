@@ -32,7 +32,7 @@ namespace godot {
             static constexpr const char *DENSITY_SETTING = "maszyna/traffic/density";
             static constexpr double DEFAULT_DENSITY = 0.5;
             static constexpr const char *MAX_VEHICLES_SETTING = "maszyna/traffic/max_vehicles";
-            static constexpr int DEFAULT_MAX_VEHICLES = 60;
+            static constexpr int DEFAULT_MAX_VEHICLES = 120;
 
             static RoadTrafficServer *get_instance() {
                 return Object::cast_to<RoadTrafficServer>(Engine::get_singleton()->get_singleton("RoadTrafficServer"));
@@ -73,25 +73,25 @@ namespace godot {
             static constexpr double DRIVER_FACTOR_MIN = 0.85;
             static constexpr double DRIVER_FACTOR_MAX = 1.05;
             /* Vehicles a kilometre of road holds at full density, both ways together */
-            static constexpr double BASE_VEHICLES_PER_KM = 20.0;
+            static constexpr double BASE_VEHICLES_PER_KM = 60.0;
             /* A road this wide [m] takes its length's share of the traffic; a narrower one less, a
              * wider one more, within the weights */
             static constexpr double REFERENCE_ROAD_WIDTH = 6.0;
             static constexpr double MIN_WIDTH_WEIGHT = 0.25;
             static constexpr double MAX_WIDTH_WEIGHT = 2.0;
             /* The quietest place of the heat map keeps this share of the traffic */
-            static constexpr double MIN_HEAT = 0.1;
+            static constexpr double MIN_HEAT = 0.3;
             /* The roads within this of the camera have traffic [m]; they are looked for again when
              * the camera has moved ACTIVE_REFRESH_DISTANCE, and a vehicle further than
              * DESPAWN_RADIUS is taken off */
-            static constexpr double ACTIVE_RADIUS = 1000.0;
-            static constexpr double ACTIVE_REFRESH_DISTANCE = 100.0;
-            static constexpr double DESPAWN_RADIUS = 1200.0;
+            static constexpr double ACTIVE_RADIUS = 500.0;
+            static constexpr double ACTIVE_REFRESH_DISTANCE = 50.0;
+            static constexpr double DESPAWN_RADIUS = 600.0;
             /* Every SPAWN_INTERVAL [s] of the simulation at most SPAWNS_PER_TICK vehicles come onto
              * the roads, none within SPAWN_HIDDEN_DISTANCE [m] of the camera */
             static constexpr double SPAWN_INTERVAL = 1.0;
-            static constexpr int SPAWNS_PER_TICK = 4;
-            static constexpr double SPAWN_HIDDEN_DISTANCE = 250.0;
+            static constexpr int SPAWNS_PER_TICK = 10;
+            static constexpr double SPAWN_HIDDEN_DISTANCE = 150.0;
             /* How far ahead along the road a vehicle's heading is taken [m] */
             static constexpr double HEADING_SAMPLE_DISTANCE = 1.0;
             /* A vehicle's windows are drawn as a rail vehicle's are (RailVehicleRenderingServer) */
