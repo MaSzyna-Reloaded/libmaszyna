@@ -10,6 +10,9 @@ const CLOCK_REFRESH_INTERVAL: float = 0.1
 ## The time speeds the slider steps through. 0 is not one of them - a slider nudged to its end must
 ## not stop the world; stopping it is the pause button's
 const TIME_SCALE_STEPS: Array[float] = [0.1, 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 20.0]
+## How busy the roads are - RoadTrafficServer's DENSITY_SETTING (not bound), the settings screen's too
+const TRAFFIC_DENSITY_SETTING: String = "maszyna/traffic/density"
+const DEFAULT_TRAFFIC_DENSITY: float = 0.5
 
 ## The environment of the world being shown (attach_environment()); null in the menu, where the HUD
 ## and this window are hidden
@@ -43,6 +46,8 @@ var _refresh_timer: Timer
 @onready var _pause_button: Button = %PauseButton
 @onready var _system_time_check_box: CheckBox = %SystemTimeCheckBox
 @onready var _simulation_time_label: Label = %SimulationTime
+@onready var _traffic_density_slider: HSlider = %TrafficDensitySlider
+@onready var _traffic_density_value_label: Label = %TrafficDensityValueLabel
 
 
 func _ready() -> void:
@@ -72,12 +77,22 @@ func _ready() -> void:
     add_child(_refresh_timer)
     _refresh_timer.timeout.connect(_on_refresh_timeout)
     _refresh_timer.start()
+    ProjectSettings.settings_changed.connect(_on_project_settings_changed)
+    _on_project_settings_changed()
 
 
 func _exit_tree() -> void:
     SimulationServer.simulation_paused.disconnect(_pause_button.set_pressed_no_signal.bind(true))
     SimulationServer.simulation_unpaused.disconnect(_pause_button.set_pressed_no_signal.bind(false))
     SimulationServer.simulation_speed_changed.disconnect(_on_simulation_speed_changed)
+    ProjectSettings.settings_changed.disconnect(_on_project_settings_changed)
+
+
+## The traffic's density set elsewhere (the settings screen) shows here
+func _on_project_settings_changed() -> void:
+    var density: float = ProjectSettings.get_setting(TRAFFIC_DENSITY_SETTING, DEFAULT_TRAFFIC_DENSITY)
+    _traffic_density_slider.set_value_no_signal(density)
+    _traffic_density_value_label.text = _format_percent(density)
 
 
 ## The world made for a scenery brings its environment, and takes it with it to the menu (null)
@@ -199,6 +214,12 @@ func _on_fog_density_changed(value: float) -> void:
 func _on_fog_distance_changed(value: float) -> void:
     _fog_distance_value_label.text = _format_meters(value)
     _environment_node.fog_distance = value
+
+
+## The setting RoadTrafficServer follows; the settings screen saves it, this only sets it
+func _on_traffic_density_changed(value: float) -> void:
+    _traffic_density_value_label.text = _format_percent(value)
+    ProjectSettings.set_setting(TRAFFIC_DENSITY_SETTING, value)
 
 
 func _on_time_changed(value: float) -> void:

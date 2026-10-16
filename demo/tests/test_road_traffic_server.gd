@@ -17,6 +17,10 @@ const MODEL:String = "ktmnb"
 const VEHICLE_LENGTH:float = 4.0
 const VEHICLE_WIDTH:float = 1.8
 const ROAD_WIDTH:float = 7.0
+## An asphalt road's friction (the original's `track road ... 0.85`) and a dirt road's of the
+## importer - unpaved, no traffic
+const ASPHALT_FRICTION:float = 0.85
+const DIRT_FRICTION:float = 0.5
 const LONG_ROAD:float = 500.0
 const DEAD_END_ROAD:float = 30.0
 ## The side of a square of four roads, each meeting the next at a corner
@@ -69,13 +73,15 @@ func _start(max_vehicles:int, density:float) -> void:
     RoadTrafficServer.traffic_set_vehicle_types(types)
 
 
-func _road(p1:Vector3, p2:Vector3) -> RID:
+func _road(p1:Vector3, p2:Vector3, friction:float = ASPHALT_FRICTION) -> RID:
     var curve:TrackCurve = TrackCurve.new()
     curve.p1 = p1
     curve.p2 = p2
     var track:RID = TrackServer.track_create()
     TrackServer.track_update_curves(track, curve, null)
     TrackServer.track_update(track, TrackServer.TRACK_ROAD, "", ROAD_WIDTH)
+    TrackServer.track_update_properties(track, 0, TrackServer.TRACK_DAMAGE_NONE, friction,
+            TrackServer.ENVIRONMENT_FLAT, -1.0)
     _roads.append(track)
     return track
 
@@ -151,6 +157,15 @@ func test_a_vehicle_keeps_its_distance_to_the_one_ahead() -> void:
                 # one lane: the same way, the same side of the road
                 if a.basis.z.dot(b.basis.z) > 0.9 and a.origin.distance_to(b.origin) < LOOP_SIDE / 2.0:
                     assert_gte(a.origin.distance_to(b.origin), VEHICLE_LENGTH, "the vehicles do not overlap")
+
+
+func test_no_vehicle_drives_on_an_unpaved_road() -> void:
+    await _start(4, 1.0)
+    _road(Vector3.ZERO, Vector3(LONG_ROAD, 0.0, 0.0), DIRT_FRICTION)
+    _camera.global_position = Vector3(LONG_ROAD / 2.0, 0.0, 0.0)
+    RoadTrafficServer.road_add_many(_roads)
+    await step(ticks(2.0))
+    assert_eq(RoadTrafficServer.vehicle_get_rids().size(), 0)
 
 
 func test_roads_removed_take_their_vehicles_off() -> void:

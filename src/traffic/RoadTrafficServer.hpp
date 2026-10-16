@@ -62,6 +62,9 @@ namespace godot {
              * driving [s] */
             static constexpr double MIN_GAP = 2.0;
             static constexpr double TIME_HEADWAY = 1.5;
+            /* A road gripping less is unpaved and has no traffic: an asphalt road grips 0.85 (the
+             * original's `track road ... 0.85`), a dirt road of the importer 0.5 */
+            static constexpr double MIN_ROAD_FRICTION = 0.7;
             /* A road without a speed limit of its own is driven at this [km/h] - a built-up area's */
             static constexpr double DEFAULT_ROAD_VELOCITY = 50.0;
             /* How much faster or slower than the limit a driver goes */
@@ -211,7 +214,8 @@ namespace godot {
             void traffic_set_density_noise(const Ref<FastNoiseLite> &p_noise);
             /* Where the fleet is drawn; none takes it out of every scenario */
             void traffic_set_scenario(const RID &p_scenario);
-            /* Roads of TrackServer to drive on; the tracks of another group are passed over */
+            /* Roads of TrackServer to drive on; the tracks of another group and the unpaved roads
+             * (MIN_ROAD_FRICTION) are passed over */
             void road_add_many(const TypedArray<RID> &p_tracks);
             /* Roads no longer driven on - their vehicles go back to the fleet - before they are freed */
             void road_remove_many(const TypedArray<RID> &p_tracks);
