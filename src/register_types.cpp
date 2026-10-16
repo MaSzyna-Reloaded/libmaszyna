@@ -101,6 +101,8 @@
 #include "tracks/TrackEndpointRef.hpp"
 #include "tracks/TrackServer.hpp"
 #include "traction/TractionServer.hpp"
+#include "traffic/RoadTrafficServer.hpp"
+#include "traffic/RoadTrafficVehicleType.hpp"
 #include "utils/LibMaszynaUnits.hpp"
 #include "utils/MaszynaTranslationServer.hpp"
 #include "utils/ProcessMemory.hpp"
@@ -199,6 +201,7 @@ ScenarioScriptServer *scenario_script_server_singleton = nullptr;
 DriverServer *driver_server_singleton = nullptr;
 PlayerServer *player_server_singleton = nullptr;
 StationServer *station_server_singleton = nullptr;
+RoadTrafficServer *road_traffic_server_singleton = nullptr;
 RadioServer *radio_server_singleton = nullptr;
 PlayerCameraServer *player_camera_server_singleton = nullptr;
 HUDServer *hud_server_singleton = nullptr;
@@ -264,6 +267,8 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         GDREGISTER_VIRTUAL_CLASS(ScenarioScriptCabinImplementation);
         GDREGISTER_CLASS(PlayerServer);
         GDREGISTER_CLASS(StationServer);
+        GDREGISTER_CLASS(RoadTrafficVehicleType);
+        GDREGISTER_CLASS(RoadTrafficServer);
         GDREGISTER_CLASS(RadioServer);
         GDREGISTER_CLASS(SceneryVirtualRadio);
         GDREGISTER_CLASS(PlayerCameraServer);
@@ -466,6 +471,10 @@ void initialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
         // after VehicleServer: the constructor follows its freed vehicles
         station_server_singleton = memnew(StationServer);
         Engine::get_singleton()->register_singleton("StationServer", station_server_singleton); // 18b
+        // after SimulationServer, TrackServer, SceneryStreamingServer and E3DRenderingServer: it
+        // drives on their roads by their clock around their camera, drawn by their instances
+        road_traffic_server_singleton = memnew(RoadTrafficServer);
+        Engine::get_singleton()->register_singleton("RoadTrafficServer", road_traffic_server_singleton); // 18c
         // after RailVehicleServer and DriverServer: it follows freed vehicles and hands trainsets
         // over to their drivers
         player_server_singleton = memnew(PlayerServer);
@@ -535,6 +544,14 @@ void uninitialize_libmaszyna_module(const ModuleInitializationLevel p_level) {
     if (player_server_singleton != nullptr) {
         memdelete(player_server_singleton);
         player_server_singleton = nullptr;
+    }
+
+    if (Engine::get_singleton()->has_singleton("RoadTrafficServer")) {
+        Engine::get_singleton()->unregister_singleton("RoadTrafficServer"); // 18c
+    }
+    if (road_traffic_server_singleton != nullptr) {
+        memdelete(road_traffic_server_singleton);
+        road_traffic_server_singleton = nullptr;
     }
 
     if (Engine::get_singleton()->has_singleton("StationServer")) {

@@ -482,6 +482,19 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   the scene's lights instead of the original's diffuse x `m_sunlight.ambient` (`:4150`); lines
   cast no shadow (the original draws them in its shadow pass, `:4152`).
 
+## Road traffic (RoadTrafficServer)
+
+* No right of way: vehicles coming onto one road from two pass through each other at the junction;
+  a level crossing and the trains on it are not looked at.
+* Roads given apart (a world's sectors, `MaszynaWorld.sector_roads_built`) do not lead on to each
+  other: a vehicle is taken off at a sector's edge.
+* A crossing (`TRACK_CROSS`) is driven along its first path only; its second (`curve2`) leads
+  nowhere.
+* The wheels do not turn; no lights (the original's car: headlights and red markers,
+  `Driver.cpp:6519`), no sound.
+* A change of `maszyna/traffic/max_vehicles` builds the whole fleet again, its materials on the
+  main thread.
+
 ## Scenery loading
 
 * calkowo_sn61_zima.scn: `Cannot load include file: .../scenery/F` - a cut name, an include whose

@@ -75,6 +75,47 @@ func test_sectors_tracks_are_moved_to_their_place_and_joined() -> void:
     assert_false(TrackServer.track_exists(west))
 
 
+func test_sectors_roads_are_announced_built_and_before_they_are_freed() -> void:
+    DirAccess.make_dir_recursive_absolute(SECTORS_DIR)
+    var camera:Camera3D = Camera3D.new()
+    add_child_autoqfree(camera)
+    camera.global_position = Vector3(-500.0, 0.0, 500.0)
+    SceneryStreamingServer.streaming_set_camera(camera.get_instance_id())
+    var world:MaszynaWorld = MaszynaWorld.new()
+    world.autoload = false
+    world.world_name = "roads"
+    world.origin = Vector2(ORIGIN_CELL) * MaszynaWorld.SECTOR_SIZE
+    var sector:MaszynaWorldSector = _sector(
+            ORIGIN_CELL, "road", Vector3(-TRACK_LENGTH, 0.0, TRACK_Z), Vector3(0.0, 0.0, TRACK_Z))
+    var roads:MaszynaTracksNode = sector.get_child(0)
+    roads.type = TrackServer.GROUP_ROAD
+    roads.tracks[0].type = TrackServer.TRACK_ROAD
+    var source:TestSource = TestSource.new()
+    var path:String = source.sector_get_path(sector.id, MaszynaWorld.SectorFile.ROADS)
+    assert_eq(ResourceSaver.save(world.add_sector(sector), path), OK)
+    world.sector_ids = PackedStringArray([sector.id])
+    sector.free()
+    world.sector_source = source
+    var built:Array[RID] = []
+    var freeing:Array[RID] = []
+    var standing:Array[bool] = []
+    world.sector_roads_built.connect(func(_id:String, track_rids:Array[RID]) -> void: built.append_array(track_rids))
+    world.sector_roads_freeing.connect(func(_id:String, track_rids:Array[RID]) -> void:
+            freeing.append_array(track_rids)
+            standing.append(TrackServer.track_exists(track_rids[0])))
+    add_child(world)
+    await world.load()
+
+    assert_eq(built.size(), 1, "the sector's road is announced")
+    assert_eq(TrackServer.track_get_group(built[0]), TrackServer.GROUP_ROAD)
+    world.free()
+    assert_eq(freeing, built, "the road is announced going with its sector")
+    assert_eq(standing, [true] as Array[bool], "while it still stands")
+    assert_false(TrackServer.track_exists(built[0]))
+    SceneryStreamingServer.streaming_set_camera(0)
+    DirAccess.remove_absolute(path)
+
+
 func test_world_is_named_and_loads_nothing_without_sectors() -> void:
     var world:MaszynaWorld = MaszynaWorld.new()
     world.autoload = false

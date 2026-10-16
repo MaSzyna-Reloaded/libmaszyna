@@ -391,6 +391,16 @@ func _enter_tree():
         "maszyna/smoke/static/max_particles", 500, TYPE_INT,
         PROPERTY_HINT_RANGE, "16,8000,1"
     )
+    # RoadTrafficServer: how busy the roads are, 0 for none, and how many vehicles its fleet has -
+    # each one an instance built with the fleet, drawn while it drives
+    add_custom_project_setting(
+        "maszyna/traffic/density", 0.5, TYPE_FLOAT,
+        PROPERTY_HINT_RANGE, "0.0,1.0,0.05"
+    )
+    add_custom_project_setting(
+        "maszyna/traffic/max_vehicles", 60, TYPE_INT,
+        PROPERTY_HINT_RANGE, "0,300,1"
+    )
     add_custom_project_setting("maszyna/debug/physics_diagnostics", false, TYPE_BOOL)
     # off, no ResourceCache is read or written (the tests' hooks switch it off)
     add_custom_project_setting("maszyna/cache/enabled", true, TYPE_BOOL)

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RoadTrafficServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Road traffic around the camera, driven along the roads of [TrackServer].
+	</brief_description>
+	<description>
+		Vehicles driven along the roads ([constant TrackServer.GROUP_ROAD]) the server is given ([method road_add_many]): no physics and no driver - a body keeping its distance to the one ahead, on the right of its road, taking a random way at a junction as the original's car does (Driver.cpp:660-690). A vehicle with nowhere to go at the end of its road - a dead end, the edge of the roads given - is taken off.
+		The vehicles are a fleet built once, from [method traffic_set_vehicle_types] and the [code]maszyna/traffic/max_vehicles[/code] setting: an instance's materials are made on the main thread, so none is built while the traffic runs - a vehicle taken off waits hidden for its next road. A road near the camera holds vehicles by its length, the [code]maszyna/traffic/density[/code] setting, the heat map ([method traffic_set_density_noise]), its width and the time of day ([method traffic_set_time_of_day_curve]). The traffic moves with the simulation's clock ([signal SimulationServer.simulation_advanced]) and stands while the simulation is paused.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="road_add_many">
+			<return type="void" />
+			<param index="0" name="tracks" type="RID[]" />
+			<description>
+				Roads of [TrackServer] to drive on, connected to the roads given before where their ends meet; the tracks of another group are passed over. The roads near the camera are filled with vehicles at once.
+			</description>
+		</method>
+		<method name="road_remove_many">
+			<return type="void" />
+			<param index="0" name="tracks" type="RID[]" />
+			<description>
+				Roads no longer driven on, before they are freed: their vehicles go back to the fleet.
+			</description>
+		</method>
+		<method name="traffic_set_density_noise">
+			<return type="void" />
+			<param index="0" name="noise" type="FastNoiseLite" />
+			<description>
+				The heat map: a road's traffic grows with the noise where its middle is. Without one every road is as busy as its length and width make it.
+			</description>
+		</method>
+		<method name="traffic_set_scenario">
+			<return type="void" />
+			<param index="0" name="scenario" type="RID" />
+			<description>
+				Where the fleet is drawn; an empty RID takes it out of every scenario.
+			</description>
+		</method>
+		<method name="traffic_set_time_of_day_curve">
+			<return type="void" />
+			<param index="0" name="curve" type="Curve" />
+			<description>
+				The density's multiplier by the hours of the day: the curve's domain is 0-24.
+			</description>
+		</method>
+		<method name="traffic_set_vehicle_types">
+			<return type="void" />
+			<param index="0" name="types" type="RoadTrafficVehicleType[]" />
+			<description>
+				The kinds of vehicles the fleet is drawn from, by their weights; the fleet is built again from them.
+			</description>
+		</method>
+		<method name="vehicle_get_rids" qualifiers="const">
+			<return type="RID[]" />
+			<description>
+				The vehicles on the roads.
+			</description>
+		</method>
+		<method name="vehicle_get_speed" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				How fast the vehicle goes [m/s].
+			</description>
+		</method>
+		<method name="vehicle_get_track" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The road the vehicle is on; an empty RID while it waits in the fleet.
+			</description>
+		</method>
+		<method name="vehicle_get_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Where the vehicle stands, in the frame its model is authored in: +Z the way it goes, +X its left.
+			</description>
+		</method>
+	</methods>
+</class>

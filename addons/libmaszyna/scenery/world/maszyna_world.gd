@@ -60,6 +60,12 @@ const SECTOR_FILE_SUFFIXES:Dictionary[SectorFile, String] = {
     SectorFile.ROADS: ".roads.res",
 }
 
+## The roads of the sector `id` (SectorFile.ROADS) are registered and connected among themselves -
+## TrackServer's tracks of GROUP_ROAD
+signal sector_roads_built(id:String, track_rids:Array[RID])
+## The roads of the sector `id` are about to be freed; their RIDs still stand
+signal sector_roads_freeing(id:String, track_rids:Array[RID])
+
 ## The world's name: its .json and .pck, and its signalling system's (get_scenery_name())
 @export var world_name:String = ""
 ## The projected metres (east, north) of the world's origin - multiples of SECTOR_SIZE
@@ -285,6 +291,7 @@ func _on_sector_loaded(id:String) -> void:
         track_render_rids.append(built["track_render_rid"])
     TrackServer.track_connect_many(track_rids)
     _sector_roads[id] = [track_rids, track_render_rids]
+    sector_roads_built.emit(id, track_rids)
 
 
 ## A sector unloaded has its roads freed
@@ -292,6 +299,7 @@ func _on_sector_unloaded(id:String) -> void:
     _provider.sector_set_loaded(id, false)
     if not _sector_roads.has(id):
         return
+    sector_roads_freeing.emit(id, _sector_roads[id][0])
     TrackRenderingServer.free_track_many(_sector_roads[id][1])
     TrackServer.track_free_many(_sector_roads[id][0])
     _sector_roads.erase(id)

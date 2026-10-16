@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RoadTrafficVehicleType" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A kind of road vehicle [RoadTrafficServer] drives.
+	</brief_description>
+	<description>
+		The model it is drawn with, its size, how fast it goes and how much of the traffic it makes. Whoever knows the vehicles makes one per vehicle and skin.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="data_path" type="String" setter="set_data_path" getter="get_data_path" default="&quot;&quot;">
+			Where the model and its textures are, as a [code]dynamic[/code] names it.
+		</member>
+		<member name="length" type="float" setter="set_length" getter="get_length" default="0.0">
+			Its length [m] ([code]Dim.L[/code]).
+		</member>
+		<member name="max_velocity" type="float" setter="set_max_velocity" getter="get_max_velocity" default="0.0">
+			How fast it can go [km/h] ([code]Vmax[/code]); 0 for no limit of its own - the road's then.
+		</member>
+		<member name="model_filename" type="String" setter="set_model_filename" getter="get_model_filename" default="&quot;&quot;">
+			The model it is drawn with.
+		</member>
+		<member name="skins" type="PackedStringArray" setter="set_skins" getter="get_skins" default="PackedStringArray()">
+			Its skins, by number of the model's replaceable materials.
+		</member>
+		<member name="weight" type="float" setter="set_weight" getter="get_weight" default="1.0">
+			Its share of the traffic, against the other types'.
+		</member>
+		<member name="width" type="float" setter="set_width" getter="get_width" default="0.0">
+			Its width [m] ([code]Dim.W[/code]).
+		</member>
+	</members>
+</class>
