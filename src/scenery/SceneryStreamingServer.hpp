@@ -72,8 +72,10 @@ namespace godot {
             /// clearing is done (ProcessMemory::release_unused())
             static constexpr int RELEASE_CLEARED_PIECES = 256;
             /// Fallback for maszyna/scenery/draw_distance, also the range of the pieces
-            /// that declare none of their own
-            static constexpr float DEFAULT_DRAW_DISTANCE_M = 3000.0;
+            /// that declare none of their own: 20 km, a world's far terrain and what declares
+            /// a range of its own seen within it (the operator, 2026-10-17); a world's sectors are
+            /// loaded only within maszyna/scenery/sector_distance (MaszynaWorldSectors)
+            static constexpr float DEFAULT_DRAW_DISTANCE_M = 20000.0;
             static constexpr const char *DRAW_DISTANCE_SETTING = "maszyna/scenery/draw_distance";
 
             /// Pieces in range started waiting to be built...

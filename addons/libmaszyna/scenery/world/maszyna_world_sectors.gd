@@ -2,21 +2,23 @@ extends RefCounted
 class_name MaszynaWorldSectors
 
 ## Which sectors of a world (MaszynaWorld) are wanted - the one owner of it: the ones within the
-## draw distance and REQUEST_MARGIN of SceneryStreamingServer's camera are asked of the world's
-## source (MaszynaWorldSectorSource), the ones farther than the draw distance and RELEASE_MARGIN
-## let go. A sector asked for is loaded once its source has made it available - from a pack at
+## sector distance (SECTOR_DISTANCE_SETTING) of SceneryStreamingServer's camera are asked of the
+## world's source (MaszynaWorldSectorSource), the ones farther than it and RELEASE_MARGIN let go. Not
+## the draw distance: at 20 km it loaded the terrain and everything drawn of hundreds of sectors,
+## which the world's far terrain (MaszynaWorld.FAR_TERRAIN_DIR) stands for past this (2026-10-17). A sector asked for is loaded once its source has made it available - from a pack at
 ## once, from a server once downloaded - and what draws the sectors (MaszynaWorldSectorProvider,
 ## the game's terrain) follows it by sector_loaded and sector_unloaded.
 
 signal sector_loaded(id:String)
 signal sector_unloaded(id:String)
 
-## Asked for this far past the draw distance [m] - past SceneryStreamingServer's prefetch
-## (PREFETCH_M) and a sector's reach out of its cells - so a sector is there before it is drawn
-const REQUEST_MARGIN:float = 1000.0
-## Let go this far past the draw distance [m]: SceneryStreamingServer::HYSTERESIS_M past
-## REQUEST_MARGIN, so a camera moving along the edge does not ask for them again and again
-const RELEASE_MARGIN:float = 2000.0
+## How far around the camera the sectors are loaded by default [m] (the operator, 2026-10-17)
+const SECTOR_DISTANCE:float = 3000.0
+## The project setting of how far the sectors are loaded
+const SECTOR_DISTANCE_SETTING:String = "maszyna/scenery/sector_distance"
+## Let go this far past the sector distance [m] (SceneryStreamingServer::HYSTERESIS_M), so a camera
+## moving along the edge does not ask for them again and again
+const RELEASE_MARGIN:float = 1000.0
 
 var _source:MaszynaWorldSectorSource = null
 var _origin:Vector2 = Vector2.ZERO
@@ -78,7 +80,7 @@ func update() -> void:
     if not SceneryStreamingServer.streaming_has_camera():
         return
     var camera:Vector3 = SceneryStreamingServer.streaming_get_camera_position()
-    var reach:float = SceneryStreamingServer.streaming_get_draw_distance()
+    var reach:float = ProjectSettings.get_setting(SECTOR_DISTANCE_SETTING, SECTOR_DISTANCE)
     for id:String in _wanted.keys():
         if _distance(MaszynaWorldSector.cell_of(id), camera) > reach + RELEASE_MARGIN:
             var loaded:bool = _wanted[id]
@@ -88,11 +90,11 @@ func update() -> void:
                 sector_unloaded.emit(id)
     # the cell under the camera and the ones in reach of it
     var centre:Vector2i = MaszynaWorld.cell_at(_origin, camera)
-    var radius:int = ceili((reach + REQUEST_MARGIN) / MaszynaWorld.SECTOR_SIZE)
+    var radius:int = ceili(reach / MaszynaWorld.SECTOR_SIZE)
     for x:int in range(centre.x - radius, centre.x + radius + 1):
         for y:int in range(centre.y - radius, centre.y + radius + 1):
             var id:String = _cells.get(Vector2i(x, y), "")
-            if id and not _wanted.has(id) and _distance(Vector2i(x, y), camera) <= reach + REQUEST_MARGIN:
+            if id and not _wanted.has(id) and _distance(Vector2i(x, y), camera) <= reach:
                 _wanted[id] = false
                 _source.sector_request(id)
 

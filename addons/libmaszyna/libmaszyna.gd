@@ -3,6 +3,8 @@ extends EditorPlugin
 
 # Custom nodes
 const PLUGIN_NAME = "libmaszyna"
+## The tracks' rendering server's script: how far tracks and their traction are drawn
+const TRACKS: GDScript = preload("tracks/track_rendering_server.gd")
 
 var maszyna_environment_node_script = preload("res://addons/libmaszyna/environment/maszyna_environment_node.gd")
 var maszyna_environment_node_icon = preload("res://addons/libmaszyna/environment/maszyna_environment_node_icon.png")
@@ -156,8 +158,24 @@ func _enter_tree():
     # E3DRenderingServer streams registered scenery models in and out around the camera; this caps
     # every node's own range and stands in for the nodes that declare none (read at startup)
     add_custom_project_setting(
-        "maszyna/scenery/draw_distance", 3000.0, TYPE_FLOAT,
+        "maszyna/scenery/draw_distance", 20000.0, TYPE_FLOAT,
+        PROPERTY_HINT_RANGE, "100.0,50000.0,10.0,suffix:m"
+    )
+    # The game's settings (its JSON, UserSettings.DECLARATIONS_SETTING): only the project settings
+    # it declares a player's are taken from the player's settings.cfg (read at startup)
+    add_custom_project_setting("maszyna/user_settings/declarations", "", TYPE_STRING, PROPERTY_HINT_FILE, "*.json")
+    # How far the tracks, the roads and the traction are drawn (TrackRenderingServer), a player's
+    # setting under the draw distance (read when they are first streamed)
+    add_custom_project_setting(
+        TRACKS.TRACKS_DISTANCE_SETTING, TRACKS.TRACKS_DISTANCE, TYPE_FLOAT,
         PROPERTY_HINT_RANGE, "100.0,20000.0,10.0,suffix:m"
+    )
+    # How far around the camera a world's sectors are loaded (MaszynaWorldSectors) - their terrain
+    # regions, what is drawn of them, their roads - apart from the draw distance: past it the far
+    # terrain stands for them
+    add_custom_project_setting(
+        MaszynaWorldSectors.SECTOR_DISTANCE_SETTING, MaszynaWorldSectors.SECTOR_DISTANCE, TYPE_FLOAT,
+        PROPERTY_HINT_RANGE, "1000.0,20000.0,100.0,suffix:m"
     )
     # How far the camera sees: a world's far terrain (MaszynaWorld.FAR_TERRAIN_DIR) stands for its
     # ground past the draw distance, its mountains seen from tens of kilometres (read when a camera

@@ -29,8 +29,12 @@ namespace godot {
             static constexpr const char *MASZYNA_GAMEDIR_SECTION = "maszyna";
             static constexpr const char *MASZYNA_GAMEDIR_KEY = "game_dir";
             /// Section of values set onto ProjectSettings, each under its full name
-            /// ("maszyna/scenery/draw_distance")
+            /// ("maszyna/scenery/lights/distance")
             static constexpr const char *PROJECT_SETTINGS_SECTION = "project_settings";
+            /// The project setting naming the game's settings (its JSON: "sections", each with
+            /// "settings" of a "store" and a "key"): only those of the "project" store are a
+            /// player's, applied from PROJECT_SETTINGS_SECTION; none without it
+            static constexpr const char *DECLARATIONS_SETTING = "maszyna/user_settings/declarations";
 
             void _apply_defaults();
             void _set_project_setting(const String &p_name, const Variant &p_value);

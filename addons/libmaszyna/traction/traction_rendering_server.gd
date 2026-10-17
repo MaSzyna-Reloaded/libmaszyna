@@ -1,6 +1,9 @@
 @tool
 extends Node
 
+## The tracks' rendering server's script: how far tracks and their traction are drawn
+const TRACKS: GDScript = preload("../tracks/track_rendering_server.gd")
+
 enum Wires {
     CONTACT,
     CONTACT_SUPPORT,
@@ -46,6 +49,9 @@ const EPSILON: float = 0.0001
 var _tractions: Dictionary[RID, TractionState] = {}
 var _next_traction_id: int = 0
 var _stream_owner: int = -1
+## How far the traction is drawn: the tracks' (TrackRenderingServer's TRACKS_DISTANCE_SETTING), read as
+## the streaming owner is made
+var _tracks_distance: float = TRACKS.TRACKS_DISTANCE
 
 
 func create_traction() -> RID:
@@ -153,8 +159,9 @@ func stream_traction(traction_rid: RID) -> void:
         return
     if _stream_owner < 0:
         _stream_owner = SceneryStreamingServer.owner_create("traction", Callable(), _stream_build, _stream_clear)
+        _tracks_distance = ProjectSettings.get_setting(TRACKS.TRACKS_DISTANCE_SETTING, TRACKS.TRACKS_DISTANCE)
     state.stream_rid = SceneryStreamingServer.stream_register(
-        _stream_owner, traction_rid, state.contact_p1, 0.0
+        _stream_owner, traction_rid, state.contact_p1, _tracks_distance
     )
     _stream_clear(traction_rid)
 

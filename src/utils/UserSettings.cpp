@@ -3,6 +3,7 @@
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -125,11 +126,30 @@ namespace godot {
         const String previous_game_dir = game_dir;
         _update_game_dir();
 
-        /* The player's own values of the project's settings, keyed by their full name. The
-         * constructor runs before every server's, so each server reads them at its own init. */
+        /* The player's own values of the project's settings, keyed by their full name - only the
+         * ones the game's settings declare a player's (DECLARATIONS_SETTING); a value the game no
+         * longer declares stays in the file and is not applied (2026-10-17: the draw distance taken
+         * out of the game's Settings still overrode the project's). The constructor runs before
+         * every server's, so each server reads them at its own init. */
+        PackedStringArray declared;
+        const String declarations = project_settings->get_setting(DECLARATIONS_SETTING, "");
+        const Variant parsed =
+                declarations.is_empty() ? Variant() : JSON::parse_string(FileAccess::get_file_as_string(declarations));
+        const Array sections =
+                parsed.get_type() == Variant::DICTIONARY ? Array(Dictionary(parsed).get("sections", Array())) : Array();
+        for (const Variant &section: sections) {
+            for (const Variant &setting: Array(Dictionary(section).get("settings", Array()))) {
+                const Dictionary entry = setting;
+                if (entry.get("store", "") == Variant("project")) {
+                    declared.append(entry.get("key", ""));
+                }
+            }
+        }
         if (config->has_section(PROJECT_SETTINGS_SECTION)) {
             for (const String &key: config->get_section_keys(PROJECT_SETTINGS_SECTION)) {
-                _set_project_setting(key, config->get_value(PROJECT_SETTINGS_SECTION, key));
+                if (declared.has(key)) {
+                    _set_project_setting(key, config->get_value(PROJECT_SETTINGS_SECTION, key));
+                }
             }
         }
         saved_text = config->encode_to_text();

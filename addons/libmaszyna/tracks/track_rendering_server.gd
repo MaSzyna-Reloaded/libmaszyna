@@ -7,6 +7,10 @@ const _SWITCH_SEGMENT_COUNT: int = 6
 const _SWITCH_BLADE_RATIO: float = 0.65
 const _MIN_CURVED_MESH_SEGMENT_LENGTH: float = 2.0
 const _MAX_MESH_SEGMENT_LENGTH: float = 10.0
+## How far the tracks, the roads and the traction over them are drawn by default [m] (the operator,
+## 2026-10-17: under the 20 km draw distance they drew a world's whole network); a player's setting
+const TRACKS_DISTANCE: float = 2000.0
+const TRACKS_DISTANCE_SETTING: String = "maszyna/scenery/tracks/distance"
 
 
 class TrackState:
@@ -136,6 +140,8 @@ var _road_rebuild_pending: bool = false
 var _track_render_rids_by_track: Dictionary[RID, RID] = {}
 var _next_track_render_id: int = 0
 var _stream_owner: int = -1
+## How far the tracks and roads are drawn (TRACKS_DISTANCE_SETTING), read as the streaming owners are made
+var _tracks_distance: float = TRACKS_DISTANCE
 var _rail_profile_cache: Dictionary = {}
 ## Texture length ("size:" y) by material name, -1 for none - parsed once per material
 var _material_texture_lengths: Dictionary[String, float] = {}
@@ -423,6 +429,7 @@ func stream_track(track_render_rid: RID) -> void:
         return
     if _stream_owner < 0:
         _stream_owner = SceneryStreamingServer.owner_create("tracks", Callable(), _stream_build, _stream_clear)
+        _tracks_distance = ProjectSettings.get_setting(TRACKS_DISTANCE_SETTING, TRACKS_DISTANCE)
     var track: TrackData = _get_track_data(state.track_rid)
     if not track.is_valid():
         return
@@ -430,7 +437,7 @@ func stream_track(track_render_rid: RID) -> void:
         _road_cell_add(track_render_rid, state)
         return
     state.stream_rid = SceneryStreamingServer.stream_register(
-        _stream_owner, track_render_rid, track.curve1.p1, 0.0
+        _stream_owner, track_render_rid, track.curve1.p1, _tracks_distance
     )
 
 
@@ -913,9 +920,10 @@ func _road_cell_add(track_render_rid: RID, state: TrackState) -> void:
         _road_cells_by_key[key] = cell_rid
         if _road_stream_owner < 0:
             _road_stream_owner = SceneryStreamingServer.owner_create("roads", Callable(), _road_cell_build, _road_cell_clear)
+            _tracks_distance = ProjectSettings.get_setting(TRACKS_DISTANCE_SETTING, TRACKS_DISTANCE)
         var centre: Vector2 = (Vector2(coords) + Vector2(0.5, 0.5)) * _ROAD_CELL_SIZE
         cell.stream_rid = SceneryStreamingServer.stream_register(
-            _road_stream_owner, cell_rid, Vector3(centre.x, track.curve1.p1.y, centre.y), 0.0
+            _road_stream_owner, cell_rid, Vector3(centre.x, track.curve1.p1.y, centre.y), _tracks_distance
         )
     cell.tracks[track_render_rid] = true
     state.road_cell = cell_rid
