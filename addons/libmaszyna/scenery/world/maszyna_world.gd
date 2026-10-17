@@ -50,7 +50,11 @@ const SCENARIO_FILE:String = "scenario.res"
 const FAR_TERRAIN_DIR:String = "far"
 ## The pack of the far terrain in the world's directory of packs, mounted with the world (mount())
 const FAR_TERRAIN_PACK:String = "far.pck"
+## What the far terrain is drawn with: its mesh's material within its file (the scenery importer's
+## SIFarTerrain), this shader with the block's maps - the ground's colour and its normal
 const FAR_TERRAIN_SHADER:Shader = preload("far_terrain.gdshader")
+const FAR_TERRAIN_ALBEDO:StringName = &"albedo_map"
+const FAR_TERRAIN_NORMALS:StringName = &"normal_map"
 ## How far the camera sees by default, the far terrain's mountains with it (the project setting
 ## "maszyna/scenery/far_terrain_distance") [m]
 const FAR_TERRAIN_DISTANCE:float = 30000.0
@@ -263,8 +267,6 @@ func _instantiate_content() -> void:
     var blocks:Dictionary[String, bool] = {}
     for id:String in sector_ids:
         blocks[block_of(id)] = true
-    var far_material:ShaderMaterial = ShaderMaterial.new()
-    far_material.shader = FAR_TERRAIN_SHADER
     for block:String in blocks:
         var far_path:String = dir.path_join(far_terrain_file(block))
         if not dir or not ResourceLoader.exists(far_path):
@@ -272,7 +274,6 @@ func _instantiate_content() -> void:
         var far:MeshInstance3D = MeshInstance3D.new()
         far.name = "FarTerrain_" + block
         far.mesh = load(far_path) as Mesh
-        far.material_override = far_material
         far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         add_child(far)
     if not sector_source:
