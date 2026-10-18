@@ -4,6 +4,16 @@ extends Node
 static var UNKNOWN_MATERIAL = preload("res://addons/libmaszyna/legacy/materials/unknown.tres")
 static var UNKNOWN_TEXTURE = preload("res://addons/libmaszyna/legacy/materials/missing_texture.png")
 const DDSTextureLoader = preload("res://addons/libmaszyna/legacy/materials/dds_texture_loader.gd")
+const StreamedTextureFile = preload("streamed_texture_file.gd")
+## Godot streams only a StreamedTexture2D, and reads the setting once, at its start: on, the
+## original's textures are written once into a file of that format (streamed_texture_file.gd) and
+## handed out as StreamedTexture2Ds, so only the mip levels the camera needs take VRAM
+const TEXTURE_STREAMING_SETTING: StringName = &"rendering/textures/streaming/enabled"
+## ResourceCache's switch: off, a file written by a previous run is not taken (the tests)
+const CACHE_ENABLED_SETTING: StringName = &"maszyna/cache/enabled"
+static var _texture_streaming: bool = bool(ProjectSettings.get_setting(TEXTURE_STREAMING_SETTING, false))
+## Where the streamed textures' files are kept; cleared with every cache
+static var _streamed_textures: ResourceCache = ResourceCache.create("textures")
 const COLORED_MATERIAL: Material = preload("res://addons/libmaszyna/legacy/e3d/colored.tres")
 ## A free spotlight drawn as a point of a constant size on the screen (types/free_spotlight.gdshader)
 ## and its glare (types/free_spotlight_glare.gdshader) as the next pass
@@ -213,6 +223,11 @@ func material_preload(
         var resident:bool = _dds_cache.has(texture_key)
         _preload_mutex.unlock()
         if resident:
+            continue
+        # streamed, what the main thread reads is the file's header and its smallest levels: the
+        # worker writes the file, and nothing is held
+        if _texture_streaming:
+            _streamed_texture_file(full_path, max_size)
             continue
         var image:Image = _hold_preloaded(texture_key, files) as Image
         if not image:
@@ -447,16 +462,43 @@ func _load_dds_clamped(full_path:String, max_size:int) -> Texture2D:
         _preload_mutex.lock()
         _dds_cache.erase(cache_key)
         _preload_mutex.unlock()
-    var image:Image = _get_preloaded(cache_key) as Image
-    if not image:
-        image = DDSTextureLoader.load_image(full_path, max_size)
-    if not image:
-        return null
-    texture = ImageTexture.create_from_image(image)
+    if _texture_streaming:
+        var streamed_path:String = _streamed_texture_file(full_path, max_size)
+        if not streamed_path:
+            return null
+        var streamed:StreamedTexture2D = StreamedTexture2D.new()
+        if not streamed.load(streamed_path) == OK:
+            return null
+        texture = streamed
+    else:
+        var image:Image = _get_preloaded(cache_key) as Image
+        if not image:
+            image = DDSTextureLoader.load_image(full_path, max_size)
+        if not image:
+            return null
+        texture = ImageTexture.create_from_image(image)
     _preload_mutex.lock()
     _dds_cache[cache_key] = weakref(texture)
     _preload_mutex.unlock()
     return texture
+
+
+## On a worker or the main thread: the streamed texture file of a .dds at max_size, written from it
+## the first time. Named after the .dds, the limit and the time the .dds was changed, so a changed
+## file gets one of its own and an existing one is never stale. Empty when the .dds cannot be read.
+static func _streamed_texture_file(full_path:String, max_size:int) -> String:
+    var name:String = "%s:%d:%d" % [full_path, max_size, FileAccess.get_modified_time(full_path)]
+    var path:String = _streamed_textures.get_file_path(name.md5_text() + ".stex")
+    if FileAccess.file_exists(path) and bool(ProjectSettings.get_setting(CACHE_ENABLED_SETTING, true)):
+        return path
+    var image:Image = DDSTextureLoader.load_image(full_path, max_size)
+    if not image:
+        return ""
+    DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+    if not StreamedTextureFile.save(image, path) == OK:
+        push_error("[MaterialManager] Cannot write the streamed texture %s of %s" % [path, full_path])
+        return ""
+    return path
 
 
 ## The material handed out for a path with these options, the same while it is alive

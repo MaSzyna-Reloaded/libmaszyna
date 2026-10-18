@@ -421,6 +421,11 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * **A light's submodels have two managers**: `E3DRenderingServer` (`lights_state`) and the cab
   widgets (`CabinIndicator3D`, `CabinSpotLight3D`) writing `visible`; the widgets should ask the
   model.
+* **Streamed textures** (`MaterialManager`, `streamed_texture_file.gd`): a `.dds` of another
+  format than DXT1/3/5 (BC4U: one file in the data) still goes through `load()` and does not
+  stream; the file of a `.dds` changed since is left in `user://cache/textures` until the cache
+  is cleared; with the cache switched off (the tests) a file is written again on every load, and
+  on Windows `rename_absolute()` over a file a texture still streams from is not checked.
 
 ### Self-illumination of light submodels
 
