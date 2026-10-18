@@ -85,7 +85,7 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:Str
         return kept
 
     var cache_path:String = _get_cache_path(key)
-    var cached:Image = await _run_in_queue(_cache.get.bind(cache_path)) as Image
+    var cached:Image = await _run_in_queue(_cache.read.bind(cache_path)) as Image
     if cached:
         var texture:Texture2D = ImageTexture.create_from_image(cached)
         _remember_profile(key, texture)
@@ -96,7 +96,7 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:Str
         return null
     var rendered:Texture2D = ImageTexture.create_from_image(image)
     _remember_profile(key, rendered)
-    _queue.submit(_cache.set.bind(cache_path, image, ""))
+    _queue.submit(_cache.write.bind(cache_path, image, ""))
     return rendered
 
 

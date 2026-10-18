@@ -37,16 +37,16 @@
 				The channel the radio is tuned to.
 			</description>
 		</method>
-		<method name="get_enabled" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Whether the radio is switched on ([code]Radio[/code]).
-			</description>
-		</method>
 		<method name="get_powered" qualifiers="const">
 			<return type="bool" />
 			<description>
 				Whether the radio is switched on and has the low voltage to work.
+			</description>
+		</method>
+		<method name="get_radio_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Whether the radio is switched on ([code]Radio[/code]).
 			</description>
 		</method>
 		<method name="get_radio_stop_active" qualifiers="const">

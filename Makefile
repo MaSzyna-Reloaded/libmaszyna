@@ -22,8 +22,14 @@ CMAKE_GODOTCPP_API_VERSION=4.7
 CMAKE_GODOTCPP_PRECISION=double
 CMAKE_GODOTCPP_API_FILE=$(CURDIR)/extension_api.json
 # The engine the library is built for - a game exporting with it has to use exactly this one, since
-# the export looks its template up by this version
-GODOT_VERSION:=4.7.2
+# the export looks its template up by this version (export_templates/<version>.double). It is
+# Godot's full version with its status (4.7.2.stable, 4.8.beta1): an engine built from source
+# reports the status scons is given (GODOT_VERSION_STATUS), so a pre-release is built with its own
+GODOT_VERSION:=4.8.beta1
+GODOT_STATUS:=$(lastword $(subst ., ,$(GODOT_VERSION)))
+# The commit the release was built from (its notes in godotengine/godot-builds) - a pre-release has
+# no tag in godotengine/godot, so the source is fetched by the commit, whatever the status
+GODOT_COMMIT:=4d10419cacd6d3009976e8f9fd3abd970fd58018
 
 # glibc is only forward compatible: a library or template linked against a rolling distribution's
 # glibc (2.43-2.44 here) refuses to start on anything older - Ubuntu 22.04/24.04, Debian 12, Mint.
@@ -44,7 +50,7 @@ LINUX_SDK_RUN=mkdir -p $(CCACHE_DIR) && docker run --rm --user $(shell id -u):$(
     -e CMAKE_C_COMPILER_LAUNCHER=ccache -e CMAKE_CXX_COMPILER_LAUNCHER=ccache $(LINUX_SDK_IMAGE)
 GODOT_SOURCE_DIR:=build-godot-$(GODOT_VERSION)
 GODOT_BIN:=$(GODOT_SOURCE_DIR)/bin
-GODOT_SCONS=scons precision=double production=yes -j$(CMAKE_BUILD_JOBS)
+GODOT_SCONS=GODOT_VERSION_STATUS=$(GODOT_STATUS) scons precision=double production=yes -j$(CMAKE_BUILD_JOBS)
 LINUX_TEMPLATE:=$(GODOT_BIN)/godot.linuxbsd.template_release.double.x86_64
 ANDROID_TEMPLATES:=$(GODOT_BIN)/android_release.apk $(GODOT_BIN)/android_debug.apk
 
@@ -200,8 +206,10 @@ $(PYTHON_RUNTIME_DIR)/lib/libpython2.7.so.1.0: scripts/build-python-runtime | li
 	$(LINUX_SDK_RUN) scripts/build-python-runtime $(PYTHON_RUNTIME_DIR) $(PYTHON_RUNTIME_BUILD_DIR)
 
 
+# git clone takes a branch or a tag only; a failed fetch leaves no directory to be taken as done
 $(GODOT_SOURCE_DIR):
-	git clone --depth 1 --branch $(GODOT_VERSION)-stable https://github.com/godotengine/godot.git $@
+	git init -q $@ && git -C $@ fetch -q --depth 1 https://github.com/godotengine/godot.git $(GODOT_COMMIT) \
+	    && git -C $@ checkout -q FETCH_HEAD || { rm -rf $@; exit 1; }
 
 
 # Godot publishes no double precision build, so the engine is built here, once per engine version.

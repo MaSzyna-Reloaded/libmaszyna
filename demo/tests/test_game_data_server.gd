@@ -26,7 +26,7 @@ func test_clear_cache_emits_the_request():
 
 func test_a_created_cache_follows_the_request():
     var resource:Resource = Resource.new()
-    _cache.set("entry.res", resource)
+    _cache.write("entry.res", resource)
     assert_true(_cache.has("entry.res"), "the entry should be in the cache before it is cleared")
 
     GameDataServer.cache_clear()
@@ -36,14 +36,14 @@ func test_a_created_cache_follows_the_request():
 func test_an_entry_saved_again_replaces_the_one_read_before():
     var first:Resource = Resource.new()
     first.resource_name = "first"
-    _cache.set("entry.res", first)
-    var read:Resource = _cache.get("entry.res")
+    _cache.write("entry.res", first)
+    var read:Resource = _cache.read("entry.res")
     assert_eq(read.resource_name, "first")
 
     var second:Resource = Resource.new()
     second.resource_name = "second"
-    _cache.set("entry.res", second)
-    assert_eq(_cache.get("entry.res").resource_name, "second")
+    _cache.write("entry.res", second)
+    assert_eq(_cache.read("entry.res").resource_name, "second")
 
 func test_a_reload_unloads_first_then_reloads():
     GameDataServer.data_unload_requested.connect(_on_data_unload_requested)
@@ -55,7 +55,7 @@ func test_a_reload_unloads_first_then_reloads():
     assert_eq(_requests, expected)
 
 func test_a_reload_leaves_the_caches_on_disk():
-    _cache.set("entry.res", Resource.new())
+    _cache.write("entry.res", Resource.new())
     GameDataServer.data_reload()
     assert_true(_cache.has("entry.res"), "a reload should not clear the caches - that is cache_clear()")
 

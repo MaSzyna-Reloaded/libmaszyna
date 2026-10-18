@@ -17,7 +17,7 @@ func get_preview(item_data: NodebankGridItem) -> Texture2D:
 
     var cache_path: String = _make_cache_path(item_data)
     var cache_hash: String = _make_cache_hash(item_data, source_path)
-    var cached_texture: Texture2D = _cache.get(cache_path, cache_hash) as Texture2D
+    var cached_texture: Texture2D = _cache.read(cache_path, cache_hash) as Texture2D
     if cached_texture:
         return cached_texture
 
@@ -25,8 +25,8 @@ func get_preview(item_data: NodebankGridItem) -> Texture2D:
     if not rendered_texture:
         return null
 
-    _cache.set(cache_path, rendered_texture, cache_hash)
-    cached_texture = _cache.get(cache_path, cache_hash) as Texture2D
+    _cache.write(cache_path, rendered_texture, cache_hash)
+    cached_texture = _cache.read(cache_path, cache_hash) as Texture2D
     return cached_texture if cached_texture else rendered_texture
 
 

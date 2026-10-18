@@ -4949,3 +4949,24 @@ lighting or the trainset.
   same probe shows the reversed wagons at -11.11 m/s and the couplers at a few kN.
 * **Rule:** a value the original gives "along the vehicle" (velocity, the Mover's V) is signed by
   the vehicle's own direction on the track; a reversed vehicle takes it negated.
+
+
+## 2026-10-18 Godot 4.8 refused ResourceCache.get
+
+* **Symptom:**
+  - On Godot 4.8 (beta1) the extension loaded with `Object 'ResourceCache' already has member
+    'get'` (and `'set'`, and `'RailVehicleRadio' ... 'get_enabled'`), `core/object/gdtype.cpp:161`.
+    Every `_cache.get(path, hash)` then failed to parse ("Too many arguments for get()"), so
+    `E3DModelManager`, `MaszynaLegacyVehicleSystem`, the `.fiz` importer and the node bank did not
+    compile: no models, no vehicles. The same checkout imported clean on 4.7.2.
+* **What proved it:**
+  - godotengine/godot#122596 (`c97f21f9f4`): `GDType::bind_method()` checked `self_method_map` -
+    the class's own methods - and now checks `property_map`, every member of the class and of its
+    bases. A method named after a base's member is refused instead of shadowing it.
+  - `ResourceCache` bound `get`/`set`, the names of `Object.get()`/`set()`. `RailVehicleRadio`
+    bound its own `get_enabled()` (the Mover's `Radio`) over `VehicleComponent.get_enabled()`, the
+    getter of the component's `enabled` property: up to 4.7 `radio.enabled` read the radio switch,
+    on 4.8 `cabin_radio_3d.gd` would read the component's flag without any parse error.
+* **Fix:** `ResourceCache.read()`/`write()`; the radio's switch is `get_radio_enabled()`, as its
+  state key `radio_enabled`.
+* **Rule:** a bound method never takes the name of a member of any base class.

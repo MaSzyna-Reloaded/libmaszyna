@@ -23,7 +23,7 @@ namespace godot {
         BIND_ENUM_CONSTANT(RADIO_CALL3);
         BIND_CONSTANT(CHANNEL_NO_CALLS);
 
-        ClassDB::bind_method(D_METHOD("get_enabled"), &RailVehicleRadio::get_enabled);
+        ClassDB::bind_method(D_METHOD("get_radio_enabled"), &RailVehicleRadio::get_radio_enabled);
         ClassDB::bind_method(D_METHOD("get_powered"), &RailVehicleRadio::get_powered);
         ClassDB::bind_method(D_METHOD("get_radio_stop_active"), &RailVehicleRadio::get_radio_stop_active);
         ClassDB::bind_method(D_METHOD("get_channel"), &RailVehicleRadio::get_channel);
@@ -98,7 +98,7 @@ namespace godot {
         if (!is_simulation_ready()) {
             return;
         }
-        p_state["radio_enabled"] = get_enabled();
+        p_state["radio_enabled"] = get_radio_enabled();
         p_state["radio_powered"] = get_powered();
         p_state["radio_channel"] = get_channel();
         p_state["radio_volume"] = get_volume();

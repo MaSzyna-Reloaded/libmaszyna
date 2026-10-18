@@ -206,7 +206,7 @@ static func build_description(data_path: String, fiz_filename: String) -> Vehicl
 static func build_description_at(fiz_path: String) -> VehicleController:
     var cache_path: String = _make_cache_path(fiz_path)
     var cache_hash: String = _make_cache_hash(fiz_path)
-    var description: VehicleController = _cache.get(cache_path, cache_hash) as VehicleController
+    var description: VehicleController = _cache.read(cache_path, cache_hash) as VehicleController
     if description:
         return description
 
@@ -214,7 +214,7 @@ static func build_description_at(fiz_path: String) -> VehicleController:
     # components are kept in the order the FIZ sections built them
     description = MoverRailVehicleController.new()
     build_into(description, fiz_path)
-    _cache.set(cache_path, description, cache_hash)
+    _cache.write(cache_path, description, cache_hash)
     return description
 
 

@@ -4,7 +4,7 @@
 namespace godot {
     void MoverRailVehicleRadio::_bind_methods() {}
 
-    bool MoverRailVehicleRadio::get_enabled() const {
+    bool MoverRailVehicleRadio::get_radio_enabled() const {
         const TMoverParameters *mover = get_mover();
         return mover != nullptr ? mover->Radio : false;
     }

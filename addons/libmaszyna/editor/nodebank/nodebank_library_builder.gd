@@ -18,7 +18,7 @@ func load_library(force_rebuild: bool = false) -> PackedScene:
 
     var cache_hash: String = _make_cache_hash(nodebank_path)
     if not force_rebuild:
-        var cached_scene: PackedScene = _cache.get(CACHE_FILE, cache_hash) as PackedScene
+        var cached_scene: PackedScene = _cache.read(CACHE_FILE, cache_hash) as PackedScene
         if cached_scene:
             return cached_scene
 
@@ -28,9 +28,9 @@ func load_library(force_rebuild: bool = false) -> PackedScene:
         return EMPTY_NODEBANK
 
     var scene: PackedScene = _parse_nodebank_txt(file)
-    _cache.set(CACHE_FILE, scene, cache_hash)
+    _cache.write(CACHE_FILE, scene, cache_hash)
 
-    var reloaded_scene: PackedScene = _cache.get(CACHE_FILE, cache_hash) as PackedScene
+    var reloaded_scene: PackedScene = _cache.read(CACHE_FILE, cache_hash) as PackedScene
     return reloaded_scene if reloaded_scene else scene
 
 

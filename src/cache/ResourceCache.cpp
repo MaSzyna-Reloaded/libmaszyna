@@ -24,8 +24,8 @@ namespace godot {
                 "ResourceCache", D_METHOD("resource_save", "resource", "path"), &ResourceCache::resource_save);
         ClassDB::bind_static_method("ResourceCache", D_METHOD("scene_pack", "root"), &ResourceCache::scene_pack);
         ClassDB::bind_method(D_METHOD("has", "path", "hash"), &ResourceCache::has, DEFVAL(""));
-        ClassDB::bind_method(D_METHOD("get", "path", "hash"), &ResourceCache::get, DEFVAL(""));
-        ClassDB::bind_method(D_METHOD("set", "path", "resource", "hash"), &ResourceCache::set, DEFVAL(""));
+        ClassDB::bind_method(D_METHOD("read", "path", "hash"), &ResourceCache::read, DEFVAL(""));
+        ClassDB::bind_method(D_METHOD("write", "path", "resource", "hash"), &ResourceCache::write, DEFVAL(""));
         ClassDB::bind_method(D_METHOD("remove", "path"), &ResourceCache::remove);
         ClassDB::bind_method(D_METHOD("get_file_path", "path"), &ResourceCache::get_file_path);
         ClassDB::bind_method(D_METHOD("clear"), &ResourceCache::clear);
@@ -102,7 +102,7 @@ namespace godot {
         return hash_file->get_as_text() == p_hash;
     }
 
-    Ref<Resource> ResourceCache::get(const String &p_path, const String &p_hash) const {
+    Ref<Resource> ResourceCache::read(const String &p_path, const String &p_hash) const {
         const String cache_path = _get_cache_path(p_path);
         if (!_enabled() || !FileAccess::file_exists(cache_path)) {
             return nullptr;
@@ -118,7 +118,7 @@ namespace godot {
         return ResourceLoader::get_singleton()->load(cache_path);
     }
 
-    void ResourceCache::set(const String &p_path, const Ref<Resource> &p_resource, const String &p_hash) const {
+    void ResourceCache::write(const String &p_path, const Ref<Resource> &p_resource, const String &p_hash) const {
         if (!_enabled() || p_resource.is_null()) {
             return;
         }
@@ -136,7 +136,7 @@ namespace godot {
             UtilityFunctions::push_error("[ResourceCache] Failed to save cache: " + cache_path);
         } else {
             // the resource loaded from this path before stays in Godot's cache while it lives, and
-            // get() would hand it out again in place of what was just saved
+            // read() would hand it out again in place of what was just saved
             p_resource->take_over_path(cache_path);
             UtilityFunctions::print_verbose("[ResourceCache] Saved to disk: " + cache_path);
         }

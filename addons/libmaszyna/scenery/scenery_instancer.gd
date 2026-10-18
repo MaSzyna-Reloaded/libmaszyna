@@ -172,7 +172,7 @@ func instantiate(root: MaszynaIncludeNode, parameters: Dictionary = {}) -> void:
             compiled.triangle_chunks.append(chunk)
         if root.use_cache and cacheable:
             await _run_on_worker(
-                root, _cache.set.bind(cache_path, compiled), PARSE_PROGRESS, MaszynaIncludeNode.LoadStage.FILES,
+                root, _cache.write.bind(cache_path, compiled), PARSE_PROGRESS, MaszynaIncludeNode.LoadStage.FILES,
                 "Saving cache"
             )
             SceneryLoadMeasurement.print_process(CONVERT_TAG, "saved")
@@ -540,7 +540,7 @@ static func _load_cached(
     source_path:String,
     parameters_hash:String,
 ) -> MaszynaCompiledScenery:
-    var compiled:MaszynaCompiledScenery = _cache.get(cache_path) as MaszynaCompiledScenery
+    var compiled:MaszynaCompiledScenery = _cache.read(cache_path) as MaszynaCompiledScenery
     if not compiled:
         return null
     if not _is_cache_valid(compiled, source_path, parameters_hash):
@@ -700,7 +700,7 @@ func parse_subscene_task(
         subscene.triangle_chunk_paths = chunk_paths
         subscene.join_duplicated_events = context.join_duplicated_events
         if _compile_scenery(source_path, state_hash, context, context.objects, subscene):
-            _cache.set(cache_path, subscene)
+            _cache.write(cache_path, subscene)
     _saving_subscenes_mutex.lock()
     _saving_subscenes.erase(cache_path)
     _saving_subscenes_mutex.unlock()

@@ -14,7 +14,7 @@ TAG="godot-$VERSION-double"
 REPOSITORY="${GODOT_RELEASE_REPOSITORY:-MaSzyna-Reloaded/libmaszyna}"
 GODOT_BIN="$REPO_DIR/build-godot-$VERSION/bin"
 BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
-TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/$VERSION.stable.double"
+TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/$VERSION.double"
 
 # release file -> where Godot expects it; the editor goes into BIN_DIR
 declare -A INSTALL=(

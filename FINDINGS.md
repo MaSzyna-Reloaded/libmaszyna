@@ -487,6 +487,10 @@ anything. Open work belongs in `TODO.md`.
   never in the game's: its fatal error is `abort()` on a stderr nobody sees, and Godot's crash
   handler covers only the main thread. The host's stderr and exit code go to the log.
   *(10-09 Python screens ended the game without a trace)*
+* A bound method never takes the name of a member of any base class - Godot's (`get`, `set`,
+  `call`) or our own (`VehicleComponent.get_enabled`). Up to 4.7 the bind shadowed it; from 4.8
+  it is refused with an error and the base member answers in its place. *(10-18 Godot 4.8 refused
+  ResourceCache.get)*
 
 ## Threads and teardown
 * A worker never takes an object back from a `WeakRef` the main thread may be letting go: what

@@ -27,7 +27,7 @@ namespace godot {
             bool _radio_stop_receive(bool p_driven) override;
 
         public:
-            bool get_enabled() const override;
+            bool get_radio_enabled() const override;
             bool get_powered() const override;
             bool get_radio_stop_active() const override;
             void radio(bool p_enabled) override;

@@ -49,7 +49,7 @@ func load_model(data_path:String, filename: String) -> E3DModel:
     var cached_path = _make_cache_path(data_path, filename, path)
     var cache_hash = _make_cache_hash(path)
 
-    output = _cache.get(cached_path, cache_hash) as E3DModel
+    output = _cache.read(cached_path, cache_hash) as E3DModel
     if output:
         return output
 
@@ -58,7 +58,7 @@ func load_model(data_path:String, filename: String) -> E3DModel:
         if output:
             # saved on the thread that loaded it: an E3DMesh keeps its arrays, so saving reads
             # nothing back from the RenderingServer (it was a GPU stall on the main thread)
-            _cache.set(cached_path, output, cache_hash)
+            _cache.write(cached_path, output, cache_hash)
             return output
         else:
             push_warning("File is not an E3DModel: "+path)

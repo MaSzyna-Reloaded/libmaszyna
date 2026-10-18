@@ -47,8 +47,8 @@ namespace godot {
             static Ref<PackedScene> scene_pack(Node *p_root);
 
             bool has(const String &p_path, const String &p_hash = "") const;
-            Ref<Resource> get(const String &p_path, const String &p_hash = "") const;
-            void set(const String &p_path, const Ref<Resource> &p_resource, const String &p_hash = "") const;
+            Ref<Resource> read(const String &p_path, const String &p_hash = "") const;
+            void write(const String &p_path, const Ref<Resource> &p_resource, const String &p_hash = "") const;
             void remove(const String &p_path) const;
             /* Where an entry is kept, for files a cache entry writes beside it (a scenery's chunks) */
             String get_file_path(const String &p_path) const;

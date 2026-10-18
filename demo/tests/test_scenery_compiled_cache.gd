@@ -39,7 +39,7 @@ func test_binary_cache_restores_typed_track_resources_and_nodes() -> void:
         context,
         objects,
     )
-    SceneryInstancer._cache.set(_cache_path, compiled)
+    SceneryInstancer._cache.write(_cache_path, compiled)
 
     var cache_file:String = "user://cache".path_join(
         SceneryInstancer._cache.get_cache_dir()

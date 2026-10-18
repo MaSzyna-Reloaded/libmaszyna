@@ -62,7 +62,7 @@ func set_vehicle_rid(vehicle_rid:RID) -> void:
         _radio.transmission_received.connect(_on_transmission_received)
     CabinSystem.state_computed_value_register(vehicle_rid, MESSAGE_PLAYED_KEY, func() -> bool: return _message_played)
     CabinSystem.state_computed_value_register(vehicle_rid, RADIO_STOP_LAMP_KEY,
-            func() -> bool: return _radio != null and _radio.get_enabled() and _radio.get_radio_stop_active())
+            func() -> bool: return _radio != null and _radio.get_radio_enabled() and _radio.get_radio_stop_active())
     # the alarm is watched for as long as the cab has one and a radio to sound it
     set_process(_radio != null and _alarm_player != null)
 
