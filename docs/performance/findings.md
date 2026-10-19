@@ -116,3 +116,15 @@ seconds, once with `PHYSICS_STEP` = 0.01 and once with 1/30 (the experiment reve
 
 Derailments seen in these runs (`cause=collision`, road cars at crossings, 52-75 a run) are there
 in every build, with the 0.01 s step as well - not the step's.
+
+## Measured: what is left on the main thread (Fedora, rendering on its own thread)
+
+* **The Mover step is 44%** of the main thread. The Mover's own physics (`_integrate`,
+  `ComputeTotalForce`, `UpdatePipePressure`) is about 25%, the server's placing and neighbours
+  (`vehicle_process_movement`, `_update_neighbours`, the axle transforms) about 20%.
+* **The Mover draws from one random engine for all vehicles** (`Random()`, `utilities.cpp`:
+  adhesion, track irregularities, brake delays). Stepping the trainsets on several threads would
+  change the order of the draws: the behaviour the same in distribution, not bit by bit. Not done.
+* **`Curve3D::sample_baked` is called into the engine three times per axle** per sub-step
+  (`_axle_transform()`), with `get_baked_length()`: about 3%. Sampling the baked points here would
+  have to give the engine's result to the bit (linear, `cubic = false`). Not done.

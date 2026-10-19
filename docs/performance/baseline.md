@@ -50,3 +50,27 @@ Every one of these crosses the extension boundary and does more work than it loo
   a `Ref<TrackEndpointRef>` in a `TypedArray` for every connection, on every axle crossing a track's
   end: 3.3% in making them, plus `Array` reference counting.
 * `VehicleController::get_component` > `_get_component_of_type`: 1.4%.
+
+## Wrzosy on the Fedora desktop, rendering on its own thread
+
+The game's `docs/performance/baseline.md` has the machine (Ryzen 9 5950X, RX 9060 XT). With the
+game's rendering on a thread of its own, the main thread runs the simulation and the scripts only.
+Shares of the main thread (a symbol build of Godot 4.7.2, `perf` 20 s; libmaszyna at `7f7c833e`):
+
+| Phase | Share |
+|---|---|
+| `SimulationServer::simulation_advance` | 83.8% |
+| `MaszynaMoverVehicleServer::stepping_advance` | 43.8% |
+| - `MoverRailVehicleController::_integrate` (the Mover's movement) | 11.5% |
+| - `RailVehicleServer::vehicle_process_movement` | 9.2% |
+| - `RailVehicleServer::_update_neighbours` | 8.5% |
+| - `RailVehicleServer::_get_controller` (`ObjectDB::get_instance`, a mutex, `is_class`) | 4.7% |
+| - `TMoverParameters::UpdatePipePressure` / `ComputeTotalForce` | 4.4% / 4.2% |
+| - `VehicleController::_get_component_of_type` | 2.8% |
+| - `Curve3D::sample_baked`, called into the engine per axle | about 3% |
+| the AI drivers (the game's GDScript) | 21.8% |
+| the rest of `simulation_advanced`'s listeners (`CabinSystem`, sound's sweep) | 18.4% |
+
+At more frames a second the Mover's share grows: it runs `ceil(delta / 10 ms)` sub-steps, so a
+frame of 18 ms takes two sub-steps of 9 ms, and the work done once a frame per vehicle
+(`vehicle_report_placement`, `process_components`, `update_state`) comes more often.

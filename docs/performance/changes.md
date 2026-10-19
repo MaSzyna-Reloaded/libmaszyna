@@ -121,3 +121,79 @@ cab, one run each):
 * Night is now held by the CPU (the CPU model gives about 49 ms) rather than the GPU.
 * The sky and environment tests pass (the game's `test_gnd_skydome_environment.gd`, 8;
   `test_maszyna_environment_node.gd`, 9).
+
+## The second round, on the Fedora desktop
+
+Measured on the game's Wrzosy with its rendering on a thread of its own (the game's
+`docs/performance/changes.md`), 1920x1080, a symbol build of Godot 4.7.2 for the shares.
+
+### The controller of a placed vehicle is held
+
+`RailVehicleServer::_get_controller()` turned the placement's `ObjectID` into the controller on
+every call: `ObjectDB::get_instance()` (an engine call that takes a mutex) and a cast across the
+extension boundary. The Mover step calls it per vehicle several times a sub-step.
+
+* **Change:** `VehiclePlacement` holds `Ref<RailVehicleController>`, taken where the id was taken -
+  `vehicle_attach()` and `vehicle_controller_changed`, which VehicleServer emits on every binding
+  and unbinding, so the placement never holds a controller the vehicle no longer has.
+* **Before:** 4.7% of the main thread (`ObjectDB::get_instance` 3.5%, the mutex 1.4%,
+  `is_class` 1.5%). **After:** `_get_controller` gone from the profile, the mutex 0.14%.
+
+### Components indexed by type
+
+`VehicleController::_get_component_of_type()` walked the vehicle's components and asked each its
+type, for every `get_component()` - per axle and per sub-step in the Mover step.
+
+* **Change:** an index of the first component of each type, made again whenever the list changes
+  (`add_component()`, `remove_component()`, `set_components()`); the first one of a type still
+  answers, as the walk did.
+* **Before:** 2.8% of the main thread. **After:** 2.2% - most of the cost is the `Ref` handed back
+  and the call, not the walk.
+
+### Material types read their shader defaults once
+
+`MaszynaMaterialFactory.create()` duplicated the type's base material and `_apply()` read every
+shader parameter of it again. A parameter the material does not set is read from the
+RenderingServer (`shader_get_parameter_default`), and with the rendering thread on its own every
+such read waits for it: about 1 600 waits in a run while Wrzosy streamed its materials (Godot's
+warning "causing RenderingServer synchronizations").
+
+* **Change:** `MaszynaShaderMeta` keeps a copy of the type's base material with every shader
+  parameter set from its default, once; materials are made from the copy. The values, and so the
+  picture, are the same: `duplicate()` already set every default explicitly on the material made.
+* **A copy, not the type's material:** the first version set the defaults on the loaded `.tres`,
+  and an editor open on the project wrote all 13 type files back.
+* **After:** no synchronization warning from the factory in a run.
+
+### Cab logic of unseen cabs
+
+Every driven vehicle registers its cab logic for the cab its driver sits in - on Wrzosy 264 AI
+drivers, each running the cab lights, the main switch and the door permits on every simulation
+step: 18.5% of the main thread (a probe: lights 8.5%, main switch 7.8%, door permits 2.3%).
+
+* **Change:** `CabinSystem.register_display_process()` - a callable that only works out what a cab
+  shows. The cab lights (`LegacyCabinCabLights`) are one: they run with the simulation while their
+  vehicle's interior is shown, else just before it is shown (`cabin_show()`) or when a getter
+  reads them (`cabin_get_light_level()`, ...). Their inputs - the switches and the vehicle's power
+  after the step - are the same at the read as at the step, so the values read are the same; the
+  elements that follow the change signals exist only in a shown cab.
+* The main switch and the door permits send commands, so they run on every step as before - with
+  their controls read in place and `CabinState.vehicle_component()` asking VehicleServer directly.
+  The process lists are replaced when they change, not copied on every step; `act()` makes the
+  vehicle's id only for an error message.
+* Tests: `test_cab_lights.gd` (7, one of them reading the lights of a cab never shown),
+  `test_cabin_system_state.gd`, `test_legacy_cabin_doors.gd`, `test_legacy_cabin_cab_activation.gd`,
+  `test_cabin_switch.gd`, `test_train_cab_change.gd` and others, 14 scripts, pass.
+
+### Where the round stands
+
+| Build (symbol build of Godot) | FPS | Main thread busy | Main thread a frame | Rendering thread busy |
+|---|---|---|---|---|
+| the controller held | 50.2 | 90% | 17.9 ms | 80% |
+| + components, materials, cab logic | **53.6** | 77% | **14.4 ms** | 83% |
+
+The main thread's time a frame fell by a fifth; the rendering thread now limits the frame.
+
+* Failing before the round, not by it: `test_material_manager_variants.gd` (7/27),
+  `test_material_preload.gd` (1/3), `test_mmd_cabin_instancer.gd` (37/39) and
+  `test_zzz_ep07_cabin_main_switch.gd` (0/5) fail the same with this round's scripts taken out.
