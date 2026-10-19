@@ -7,6 +7,7 @@
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
 namespace godot {
@@ -34,6 +35,40 @@ namespace godot {
             bool diagnostics = false;
             /* The velocity each vehicle had after the last step, for the kick diagnostics */
             RIDMap<double> diagnostics_velocity;
+
+            /* The vehicles of a sub-step in groups that never reach each other's Movers. A Mover
+             * reads and writes only the vehicles at its ends - the coupled ones and the nearest one
+             * ahead and behind (TMoverParameters::Neighbours: CouplerForce() sets the other's
+             * CForce, Attach() couples it, the trainset's voltage and pipe come along the
+             * couplers) - so two groups step on two threads. Each group keeps the vehicles in the
+             * order they step in one after the other. */
+            struct StepGroups {
+                    /* indices into the stepped vehicles, a group after a group */
+                    LocalVector<uint32_t> members;
+                    /* where each group starts in members, and members' end last */
+                    LocalVector<uint32_t> starts;
+                    /* the union-find of _group_vehicles(): a vehicle's index, or a Mover at an end
+                     * that is not stepped here, numbered after them */
+                    LocalVector<uint32_t> parents;
+                    LocalVector<uint32_t> counts;
+                    HashMap<const TMoverParameters *, uint32_t> indices;
+            };
+            StepGroups step_groups;
+            /* What a phase of a sub-step hands its group tasks */
+            struct StepPhase {
+                    const StepGroups *groups = nullptr;
+                    const Vector<Ref<VehicleController>> *controllers = nullptr;
+                    double sub_step = 0.0;
+                    bool full_movement = false;
+            };
+            /* Fewer groups than this step on the calling thread: handing them out costs more */
+            static constexpr uint32_t PARALLEL_MIN_GROUPS = 8;
+
+            void _group_vehicles(const Vector<Ref<VehicleController>> &p_controllers);
+            /* Runs a phase over the groups - on the worker threads when there are enough of them */
+            void _run_phase(void (*p_task)(void *, uint32_t), StepPhase &p_phase, const char *p_description);
+            static void _compute_forces_task(void *p_phase, uint32_t p_group);
+            static void _compute_movement_task(void *p_phase, uint32_t p_group);
 
             /* Diagnostics: a velocity jump within one frame is a kick - with consistent track
              * movement it comes from the forces, typically a coupler reacting to an inconsistent

@@ -1,9 +1,11 @@
 #include "MaszynaMoverVehicleServer.hpp"
+#include "legacy/vehicles/MoverRailVehicleController.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
 #include <map>
 
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/worker_thread_pool.hpp>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -134,26 +136,25 @@ namespace godot {
             for (const RID &vehicle_rid: p_vehicles) {
                 rail_vehicles->vehicle_update_neighbours(vehicle_rid);
             }
+            // the groups follow the neighbours just found
+            _group_vehicles(p_controllers);
+            StepPhase phase;
+            phase.groups = &step_groups;
+            phase.controllers = &p_controllers;
+            phase.sub_step = sub_step;
+            // the cheap integration in every sub-iteration but the last (DynObj.cpp:4086)
+            phase.full_movement = iteration == iterations - 1;
             // the original computes the forces of every vehicle before moving any of them, so
             // coupled vehicles see a consistent state (DynObj.cpp:8199-8205)
-            for (const Ref<VehicleController> &controller: p_controllers) {
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
-                static_cast<RailVehicleController *>(controller.ptr())->compute_forces(sub_step);
-            }
-            const bool full_movement = iteration == iterations - 1;
+            _run_phase(&MaszynaMoverVehicleServer::_compute_forces_task, phase, "Mover forces");
+            _run_phase(&MaszynaMoverVehicleServer::_compute_movement_task, phase, "Mover movement");
+            // the track is the server's, its events and signals the main thread's: each vehicle
+            // takes its movement along it after all have computed theirs, in their order
             for (int index = 0; index < p_vehicles.size(); ++index) {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
-                RailVehicleController *controller = static_cast<RailVehicleController *>(p_controllers[index].ptr());
-                if (!controller->is_physics_active()) {
-                    continue;
+                if (static_cast<RailVehicleController *>(p_controllers[index].ptr())->is_physics_active()) {
+                    rail_vehicles->vehicle_process_movement(p_vehicles[index], sub_step);
                 }
-                // the cheap integration in every sub-iteration but the last (DynObj.cpp:4086)
-                if (full_movement) {
-                    controller->compute_movement(sub_step);
-                } else {
-                    controller->compute_fast_movement(sub_step);
-                }
-                rail_vehicles->vehicle_process_movement(p_vehicles[index], sub_step);
             }
         }
 
@@ -172,6 +173,127 @@ namespace godot {
 
         for (const RID &vehicle_rid: p_vehicles) {
             rail_vehicles->vehicle_report_placement(vehicle_rid);
+        }
+    }
+
+    /* Union-find over the Movers' ends: a vehicle and whatever stands at its ends - coupled or
+     * not, stepped here or not - end up in one group */
+    void MaszynaMoverVehicleServer::_group_vehicles(const Vector<Ref<VehicleController>> &p_controllers) {
+        StepGroups &groups = step_groups;
+        const uint32_t count = p_controllers.size();
+        groups.indices.clear();
+        groups.parents.clear();
+        for (uint32_t index = 0; index < count; ++index) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+            const auto *controller = static_cast<MoverRailVehicleController *>(p_controllers[index].ptr());
+            const TMoverParameters *mover = controller->get_mover();
+            if (mover != nullptr) {
+                groups.indices.insert(mover, index);
+            }
+            groups.parents.push_back(index);
+        }
+        const auto find = [&groups](uint32_t p_node) {
+            while (groups.parents[p_node] != p_node) {
+                groups.parents[p_node] = groups.parents[groups.parents[p_node]];
+                p_node = groups.parents[p_node];
+            }
+            return p_node;
+        };
+        for (uint32_t index = 0; index < count; ++index) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+            const auto *controller = static_cast<MoverRailVehicleController *>(p_controllers[index].ptr());
+            const TMoverParameters *mover = controller->get_mover();
+            if (mover == nullptr) {
+                continue;
+            }
+            for (const auto &neighbour: mover->Neighbours) {
+                if (neighbour.vehicle == nullptr) {
+                    continue;
+                }
+                const uint32_t *other = groups.indices.getptr(neighbour.vehicle);
+                uint32_t other_index = 0;
+                if (other != nullptr) {
+                    other_index = *other;
+                } else {
+                    // a Mover not stepped here is still written to by both its neighbours
+                    other_index = groups.parents.size();
+                    groups.parents.push_back(other_index);
+                    groups.indices.insert(neighbour.vehicle, other_index);
+                }
+                const uint32_t root = find(index);
+                const uint32_t other_root = find(other_index);
+                if (root != other_root) {
+                    groups.parents[MAX(root, other_root)] = MIN(root, other_root);
+                }
+            }
+        }
+        // a group per root, its vehicles in their order
+        groups.counts.resize(groups.parents.size());
+        for (uint32_t &group_count: groups.counts) {
+            group_count = 0;
+        }
+        for (uint32_t index = 0; index < count; ++index) {
+            ++groups.counts[find(index)];
+        }
+        groups.starts.clear();
+        uint32_t start = 0;
+        for (uint32_t root = 0; root < groups.counts.size(); ++root) {
+            const uint32_t group_count = groups.counts[root];
+            if (group_count == 0) {
+                continue;
+            }
+            groups.starts.push_back(start);
+            // from here on counts[root] is where the root's next vehicle goes
+            groups.counts[root] = start;
+            start += group_count;
+        }
+        groups.starts.push_back(start);
+        groups.members.resize(count);
+        for (uint32_t index = 0; index < count; ++index) {
+            groups.members[groups.counts[find(index)]++] = index;
+        }
+    }
+
+    void MaszynaMoverVehicleServer::_run_phase(
+            void (*p_task)(void *, uint32_t), StepPhase &p_phase, const char *p_description) {
+        const uint32_t group_count = step_groups.starts.size() - 1;
+        WorkerThreadPool *pool = WorkerThreadPool::get_singleton();
+        if (pool == nullptr || group_count < PARALLEL_MIN_GROUPS) {
+            for (uint32_t group = 0; group < group_count; ++group) {
+                p_task(&p_phase, group);
+            }
+            return;
+        }
+        const int64_t task = pool->add_native_group_task(
+                p_task, &p_phase, static_cast<int>(group_count), -1, true, String(p_description));
+        pool->wait_for_group_task_completion(task);
+    }
+
+    void MaszynaMoverVehicleServer::_compute_forces_task(void *p_phase, const uint32_t p_group) {
+        const StepPhase *phase = static_cast<const StepPhase *>(p_phase);
+        const StepGroups &groups = *phase->groups;
+        for (uint32_t member = groups.starts[p_group]; member < groups.starts[p_group + 1]; ++member) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+            static_cast<RailVehicleController *>((*phase->controllers)[groups.members[member]].ptr())
+                    ->compute_forces(phase->sub_step);
+        }
+    }
+
+    void MaszynaMoverVehicleServer::_compute_movement_task(void *p_phase, const uint32_t p_group) {
+        const StepPhase *phase = static_cast<const StepPhase *>(p_phase);
+        const StepGroups &groups = *phase->groups;
+        for (uint32_t member = groups.starts[p_group]; member < groups.starts[p_group + 1]; ++member) {
+            const Ref<VehicleController> &stepped = (*phase->controllers)[groups.members[member]];
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): see stepping_advance()
+            auto *controller = static_cast<RailVehicleController *>(stepped.ptr());
+            if (!controller->is_physics_active()) {
+                continue;
+            }
+            if (phase->full_movement) {
+                controller->compute_movement(phase->sub_step);
+            } else {
+                controller->compute_fast_movement(phase->sub_step);
+            }
         }
     }
 
