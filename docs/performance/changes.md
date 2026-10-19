@@ -224,3 +224,23 @@ engine (`Random()`, `utilities.cpp`).
   `..._track_physics.gd`), couplers, trainset brakes, EP blending, spring brake, cab change - 88 -
   pass; the game's AI driver tests (76) pass. `test_scenery_trainsets.gd` and the game's `test_zzz_*`
   cannot load their sceneries on this machine (`Cannot load scenery`), before and after.
+
+### Materials made from their type's parameters, without the property list
+
+The first change to the material defaults (above) was not enough: a run still logged 1 790
+`shader_get_parameter_default` and 466 `get_shader_parameter_list` synchronizations, from
+`create()` and `_apply()`. A `ShaderMaterial`'s property list itself asks the RenderingServer for
+the shader's parameters and their defaults, and `duplicate(true)` and the loop of `_apply()` both
+walk it - for every material a scenery streams in, all through the run. With rendering on its own
+thread each such call waits until the thread has drawn the frame it is on: the main thread and the
+rendering thread took turns instead of working at once, both busy under 90%.
+
+* **Change:** `MaszynaShaderMeta` reads the type's shader parameters once, from the type's material
+  as it is loaded; `instantiate()` builds a `ShaderMaterial` with the type's shader, render
+  priority and those parameters, and `_apply()` sets them in the same order without the property
+  list. The types' files hold nothing else (no sub-resource), so the material is the one
+  `duplicate(true)` made. The type's material is no longer changed or copied.
+* **Measured** (Wrzosy, 1920x1080, `/usr/bin/godot`, 60 s after 120 s): **56-59 -> 79.0 FPS**,
+  frame median 16.7-17.8 -> 12.5 ms, p99 23-25 -> 16.7 ms; no synchronization in the log.
+* Tests: `test_material_manager_variants.gd` and `test_material_preload.gd` fail the same 22
+  asserts as before the round; `test_e3d_lights_state.gd` passes.

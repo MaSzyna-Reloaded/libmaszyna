@@ -128,3 +128,16 @@ in every build, with the 0.01 s step as well - not the step's.
 * **`Curve3D::sample_baked` is called into the engine three times per axle** per sub-step
   (`_axle_transform()`), with `get_baked_length()`: about 3%. Sampling the baked points here would
   have to give the engine's result to the bit (linear, `cubic = false`). Not done.
+
+## A ShaderMaterial's property list waits for the rendering thread
+
+* **Seen:** with the game's rendering on its own thread, the main thread and the rendering thread
+  were both busy under 90% at 56 FPS - neither the limit. Godot's log held about 2 300 warnings
+  "causing RenderingServer synchronizations" a run, from the material factory.
+* **Why:** `ShaderMaterial.get_property_list()` lists the shader's parameters through
+  `RenderingServer.shader_get_parameter_list()`, and a parameter the material does not set reads
+  its default with `shader_get_parameter_default()`. Both return a value, so with a rendering
+  thread they wait until it has run everything queued - the whole frame being drawn.
+  `Resource.duplicate()` walks the property list too.
+* **Rule:** no `ShaderMaterial` property list, `duplicate()` or unset parameter read on a path that
+  runs while a scenery streams. What is needed from a material type is read once and kept.
