@@ -134,10 +134,6 @@ so is their open work.
 * **Gauges that gate their command but have no catalog entry yet** - when ported, they get
   `requires_gauge` (Train.cpp line in brackets): `antislip_bt` (2232), `nextcurrent_sw` (1584),
   `signalling_sw` (2602), `converterlocal_sw` (4463), `compressorlocal_sw` (4629).
-* **`MaszynaMaterialFactory._get_shader_variant()` builds its shader variants with
-  `code.replace()`** (alpha blend, cull disabled, specgloss): to be static variant files with the
-  render modes they have now (`CODE_STYLE.md`, "A shader variant is a file"). A vehicle's glass
-  uses the blended variant, so the first vehicle near the camera compiles it in the game.
 * **A translucent skin submodel is forced whether or not the skin has an alpha channel**
   (`E3DInstanceBackend::_submodel_translucency()`); the original draws it in the alpha pass only
   when it has one (`DynObj.cpp:331-346`, `textures_alpha`).

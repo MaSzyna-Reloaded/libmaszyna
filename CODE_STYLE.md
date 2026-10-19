@@ -662,7 +662,7 @@ code = code.replace("cull_back", "cull_disabled")
 variant_shader.code = code
 
 # this - the variant is a file, picked by the factory
-const BLEND_SHADER: Shader = preload("types/normalmap_blend.gdshader")
+load("res://addons/libmaszyna/legacy/materials/types/variants/normalmap_blend_cull_disabled.gdshader")
 ```
 
 * **It cannot be precompiled.** A shader that exists only as a string made at run time is
@@ -677,10 +677,18 @@ A variant that needs another compilation - a shader that writes `ALPHA`, another
 mode - is a small `.gdshader` of its own: its `render_mode`, a `#define`, and an `#include` of the
 shared code (`.gdshaderinc`). What a uniform can switch is a uniform, not a variant.
 
-`MaszynaMaterialFactory._get_shader_variant()` still does the forbidden thing, and the blended
-variant a vehicle's glass is drawn with comes out of it - so the first vehicle drawn near the
-camera compiles it in the game. Replacing it with files is in `TODO.md`; nothing more is added to
-it.
+The material types are built that way: `types/<type>.gdshader` is the opaque one with the back
+faces culled, its code is `types/<type>.gdshaderinc`, and `types/variants/` holds one file per
+combination it needs - `_blend` (`MASZYNA_ALPHA_BLEND`), `_scissor` (`MASZYNA_ALPHA_SCISSOR`),
+`_cull_disabled`, `_specgloss` (`MASZYNA_SPECGLOSS`), in that order.
+`MaszynaMaterialFactory.SHADER_VARIANTS` lists which of them a type has, and
+`_get_shader_variant()` only picks the file. A new combination is a new file and an entry there.
+
+* **`discard` stands only under `MASZYNA_ALPHA_SCISSOR`.** A shader that holds `discard`, even
+  behind a uniform that is never set, does not get Godot's shared depth and shadow material, so
+  each of its surfaces draws again with its own shader in the depth prepass and in every shadow
+  pass. A cut-out material takes the `_scissor` variant. The opaque ones stay off that path
+  (`docs/performance/changes.md`).
 
 ### Input is the project's actions, matched exactly
 
