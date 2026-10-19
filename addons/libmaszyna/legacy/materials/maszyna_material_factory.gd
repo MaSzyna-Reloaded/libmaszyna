@@ -22,22 +22,40 @@ class MaszynaShaderMeta:
     var base_material: Material
     var factory: Callable
     var texture_map: TextureMap
+    ## The base material's shader parameters by property name ("shader_parameter/<name>"), read
+    ## once. A ShaderMaterial's property list and a parameter it does not set come from the
+    ## RenderingServer (shader_get_parameter_list, shader_get_parameter_default), and each such
+    ## read waits for the rendering thread when it runs on its own - for every material a
+    ## scenery streams in, that held the main thread a thousand times and more a run.
+    var shader_parameters: Dictionary[String, Variant] = {}
 
     func _init(factory: Callable, base_material: Material, texture_map: TextureMap) -> void:
         self.factory = factory
         self.texture_map = texture_map
         self.base_material = base_material
-        # A parameter the material does not set reads its default from the RenderingServer
-        # (shader_get_parameter_default), which waits for the rendering thread when it runs on its
-        # own; every material made from this one reads all of them (create(), _apply()). A copy
-        # of its own has them set once and is read from then on - the values, and so the picture,
-        # are the same. A copy, so the type's file loaded in the editor is never changed.
         if base_material is ShaderMaterial:
-            self.base_material = base_material.duplicate()
-            for property: Dictionary in self.base_material.get_property_list():
+            for property: Dictionary in base_material.get_property_list():
                 var property_name: String = property.get("name", "")
                 if property_name.begins_with("shader_parameter/"):
-                    self.base_material.set(property_name, self.base_material.get(property_name))
+                    shader_parameters[property_name] = base_material.get(property_name)
+
+    ## A material of the type, as base_material.duplicate(true) made it: the type's files hold the
+    ## shader, the render priority and the shader parameters, and no resource of their own
+    func instantiate() -> Material:
+        if not base_material is ShaderMaterial:
+            return base_material.duplicate(true)
+        var material: ShaderMaterial = ShaderMaterial.new()
+        apply_base(material)
+        return material
+
+    ## The base material's shader, render priority and shader parameters on `target`, in the order
+    ## its property list gives them
+    func apply_base(target: ShaderMaterial) -> void:
+        var source: ShaderMaterial = base_material as ShaderMaterial
+        target.shader = source.shader
+        target.render_priority = source.render_priority
+        for property_name: String in shader_parameters:
+            target.set(property_name, shader_parameters[property_name])
 
 # Named texture keys of a material without "shader:" (texture_bindings, material.cpp:60-65)
 const LEGACY_TEXTURE_BINDINGS: Dictionary[int, String] = {
@@ -207,7 +225,7 @@ func create(
 ) -> Material:
     var variant: MaszynaMaterial.MaszynaMaterialVariant = mmat.get_variant(season, weather)
     var shader_meta:MaszynaShaderMeta = _get_shader_meta(variant)
-    var material: Material = shader_meta.base_material.duplicate(true)
+    var material: Material = shader_meta.instantiate()
     _apply(
         material,
         mmat,
@@ -287,12 +305,7 @@ func _apply(
         return
     var target_shader_material: ShaderMaterial = material as ShaderMaterial
     var source_shader_material: ShaderMaterial = shader_meta.base_material as ShaderMaterial
-    for property: Dictionary in source_shader_material.get_property_list():
-        var property_name: String = property.get("name", "")
-        if property_name == "shader":
-            target_shader_material.shader = source_shader_material.shader
-        elif property_name == "render_priority" or property_name.begins_with("shader_parameter/"):
-            target_shader_material.set(property_name, source_shader_material.get(property_name))
+    shader_meta.apply_base(target_shader_material)
 
     shader_meta.factory.call(mmat, variant, material, texture_map, model_path, options)
     # The original's opaque pass keeps the texels at the material's "opacity:" and above
