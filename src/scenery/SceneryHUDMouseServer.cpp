@@ -24,7 +24,10 @@ namespace godot {
     const char *SceneryHUDMouseServer::pickable_unhovered_signal = "pickable_unhovered";
     const char *SceneryHUDMouseServer::vehicle_pressed_signal = "vehicle_pressed";
 
+    SceneryHUDMouseServer *SceneryHUDMouseServer::singleton = nullptr;
+
     SceneryHUDMouseServer::SceneryHUDMouseServer() {
+        singleton = this;
         outline_material = mouse_picking::outline_material(OUTLINE_WIDTH_PER_METRE, 0.0);
         vehicle_outline_material = mouse_picking::outline_material(VEHICLE_OUTLINE_WIDTH_PER_METRE, 0.0);
         // the bogies, wheels and interior inside the body would each draw their own ring through it
@@ -35,6 +38,10 @@ namespace godot {
         e3d->connect(
                 E3DRenderingServer::instance_freed_signal,
                 callable_mp(this, &SceneryHUDMouseServer::_on_instance_freed));
+    }
+
+    SceneryHUDMouseServer::~SceneryHUDMouseServer() {
+        singleton = nullptr;
     }
 
     void SceneryHUDMouseServer::_bind_methods() {

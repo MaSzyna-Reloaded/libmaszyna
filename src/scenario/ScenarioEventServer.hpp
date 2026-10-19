@@ -63,11 +63,12 @@ namespace godot {
             static const char *memory_values_changed_signal;
 
             static ScenarioEventServer *get_instance() {
-                return Object::cast_to<ScenarioEventServer>(
-                        Engine::get_singleton()->get_singleton("ScenarioEventServer"));
+                return singleton;
             }
 
         private:
+            static ScenarioEventServer *singleton;
+
             struct EventData {
                     StringName name;
                     double delay = 0.0;

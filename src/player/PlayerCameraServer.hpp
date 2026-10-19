@@ -39,11 +39,12 @@ namespace godot {
             static const char *camera_placed_signal;
 
             static PlayerCameraServer *get_instance() {
-                return Object::cast_to<PlayerCameraServer>(
-                        Engine::get_singleton()->get_singleton("PlayerCameraServer"));
+                return singleton;
             }
 
         private:
+            static PlayerCameraServer *singleton;
+
             CameraMode mode = CAMERA_MODE_FREE;
             RID target;
             CameraFollowView follow_view = CAMERA_FOLLOW_VIEW_TRAINSET_FRONT;
@@ -59,6 +60,7 @@ namespace godot {
 
         public:
             PlayerCameraServer();
+            ~PlayerCameraServer() override;
 
             /// The view from the cab (a vehicle driven), the free camera, or the following camera (a
             /// target set)

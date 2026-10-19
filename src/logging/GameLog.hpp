@@ -47,7 +47,7 @@ namespace godot {
             static const char *GAME_LOGGER;
 
             static GameLog *get_instance() {
-                return dynamic_cast<GameLog *>(Engine::get_singleton()->get_singleton("GameLog"));
+                return singleton;
             }
 
             enum LogLevel {
@@ -58,6 +58,7 @@ namespace godot {
             };
 
             GameLog();
+            ~GameLog() override;
 
             Ref<GameLogger> create_logger(const String &p_logger_id);
             /// The one getter that makes what it returns (CODE_STYLE.md, "Logging"): a logger
@@ -81,6 +82,8 @@ namespace godot {
             static void _bind_methods();
 
         private:
+            static GameLog *singleton;
+
             /// logger id -> GameLogger
             Dictionary loggers;
             /// handler name -> GameLogHandler

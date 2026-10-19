@@ -32,11 +32,12 @@ namespace godot {
             static const char *vehicle_pressed_signal;
 
             static SceneryHUDMouseServer *get_instance() {
-                return Object::cast_to<SceneryHUDMouseServer>(
-                        Engine::get_singleton()->get_singleton("SceneryHUDMouseServer"));
+                return singleton;
             }
 
         private:
+            static SceneryHUDMouseServer *singleton;
+
             struct Pickable {
                     RID instance;
                     String caption;
@@ -61,6 +62,7 @@ namespace godot {
 
         public:
             SceneryHUDMouseServer();
+            ~SceneryHUDMouseServer() override;
 
             void mouse_set_camera(uint64_t p_camera_id);
             /// Inactive, nothing is picked and the outline is taken off - the original picks

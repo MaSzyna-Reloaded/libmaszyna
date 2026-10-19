@@ -46,7 +46,10 @@ namespace godot {
     /// A freed vehicle is not followed any more, and the view follows what the player drives. No
     /// explicit disconnect: callable_mp reports this instance as the callable's object, so the
     /// engine drops the connection when it dies.
+    PlayerCameraServer *PlayerCameraServer::singleton = nullptr;
+
     PlayerCameraServer::PlayerCameraServer() {
+        singleton = this;
         VehicleServer *vehicles = VehicleServer::get_instance();
         ERR_FAIL_NULL(vehicles);
         vehicles->connect(
@@ -59,6 +62,10 @@ namespace godot {
         player->connect(
                 PlayerServer::player_vehicle_entered_signal,
                 callable_mp(this, &PlayerCameraServer::_on_player_vehicle_entered));
+    }
+
+    PlayerCameraServer::~PlayerCameraServer() {
+        singleton = nullptr;
     }
 
     void PlayerCameraServer::_on_player_vehicle_changed(const RID &p_vehicle, const RID & /*p_previous*/) {

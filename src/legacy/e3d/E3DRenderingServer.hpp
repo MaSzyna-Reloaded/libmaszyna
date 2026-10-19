@@ -133,11 +133,12 @@ namespace godot {
             static const char *instance_submodel_animation_finished_signal;
 
             static E3DRenderingServer *get_instance() {
-                return Object::cast_to<E3DRenderingServer>(
-                        Engine::get_singleton()->get_singleton("E3DRenderingServer"));
+                return singleton;
             }
 
         private:
+            static E3DRenderingServer *singleton;
+
             /// An addressable light of an instance. An emission light only switches the model's
             /// own light_onNN/light_offNN submodels (the backends do that from lights_state), a
             /// spot or omni light additionally owns a RenderingServer light.

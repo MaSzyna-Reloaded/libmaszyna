@@ -140,6 +140,9 @@ Code generation:
 * PROHIBITED: **never wire anything up in a hot path** - no `connect`, `get_node`, path resolution
   or subscription in `_process`/`_physics_process`/a tick, not even behind `_dirty`; wire once in
   `_enter_tree()`, `_ready()` or an owner's init - see `CODE_STYLE.md`
+* a server's `get_instance()` returns a private `static X *singleton` set in its constructor and
+  cleared in its destructor - never `Engine::get_singleton()->get_singleton("X")`, a name lookup
+  in the engine on every call - see `CODE_STYLE.md`
 * recurring work, in order of preference: C++ (a singleton on `SceneTree`'s `process_frame`), a
   `Timer` (not one per instance of something numerous), `_process` with a delta accumulator
 * `_process` is a last resort in C++ as much as in GDScript - prefer event-driven code. What lands

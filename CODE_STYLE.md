@@ -375,8 +375,8 @@ electric_engine->call("set_pantograph_wire_voltage", TrainElectricEngine::PANTOG
 electric_engine->set_pantograph_wire_voltage(TrainElectricEngine::PANTOGRAPH_FIRST, voltage);
 ```
 
-A singleton is reached the same way - a typed `static X *get_instance()` and typed methods, the
-shape `RailVehicleServer`, `SceneryStreamingServer` and `SimulationServer` already have. Not a name looked
+A singleton is reached the same way - a typed `static X *get_instance()` returning the pointer the
+server stored in its constructor ("Singletons C++" below), and typed methods. Not a name looked
 up on an `Object`, and not `get_tree()->get_root()->get_node_or_null(name)` standing in for one.
 
 A string call is allowed only where the class genuinely cannot be known at build time - a GDScript
@@ -722,8 +722,36 @@ the logic into a separate class) instead of reaching into internals.
   - call `Engine::unregister_singleton()` with checking `Engine::has_singleton()`
   - call `memdelete()` if pointer is not nullptr, then assign nullptr to the pointer
   - double check order of deallocation singletons
-* `Engine::get_singleton()->get_singleton("<name>")` and/or `CustomSingleton::get_instance()` does not guarantee
-  a valid instance / pointer. Always check that the singleton pointer is not `nullptr`.
+* `CustomSingleton::get_instance()` does not guarantee a valid instance / pointer. Always check that the
+  singleton pointer is not `nullptr`.
+* A server holds its own instance: a private `static X *singleton`, set in the constructor and cleared
+  in the destructor, and `get_instance()` returns it. Never look the singleton up by name
+  (`Engine::get_singleton()->get_singleton("X")`): that builds a `StringName` from a C string and scans
+  the engine's singleton list on every call, and `TrackServer::get_instance()` is called per axle in
+  the Mover step - 6% of the main thread on Wrzosy (`docs/performance/changes.md`).
+
+  ```cpp
+  // X.hpp
+  public:
+      static X *get_instance() {
+          return singleton;
+      }
+
+  private:
+      static X *singleton;
+
+  // X.cpp
+  X *X::singleton = nullptr;
+
+  X::X() {
+      singleton = this;
+  }
+
+  X::~X() {
+      singleton = nullptr;
+  }
+  ```
+
 
 ### Pointers, Refs and RefCounted objects
 

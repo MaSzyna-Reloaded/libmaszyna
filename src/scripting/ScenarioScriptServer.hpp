@@ -80,11 +80,12 @@ namespace godot {
             static const char *script_error_signal;
 
             static ScenarioScriptServer *get_instance() {
-                return Object::cast_to<ScenarioScriptServer>(
-                        Engine::get_singleton()->get_singleton("ScenarioScriptServer"));
+                return singleton;
             }
 
         private:
+            static ScenarioScriptServer *singleton;
+
             enum HookKind {
                 /// An event a script created
                 HOOK_EVENT,
@@ -159,6 +160,7 @@ namespace godot {
 
         public:
             ScenarioScriptServer();
+            ~ScenarioScriptServer() override;
 
             /// A context whose scripts load their files from p_base_dir
             RID context_create(const String &p_base_dir);

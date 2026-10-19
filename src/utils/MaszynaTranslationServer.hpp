@@ -18,8 +18,7 @@ namespace godot {
 
         public:
             static MaszynaTranslationServer *get_instance() {
-                return Object::cast_to<MaszynaTranslationServer>(
-                        Engine::get_singleton()->get_singleton("MaszynaTranslationServer"));
+                return singleton;
             }
 
             /// The wrapper's own .po files, merged under the game's catalogue
@@ -31,6 +30,8 @@ namespace godot {
             static constexpr const char *TRANSLATION_LANGUAGES_CHANGED_SIGNAL = "translation_languages_changed";
 
         private:
+            static MaszynaTranslationServer *singleton;
+
             /// The merged catalogue registered in TranslationServer
             Ref<Translation> translation;
             PackedStringArray languages;

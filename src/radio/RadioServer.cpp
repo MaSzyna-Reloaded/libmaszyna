@@ -5,6 +5,16 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    RadioServer *RadioServer::singleton = nullptr;
+
+    RadioServer::RadioServer() {
+        singleton = this;
+    }
+
+    RadioServer::~RadioServer() {
+        singleton = nullptr;
+    }
+
     const char *RadioServer::transmitted_signal = "transmitted";
 
     void RadioServer::_bind_methods() {

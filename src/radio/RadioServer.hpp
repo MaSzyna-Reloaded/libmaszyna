@@ -37,10 +37,12 @@ namespace godot {
             static const char *transmitted_signal;
 
             static RadioServer *get_instance() {
-                return Object::cast_to<RadioServer>(Engine::get_singleton()->get_singleton("RadioServer"));
+                return singleton;
             }
 
         private:
+            static RadioServer *singleton;
+
             struct Radio {
                     /// The vehicle it is in, or none for one standing at `position`
                     RID vehicle;
@@ -56,6 +58,8 @@ namespace godot {
             static void _bind_methods();
 
         public:
+            RadioServer();
+            ~RadioServer() override;
             RID radio_create();
             void radio_free(const RID &p_radio);
             void radio_set_receive_callback(const RID &p_radio, const Callable &p_callback);

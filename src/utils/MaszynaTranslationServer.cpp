@@ -16,7 +16,10 @@ namespace godot {
         constexpr const char *LANGUAGE_KEY = "language";
     } // namespace
 
+    MaszynaTranslationServer *MaszynaTranslationServer::singleton = nullptr;
+
     MaszynaTranslationServer::MaszynaTranslationServer() {
+        singleton = this;
         GameDataServer *game_data = GameDataServer::get_instance();
         ERR_FAIL_NULL(game_data);
         game_data->connect(
@@ -29,6 +32,7 @@ namespace godot {
     }
 
     MaszynaTranslationServer::~MaszynaTranslationServer() {
+        singleton = nullptr;
         if (translation.is_valid()) {
             TranslationServer::get_singleton()->remove_translation(translation);
         }

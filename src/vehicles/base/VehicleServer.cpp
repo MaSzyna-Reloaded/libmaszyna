@@ -19,7 +19,10 @@ namespace godot {
     const char *VehicleServer::cabin_person_role_changed_signal = "cabin_person_role_changed";
     const char *VehicleServer::cabin_person_moved_signal = "cabin_person_moved";
 
+    VehicleServer *VehicleServer::singleton = nullptr;
+
     VehicleServer::VehicleServer() {
+        singleton = this;
         // The vehicles step by the runtime's clock, which stands still while paused. No explicit
         // disconnect: callable_mp reports this instance as the callable's object, so the engine
         // drops the connection when the instance dies.
@@ -35,6 +38,7 @@ namespace godot {
     }
 
     VehicleServer::~VehicleServer() {
+        singleton = nullptr;
         stepping_enabled = false;
         _refresh_stepping();
     }

@@ -87,10 +87,12 @@ namespace godot {
             static String route_state_hint();
 
             static SignallingServer *get_instance() {
-                return Object::cast_to<SignallingServer>(Engine::get_singleton()->get_singleton("SignallingServer"));
+                return singleton;
             }
 
         private:
+            static SignallingServer *singleton;
+
             struct SignalHeadData {
                     RID instance;
                     StringName name;
@@ -174,6 +176,7 @@ namespace godot {
 
         public:
             SignallingServer();
+            ~SignallingServer() override;
 
             RID signal_head_create(const RID &p_instance);
             void signal_head_free(const RID &p_signal_head);

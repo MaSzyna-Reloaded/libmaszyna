@@ -31,10 +31,12 @@ namespace godot {
 
         public:
             static DriverServer *get_instance() {
-                return Object::cast_to<DriverServer>(Engine::get_singleton()->get_singleton("DriverServer"));
+                return singleton;
             }
 
         private:
+            static DriverServer *singleton;
+
             struct DriverData {
                     /// What the driver was declared to think with, and the implementation registered
                     /// under it, null while none is

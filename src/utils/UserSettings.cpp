@@ -33,7 +33,10 @@ namespace godot {
     /// The usual folder for games on a drive and in the home directory
     static constexpr const char *GAMES_DIR = "Games";
 
+    UserSettings *UserSettings::singleton = nullptr;
+
     UserSettings::UserSettings() {
+        singleton = this;
         config.instantiate();
 
         Dictionary e3d;
@@ -54,6 +57,10 @@ namespace godot {
         defaults["render"] = render;
 
         load_config();
+    }
+
+    UserSettings::~UserSettings() {
+        singleton = nullptr;
     }
 
     void UserSettings::_bind_methods() {

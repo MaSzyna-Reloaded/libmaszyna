@@ -22,10 +22,12 @@ namespace godot {
             static const char *card_changed_signal;
 
             static HUDServer *get_instance() {
-                return Object::cast_to<HUDServer>(Engine::get_singleton()->get_singleton("HUDServer"));
+                return singleton;
             }
 
         private:
+            static HUDServer *singleton;
+
             HashMap<StringName, bool> panels;
             bool hud_visible = true;
             RID card_vehicle;
@@ -37,6 +39,7 @@ namespace godot {
 
         public:
             HUDServer();
+            ~HUDServer() override;
 
             void panel_set_visible(const StringName &p_panel, bool p_visible);
             /// A panel never set is closed

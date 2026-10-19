@@ -26,10 +26,17 @@ namespace godot {
 
     /// The card of a freed vehicle closes. No explicit disconnect: callable_mp reports this instance
     /// as the callable's object, so the engine drops the connection when it dies.
+    HUDServer *HUDServer::singleton = nullptr;
+
     HUDServer::HUDServer() {
+        singleton = this;
         VehicleServer *vehicles = VehicleServer::get_instance();
         ERR_FAIL_NULL(vehicles);
         vehicles->connect(VehicleServer::vehicle_freed_signal, callable_mp(this, &HUDServer::_on_vehicle_freed));
+    }
+
+    HUDServer::~HUDServer() {
+        singleton = nullptr;
     }
 
     void HUDServer::_on_vehicle_freed(const RID &p_vehicle) {

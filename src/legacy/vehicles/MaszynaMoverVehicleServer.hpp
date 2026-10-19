@@ -17,6 +17,8 @@ namespace godot {
             GDCLASS(MaszynaMoverVehicleServer, VehicleImplementationServer)
 
         private:
+            static MaszynaMoverVehicleServer *singleton;
+
             /* Original engine: the primary physics update rate - a frame is integrated whole, in as
              * many steps as keep each at or below it (drivermode.cpp:193-206) */
             static constexpr double PHYSICS_STEP = 0.01;
@@ -48,8 +50,7 @@ namespace godot {
             static constexpr const char *IMPLEMENTATION_NAME = "maszyna_mover";
 
             static MaszynaMoverVehicleServer *get_instance() {
-                return Object::cast_to<MaszynaMoverVehicleServer>(
-                        Engine::get_singleton()->get_singleton("MaszynaMoverVehicleServer"));
+                return singleton;
             }
 
             MaszynaMoverVehicleServer();

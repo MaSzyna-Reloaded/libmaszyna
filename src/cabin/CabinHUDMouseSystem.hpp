@@ -42,11 +42,12 @@ namespace godot {
             static constexpr int DRAG_STEP_PIXELS = 28;
 
             static CabinHUDMouseSystem *get_instance() {
-                return Object::cast_to<CabinHUDMouseSystem>(
-                        Engine::get_singleton()->get_singleton("CabinHUDMouseSystem"));
+                return singleton;
             }
 
         private:
+            static CabinHUDMouseSystem *singleton;
+
             /// A mesh the cursor ray can hit: its triangles, taken once, in its own space
             struct Part {
                     ObjectID mesh;
@@ -141,6 +142,7 @@ namespace godot {
 
         public:
             CabinHUDMouseSystem();
+            ~CabinHUDMouseSystem() override;
 
             void mouse_set_camera(uint64_t p_camera_id);
 

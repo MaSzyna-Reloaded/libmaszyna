@@ -26,10 +26,12 @@ namespace godot {
             static const char *player_vehicle_entered_signal;
 
             static PlayerServer *get_instance() {
-                return Object::cast_to<PlayerServer>(Engine::get_singleton()->get_singleton("PlayerServer"));
+                return singleton;
             }
 
         private:
+            static PlayerServer *singleton;
+
             RID person;
             /// The vehicle last announced as the player's (player_vehicle_changed) - kept, for a
             /// vehicle freed with the player in it has taken the player's seat along already

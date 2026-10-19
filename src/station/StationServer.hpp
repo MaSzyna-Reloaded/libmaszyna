@@ -38,10 +38,12 @@ namespace godot {
             static const char *dispatch_finished_signal;
 
             static StationServer *get_instance() {
-                return Object::cast_to<StationServer>(Engine::get_singleton()->get_singleton("StationServer"));
+                return singleton;
             }
 
         private:
+            static StationServer *singleton;
+
             /// A car of the dispatch and what it reports, followed while the dispatch lasts
             struct Car {
                     RID vehicle;
@@ -71,6 +73,7 @@ namespace godot {
 
         public:
             StationServer();
+            ~StationServer() override;
 
             /// The dispatch of the train driven from the vehicle, of the cars given: those whose
             /// load is being exchanged (RailVehicleServer.load_add/load_remove) are waited for, the

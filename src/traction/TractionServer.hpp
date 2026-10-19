@@ -26,10 +26,12 @@ namespace godot {
 
         public:
             static TractionServer *get_instance() {
-                return Object::cast_to<TractionServer>(Engine::get_singleton()->get_singleton("TractionServer"));
+                return singleton;
             }
 
         private:
+            static TractionServer *singleton;
+
             static void _bind_methods();
 
             /* Original engine: Traction.cpp's own "close enough to be one continuous wire"
@@ -194,6 +196,7 @@ namespace godot {
 
         public:
             TractionServer();
+            ~TractionServer() override;
 
             RID power_source_create();
             void power_source_set_params(

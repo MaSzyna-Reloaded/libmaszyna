@@ -41,7 +41,10 @@ namespace godot {
     const char *RailVehicleServer::vehicle_emergency_signal_received_signal = "vehicle_emergency_signal_received";
     const char *RailVehicleServer::vehicle_pantograph_contact_lost_signal = "vehicle_pantograph_contact_lost";
 
+    RailVehicleServer *RailVehicleServer::singleton = nullptr;
+
     RailVehicleServer::RailVehicleServer() {
+        singleton = this;
         ProjectSettings *settings = ProjectSettings::get_singleton();
         diagnostics = settings->get_setting(DIAGNOSTICS_SETTING, false);
         settings->connect("settings_changed", callable_mp(this, &RailVehicleServer::_on_project_settings_changed));
@@ -85,6 +88,10 @@ namespace godot {
                 TrackServer::tracks_changed_signal, callable_mp(this, &RailVehicleServer::_on_topology_changed));
         tracks->connect(
                 TrackServer::topology_changed_signal, callable_mp(this, &RailVehicleServer::_on_topology_changed));
+    }
+
+    RailVehicleServer::~RailVehicleServer() {
+        singleton = nullptr;
     }
 
     void RailVehicleServer::_bind_methods() {

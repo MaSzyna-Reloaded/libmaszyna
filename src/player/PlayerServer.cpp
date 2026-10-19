@@ -76,7 +76,10 @@ namespace godot {
     /// A vehicle freed with the player in it leaves the player on foot. No explicit disconnect:
     /// callable_mp reports this instance as the callable's object, so the engine drops the
     /// connection when it dies.
+    PlayerServer *PlayerServer::singleton = nullptr;
+
     PlayerServer::PlayerServer() {
+        singleton = this;
         PersonServer *persons = PersonServer::get_instance();
         ERR_FAIL_NULL(persons);
         person = persons->person_create();
@@ -110,6 +113,7 @@ namespace godot {
     }
 
     PlayerServer::~PlayerServer() {
+        singleton = nullptr;
         if (PersonServer *persons = PersonServer::get_instance(); persons != nullptr) {
             persons->person_free(person);
         }

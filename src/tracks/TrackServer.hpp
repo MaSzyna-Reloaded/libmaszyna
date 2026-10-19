@@ -109,10 +109,12 @@ namespace godot {
             static constexpr int INVALID_NODE_ID = -1;
 
             static TrackServer *get_instance() {
-                return Object::cast_to<TrackServer>(Engine::get_singleton()->get_singleton("TrackServer"));
+                return singleton;
             }
 
         private:
+            static TrackServer *singleton;
+
             static constexpr const char *CURVE_BAKE_INTERVAL_SETTING = "maszyna/scenery/track_curve_bake_interval";
             static constexpr double DEFAULT_CURVE_BAKE_INTERVAL = 10.0;
             /* Maximum switch blade offset (MaSzyna Track.cpp:33 fMaxOffset). */

@@ -14,10 +14,12 @@ namespace godot {
 
         public:
             static PersonServer *get_instance() {
-                return Object::cast_to<PersonServer>(Engine::get_singleton()->get_singleton("PersonServer"));
+                return singleton;
             }
 
         private:
+            static PersonServer *singleton;
+
             /* Every person and its name */
             HashMap<RID, String> persons;
 
@@ -25,6 +27,8 @@ namespace godot {
             static void _bind_methods();
 
         public:
+            PersonServer();
+            ~PersonServer() override;
             /* A person came to be (person: RID) */
             static const char *person_created_signal;
             /* A person has another name (person: RID, previous: String) */

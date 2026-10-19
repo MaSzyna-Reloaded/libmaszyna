@@ -15,6 +15,8 @@ namespace godot {
             GDCLASS(UserSettings, Object)
 
         private:
+            static UserSettings *singleton;
+
             String config_file_path = "user://settings.cfg";
             Ref<ConfigFile> config;
             Dictionary defaults;
@@ -45,9 +47,10 @@ namespace godot {
             static const char *game_dir_changed_signal;
 
             UserSettings();
+            ~UserSettings() override;
 
             static UserSettings *get_instance() {
-                return dynamic_cast<UserSettings *>(Engine::get_singleton()->get_singleton("UserSettings"));
+                return singleton;
             }
 
             void load_config();

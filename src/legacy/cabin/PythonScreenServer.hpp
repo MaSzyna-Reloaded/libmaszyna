@@ -44,11 +44,12 @@ namespace godot {
             static constexpr const char *ARG_NO_PYTHON = "--no-python";
 
             static PythonScreenServer *get_instance() {
-                return Object::cast_to<PythonScreenServer>(
-                        Engine::get_singleton()->get_singleton("PythonScreenServer"));
+                return singleton;
             }
 
         private:
+            static PythonScreenServer *singleton;
+
             struct Screen {
                     String script_path;
                     Ref<ImageTexture> texture;

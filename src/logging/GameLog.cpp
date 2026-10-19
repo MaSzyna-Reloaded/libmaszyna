@@ -24,8 +24,15 @@ namespace godot {
         BIND_ENUM_CONSTANT(ERROR);
     }
 
+    GameLog *GameLog::singleton = nullptr;
+
     GameLog::GameLog() {
+        singleton = this;
         create_logger(GAME_LOGGER);
+    }
+
+    GameLog::~GameLog() {
+        singleton = nullptr;
     }
 
     Ref<GameLogger> GameLog::create_logger(const String &p_logger_id) {

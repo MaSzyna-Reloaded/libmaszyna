@@ -182,7 +182,10 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("screen_free", "screen"), &PythonScreenServer::screen_free);
     }
 
+    PythonScreenServer *PythonScreenServer::singleton = nullptr;
+
     PythonScreenServer::PythonScreenServer() {
+        singleton = this;
         semaphore.instantiate();
         if (disabled) {
             UtilityFunctions::print("[PythonScreen] disabled by ", ARG_NO_PYTHON, " - the screens stay blank");
@@ -211,6 +214,7 @@ namespace godot {
     }
 
     PythonScreenServer::~PythonScreenServer() {
+        singleton = nullptr;
         if (worker.is_null()) {
             return;
         }

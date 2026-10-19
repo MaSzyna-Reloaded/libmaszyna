@@ -26,10 +26,12 @@ namespace godot {
 
         public:
             static VehicleServer *get_instance() {
-                return Object::cast_to<VehicleServer>(Engine::get_singleton()->get_singleton("VehicleServer"));
+                return singleton;
             }
 
         private:
+            static VehicleServer *singleton;
+
             /* A controller this server holds (controller_create()): the copy of a description it
              * was configured with, and the vehicle it drives while bound */
             struct Controller {

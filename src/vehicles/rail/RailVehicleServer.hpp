@@ -67,10 +67,12 @@ namespace godot {
             };
 
             static RailVehicleServer *get_instance() {
-                return Object::cast_to<RailVehicleServer>(Engine::get_singleton()->get_singleton("RailVehicleServer"));
+                return singleton;
             }
 
         private:
+            static RailVehicleServer *singleton;
+
             /* Distance the neighbour scan steps past a track endpoint to enter the next track */
             static constexpr double SCAN_ENDPOINT_EPSILON = 0.001;
             /* 10 m is about 140 km/h at 4 fps, plus a safety margin (DynObj.cpp:7160) */
@@ -457,6 +459,7 @@ namespace godot {
             static const char *vehicle_pantograph_contact_lost_signal;
 
             RailVehicleServer();
+            ~RailVehicleServer() override;
 
             /* A VehicleServer vehicle becomes a rail vehicle: it gets a place on the route and is
              * stepped - called by whatever makes it one (RailVehicle3D, a FIZ vehicle). A vehicle
