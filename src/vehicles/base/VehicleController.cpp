@@ -241,12 +241,26 @@ namespace godot {
     }
 
     Ref<VehicleComponent> VehicleController::_get_component_of_type(const int p_type) const {
+        if (p_type < 0 || static_cast<uint32_t>(p_type) >= components_by_type.size()) {
+            return Ref<VehicleComponent>();
+        }
+        return Ref<VehicleComponent>(components_by_type[p_type]);
+    }
+
+    void VehicleController::_index_components() {
+        components_by_type.clear();
         for (const Ref<VehicleComponent> &component: components) {
-            if (component->get_component_type() == p_type) {
-                return component;
+            const int type = component->get_component_type();
+            if (type < 0) {
+                continue;
+            }
+            while (components_by_type.size() <= static_cast<uint32_t>(type)) {
+                components_by_type.push_back(nullptr);
+            }
+            if (components_by_type[type] == nullptr) {
+                components_by_type[type] = component.ptr();
             }
         }
-        return Ref<VehicleComponent>();
     }
 
     TypedArray<VehicleComponent> VehicleController::_find_components_of_type(const int p_type) const {
@@ -277,6 +291,7 @@ namespace godot {
     void VehicleController::add_component(const Ref<VehicleComponent> &p_component) {
         ERR_FAIL_COND(p_component.is_null());
         components.push_back(p_component);
+        _index_components();
         if (!in_system) {
             return;
         }
@@ -290,11 +305,13 @@ namespace godot {
         ERR_FAIL_COND(p_component.is_null());
         p_component->detach();
         components.erase(p_component);
+        _index_components();
     }
 
     void VehicleController::set_components(const TypedArray<VehicleComponent> &p_components) {
         _detach_components();
         components.clear();
+        _index_components();
         for (int index = 0; index < p_components.size(); ++index) {
             add_component(p_components[index]);
         }
