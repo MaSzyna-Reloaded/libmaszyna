@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/RIDHash.hpp"
 #include "vehicles/base/VehicleComponentType.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehiclePerson.hpp"
@@ -69,16 +70,16 @@ namespace godot {
              * and who is in it, in what role */
             struct Cabin {
                     RID vehicle;
-                    HashMap<RID, VehiclePersonRole::Role> persons;
+                    RIDMap<VehiclePersonRole::Role> persons;
             };
 
-            HashMap<RID, Vehicle> vehicles;
-            HashMap<RID, Cabin> cabins;
+            RIDMap<Vehicle> vehicles;
+            RIDMap<Cabin> cabins;
             /* The cabin each person aboard sits in - a person is in one cabin at a time */
-            HashMap<RID, RID> person_cabins;
+            RIDMap<RID> person_cabins;
             HashMap<String, RID> vehicles_by_id;
             int64_t next_vehicle_id = 0;
-            HashMap<RID, Controller> controllers;
+            RIDMap<Controller> controllers;
             int64_t next_controller_id = 0;
             /* What simulates vehicles, by the name a controller gives (implementation_register()) */
             HashMap<StringName, ObjectID> implementations;

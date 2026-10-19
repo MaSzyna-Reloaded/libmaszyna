@@ -610,7 +610,7 @@ namespace godot {
         const Vector<TrainsetMember> members = trainset->members;
         // standing anew in another order, the vehicles let go of each other first - coupled again
         // pair by pair, the old pairs would close the trainset into a ring
-        HashSet<RID> member_vehicles;
+        RIDSet member_vehicles;
         for (const TrainsetMember &member: members) {
             member_vehicles.insert(member.vehicle);
         }

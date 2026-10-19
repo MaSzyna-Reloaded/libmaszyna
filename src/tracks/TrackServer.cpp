@@ -1392,7 +1392,7 @@ namespace godot {
 
     void TrackServer::_rebuild_graph_ids() {
         graph_members.clear();
-        HashMap<RID, bool> visited;
+        RIDMap<bool> visited;
         for (const KeyValue<RID, TrackSegment> &item: tracks) {
             if (visited.has(item.key)) {
                 continue;

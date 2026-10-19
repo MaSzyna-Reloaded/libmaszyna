@@ -1,5 +1,6 @@
 #pragma once
 #include "DriverImplementation.hpp"
+#include "utils/RIDHash.hpp"
 #include "vehicles/base/VehiclePersonRole.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -58,7 +59,7 @@ namespace godot {
                     }
             };
 
-            HashMap<RID, DriverData> drivers;
+            RIDMap<DriverData> drivers;
             HashMap<StringName, Ref<DriverImplementation>> implementations;
             std::priority_queue<UpdateEntry, std::vector<UpdateEntry>, std::greater<UpdateEntry>> updates;
             uint64_t next_sequence = 1;

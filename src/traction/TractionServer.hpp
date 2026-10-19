@@ -1,5 +1,6 @@
 #pragma once
 #include "../tracks/SpatialIndex.hpp"
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -159,10 +160,10 @@ namespace godot {
                     }
             };
 
-            HashMap<RID, PowerSource> power_sources;
+            RIDMap<PowerSource> power_sources;
             HashMap<String, RID> power_sources_by_name;
             int64_t next_power_source_id = 0;
-            HashMap<RID, Wire> wires;
+            RIDMap<Wire> wires;
             int64_t next_wire_id = 0;
             Ref<SpatialIndex> spatial_index;
 

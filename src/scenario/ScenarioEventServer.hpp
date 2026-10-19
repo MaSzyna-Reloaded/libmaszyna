@@ -1,6 +1,7 @@
 #pragma once
 #include "ScenarioEventAction.hpp"
 #include "ScenarioEventCondition.hpp"
+#include "utils/RIDHash.hpp"
 #include "vehicles/rail/RailVehicleRadio.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
@@ -150,18 +151,18 @@ namespace godot {
                     bool fired_to_end = false;
             };
 
-            HashMap<RID, EventData> events;
-            HashMap<RID, MemoryData> memories;
-            HashMap<RID, LauncherData> launchers;
+            RIDMap<EventData> events;
+            RIDMap<MemoryData> memories;
+            RIDMap<LauncherData> launchers;
             /// The launchers that fire at a time of day
             Vector<RID> timed_launchers;
             /// ...and the ones a radio call fires (m_radiodrivenlaunchers, Event.h)
             Vector<RID> radio_launchers;
-            HashMap<RID, TrackEvents> track_events;
-            HashMap<RID, IsolatedEvents> isolated_events;
+            RIDMap<TrackEvents> track_events;
+            RIDMap<IsolatedEvents> isolated_events;
             /// The `<model>.<submodel>:done` events, by E3DRenderingServer instance and submodel
-            HashMap<RID, HashMap<String, RID>> animation_done_events;
-            HashMap<RID, VehicleOnTrack> vehicles_on_tracks;
+            RIDMap<HashMap<String, RID>> animation_done_events;
+            RIDMap<VehicleOnTrack> vehicles_on_tracks;
             HashMap<StringName, RID> events_by_name;
             HashMap<StringName, RID> memories_by_name;
             HashMap<StringName, RID> launchers_by_name;

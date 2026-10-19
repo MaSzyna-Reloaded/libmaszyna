@@ -1,5 +1,6 @@
 #pragma once
 #include "legacy/e3d/E3DModel.hpp"
+#include "utils/RIDHash.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
@@ -116,7 +117,7 @@ namespace godot {
                     RID coupler_adapter_resources[2];
                     /* What the preload loaded on a worker, by resource - taken by the next build,
                      * which holds them (_get_model()) */
-                    HashMap<RID, Ref<Resource>> preloaded;
+                    RIDMap<Ref<Resource>> preloaded;
                     /* What holds the files of those models' materials the preload read
                      * (E3DRenderingServer::material_preload()), let go with them after the build */
                     Array preloaded_materials;
@@ -199,11 +200,11 @@ namespace godot {
                 COUPLER_VARIANT_COUNT,
             };
 
-            HashMap<RID, Visual> vehicles;
+            RIDMap<Visual> vehicles;
             /* The vehicle each exterior model draws */
-            HashMap<RID, RID> model_vehicles;
+            RIDMap<RID> model_vehicles;
             /* The vehicle each detection area finds */
-            HashMap<RID, RID> area_vehicles;
+            RIDMap<RID> area_vehicles;
             /* The vehicles in the order the frame visits them, and where each visit left off */
             Vector<RID> visit_order;
             int slow_cursor = 0;

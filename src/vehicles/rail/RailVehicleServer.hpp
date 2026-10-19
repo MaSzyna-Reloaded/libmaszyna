@@ -12,6 +12,7 @@
 
 #include "RailVehicleNeighbour.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/RIDHash.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -275,7 +276,7 @@ namespace godot {
                     /* How long the pantographs have fed no voltage [s] (NoVoltTime) */
                     double no_voltage_time = 0.0;
                     /* What each of its VehicleServer cabins is, in the railway's words */
-                    HashMap<RID, RailVehicleCabinKind::Kind> cabin_kinds;
+                    RIDMap<RailVehicleCabinKind::Kind> cabin_kinds;
                     /* The person the vehicle answers to - kept while it drives it, whoever else
                      * sits down to drive */
                     RID driver;
@@ -285,7 +286,7 @@ namespace godot {
                     TrainsetType trainset_type = TRAINSET_TYPE_NONE;
             };
 
-            HashMap<RID, VehiclePlacement> vehicles;
+            RIDMap<VehiclePlacement> vehicles;
 
             /* A scenery's trainset (deserialize_trainset(), simulationstateserializer.cpp): its
              * vehicles in order, standing one after another from its front on its track */
@@ -306,7 +307,7 @@ namespace godot {
                     /* Asked to stand while a vehicle of it had no simulation yet: it stands once it has */
                     bool placement_pending = false;
             };
-            HashMap<RID, Trainset> trainsets;
+            RIDMap<Trainset> trainsets;
             void _on_vehicle_configured(const RID &p_vehicle);
             void _on_vehicle_config_changed(const RID &p_vehicle);
             bool diagnostics = false;
@@ -317,7 +318,7 @@ namespace godot {
              * change of the track network as a whole stales every scan */
             uint64_t track_change_serial = 0;
             uint64_t topology_change_serial = 0;
-            HashMap<RID, uint64_t> track_change_serials;
+            RIDMap<uint64_t> track_change_serials;
             void _track_changed(const RID &p_track);
             void _on_topology_changed();
             void _on_switch_active_track_changed(const RID &p_switch, int p_active_track);

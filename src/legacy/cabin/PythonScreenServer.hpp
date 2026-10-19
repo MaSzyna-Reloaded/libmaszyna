@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
@@ -65,7 +66,7 @@ namespace godot {
             };
 
             // main thread only
-            HashMap<RID, Screen> screens;
+            RIDMap<Screen> screens;
             const bool disabled = OS::get_singleton()->get_cmdline_args().has(ARG_NO_PYTHON);
 
             // shared with the worker, under the mutex

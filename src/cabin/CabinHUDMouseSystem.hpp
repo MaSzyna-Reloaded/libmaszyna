@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -90,8 +91,8 @@ namespace godot {
                     Vector2 drag_signs;
             };
 
-            HashMap<RID, Control> controls;
-            HashMap<RID, Pickable> occluders;
+            RIDMap<Control> controls;
+            RIDMap<Pickable> occluders;
             ObjectID camera;
             Ref<StandardMaterial3D> small_outline_material;
             Ref<StandardMaterial3D> large_outline_material;

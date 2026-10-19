@@ -10,6 +10,7 @@
 #include <godot_cpp/variant/rid.hpp>
 #include <godot_cpp/variant/string.hpp>
 
+#include "utils/RIDHash.hpp"
 #include <memory>
 
 namespace godot {
@@ -55,7 +56,7 @@ namespace godot {
             static ResourceLazyLoader *singleton;
 
             mutable Mutex mutex;
-            HashMap<RID, Entry> entries;
+            RIDMap<Entry> entries;
             HashMap<String, RID> keys;
             int load_count = 0;
             bool lazy_loading = DEFAULT_LAZY_LOADING;

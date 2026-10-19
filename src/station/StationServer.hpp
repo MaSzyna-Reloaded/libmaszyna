@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/RIDHash.hpp"
 #include "vehicles/rail/RailVehicleDoors.hpp"
 #include "vehicles/rail/RailVehicleLoad.hpp"
 #include <godot_cpp/classes/engine.hpp>
@@ -56,10 +57,10 @@ namespace godot {
                     bool departure_allowed = false;
                     Vector<Car> cars;
                     /// The cars still exchanging, and those whose doors are still not closed
-                    HashSet<RID> exchanging;
-                    HashSet<RID> doors_not_closed;
+                    RIDSet exchanging;
+                    RIDSet doors_not_closed;
             };
-            HashMap<RID, Dispatch> dispatches;
+            RIDMap<Dispatch> dispatches;
 
             void _set_step(const RID &p_vehicle, Dispatch &p_dispatch, DispatchStep p_step);
             void _close_doors(const RID &p_vehicle, Dispatch &p_dispatch);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scenery/SceneryStreamingProvider.hpp"
+#include "utils/RIDHash.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -239,7 +240,7 @@ namespace godot {
                     Vector2i chunk;
                     int index = 0;
             };
-            HashMap<RID, EntryLocation> entry_locations;
+            RIDMap<EntryLocation> entry_locations;
             Vector3 camera_position;
             float draw_distance = DEFAULT_DRAW_DISTANCE_M;
 
@@ -272,7 +273,7 @@ namespace godot {
             /// Builds ahead of the range, nearest last - applied only when pending_builds is empty
             Vector<PendingBuild> pending_prefetches;
             Vector<PendingClear> pending_clears;
-            HashMap<RID, Provider> providers;
+            RIDMap<Provider> providers;
             std::array<Consumer, CONTENT_KIND_COUNT> consumers;
             Vector<PendingProvide> planned_provides; // published by the worker
             Vector<PendingWithdraw> planned_withdraws;

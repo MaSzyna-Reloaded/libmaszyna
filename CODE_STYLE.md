@@ -752,6 +752,26 @@ the logic into a separate class) instead of reaching into internals.
   }
   ```
 
+### RID-keyed containers
+
+A map or a set keyed by `RID` is `RIDMap<V>` / `RIDSet` (`src/utils/RIDHash.hpp`), never
+`HashMap<RID, V>` / `HashSet<RID>`. godot-cpp's `RID::operator==` is a variant operator call into the
+engine and `RID::get_id()` a builtin method call, and a `HashMap` with the default hasher and
+comparator makes one on every hash and every compare - several per lookup. `RIDMap` hashes and
+compares the RID's 64-bit id read from its bytes (`rid_get_id()`), with no call. On Wrzosy the
+engine's RID compares were 8.8% of the main thread before, 0.05% after
+(`docs/performance/changes.md`).
+
+```cpp
+// not this
+HashMap<RID, TrackSegment> tracks;
+HashSet<RID> built_instances;
+
+// this
+#include "utils/RIDHash.hpp"
+RIDMap<TrackSegment> tracks;
+RIDSet built_instances;
+```
 
 ### Pointers, Refs and RefCounted objects
 

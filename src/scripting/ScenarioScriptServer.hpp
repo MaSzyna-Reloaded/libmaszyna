@@ -1,6 +1,7 @@
 #pragma once
 #include "ScenarioScriptCabinImplementation.hpp"
 #include "ScriptRuntime.hpp"
+#include "utils/RIDHash.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -120,10 +121,10 @@ namespace godot {
                     StringName active_unit;
             };
 
-            HashMap<RID, Context> contexts;
-            HashMap<RID, Hook> hooks;
+            RIDMap<Context> contexts;
+            RIDMap<Hook> hooks;
             /// The subscriptions of each signal, by target
-            HashMap<RID, Vector<RID>> subscriptions[SIGNAL_MAX];
+            RIDMap<Vector<RID>> subscriptions[SIGNAL_MAX];
 
             RID _create_hook(const RID &p_context, HookKind p_kind, int64_t p_function);
             void _free_hook(const RID &p_hook);

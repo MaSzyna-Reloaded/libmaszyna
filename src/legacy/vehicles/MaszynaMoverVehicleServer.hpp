@@ -1,5 +1,6 @@
 #pragma once
 #include "legacy/maszyna-mover/McZapkie/MOVER.h"
+#include "utils/RIDHash.hpp"
 #include "vehicles/base/VehicleImplementationServer.hpp"
 #include "vehicles/rail/RailVehicleController.hpp"
 #include "vehicles/rail/RailVehicleEngine.hpp"
@@ -28,11 +29,11 @@ namespace godot {
             /* The Mover of each vehicle on it, created and deleted here (mover_create(),
              * mover_free()); coupled Movers only know each other (TCoupling::Connected), hence the
              * way back to the vehicle */
-            HashMap<RID, TMoverParameters *> movers;
+            RIDMap<TMoverParameters *> movers;
             HashMap<const TMoverParameters *, RID> vehicles_by_mover;
             bool diagnostics = false;
             /* The velocity each vehicle had after the last step, for the kick diagnostics */
-            HashMap<RID, double> diagnostics_velocity;
+            RIDMap<double> diagnostics_velocity;
 
             /* Diagnostics: a velocity jump within one frame is a kick - with consistent track
              * movement it comes from the forces, typically a coupler reacting to an inconsistent

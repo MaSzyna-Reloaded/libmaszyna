@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -47,7 +48,7 @@ namespace godot {
                     RID vehicle;
             };
 
-            HashMap<RID, Pickable> pickables;
+            RIDMap<Pickable> pickables;
             ObjectID camera;
             bool active = true;
             Ref<StandardMaterial3D> outline_material;

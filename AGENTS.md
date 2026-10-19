@@ -143,6 +143,9 @@ Code generation:
 * a server's `get_instance()` returns a private `static X *singleton` set in its constructor and
   cleared in its destructor - never `Engine::get_singleton()->get_singleton("X")`, a name lookup
   in the engine on every call - see `CODE_STYLE.md`
+* a map or a set keyed by `RID` is `RIDMap<V>` / `RIDSet` (`src/utils/RIDHash.hpp`), never
+  `HashMap<RID, V>` / `HashSet<RID>`, whose hash and compare call into the engine - see
+  `CODE_STYLE.md`
 * recurring work, in order of preference: C++ (a singleton on `SceneTree`'s `process_frame`), a
   `Timer` (not one per instance of something numerous), `_process` with a delta accumulator
 * `_process` is a last resort in C++ as much as in GDScript - prefer event-driven code. What lands

@@ -2,6 +2,7 @@
 
 #include "SpatialIndex.hpp"
 #include "TrackEndpointRef.hpp"
+#include "utils/RIDHash.hpp"
 
 #include <godot_cpp/classes/curve3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -257,12 +258,12 @@ namespace godot {
                     int axle_count = 0;
             };
 
-            HashMap<RID, TrackSegment> tracks;
-            HashMap<RID, SwitchData> switches;
+            RIDMap<TrackSegment> tracks;
+            RIDMap<SwitchData> switches;
             /* The index of TrackSegment::name; a duplicate name points at the last track given it
              * (basic_table::insert(), Names.h:40-49) */
             HashMap<String, RID> named_tracks;
-            HashMap<RID, IsolatedData> isolated_sections;
+            RIDMap<IsolatedData> isolated_sections;
             HashMap<StringName, RID> isolated_by_name;
             Ref<SpatialIndex> spatial_index;
             int64_t next_track_id = 0;
