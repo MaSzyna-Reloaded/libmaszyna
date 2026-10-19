@@ -139,6 +139,9 @@ Code generation:
   `CODE_STYLE.md`. The material types' variants are `types/variants/<type>_*.gdshader`, listed in
   `MaszynaMaterialFactory.SHADER_VARIANTS`; a material type's `discard` stands only under
   `MASZYNA_ALPHA_SCISSOR`, never in the opaque shader
+* a world or cab directional light's shadow is set through `MaszynaSkyEnvironment._shadow_wanted`,
+  never `shadow_enabled` directly: `sync_shadow_casting()` casts it only while the light has energy
+  (at night the sky's light is at zero, and its cascades cost 11 ms - `docs/performance/changes.md`)
 * PROHIBITED: **never wire anything up in a hot path** - no `connect`, `get_node`, path resolution
   or subscription in `_process`/`_physics_process`/a tick, not even behind `_dirty`; wire once in
   `_enter_tree()`, `_ready()` or an owner's init - see `CODE_STYLE.md`
