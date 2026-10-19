@@ -107,7 +107,10 @@ func vehicle_state_value(key:String, default_value:Variant = null, target:Target
 ## for each read in a step, which for a scenery's driven vehicles was half of the frame
 ## (docs/findings-archive.md, 2026-10-03 hundreds of vehicles)
 func vehicle_component(type:VehicleComponentType.Type, target:Target = Target.OCCUPIED) -> VehicleComponent:
-    return CabinSystem.vehicle_component(vehicle_of(vehicle_rid, target), type)
+    # VehicleServer directly, as CabinSystem.vehicle_component() asks it: every cab of a scenery's
+    # drivers reads its components on every step, and each call of a script function counts there
+    var vehicle:RID = vehicle_of(vehicle_rid, target)
+    return VehicleServer.vehicle_component_get(vehicle, type) if vehicle.is_valid() else null
 
 
 ## A command of a control, to its target

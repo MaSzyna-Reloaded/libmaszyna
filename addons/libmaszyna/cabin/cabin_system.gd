@@ -42,6 +42,8 @@ const ACTIONS:Array[StringName] = [&"increase", &"decrease", &"hold", &"release"
 var _states:Dictionary[RID, CabinState] = {}
 var _controls:Dictionary[RID, Dictionary] = {}
 var _processes:Dictionary[RID, Array] = {}
+## By cabin: the callables that only work out what the cab shows (register_display_process())
+var _display_processes:Dictionary[RID, Array] = {}
 var _cab_logics:Dictionary[RID, CabinLogic] = {}
 ## The cab interior each vehicle's crew sits in, and the one shown, by instance id
 var _cabin_scenes:Dictionary[RID, PackedScene] = {}
@@ -78,6 +80,7 @@ func _on_vehicle_freed(vehicle_rid:RID) -> void:
             _states.erase(cabin)
             _controls.erase(cabin)
             _processes.erase(cabin)
+            _display_processes.erase(cabin)
 
 
 func _on_vehicle_command_received(vehicle_rid:RID, command:String, p1:Variant, p2:Variant) -> void:
@@ -182,6 +185,9 @@ func vehicle_get_cabin_scene(vehicle_rid:RID) -> PackedScene:
 ## for this one. Null for a vehicle without a cab.
 func cabin_show(cabin_rid:RID, parent:Node) -> Cabin3D:
     var vehicle_rid:RID = VehicleServer.cabin_get_vehicle(cabin_rid)
+    # what the cab shows is worked out before its elements read it - they read it when they are
+    # built and follow its changes from then on
+    _run_vehicle_display_processes(vehicle_rid)
     var shown:Cabin3D = vehicle_get_cabin(vehicle_rid)
     if shown:
         shown.set_cabin(cabin_rid)
@@ -228,6 +234,7 @@ func cabin_set_light_level(cabin:RID, level:float) -> void:
 
 
 func cabin_get_light_level(cabin:RID) -> float:
+    _refresh_display(cabin)
     var state:CabinState = _states.get(cabin)
     return state.light_level if state else 0.0
 
@@ -241,6 +248,7 @@ func cabin_set_instrument_light_enabled(cabin:RID, enabled:bool) -> void:
 
 
 func cabin_get_instrument_light_enabled(cabin:RID) -> bool:
+    _refresh_display(cabin)
     var state:CabinState = _states.get(cabin)
     return state.instrument_light_enabled if state else false
 
@@ -254,6 +262,7 @@ func cabin_set_dashboard_light_enabled(cabin:RID, enabled:bool) -> void:
 
 
 func cabin_get_dashboard_light_enabled(cabin:RID) -> bool:
+    _refresh_display(cabin)
     var state:CabinState = _states.get(cabin)
     return state.dashboard_light_enabled if state else false
 
@@ -267,6 +276,7 @@ func cabin_set_timetable_light_enabled(cabin:RID, enabled:bool) -> void:
 
 
 func cabin_get_timetable_light_enabled(cabin:RID) -> bool:
+    _refresh_display(cabin)
     var state:CabinState = _states.get(cabin)
     return state.timetable_light_enabled if state else false
 
@@ -303,31 +313,78 @@ func get_controls(cabin:RID) -> Array:
     return controls
 
 
-## callable(state:CabinState, delta:float) - called every frame while registered
+## callable(state:CabinState, delta:float) - called every frame while registered. The list is
+## replaced, never changed in place, so a step walks the one it started with even when a callable
+## registers or unregisters on the way, without copying it on every step.
 func register_process(cabin:RID, callable:Callable) -> void:
     get_cabin_state(cabin)
-    if not _processes.has(cabin):
-        _processes[cabin] = []
-    _processes[cabin].append(callable)
+    var processes:Array = _processes.get(cabin, []).duplicate()
+    processes.append(callable)
+    _processes[cabin] = processes
 
 
 func unregister_process(cabin:RID, callable:Callable) -> void:
-    var processes:Array = _processes.get(cabin, [])
+    if not _processes.has(cabin):
+        return
+    var processes:Array = _processes[cabin].duplicate()
     processes.erase(callable)
+    _processes[cabin] = processes
+
+
+## callable(state:CabinState, delta:float) for what only the cab shows - its lights: run with the
+## simulation while the interior of the cabin's vehicle is shown, and for a cab not shown when it
+## is about to be (cabin_show()) or something reads it (cabin_get_light_level(), ...). It must work
+## its result out of the state as it is, not of the time passed. A scenery's computer drivers each
+## sit in a cab nobody sees: run on every step, their lights were a twelfth of the frame.
+func register_display_process(cabin:RID, callable:Callable) -> void:
+    get_cabin_state(cabin)
+    var processes:Array = _display_processes.get(cabin, []).duplicate()
+    processes.append(callable)
+    _display_processes[cabin] = processes
+
+
+func unregister_display_process(cabin:RID, callable:Callable) -> void:
+    if not _display_processes.has(cabin):
+        return
+    var processes:Array = _display_processes[cabin].duplicate()
+    processes.erase(callable)
+    _display_processes[cabin] = processes
+
+
+## A cab whose interior is not shown works out what it shows now, when it is asked for it
+func _refresh_display(cabin:RID) -> void:
+    var state:CabinState = _states.get(cabin)
+    if not state or _cabins.has(state.vehicle_rid):
+        return
+    for callable:Callable in _display_processes.get(cabin, []):
+        callable.call(state, 0.0)
+
+
+func _run_vehicle_display_processes(vehicle_rid:RID) -> void:
+    for cabin:RID in _display_processes:
+        var state:CabinState = _states.get(cabin)
+        if state and state.vehicle_rid == vehicle_rid:
+            for callable:Callable in _display_processes[cabin]:
+                callable.call(state, 0.0)
 
 
 ## Reports a manipulation of a cabin control; returns the handler's result (#43), or null when
 ## no handler is registered for the control.
 func act(cabin:RID, control_id:StringName, action:StringName, value:Variant = null) -> Variant:
-    var vehicle_id:String = VehicleServer.vehicle_get_id(VehicleServer.cabin_get_vehicle(cabin))
     if not action in ACTIONS:
-        _log.error("%s: Unknown cabin action: %s" % [vehicle_id, action])
+        _log.error("%s: Unknown cabin action: %s" % [_cabin_vehicle_id(cabin), action])
         return null
     var handler:Callable = _controls.get(cabin, {}).get(control_id, Callable())
     if not handler.is_valid():
-        _log.error("%s: Unknown cabin control: %s" % [vehicle_id, control_id])
+        _log.error("%s: Unknown cabin control: %s" % [_cabin_vehicle_id(cabin), control_id])
         return null
     return handler.call(get_cabin_state(cabin), action, value)
+
+
+## The id of a cabin's vehicle, for a message - made only when there is one to write: act() is
+## called on every decision of every computer driver
+func _cabin_vehicle_id(cabin:RID) -> String:
+    return VehicleServer.vehicle_get_id(VehicleServer.cabin_get_vehicle(cabin))
 
 
 func get_control(cabin:RID, control_id:StringName) -> Variant:
@@ -344,5 +401,10 @@ func get_state(cabin:RID) -> Dictionary:
 func _on_simulation_advanced(seconds:float) -> void:
     for cabin:RID in _processes:
         var state:CabinState = _states.get(cabin)
-        for callable:Callable in _processes[cabin].duplicate():
+        for callable:Callable in _processes[cabin]:
             callable.call(state, seconds)
+    for cabin:RID in _display_processes:
+        var state:CabinState = _states.get(cabin)
+        if _cabins.has(state.vehicle_rid):
+            for callable:Callable in _display_processes[cabin]:
+                callable.call(state, seconds)
