@@ -164,6 +164,11 @@ General guidelines:
 * if you are not sure, ask operator for decision
 * whatever is left out of a task (not ported, skipped, deferred) goes to `TODO.md`, not only to the
   session report, so it isn't forgotten
+* performance work - a measurement, a profile, a change made for speed and its before/after, what
+  was left out because it would change the picture - goes to `docs/performance/` (`baseline.md`,
+  `changes.md`, `findings.md` - faults of behaviour or data found while measuring -,
+  `out-of-scope.md`), not to `FINDINGS.md` or `docs/findings-archive.md`. How to
+  measure: the game's `docs/performance/profiling.md`, and the `godot-frame-time` skill
 * every significant finding (a root cause that took a measurement to find, a trap in the data or in
   the engine, a wrong assumption that cost time) goes to `docs/findings-archive.md` - symptom, what
   proved the cause, the fix and the rule - and its rule, one line, to the index in `FINDINGS.md`;
