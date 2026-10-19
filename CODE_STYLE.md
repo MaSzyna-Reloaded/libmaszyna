@@ -490,6 +490,10 @@ polled. If it truly has to run every frame:
   its instance up).
 * No allocations, no `get_node()`, no string work, no `find`/`has` over a collection, no singleton
   or `ProjectSettings` lookups - resolve all of it once and cache it.
+* Inside its own per-step path a server reads its storage, not its public API that builds objects
+  for a caller (`TypedArray<Ref<...>>`, `Dictionary`): `TrackServer::track_find_next()` walks the
+  node's `endpoint_refs` instead of `track_get_endpoint_connections()`, which made a
+  `Ref<TrackEndpointRef>` per connection on every axle crossing a track's end.
 * Nothing at all while the work is idle: turn the processing off (`set_process(false)`, or
   disconnect from `process_frame`) when there is nothing to do, and back on when there is.
 * If a per-frame loop is genuinely unavoidable, **bound it** - a fixed budget per frame, or the
