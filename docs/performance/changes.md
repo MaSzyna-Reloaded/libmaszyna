@@ -192,8 +192,35 @@ step: 18.5% of the main thread (a probe: lights 8.5%, main switch 7.8%, door per
 | the controller held | 50.2 | 90% | 17.9 ms | 80% |
 | + components, materials, cab logic | **53.6** | 77% | **14.4 ms** | 83% |
 
-The main thread's time a frame fell by a fifth; the rendering thread now limits the frame.
+The main thread's time a frame fell by a fifth; the rendering thread now limits the frame. With
+the Mover on worker threads (above) the main thread needs 12.3 ms a frame.
 
 * Failing before the round, not by it: `test_material_manager_variants.gd` (7/27),
   `test_material_preload.gd` (1/3), `test_mmd_cabin_instancer.gd` (37/39) and
   `test_zzz_ep07_cabin_main_switch.gd` (0/5) fail the same with this round's scripts taken out.
+
+### The Mover step on worker threads
+
+With rendering on its own thread the Mover step was 44% of the main thread. The vendored Mover reads
+and writes other vehicles only at its ends: `CouplerForce()` sets the neighbour's `CForce` and may
+couple it (`Attach()`), `ComputeTotalForce()` reads the neighbours' speed, the trainset's voltage
+and pipe come along the couplers - and `TMoverParameters::Neighbours` holds both the coupled
+vehicles and the nearest free one. It has no mutable statics; its one shared state is the random
+engine (`Random()`, `utilities.cpp`).
+
+* **Change:** each sub-step, after the neighbours are found, the vehicles are grouped by a
+  union-find over their Movers' ends (a Mover at an end that is not stepped here joins the group
+  too). The forces of all, then the movement of all, run per group on `WorkerThreadPool`
+  (`add_native_group_task`), the vehicles of a group in their order; fewer than 8 groups run on
+  the calling thread. `vehicle_process_movement()` - the track, its events and signals - stays on
+  the main thread, in the vehicles' order, after the movement of all.
+* **The random engines are `thread_local`;** the first thread keeps the default seed, the others
+  the next ones. The draws come in another order: the behaviour is the same in distribution, not
+  bit by bit - by the operator's decision (2026-10-19). Runs were not bit-identical before either
+  (findings, "what is left on the main thread"; the game's findings, "a run of the same build").
+* **Measured** (symbol build of Godot, 20 s of `perf`): the main thread busy 77% -> 69%, 14.4 ->
+  12.3 ms a frame; FPS 53.6 -> 56.2; the rendering thread busy 83% -> 91% - it limits the frame.
+* Tests: the rail physics (`test_rail_vehicle_physics_server.gd`, `..._track_movement.gd`,
+  `..._track_physics.gd`), couplers, trainset brakes, EP blending, spring brake, cab change - 88 -
+  pass; the game's AI driver tests (76) pass. `test_scenery_trainsets.gd` and the game's `test_zzz_*`
+  cannot load their sceneries on this machine (`Cannot load scenery`), before and after.
