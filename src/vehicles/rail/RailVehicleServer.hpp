@@ -219,8 +219,10 @@ namespace godot {
             /* Where one vehicle sits on the route. */
             struct VehiclePlacement {
                     /* The controller this server steps and relays the rail events of - the one
-                     * VehicleServer drives the vehicle with, taken again when that changes */
-                    ObjectID controller_id;
+                     * VehicleServer drives the vehicle with, taken again when that changes
+                     * (vehicle_controller_changed). Held, not looked up by its id: the lookup and
+                     * the cast cross into the engine, and the step asks for it per axle. */
+                    Ref<RailVehicleController> controller;
                     /* What the scenery placed the rail vehicle with - its type and its load -
                      * handed to every controller bound to it before its simulation starts */
                     String type_name;

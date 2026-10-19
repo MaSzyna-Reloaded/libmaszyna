@@ -431,10 +431,7 @@ namespace godot {
     }
 
     RailVehicleController *RailVehicleServer::_get_controller(const VehiclePlacement &p_placement) const {
-        if (p_placement.controller_id.is_null()) {
-            return nullptr;
-        }
-        return Object::cast_to<RailVehicleController>(ObjectDB::get_instance(p_placement.controller_id));
+        return p_placement.controller.ptr();
     }
 
     void RailVehicleServer::vehicle_attach(const RID &p_vehicle) {
@@ -445,7 +442,7 @@ namespace godot {
             return;
         }
         VehiclePlacement &placement = vehicles.insert(p_vehicle, VehiclePlacement())->value;
-        placement.controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
+        placement.controller = vehicle_server->vehicle_get_controller(p_vehicle);
         _connect_relays(p_vehicle, placement);
         _update_driver_cabin(p_vehicle);
     }
@@ -976,7 +973,7 @@ namespace godot {
         }
         _disconnect_relays(p_vehicle, *placement);
         _disconnect_radio(p_vehicle, *placement);
-        placement->controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
+        placement->controller = vehicle_server->vehicle_get_controller(p_vehicle);
         // the scans that found it hold the previous controller
         _track_changed(placement->axles[placement->primary_axle].track);
         _connect_relays(p_vehicle, *placement);
