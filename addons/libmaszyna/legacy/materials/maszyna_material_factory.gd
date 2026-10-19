@@ -24,9 +24,20 @@ class MaszynaShaderMeta:
     var texture_map: TextureMap
 
     func _init(factory: Callable, base_material: Material, texture_map: TextureMap) -> void:
-        self.base_material = base_material
         self.factory = factory
         self.texture_map = texture_map
+        self.base_material = base_material
+        # A parameter the material does not set reads its default from the RenderingServer
+        # (shader_get_parameter_default), which waits for the rendering thread when it runs on its
+        # own; every material made from this one reads all of them (create(), _apply()). A copy
+        # of its own has them set once and is read from then on - the values, and so the picture,
+        # are the same. A copy, so the type's file loaded in the editor is never changed.
+        if base_material is ShaderMaterial:
+            self.base_material = base_material.duplicate()
+            for property: Dictionary in self.base_material.get_property_list():
+                var property_name: String = property.get("name", "")
+                if property_name.begins_with("shader_parameter/"):
+                    self.base_material.set(property_name, self.base_material.get(property_name))
 
 # Named texture keys of a material without "shader:" (texture_bindings, material.cpp:60-65)
 const LEGACY_TEXTURE_BINDINGS: Dictionary[int, String] = {
