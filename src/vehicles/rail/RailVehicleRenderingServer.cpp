@@ -1201,7 +1201,10 @@ namespace godot {
      * transform is RailVehicleServer's answer and nothing else - it composes it from the bogies. */
     void RailVehicleRenderingServer::_place(const RID &p_vehicle, Visual &p_visual) {
         RailVehicleServer *server = RailVehicleServer::get_instance();
-        const Dictionary position = server != nullptr ? server->vehicle_get_track_position(p_vehicle) : Dictionary();
+        if (server == nullptr) {
+            return;
+        }
+        const Dictionary position = server->vehicle_get_track_position(p_vehicle);
         if (!RID(position.get("track_rid", RID())).is_valid()) {
             return;
         }
