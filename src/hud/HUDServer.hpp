@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -10,7 +11,7 @@ namespace godot {
     /// all, and the vehicle whose card is open. The HUD's scenes draw this state and ask for its
     /// changes here - a menu, a close button, a key, a script alike; the server knows no panel of
     /// its own, a panel is a name the HUD gives it.
-    class HUDServer : public Object {
+    class HUDServer : public Object, public ServerSingleton<HUDServer> {
             GDCLASS(HUDServer, Object)
 
         public:
@@ -21,13 +22,7 @@ namespace godot {
             /// The card shows another vehicle (vehicle: RID, invalid when closed)
             static const char *card_changed_signal;
 
-            static HUDServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static HUDServer *singleton;
-
             HashMap<StringName, bool> panels;
             bool hud_visible = true;
             RID card_vehicle;
@@ -39,7 +34,6 @@ namespace godot {
 
         public:
             HUDServer();
-            ~HUDServer() override;
 
             void panel_set_visible(const StringName &p_panel, bool p_visible);
             /// A panel never set is closed

@@ -50,10 +50,7 @@ namespace godot {
     /// A freed person is no driver; one sitting down at the controls again takes them back. No
     /// explicit disconnect: callable_mp reports this instance as the callable's object, so the
     /// engine drops the connection when it dies.
-    DriverServer *DriverServer::singleton = nullptr;
-
     DriverServer::DriverServer() {
-        singleton = this;
         PersonServer *persons = PersonServer::get_instance();
         VehicleServer *vehicles = VehicleServer::get_instance();
         ERR_FAIL_NULL(persons);
@@ -65,7 +62,6 @@ namespace godot {
     }
 
     DriverServer::~DriverServer() {
-        singleton = nullptr;
         _set_processing(false);
     }
 

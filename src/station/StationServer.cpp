@@ -28,17 +28,10 @@ namespace godot {
     /// A freed vehicle takes its train's dispatch with it. No explicit disconnect: callable_mp
     /// reports this instance as the callable's object, so the engine drops the connection when it
     /// dies.
-    StationServer *StationServer::singleton = nullptr;
-
     StationServer::StationServer() {
-        singleton = this;
         VehicleServer *vehicles = VehicleServer::get_instance();
         ERR_FAIL_NULL(vehicles);
         vehicles->connect(VehicleServer::vehicle_freed_signal, callable_mp(this, &StationServer::_on_vehicle_freed));
-    }
-
-    StationServer::~StationServer() {
-        singleton = nullptr;
     }
 
     void StationServer::dispatch_start(const RID &p_vehicle, const TypedArray<RID> &p_cars) {

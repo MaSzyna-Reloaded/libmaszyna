@@ -76,10 +76,7 @@ namespace godot {
         ADD_SIGNAL(MethodInfo(area_ready_signal, PropertyInfo(Variant::INT, "chunk_radius")));
     }
 
-    SceneryStreamingServer *SceneryStreamingServer::singleton = nullptr;
-
     SceneryStreamingServer::SceneryStreamingServer() {
-        singleton = this;
         semaphore.instantiate();
         preload_queue.instantiate();
         draw_distance = ProjectSettings::get_singleton()->get_setting(DRAW_DISTANCE_SETTING, DEFAULT_DRAW_DISTANCE_M);
@@ -112,7 +109,6 @@ namespace godot {
 
     /// The worker finishes the pass it is in before it is joined
     SceneryStreamingServer::~SceneryStreamingServer() {
-        singleton = nullptr;
         streaming_set_camera(0);
         streaming_drain();
     }

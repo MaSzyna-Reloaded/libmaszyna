@@ -2,6 +2,7 @@
 #include "ScenarioScriptCabinImplementation.hpp"
 #include "ScriptRuntime.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -22,7 +23,7 @@ namespace godot {
     ///
     /// The code a context runs is grouped in units - a file, or what an editor applied under a
     /// name. Applying a unit again first frees whatever its previous run made.
-    class ScenarioScriptServer : public Object {
+    class ScenarioScriptServer : public Object, public ServerSingleton<ScenarioScriptServer> {
             GDCLASS(ScenarioScriptServer, Object)
             friend class ScenarioScriptAction;
 
@@ -80,13 +81,7 @@ namespace godot {
             /// A script failed (context: RID, message: String) - it is logged as well
             static const char *script_error_signal;
 
-            static ScenarioScriptServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static ScenarioScriptServer *singleton;
-
             enum HookKind {
                 /// An event a script created
                 HOOK_EVENT,
@@ -161,7 +156,6 @@ namespace godot {
 
         public:
             ScenarioScriptServer();
-            ~ScenarioScriptServer() override;
 
             /// A context whose scripts load their files from p_base_dir
             RID context_create(const String &p_base_dir);

@@ -1,5 +1,6 @@
 #pragma once
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -30,7 +31,7 @@ namespace godot {
     /// flat colour, and read the one pixel under the cursor (opengl33renderer.cpp:1188-1214,
     /// 3494-3507, Update_Pick_Control :4568). Exact to the pixel, at the price of a second render
     /// of the cab (a SubViewport with a pick shader) on every pick.
-    class CabinHUDMouseSystem : public Object {
+    class CabinHUDMouseSystem : public Object, public ServerSingleton<CabinHUDMouseSystem> {
             GDCLASS(CabinHUDMouseSystem, Object)
 
         public:
@@ -42,13 +43,7 @@ namespace godot {
             /// one step
             static constexpr int DRAG_STEP_PIXELS = 28;
 
-            static CabinHUDMouseSystem *get_instance() {
-                return singleton;
-            }
-
         private:
-            static CabinHUDMouseSystem *singleton;
-
             /// A mesh the cursor ray can hit: its triangles, taken once, in its own space
             struct Part {
                     ObjectID mesh;
@@ -143,7 +138,6 @@ namespace godot {
 
         public:
             CabinHUDMouseSystem();
-            ~CabinHUDMouseSystem() override;
 
             void mouse_set_camera(uint64_t p_camera_id);
 

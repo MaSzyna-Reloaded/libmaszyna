@@ -31,11 +31,7 @@ namespace godot {
         return length1;
     }
 
-
-    TrackServer *TrackServer::singleton = nullptr;
-
     TrackServer::TrackServer() {
-        singleton = this;
         spatial_index.instantiate();
         spatial_index->set_cell_size(GRID_CELL_SIZE);
         curve_bake_interval =
@@ -59,7 +55,6 @@ namespace godot {
     }
 
     TrackServer::~TrackServer() {
-        singleton = nullptr;
         _set_switch_processing(false);
     }
 

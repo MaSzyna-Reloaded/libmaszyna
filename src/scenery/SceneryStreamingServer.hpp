@@ -2,6 +2,7 @@
 
 #include "scenery/SceneryStreamingProvider.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -35,7 +36,7 @@ namespace godot {
     /// Content may also be supplied by chunk (SceneryStreamingProvider): a provider's cell is asked
     /// for as the camera comes within the draw distance of it, and what it gives is handed to the
     /// consumer of its kind, which registers it as pieces like any other.
-    class SceneryStreamingServer : public Object {
+    class SceneryStreamingServer : public Object, public ServerSingleton<SceneryStreamingServer> {
             GDCLASS(SceneryStreamingServer, Object)
 
         public:
@@ -89,13 +90,7 @@ namespace godot {
             /// plan of where the camera is
             static const char *area_ready_signal;
 
-            static SceneryStreamingServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static SceneryStreamingServer *singleton;
-
             struct Owner {
                     String name;      // what the debug window calls it
                     Callable preload; // (rid) -> Variant, on the worker thread; may be invalid
@@ -328,7 +323,6 @@ namespace godot {
             bool _apply_builds(Vector<PendingBuild> &p_builds, uint64_t p_deadline);
             /// Hands each RID back to the consumer of its kind
             void _release_content(const std::array<Vector<RID>, CONTENT_KIND_COUNT> &p_rids);
-
 
         protected:
             static void _bind_methods();

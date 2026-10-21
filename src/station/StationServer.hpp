@@ -1,5 +1,6 @@
 #pragma once
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/rail/RailVehicleDoors.hpp"
 #include "vehicles/rail/RailVehicleLoad.hpp"
 #include <godot_cpp/classes/engine.hpp>
@@ -17,7 +18,7 @@ namespace godot {
     /// doors and exchange by themselves (RailVehicleLoad); whoever drives works the cab's controls
     /// as the step asks. The original keeps it as a negative fStopTime of the driver and the
     /// driver's Doors() (Driver.cpp:1233-1241, 4266-4356, 6767-6801).
-    class StationServer : public Object {
+    class StationServer : public Object, public ServerSingleton<StationServer> {
             GDCLASS(StationServer, Object)
 
         public:
@@ -38,13 +39,7 @@ namespace godot {
             /// The dispatch is over, the train may go (vehicle: RID)
             static const char *dispatch_finished_signal;
 
-            static StationServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static StationServer *singleton;
-
             /// A car of the dispatch and what it reports, followed while the dispatch lasts
             struct Car {
                     RID vehicle;
@@ -74,7 +69,6 @@ namespace godot {
 
         public:
             StationServer();
-            ~StationServer() override;
 
             /// The dispatch of the train driven from the vehicle, of the cars given: those whose
             /// load is being exchanged (RailVehicleServer.load_add/load_remove) are waited for, the

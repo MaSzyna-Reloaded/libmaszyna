@@ -11,20 +11,14 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
-    ResourceLazyLoader *ResourceLazyLoader::singleton = nullptr;
 
     /// The display a headless run has: it renders with RasterizerDummy, whose RID storage is not
     /// thread-safe (RID_Owner<DummyMesh>, servers/rendering/dummy/storage/mesh_storage.h:50). The
     /// rendering driver's name stays the project's ("vulkan"), so it says nothing
     constexpr const char *HEADLESS_DISPLAY = "headless";
 
-    ResourceLazyLoader *ResourceLazyLoader::get_instance() {
-        return singleton;
-    }
-
     /// What is read from the game's data is let go when the data is (GameDataServer)
     ResourceLazyLoader::ResourceLazyLoader() {
-        singleton = this;
         lazy_loading = OS::get_singleton()->get_cmdline_args().has(ARG_ENABLE_LAZY_LOADING) ||
                        static_cast<bool>(ProjectSettings::get_singleton()->get_setting(
                                LAZY_LOADING_SETTING, DEFAULT_LAZY_LOADING));
@@ -33,10 +27,6 @@ namespace godot {
         game_data->connect(
                 GameDataServer::data_unload_requested_signal,
                 callable_mp(this, &ResourceLazyLoader::_on_data_unload_requested));
-    }
-
-    ResourceLazyLoader::~ResourceLazyLoader() {
-        singleton = nullptr;
     }
 
     void ResourceLazyLoader::_bind_methods() {

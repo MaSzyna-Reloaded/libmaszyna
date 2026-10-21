@@ -1,6 +1,7 @@
 #pragma once
 #include "../tracks/SpatialIndex.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -22,17 +23,10 @@ namespace godot {
      * relevant when a sectioning cabin sits between two differently named substations) and
      * update_traction()'s pantograph-horn lateral tolerance. Both are refinements on top of the
      * network and contact logic ported here, not needed for a wire to deliver the right voltage. */
-    class TractionServer : public Object {
+    class TractionServer : public Object, public ServerSingleton<TractionServer> {
             GDCLASS(TractionServer, Object)
 
-        public:
-            static TractionServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static TractionServer *singleton;
-
             static void _bind_methods();
 
             /* Original engine: Traction.cpp's own "close enough to be one continuous wire"
@@ -197,7 +191,6 @@ namespace godot {
 
         public:
             TractionServer();
-            ~TractionServer() override;
 
             RID power_source_create();
             void power_source_set_params(

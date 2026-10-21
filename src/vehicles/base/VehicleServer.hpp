@@ -1,5 +1,6 @@
 #pragma once
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/base/VehicleComponentType.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehiclePerson.hpp"
@@ -22,17 +23,10 @@ namespace godot {
      * What a kind of vehicle adds - a rail vehicle's track, stepping, couplers and the kinds of its
      * cabins - is a server of its own (RailVehicleServer), which takes a vehicle created here and
      * knows it by the same handle. */
-    class VehicleServer : public Object {
+    class VehicleServer : public Object, public ServerSingleton<VehicleServer> {
             GDCLASS(VehicleServer, Object)
 
-        public:
-            static VehicleServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static VehicleServer *singleton;
-
             /* A controller this server holds (controller_create()): the copy of a description it
              * was configured with, and the vehicle it drives while bound */
             struct Controller {

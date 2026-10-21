@@ -145,9 +145,10 @@ Code generation:
 * PROHIBITED: **never wire anything up in a hot path** - no `connect`, `get_node`, path resolution
   or subscription in `_process`/`_physics_process`/a tick, not even behind `_dirty`; wire once in
   `_enter_tree()`, `_ready()` or an owner's init - see `CODE_STYLE.md`
-* a server's `get_instance()` returns a private `static X *singleton` set in its constructor and
-  cleared in its destructor - never `Engine::get_singleton()->get_singleton("X")`, a name lookup
-  in the engine on every call - see `CODE_STYLE.md`
+* a server derives `ServerSingleton<X>` (`src/utils/ServerSingleton.hpp`) and is registered with
+  `GDREGISTER_ABSTRACT_CLASS`: `get_instance()` is the pointer its one `memnew` set, a second
+  instance is refused - never `Engine::get_singleton()->get_singleton("X")`, a name lookup in the
+  engine on every call - see `CODE_STYLE.md`
 * a map or a set keyed by `RID` is `RIDMap<V>` / `RIDSet` (`src/utils/RIDHash.hpp`), never
   `HashMap<RID, V>` / `HashSet<RID>`, whose hash and compare call into the engine - see
   `CODE_STYLE.md`

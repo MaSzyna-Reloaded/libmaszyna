@@ -2,6 +2,7 @@
 #include "ScenarioEventAction.hpp"
 #include "ScenarioEventCondition.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/rail/RailVehicleRadio.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
@@ -23,7 +24,7 @@ namespace godot {
     /// A queued event runs once its time comes: its condition is tested, then the action's run()
     /// or run_else() is called. The time is SimulationServer's simulation time, in seconds, which
     /// the physics and the drivers read too.
-    class ScenarioEventServer : public Object {
+    class ScenarioEventServer : public Object, public ServerSingleton<ScenarioEventServer> {
             GDCLASS(ScenarioEventServer, Object)
 
         public:
@@ -63,13 +64,7 @@ namespace godot {
             static const char *event_dequeued_signal;
             static const char *memory_values_changed_signal;
 
-            static ScenarioEventServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static ScenarioEventServer *singleton;
-
             struct EventData {
                     StringName name;
                     double delay = 0.0;

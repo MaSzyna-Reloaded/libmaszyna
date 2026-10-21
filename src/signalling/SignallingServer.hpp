@@ -3,6 +3,7 @@
 #include "SignallingImplementation.hpp"
 #include "tracks/TrackServer.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -16,7 +17,7 @@ namespace godot {
     /// instance. Low level, its lights are switched one by one. High level, signal heads and event
     /// sources are grouped into systems, and a system's SignallingImplementation decides what an
     /// event means and shows it on the system's signal heads.
-    class SignallingServer : public Object {
+    class SignallingServer : public Object, public ServerSingleton<SignallingServer> {
             GDCLASS(SignallingServer, Object)
 
         public:
@@ -87,13 +88,7 @@ namespace godot {
             /// The PROPERTY_HINT_ENUM string of RouteState
             static String route_state_hint();
 
-            static SignallingServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static SignallingServer *singleton;
-
             struct SignalHeadData {
                     RID instance;
                     StringName name;
@@ -177,7 +172,6 @@ namespace godot {
 
         public:
             SignallingServer();
-            ~SignallingServer() override;
 
             RID signal_head_create(const RID &p_instance);
             void signal_head_free(const RID &p_signal_head);

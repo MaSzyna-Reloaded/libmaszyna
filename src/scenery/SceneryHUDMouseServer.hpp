@@ -1,5 +1,6 @@
 #pragma once
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -24,7 +25,7 @@ namespace godot {
     ///
     /// Unlike the original's pick buffer, nothing hides a model: one standing behind a building is
     /// picked through it.
-    class SceneryHUDMouseServer : public Object {
+    class SceneryHUDMouseServer : public Object, public ServerSingleton<SceneryHUDMouseServer> {
             GDCLASS(SceneryHUDMouseServer, Object)
 
         public:
@@ -32,13 +33,7 @@ namespace godot {
             static const char *pickable_unhovered_signal;
             static const char *vehicle_pressed_signal;
 
-            static SceneryHUDMouseServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static SceneryHUDMouseServer *singleton;
-
             struct Pickable {
                     RID instance;
                     String caption;
@@ -63,7 +58,6 @@ namespace godot {
 
         public:
             SceneryHUDMouseServer();
-            ~SceneryHUDMouseServer() override;
 
             void mouse_set_camera(uint64_t p_camera_id);
             /// Inactive, nothing is picked and the outline is taken off - the original picks

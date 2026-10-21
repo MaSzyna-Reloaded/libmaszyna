@@ -736,32 +736,29 @@ the logic into a separate class) instead of reaching into internals.
   - double check order of deallocation singletons
 * `CustomSingleton::get_instance()` does not guarantee a valid instance / pointer. Always check that the
   singleton pointer is not `nullptr`.
-* A server holds its own instance: a private `static X *singleton`, set in the constructor and cleared
-  in the destructor, and `get_instance()` returns it. Never look the singleton up by name
+* A server holds its own instance by deriving `ServerSingleton<X>` (`src/utils/ServerSingleton.hpp`),
+  as the engine's servers keep theirs: `get_instance()` returns the pointer set when the server was
+  made, cleared after its destructor has run. Never look the singleton up by name
   (`Engine::get_singleton()->get_singleton("X")`): that builds a `StringName` from a C string and scans
   the engine's singleton list on every call, and `TrackServer::get_instance()` is called per axle in
   the Mover step - 6% of the main thread on Wrzosy (`docs/performance/changes.md`).
+* A server is made once, by `memnew()` in `register_types.cpp`, and freed there in dependency order -
+  never a function-local `static X instance`: it would skip `memnew`'s `_postinitialize()` and be
+  destroyed at process exit, after godot-cpp is gone. It is registered with
+  `GDREGISTER_ABSTRACT_CLASS`, so a script cannot make a second one (`RenderingServer` is registered
+  the same way); a second `memnew` is refused by `ServerSingleton` and never takes the pointer over.
 
   ```cpp
   // X.hpp
-  public:
-      static X *get_instance() {
-          return singleton;
-      }
+  class X : public Object, public ServerSingleton<X> {
+          GDCLASS(X, Object)
+          ...
+  };
 
-  private:
-      static X *singleton;
-
-  // X.cpp
-  X *X::singleton = nullptr;
-
-  X::X() {
-      singleton = this;
-  }
-
-  X::~X() {
-      singleton = nullptr;
-  }
+  // register_types.cpp
+  GDREGISTER_ABSTRACT_CLASS(X);
+  x_singleton = memnew(X);
+  Engine::get_singleton()->register_singleton("X", x_singleton);
   ```
 
 ### RID-keyed containers

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -11,12 +12,10 @@
 
 namespace godot {
 
-    class UserSettings : public Object {
+    class UserSettings : public Object, public ServerSingleton<UserSettings> {
             GDCLASS(UserSettings, Object)
 
         private:
-            static UserSettings *singleton;
-
             String config_file_path = "user://settings.cfg";
             Ref<ConfigFile> config;
             Dictionary defaults;
@@ -47,11 +46,6 @@ namespace godot {
             static const char *game_dir_changed_signal;
 
             UserSettings();
-            ~UserSettings() override;
-
-            static UserSettings *get_instance() {
-                return singleton;
-            }
 
             void load_config();
 

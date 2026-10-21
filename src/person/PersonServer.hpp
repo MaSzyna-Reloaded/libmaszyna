@@ -1,5 +1,6 @@
 #pragma once
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -10,17 +11,10 @@ namespace godot {
     /* The people of the world - the player and every AI driver - by their handles and names. A
      * person is only a handle and a name here: where it sits and in what role is VehicleServer's,
      * what an AI driver thinks is DriverServer's, the player is PlayerServer's. */
-    class PersonServer : public Object {
+    class PersonServer : public Object, public ServerSingleton<PersonServer> {
             GDCLASS(PersonServer, Object)
 
-        public:
-            static PersonServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static PersonServer *singleton;
-
             /* Every person and its name */
             RIDMap<String> persons;
 
@@ -28,8 +22,6 @@ namespace godot {
             static void _bind_methods();
 
         public:
-            PersonServer();
-            ~PersonServer() override;
             /* A person came to be (person: RID) */
             static const char *person_created_signal;
             /* A person has another name (person: RID, previous: String) */

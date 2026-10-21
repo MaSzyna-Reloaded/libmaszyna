@@ -142,10 +142,7 @@ namespace godot {
 
     /// No explicit disconnect: callable_mp reports this instance as the callable's object, so the
     /// engine drops the connections when the instance dies.
-    ScenarioEventServer *ScenarioEventServer::singleton = nullptr;
-
     ScenarioEventServer::ScenarioEventServer() {
-        singleton = this;
         SimulationServer *runtime = SimulationServer::get_instance();
         ERR_FAIL_NULL(runtime);
         // a launcher at an hour looks at the time of day, which the runtime's clock runs
@@ -204,7 +201,6 @@ namespace godot {
     }
 
     ScenarioEventServer::~ScenarioEventServer() {
-        singleton = nullptr;
         _set_processing(false);
     }
 

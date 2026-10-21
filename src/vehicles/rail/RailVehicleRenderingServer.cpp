@@ -34,7 +34,6 @@
 #include <array>
 
 namespace godot {
-    RailVehicleRenderingServer *RailVehicleRenderingServer::singleton = nullptr;
     const char *RailVehicleRenderingServer::vehicle_model_built_signal = "vehicle_model_built";
     const char *RailVehicleRenderingServer::builds_finished_signal = "builds_finished";
 
@@ -146,12 +145,7 @@ namespace godot {
                                  : Ref<RailVehicleBuffCoupl>();
     }
 
-    RailVehicleRenderingServer *RailVehicleRenderingServer::get_instance() {
-        return singleton;
-    }
-
     RailVehicleRenderingServer::RailVehicleRenderingServer() {
-        singleton = this;
         preload_queue.instantiate();
         preload_queue->connect(
                 WorkerTaskQueue::task_finished_signal,
@@ -413,7 +407,6 @@ namespace godot {
         while (!vehicles.is_empty()) {
             vehicle_detach(vehicles.begin()->key);
         }
-        singleton = nullptr;
     }
 
     void RailVehicleRenderingServer::_bind_methods() {

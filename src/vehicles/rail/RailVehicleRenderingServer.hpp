@@ -1,6 +1,7 @@
 #pragma once
 #include "legacy/e3d/E3DModel.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
@@ -28,7 +29,7 @@ namespace godot {
      * the vehicle, and draws the models there. What moves is animated from the vehicle's state
      * natively, once a frame for the vehicles near the camera and a few times a second for the
      * rest - no script runs per vehicle. */
-    class RailVehicleRenderingServer : public Object {
+    class RailVehicleRenderingServer : public Object, public ServerSingleton<RailVehicleRenderingServer> {
             GDCLASS(RailVehicleRenderingServer, Object)
 
         public:
@@ -62,8 +63,6 @@ namespace godot {
             static constexpr uint64_t BUILD_BUDGET_MSEC = 4;
 
         private:
-            static RailVehicleRenderingServer *singleton;
-
             /* The low-poly interior's cabs, cab0 for a vehicle's single one (DynObj.cpp:2383-2391) */
             static constexpr std::array<const char *, 3> LOW_POLY_CABS = {"cab0", "cab1", "cab2"};
 
@@ -299,8 +298,6 @@ namespace godot {
             static void _bind_methods();
 
         public:
-            static RailVehicleRenderingServer *get_instance();
-
             RailVehicleRenderingServer();
             ~RailVehicleRenderingServer() override;
 

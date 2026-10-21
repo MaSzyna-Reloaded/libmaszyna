@@ -13,6 +13,7 @@
 #include "RailVehicleNeighbour.hpp"
 #include "tracks/TrackServer.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -43,7 +44,7 @@ namespace godot {
      * the per-vehicle rail operations below in its phases.
      *
      * Ported from addons/libmaszyna/servers/rail_vehicle_physics_server.gd. */
-    class RailVehicleServer : public Object {
+    class RailVehicleServer : public Object, public ServerSingleton<RailVehicleServer> {
             GDCLASS(RailVehicleServer, Object)
 
         public:
@@ -67,13 +68,7 @@ namespace godot {
                 PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE,
             };
 
-            static RailVehicleServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static RailVehicleServer *singleton;
-
             /* Distance the neighbour scan steps past a track endpoint to enter the next track */
             static constexpr double SCAN_ENDPOINT_EPSILON = 0.001;
             /* 10 m is about 140 km/h at 4 fps, plus a safety margin (DynObj.cpp:7160) */
@@ -462,7 +457,6 @@ namespace godot {
             static const char *vehicle_pantograph_contact_lost_signal;
 
             RailVehicleServer();
-            ~RailVehicleServer() override;
 
             /* A VehicleServer vehicle becomes a rail vehicle: it gets a place on the route and is
              * stepped - called by whatever makes it one (RailVehicle3D, a FIZ vehicle). A vehicle
@@ -577,7 +571,6 @@ namespace godot {
              * one fed by a current collector, of the unit first, then of the vehicles under control;
              * an invalid RID when there is none */
             RID vehicle_find_pantograph_carrier(const RID &p_vehicle) const;
-
 
             void vehicle_set_track(
                     const RID &p_vehicle, const RID &p_track, double p_track_offset,

@@ -116,6 +116,12 @@ so is their open work.
 
 ## Cabins
 
+* `PythonScreenServer` is the one server not on `ServerSingleton` and still `GDREGISTER_CLASS`:
+  `test_python_screen_server.gd` makes a server of its own (`ClassDB.instantiate()`), since a
+  Python host that has ended is not started again. That instance takes `singleton` over and clears
+  it when freed, so after the test `PythonScreenServer::get_instance()` is null while the module's
+  server lives (no C++ caller today). Moved once the server can start a new host after an ended one
+  and the test uses the module's server (operator, 2026-10-21).
 * **Next, right after the split commit (operator, 2026-10-09):** the occupancy layer drives the cabs
   by plain vehicle commands instead of `set_driver_cabin_kind()` (`RailVehicleServer.cpp:1007`):
   `cabin_activate` (today's `cab_activation`), `cabin_change` (`ChangeCab()`, Mover.cpp:736) and,

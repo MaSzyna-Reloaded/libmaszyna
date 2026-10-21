@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/variant/rid.hpp>
@@ -11,7 +12,7 @@ namespace godot {
     /// drivermode.cpp:1244-1277), the HUD, scripts - calls these operations by the vehicles'
     /// RailVehicleServer handles. The server holds the view and announces it; the player's cameras
     /// are the player's, which follows these signals.
-    class PlayerCameraServer : public Object {
+    class PlayerCameraServer : public Object, public ServerSingleton<PlayerCameraServer> {
             GDCLASS(PlayerCameraServer, Object)
 
         public:
@@ -38,13 +39,7 @@ namespace godot {
             /// The free camera is to stand at the transform (transform: Transform3D)
             static const char *camera_placed_signal;
 
-            static PlayerCameraServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static PlayerCameraServer *singleton;
-
             CameraMode mode = CAMERA_MODE_FREE;
             RID target;
             CameraFollowView follow_view = CAMERA_FOLLOW_VIEW_TRAINSET_FRONT;
@@ -60,7 +55,6 @@ namespace godot {
 
         public:
             PlayerCameraServer();
-            ~PlayerCameraServer() override;
 
             /// The view from the cab (a vehicle driven), the free camera, or the following camera (a
             /// target set)

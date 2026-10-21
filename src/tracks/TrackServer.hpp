@@ -3,6 +3,7 @@
 #include "SpatialIndex.hpp"
 #include "TrackEndpointRef.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 
 #include <godot_cpp/classes/curve3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -27,7 +28,7 @@ namespace godot {
      * (TrackCurve) stays a GDScript Resource because scenes serialize it, so its fields are
      * read through the Variant property API once, when the curves are set, and cached as plain
      * values from then on. */
-    class TrackServer : public Object {
+    class TrackServer : public Object, public ServerSingleton<TrackServer> {
             GDCLASS(TrackServer, Object)
 
         public:
@@ -109,13 +110,7 @@ namespace godot {
             /* Invalid node index used by topology storage. */
             static constexpr int INVALID_NODE_ID = -1;
 
-            static TrackServer *get_instance() {
-                return singleton;
-            }
-
         private:
-            static TrackServer *singleton;
-
             static constexpr const char *CURVE_BAKE_INTERVAL_SETTING = "maszyna/scenery/track_curve_bake_interval";
             static constexpr double DEFAULT_CURVE_BAKE_INTERVAL = 10.0;
             /* Maximum switch blade offset (MaSzyna Track.cpp:33 fMaxOffset). */

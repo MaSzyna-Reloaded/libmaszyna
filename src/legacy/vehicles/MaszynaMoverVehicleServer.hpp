@@ -1,6 +1,7 @@
 #pragma once
 #include "legacy/maszyna-mover/McZapkie/MOVER.h"
 #include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/base/VehicleImplementationServer.hpp"
 #include "vehicles/rail/RailVehicleController.hpp"
 #include "vehicles/rail/RailVehicleEngine.hpp"
@@ -15,12 +16,11 @@ namespace godot {
      * VehicleServer as IMPLEMENTATION_NAME. It knows how its vehicles are stepped: all of them
      * together, in the original's phases (vehicle_table::update(), DynObj.cpp:8686-8724), with
      * RailVehicleServer doing what the rail does for each of them. */
-    class MaszynaMoverVehicleServer : public VehicleImplementationServer {
+    class MaszynaMoverVehicleServer : public VehicleImplementationServer,
+                                      public ServerSingleton<MaszynaMoverVehicleServer> {
             GDCLASS(MaszynaMoverVehicleServer, VehicleImplementationServer)
 
         private:
-            static MaszynaMoverVehicleServer *singleton;
-
             /* Original engine: the primary physics update rate - a frame is integrated whole, in as
              * many steps as keep each at or below it (drivermode.cpp:193-206) */
             static constexpr double PHYSICS_STEP = 0.01;
@@ -84,10 +84,6 @@ namespace godot {
 
         public:
             static constexpr const char *IMPLEMENTATION_NAME = "maszyna_mover";
-
-            static MaszynaMoverVehicleServer *get_instance() {
-                return singleton;
-            }
 
             MaszynaMoverVehicleServer();
             ~MaszynaMoverVehicleServer() override;

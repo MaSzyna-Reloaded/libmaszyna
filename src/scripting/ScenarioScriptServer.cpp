@@ -40,10 +40,7 @@ namespace godot {
 
     /// No explicit disconnect: callable_mp reports this instance as the callable's object, so the
     /// engine drops the connections when the instance dies.
-    ScenarioScriptServer *ScenarioScriptServer::singleton = nullptr;
-
     ScenarioScriptServer::ScenarioScriptServer() {
-        singleton = this;
         VehicleServer *vehicle_server = VehicleServer::get_instance();
         ERR_FAIL_NULL(vehicle_server);
         vehicle_server->connect(
@@ -85,10 +82,6 @@ namespace godot {
         events->connect(
                 ScenarioEventServer::memory_values_changed_signal,
                 callable_mp(this, &ScenarioScriptServer::_on_memory_values_changed));
-    }
-
-    ScenarioScriptServer::~ScenarioScriptServer() {
-        singleton = nullptr;
     }
 
     // --- contexts ---

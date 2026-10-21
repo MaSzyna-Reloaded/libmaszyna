@@ -222,10 +222,7 @@ namespace godot {
 
     /// What is read from the game's data is read again when the data is (GameDataServer), and what
     /// the settings shape is built again when they change
-    E3DRenderingServer *E3DRenderingServer::singleton = nullptr;
-
     E3DRenderingServer::E3DRenderingServer() : time(Time::get_singleton()) {
-        singleton = this;
         light_placement_settings = read_settings(LIGHT_PLACEMENT_SETTING_NAMES);
         light_build_settings = read_settings(LIGHT_BUILD_SETTING_NAMES);
         smoke_settings = read_settings(SMOKE_SETTING_NAMES);
@@ -339,7 +336,6 @@ namespace godot {
     }
 
     E3DRenderingServer::~E3DRenderingServer() {
-        singleton = nullptr;
         // Nodes built by the NODES backends belong to the scene tree, only RenderingServer RIDs are freed here
         for (KeyValue<RID, LightObject> &light: lights) {
             _light_clear(light.key);

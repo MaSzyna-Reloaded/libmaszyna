@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -12,7 +13,7 @@ namespace godot {
     /// and runs the one clock of the simulation (Timer::UpdateTimers(), Timer.cpp:70-92): the
     /// physics, the events, the drivers and the time of day all advance by the same seconds, read
     /// here.
-    class SimulationServer : public Object {
+    class SimulationServer : public Object, public ServerSingleton<SimulationServer> {
             GDCLASS(SimulationServer, Object)
 
         public:
@@ -25,8 +26,6 @@ namespace godot {
             };
 
         private:
-            static SimulationServer *singleton;
-
             /// A frame counts at most this much real time [s], then times the simulation speed. The
             /// original caps the simulated time instead, at 1 s (Timer.cpp:84), because its Mover
             /// went wrong on long frames; here the couplers are refreshed every physics step and
@@ -101,7 +100,6 @@ namespace godot {
 
         public:
             SimulationServer();
-            ~SimulationServer() override;
             static const char *simulation_advanced_signal;
             static const char *simulation_paused_signal;
             static const char *simulation_unpaused_signal;
@@ -142,10 +140,6 @@ namespace godot {
             static constexpr double RAIN_FRICTION_FACTOR = 0.85;
             static constexpr double SNOW_FRICTION_FACTOR = 0.75;
             static constexpr double DEFAULT_AIR_TEMPERATURE = 15.0;
-
-            static SimulationServer *get_instance() {
-                return singleton;
-            }
 
             /// Hours since midnight, fractional. Setting it jumps the clock (a scenario's start, the
             /// player's change, the system time); running, it advances with the simulation.

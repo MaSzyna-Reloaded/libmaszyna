@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -37,7 +38,7 @@ namespace godot {
     /// loggers by name (assign_handler()), and GameLog attaches a logger's handlers to it - one
     /// handler may serve many loggers. A logger calls its handlers itself; nothing is kept in
     /// memory.
-    class GameLog : public Object {
+    class GameLog : public Object, public ServerSingleton<GameLog> {
             GDCLASS(GameLog, Object);
 
         public:
@@ -45,10 +46,6 @@ namespace godot {
             static const char *logger_removing_signal;
             /// The logger of the game's own messages, made with the log
             static const char *GAME_LOGGER;
-
-            static GameLog *get_instance() {
-                return singleton;
-            }
 
             enum LogLevel {
                 DEBUG = 0,
@@ -58,7 +55,6 @@ namespace godot {
             };
 
             GameLog();
-            ~GameLog() override;
 
             Ref<GameLogger> create_logger(const String &p_logger_id);
             /// The one getter that makes what it returns (CODE_STYLE.md, "Logging"): a logger
@@ -82,8 +78,6 @@ namespace godot {
             static void _bind_methods();
 
         private:
-            static GameLog *singleton;
-
             /// logger id -> GameLogger
             Dictionary loggers;
             /// handler name -> GameLogHandler
