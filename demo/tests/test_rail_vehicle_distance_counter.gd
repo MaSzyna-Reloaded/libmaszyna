@@ -18,7 +18,7 @@ var train:VehicleController
 func before_each() -> void:
     var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
     train = build_vehicle("TestDistanceCounter", description, VELOCITY,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await step(2)
     train.send_command("battery", true)
     await step(2)

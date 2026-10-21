@@ -1,6 +1,0 @@
-CompileFlags:
-  CompilationDatabase: build-clang-tidy
-  Remove:
-    - "-fno-gnu-unique"
-  Add:
-    - "-Wno-macro-redefined"

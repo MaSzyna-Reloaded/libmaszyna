@@ -2,7 +2,7 @@
 extends HBoxContainer
 
 var _t = 0.0
-var _selected_e3d:E3DModelInstance
+var _selected_e3d:MaszynaE3DModelInstance
 
 @onready var btn = $Editable
 
@@ -20,14 +20,14 @@ func _find_parent_e3d(node: Node):
     if not node:
         return null
 
-    if node is E3DModelInstance:
+    if node is MaszynaE3DModelInstance:
         return node
     return _find_parent_e3d(node.get_parent())
 
 
 func _on_selection_changed():
     var sel:EditorSelection = EditorInterface.get_selection()
-    var previously_selected:E3DModelInstance = _selected_e3d
+    var previously_selected:MaszynaE3DModelInstance = _selected_e3d
 
     var nodes = sel.get_selected_nodes()
 

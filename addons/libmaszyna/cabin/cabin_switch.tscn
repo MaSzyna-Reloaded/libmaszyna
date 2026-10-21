@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://cmluhfe2vkxcc"]
-
-[ext_resource type="Script" uid="uid://3hp38qtyx500" path="res://addons/libmaszyna/cabin/cabin_switch.gd" id="1_526md"]
-
-[node name="CabinSwitch" type="Node3D" unique_id=239665158]
-script = ExtResource("1_526md")

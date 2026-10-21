@@ -10,12 +10,12 @@ var _events:Array[String] = []
 
 
 func test_a_model_leaving_and_entering_the_tree_announces_its_submodels() -> void:
-    var instance:E3DModelInstance = E3DModelInstance.new()
-    var model:E3DModel = E3DModel.new()
-    var bogie:E3DSubModel = E3DSubModel.new()
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
+    var bogie:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     bogie.resource_name = BOGIE
-    bogie.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
-    var submodels:Array[E3DSubModel] = [bogie]
+    bogie.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+    var submodels:Array[MaszynaE3DSubModel] = [bogie]
     model.submodels = submodels
     instance.model = model
     var holder:Node3D = Node3D.new()

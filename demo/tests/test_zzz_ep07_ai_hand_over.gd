@@ -19,14 +19,14 @@ const TAKE_BACK_WATCH_SECONDS:float = 2.0
 
 var _previous_game_dir:String = ""
 var scenery:MaszynaSceneryNode
-var player:MaszynaPlayer
+var player:Player
 var vehicle_rid:RID
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
-    player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
+    player = load("res://addons/libreloaded/player/player.tscn").instantiate()
     player.start_vehicle_id = "ep07-424"
     add_child(player)
     scenery = MaszynaSceneryNode.new()
@@ -42,7 +42,7 @@ func before_each():
 func after_each():
     player.free()
     scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _main_switch_enabled() -> bool:

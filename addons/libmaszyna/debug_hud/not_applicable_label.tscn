@@ -1,5 +1,0 @@
-[gd_scene format=3]
-
-[node name="NotApplicable" type="Label"]
-visible = false
-text = "Not applicable to this vehicle"

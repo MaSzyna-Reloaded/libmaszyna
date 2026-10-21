@@ -26,8 +26,8 @@ var _unloads:int = 0
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     _camera = Camera3D.new()
     add_child_autoqfree(_camera)
     _unloads = 0
@@ -38,7 +38,7 @@ func after_each() -> void:
         SceneryStreamingServer.stream_free(stream_rid)
     _stream_rids.clear()
     SceneryStreamingServer.streaming_set_camera(0)
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 ## A reload frees the content its preloads in flight are loading: they are joined first, as on
@@ -144,7 +144,7 @@ func test_a_scenario_runs_from_its_start_until_its_scenery_unloads() -> void:
     if not await wait_loaded(scenery.scenery_loaded, scenery.filename):
         return
 
-    var scenario:MaszynaLegacyScenario = MaszynaLegacyScenario.new()
+    var scenario:MaszynaScenario = MaszynaScenario.new()
     assert_false(scenario.get_script_context().is_valid(), "a scenario ran before it was started")
     await scenario.start(scenery)
     assert_true(scenario.get_script_context().is_valid(), "a started scenario has no script context")

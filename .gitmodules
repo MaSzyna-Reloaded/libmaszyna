@@ -1,12 +1,4 @@
-[submodule "godot-cpp"]
-    path = godot-cpp
-    url = https://github.com/godotengine/godot-cpp.git
-[submodule "vendor/gut"]
-    path = vendor/gut
-    url = https://github.com/bitwes/Gut.git
-[submodule "vendor/gnd-sfx"]
-    path = vendor/gnd-sfx
-    url = https://github.com/GamesNotDeveloped/godot-sfx.git
-[submodule "vendor/lua"]
-    path = vendor/lua
-    url = https://github.com/lua/lua.git
+[submodule "vendor/libreloaded"]
+	path = vendor/libreloaded
+	url = git@github.com:MaSzyna-Reloaded/libreloaded.git
+	branch = main

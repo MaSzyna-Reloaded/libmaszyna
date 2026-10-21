@@ -1,26 +1,25 @@
 [gd_scene format=3 uid="uid://bsp43pawp632n"]
 
 [ext_resource type="Script" uid="uid://bjjgkykr4c718" path="res://demo_3d.gd" id="1_ut343"]
-[ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libmaszyna/console/developer_console.tscn" id="2_ig825"]
+[ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libreloaded/console/developer_console.tscn" id="2_ig825"]
 [ext_resource type="Material" uid="uid://b7qto250huuby" path="res://materials/custom_demo_ground.tres" id="2_imrpy"]
-[ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libmaszyna/environment/maszyna_environment_node.gd" id="2_py6pt"]
+[ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libreloaded/environment/environment_node.gd" id="2_py6pt"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="2_qg2pq"]
-[ext_resource type="Script" uid="uid://dgifxvb2e4hww" path="res://addons/libmaszyna/legacy/e3d/e3d_model_instance.gd" id="4_drlsl"]
-[ext_resource type="Script" uid="uid://onxj3ocy4jip" path="res://addons/libmaszyna/trainsets/train_set_3d.gd" id="9_ss847"]
+[ext_resource type="Script" uid="uid://dgifxvb2e4hww" path="res://addons/libmaszyna/e3d/maszyna_e3d_model_instance.gd" id="4_drlsl"]
+[ext_resource type="Script" uid="uid://onxj3ocy4jip" path="res://addons/libreloaded/trainsets/train_set_3d.gd" id="9_ss847"]
 [ext_resource type="PackedScene" uid="uid://bbq6b2v2678h0" path="res://hud/user_settings_panel.tscn" id="12_eihw1"]
-[ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libmaszyna/player/player.tscn" id="13_nxmm0"]
-[ext_resource type="E3DModel" uid="uid://buxg17oldnjq6" path="res://e3d_models/dzik.e3d" id="21_sa6xs"]
-[ext_resource type="Script" uid="uid://q5rsmctbnhqt" path="res://addons/libmaszyna/tracks/track_curve.gd" id="22_track_curve"]
-[ext_resource type="Script" uid="uid://crnc02lngpqkm" path="res://addons/libmaszyna/tracks/track_normal_3d.gd" id="23_track_normal"]
-[ext_resource type="Script" uid="uid://do35jm13yiccm" path="res://addons/libmaszyna/traction/traction_3d.gd" id="24_6m450"]
-[ext_resource type="Script" uid="uid://dotmfqnin31lo" path="res://addons/libmaszyna/traction/traction_line.gd" id="25_jchga"]
-[ext_resource type="Script" uid="uid://duaegoh4xg84s" path="res://addons/libmaszyna/tracks/track_switch_3d.gd" id="25_track_switch"]
-[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
-[ext_resource type="PackedScene" path="res://addons/libmaszyna/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
+[ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libreloaded/player/player.tscn" id="13_nxmm0"]
+[ext_resource type="MaszynaE3DModel" uid="uid://buxg17oldnjq6" path="res://e3d_models/dzik.e3d" id="21_sa6xs"]
+[ext_resource type="Script" uid="uid://crnc02lngpqkm" path="res://addons/libreloaded/tracks/track_normal_3d.gd" id="23_track_normal"]
+[ext_resource type="Script" uid="uid://do35jm13yiccm" path="res://addons/libreloaded/traction/traction_3d.gd" id="24_6m450"]
+[ext_resource type="Script" uid="uid://dotmfqnin31lo" path="res://addons/libreloaded/traction/traction_line.gd" id="25_jchga"]
+[ext_resource type="Script" uid="uid://duaegoh4xg84s" path="res://addons/libreloaded/tracks/track_switch_3d.gd" id="25_track_switch"]
+[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
+[ext_resource type="PackedScene" path="res://addons/libreloaded/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
 [ext_resource type="SignallingImplementation" path="res://signalling/demo_block_implementation.tres" id="demo_block_implementation"]
 [ext_resource type="Resource" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
 [ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
-[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="scenery_streamer"]
+[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="scenery_streamer"]
 
 [sub_resource type="ProceduralSkyMaterial" id="DemoSkyMaterial"]
 
@@ -33,64 +32,53 @@ sky = SubResource("DemoSky")
 tonemap_mode = 4
 tonemap_agx_contrast = 1.0
 
-[sub_resource type="Resource" id="TrackCurve_common"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_common"]
 p1 = Vector3(-25.8, 0, -136)
 p2 = Vector3(-25.8, 0, 100)
 
-[sub_resource type="Resource" id="TrackCurve_diverging"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_diverging"]
 p1 = Vector3(-19.19, 0, -100)
 p2 = Vector3(-19.19, 0, 70)
 
-[sub_resource type="Resource" id="TrackCurve_start"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_start"]
 p1 = Vector3(-25.8, 0, 236)
 p2 = Vector3(-25.8, 0, 536)
 
-[sub_resource type="Resource" id="TrackCurve_switch_diverging"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_switch_diverging"]
 p1 = Vector3(-25.8, 0, 236)
 c1 = Vector3(0, 0, -35.333)
 c2 = Vector3(0, 0, 35.333)
 p2 = Vector3(-19.19, 0, 130)
 
-[sub_resource type="Resource" id="TrackCurve_switch_common"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_switch_common"]
 p1 = Vector3(-25.8, 0, 236)
 p2 = Vector3(-25.8, 0, 136)
 
-[sub_resource type="Resource" id="TrackCurve_switch2_diverging"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_switch2_diverging"]
 p1 = Vector3(-19.19, 0, 130)
 c1 = Vector3(0, 0, -16.667)
 c2 = Vector3(0, 0, 16.667)
 p2 = Vector3(-12.53, 0, 80)
 
-[sub_resource type="Resource" id="TrackCurve_switch2_common"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_switch2_common"]
 p1 = Vector3(-19.19, 0, 130)
 p2 = Vector3(-19.19, 0, 70)
 
-[sub_resource type="Resource" id="TrackCurve_diverging2"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_diverging2"]
 p1 = Vector3(-12.53, 0, -100)
 p2 = Vector3(-12.53, 0, 80)
 
-[sub_resource type="Resource" id="TrackCurve_left_switch_diverging"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_left_switch_diverging"]
 p1 = Vector3(-25.8, 0, 136)
 c1 = Vector3(0, 0, -11.205)
 c2 = Vector3(0, 0, 10.675)
 p2 = Vector3(-32.5, 0, 100)
 
-[sub_resource type="Resource" id="TrackCurve_left_switch_common"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_left_switch_common"]
 p1 = Vector3(-25.8, 0, 136)
 p2 = Vector3(-25.8, 0, 100)
 
-[sub_resource type="Resource" id="TrackCurve_left_diverging"]
-script = ExtResource("22_track_curve")
+[sub_resource type="TrackCurve" id="TrackCurve_left_diverging"]
 p1 = Vector3(-32.5, 0, 100)
 p2 = Vector3(-32.5, 0, -100)
 
@@ -121,15 +109,16 @@ offset_bottom = 31.0
 unique_name_in_owner = true
 title = "Diagnostics"
 
-[node name="DebugHud" parent="." unique_id=194798435 instance=ExtResource("debug_hud_scene")]
+[node name="DebugHud" parent="." node_paths=PackedStringArray("environment") unique_id=194798435 instance=ExtResource("debug_hud_scene")]
 unique_name_in_owner = true
+environment = NodePath("../EnvironmentNode")
 
 [node name="DeveloperConsole" parent="." unique_id=495569075 instance=ExtResource("2_ig825")]
 visible = null
 
 [node name="UserSettingsPanel" parent="." unique_id=1798306963 instance=ExtResource("12_eihw1")]
 
-[node name="MaszynaEnvironmentNode" type="Node" parent="." unique_id=1464463242]
+[node name="EnvironmentNode" type="Node" parent="." unique_id=1464463242]
 unique_name_in_owner = true
 script = ExtResource("2_py6pt")
 current_time = 10.0
@@ -280,7 +269,7 @@ vehicle_id = "tem2"
 
 [node name="Dekoracje" type="Node3D" parent="." unique_id=1893813040]
 
-[node name="Dworzec Olkusz" type="VisualInstance3D" parent="Dekoracje" unique_id=228197153]
+[node name="Dworzec Olkusz" type="ReloadedModel3D" parent="Dekoracje" unique_id=228197153]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -301,7 +290,7 @@ data_path = "models/stacje/"
 model_filename = "dworzec_olkusz"
 skins = ["dworzec_olkusz_lhs"]
 
-[node name="Dworzec Sosnowiec" type="VisualInstance3D" parent="Dekoracje" unique_id=1386451553]
+[node name="Dworzec Sosnowiec" type="ReloadedModel3D" parent="Dekoracje" unique_id=1386451553]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -322,7 +311,7 @@ data_path = "models/stacje/"
 model_filename = "dworzec_sosnowiec_porabka"
 skins = ["dworzec_sosnowiec_porabka"]
 
-[node name="Nastawnia Sochaczew" type="VisualInstance3D" parent="Dekoracje" unique_id=2113648551]
+[node name="Nastawnia Sochaczew" type="ReloadedModel3D" parent="Dekoracje" unique_id=2113648551]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -343,7 +332,7 @@ data_path = "models/sochaczew/"
 model_filename = "nastawnia"
 skins = ["dworzec_sosnowiec_porabka"]
 
-[node name="Szyb Kleofas" type="VisualInstance3D" parent="Dekoracje" unique_id=723025036]
+[node name="Szyb Kleofas" type="ReloadedModel3D" parent="Dekoracje" unique_id=723025036]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -364,7 +353,7 @@ data_path = "models/przemysl/kopalnie"
 model_filename = "szyb_kleofas_gigant"
 skins = ["dworzec_sosnowiec_porabka"]
 
-[node name="KWK Staszic" type="VisualInstance3D" parent="Dekoracje" unique_id=230588431]
+[node name="KWK Staszic" type="ReloadedModel3D" parent="Dekoracje" unique_id=230588431]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -387,7 +376,7 @@ lights_state = Dictionary[String, bool]({
 data_path = "models/przemysl/kopalnie/kwk_staszic"
 model_filename = "szyb_ii"
 
-[node name="Tabliczka PKP" type="VisualInstance3D" parent="Dekoracje" unique_id=2055300724]
+[node name="Tabliczka PKP" type="ReloadedModel3D" parent="Dekoracje" unique_id=2055300724]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -407,7 +396,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/otoczenie/obiekty_stacyjne"
 model_filename = "terenpkp"
 
-[node name="Parkomat" type="VisualInstance3D" parent="Dekoracje" unique_id=969128519]
+[node name="Parkomat" type="ReloadedModel3D" parent="Dekoracje" unique_id=969128519]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -427,7 +416,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "parkomat_rozi_macius9551"
 
-[node name="Skrzynka" type="VisualInstance3D" parent="Dekoracje" unique_id=204687938]
+[node name="Skrzynka" type="ReloadedModel3D" parent="Dekoracje" unique_id=204687938]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -447,7 +436,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "skrzynka_tel_rozi_macius9551"
 
-[node name="Klamoty" type="VisualInstance3D" parent="Dekoracje" unique_id=2091251360]
+[node name="Klamoty" type="ReloadedModel3D" parent="Dekoracje" unique_id=2091251360]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -467,7 +456,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/kolejowe"
 model_filename = "klamoty_naprawcze"
 
-[node name="nastawnia_opuszczona" type="VisualInstance3D" parent="Dekoracje" unique_id=1085419613]
+[node name="nastawnia_opuszczona" type="ReloadedModel3D" parent="Dekoracje" unique_id=1085419613]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -487,7 +476,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/otoczenie/obiekty_stacyjne"
 model_filename = "nastawnia_opuszczona"
 
-[node name="chlodnia_belchatow" type="VisualInstance3D" parent="Dekoracje" unique_id=75347577]
+[node name="chlodnia_belchatow" type="ReloadedModel3D" parent="Dekoracje" unique_id=75347577]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -507,7 +496,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
-[node name="chlodnia_belchatow2" type="VisualInstance3D" parent="Dekoracje" unique_id=1543279749]
+[node name="chlodnia_belchatow2" type="ReloadedModel3D" parent="Dekoracje" unique_id=1543279749]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -527,7 +516,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
-[node name="chlodnia_belchatow3" type="VisualInstance3D" parent="Dekoracje" unique_id=2018873026]
+[node name="chlodnia_belchatow3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2018873026]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -547,7 +536,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
-[node name="komin_jadwiga_7,6x65" type="VisualInstance3D" parent="Dekoracje" unique_id=1038208604]
+[node name="komin_jadwiga_7,6x65" type="ReloadedModel3D" parent="Dekoracje" unique_id=1038208604]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -567,7 +556,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "komin_jadwiga_7,6x65"
 
-[node name="plot_beton_10m" type="VisualInstance3D" parent="Dekoracje" unique_id=2062558236]
+[node name="plot_beton_10m" type="ReloadedModel3D" parent="Dekoracje" unique_id=2062558236]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -587,7 +576,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
-[node name="plot_beton_10m2" type="VisualInstance3D" parent="Dekoracje" unique_id=165452069]
+[node name="plot_beton_10m2" type="ReloadedModel3D" parent="Dekoracje" unique_id=165452069]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -607,7 +596,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
-[node name="plot_beton_10m3" type="VisualInstance3D" parent="Dekoracje" unique_id=2044339556]
+[node name="plot_beton_10m3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2044339556]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -627,7 +616,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
-[node name="plot_beton_10m4" type="VisualInstance3D" parent="Dekoracje" unique_id=432120979]
+[node name="plot_beton_10m4" type="ReloadedModel3D" parent="Dekoracje" unique_id=432120979]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -647,7 +636,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
-[node name="star200_star200_teal" type="VisualInstance3D" parent="Dekoracje" unique_id=1963611550]
+[node name="star200_star200_teal" type="ReloadedModel3D" parent="Dekoracje" unique_id=1963611550]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -668,7 +657,7 @@ data_path = "models/pojazdy"
 model_filename = "star200"
 skins = ["pojazdy/star200_teal"]
 
-[node name="manewrowy" type="VisualInstance3D" parent="Dekoracje" unique_id=1289891567]
+[node name="manewrowy" type="ReloadedModel3D" parent="Dekoracje" unique_id=1289891567]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -688,7 +677,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/posers"
 model_filename = "manewrowy"
 
-[node name="droznik_sosnowiec" type="VisualInstance3D" parent="Dekoracje" unique_id=1873147890]
+[node name="droznik_sosnowiec" type="ReloadedModel3D" parent="Dekoracje" unique_id=1873147890]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -708,7 +697,7 @@ script = ExtResource("4_drlsl")
 data_path = "models/przejazdy"
 model_filename = "droznik_sosnowiec"
 
-[node name="Jezewo Budynekstacyjny" type="VisualInstance3D" parent="Dekoracje" unique_id=300012307]
+[node name="Jezewo Budynekstacyjny" type="ReloadedModel3D" parent="Dekoracje" unique_id=300012307]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -731,7 +720,7 @@ lights_state = Dictionary[String, bool]({
 data_path = "models/stacje"
 model_filename = "jezewo_budynekstacyjny"
 
-[node name="Lniano Budynekstacyjny" type="VisualInstance3D" parent="Dekoracje" unique_id=1758613069]
+[node name="Lniano Budynekstacyjny" type="ReloadedModel3D" parent="Dekoracje" unique_id=1758613069]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -754,7 +743,7 @@ lights_state = Dictionary[String, bool]({
 data_path = "models/stacje"
 model_filename = "lniano_budynekstacyjny"
 
-[node name="Tree Small Drzewo 1024g" type="VisualInstance3D" parent="Dekoracje" unique_id=1271935891]
+[node name="Tree Small Drzewo 1024g" type="ReloadedModel3D" parent="Dekoracje" unique_id=1271935891]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -775,7 +764,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
-[node name="Tree Small Drzewo 1024d" type="VisualInstance3D" parent="Dekoracje" unique_id=1363659506]
+[node name="Tree Small Drzewo 1024d" type="ReloadedModel3D" parent="Dekoracje" unique_id=1363659506]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -796,7 +785,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024d"]
 
-[node name="Tree Small Drzewo 1024c" type="VisualInstance3D" parent="Dekoracje" unique_id=1287185876]
+[node name="Tree Small Drzewo 1024c" type="ReloadedModel3D" parent="Dekoracje" unique_id=1287185876]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -817,7 +806,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024c"]
 
-[node name="Tree Small Drzewo 1024g2" type="VisualInstance3D" parent="Dekoracje" unique_id=114427822]
+[node name="Tree Small Drzewo 1024g2" type="ReloadedModel3D" parent="Dekoracje" unique_id=114427822]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -838,7 +827,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
-[node name="Tree Small Drzewo 512m" type="VisualInstance3D" parent="Dekoracje" unique_id=853177906]
+[node name="Tree Small Drzewo 512m" type="ReloadedModel3D" parent="Dekoracje" unique_id=853177906]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -859,7 +848,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo512m"]
 
-[node name="Tree Small Drzewo 512r" type="VisualInstance3D" parent="Dekoracje" unique_id=1303309419]
+[node name="Tree Small Drzewo 512r" type="ReloadedModel3D" parent="Dekoracje" unique_id=1303309419]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -880,7 +869,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo512r"]
 
-[node name="Tree Small Drzewo 1024q" type="VisualInstance3D" parent="Dekoracje" unique_id=1259392883]
+[node name="Tree Small Drzewo 1024q" type="ReloadedModel3D" parent="Dekoracje" unique_id=1259392883]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -901,7 +890,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024q"]
 
-[node name="Tree Small Drzewo 1024t" type="VisualInstance3D" parent="Dekoracje" unique_id=405853632]
+[node name="Tree Small Drzewo 1024t" type="ReloadedModel3D" parent="Dekoracje" unique_id=405853632]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -922,7 +911,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024t"]
 
-[node name="Tree Small Drzewo 1024g3" type="VisualInstance3D" parent="Dekoracje" unique_id=1443074217]
+[node name="Tree Small Drzewo 1024g3" type="ReloadedModel3D" parent="Dekoracje" unique_id=1443074217]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -943,7 +932,7 @@ data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
-[node name="Jelen Prawo Sarna A 1" type="VisualInstance3D" parent="Dekoracje" unique_id=942001874]
+[node name="Jelen Prawo Sarna A 1" type="ReloadedModel3D" parent="Dekoracje" unique_id=942001874]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -964,7 +953,7 @@ data_path = "models/animals"
 model_filename = "jelen_prawo"
 skins = ["animals/sarna_a_1"]
 
-[node name="Jelen Lezacy Sarna D 3" type="VisualInstance3D" parent="Dekoracje" unique_id=1682514191]
+[node name="Jelen Lezacy Sarna D 3" type="ReloadedModel3D" parent="Dekoracje" unique_id=1682514191]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -985,7 +974,7 @@ data_path = "models/animals"
 model_filename = "jelen_lezacy"
 skins = ["animals/sarna_d_3"]
 
-[node name="Latarniay Betdziur2" type="VisualInstance3D" parent="Dekoracje" unique_id=1894119715]
+[node name="Latarniay Betdziur2" type="ReloadedModel3D" parent="Dekoracje" unique_id=1894119715]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1009,7 +998,7 @@ lights_state = Dictionary[String, bool]({
 data_path = "models/elektryczne"
 model_filename = "latarniay_betdziur"
 
-[node name="Latarniay Betdziur3" type="VisualInstance3D" parent="Dekoracje" unique_id=2046342816]
+[node name="Latarniay Betdziur3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2046342816]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1033,7 +1022,7 @@ lights_state = Dictionary[String, bool]({
 data_path = "models/elektryczne"
 model_filename = "latarniay_betdziur"
 
-[node name="Dzik_FromImportedE3D" type="VisualInstance3D" parent="Dekoracje" unique_id=1236098597]
+[node name="Dzik_FromImportedE3D" type="ReloadedModel3D" parent="Dekoracje" unique_id=1236098597]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1053,7 +1042,7 @@ script = ExtResource("4_drlsl")
 model = ExtResource("21_sa6xs")
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[node name="SBL" type="VisualInstance3D" parent="Dekoracje" unique_id=1624308571]
+[node name="SBL" type="ReloadedModel3D" parent="Dekoracje" unique_id=1624308571]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1316,7 +1305,7 @@ metadata/_custom_type_script = "uid://do35jm13yiccm"
 [node name="Słup1" type="Node3D" parent="TractionExample" unique_id=1506328991]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.98, 0, 0)
 
-[node name="E3DModelInstance" type="VisualInstance3D" parent="TractionExample/Słup1" unique_id=918005584]
+[node name="MaszynaE3DModelInstance" type="ReloadedModel3D" parent="TractionExample/Słup1" unique_id=918005584]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1338,7 +1327,7 @@ model_filename = "tra/stb"
 skins = ["tra/betonrelief1"]
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[node name="E3DModelInstance3" type="VisualInstance3D" parent="TractionExample/Słup1" unique_id=1691875328]
+[node name="E3DModelInstance3" type="ReloadedModel3D" parent="TractionExample/Słup1" unique_id=1691875328]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1363,7 +1352,7 @@ metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 [node name="Słup2" type="Node3D" parent="TractionExample" unique_id=317781950]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.569, -0.447, 70)
 
-[node name="E3DModelInstance" type="VisualInstance3D" parent="TractionExample/Słup2" unique_id=1092672090]
+[node name="MaszynaE3DModelInstance" type="ReloadedModel3D" parent="TractionExample/Słup2" unique_id=1092672090]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1385,7 +1374,7 @@ model_filename = "tra/stb"
 skins = ["tra/betonrelief1"]
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
-[node name="E3DModelInstance3" type="VisualInstance3D" parent="TractionExample/Słup2" unique_id=1894686729]
+[node name="E3DModelInstance3" type="ReloadedModel3D" parent="TractionExample/Słup2" unique_id=1894686729]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -1423,5 +1412,6 @@ autostart = true
 
 [connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="." method="_on_diagnostics_menu_index_pressed"]
 [connection signal="index_pressed" from="DiagnosticsBar/Diagnostics" to="DebugHud" method="menu_index_pressed"]
+[connection signal="windows_visibility_changed" from="DebugHud" to="." method="_on_debug_hud_windows_visibility_changed"]
 [connection signal="camera_changed" from="Player" to="SceneryStreamer" method="set_camera"]
 [connection signal="timeout" from="AspectCycle" to="DemoBlock" method="send_event" binds= [&"next"]]

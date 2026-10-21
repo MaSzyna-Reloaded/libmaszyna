@@ -9,7 +9,7 @@ extends MaszynaGutTest
 ## part ends up in the same frame, facing the vehicle's own forward. The models are drawn as nodes
 ## under the vehicle (RailVehicleRenderingServer), found there by their submodels' names.
 
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## The driver sits in the exterior's cab shell, not just on its side of the vehicle [m]
@@ -21,12 +21,12 @@ const TURN_AWAY:float = 1.0
 
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
-var player:MaszynaPlayer
+var player:Player
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
@@ -38,7 +38,7 @@ func after_each() -> void:
         vehicle.free()
     if is_instance_valid(player):
         player.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _spawn_vehicle() -> bool:

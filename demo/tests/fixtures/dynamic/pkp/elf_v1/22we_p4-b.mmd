@@ -1,0 +1,110 @@
+//model pojazdu i definicje podmodeli:
+models: \main/22we-b.t3d#
+animations: 2 8 0 0 1 0 0 4 0 -1
+//ruchome czesci (animations)
+//krecace sie kola (o srednicy jak w *.chk)
+animwheelprefix: wheel0
+animdoorprefix: door0
+animstepprefix: drzwi_podest0
+lowpolyinterior: lowpoly/int_22wee-b.t3d
+// aktualnie mozna jeszcze animrodprefix, animpendulumprefix,
+loads: 
+{
+passengers: 22wea-b_passengers
+}
+endmodels
+
+locations:
+ doors: -3.8 both 3.67 both end
+ bogies: 8.305 end
+endlocations
+
+sounds:
+curve: { amplitudefactor: 1.35 amplitudeoffset: 1.35 range: 100 crossfade: 75 sound1: 20786_curve_111a.wav sound10: 20786_curve_111a.wav sound40: 20786_curve_111a.wav sound50: 20786_curve_111a.wav sound60: 697_et22_curve.wav sound80: silence1.wav }
+wheel_clatter: 70 6.751 wheel_elf_v3_3.wav 9.858 wheel_elf_v3_4.wav end
+derail: derail.wav 200
+unbrake: { soundbegin: 26284_elf_unbrake-start.wav soundmain: 26284_elf_unbrake-trwa.wav soundend: 26284_elf_unbrake-stop.wav range: 25 soundproofing: [ 0.0001 0.0001 0.0001 1.0 1.0 1.0 ] amplitudeoffset: -1.2 amplitudefactor: 2.0 }
+dooropen: { soundmain: 20786_en62_door_open.wav range: 20 } 
+doorclose: { soundmain: 20786_en62_door_close.wav range: 20 }
+outernoise: { range: 90 amplitudefactor: 2 amplitudeoffset: 0.2 crossfade: 90
+sound1: outernoise_z1_12.wav
+sound20: outernoise_z1_4.wav
+sound40: outernoise_z1_5.wav
+sound60: outernoise_z1_6.wav
+sound80: outernoise_z1_5.wav
+sound100: outernoise_z1_11.wav
+sound120: outernoise_z1_11.wav
+sound160: outernoise_z1_11.wav
+sound200: outernoise_z1_11.wav }
+brake: {
+ amplitudefactor: 1.2
+ amplitudeoffset: 0.7
+ range: 110
+ crossfade: 75
+ sound1: 1007_elf_brake-stop.wav
+ sound5: 1007_elf_brake-5.wav
+ sound10: 1007_elf_brake-10.wav
+ sound40: 1007_elf_brake-30.wav
+ sound50: silence1.wav
+ sound200: silence1.wav }
+doorstepopen: { soundmain: 20786_en76_stopien.wav range: 10 }
+doorstepclose: { soundmain: 20786_en76_stopien.wav range: 10 }
+unloading: { soundmain: [ passengers_loading_1.wav passengers_loading_2.wav ] placement: custom soundproofing: [ 0.1 0.1 0.1 0.1 1 1 ] }
+loading: { soundmain: [ passengers_loading_1.wav passengers_loading_2.wav ] placement: custom soundproofing: [ 0.1 0.1 0.1 0.1 1 1 ] }
+announcements: {
+ near_stop: sip/zblizamy_sie_do_stacji.wav
+  soundproofing: [ 0.1 0.2 0.1 0.0 0.0 0.0 ]
+ stop: sip/stacja.wav 
+ next_stop: sip/nastepna_stacja.wav 
+}
+endsounds
+
+internaldata:
+rainsound: { sound0: rainsound_default.wav sound30: rain_normal.wav sound70: rain_heavy.wav amplitudefactor: 0.5 }
+runningnoise: { sound1: 24150_elf_runningnoise_40.flac pitch1: 0.025 sound20: 24150_elf_runningnoise_40.flac pitch20: 0.5 sound40: 24150_elf_runningnoise_40.flac sound70: 24150_elf_runningnoise_70.flac sound100: 24150_elf_runningnoise_100.flac sound120: 24150_elf_runningnoise_120.flac sound200: 24150_elf_runningnoise_120.flac pitch200: 1.66  crossfade: 90 placement: internal amplitudefactor: 0.2 range: -1 }
+tachoclock: silence1.wav
+switch: 20786_189_button_releaser.wav
+relay: 20786_eu44_pneumatic_relay.wav
+pneumaticrelay: pneumaticrelay_18x.wav
+couplerattach: couplerattach.wav
+couplerdetach: couplerdetach.wav
+pneumaticswitch: 20786_pneumatic_swith_en57-1112.wav
+
+brakesound: silence1.wav 1.0 0.4 0.2 0.9
+airsound: silence1.wav 1000.0 -0.1 
+
+//bujanie kamery:
+// SpringK, Dampf, X, Y, Z, Max, Roll, Pitch
+mechspring: 100 0.02 0.2 0.2 0.03 0.15 0.02 0.01
+// wyzerowac 3,4,5 parametr aby nie trzeslo
+// wyzerowac ostatnie dwa parametry aby kamera sie nie kiwala
+
+cab2definition: //rozmiary kabiny po ktorej mozna chodzic
+-1.3 0.88 -7.57 1.3 1.13 -4.65
+driver2pos:
+0 2.7 -7.32
+driver2sitpos: 
+1.184 2.05 -4.824
+//cab1model: lowpoly/int_21we-b //nazwa modelu 
+
+cab1definition: //rozmiary kabiny po ktorej mozna chodzic
+-1.3 0.88 5.05 1.3 1.13 7.85
+
+driver1pos:
+0 2.7 7.32
+driver1sitpos: 
+-1.15 2.05 5.06
+//cab2model: lowpoly/int_21we-b //nazwa modelu 
+
+cab0definition: //rozmiary kabiny po ktorej mozna chodzic
+-1.3 0.28 -4.2 1.3 1.13 4.7
+driver0angle:
+180 0
+driver0pos:
+0 2.3 -3.74 
+driver0sitpos: 
+1.185 1.667 -1.685
+//cab0model: lowpoly/int_21we-b //nazwa modelu 
+
+pydestinationsign: { scripts/led_en57_n_1 parameters: kod_e=IC&kod_p=TLK&kod_o=Os. instance: name }
+destinationsignbackground: make:scripts/led_en57_n_1?dummy=1

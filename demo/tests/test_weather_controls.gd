@@ -1,16 +1,16 @@
 extends MaszynaGutTest
 
-const WEATHER_CONTROLS_SCENE: PackedScene = preload("res://addons/libmaszyna/debug_hud/weather_controls.tscn")
+const WEATHER_CONTROLS_SCENE: PackedScene = preload("res://addons/libreloaded/debug_hud/weather_controls.tscn")
 
 var _previous_weather: SimulationServer.Weather
 
 
 func before_each() -> void:
-    _previous_weather = MaterialManager.weather
+    _previous_weather = MaszynaMaterialManager.weather
 
 
 func after_each() -> void:
-    MaterialManager.weather = _previous_weather
+    MaszynaMaterialManager.weather = _previous_weather
     # the time scale slider sets SimulationServer's speed - every script after this one runs at it
     SimulationServer.simulation_reset_speed()
     # and the time and the weather are its too
@@ -18,7 +18,7 @@ func after_each() -> void:
 
 
 func test_controls_drive_environment_node() -> void:
-    var environment_node: MaszynaEnvironmentNode = add_child_autofree(MaszynaEnvironmentNode.new())
+    var environment_node: EnvironmentNode = add_child_autofree(EnvironmentNode.new())
     var controls: HFlowContainer = WEATHER_CONTROLS_SCENE.instantiate() as HFlowContainer
     add_child_autofree(controls)
     controls.attach_environment(environment_node)
@@ -39,7 +39,7 @@ func test_controls_drive_environment_node() -> void:
 
 
 func test_controls_follow_weather_preset() -> void:
-    var environment_node: MaszynaEnvironmentNode = add_child_autofree(MaszynaEnvironmentNode.new())
+    var environment_node: EnvironmentNode = add_child_autofree(EnvironmentNode.new())
     var controls: HFlowContainer = WEATHER_CONTROLS_SCENE.instantiate() as HFlowContainer
     add_child_autofree(controls)
     controls.attach_environment(environment_node)

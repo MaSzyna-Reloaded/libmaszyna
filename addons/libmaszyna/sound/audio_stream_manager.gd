@@ -44,7 +44,7 @@ func _init() -> void:
 ## name gives, then in sounds/, with each of the original's extensions in turn (audio.cpp:184-191);
 ## "" when there is none.
 func find_sound(name:String, vehicle_dir:String) -> String:
-    var game_dir:String = UserSettings.get_maszyna_game_dir()
+    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var directories:Array[String] = []
     if vehicle_dir:
         directories.append(vehicle_dir)
@@ -53,7 +53,7 @@ func find_sound(name:String, vehicle_dir:String) -> String:
     directories.append(game_dir.path_join("sounds"))
     for directory:String in directories:
         for extension:String in SOUND_EXTENSIONS:
-            var path:String = directory.path_join(MaszynaDataPath.resolve(directory, name + "." + extension))
+            var path:String = directory.path_join(ReloadedPluginServer.data_path_resolve(directory, name + "." + extension))
             if FileAccess.file_exists(path):
                 return path
     return ""

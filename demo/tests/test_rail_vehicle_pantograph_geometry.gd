@@ -86,20 +86,21 @@ func _add_model(alongs:Array[float]) -> void:
     vehicle.model_instance_path = NodePath("Model")
 
 
-## The paths of the pantograph's submodels, as a vehicle assembled by hand names them
-func _arm_paths(pantograph:int) -> Array[NodePath]:
-    var paths:Array[NodePath] = []
+## The names of the pantograph's submodels, as the appearance of a vehicle assembled by hand gives
+## them
+func _arm_names(pantograph:int) -> PackedStringArray:
+    var names:PackedStringArray = []
     for index:int in range(ARM_NODE_COUNT):
-        paths.append(NodePath("Model/arm%d_%d" % [pantograph, index]))
-    return paths
+        names.append("arm%d_%d" % [pantograph, index])
+    return names
 
 
 func _build_electric_vehicle() -> void:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
     physics_node = build_vehicle_node("test_pantograph_geometry", model)
-    engine = MoverRailVehicleElectricSeriesEngine.new()
-    var power_source:RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
+    var power_source:RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     power_source.current_collector_number_of_collectors = 2
     var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
@@ -109,8 +110,10 @@ func _build_electric_vehicle() -> void:
     vehicle = RailVehicle3D.new()
     var alongs:Array[float] = [FRONT_ALONG, REAR_ALONG]
     _add_model(alongs)
-    vehicle.pantograph_front_arm_paths = _arm_paths(0)
-    vehicle.pantograph_rear_arm_paths = _arm_paths(1)
+    var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicleAppearance.new()
+    appearance.pantograph_front_arms = _arm_names(0)
+    appearance.pantograph_rear_arms = _arm_names(1)
+    vehicle.appearance = appearance
     vehicle.controller_path = NodePath("../%s" % physics_node.name)
     add_child(vehicle)
 
@@ -144,11 +147,11 @@ func test_the_two_pantographs_do_not_share_one_sampling_point() -> void:
 
 
 func test_a_vehicle_without_pantograph_arms_publishes_no_position() -> void:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
     physics_node = build_vehicle_node("test_pantograph_geometry_bare", model)
-    engine = MoverRailVehicleElectricSeriesEngine.new()
-    var power_source:RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
+    var power_source:RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     controller.add_component(engine)
@@ -184,14 +187,14 @@ func _raise_pantograph_at_wire(vehicle_name:String) -> VehicleController:
             2000.0, 0.01)
     TractionServer.network_build()
 
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     # a vehicle with no power has no pantographs' tank to fill (Mover.cpp:1530)
     model.type_name = "test"
     model.add_component(build_power_supply(110.0))
     model.power = ENGINE_POWER
-    physics_node = build_vehicle_node(vehicle_name, model, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
-    engine = MoverRailVehicleElectricSeriesEngine.new()
-    var power_source:RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    physics_node = build_vehicle_node(vehicle_name, model, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
+    var power_source:RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     power_source.current_collector_physical_layout = 1
     power_source.current_collector_max_voltage = 3600.0
@@ -205,7 +208,9 @@ func _raise_pantograph_at_wire(vehicle_name:String) -> VehicleController:
     vehicle.start_track_offset = 20.0
     var alongs:Array[float] = [FRONT_ALONG]
     _add_model(alongs)
-    vehicle.pantograph_front_arm_paths = _arm_paths(0)
+    var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicleAppearance.new()
+    appearance.pantograph_front_arms = _arm_names(0)
+    vehicle.appearance = appearance
     vehicle.controller_path = NodePath("../%s" % physics_node.name)
     add_child(vehicle)
     await wait_idle_frames(2)
@@ -233,7 +238,7 @@ func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
     assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "the raised pantograph reaches the wire")
 
     # the model rebuilt: new arm nodes, at rest, as a model loaded again puts them
-    (vehicle.get_node("Model") as E3DModelInstance).reload()
+    (vehicle.get_node("Model") as MaszynaE3DModelInstance).reload()
     VehicleServer.stepping_advance(STEP)
 
     assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "and stays at it when the model is rebuilt")

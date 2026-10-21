@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverElectricEngineConfiguration" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What the Mover's model of an electric engine is configured with.
+	</brief_description>
+	<description>
+		What the Mover's model of an electric engine is configured with: the circuit's resistance, the tuhex relay settings and the converter overload relay's behaviour. Shared by the series and the induction engine adapters and read by MaszynaMoverCircuitUnit.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="circuit_resistance" type="float" setter="set_circuit_resistance" getter="get_circuit_resistance">
+			[code]Circuit:CircuitRes[/code]
+			Motor and circuit resistance, in ohms.
+		</member>
+		<member name="circuit_tuhex_sum" type="float" setter="set_circuit_tuhex_sum" getter="get_circuit_tuhex_sum">
+			[code]Circuit:TUHEX_Sum[/code]
+			Current ED braking regulator setpoint (sum of excitation and rotor currents).
+		</member>
+		<member name="circuit_tuhex_diff" type="float" setter="set_circuit_tuhex_diff" getter="get_circuit_tuhex_diff">
+			[code]Circuit:TUHEX_Diff[/code]
+			Hysteresis of the ED braking regulator.
+		</member>
+		<member name="circuit_tuhex_min_current" type="float" setter="set_circuit_tuhex_min_current" getter="get_circuit_tuhex_min_current">
+			[code]Circuit:TUHEX_MinIw[/code]
+			Minimum excitation current during ED braking, resulting from the traction motor's magnetization curve.
+		</member>
+		<member name="circuit_tuhex_max_current" type="float" setter="set_circuit_tuhex_max_current" getter="get_circuit_tuhex_max_current">
+			[code]Circuit:TUHEX_MaxIw[/code]
+			Maximum excitation current during ED braking (limits max braking force).
+		</member>
+		<member name="circuit_tuhex_stages" type="int" setter="set_circuit_tuhex_stages" getter="get_circuit_tuhex_stages">
+			[code]Circuit:TUHEX_Stages[/code]
+			Number of distinct ED braking stages. When greater than 0, [member circuit_tuhex_sum_1],
+			[member circuit_tuhex_sum_2] and [member circuit_tuhex_sum_3] should also be set.
+		</member>
+		<member name="circuit_tuhex_sum_1" type="float" setter="set_circuit_tuhex_sum_1" getter="get_circuit_tuhex_sum_1">
+			[code]Circuit:TUHEX_Sum1[/code]
+			ED braking regulator setpoint 1.
+		</member>
+		<member name="circuit_tuhex_sum_2" type="float" setter="set_circuit_tuhex_sum_2" getter="get_circuit_tuhex_sum_2">
+			[code]Circuit:TUHEX_Sum2[/code]
+			ED braking regulator setpoint 2.
+		</member>
+		<member name="circuit_tuhex_sum_3" type="float" setter="set_circuit_tuhex_sum_3" getter="get_circuit_tuhex_sum_3">
+			[code]Circuit:TUHEX_Sum3[/code]
+			ED braking regulator setpoint 3.
+		</member>
+		<member name="cntrl_converter_overload_relay_off_when_main_is_off" type="bool" setter="set_cntrl_converter_overload_relay_off_when_main_is_off" getter="get_cntrl_converter_overload_relay_off_when_main_is_off">
+			[code]Cntrl.ConverterOverloadWhenMainIsOff[/code]
+		</member>
+	</members>
+</class>

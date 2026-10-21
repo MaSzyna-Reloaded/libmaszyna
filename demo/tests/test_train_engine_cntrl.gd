@@ -6,7 +6,7 @@ var engine: RailVehicleDieselEngine
 func before_each():
     train = build_vehicle("TestTrain")
 
-    engine = MoverRailVehicleDieselEngine.new()
+    engine = MaszynaMoverRailVehicleDieselEngine.new()
     train.add_component(engine)
     await wait_idle_frames(2)
 
@@ -19,13 +19,13 @@ func test_defaults():
     assert_eq(engine.water_pump_start_mode, RailVehicleController.START_MODE_MANUAL)
 
 func test_round_trip_and_update_without_crashing():
-    engine.cntrl_eim_control_additional_zeros = true
-    engine.cntrl_eim_control_emergency = true
-    engine.cntrl_eim_control_type = RailVehicleEngine.EIM_CONTROL_TYPE_2
+    engine.engine_configuration.cntrl_eim_control_additional_zeros = true
+    engine.engine_configuration.cntrl_eim_control_emergency = true
+    engine.engine_configuration.cntrl_eim_control_type = MaszynaMoverEngineConfiguration.EIM_CONTROL_TYPE_2
     engine.cntrl_auto_relay_mode = RailVehicleEngine.AUTO_RELAY_YES
     engine.cntrl_has_camshaft = true
-    engine.cntrl_series_shunt_on_series_position = true
-    engine.cntrl_fast_series_circuit = true
+    engine.engine_configuration.cntrl_series_shunt_on_series_position = true
+    engine.engine_configuration.cntrl_fast_series_circuit = true
     engine.fuel_pump_start_mode = RailVehicleController.START_MODE_AUTOMATIC
     engine.oil_pump_start_mode = RailVehicleController.START_MODE_AUTOMATIC
     engine.water_pump_start_mode = RailVehicleController.START_MODE_BATTERY
@@ -38,7 +38,7 @@ func test_round_trip_and_update_without_crashing():
 
 
 func test_master_controller_positions_reach_the_vehicle_config():
-    var master_controller: RailVehicleMasterController = MoverRailVehicleMasterController.new()
+    var master_controller: RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master_controller.main_position_count = 5
     master_controller.second_position_count = 3
     master_controller.direction_change_max_position = 1

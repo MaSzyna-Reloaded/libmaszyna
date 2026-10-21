@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleController" inherits="RailVehicleController" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleController] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleController] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleController].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="train_type" type="int" setter="set_train_type" getter="get_train_type" enum="MaszynaMoverRailVehicleController.TrainType" default="0">
+			[code]Param.Type[/code]
+			Bitmask identifying a vehicle's special-cased behavior family (e.g. EZT, ET22, ET40, ET42, EP05, DMU).
+			Not every value listed on the FIZ wiki is implemented by the simulation - only the ones it knows are exposed
+			here (notably, [code]182[/code] is missing).
+		</member>
+		<member name="cntrl_ground_relay_start_mode" type="int" setter="set_cntrl_ground_relay_start_mode" getter="get_cntrl_ground_relay_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.GroundRelayStart[/code]
+		</member>
+		<member name="cntrl_compartment_lights_start_mode" type="int" setter="set_cntrl_compartment_lights_start_mode" getter="get_cntrl_compartment_lights_start_mode" enum="RailVehicleController.StartMode" default="2">
+			[code]Cntrl.CompartmentLightsStart[/code]
+		</member>
+		<member name="cntrl_automatic_cab_activation" type="bool" setter="set_cntrl_automatic_cab_activation" getter="get_cntrl_automatic_cab_activation" default="true">
+			[code]Cntrl.AutomaticCabActivation[/code]
+		</member>
+		<member name="cntrl_inactive_cab_flag" type="int" setter="set_cntrl_inactive_cab_flag" getter="get_cntrl_inactive_cab_flag" default="0">
+			[code]Cntrl.InactiveCabFlag[/code]
+			Bitmask of automatic actions performed on cab deactivation/activation.
+		</member>
+	</members>
+	<constants>
+		<constant name="TRAIN_TYPE_DEFAULT" value="0" enum="TrainType">
+			No special-cased behaviour ([code]Type=[/code] of the FIZ).
+		</constant>
+		<constant name="TRAIN_TYPE_EZT" value="1" enum="TrainType">
+			An electric multiple unit ([code]ezt[/code]).
+		</constant>
+		<constant name="TRAIN_TYPE_ET41" value="2" enum="TrainType">
+			The ET41 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_ET42" value="4" enum="TrainType">
+			The ET42 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_PSEUDODIESEL" value="8" enum="TrainType">
+			A diesel-electric locomotive simulated as an electric one ([code]pseudodiesel[/code]).
+		</constant>
+		<constant name="TRAIN_TYPE_ET22" value="16" enum="TrainType">
+			The ET22 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_SN61" value="32" enum="TrainType">
+			The SN61 railcar.
+		</constant>
+		<constant name="TRAIN_TYPE_EP05" value="64" enum="TrainType">
+			The EP05 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_ET40" value="128" enum="TrainType">
+			The ET40 locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_181" value="256" enum="TrainType">
+			The 181 (E-181) locomotive.
+		</constant>
+		<constant name="TRAIN_TYPE_DMU" value="512" enum="TrainType">
+			A diesel multiple unit ([code]dmu[/code]).
+		</constant>
+	</constants>
+</class>

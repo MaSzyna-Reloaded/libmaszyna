@@ -19,7 +19,7 @@ func _direction_after(vehicle_rid:RID, command:String) -> int:
 
 func test_the_cab_car_reverser_goes_back_to_reverse() -> void:
     var train:VehicleController = build_vehicle("TestEn57CabCar", FizVehicleBuilder.build_description_at(CAB_CAR_PATH),
-            0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var vehicle_rid:RID = train.get_rid()
     await wait_idle_frames(2)
     VehicleServer.vehicle_send_command(vehicle_rid, "cab_activation", true)
@@ -44,7 +44,7 @@ func test_an_ezt_engine_without_circuit_thresholds_has_those_of_param() -> void:
     var parser:MaszynaParser = MaszynaParser.new()
     parser.initialize("EngineType=ElectricSeriesMotor Volt=1500".to_utf8_buffer())
     var context:FizImportContext = FizImportContext.new()
-    context.train_type = RailVehicleController.TRAIN_TYPE_EZT
+    context.train_type = MaszynaMoverRailVehicleController.TRAIN_TYPE_EZT
     FizTrainEngineParser.new().parse(parser, context, "Engine:")
     var engine:RailVehicleElectricEngine = context.get_part("RailVehicleEngine") as RailVehicleElectricEngine
     assert_eq(engine.circuit_imin_low, EZT_IMIN_LOW)

@@ -3,7 +3,7 @@ extends PanelContainer
 
 func _ready() -> void:
     _auto_user_settings_visibility()
-    UserSettings.game_dir_changed.connect(_on_gamedir_changed)
+    MaszynaGameDirectory.game_dir_changed.connect(_on_gamedir_changed)
     UserSettings.config_changed.connect(_update_render_settings)
     UserSettings.setting_changed.connect(_on_user_setting_changed)
     _update_render_settings()
@@ -21,7 +21,7 @@ func _on_gamedir_changed():
 
 
 func _auto_user_settings_visibility():
-    visible = not UserSettings.is_maszyna_game_dir_valid()
+    visible = not MaszynaGameDirectory.is_game_dir_valid()
 
 
 func _update_render_settings():
@@ -43,10 +43,10 @@ func _on_user_setting_changed(section, key):
 
 
 func _reload_all_models():
-    var instances = get_tree().root.find_children("", "E3DModelInstance", true, false)
+    var instances = get_tree().root.find_children("", "MaszynaE3DModelInstance", true, false)
     for instance in instances:
         instance.reload()
 
 
 func _on_visibility_changed() -> void:
-    $VBoxContainer/GameDirNotSet.visible = not UserSettings.is_maszyna_game_dir_valid()
+    $VBoxContainer/GameDirNotSet.visible = not MaszynaGameDirectory.is_game_dir_valid()

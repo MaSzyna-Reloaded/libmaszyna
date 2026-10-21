@@ -14,9 +14,9 @@ var wheels:RailVehicleWheels
 
 
 func _build(initial_velocity:float) -> void:
-    var description:RailVehicleController = MoverRailVehicleController.new()
+    var description:RailVehicleController = MaszynaMoverRailVehicleController.new()
     description.mass = RAIL_VEHICLE_MASS
-    var configured:RailVehicleWheels = MoverRailVehicleWheels.new()
+    var configured:RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
     configured.front_rolling_wheel_diameter = FRONT_DIAMETER
     configured.rear_rolling_wheel_diameter = REAR_DIAMETER
     description.add_component(configured)

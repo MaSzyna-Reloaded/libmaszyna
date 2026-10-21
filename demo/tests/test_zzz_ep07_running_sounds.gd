@@ -10,7 +10,7 @@ const EP07_MMD:String = "dynamic/pkp/303e_v1/303e-ep-tv.mmd"
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const SCENERY:String = "ep07.scn"
 ## The listener a vehicle's sound is built for once it is within earshot (TrainSoundSystem)
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 
 ## How near its vehicle the node the vehicle's sound players are built under stands [m]
 const MOUNT_TOLERANCE:float = 1.0
@@ -22,26 +22,26 @@ var scenery:MaszynaSceneryNode
 
 
 ## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (MaszynaPlayer, initialization_ready)
+## only now has its camera (Player, initialization_ready)
 signal scenery_loaded(first_vehicle_id:String)
 
 ## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (MaszynaPlayer, initialization_ready)
-func _start_player(player:MaszynaPlayer) -> void:
+## then (Player, initialization_ready)
+func _start_player(player:Player) -> void:
     scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
     scenery_loaded.emit("")
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each():
     if scenery:
         scenery.free()
         scenery = null
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_ep07_mmd_builds_positioned_running_sound_events() -> void:
@@ -49,7 +49,7 @@ func test_ep07_mmd_builds_positioned_running_sound_events() -> void:
     add_child_autofree(vehicle)
     var diagnostics:Array[Dictionary] = []
     MmdSoundBankInstancer.build_into(
-            vehicle, RID(), UserSettings.get_maszyna_game_dir().path_join(EP07_MMD), {}, {}, diagnostics)
+            vehicle, RID(), MaszynaGameDirectory.get_game_dir().path_join(EP07_MMD), {}, {}, diagnostics)
 
     var running:SfxPlayer3D = vehicle.get_node_or_null("RunningSfxPlayer3D") as SfxPlayer3D
     assert_not_null(running, "EP07 should get its own running sound player")
@@ -88,7 +88,7 @@ func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> v
     assert_true(template.is_valid(), "EP07-424 should be a vehicle of the loaded scenery")
     if not template.is_valid():
         return
-    var template_dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(template)
+    var template_dynamic:MaszynaVehicleData = MaszynaVehicleSystem.vehicle_get_dynamic(template)
     var vehicle := MaszynaRailVehicle3D.new()
     vehicle.data_path = template_dynamic.data_path
     vehicle.file_name = template_dynamic.file_name
@@ -110,7 +110,7 @@ func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> v
     var controller:VehicleController = rail_vehicle.get_controller()
     # the sound is built once a listener is near the vehicle - on foot the player listens through
     # the free view
-    var player:MaszynaPlayer = PLAYER_SCENE.instantiate()
+    var player:Player = PLAYER_SCENE.instantiate()
     add_child_autofree(player)
     _start_player(player)
     player.free_view.global_position = rail_vehicle.global_position
@@ -119,7 +119,7 @@ func test_ep07_plays_motor_clatter_and_outer_noise_when_rolling_on_td_scn() -> v
     # local by value
     var found_players:Array[SfxPlayer3D] = []
     var found:Callable = func() -> bool:
-        for node:Node in MaszynaLegacyVehicleSystem.find_children("RunningSfxPlayer3D", "SfxPlayer3D", true, false):
+        for node:Node in MaszynaVehicleSystem.find_children("RunningSfxPlayer3D", "SfxPlayer3D", true, false):
             if (node.get_parent() as Node3D).global_position.distance_to(rail_vehicle.global_position) < MOUNT_TOLERANCE:
                 found_players.append(node as SfxPlayer3D)
         return found_players.size() > 0

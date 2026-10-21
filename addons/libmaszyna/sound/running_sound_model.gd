@@ -81,8 +81,9 @@ func update(delta:float, outer_noise_audible:bool) -> Dictionary:
     if speed > 5.0 and _labels.has("curve"):
         shape.merge(RailVehicleServer.vehicle_get_curve(_vehicle_rid))
     var track_rid:RID = shape.get("track_rid", RID())
-    var quality_volume:float = lerpf(
-            0.8, 1.2, clampf(TrackServer.track_get_quality_flag(track_rid) / 20.0, 0.0, 1.0))
+    # the quality is the .scn's, kept in the track's meta (MaszynaTrackData)
+    var quality:int = TrackServer.track_get_meta(track_rid).get(MaszynaTrackData.META_QUALITY, 0)
+    var quality_volume:float = lerpf(0.8, 1.2, clampf(quality / 20.0, 0.0, 1.0))
 
     var results:Dictionary = {}
     var levels:Dictionary = {}
@@ -149,7 +150,16 @@ func _traction_motor(source:MmdSoundSourceDefinition, delta:float) -> Array:
     if not _engine or power <= 0.0 or wheel_revolutions <= 0.01:
         _motor_volume = 0.0
         return []
-    var max_rpm:float = _engine.get_circuit_nmax_rpm()
+    # nmax is the Mover's model of the engine, which each engine kind has its own adapter of
+    var max_rpm:float = 0.0
+    if _engine is MaszynaMoverRailVehicleElectricSeriesEngine:
+        max_rpm = (_engine as MaszynaMoverRailVehicleElectricSeriesEngine).get_circuit_nmax_rpm()
+    elif _engine is MaszynaMoverRailVehicleElectricInductionEngine:
+        max_rpm = (_engine as MaszynaMoverRailVehicleElectricInductionEngine).get_circuit_nmax_rpm()
+    elif _engine is MaszynaMoverRailVehicleDieselElectricEngine:
+        max_rpm = (_engine as MaszynaMoverRailVehicleDieselElectricEngine).get_circuit_nmax_rpm()
+    elif _engine is MaszynaMoverRailVehicleDieselEngine:
+        max_rpm = (_engine as MaszynaMoverRailVehicleDieselEngine).get_circuit_nmax_rpm()
     var engine_power:float = _engine.get_power()
     var engine_type:RailVehicleEngine.EngineType = _engine.get_type()
     # combined motor sound selects its chunks in motor rpm
@@ -157,16 +167,16 @@ func _traction_motor(source:MmdSoundSourceDefinition, delta:float) -> Array:
     var motor_revolutions:float = wheel_revolutions * _engine.get_transmission_ratio()
     var frequency:float = source.frequency_offset + source.frequency_factor * motor_revolutions * normalizer
     var amplitude_factor:float = source.amplitude_factor / (max_rpm + power * 3.0)
-    var volume:float = source.amplitude_offset + amplitude_factor * motor_revolutions * LibMaszynaUnits.SECONDS_PER_MINUTE
+    var volume:float = source.amplitude_offset + amplitude_factor * motor_revolutions * Units.SECONDS_PER_MINUTE
     if engine_type == RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR:
         volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * 2.0)
     elif engine_type == RailVehicleEngine.ELECTRIC_SERIES_MOTOR:
-        volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * LibMaszynaUnits.SECONDS_PER_MINUTE)
+        volume = source.amplitude_offset + amplitude_factor * (engine_power + motor_revolutions * Units.SECONDS_PER_MINUTE)
     if engine_type == RailVehicleEngine.ELECTRIC_SERIES_MOTOR:
         if volume < 1.0 and engine_power < 100.0:
             var variation:float = (
                     randf_range(0.0, 100.0) * _engine.get_rpm_count()
-                    / (1.0 + max_rpm / LibMaszynaUnits.SECONDS_PER_MINUTE))
+                    / (1.0 + max_rpm / Units.SECONDS_PER_MINUTE))
             if variation < 2.0:
                 volume += variation / 200.0
         # a series motor is an electric engine
@@ -267,7 +277,7 @@ func _wheel_clatter(
     var source:MmdSoundSourceDefinition = entry["source"]
     var event_name:StringName = entry["event"]
     var track_rid:RID = shape.get("track_rid", RID())
-    var sound_distance:float = TrackServer.track_get_sound_distance(track_rid)
+    var sound_distance:float = TrackServer.track_get_joint_spacing(track_rid)
     if is_equal_approx(sound_distance, -1.0):
         return
     if not is_equal_approx(sound_distance, _rail_length):
@@ -292,9 +302,9 @@ func _wheel_clatter(
     if speed <= 0.1:
         return
     var volume:float = quality_volume
-    match TrackServer.track_get_environment(track_rid):
-        TrackServer.ENVIRONMENT_TUNNEL: volume *= 1.1
-        TrackServer.ENVIRONMENT_BRIDGE: volume *= 1.2
+    match TrackServer.track_get_meta(track_rid).get(MaszynaTrackData.META_ENVIRONMENT, MaszynaTrackData.MaszynaEnvironmentType.FLAT):
+        MaszynaTrackData.MaszynaEnvironmentType.TUNNEL: volume *= 1.1
+        MaszynaTrackData.MaszynaEnvironmentType.BRIDGE: volume *= 1.2
     if not _is_combined(source):
         results[event_name] = {
             "action": Action.ONE_SHOT,

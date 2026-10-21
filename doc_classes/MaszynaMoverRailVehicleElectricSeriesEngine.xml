@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleElectricSeriesEngine" inherits="RailVehicleElectricSeriesEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleElectricSeriesEngine] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleElectricSeriesEngine] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleElectricSeriesEngine].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_circuit_nmax_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+				The engine's highest speed [rpm] ([code]nmax[/code]).
+			</description>
+		</method>
+		<method name="get_eimic_real" qualifiers="const">
+			<return type="float" />
+			<description>
+				The traction an EIM controller actually asks for, -1-1 ([code]eimic_real[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="electric_engine_configuration" type="MaszynaMoverElectricEngineConfiguration" setter="set_electric_engine_configuration" getter="get_electric_engine_configuration">
+			What the Mover's model of the electric engine's circuit is configured with.
+		</member>
+		<member name="engine_configuration" type="MaszynaMoverEngineConfiguration" setter="set_engine_configuration" getter="get_engine_configuration">
+			What the Mover's model of the engine is configured with beyond its facts, read by the drive.
+		</member>
+		<member name="winding_resistance" type="float" setter="set_winding_resistance" getter="get_winding_resistance" default="0.0">
+			[code]Engine:WindingRes[/code]
+			Motor winding resistance, in ohms
+		</member>
+		<member name="resistor_fan_cutoff_resistance" type="float" setter="set_resistor_fan_cutoff_resistance" getter="get_resistor_fan_cutoff_resistance" default="0.0">
+			[code]RList:RVentCutOff[/code]
+			Starting resistor value below which the cooling fans stop running (used when [member resistor_fan_type] is Automatic).
+		</member>
+		<member name="resistor_fan_min_current" type="float" setter="set_resistor_fan_min_current" getter="get_resistor_fan_min_current" default="50.0">
+			[code]RList:RVentMinI[/code]
+			Minimum current, in amperes, at which the cooling fans switch on.
+		</member>
+		<member name="resistor_fan_speed" type="float" setter="set_resistor_fan_speed" getter="get_resistor_fan_speed" default="0.5">
+			[code]RList:RVentSpeed[/code]
+			Cooling fan spin-up rate, in the range 0..1.
+		</member>
+		<member name="dynamic_brake_resistance" type="float" setter="set_dynamic_brake_resistance" getter="get_dynamic_brake_resistance" default="5.8">
+			[code]RList:DynBrakeRes[/code]
+			Resistance of the resistors during ED (dynamic) braking, for two motors combined, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_1" type="float" setter="set_dynamic_brake_resistance_1" getter="get_dynamic_brake_resistance_1" default="5.8">
+			[code]RList:DynBrakeRes1[/code]
+			Primary ED braking resistance on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="dynamic_brake_resistance_2" type="float" setter="set_dynamic_brake_resistance_2" getter="get_dynamic_brake_resistance_2" default="5.8">
+			[code]RList:DynBrakeRes2[/code]
+			ED braking resistance used at low speeds on the third stage, when it has two resistance levels, in ohms.
+		</member>
+		<member name="relay_list" type="MaszynaMoverRelayListItem[]" setter="set_relay_list" getter="get_relay_list" default="[]">
+			[code]RList[/code]
+			Automatic starting sequence table: for each resistor-start controller position (starting from 1, not
+			counting position 0), the starting resistance and motor branch configuration.
+		</member>
+	</members>
+</class>

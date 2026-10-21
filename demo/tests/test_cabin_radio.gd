@@ -36,7 +36,7 @@ func _event(event_name:StringName) -> SfxEvent:
 func before_each() -> void:
     track = build_track(TRACK, TRACK_LENGTH)
     var physics_node:VehiclePhysicsNode = build_vehicle_node("TestCabinRadio",
-            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle = RailVehicle3D.new()
     vehicle.start_track_name = TRACK
     vehicle.start_track_offset = OFFSET

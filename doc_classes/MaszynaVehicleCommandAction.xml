@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaVehicleCommandAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]putvalues[/code] and [code]getvalues[/code] events.
+	</brief_description>
+	<description>
+		A command - its own, or read from a memory when the event runs ([code]Event.cpp:577-844[/code]). What the track does to a vehicle stays with the events: [code]CabSignal[/code] is the cab signal magnet acting on the vehicle that queued the event, and [code]Emergency_brake[/code] a Radio-Stop sent from where the event stands. The rest is an order for the driver of the vehicle that queued the event ([method DriverServer.driver_send_command]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="command" type="String" setter="set_command" getter="get_command" default="&quot;&quot;">
+			The command's name.
+		</member>
+		<member name="position" type="Vector3" setter="set_position" getter="get_position" default="Vector3(0, 0, 0)">
+			Where the event stands: [code]putvalues[/code] x y z, the memory's position for [code]getvalues[/code].
+		</member>
+		<member name="radio" type="SceneryVirtualRadio" setter="set_radio" getter="get_radio">
+			The scenery's radio [code]Emergency_brake[/code] transmits Radio-Stop on.
+		</member>
+		<member name="source" type="RID" setter="set_source" getter="get_source" default="RID()">
+			[code]getvalues[/code]: the memory whose text and values are the command, read when the event runs; empty for the action's own.
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+			The command's first value.
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+			The command's second value.
+		</member>
+	</members>
+</class>

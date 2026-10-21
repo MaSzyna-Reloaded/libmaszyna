@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 ## A cab button is a view of its control: it shows the vehicle's state and its mouse is the cab
-## logic's (the keys are tested in test_legacy_cabin_keys.gd).
+## logic's (the keys are tested in test_maszyna_cabin_keys.gd).
 
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 const SHOWN_CONTROL:StringName = &"test_shown_control"
@@ -11,12 +11,12 @@ const POSE_TIME_CONSTANTS:float = 15.0
 
 
 ## The vehicle's cab logic, registered for its driver's cabin, with one cab-only button, wired as
-## LegacyCabinForwardCommands wires one - the widget's hand is the logic's press()
+## MaszynaCabinForwardCommands wires one - the widget's hand is the logic's press()
 func _attach_logic(vehicle:RID) -> void:
-    var controls:LegacyCabinControls = LegacyCabinControls.new()
+    var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     controls.add_control(SHOWN_CONTROL, CabinButton, {})
     CabinSystem.vehicle_attach_cab_logic(
-            vehicle, LegacyCabinLogic.new(func(_cabin:RID) -> LegacyCabinControls: return controls))
+            vehicle, MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls))
 
 
 ## E186's vigilance pedal (pedal_sifa rot 0.008 -0.008) is modelled pushed: released it rests at
@@ -49,7 +49,7 @@ func test_rotation_offset_is_the_released_pose():
 ## `pushed`, which acted on the vehicle - it lowered 3E/1-42's pantograph and opened its line
 ## breaker. Showing the vehicle's state acts on nothing; only the hand does.
 func test_showing_the_vehicle_state_does_not_act():
-    var physics_node:VehiclePhysicsNode = build_vehicle_node("CabinButtonTest", SM42, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var physics_node:VehiclePhysicsNode = build_vehicle_node("CabinButtonTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     # freed before the node it is driven by, as test_driver_route_table.gd does
     var vehicle_node:RailVehicle3D = RailVehicle3D.new()
     add_child(vehicle_node)
@@ -80,7 +80,7 @@ func test_showing_the_vehicle_state_does_not_act():
 ## anew. One with no vehicle state behind it - E186's universal1, the screen's pantograph page -
 ## showed itself off while the cab still held it on, and the first press did nothing.
 func test_rebuilt_button_shows_what_the_cab_holds():
-    var physics_node:VehiclePhysicsNode = build_vehicle_node("CabinButtonRebuilt", SM42, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var physics_node:VehiclePhysicsNode = build_vehicle_node("CabinButtonRebuilt", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var vehicle_node:RailVehicle3D = RailVehicle3D.new()
     add_child(vehicle_node)
     vehicle_node.controller_path = vehicle_node.get_path_to(physics_node)

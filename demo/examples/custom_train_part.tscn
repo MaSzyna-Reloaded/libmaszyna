@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cvf3h3bnqo1my"]
 
 [ext_resource type="Script" uid="uid://bc88k5e1tpbqj" path="res://examples/custom_train_part.gd" id="1_wmqlj"]
-[ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libmaszyna/console/developer_console.tscn" id="2_l7ubh"]
+[ext_resource type="PackedScene" uid="uid://dgm10m7u26drx" path="res://addons/libreloaded/console/developer_console.tscn" id="2_l7ubh"]
 [ext_resource type="PackedScene" uid="uid://clt6kosjdfdfx" path="res://examples/example_train.tscn" id="2_qm6os"]
 
 [node name="CustomTrainPart" type="Control" unique_id=859153966]

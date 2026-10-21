@@ -11,7 +11,7 @@ func _key_values(line:String) -> Dictionary:
 
 
 func _cntrl(line:String) -> RailVehicleBrake:
-    var brake:RailVehicleBrake = MoverRailVehicleBrake.new()
+    var brake:RailVehicleBrake = MaszynaMoverRailVehicleBrake.new()
     FizTrainBrakeParser.new().apply_cntrl(_key_values(line), brake, FizImportContext.new())
     return brake
 
@@ -43,9 +43,9 @@ func test_asb_yes() -> void:
 # Mover.cpp:10778 - the local handle is FD1, Knorr or Westinghouse, nothing else
 func test_local_brake_handle_takes_only_local_handles() -> void:
     assert_eq(_cntrl("BrakeSystem=Pneumatic LocBrakeHandle=FV4a").cntrl_local_brake_handle_type,
-            RailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
+            MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
     assert_eq(_cntrl("BrakeSystem=Pneumatic LocBrakeHandle=Westinghouse").cntrl_local_brake_handle_type,
-            RailVehicleBrake.BRAKE_HANDLE_TYPE_WESTINGHOUSE)
+            MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_WESTINGHOUSE)
 
 
 # Mover.cpp:10528 - a diesel's releaser works only at zero unless its FIZ says otherwise
@@ -57,8 +57,8 @@ func test_releaser_power_position_lock_defaults_by_the_engine() -> void:
 
 # Mover.cpp:10469 - BM absent or unknown is 0
 func test_brake_method_without_bm_is_none() -> void:
-    assert_eq(_brake("BrakeValve=LSt MBF=85", RailVehicleEngine.NONE).brake_method, RailVehicleBrake.BRAKE_METHOD_NONE)
-    assert_eq(_brake("BrakeValve=LSt BM=Cosid", RailVehicleEngine.NONE).brake_method, RailVehicleBrake.BRAKE_METHOD_COSID)
+    assert_eq(_brake("BrakeValve=LSt MBF=85", RailVehicleEngine.NONE).brake_method, MaszynaMoverRailVehicleBrake.BRAKE_METHOD_NONE)
+    assert_eq(_brake("BrakeValve=LSt BM=Cosid", RailVehicleEngine.NONE).brake_method, MaszynaMoverRailVehicleBrake.BRAKE_METHOD_COSID)
 
 
 # LoadFIZ_Doors - the delays are DoorOpenDelay= and DoorCloseDelay=; no shift without its key

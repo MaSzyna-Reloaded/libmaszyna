@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://0s2ppfkln35s"]
-
-[ext_resource type="Script" uid="uid://cwpwb7k4icsh" path="res://addons/libmaszyna/cabin/cabin_knob.gd" id="1_5grf4"]
-
-[node name="CabinKnob" type="Node3D" unique_id=824959808]
-script = ExtResource("1_5grf4")

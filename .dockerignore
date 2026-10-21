@@ -1,5 +1,0 @@
-*.so
-*.dll
-/demo/.godot
-/demo/addons/
-/demo/bin/

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleElectricInductionEngine" inherits="RailVehicleElectricInductionEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleElectricInductionEngine] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleElectricInductionEngine] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleElectricInductionEngine].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_circuit_nmax_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+				The engine's highest speed [rpm] ([code]nmax[/code]).
+			</description>
+		</method>
+		<method name="get_eimic_real" qualifiers="const">
+			<return type="float" />
+			<description>
+				The traction an EIM controller actually asks for, -1-1 ([code]eimic_real[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="electric_engine_configuration" type="MaszynaMoverElectricEngineConfiguration" setter="set_electric_engine_configuration" getter="get_electric_engine_configuration">
+			What the Mover's model of the electric engine's circuit is configured with.
+		</member>
+		<member name="engine_configuration" type="MaszynaMoverEngineConfiguration" setter="set_engine_configuration" getter="get_engine_configuration">
+			What the Mover's model of the engine is configured with beyond its facts, read by the drive.
+		</member>
+		<member name="slip_current_ratio" type="float" setter="set_slip_current_ratio" getter="get_slip_current_ratio" default="0.0">
+			[code]Engine:dfic[/code]
+			Ratio of motor current to the difference between field and motor speed.
+		</member>
+		<member name="max_slip" type="float" setter="set_max_slip" getter="get_max_slip" default="0.0">
+			[code]Engine:dfmax[/code]
+			Maximum motor slip.
+		</member>
+		<member name="nominal_uf_ratio" type="float" setter="set_nominal_uf_ratio" getter="get_nominal_uf_ratio" default="0.0">
+			[code]Engine:cfu[/code]
+			Nominal U/f ratio of the motor.
+		</member>
+		<member name="current_torque_ratio" type="float" setter="set_current_torque_ratio" getter="get_current_torque_ratio" default="0.0">
+			[code]Engine:cim[/code]
+			Ratio converting current to motor torque.
+		</member>
+		<member name="current_three_phase_ratio" type="float" setter="set_current_three_phase_ratio" getter="get_current_three_phase_ratio" default="0.0">
+			[code]Engine:icif[/code]
+			Ratio converting motor current to three-phase current.
+		</member>
+		<member name="max_supply_voltage" type="float" setter="set_max_supply_voltage" getter="get_max_supply_voltage" default="0.0">
+			[code]Engine:Uzmax[/code]
+			Maximum supply voltage.
+		</member>
+		<member name="max_supply_voltage_braking" type="float" setter="set_max_supply_voltage_braking" getter="get_max_supply_voltage_braking" default="0.0">
+			[code]Engine:Uzh[/code]
+			Maximum supply voltage during ED braking.
+		</member>
+		<member name="inverter_voltage_drop" type="float" setter="set_inverter_voltage_drop" getter="get_inverter_voltage_drop" default="0.0">
+			[code]Engine:DU[/code]
+			Voltage drop across the inverter.
+		</member>
+		<member name="no_load_current" type="float" setter="set_no_load_current" getter="get_no_load_current" default="0.0">
+			[code]Engine:I0[/code]
+			No-load (idle) current.
+		</member>
+		<member name="inverter_uf_setpoint" type="float" setter="set_inverter_uf_setpoint" getter="get_inverter_uf_setpoint" default="0.0">
+			[code]Engine:fcfu[/code]
+			Inverter U/f setpoint.
+		</member>
+		<member name="inverter_uf_setpoint_braking" type="float" setter="set_inverter_uf_setpoint_braking" getter="get_inverter_uf_setpoint_braking" default="0.0">
+			[code]Engine:fcfuH[/code]
+			Inverter U/f setpoint during ED braking.
+		</member>
+		<member name="force_drop_rate" type="float" setter="set_force_drop_rate" getter="get_force_drop_rate" default="0.0">
+			[code]Engine:a1[/code]
+			Traction force drop rate, in kN per km/h.
+		</member>
+		<member name="braking_decay_velocity" type="float" setter="set_braking_decay_velocity" getter="get_braking_decay_velocity" default="0.0">
+			[code]Engine:Vh0[/code]
+			Velocity at which ED braking force has fully decayed to zero.
+		</member>
+		<member name="braking_decay_start_velocity" type="float" setter="set_braking_decay_start_velocity" getter="get_braking_decay_start_velocity" default="0.0">
+			[code]Engine:Vh1[/code]
+			Velocity below which ED braking force starts to decay (minimum velocity of full braking force).
+		</member>
+		<member name="electrodynamic_brake_cylinder_ratio" type="float" setter="set_electrodynamic_brake_cylinder_ratio" getter="get_electrodynamic_brake_cylinder_ratio" default="0.0">
+			How much the electrodynamic brake does per the brake cylinders' pressure; 0 lets the pneumatic brake switch it off ([code]abed[/code], [code]eimc[eimc_p_abed][/code], [code]Mover.cpp:5700-5719[/code]).
+		</member>
+		<member name="electrodynamic_ep_ratio" type="float" setter="set_electrodynamic_ep_ratio" getter="get_electrodynamic_ep_ratio" default="1.5">
+			The FIZ [code]edep[/code] ([code]eimc[eimc_p_eped][/code]); 1.5, the original's default, when absent.
+		</member>
+		<member name="logarithmic_force_control" type="bool" setter="set_logarithmic_force_control" getter="get_logarithmic_force_control" default="false">
+			The controller sets the force on a logarithmic scale ([code]eimclf[/code], [code]EIMCLogForce[/code]).
+		</member>
+		<member name="inverter_control_coupler_flag" type="int" setter="set_inverter_control_coupler_flag" getter="get_inverter_control_coupler_flag" default="4">
+			The coupling ([enum RailVehicleController.CouplingFlags]) a vehicle needs to control the inverters of another ([code]InvCtrCplFlag[/code]); 4, the control line, when absent.
+		</member>
+		<member name="flat_force_characteristic" type="bool" setter="set_flat_force_characteristic" getter="get_flat_force_characteristic" default="false">
+			The force asked for is held flat over the speed, not as a share of the full force ([code]Flat[/code], [code]Mover.cpp:5737[/code]).
+		</member>
+		<member name="max_power_table" type="VehicleCurvePointItem[]" setter="set_max_power_table" getter="get_max_power_table" default="[]">
+			[code]Pmaxlist[/code] (undocumented on the wiki)
+			Maximum power as a function of velocity; Each
+			item's [member VehicleCurvePointItem.x] is velocity and [member VehicleCurvePointItem.y] is the maximum power at that
+			velocity.
+		</member>
+		<member name="wwlist" type="MaszynaMoverWWListItem[]" setter="set_wwlist" getter="get_wwlist" default="[]">
+			The engine's table by position ([code]WWList[/code]); its speed and power fill the simulation's [code]DElist[/code], which the inverters' frequency is computed from ([code]Mover.cpp:5895-5908[/code]).
+		</member>
+	</members>
+</class>

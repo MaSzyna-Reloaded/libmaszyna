@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://dgm10m7u26drx"]
-
-[ext_resource type="Script" uid="uid://bhqscvjsre587" path="res://addons/libmaszyna/console/developer_console.gd" id="1_vako3"]
-
-[node name="DeveloperConsole" type="Node" unique_id=1071361171]
-script = ExtResource("1_vako3")

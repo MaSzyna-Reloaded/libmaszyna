@@ -7,8 +7,9 @@ extends MaszynaGutTest
 ## Frames given to the streaming worker and the frame-budgeted apply before a check fails
 const STREAMING_FRAMES:int = 60
 const CHUNK_SIZE_M:float = 1000.0
-## Beyond the draw distance (SceneryStreamingServer.DEFAULT_DRAW_DISTANCE_M) and its hysteresis
-const FAR_AWAY:Vector3 = Vector3(20.0 * CHUNK_SIZE_M, 0.0, 0.0)
+## How far past the draw distance the camera goes to be out of reach: the server's hysteresis
+## (SceneryStreamingServer::HYSTERESIS_M, a chunk) and two chunks beyond it
+const FAR_AWAY_MARGIN_M:float = 3.0 * CHUNK_SIZE_M
 
 
 class TestProvider extends SceneryStreamingProvider:
@@ -36,6 +37,8 @@ class TestProvider extends SceneryStreamingProvider:
 
 
 var _camera:Camera3D
+## Beyond the draw distance the server has, whatever the project sets it to
+var _far_away:Vector3
 var _providers:Array[RID] = []
 var _adopted:Array[Variant] = []
 var _released:Array[RID] = []
@@ -44,7 +47,8 @@ var _released:Array[RID] = []
 func before_each() -> void:
     _camera = Camera3D.new()
     add_child_autoqfree(_camera)
-    _camera.global_position = FAR_AWAY
+    _far_away = Vector3(SceneryStreamingServer.streaming_get_draw_distance() + FAR_AWAY_MARGIN_M, 0.0, 0.0)
+    _camera.global_position = _far_away
     SceneryStreamingServer.content_set_consumer(SceneryStreamingProvider.CONTENT_TERRAIN, _adopt, _release)
     SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
 
@@ -63,14 +67,14 @@ func after_each() -> void:
 
 func test_a_cell_is_supplied_within_the_draw_distance_and_let_go_beyond_it() -> void:
     var provider:TestProvider = _terrain_provider()
-    await _move_camera(FAR_AWAY)
+    await _move_camera(_far_away)
     assert_eq(_adopted.size(), 0, "supplied while out of reach")
 
     await _move_camera(Vector3.ZERO)
     assert_eq(_adopted.size(), 1, "not supplied in reach")
     assert_same(_adopted[0], provider.items[SceneryStreamingProvider.CONTENT_TERRAIN][0])
 
-    await _move_camera(FAR_AWAY)
+    await _move_camera(_far_away)
     assert_eq(_released.size(), 1, "not let go after the camera left")
 
 
@@ -96,11 +100,26 @@ func test_the_area_is_ready_once_the_cells_around_the_camera_are_supplied() -> v
     assert_eq(SceneryStreamingServer.streaming_get_statistics()["supplied_cells"], 1)
 
 
+func test_a_refreshed_cell_is_supplied_again_with_its_new_content() -> void:
+    var provider:TestProvider = _terrain_provider()
+    await _move_camera(Vector3.ZERO)
+    assert_eq(_adopted.size(), 1)
+
+    var geometry:MaszynaTrianglesChunkGeometry = MaszynaTrianglesChunkGeometry.new()
+    var terrain:Array = [geometry]
+    provider.items[SceneryStreamingProvider.CONTENT_TERRAIN] = terrain
+    SceneryStreamingServer.provider_refresh_cell(_providers[0], Vector2i.ZERO)
+    await wait_streaming(STREAMING_FRAMES)
+    assert_eq(_released.size(), 1, "the old content was not let go")
+    assert_eq(_adopted.size(), 2, "the cell was not supplied again")
+    assert_same(_adopted[1], geometry)
+
+
 func test_a_supplied_model_is_drawn_by_the_model_consumer() -> void:
-    E3DRenderingServer.model_set_loader(_load_test_model)
+    MaszynaE3DRenderingServer.model_set_loader(_load_test_model)
     var placement:SceneryModelPlacement = SceneryModelPlacement.new()
-    placement.data_path = "models/test"
-    placement.model_filename = "supplied"
+    placement.model_provider = MaszynaModelData.MODEL_PROVIDER
+    placement.model = "models/test/supplied"
     placement.transform = Transform3D(Basis(), Vector3(10.0, 0.0, 10.0))
     var provider:TestProvider = TestProvider.new()
     provider.kinds = [SceneryStreamingProvider.CONTENT_MODELS]
@@ -113,7 +132,7 @@ func test_a_supplied_model_is_drawn_by_the_model_consumer() -> void:
     SceneryStreamingServer.provider_free(_providers.pop_back())
     await wait_streaming(STREAMING_FRAMES)
     assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "the model outlived its provider")
-    E3DRenderingServer.model_set_loader(E3DModelManager.load_model)
+    MaszynaE3DRenderingServer.model_set_loader(MaszynaE3DModelManager.load_model)
 
 
 func _terrain_provider() -> TestProvider:
@@ -141,13 +160,13 @@ func _move_camera(position:Vector3) -> void:
     await wait_streaming(STREAMING_FRAMES)
 
 
-func _load_test_model(_data_path:String, _filename:String) -> E3DModel:
-    var mesh_submodel:E3DSubModel = E3DSubModel.new()
+func _load_test_model(_data_path:String, _filename:String) -> MaszynaE3DModel:
+    var mesh_submodel:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     mesh_submodel.resource_name = "mesh"
-    mesh_submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    mesh_submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     var mesh:ArrayMesh = ArrayMesh.new()
     mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, BoxMesh.new().get_mesh_arrays())
     mesh_submodel.mesh = mesh
-    var model:E3DModel = E3DModel.new()
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
     model.submodels = [mesh_submodel]
     return model

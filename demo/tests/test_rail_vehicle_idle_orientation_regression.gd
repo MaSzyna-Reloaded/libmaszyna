@@ -110,7 +110,7 @@ func _spawn_bogie_vehicle(direction:TrackServer.Direction) -> RailVehicle3D:
     var controller: VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     # the pivot spacing belongs to the wheels, and RailVehicle3D reads it off the vehicle's
     # composed configuration - so the vehicle has to actually have wheels
-    var wheels: RailVehicleWheels = MoverRailVehicleWheels.new()
+    var wheels: RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
     wheels.bogie_pivot_spacing = 6.0
     controller.add_component(wheels)
 

@@ -6,7 +6,7 @@ extends MaszynaGutTest
 
 const WITH_SPRING_BRAKE_PATH:String = "res://tests/fixtures/dynamic/pkp/wmb10_v1/wmb10.fiz"
 const WITHOUT_SPRING_BRAKE_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6ba.fiz"
-const SPRING_BRAKE_SECTION:PackedScene = preload("res://addons/libmaszyna/debug_hud/mover_switches_spring_brake.tscn")
+const SPRING_BRAKE_SECTION:PackedScene = preload("res://addons/libreloaded/debug_hud/mover_switches_spring_brake.tscn")
 
 var with_spring_brake:RID
 var without_spring_brake:RID

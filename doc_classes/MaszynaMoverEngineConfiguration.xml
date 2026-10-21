@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverEngineConfiguration" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What the Mover's model of any engine is configured with beyond the engine's facts.
+	</brief_description>
+	<description>
+		What the Mover's model of any engine is configured with beyond the engine's facts: the motors' parameter table, the blowers' speed and the EIM controller's and the series controller's settings (LoadFIZ_Engine, LoadFIZ_Cntrl). Shared by every engine adapter and read by MaszynaMoverDriveUnit.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="cntrl_eim_control_additional_zeros" type="bool" setter="set_cntrl_eim_control_additional_zeros" getter="get_cntrl_eim_control_additional_zeros">
+			[code]Cntrl.EIMCtrlAddZeros[/code]
+		</member>
+		<member name="cntrl_eim_control_emergency" type="bool" setter="set_cntrl_eim_control_emergency" getter="get_cntrl_eim_control_emergency">
+			[code]Cntrl.EIMCtrlEmergency[/code]
+		</member>
+		<member name="cntrl_eim_control_type" type="int" setter="set_cntrl_eim_control_type" getter="get_cntrl_eim_control_type" enum="RailVehicleEngine.EimControlType">
+			[code]Cntrl.EIMCtrlType[/code]
+		</member>
+		<member name="cntrl_series_shunt_on_series_position" type="bool" setter="set_cntrl_series_shunt_on_series_position" getter="get_cntrl_series_shunt_on_series_position">
+			[code]Cntrl.ScndS[/code]
+		</member>
+		<member name="cntrl_fast_series_circuit" type="bool" setter="set_cntrl_fast_series_circuit" getter="get_cntrl_fast_series_circuit">
+			[code]Cntrl.FSCircuit[/code]
+		</member>
+		<member name="motor_blowers_speed" type="float" setter="set_motor_blowers_speed" getter="get_motor_blowers_speed">
+			[code]Engine:MotorBlowersSpeed[/code]
+			Motor cooling fan speed: a positive value is a multiplier of the main engine's RPM, a negative value is a
+			fixed RPM.
+		</member>
+		<member name="motor_param_table" type="MaszynaMoverMotorParameter[]" setter="set_motor_param_table" getter="get_motor_param_table">
+			[code]MotorParamTable[/code]
+			FIXME: original FIZ file has multiple MotorParamTable sections depending of the engine type. Their values are parsed individually. This property should be a part of a specific train engine.
+		</member>
+	</members>
+	<constants>
+		<constant name="EIM_CONTROL_TYPE_0" value="0" enum="EimControlType">
+			EIM traction lever variant 0.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_1" value="1" enum="EimControlType">
+			EIM traction lever variant 1.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_2" value="2" enum="EimControlType">
+			EIM traction lever variant 2.
+		</constant>
+		<constant name="EIM_CONTROL_TYPE_3" value="3" enum="EimControlType">
+			EIM traction lever variant 3.
+		</constant>
+	</constants>
+</class>

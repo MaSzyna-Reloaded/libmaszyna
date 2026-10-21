@@ -37,7 +37,7 @@ func after_each() -> void:
 
 ## A vehicle of the trainset, as long as asked, standing the way asked
 func _add_vehicle(vehicle_name:String, length:float, direction:TrackServer.Direction) -> RailVehicle3D:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
     model.mass = RAIL_VEHICLE_MASS
     model.dimensions_length = length

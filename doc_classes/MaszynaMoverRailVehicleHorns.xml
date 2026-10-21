@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleHorns" inherits="RailVehicleHorns" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleHorns] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleHorns] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleHorns].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_horn" qualifiers="const">
+			<return type="int" />
+			<description>
+				The horn pressed: 1 the low one, -1 the high one, 0 none.
+			</description>
+		</method>
+	</methods>
+</class>

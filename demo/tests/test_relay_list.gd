@@ -6,23 +6,23 @@ var engine: RailVehicleElectricSeriesEngine
 func before_each():
     train = build_vehicle("TestTrain")
 
-    engine = MoverRailVehicleElectricSeriesEngine.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
     train.add_component(engine)
     # the engine fed as a pantograph-powered locomotive's is
-    var power_source := MoverRailVehicleEnginePowerSource.new()
+    var power_source := MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     train.add_component(power_source)
     await wait_idle_frames(2)
 
-func _make_row(relay_position: int, resistance: float, auto_switch: bool) -> RailVehicleRelayListItem:
-    var item = RailVehicleRelayListItem.new()
+func _make_row(relay_position: int, resistance: float, auto_switch: bool) -> MaszynaMoverRelayListItem:
+    var item = MaszynaMoverRelayListItem.new()
     item.relay_position = relay_position
     item.resistance = resistance
     item.auto_switch = auto_switch
     return item
 
 func test_default_row_has_expected_defaults():
-    var item = RailVehicleRelayListItem.new()
+    var item = MaszynaMoverRelayListItem.new()
     assert_eq(item.relay_position, 0, "relay_position should default to 0")
     assert_eq(item.resistance, 0.0, "resistance should default to 0.0")
     assert_eq(item.branch_count, 0, "branch_count should default to 0")
@@ -44,7 +44,7 @@ func test_row_round_trips_values():
     assert_eq(item.shunt_index, 2)
 
 func test_relay_list_property_accepts_items():
-    var rows: Array[RailVehicleRelayListItem] = [
+    var rows: Array[MaszynaMoverRelayListItem] = [
         _make_row(0, 0.0, false),
         _make_row(1, 24.891, true),
     ]
@@ -52,10 +52,10 @@ func test_relay_list_property_accepts_items():
     await wait_idle_frames(2)
 
     assert_eq(engine.relay_list.size(), 2, "relay_list should hold the assigned rows")
-    assert_eq((engine.relay_list[1] as RailVehicleRelayListItem).resistance, 24.891)
+    assert_eq((engine.relay_list[1] as MaszynaMoverRelayListItem).resistance, 24.891)
 
 func test_oversized_relay_list_is_truncated_without_crashing():
-    var rows: Array[RailVehicleRelayListItem] = []
+    var rows: Array[MaszynaMoverRelayListItem] = []
     for i in range(70):
         rows.append(_make_row(i, 1.0, false))
     engine.relay_list = rows

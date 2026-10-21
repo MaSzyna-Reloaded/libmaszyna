@@ -4,7 +4,7 @@
 		The triangles of one terrain chunk, in groups.
 	</brief_description>
 	<description>
-		Scenery [code]triangles[/code] nodes merged as the original merges its shapes ([SceneryTrianglesSink], [MaszynaLegacySBTTerrainProvider]): a texture in a section of the 1 km grid, or a texture and a visibility range in a cell of the 250 m grid. Its triangles are groups one after another - the shapes the original merges within 25 m, each drawn by its own range measured from its own centre; a section's chunk is one group, drawn whatever its range. Kept in the file of its section ([MaszynaTrianglesSector]). Positions and the groups' centres are relative to [member origin], stored as floats.
+		Scenery [code]triangles[/code] nodes merged as the original merges its shapes ([MaszynaTrianglesSink], [MaszynaSBTTerrainProvider]): a texture in a section of the 1 km grid, or a texture and a visibility range in a cell of the 250 m grid. Its triangles are groups one after another - the shapes the original merges within 25 m, each drawn by its own range measured from its own centre; a section's chunk is one group, drawn whatever its range. Kept in the file of its section ([MaszynaTrianglesSector]). Positions and the groups' centres are relative to [member origin], stored as floats.
 	</description>
 	<tutorials>
 	</tutorials>

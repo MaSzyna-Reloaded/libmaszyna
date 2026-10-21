@@ -6,18 +6,18 @@ extends MaszynaGutTest
 ## CabOccupied (drivermode.cpp:1071), i.e. backward from cab 2. The fixtures carry no models, so
 ## the low-poly interior's cab visibility (DynObj.cpp:1211-1219) is not checked here.
 
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
-var player:MaszynaPlayer
+var player:Player
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
@@ -29,12 +29,12 @@ func after_each() -> void:
         vehicle.free()
     if is_instance_valid(player):
         player.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_cab_change_moves_camera_to_rear_cab_facing_backward() -> void:
     vehicle = await spawn_maszyna_vehicle("dynamic/pkp/303e_v1", "303e-ep-tv", "303e-ep-tv-424-hist", "test_ep07_cab_change",
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var bound:bool = vehicle.get_rid().is_valid()
     assert_true(bound, "EP07's FIZ controller should be built")
     if not bound:

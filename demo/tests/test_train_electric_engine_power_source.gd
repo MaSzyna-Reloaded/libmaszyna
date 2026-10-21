@@ -17,7 +17,7 @@ func before_each():
 
 
 func test_current_collector_power_source_does_not_crash_on_process():
-    var power_source := MoverRailVehicleEnginePowerSource.new()
+    var power_source := MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     train.add_component(power_source)
     await wait_idle_frames(3)
@@ -30,7 +30,7 @@ func test_current_collector_power_source_does_not_crash_on_process():
 
 func test_default_power_source_does_not_crash_on_process():
     # The compiled default (source_type == NotDefined) hits the same unconditional-read path.
-    var power_source := MoverRailVehicleEnginePowerSource.new()
+    var power_source := MaszynaMoverRailVehicleEnginePowerSource.new()
     train.add_component(power_source)
     await wait_idle_frames(3)
 
@@ -38,7 +38,7 @@ func test_default_power_source_does_not_crash_on_process():
 
 
 func test_accumulator_power_source_still_reports_recharge_source():
-    var power_source := MoverRailVehicleEnginePowerSource.new()
+    var power_source := MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_ACCUMULATOR
     power_source.accumulator_recharge_source = RailVehicleController.POWER_SOURCE_GENERATOR
     train.add_component(power_source)

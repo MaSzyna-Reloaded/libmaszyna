@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bbq6b2v2678h0"]
 
-[ext_resource type="PackedScene" uid="uid://cpnfrm4urr642" path="res://addons/libmaszyna/user_settings/user_settings_dock.tscn" id="1_755qg"]
+[ext_resource type="PackedScene" uid="uid://cpnfrm4urr642" path="res://addons/libreloaded/user_settings/user_settings_dock.tscn" id="1_755qg"]
 [ext_resource type="Script" uid="uid://ddxg6048u2fs4" path="res://hud/user_settings_panel.gd" id="1_r6syw"]
 
 [node name="UserSettingsPanel" type="PanelContainer" unique_id=1798306963]

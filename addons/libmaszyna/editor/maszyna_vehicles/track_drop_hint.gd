@@ -35,8 +35,8 @@ var _group:TrackServer.TrackTypeGroup = TrackServer.GROUP_RAIL
 
 
 ## The dragged vehicle's category picks the tracks shown: roads for a road vehicle, else rails
-func set_vehicle_category(category:MaszynaVehiclesBank.Category) -> void:
-    _group = TrackServer.GROUP_ROAD if category in MaszynaVehiclesBank.ROAD_CATEGORIES else TrackServer.GROUP_RAIL
+func set_vehicle_category(category:VehicleInfo.VehicleCategory) -> void:
+    _group = TrackServer.GROUP_ROAD if category in VehicleInfo.ROAD_CATEGORIES else TrackServer.GROUP_RAIL
 
 
 ## The name of the track the cursor is over, empty when it is over none

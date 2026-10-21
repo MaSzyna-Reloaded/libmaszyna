@@ -4,13 +4,13 @@ extends MaszynaGutTest
 ## interior stands, with the player's cab view in it, while the player drives the vehicle - also
 ## while looking from outside, as the cab's widgets take the keys - and goes when it is let go.
 
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 ## Enough frames for the vehicle to take its controller and stand on its track
 const SETTLE_FRAMES:int = 4
 const TRACK_NAME:String = "player_cabin_test"
 const TRACK_LENGTH:float = 200.0
 const TRACK_OFFSET:float = 100.0
-## A track long enough for a vehicle past MaszynaPlayer's follow jump distance (1 km), and where the
+## A track long enough for a vehicle past Player's follow jump distance (1 km), and where the
 ## vehicles stand on it: two within it, one 3 km off [m]
 const LONG_TRACK_LENGTH:float = 4000.0
 const NEAR_OFFSET:float = 200.0
@@ -27,12 +27,12 @@ const FLIGHT_DISTANCE:float = 500.0
 var _vehicle:RailVehicle3D
 var _second_vehicle:RailVehicle3D
 var _far_vehicle:RailVehicle3D
-var _player:MaszynaPlayer
+var _player:Player
 var _track:RID
 
 
 ## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (MaszynaPlayer, initialization_ready)
+## only now has its camera (Player, initialization_ready)
 signal scenery_loaded(first_vehicle_id:String)
 
 
@@ -54,8 +54,8 @@ func after_each() -> void:
 
 
 ## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (MaszynaPlayer, initialization_ready)
-func _start_player(player:MaszynaPlayer) -> void:
+## then (Player, initialization_ready)
+func _start_player(player:Player) -> void:
     scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
     scenery_loaded.emit("")
 
@@ -108,7 +108,7 @@ func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
 
 
 ## Regression: a scenery's vehicle is taken over the moment it has its simulation
-## (vehicle_configured), and MaszynaLegacyVehicleSystem hands its cab scene over only after that, in
+## (vehicle_configured), and MaszynaVehicleSystem hands its cab scene over only after that, in
 ## the same build - the player sat in it looking from outside, with no cab shown (demo_3d)
 func test_the_cab_is_shown_when_its_scene_comes_after_the_vehicle_was_taken_over() -> void:
     _track = build_track(TRACK_NAME, TRACK_LENGTH)

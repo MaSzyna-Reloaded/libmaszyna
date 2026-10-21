@@ -1,0 +1,104 @@
+#include "MaszynaMoverRailVehicleElectroPneumaticDynamicBrake.hpp"
+#include "maszyna/vehicles/MaszynaMoverBackend.hpp"
+#include "vehicles/rail/RailVehicleElectroPneumaticDynamicBrake.hpp"
+
+namespace godot {
+    void MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::_bind_methods() {
+        BIND_PROPERTY_W_HINT(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::INT, coupler_check, PROPERTY_HINT_ENUM,
+                "None,Front,Back");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT,
+                electro_pneumatic_min_regenerative_braking, "electro_pneumatic");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT,
+                electro_pneumatic_max_ep_brake_engagement_speed, "electro_pneumatic");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, electro_pneumatic_brake_delay,
+                "electro_pneumatic");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, blending_max_velocity, "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, blending_min_velocity, "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, blending_reference_velocity,
+                "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, blending_max_deceleration,
+                "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::BOOL, blending_velocity_correction,
+                "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::BOOL, blending_load_correction,
+                "blending");
+        BIND_PROPERTY(
+                MaszynaMoverRailVehicleElectroPneumaticDynamicBrake, Variant::FLOAT, blending_min_ed_brake_request,
+                "blending");
+    }
+
+
+    double MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_ed_braking_ep_delay() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->DCEMUED_EP_delay : 0.0;
+    }
+
+    double MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_ep_max_brake_engagement_speed() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->DCEMUED_EP_max_Vel : 0.0;
+    }
+
+    double MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_ep_min_regenerative_braking() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->DCEMUED_EP_min_Im : 0.0;
+    }
+
+    double MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_ep_force() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->EpForce : 0.0;
+    }
+
+    bool MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_ep_fuse() const {
+        const TMoverParameters *mover = get_mover();
+        return mover != nullptr ? mover->EpFuse : false;
+    }
+
+    void MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::_fill_state_dictionary(Dictionary &p_state) const {
+        const TMoverParameters *mover = get_mover();
+        if (mover == nullptr) {
+            return;
+        }
+        p_state["dcemued_coupler_check"] = get_coupler_check();
+        p_state["dcemued_ed_braking_ep_delay"] = get_ed_braking_ep_delay();
+        p_state["dcemued_ep_max_brake_engagement_speed"] = get_ep_max_brake_engagement_speed();
+        p_state["dcemued_ep_min_regenerative_braking"] = get_ep_min_regenerative_braking();
+        p_state["dcemued_ep_force"] = get_ep_force();
+        p_state["dcemued_ep_fuse"] = get_ep_fuse();
+    }
+
+
+    void MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::_apply_configuration() {
+        TMoverParameters *p_mover = get_mover();
+        ASSERT_MOVER(p_mover);
+        p_mover->DCEMUED_CC = get_coupler_check();
+        p_mover->DCEMUED_EP_delay = get_electro_pneumatic_brake_delay();
+        p_mover->DCEMUED_EP_max_Vel = get_electro_pneumatic_max_ep_brake_engagement_speed();
+        p_mover->DCEMUED_EP_min_Im = get_electro_pneumatic_min_regenerative_braking();
+        p_mover->EpFuseSwitch(get_ep_brake_fuse());
+
+        p_mover->MED_Vmax = get_blending_max_velocity();
+        p_mover->MED_Vmin = get_blending_min_velocity();
+        p_mover->MED_Vref = get_blending_reference_velocity();
+        p_mover->MED_amax = get_blending_max_deceleration();
+        p_mover->MED_EPVC = get_blending_velocity_correction();
+        p_mover->MED_Ncor = get_blending_load_correction();
+        p_mover->MED_MinBrakeReqED = get_blending_min_ed_brake_request();
+    }
+
+
+    void MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::switch_ep_fuse(const bool p_value) {
+        TMoverParameters *mover = get_mover();
+        ASSERT_MOVER_BRAKE(mover);
+        mover->EpFuseSwitch(p_value);
+    }
+} // namespace godot
