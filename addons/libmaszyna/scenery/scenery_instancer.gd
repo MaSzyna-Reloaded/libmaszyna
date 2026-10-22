@@ -562,13 +562,18 @@ static func _is_cache_valid(
         return false
     if not compiled.nodes:
         return false
-    if not compiled.dependencies.has(source_path):
+    if not compiled.dependencies.has(source_path) or compiled.dependencies[source_path].get("missing", false):
         return false
     for dependency_value:Variant in compiled.dependencies.keys():
         var dependency_path:String = dependency_value
+        var state:Dictionary = compiled.dependencies[dependency_path]
+        # an include that was missing is still to be missing
+        if state.get("missing", false):
+            if FileAccess.file_exists(dependency_path):
+                return false
+            continue
         if not FileAccess.file_exists(dependency_path):
             return false
-        var state:Dictionary = compiled.dependencies[dependency_path]
         if not FileAccess.get_modified_time(dependency_path) == int(state["modified_time"]):
             return false
         var file:FileAccess = FileAccess.open(dependency_path, FileAccess.READ)

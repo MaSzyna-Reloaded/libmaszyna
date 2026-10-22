@@ -649,6 +649,15 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 * The build named at the top of `app.log` is `res://build_number.txt`, written by the last full
   build - a checkout built incrementally logs an older number than the code it runs.
+* The cache is cleared only when `build_number.txt` changes (`GameDataServer::_check_build_version()`),
+  which a code change does not: an entry whose format changed without its version tag
+  (`E3DModel::FORMAT_VERSION`, `FIZ_PARSER_FORMAT_VERSION`, `structure-v32`, `CACHE_FORMAT_VERSION`)
+  is read back, and two builds of other numbers sharing the user directory clear it in turn.
+  Vehicle profiles are cached with no hash at all - a changed model or skin keeps its old profile.
+* `UserSettings::_update_game_dir()` takes and saves the only game directory it finds when the one
+  set is not a game directory - a directory set on purpose (a test's fixtures, the settings screen)
+  is replaced without a word (docs/findings-archive.md, 2026-10-22). Decide with the operator
+  whether an explicit set may be replaced.
 * `MaszynaVehicleProfileManager._ensure_viewport()` is an `ensure_*` API: create the viewport
   where the manager is.
 * An owner that is not a scenery's rebuilds its streamed pieces when the scenery reloads itself in
