@@ -27,6 +27,10 @@ anything. Open work belongs in `TODO.md`.
   *(09-21 release never unpacked; 09-20 low-poly interior)*
 * When a cache "does not work", load an entry and run its own validity check before suspecting
   invalidation. *(09-23 game dir ".")*
+* A cache entry missing beside its directory of chunks was never saved: look for what made the
+  parse uncacheable. A file the parse looks for and does not find is a dependency that must stay
+  missing, never a reason not to cache - the original skips a missing include. *(10-22 Wrzosy
+  parsed again on every load)*
 * "One action late" means a read of a snapshot taken before the write. Look for the cache
   between them. *(09-23 cab one keypress late)*
 * Crashes at changing places are one cause: lay the backtraces side by side and find the frame
@@ -574,6 +578,10 @@ anything. Open work belongs in `TODO.md`.
   every `release-*` export builds `compile-debug` too. *(09-30 release export without CabinSystem)*
 
 ## Tests
+* A fixture directory a test makes the game directory has every marker of one
+  (`UserSettings::GAME_DIR_MARKERS`: `scenery`, `dynamic`, `textures`). One that lacks a marker is
+  replaced by the only game directory found on the machine - a test then reads the player's game
+  data where CI, with none, reads the fixtures. *(10-22 tests read the Steam game directory)*
 * `user://` is `~/.local/share/MaSzyna-Reloaded/` (`custom_user_dir_name`); a killed test may
   leave `game_dir` there pointing at the fixtures - check it before a run on the game's data.
   *(10-06 a killed test leaves the game directory pointing at the fixtures)*

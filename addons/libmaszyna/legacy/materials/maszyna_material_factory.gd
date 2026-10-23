@@ -22,11 +22,40 @@ class MaszynaShaderMeta:
     var base_material: Material
     var factory: Callable
     var texture_map: TextureMap
+    ## The base material's shader parameters by property name ("shader_parameter/<name>"), read
+    ## once. A ShaderMaterial's property list and a parameter it does not set come from the
+    ## RenderingServer (shader_get_parameter_list, shader_get_parameter_default), and each such
+    ## read waits for the rendering thread when it runs on its own - for every material a
+    ## scenery streams in, that held the main thread a thousand times and more a run.
+    var shader_parameters: Dictionary[String, Variant] = {}
 
     func _init(factory: Callable, base_material: Material, texture_map: TextureMap) -> void:
-        self.base_material = base_material
         self.factory = factory
         self.texture_map = texture_map
+        self.base_material = base_material
+        if base_material is ShaderMaterial:
+            for property: Dictionary in base_material.get_property_list():
+                var property_name: String = property.get("name", "")
+                if property_name.begins_with("shader_parameter/"):
+                    shader_parameters[property_name] = base_material.get(property_name)
+
+    ## A material of the type, as base_material.duplicate(true) made it: the type's files hold the
+    ## shader, the render priority and the shader parameters, and no resource of their own
+    func instantiate() -> Material:
+        if not base_material is ShaderMaterial:
+            return base_material.duplicate(true)
+        var material: ShaderMaterial = ShaderMaterial.new()
+        apply_base(material)
+        return material
+
+    ## The base material's shader, render priority and shader parameters on `target`, in the order
+    ## its property list gives them
+    func apply_base(target: ShaderMaterial) -> void:
+        var source: ShaderMaterial = base_material as ShaderMaterial
+        target.shader = source.shader
+        target.render_priority = source.render_priority
+        for property_name: String in shader_parameters:
+            target.set(property_name, shader_parameters[property_name])
 
 # Named texture keys of a material without "shader:" (texture_bindings, material.cpp:60-65)
 const LEGACY_TEXTURE_BINDINGS: Dictionary[int, String] = {
@@ -158,10 +187,28 @@ var MATERIAL_SHADER_FACTORIES: Dictionary[String, MaszynaShaderMeta] = {
     ),
 }
 
-## Shader variants by "source shader instance id:alpha blend:cull disabled:specgloss"
-var _shader_variants: Dictionary[String, Shader] = {}
-## Turns on the specgloss texture (types/specgloss.gdshaderinc) in a type shader that offers it
-const SPECGLOSS_DEFINE: String = "MASZYNA_SPECGLOSS"
+## What a type shader has a variant file for (types/variants/<type>[_blend][_scissor][_cull_disabled][_specgloss].gdshader):
+## blended (MASZYNA_ALPHA_BLEND), cut out (MASZYNA_ALPHA_SCISSOR - only that one has the discard,
+## so the opaque surfaces keep Godot's shared depth and shadow material), both faces drawn, and the
+## specgloss texture (types/specgloss.gdshaderinc) turned on (MASZYNA_SPECGLOSS)
+enum ShaderVariant { BLEND = 1, SCISSOR = 2, CULL_DISABLED = 4, SPECGLOSS = 8 }
+const SHADER_VARIANT_DIRECTORY: String = "res://addons/libmaszyna/legacy/materials/types/variants/"
+const SHADER_VARIANTS: Dictionary[String, int] = {
+    "default": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED,
+    "normalmap": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED,
+    "normalmap_specgloss": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED | ShaderVariant.SPECGLOSS,
+    "detail_normalmap": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED | ShaderVariant.SPECGLOSS,
+    "sunlessnormalmap": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED | ShaderVariant.SPECGLOSS,
+    "shadowlessnormalmap": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED | ShaderVariant.SPECGLOSS,
+    # parallax cuts out on its own (use_alpha_scissor) - blended as well: it has the
+    # _blend_scissor variants the other types never need
+    "parallax": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED,
+    # reads the specgloss texture unconditionally
+    "parallax_specgloss": ShaderVariant.BLEND | ShaderVariant.SCISSOR | ShaderVariant.CULL_DISABLED,
+    "water": ShaderVariant.CULL_DISABLED,
+    "water_specgloss": ShaderVariant.CULL_DISABLED,
+    "rain_windscreen": ShaderVariant.CULL_DISABLED,
+}
 ## The image formats with an alpha channel - what the original's has_alpha is (_texture_has_alpha())
 const ALPHA_FORMATS: Array[Image.Format] = [
     Image.FORMAT_DXT3, Image.FORMAT_DXT5, Image.FORMAT_LA8, Image.FORMAT_RGBA8, Image.FORMAT_RGBA4444,
@@ -178,7 +225,7 @@ func create(
 ) -> Material:
     var variant: MaszynaMaterial.MaszynaMaterialVariant = mmat.get_variant(season, weather)
     var shader_meta:MaszynaShaderMeta = _get_shader_meta(variant)
-    var material: Material = shader_meta.base_material.duplicate(true)
+    var material: Material = shader_meta.instantiate()
     _apply(
         material,
         mmat,
@@ -258,22 +305,7 @@ func _apply(
         return
     var target_shader_material: ShaderMaterial = material as ShaderMaterial
     var source_shader_material: ShaderMaterial = shader_meta.base_material as ShaderMaterial
-    # a type shader that offers the specgloss texture as a variant (parallax_specgloss and
-    # water_specgloss read it unconditionally) gets it only when the material binds one
-    var specgloss: bool = (
-        source_shader_material.shader.code.contains(SPECGLOSS_DEFINE)
-        and not _texture_path(variant, texture_map, texture_map.specgloss) == ""
-    )
-    for property: Dictionary in source_shader_material.get_property_list():
-        var property_name: String = property.get("name", "")
-        if property_name == "shader":
-            target_shader_material.shader = (
-                _get_shader_variant(source_shader_material.shader, options, specgloss)
-                if options.force_transparent or options.cull_disabled or specgloss
-                else source_shader_material.shader
-            )
-        elif property_name == "render_priority" or property_name.begins_with("shader_parameter/"):
-            target_shader_material.set(property_name, source_shader_material.get(property_name))
+    shader_meta.apply_base(target_shader_material)
 
     shader_meta.factory.call(mmat, variant, material, texture_map, model_path, options)
     # The original's opaque pass keeps the texels at the material's "opacity:" and above
@@ -286,6 +318,16 @@ func _apply(
     elif (mmat.transparent or has_opacity) and not options.force_opaque:
         transparency = MaterialManager.Transparency.AlphaScissor
     target_shader_material.set_shader_parameter("transparency", transparency)
+    # a type shader that offers the specgloss texture as a variant (parallax_specgloss and
+    # water_specgloss read it unconditionally) gets it only when the material binds one
+    var specgloss: bool = not _texture_path(variant, texture_map, texture_map.specgloss) == ""
+    # what the shader discards for: the cut-out transparency, or parallax's own use_alpha_scissor
+    var scissor: bool = (
+        transparency == MaterialManager.Transparency.AlphaScissor
+        or target_shader_material.get_shader_parameter("use_alpha_scissor") == true
+    )
+    target_shader_material.shader = _get_shader_variant(
+        source_shader_material.shader, options.force_transparent, scissor, options.cull_disabled, specgloss)
     target_shader_material.set_shader_parameter(
         "alpha_scissor_threshold", mmat.opacity if has_opacity else options.alpha_scissor_threshold)
     target_shader_material.set_shader_parameter("emission_enabled", options.selfillum_enabled)
@@ -302,30 +344,23 @@ func _apply(
             "blended_reflection", variant.get_parameter("reflection", default_reflection))
 
 
-func _get_shader_variant(source_shader: Shader, options: MaterialManager.MaterialOptions, specgloss: bool) -> Shader:
-    var cache_key: String = "%d:%s:%s:%s" % [
-        source_shader.get_instance_id(), options.force_transparent, options.cull_disabled, specgloss
-    ]
-    var cached_shader: Shader = _shader_variants.get(cache_key)
-    if cached_shader:
-        return cached_shader
-
-    var code: String = source_shader.code
-    if options.force_transparent:
-        code = code.replace("shader_type spatial;", "shader_type spatial;\n#define MASZYNA_ALPHA_BLEND")
-        # a blended surface mirrors the sky (types/blended_reflection.gdshaderinc), which
-        # specular_disabled would take away with the lights' highlights
-        code = code.replace("specular_disabled", "specular_schlick_ggx")
-    if options.cull_disabled:
-        code = code.replace("cull_back", "cull_disabled")
-    if specgloss:
-        # the specular term the texture scales has to exist (default, detail_normalmap disable it)
-        code = code.replace("shader_type spatial;", "shader_type spatial;\n#define %s" % SPECGLOSS_DEFINE)
-        code = code.replace("specular_disabled", "specular_schlick_ggx")
-    var variant_shader: Shader = Shader.new()
-    variant_shader.code = code
-    _shader_variants[cache_key] = variant_shader
-    return variant_shader
+## The variant file of a type shader (SHADER_VARIANTS); the type shader itself is the opaque one
+## with the back faces culled, and a variant a type has no file for is the same shader for it
+func _get_shader_variant(source_shader: Shader, blend: bool, scissor: bool, cull_disabled: bool, specgloss: bool) -> Shader:
+    var type_name: String = source_shader.resource_path.get_file().get_basename()
+    var variants: int = SHADER_VARIANTS.get(type_name, 0)
+    var suffix: String = ""
+    if blend and variants & ShaderVariant.BLEND:
+        suffix += "_blend"
+    if scissor and variants & ShaderVariant.SCISSOR:
+        suffix += "_scissor"
+    if cull_disabled and variants & ShaderVariant.CULL_DISABLED:
+        suffix += "_cull_disabled"
+    if specgloss and variants & ShaderVariant.SPECGLOSS:
+        suffix += "_specgloss"
+    if suffix.is_empty():
+        return source_shader
+    return load(SHADER_VARIANT_DIRECTORY + type_name + suffix + ".gdshader")
 
 
 func _apply_default_material(

@@ -1,6 +1,8 @@
 #pragma once
 #include "ScenarioScriptCabinImplementation.hpp"
 #include "ScriptRuntime.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <functional>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -21,7 +23,7 @@ namespace godot {
     ///
     /// The code a context runs is grouped in units - a file, or what an editor applied under a
     /// name. Applying a unit again first frees whatever its previous run made.
-    class ScenarioScriptServer : public Object {
+    class ScenarioScriptServer : public Object, public ServerSingleton<ScenarioScriptServer> {
             GDCLASS(ScenarioScriptServer, Object)
             friend class ScenarioScriptAction;
 
@@ -79,11 +81,6 @@ namespace godot {
             /// A script failed (context: RID, message: String) - it is logged as well
             static const char *script_error_signal;
 
-            static ScenarioScriptServer *get_instance() {
-                return Object::cast_to<ScenarioScriptServer>(
-                        Engine::get_singleton()->get_singleton("ScenarioScriptServer"));
-            }
-
         private:
             enum HookKind {
                 /// An event a script created
@@ -119,10 +116,10 @@ namespace godot {
                     StringName active_unit;
             };
 
-            HashMap<RID, Context> contexts;
-            HashMap<RID, Hook> hooks;
+            RIDMap<Context> contexts;
+            RIDMap<Hook> hooks;
             /// The subscriptions of each signal, by target
-            HashMap<RID, Vector<RID>> subscriptions[SIGNAL_MAX];
+            RIDMap<Vector<RID>> subscriptions[SIGNAL_MAX];
 
             RID _create_hook(const RID &p_context, HookKind p_kind, int64_t p_function);
             void _free_hook(const RID &p_hook);

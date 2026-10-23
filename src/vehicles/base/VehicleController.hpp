@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/variant/packed_int32_array.hpp>
 #include <godot_cpp/variant/rid.hpp>
 #include <godot_cpp/variant/transform3d.hpp>
@@ -224,6 +225,11 @@ namespace godot {
 
         private:
             Vector<Ref<VehicleComponent>> components;
+            /* The first of the components of each type, by the type: get_component() is asked per
+             * axle and per step, and walking the list called every component's type. Made again
+             * whenever the list changes (_index_components()). */
+            LocalVector<VehicleComponent *> components_by_type;
+            void _index_components();
             /* In the system as a live vehicle (attach_to_system() .. release()): its components
              * are joined to it. A description - the same class, only stored - never is. */
             bool in_system = false;

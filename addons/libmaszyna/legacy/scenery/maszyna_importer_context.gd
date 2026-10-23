@@ -86,10 +86,12 @@ var _joined_at_start:bool = false
 var _join_changes:Array[JoinChange] = []
 
 
+## A file the parse read, or looked for: one that is not there is skipped, as the original skips a
+## missing include, and the cache depends on it staying away (SceneryInstancer._is_cache_valid())
 func register_dependency(path:String, size:int = -1) -> void:
     var normalized_path:String = path.simplify_path()
     if not FileAccess.file_exists(normalized_path):
-        cacheable = false
+        dependencies[normalized_path] = {"missing": true}
         return
     var dependency_size:int = size
     if dependency_size < 0:

@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/base/VehiclePersonRole.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -11,7 +12,7 @@ namespace godot {
     /// cabin, whoever asks - the keys, the HUD, scripts - and are announced; the player's node
     /// follows the signal into the cab and out. It knows nothing of the view: PlayerCameraServer
     /// follows player_vehicle_entered into the cab.
-    class PlayerServer : public Object {
+    class PlayerServer : public Object, public ServerSingleton<PlayerServer> {
             GDCLASS(PlayerServer, Object)
 
         public:
@@ -24,10 +25,6 @@ namespace godot {
             static const char *player_vehicle_changed_signal;
             /// The player entered a vehicle (vehicle: RID) - also the one it already drives
             static const char *player_vehicle_entered_signal;
-
-            static PlayerServer *get_instance() {
-                return Object::cast_to<PlayerServer>(Engine::get_singleton()->get_singleton("PlayerServer"));
-            }
 
         private:
             RID person;

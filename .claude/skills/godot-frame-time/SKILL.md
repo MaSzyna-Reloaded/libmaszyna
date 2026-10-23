@@ -49,6 +49,30 @@ game directory and puts the player in its first trainset (`-v <vehicle_id>` for 
   `settings.cfg`. Every later `-s` start then quits with "Invalid game directory". Check
   `game_dir` there before the first run.
 
+## Traps of a measuring run (2026-10-18)
+
+The game's `docs/performance/profiling.md` is the step-by-step guide; these cost whole runs.
+
+* **A laptop on battery** clocks an integrated GPU down to 400-635 MHz (from 1600) and the CPU with
+  it: the same frame took 94 ms of GPU on battery, 51 ms on AC. Check
+  `/sys/class/power_supply/*/online` before every run.
+* **The frame is rounded to the display's refresh.** The game's VSync (on by default) and gamescope
+  (60 Hz unless `-r`) both turn a 52 ms frame into 66.7 ms. Run `gamescope ... -r 240` and read
+  the frame times as 4.17 ms steps.
+* **`perf record --call-graph` needs `kernel.perf_event_paranoid` <= 1** (`sudo sysctl`, from a
+  terminal), and `-e cycles:u` at 1. Use `--call-graph dwarf,16384`: neither the engine nor the
+  extension has frame pointers.
+* **Under gamescope the game is not headless** and writes its log files into the player's `logs/`.
+* **The simulation's cost follows the frame.** The Mover integrates `ceil(delta / 10 ms)` sub-steps,
+  so the frame settles at F = R / (1 - k): k the simulation's CPU seconds per simulated second, R
+  the rest of the frame. On Wrzosy k was 0.69 and R 20 ms. A cut in R barely moves F, a cut in k
+  shows in k first - compare k between runs (main thread samples under
+  `SimulationServer::simulation_advance` / 499 Hz / seconds recorded), not only the FPS.
+* **Near the GPU's limit a lighter main thread waits for the GPU inside drawing**, so the drawing
+  phase grows by what the simulation lost. Measure CPU changes at a resolution where the GPU has
+  room (720p on the Renoir iGPU: GPU 34 ms against a 66 ms frame), or pause the simulation to see
+  the GPU's floor.
+
 ## Read the instruments correctly
 
 This is where most of the time gets lost, so start here.

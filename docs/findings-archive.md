@@ -4,6 +4,39 @@ The full entries behind the rules in `FINDINGS.md`: the symptom, what proved the
 and the rule. Headings keep their date and title, because comments in the code cite them
 (`see FINDINGS.md, 2026-09-23`). Open work belongs in `TODO.md`, not here.
 
+## 2026-10-22 - Wrzosy parsed again on every load
+
+* **Symptom:** the disk cache "does not work" (operator): every load of Wrzosy took about a minute
+  of parsing; ep07 loaded from the cache.
+* **What proved it:** `user://cache/scenery_compiled` held directories of terrain chunks with no
+  `.res` entry beside them. The game's logs: every Wrzosy run had `saved` 0 and 2-3 `Cannot load
+  include file` (`scenery/none`, `9a-jerzynianka-podg_trawy.scm`, `pkp/d1_stajaca.inc`); ep07, with
+  none, saved 21 entries. `test_resource_cache.gd`: ResourceCache, the e3d and the fiz entries are
+  written and read back from the disk - the cache itself works.
+* **Cause:** a missing include set `MaszynaImporterContext.cacheable = false`, and so did
+  `register_dependency()` of a file that is not there; an uncacheable include makes its parents
+  uncacheable, so the whole scenery was parsed again on every load.
+* **Fix:** a missing file is a dependency recorded as `{"missing": true}`;
+  `SceneryInstancer._is_cache_valid()` takes the entry as stale once the file is there.
+  `test_scenery_compiled_cache.gd` tests both. Wrzosy (eie2620): FILES 56.8 s, then 1.6 s from the
+  cache.
+* **Rule:** a file the parse looks for and does not find is a dependency that must stay missing,
+  never a reason not to cache.
+
+## 2026-10-22 - tests read the Steam game directory
+
+* **Symptom:** `test_scenery_subscene_cache.gd` failed both its tests on the operator's machine
+  (`Cannot load scenery: .../steamapps/common/MaSzyna/scenery/subscene/root.scn`); the game's tests
+  read `.../MaSzyna/dynamic/test/synthetic_v1/synthetic.fiz` and `scenery/ep07.scn` from there.
+* **What proved it:** `res://tests/fixtures` has `scenery/` and `dynamic/` but no `textures/`, so
+  `UserSettings::is_maszyna_game_dir()` refuses it; `_update_game_dir()` (since `b72adb8d`) then
+  takes the only game directory `find_maszyna_game_dirs()` finds - the Steam one - and saves it.
+  CI has none and keeps the fixtures.
+* **Fix:** `tests/fixtures/textures/` (a `.gitkeep`) in libmaszyna and in the game; the subscene
+  test passes, as do the game's `test_player_initialization.gd` and
+  `test_rail_vehicle_rain_exclusion.gd`.
+* **Rule:** a fixture directory used as the game directory carries every marker of one.
+
 ## 2026-10-09 - Mover configured five times, spring brake released
 
 * **Symptom:** none reported directly - the review of `REQUIRED_CLEANING` (RC-004) and the operator's

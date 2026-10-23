@@ -291,7 +291,6 @@ namespace godot {
                 PropertyInfo(Variant::RID, "track")));
     }
 
-
     void RailVehicleServer::vehicle_set_pantograph_geometry(
             const RID &p_vehicle, const RailVehicleEnginePowerSource::PantographSelector p_pantograph,
             const Vector3 &p_position, const double p_lower_length, const double p_upper_length,
@@ -424,10 +423,7 @@ namespace godot {
     }
 
     RailVehicleController *RailVehicleServer::_get_controller(const VehiclePlacement &p_placement) const {
-        if (p_placement.controller_id.is_null()) {
-            return nullptr;
-        }
-        return Object::cast_to<RailVehicleController>(ObjectDB::get_instance(p_placement.controller_id));
+        return p_placement.controller.ptr();
     }
 
     void RailVehicleServer::vehicle_attach(const RID &p_vehicle) {
@@ -438,7 +434,7 @@ namespace godot {
             return;
         }
         VehiclePlacement &placement = vehicles.insert(p_vehicle, VehiclePlacement())->value;
-        placement.controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
+        placement.controller = vehicle_server->vehicle_get_controller(p_vehicle);
         _connect_relays(p_vehicle, placement);
         _update_driver_cabin(p_vehicle);
     }
@@ -603,7 +599,7 @@ namespace godot {
         const Vector<TrainsetMember> members = trainset->members;
         // standing anew in another order, the vehicles let go of each other first - coupled again
         // pair by pair, the old pairs would close the trainset into a ring
-        HashSet<RID> member_vehicles;
+        RIDSet member_vehicles;
         for (const TrainsetMember &member: members) {
             member_vehicles.insert(member.vehicle);
         }
@@ -969,7 +965,7 @@ namespace godot {
         }
         _disconnect_relays(p_vehicle, *placement);
         _disconnect_radio(p_vehicle, *placement);
-        placement->controller_id = ObjectID(vehicle_server->vehicle_get_controller_instance_id(p_vehicle));
+        placement->controller = vehicle_server->vehicle_get_controller(p_vehicle);
         // the scans that found it hold the previous controller
         _track_changed(placement->axles[placement->primary_axle].track);
         _connect_relays(p_vehicle, *placement);

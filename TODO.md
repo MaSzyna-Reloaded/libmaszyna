@@ -116,6 +116,12 @@ so is their open work.
 
 ## Cabins
 
+* `PythonScreenServer` is the one server not on `ServerSingleton` and still `GDREGISTER_CLASS`:
+  `test_python_screen_server.gd` makes a server of its own (`ClassDB.instantiate()`), since a
+  Python host that has ended is not started again. That instance takes `singleton` over and clears
+  it when freed, so after the test `PythonScreenServer::get_instance()` is null while the module's
+  server lives (no C++ caller today). Moved once the server can start a new host after an ended one
+  and the test uses the module's server (operator, 2026-10-21).
 * **Next, right after the split commit (operator, 2026-10-09):** the occupancy layer drives the cabs
   by plain vehicle commands instead of `set_driver_cabin_kind()` (`RailVehicleServer.cpp:1007`):
   `cabin_activate` (today's `cab_activation`), `cabin_change` (`ChangeCab()`, Mover.cpp:736) and,
@@ -134,10 +140,6 @@ so is their open work.
 * **Gauges that gate their command but have no catalog entry yet** - when ported, they get
   `requires_gauge` (Train.cpp line in brackets): `antislip_bt` (2232), `nextcurrent_sw` (1584),
   `signalling_sw` (2602), `converterlocal_sw` (4463), `compressorlocal_sw` (4629).
-* **`MaszynaMaterialFactory._get_shader_variant()` builds its shader variants with
-  `code.replace()`** (alpha blend, cull disabled, specgloss): to be static variant files with the
-  render modes they have now (`CODE_STYLE.md`, "A shader variant is a file"). A vehicle's glass
-  uses the blended variant, so the first vehicle near the camera compiles it in the game.
 * **A translucent skin submodel is forced whether or not the skin has an alpha channel**
   (`E3DInstanceBackend::_submodel_translucency()`); the original draws it in the alpha pass only
   when it has one (`DynObj.cpp:331-346`, `textures_alpha`).
@@ -647,6 +649,15 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 * The build named at the top of `app.log` is `res://build_number.txt`, written by the last full
   build - a checkout built incrementally logs an older number than the code it runs.
+* The cache is cleared only when `build_number.txt` changes (`GameDataServer::_check_build_version()`),
+  which a code change does not: an entry whose format changed without its version tag
+  (`E3DModel::FORMAT_VERSION`, `FIZ_PARSER_FORMAT_VERSION`, `structure-v32`, `CACHE_FORMAT_VERSION`)
+  is read back, and two builds of other numbers sharing the user directory clear it in turn.
+  Vehicle profiles are cached with no hash at all - a changed model or skin keeps its old profile.
+* `UserSettings::_update_game_dir()` takes and saves the only game directory it finds when the one
+  set is not a game directory - a directory set on purpose (a test's fixtures, the settings screen)
+  is replaced without a word (docs/findings-archive.md, 2026-10-22). Decide with the operator
+  whether an explicit set may be replaced.
 * `MaszynaVehicleProfileManager._ensure_viewport()` is an `ensure_*` API: create the viewport
   where the manager is.
 * An owner that is not a scenery's rebuilds its streamed pieces when the scenery reloads itself in

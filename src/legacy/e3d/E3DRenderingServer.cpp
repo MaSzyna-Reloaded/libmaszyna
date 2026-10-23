@@ -1888,7 +1888,7 @@ namespace godot {
     }
 
     void E3DRenderingServer::light_free(const RID &p_light) {
-        const HashMap<RID, LightObject>::Iterator item = lights.find(p_light);
+        const RIDMap<LightObject>::Iterator item = lights.find(p_light);
         ERR_FAIL_COND(item == lights.end());
         if (E3DInstanceData *instance = instances.getptr(item->value.owner); instance != nullptr) {
             instance->light_objects.erase(p_light);

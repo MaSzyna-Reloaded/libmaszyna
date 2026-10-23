@@ -31,7 +31,6 @@ namespace godot {
         return length1;
     }
 
-
     TrackServer::TrackServer() {
         spatial_index.instantiate();
         spatial_index->set_cell_size(GRID_CELL_SIZE);
@@ -1150,11 +1149,14 @@ namespace godot {
     bool TrackServer::track_find_next(
             const RID &p_track, const int p_endpoint_index, RID &p_r_track, int &p_r_endpoint,
             int &p_r_forced_switch_track) {
-        if (!track_exists(p_track)) {
+        const TrackSegment *track = tracks.getptr(p_track);
+        if (track == nullptr || p_endpoint_index < 0 || p_endpoint_index > CURVE2_P2) {
             return false;
         }
-        const TypedArray<TrackEndpointRef> connections =
-                track_get_endpoint_connections(p_track, static_cast<EndpointIndex>(p_endpoint_index));
+        const TrackNode *node = _get_node(track->node_ids[p_endpoint_index]);
+        if (node == nullptr) {
+            return false;
+        }
 
         bool has_unique = false;
         RID unique_track;
@@ -1162,17 +1164,22 @@ namespace godot {
         int unique_forced_switch_track = TrackServer::TRACK_COMMON;
         bool has_unique_forced_switch_track = false;
 
-        for (int index = 0; index < connections.size(); ++index) {
-            const Ref<TrackEndpointRef> raw = connections[index];
-            RID candidate_track = raw->get_track_rid();
-            int candidate_endpoint = raw->get_endpoint_index();
+        // The node's endpoints read in place: track_get_endpoint_connections() makes an object of
+        // each, on every axle crossing a track's end. A repeated endpoint is merged below as the
+        // same candidate.
+        for (const EndpointPair &raw: node->endpoint_refs) {
+            if (raw.track_rid == p_track) {
+                continue;
+            }
+            RID candidate_track = raw.track_rid;
+            int candidate_endpoint = raw.endpoint_index;
             int candidate_forced_switch_track = TrackServer::TRACK_COMMON;
             bool has_candidate_forced_switch_track = false;
 
             const RID candidate_switch = track_get_switch(candidate_track);
             if (candidate_switch.is_valid()) {
                 const PackedInt32Array common_endpoints = track_get_common_endpoints(candidate_track);
-                if (common_endpoints.has(raw->get_endpoint_index())) {
+                if (common_endpoints.has(raw.endpoint_index)) {
                     // Entering from the common point follows whichever branch is active; remap the
                     // shared endpoint to the active branch endpoint at the same physical point.
                     const SwitchTrack active_track = switch_get_active_track(candidate_switch);
@@ -1181,8 +1188,8 @@ namespace godot {
                                                  ? branch_start
                                                  : track_get_branch_end_endpoint(candidate_track, active_track);
                 } else {
-                    candidate_forced_switch_track = track_get_endpoint_branch(
-                            candidate_track, static_cast<EndpointIndex>(raw->get_endpoint_index()));
+                    candidate_forced_switch_track =
+                            track_get_endpoint_branch(candidate_track, static_cast<EndpointIndex>(raw.endpoint_index));
                     has_candidate_forced_switch_track = true;
                 }
             }
@@ -1388,7 +1395,7 @@ namespace godot {
 
     void TrackServer::_rebuild_graph_ids() {
         graph_members.clear();
-        HashMap<RID, bool> visited;
+        RIDMap<bool> visited;
         for (const KeyValue<RID, TrackSegment> &item: tracks) {
             if (visited.has(item.key)) {
                 continue;

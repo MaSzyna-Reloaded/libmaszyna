@@ -4,6 +4,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+
     const char *PersonServer::person_created_signal = "person_created";
     const char *PersonServer::person_name_changed_signal = "person_name_changed";
     const char *PersonServer::person_freed_signal = "person_freed";

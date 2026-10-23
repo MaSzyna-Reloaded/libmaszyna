@@ -2,6 +2,8 @@
 
 #include "SpatialIndex.hpp"
 #include "TrackEndpointRef.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 
 #include <godot_cpp/classes/curve3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -26,7 +28,7 @@ namespace godot {
      * (TrackCurve) stays a GDScript Resource because scenes serialize it, so its fields are
      * read through the Variant property API once, when the curves are set, and cached as plain
      * values from then on. */
-    class TrackServer : public Object {
+    class TrackServer : public Object, public ServerSingleton<TrackServer> {
             GDCLASS(TrackServer, Object)
 
         public:
@@ -107,10 +109,6 @@ namespace godot {
 
             /* Invalid node index used by topology storage. */
             static constexpr int INVALID_NODE_ID = -1;
-
-            static TrackServer *get_instance() {
-                return Object::cast_to<TrackServer>(Engine::get_singleton()->get_singleton("TrackServer"));
-            }
 
         private:
             static constexpr const char *CURVE_BAKE_INTERVAL_SETTING = "maszyna/scenery/track_curve_bake_interval";
@@ -255,12 +253,12 @@ namespace godot {
                     int axle_count = 0;
             };
 
-            HashMap<RID, TrackSegment> tracks;
-            HashMap<RID, SwitchData> switches;
+            RIDMap<TrackSegment> tracks;
+            RIDMap<SwitchData> switches;
             /* The index of TrackSegment::name; a duplicate name points at the last track given it
              * (basic_table::insert(), Names.h:40-49) */
             HashMap<String, RID> named_tracks;
-            HashMap<RID, IsolatedData> isolated_sections;
+            RIDMap<IsolatedData> isolated_sections;
             HashMap<StringName, RID> isolated_by_name;
             Ref<SpatialIndex> spatial_index;
             int64_t next_track_id = 0;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/vector.hpp>
@@ -18,7 +19,7 @@ namespace godot {
         private:
             double cell_size = 1.0;
             HashMap<Vector2i, Vector<RID>> cells;
-            HashMap<RID, Vector<Vector2i>> item_cells;
+            RIDMap<Vector<Vector2i>> item_cells;
 
             void _cells_for_aabb(const Rect2 &p_aabb, Vector<Vector2i> &p_cells) const;
 

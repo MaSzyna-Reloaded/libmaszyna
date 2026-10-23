@@ -15,6 +15,7 @@ Copyright (C) 2007-2014 Maciej Cierniak
 
 #include "utilities.h"
 #include <algorithm>
+#include <atomic>
 #include <iomanip>
 #include <random>
 #include <sys/stat.h>
@@ -32,8 +33,21 @@ namespace Maszyna {
     bool DebugCameraFlag = false;
     bool DebugTractionFlag = false;
 
-    RANDOM_ENGINE_TYPE random_engine;
-    LOCAL_RANDOM_ENGINE_TYPE local_random_engine;
+    /* The engines are each thread's own: the Mover steps groups of vehicles on worker threads
+     * (MaszynaMoverVehicleServer::stepping_advance()), and one engine drawn from by two threads at
+     * once is a data race. The first thread to draw - the main one, while the scenery loads -
+     * keeps the engine's default seed; every other one takes the next, so no two threads draw the
+     * same numbers. */
+    namespace {
+        std::atomic<uint32_t> random_engine_threads{0};
+
+        uint32_t next_random_seed() {
+            return RANDOM_ENGINE_TYPE::default_seed + random_engine_threads.fetch_add(1);
+        }
+    } // namespace
+
+    thread_local RANDOM_ENGINE_TYPE random_engine{next_random_seed()};
+    thread_local LOCAL_RANDOM_ENGINE_TYPE local_random_engine{LOCAL_RANDOM_ENGINE_TYPE::default_seed};
 
     double Max0R(double x1, double x2) {
         if (x1 > x2)

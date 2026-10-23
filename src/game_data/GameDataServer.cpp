@@ -7,18 +7,12 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
-    GameDataServer *GameDataServer::singleton = nullptr;
     const char *GameDataServer::cache_clear_requested_signal = "cache_clear_requested";
     const char *GameDataServer::data_unload_requested_signal = "data_unload_requested";
     const char *GameDataServer::data_reload_requested_signal = "data_reload_requested";
 
-    GameDataServer *GameDataServer::get_instance() {
-        return singleton;
-    }
-
     /* A different game directory is different data: everything read from it is read again */
     GameDataServer::GameDataServer() {
-        singleton = this;
         build_number = FileAccess::get_file_as_string(BUILD_NUMBER_PATH).strip_edges();
         // the first thing the session's log says: which build wrote it
         UtilityFunctions::print(
@@ -31,10 +25,6 @@ namespace godot {
         if (!Engine::get_singleton()->is_editor_hint()) {
             _check_build_version();
         }
-    }
-
-    GameDataServer::~GameDataServer() {
-        singleton = nullptr;
     }
 
     void GameDataServer::_bind_methods() {

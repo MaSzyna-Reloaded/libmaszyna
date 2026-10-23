@@ -1,4 +1,6 @@
 #pragma once
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -14,7 +16,7 @@ namespace godot {
     /// vehicle's (its position is the vehicle's at the moment of a transmission, whatever kind of
     /// vehicle it is), or one standing at a place. Whether it is on is its owner's to answer: it
     /// sends only when it can, and plays only what it can hear. Whoever transmits has a radio.
-    class RadioServer : public Object {
+    class RadioServer : public Object, public ServerSingleton<RadioServer> {
             GDCLASS(RadioServer, Object)
 
         public:
@@ -36,10 +38,6 @@ namespace godot {
             /// scenario (kind: Kind, channel: int, payload: Variant, position: Vector3, reach: float)
             static const char *transmitted_signal;
 
-            static RadioServer *get_instance() {
-                return Object::cast_to<RadioServer>(Engine::get_singleton()->get_singleton("RadioServer"));
-            }
-
         private:
             struct Radio {
                     /// The vehicle it is in, or none for one standing at `position`
@@ -48,7 +46,7 @@ namespace godot {
                     /// (kind, channel, payload, position) of what it hears; none for a transmitter only
                     Callable receive_callback;
             };
-            HashMap<RID, Radio> radios;
+            RIDMap<Radio> radios;
 
             Vector3 _get_position(const Radio &p_radio) const;
 

@@ -1,5 +1,7 @@
 #pragma once
 #include "DriverImplementation.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/base/VehiclePersonRole.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -26,13 +28,8 @@ namespace godot {
     /// ReactionTime, Driver.cpp:150-158): its implementation asks for the next one
     /// (driver_schedule_update()) and is called when it comes. The time is SimulationServer's
     /// simulation time, which the physics and the events read too.
-    class DriverServer : public Object {
+    class DriverServer : public Object, public ServerSingleton<DriverServer> {
             GDCLASS(DriverServer, Object)
-
-        public:
-            static DriverServer *get_instance() {
-                return Object::cast_to<DriverServer>(Engine::get_singleton()->get_singleton("DriverServer"));
-            }
 
         private:
             struct DriverData {
@@ -56,7 +53,7 @@ namespace godot {
                     }
             };
 
-            HashMap<RID, DriverData> drivers;
+            RIDMap<DriverData> drivers;
             HashMap<StringName, Ref<DriverImplementation>> implementations;
             std::priority_queue<UpdateEntry, std::vector<UpdateEntry>, std::greater<UpdateEntry>> updates;
             uint64_t next_sequence = 1;

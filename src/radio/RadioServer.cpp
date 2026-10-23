@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+
     const char *RadioServer::transmitted_signal = "transmitted";
 
     void RadioServer::_bind_methods() {

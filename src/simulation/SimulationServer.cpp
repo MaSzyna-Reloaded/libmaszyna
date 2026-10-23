@@ -71,17 +71,10 @@ namespace godot {
     const char *SimulationServer::light_level_changed_signal = "light_level_changed";
     const char *SimulationServer::simulation_advanced_signal = "simulation_advanced";
 
-    SimulationServer *SimulationServer::singleton = nullptr;
-
     SimulationServer::SimulationServer() {
-        singleton = this;
         _on_project_settings_changed();
         ProjectSettings::get_singleton()->connect(
                 "settings_changed", callable_mp(this, &SimulationServer::_on_project_settings_changed));
-    }
-
-    SimulationServer::~SimulationServer() {
-        singleton = nullptr;
     }
 
     void SimulationServer::_on_project_settings_changed() {

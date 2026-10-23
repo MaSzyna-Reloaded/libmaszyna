@@ -375,8 +375,8 @@ electric_engine->call("set_pantograph_wire_voltage", TrainElectricEngine::PANTOG
 electric_engine->set_pantograph_wire_voltage(TrainElectricEngine::PANTOGRAPH_FIRST, voltage);
 ```
 
-A singleton is reached the same way - a typed `static X *get_instance()` and typed methods, the
-shape `RailVehicleServer`, `SceneryStreamingServer` and `SimulationServer` already have. Not a name looked
+A singleton is reached the same way - a typed `static X *get_instance()` returning the pointer the
+server stored in its constructor ("Singletons C++" below), and typed methods. Not a name looked
 up on an `Object`, and not `get_tree()->get_root()->get_node_or_null(name)` standing in for one.
 
 A string call is allowed only where the class genuinely cannot be known at build time - a GDScript
@@ -490,6 +490,10 @@ polled. If it truly has to run every frame:
   its instance up).
 * No allocations, no `get_node()`, no string work, no `find`/`has` over a collection, no singleton
   or `ProjectSettings` lookups - resolve all of it once and cache it.
+* Inside its own per-step path a server reads its storage, not its public API that builds objects
+  for a caller (`TypedArray<Ref<...>>`, `Dictionary`): `TrackServer::track_find_next()` walks the
+  node's `endpoint_refs` instead of `track_get_endpoint_connections()`, which made a
+  `Ref<TrackEndpointRef>` per connection on every axle crossing a track's end.
 * Nothing at all while the work is idle: turn the processing off (`set_process(false)`, or
   disconnect from `process_frame`) when there is nothing to do, and back on when there is.
 * If a per-frame loop is genuinely unavoidable, **bound it** - a fixed budget per frame, or the
@@ -658,7 +662,7 @@ code = code.replace("cull_back", "cull_disabled")
 variant_shader.code = code
 
 # this - the variant is a file, picked by the factory
-const BLEND_SHADER: Shader = preload("types/normalmap_blend.gdshader")
+load("res://addons/libmaszyna/legacy/materials/types/variants/normalmap_blend_cull_disabled.gdshader")
 ```
 
 * **It cannot be precompiled.** A shader that exists only as a string made at run time is
@@ -673,10 +677,18 @@ A variant that needs another compilation - a shader that writes `ALPHA`, another
 mode - is a small `.gdshader` of its own: its `render_mode`, a `#define`, and an `#include` of the
 shared code (`.gdshaderinc`). What a uniform can switch is a uniform, not a variant.
 
-`MaszynaMaterialFactory._get_shader_variant()` still does the forbidden thing, and the blended
-variant a vehicle's glass is drawn with comes out of it - so the first vehicle drawn near the
-camera compiles it in the game. Replacing it with files is in `TODO.md`; nothing more is added to
-it.
+The material types are built that way: `types/<type>.gdshader` is the opaque one with the back
+faces culled, its code is `types/<type>.gdshaderinc`, and `types/variants/` holds one file per
+combination it needs - `_blend` (`MASZYNA_ALPHA_BLEND`), `_scissor` (`MASZYNA_ALPHA_SCISSOR`),
+`_cull_disabled`, `_specgloss` (`MASZYNA_SPECGLOSS`), in that order.
+`MaszynaMaterialFactory.SHADER_VARIANTS` lists which of them a type has, and
+`_get_shader_variant()` only picks the file. A new combination is a new file and an entry there.
+
+* **`discard` stands only under `MASZYNA_ALPHA_SCISSOR`.** A shader that holds `discard`, even
+  behind a uniform that is never set, does not get Godot's shared depth and shadow material, so
+  each of its surfaces draws again with its own shader in the depth prepass and in every shadow
+  pass. A cut-out material takes the `_scissor` variant. The opaque ones stay off that path
+  (`docs/performance/changes.md`).
 
 ### Input is the project's actions, matched exactly
 
@@ -722,8 +734,53 @@ the logic into a separate class) instead of reaching into internals.
   - call `Engine::unregister_singleton()` with checking `Engine::has_singleton()`
   - call `memdelete()` if pointer is not nullptr, then assign nullptr to the pointer
   - double check order of deallocation singletons
-* `Engine::get_singleton()->get_singleton("<name>")` and/or `CustomSingleton::get_instance()` does not guarantee
-  a valid instance / pointer. Always check that the singleton pointer is not `nullptr`.
+* `CustomSingleton::get_instance()` does not guarantee a valid instance / pointer. Always check that the
+  singleton pointer is not `nullptr`.
+* A server holds its own instance by deriving `ServerSingleton<X>` (`src/utils/ServerSingleton.hpp`),
+  as the engine's servers keep theirs: `get_instance()` returns the pointer set when the server was
+  made, cleared after its destructor has run. Never look the singleton up by name
+  (`Engine::get_singleton()->get_singleton("X")`): that builds a `StringName` from a C string and scans
+  the engine's singleton list on every call, and `TrackServer::get_instance()` is called per axle in
+  the Mover step - 6% of the main thread on Wrzosy (`docs/performance/changes.md`).
+* A server is made once, by `memnew()` in `register_types.cpp`, and freed there in dependency order -
+  never a function-local `static X instance`: it would skip `memnew`'s `_postinitialize()` and be
+  destroyed at process exit, after godot-cpp is gone. It is registered with
+  `GDREGISTER_ABSTRACT_CLASS`, so a script cannot make a second one (`RenderingServer` is registered
+  the same way); a second `memnew` is refused by `ServerSingleton` and never takes the pointer over.
+
+  ```cpp
+  // X.hpp
+  class X : public Object, public ServerSingleton<X> {
+          GDCLASS(X, Object)
+          ...
+  };
+
+  // register_types.cpp
+  GDREGISTER_ABSTRACT_CLASS(X);
+  x_singleton = memnew(X);
+  Engine::get_singleton()->register_singleton("X", x_singleton);
+  ```
+
+### RID-keyed containers
+
+A map or a set keyed by `RID` is `RIDMap<V>` / `RIDSet` (`src/utils/RIDHash.hpp`), never
+`HashMap<RID, V>` / `HashSet<RID>`. godot-cpp's `RID::operator==` is a variant operator call into the
+engine and `RID::get_id()` a builtin method call, and a `HashMap` with the default hasher and
+comparator makes one on every hash and every compare - several per lookup. `RIDMap` hashes and
+compares the RID's 64-bit id read from its bytes (`rid_get_id()`), with no call. On Wrzosy the
+engine's RID compares were 8.8% of the main thread before, 0.05% after
+(`docs/performance/changes.md`).
+
+```cpp
+// not this
+HashMap<RID, TrackSegment> tracks;
+HashSet<RID> built_instances;
+
+// this
+#include "utils/RIDHash.hpp"
+RIDMap<TrackSegment> tracks;
+RIDSet built_instances;
+```
 
 ### Pointers, Refs and RefCounted objects
 

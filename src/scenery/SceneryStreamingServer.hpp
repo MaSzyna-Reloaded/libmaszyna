@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scenery/SceneryStreamingProvider.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -34,7 +36,7 @@ namespace godot {
     /// Content may also be supplied by chunk (SceneryStreamingProvider): a provider's cell is asked
     /// for as the camera comes within the draw distance of it, and what it gives is handed to the
     /// consumer of its kind, which registers it as pieces like any other.
-    class SceneryStreamingServer : public Object {
+    class SceneryStreamingServer : public Object, public ServerSingleton<SceneryStreamingServer> {
             GDCLASS(SceneryStreamingServer, Object)
 
         public:
@@ -87,11 +89,6 @@ namespace godot {
             /// A watched area (area_watch()) is built around the camera (chunk_radius: int) - once per
             /// plan of where the camera is
             static const char *area_ready_signal;
-
-            static SceneryStreamingServer *get_instance() {
-                return Object::cast_to<SceneryStreamingServer>(
-                        Engine::get_singleton()->get_singleton("SceneryStreamingServer"));
-            }
 
         private:
             struct Owner {
@@ -238,7 +235,7 @@ namespace godot {
                     Vector2i chunk;
                     int index = 0;
             };
-            HashMap<RID, EntryLocation> entry_locations;
+            RIDMap<EntryLocation> entry_locations;
             Vector3 camera_position;
             float draw_distance = DEFAULT_DRAW_DISTANCE_M;
 
@@ -271,7 +268,7 @@ namespace godot {
             /// Builds ahead of the range, nearest last - applied only when pending_builds is empty
             Vector<PendingBuild> pending_prefetches;
             Vector<PendingClear> pending_clears;
-            HashMap<RID, Provider> providers;
+            RIDMap<Provider> providers;
             std::array<Consumer, CONTENT_KIND_COUNT> consumers;
             Vector<PendingProvide> planned_provides; // published by the worker
             Vector<PendingWithdraw> planned_withdraws;
@@ -326,7 +323,6 @@ namespace godot {
             bool _apply_builds(Vector<PendingBuild> &p_builds, uint64_t p_deadline);
             /// Hands each RID back to the consumer of its kind
             void _release_content(const std::array<Vector<RID>, CONTENT_KIND_COUNT> &p_rids);
-
 
         protected:
             static void _bind_methods();

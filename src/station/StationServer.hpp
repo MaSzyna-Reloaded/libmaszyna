@@ -1,4 +1,6 @@
 #pragma once
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/rail/RailVehicleDoors.hpp"
 #include "vehicles/rail/RailVehicleLoad.hpp"
 #include <godot_cpp/classes/engine.hpp>
@@ -16,7 +18,7 @@ namespace godot {
     /// doors and exchange by themselves (RailVehicleLoad); whoever drives works the cab's controls
     /// as the step asks. The original keeps it as a negative fStopTime of the driver and the
     /// driver's Doors() (Driver.cpp:1233-1241, 4266-4356, 6767-6801).
-    class StationServer : public Object {
+    class StationServer : public Object, public ServerSingleton<StationServer> {
             GDCLASS(StationServer, Object)
 
         public:
@@ -37,10 +39,6 @@ namespace godot {
             /// The dispatch is over, the train may go (vehicle: RID)
             static const char *dispatch_finished_signal;
 
-            static StationServer *get_instance() {
-                return Object::cast_to<StationServer>(Engine::get_singleton()->get_singleton("StationServer"));
-            }
-
         private:
             /// A car of the dispatch and what it reports, followed while the dispatch lasts
             struct Car {
@@ -54,10 +52,10 @@ namespace godot {
                     bool departure_allowed = false;
                     Vector<Car> cars;
                     /// The cars still exchanging, and those whose doors are still not closed
-                    HashSet<RID> exchanging;
-                    HashSet<RID> doors_not_closed;
+                    RIDSet exchanging;
+                    RIDSet doors_not_closed;
             };
-            HashMap<RID, Dispatch> dispatches;
+            RIDMap<Dispatch> dispatches;
 
             void _set_step(const RID &p_vehicle, Dispatch &p_dispatch, DispatchStep p_step);
             void _close_doors(const RID &p_vehicle, Dispatch &p_dispatch);

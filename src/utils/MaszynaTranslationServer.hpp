@@ -1,4 +1,5 @@
 #pragma once
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/translation.hpp>
@@ -13,15 +14,10 @@ namespace godot {
     ///
     /// It is the only translation in TranslationServer: every Control, `tr()` and `atr()` looks
     /// up through it, and re-translates itself when the language changes.
-    class MaszynaTranslationServer : public Object {
+    class MaszynaTranslationServer : public Object, public ServerSingleton<MaszynaTranslationServer> {
             GDCLASS(MaszynaTranslationServer, Object)
 
         public:
-            static MaszynaTranslationServer *get_instance() {
-                return Object::cast_to<MaszynaTranslationServer>(
-                        Engine::get_singleton()->get_singleton("MaszynaTranslationServer"));
-            }
-
             /// The wrapper's own .po files, merged under the game's catalogue
             static constexpr const char *TRANSLATIONS_SETTING = "maszyna/locale/translations";
             /// The original's own strings, untranslated - no catalogue needed.

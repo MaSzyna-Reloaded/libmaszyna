@@ -6,6 +6,8 @@
 #include "E3DOptimizedBackend.hpp"
 #include "E3DSmokeSourceFactory.hpp"
 #include "scenery/SceneryModelPlacement.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -23,7 +25,7 @@ namespace godot {
     /// Scenery placements are registered with instance_register() instead of being built right
     /// away: SceneryStreamingServer builds them only while the camera is within their range.
     /// InstanceKind and Translucency are E3DInstanceTypes', shared with the backends below it.
-    class E3DRenderingServer : public Object, public E3DInstanceTypes {
+    class E3DRenderingServer : public Object, public E3DInstanceTypes, public ServerSingleton<E3DRenderingServer> {
             GDCLASS(E3DRenderingServer, Object)
 
         public:
@@ -132,11 +134,6 @@ namespace godot {
             /// (TAnimContainer's evDone, AnimModel.cpp:112-120, 175-180)
             static const char *instance_submodel_animation_finished_signal;
 
-            static E3DRenderingServer *get_instance() {
-                return Object::cast_to<E3DRenderingServer>(
-                        Engine::get_singleton()->get_singleton("E3DRenderingServer"));
-            }
-
         private:
             /// An addressable light of an instance. An emission light only switches the model's
             /// own light_onNN/light_offNN submodels (the backends do that from lights_state), a
@@ -193,9 +190,9 @@ namespace godot {
                     bool streamed_in = false;
             };
 
-            HashMap<RID, E3DInstanceData> instances;
-            HashMap<RID, LightObject> lights;
-            HashMap<RID, SmokeObject> smoke_objects;
+            RIDMap<E3DInstanceData> instances;
+            RIDMap<LightObject> lights;
+            RIDMap<SmokeObject> smoke_objects;
             /// The emitters that spawn now (SmokeObject::ordered), in a flat list the per-frame tick
             /// walks round-robin; a HashMap's elements do not move, so they are held by pointer
             LocalVector<SmokeObject *> smoke_order;
@@ -237,7 +234,7 @@ namespace godot {
             double current_time = 12.0; // hours, 0..24
             double light_level = 1.0;   // Global.fLuminance equivalent (simulationenvironment.cpp:184)
             /// The instances built now - the only ones whose lights a change of time or light reaches
-            HashSet<RID> built_instances;
+            RIDSet built_instances;
             Callable model_loader;
             /// `material_preloader(model, data_path, skins, max_texture_size) -> Variant`, on a worker
             Callable material_preloader;
@@ -250,7 +247,7 @@ namespace godot {
                     String data_path;
                     PackedStringArray skins;
             };
-            HashMap<RID, StreamModel> stream_models;
+            RIDMap<StreamModel> stream_models;
             Mutex models_mutex;
 
             E3DInstanceBackend &_get_backend(const E3DInstanceData &p_instance);

@@ -2,6 +2,8 @@
 #include "SignalHeadKind.hpp"
 #include "SignallingImplementation.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -15,7 +17,7 @@ namespace godot {
     /// instance. Low level, its lights are switched one by one. High level, signal heads and event
     /// sources are grouped into systems, and a system's SignallingImplementation decides what an
     /// event means and shows it on the system's signal heads.
-    class SignallingServer : public Object {
+    class SignallingServer : public Object, public ServerSingleton<SignallingServer> {
             GDCLASS(SignallingServer, Object)
 
         public:
@@ -86,10 +88,6 @@ namespace godot {
             /// The PROPERTY_HINT_ENUM string of RouteState
             static String route_state_hint();
 
-            static SignallingServer *get_instance() {
-                return Object::cast_to<SignallingServer>(Engine::get_singleton()->get_singleton("SignallingServer"));
-            }
-
         private:
             struct SignalHeadData {
                     RID instance;
@@ -138,10 +136,10 @@ namespace godot {
                     Vector<RID> routes;
             };
 
-            HashMap<RID, SignalHeadData> signal_heads;
-            HashMap<RID, SourceData> sources;
-            HashMap<RID, SystemData> systems;
-            HashMap<RID, RouteData> routes;
+            RIDMap<SignalHeadData> signal_heads;
+            RIDMap<SourceData> sources;
+            RIDMap<SystemData> systems;
+            RIDMap<RouteData> routes;
             HashMap<StringName, RID> systems_by_switch_name;
             HashMap<StringName, RID> routes_by_name;
             HashMap<StringName, RID> signal_heads_by_name;
@@ -149,7 +147,7 @@ namespace godot {
             /// The source of each isolated section a source reports - one per section
             HashMap<StringName, RID> sources_by_isolated;
             HashMap<StringName, RID> systems_by_name;
-            HashMap<RID, RID> signal_heads_by_instance;
+            RIDMap<RID> signal_heads_by_instance;
 
             void _on_instance_freed(const RID &p_instance);
             void _on_instance_built(const RID &p_instance);

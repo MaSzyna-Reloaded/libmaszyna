@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/string.hpp>
@@ -14,11 +15,10 @@ namespace godot {
     /// drops what it holds in memory (data_unload_requested), then builds again what it has built
     /// (data_reload_requested). Whatever is built takes its data from its owner when it needs it,
     /// so by the second round every owner hands out the new data, in whatever order they rebuild.
-    class GameDataServer : public Object {
+    class GameDataServer : public Object, public ServerSingleton<GameDataServer> {
             GDCLASS(GameDataServer, Object)
 
         private:
-            static GameDataServer *singleton;
             static constexpr const char *BUILD_NUMBER_PATH = "res://build_number.txt";
             static constexpr const char *BUILD_SECTION = "app";
             static constexpr const char *BUILD_NUMBER_KEY = "build_number";
@@ -39,12 +39,7 @@ namespace godot {
             static const char *data_unload_requested_signal;
             static const char *data_reload_requested_signal;
 
-            /* Set as the server is created, so the servers created after it follow it from their
-             * own constructors */
-            static GameDataServer *get_instance();
-
             GameDataServer();
-            ~GameDataServer() override;
 
             /* Throws the caches on disk away: every cache follows cache_clear_requested */
             void cache_clear();

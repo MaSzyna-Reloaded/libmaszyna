@@ -10,6 +10,8 @@
 #include <godot_cpp/variant/rid.hpp>
 #include <godot_cpp/variant/string.hpp>
 
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include <memory>
 
 namespace godot {
@@ -35,7 +37,7 @@ namespace godot {
     /// Thread-safe: the streaming loads on its worker threads (resource_load()) and holds what it
     /// builds on the main thread (resource_hold()). One key is loaded by one thread at a time; a
     /// second asking for it waits, and gets the copy kept when one is.
-    class ResourceLazyLoader : public Object {
+    class ResourceLazyLoader : public Object, public ServerSingleton<ResourceLazyLoader> {
             GDCLASS(ResourceLazyLoader, Object)
 
         private:
@@ -52,10 +54,8 @@ namespace godot {
                     Ref<Resource> resource; // while held, or while registered when resident by it
             };
 
-            static ResourceLazyLoader *singleton;
-
             mutable Mutex mutex;
-            HashMap<RID, Entry> entries;
+            RIDMap<Entry> entries;
             HashMap<String, RID> keys;
             int load_count = 0;
             bool lazy_loading = DEFAULT_LAZY_LOADING;
@@ -72,10 +72,7 @@ namespace godot {
             /// Command-line switch: lazy loading whatever the setting says
             static constexpr const char *ARG_ENABLE_LAZY_LOADING = "--enable-lazy-loading";
 
-            static ResourceLazyLoader *get_instance();
-
             ResourceLazyLoader();
-            ~ResourceLazyLoader() override;
 
             /* Takes effect on the keys registered from now on; one registered already keeps its mode */
             void set_lazy_loading(bool p_lazy_loading);

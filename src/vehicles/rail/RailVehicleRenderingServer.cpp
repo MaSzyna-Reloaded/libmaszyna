@@ -34,7 +34,6 @@
 #include <array>
 
 namespace godot {
-    RailVehicleRenderingServer *RailVehicleRenderingServer::singleton = nullptr;
     const char *RailVehicleRenderingServer::vehicle_model_built_signal = "vehicle_model_built";
     const char *RailVehicleRenderingServer::builds_finished_signal = "builds_finished";
 
@@ -146,12 +145,7 @@ namespace godot {
                                  : Ref<RailVehicleBuffCoupl>();
     }
 
-    RailVehicleRenderingServer *RailVehicleRenderingServer::get_instance() {
-        return singleton;
-    }
-
     RailVehicleRenderingServer::RailVehicleRenderingServer() {
-        singleton = this;
         preload_queue.instantiate();
         preload_queue->connect(
                 WorkerTaskQueue::task_finished_signal,
@@ -413,7 +407,6 @@ namespace godot {
         while (!vehicles.is_empty()) {
             vehicle_detach(vehicles.begin()->key);
         }
-        singleton = nullptr;
     }
 
     void RailVehicleRenderingServer::_bind_methods() {
@@ -1201,7 +1194,10 @@ namespace godot {
      * transform is RailVehicleServer's answer and nothing else - it composes it from the bogies. */
     void RailVehicleRenderingServer::_place(const RID &p_vehicle, Visual &p_visual) {
         RailVehicleServer *server = RailVehicleServer::get_instance();
-        const Dictionary position = server != nullptr ? server->vehicle_get_track_position(p_vehicle) : Dictionary();
+        if (server == nullptr) {
+            return;
+        }
+        const Dictionary position = server->vehicle_get_track_position(p_vehicle);
         if (!RID(position.get("track_rid", RID())).is_valid()) {
             return;
         }

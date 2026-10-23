@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/ServerSingleton.hpp"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -11,7 +12,7 @@
 
 namespace godot {
 
-    class UserSettings : public Object {
+    class UserSettings : public Object, public ServerSingleton<UserSettings> {
             GDCLASS(UserSettings, Object)
 
         private:
@@ -45,10 +46,6 @@ namespace godot {
             static const char *game_dir_changed_signal;
 
             UserSettings();
-
-            static UserSettings *get_instance() {
-                return dynamic_cast<UserSettings *>(Engine::get_singleton()->get_singleton("UserSettings"));
-            }
 
             void load_config();
 

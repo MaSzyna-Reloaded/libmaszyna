@@ -12,6 +12,8 @@
 
 #include "RailVehicleNeighbour.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -42,7 +44,7 @@ namespace godot {
      * the per-vehicle rail operations below in its phases.
      *
      * Ported from addons/libmaszyna/servers/rail_vehicle_physics_server.gd. */
-    class RailVehicleServer : public Object {
+    class RailVehicleServer : public Object, public ServerSingleton<RailVehicleServer> {
             GDCLASS(RailVehicleServer, Object)
 
         public:
@@ -65,10 +67,6 @@ namespace godot {
                 PANTOGRAPH_CONTACT_LOSS_NO_WIRE,
                 PANTOGRAPH_CONTACT_LOSS_DEAD_WIRE,
             };
-
-            static RailVehicleServer *get_instance() {
-                return Object::cast_to<RailVehicleServer>(Engine::get_singleton()->get_singleton("RailVehicleServer"));
-            }
 
         private:
             /* Distance the neighbour scan steps past a track endpoint to enter the next track */
@@ -216,8 +214,10 @@ namespace godot {
             /* Where one vehicle sits on the route. */
             struct VehiclePlacement {
                     /* The controller this server steps and relays the rail events of - the one
-                     * VehicleServer drives the vehicle with, taken again when that changes */
-                    ObjectID controller_id;
+                     * VehicleServer drives the vehicle with, taken again when that changes
+                     * (vehicle_controller_changed). Held, not looked up by its id: the lookup and
+                     * the cast cross into the engine, and the step asks for it per axle. */
+                    Ref<RailVehicleController> controller;
                     /* What the scenery placed the rail vehicle with - its type and its load -
                      * handed to every controller bound to it before its simulation starts */
                     String type_name;
@@ -273,7 +273,7 @@ namespace godot {
                     /* How long the pantographs have fed no voltage [s] (NoVoltTime) */
                     double no_voltage_time = 0.0;
                     /* What each of its VehicleServer cabins is, in the railway's words */
-                    HashMap<RID, RailVehicleCabinKind::Kind> cabin_kinds;
+                    RIDMap<RailVehicleCabinKind::Kind> cabin_kinds;
                     /* The person the vehicle answers to - kept while it drives it, whoever else
                      * sits down to drive */
                     RID driver;
@@ -283,7 +283,7 @@ namespace godot {
                     TrainsetType trainset_type = TRAINSET_TYPE_NONE;
             };
 
-            HashMap<RID, VehiclePlacement> vehicles;
+            RIDMap<VehiclePlacement> vehicles;
 
             /* A scenery's trainset (deserialize_trainset(), simulationstateserializer.cpp): its
              * vehicles in order, standing one after another from its front on its track */
@@ -304,7 +304,7 @@ namespace godot {
                     /* Asked to stand while a vehicle of it had no simulation yet: it stands once it has */
                     bool placement_pending = false;
             };
-            HashMap<RID, Trainset> trainsets;
+            RIDMap<Trainset> trainsets;
             void _on_vehicle_configured(const RID &p_vehicle);
             void _on_vehicle_config_changed(const RID &p_vehicle);
             bool diagnostics = false;
@@ -315,7 +315,7 @@ namespace godot {
              * change of the track network as a whole stales every scan */
             uint64_t track_change_serial = 0;
             uint64_t topology_change_serial = 0;
-            HashMap<RID, uint64_t> track_change_serials;
+            RIDMap<uint64_t> track_change_serials;
             void _track_changed(const RID &p_track);
             void _on_topology_changed();
             void _on_switch_active_track_changed(const RID &p_switch, int p_active_track);
@@ -571,7 +571,6 @@ namespace godot {
              * one fed by a current collector, of the unit first, then of the vehicles under control;
              * an invalid RID when there is none */
             RID vehicle_find_pantograph_carrier(const RID &p_vehicle) const;
-
 
             void vehicle_set_track(
                     const RID &p_vehicle, const RID &p_track, double p_track_offset,

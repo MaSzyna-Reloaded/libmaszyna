@@ -179,6 +179,9 @@ var environment_node: MaszynaEnvironmentNode
 var _environment: Environment
 ## The cab light of each world light, when CABIN_SHADOWS_IMPROVED_SETTING is on
 var _cabin_lights: Dictionary[DirectionalLight3D, DirectionalLight3D] = {}
+## Whether the settings give a light its shadow (_apply_directional_light_settings()); it casts it
+## only while it shines (sync_shadow_casting())
+var _shadow_wanted: Dictionary[DirectionalLight3D, bool] = {}
 var _dirty_visuals: bool = true
 var _dirty_lights: bool = true
 var _dirty_time: bool = true
@@ -243,6 +246,7 @@ func _process(delta: float) -> void:
         _dirty_time = false
         apply_time_configuration()
     sync_cabin_lights()
+    sync_shadow_casting()
     process_time(delta)
 
 
@@ -352,6 +356,17 @@ func sync_cabin_lights() -> void:
         cabin_light.light_angular_distance = world_light.light_angular_distance
 
 
+## A light without energy casts no shadow: the sky backend keeps its one world light at zero while
+## neither the sun nor the moon is up (Skydome.gd), and its four cascades would still draw the
+## scenery again - 9-11 ms of the GPU at night on calkowo_v2 (docs/performance/changes.md) - for
+## nothing to see
+func sync_shadow_casting() -> void:
+    for light: DirectionalLight3D in _shadow_wanted:
+        var casting: bool = _shadow_wanted[light] and light.light_energy > 0.0
+        if not light.shadow_enabled == casting:
+            light.shadow_enabled = casting
+
+
 ## Gives a world light a cab light of its own: it lights only the cab layer and the world light no
 ## longer does. Shadow casters stay on every layer, so a station roof or the vehicle's body still
 ## shades the cab.
@@ -373,6 +388,7 @@ func _create_cabin_light(world_light: DirectionalLight3D) -> void:
 ## The world light gives the cab light back the cab layer it took
 func _free_cabin_light(world_light: DirectionalLight3D) -> void:
     world_light.light_cull_mask |= MaszynaEnvironmentNode.CABIN_RENDER_LAYER
+    _shadow_wanted.erase(_cabin_lights[world_light])
     _cabin_lights[world_light].queue_free()
     _cabin_lights.erase(world_light)
 
@@ -395,12 +411,13 @@ func _apply_directional_light_settings(light: DirectionalLight3D, view: ShadowVi
     light.shadow_reverse_cull_face = bool(ProjectSettings.get_setting(REVERSE_CULL_FACE_SETTING, false))
     # the cab light casts shadows only while there is a cab to look at; it keeps lighting the cab
     # seen from outside
-    light.shadow_enabled = (
+    _shadow_wanted[light] = (
         bool(ProjectSettings.get_setting(SHADOW_CABIN_ENABLED_SETTING, true))
         and environment_node.cabin_view
         if cabin
         else bool(ProjectSettings.get_setting(SHADOW_SCENERY_ENABLED_SETTING, true))
     )
+    light.shadow_enabled = _shadow_wanted[light] and light.light_energy > 0.0
     light.shadow_opacity = float(
         ProjectSettings.get_setting(SHADOW_CABIN_OPACITY_SETTING, 1.0)
         if cabin

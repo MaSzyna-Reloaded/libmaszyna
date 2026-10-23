@@ -3,8 +3,9 @@ extends MaszynaGutTest
 const MATERIALS_GAME_DIR = "res://tests/materials"
 const MATERIAL_NAME = "seasonal_manager"
 const NONTRANSPARENT_MATERIAL_NAME = "nontransparent_manager"
-const NORMALMAP_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/normalmap.gdshader"
-const SHADOWLESS_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/shadowlessnormalmap.gdshader"
+# MATERIAL_NAME is cut out (its texture asks for transparency): its types' variant with the discard
+const NORMALMAP_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/variants/normalmap_scissor.gdshader"
+const SHADOWLESS_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/variants/shadowlessnormalmap_scissor.gdshader"
 const WATER_SHADER_PATH = "res://addons/libmaszyna/legacy/materials/types/water.gdshader"
 
 var _previous_game_dir: String = ""

@@ -136,10 +136,22 @@ Code generation:
   together and assigned to `Shader.code`. A shader made that way cannot be precompiled: it compiles
   when the first object using it is drawn, which is an FPS drop every time a vehicle is instanced
   in the game. A variant is a `.gdshader` file; what a uniform can switch is a uniform - see
-  `CODE_STYLE.md`
+  `CODE_STYLE.md`. The material types' variants are `types/variants/<type>_*.gdshader`, listed in
+  `MaszynaMaterialFactory.SHADER_VARIANTS`; a material type's `discard` stands only under
+  `MASZYNA_ALPHA_SCISSOR`, never in the opaque shader
+* a world or cab directional light's shadow is set through `MaszynaSkyEnvironment._shadow_wanted`,
+  never `shadow_enabled` directly: `sync_shadow_casting()` casts it only while the light has energy
+  (at night the sky's light is at zero, and its cascades cost 11 ms - `docs/performance/changes.md`)
 * PROHIBITED: **never wire anything up in a hot path** - no `connect`, `get_node`, path resolution
   or subscription in `_process`/`_physics_process`/a tick, not even behind `_dirty`; wire once in
   `_enter_tree()`, `_ready()` or an owner's init - see `CODE_STYLE.md`
+* a server derives `ServerSingleton<X>` (`src/utils/ServerSingleton.hpp`) and is registered with
+  `GDREGISTER_ABSTRACT_CLASS`: `get_instance()` is the pointer its one `memnew` set, a second
+  instance is refused - never `Engine::get_singleton()->get_singleton("X")`, a name lookup in the
+  engine on every call - see `CODE_STYLE.md`
+* a map or a set keyed by `RID` is `RIDMap<V>` / `RIDSet` (`src/utils/RIDHash.hpp`), never
+  `HashMap<RID, V>` / `HashSet<RID>`, whose hash and compare call into the engine - see
+  `CODE_STYLE.md`
 * recurring work, in order of preference: C++ (a singleton on `SceneTree`'s `process_frame`), a
   `Timer` (not one per instance of something numerous), `_process` with a delta accumulator
 * `_process` is a last resort in C++ as much as in GDScript - prefer event-driven code. What lands
@@ -153,6 +165,11 @@ General guidelines:
 * if you are not sure, ask operator for decision
 * whatever is left out of a task (not ported, skipped, deferred) goes to `TODO.md`, not only to the
   session report, so it isn't forgotten
+* performance work - a measurement, a profile, a change made for speed and its before/after, what
+  was left out because it would change the picture - goes to `docs/performance/` (`baseline.md`,
+  `changes.md`, `findings.md` - faults of behaviour or data found while measuring -,
+  `out-of-scope.md`), not to `FINDINGS.md` or `docs/findings-archive.md`. How to
+  measure: the game's `docs/performance/profiling.md`, and the `godot-frame-time` skill
 * every significant finding (a root cause that took a measurement to find, a trap in the data or in
   the engine, a wrong assumption that cost time) goes to `docs/findings-archive.md` - symptom, what
   proved the cause, the fix and the rule - and its rule, one line, to the index in `FINDINGS.md`;

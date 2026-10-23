@@ -1,4 +1,6 @@
 #pragma once
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "vehicles/base/VehicleComponentType.hpp"
 #include "vehicles/base/VehicleController.hpp"
 #include "vehicles/base/VehiclePerson.hpp"
@@ -21,13 +23,8 @@ namespace godot {
      * What a kind of vehicle adds - a rail vehicle's track, stepping, couplers and the kinds of its
      * cabins - is a server of its own (RailVehicleServer), which takes a vehicle created here and
      * knows it by the same handle. */
-    class VehicleServer : public Object {
+    class VehicleServer : public Object, public ServerSingleton<VehicleServer> {
             GDCLASS(VehicleServer, Object)
-
-        public:
-            static VehicleServer *get_instance() {
-                return Object::cast_to<VehicleServer>(Engine::get_singleton()->get_singleton("VehicleServer"));
-            }
 
         private:
             /* A controller this server holds (controller_create()): the copy of a description it
@@ -67,16 +64,16 @@ namespace godot {
              * and who is in it, in what role */
             struct Cabin {
                     RID vehicle;
-                    HashMap<RID, VehiclePersonRole::Role> persons;
+                    RIDMap<VehiclePersonRole::Role> persons;
             };
 
-            HashMap<RID, Vehicle> vehicles;
-            HashMap<RID, Cabin> cabins;
+            RIDMap<Vehicle> vehicles;
+            RIDMap<Cabin> cabins;
             /* The cabin each person aboard sits in - a person is in one cabin at a time */
-            HashMap<RID, RID> person_cabins;
+            RIDMap<RID> person_cabins;
             HashMap<String, RID> vehicles_by_id;
             int64_t next_vehicle_id = 0;
-            HashMap<RID, Controller> controllers;
+            RIDMap<Controller> controllers;
             int64_t next_controller_id = 0;
             /* What simulates vehicles, by the name a controller gives (implementation_register()) */
             HashMap<StringName, ObjectID> implementations;

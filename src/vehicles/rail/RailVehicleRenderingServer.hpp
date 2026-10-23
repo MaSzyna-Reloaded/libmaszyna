@@ -1,5 +1,7 @@
 #pragma once
 #include "legacy/e3d/E3DModel.hpp"
+#include "utils/RIDHash.hpp"
+#include "utils/ServerSingleton.hpp"
 #include "utils/WorkerTaskQueue.hpp"
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
@@ -27,7 +29,7 @@ namespace godot {
      * the vehicle, and draws the models there. What moves is animated from the vehicle's state
      * natively, once a frame for the vehicles near the camera and a few times a second for the
      * rest - no script runs per vehicle. */
-    class RailVehicleRenderingServer : public Object {
+    class RailVehicleRenderingServer : public Object, public ServerSingleton<RailVehicleRenderingServer> {
             GDCLASS(RailVehicleRenderingServer, Object)
 
         public:
@@ -61,8 +63,6 @@ namespace godot {
             static constexpr uint64_t BUILD_BUDGET_MSEC = 4;
 
         private:
-            static RailVehicleRenderingServer *singleton;
-
             /* The low-poly interior's cabs, cab0 for a vehicle's single one (DynObj.cpp:2383-2391) */
             static constexpr std::array<const char *, 3> LOW_POLY_CABS = {"cab0", "cab1", "cab2"};
 
@@ -116,7 +116,7 @@ namespace godot {
                     RID coupler_adapter_resources[2];
                     /* What the preload loaded on a worker, by resource - taken by the next build,
                      * which holds them (_get_model()) */
-                    HashMap<RID, Ref<Resource>> preloaded;
+                    RIDMap<Ref<Resource>> preloaded;
                     /* What holds the files of those models' materials the preload read
                      * (E3DRenderingServer::material_preload()), let go with them after the build */
                     Array preloaded_materials;
@@ -199,11 +199,11 @@ namespace godot {
                 COUPLER_VARIANT_COUNT,
             };
 
-            HashMap<RID, Visual> vehicles;
+            RIDMap<Visual> vehicles;
             /* The vehicle each exterior model draws */
-            HashMap<RID, RID> model_vehicles;
+            RIDMap<RID> model_vehicles;
             /* The vehicle each detection area finds */
-            HashMap<RID, RID> area_vehicles;
+            RIDMap<RID> area_vehicles;
             /* The vehicles in the order the frame visits them, and where each visit left off */
             Vector<RID> visit_order;
             int slow_cursor = 0;
@@ -298,8 +298,6 @@ namespace godot {
             static void _bind_methods();
 
         public:
-            static RailVehicleRenderingServer *get_instance();
-
             RailVehicleRenderingServer();
             ~RailVehicleRenderingServer() override;
 
