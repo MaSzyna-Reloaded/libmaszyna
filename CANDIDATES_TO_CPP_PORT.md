@@ -52,13 +52,18 @@ libreloaded `addons/libreloaded/cabin/cabin_system.gd:401` calls, on every simul
 for every cab of the scenery (hundreds - every AI driver sits in one), its process callables:
 `addons/libmaszyna/cabin/main_switch.gd`, `door_permits.gd`, and for the shown cabs
 `cab_lights.gd`; `cabin_logic.gd:314` adds its held knobs. `Callable.call()` per process per cab per
-step. Not measured on its own yet (inside the ~4% of the step's other listeners).
+step. Measured (a timing wrapper around `_on_simulation_advanced()`, the same run): **~2.3 ms a
+frame** - 309 cabs, 618 processes (`main_switch.gd`, `door_permits.gd` of every cab) called on every
+advance, and the 309 cabs with display processes looked up to find the few shown. At 27 fps that is
+about 6% of the main thread.
 
 ## 3. Train sounds - `TrainSoundSystem`
 
 `addons/libmaszyna/sound/train_sound_system.gd:300` `_process()` visits every active bank (the
 vehicles within earshot) every frame, `_on_simulation_advanced()` sweeps the banks a few times a
-second. Not measured on its own yet.
+second. Measured the same way: **~2.4 ms a frame** in `_process()` with 87 active banks, the sweep
+~0.15 ms a frame. About 6% of the main thread at 27 fps - with the cabs, an eighth of the frame in
+GDScript beside the AI.
 
 ## Not candidates
 
