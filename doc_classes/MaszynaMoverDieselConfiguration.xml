@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverDieselConfiguration" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What the Mover's model of a diesel engine is configured with.
+	</brief_description>
+	<description>
+		What the Mover's model of a diesel engine is configured with: its governor, clutch, torque converter, retarder, cooling and throttle tables (LoadFIZ_Engine for DieselEngine). Shared by the diesel and the diesel-electric adapters and read by MaszynaMoverDieselEngineUnit.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mechanical_clutch_engage_speed" type="float" setter="set_mechanical_clutch_engage_speed" getter="get_mechanical_clutch_engage_speed" default="0.5">
+			[code]Engine:EUS[/code]
+			Gearbox clutch engagement rate, in 1/s.
+		</member>
+		<member name="mechanical_clutch_disengage_speed" type="float" setter="set_mechanical_clutch_disengage_speed" getter="get_mechanical_clutch_disengage_speed" default="0.9">
+			[code]Engine:EDS[/code]
+			Gearbox clutch disengagement rate, in 1/s.
+		</member>
+		<member name="mechanical_min_rpm_hydro_drive_factor" type="float" setter="set_mechanical_min_rpm_hydro_drive_factor" getter="get_mechanical_min_rpm_hydro_drive_factor" default="0.0">
+			The rise of [member mechanical_min_rpm_hydro_drive] with the power asked for [1/s] ([code]nmin_hdrive_factor[/code]).
+		</member>
+		<member name="mechanical_regulator_acceleration" type="float" setter="set_mechanical_regulator_acceleration" getter="get_mechanical_regulator_acceleration" default="999.0">
+			How fast the governor raises the speed [1/s²] ([code]nreg_acc[/code]).
+		</member>
+		<member name="mechanical_rpm_decrease_rate" type="float" setter="set_mechanical_rpm_decrease_rate" getter="get_mechanical_rpm_decrease_rate" default="2.0">
+			How fast the engine slows down ([code]RPMDecRate[/code]).
+		</member>
+		<member name="clutch_min_velocity_full_engage" type="float" setter="set_clutch_min_velocity_full_engage" getter="get_clutch_min_velocity_full_engage" default="0.0">
+			The speed above which the clutch holds without slip [km/h] ([code]minVelfullengage[/code]).
+		</member>
+		<member name="clutch_diameter" type="float" setter="set_clutch_diameter" getter="get_clutch_diameter" default="0.5">
+			The clutch's diameter [m] ([code]engageDia[/code]).
+		</member>
+		<member name="clutch_max_force" type="float" setter="set_clutch_max_force" getter="get_clutch_max_force" default="6000.0">
+			The clutch's greatest pressing force [lb]N[rb] ([code]engageMaxForce[/code]).
+		</member>
+		<member name="clutch_friction" type="float" setter="set_clutch_friction" getter="get_clutch_friction" default="0.5">
+			The clutch's friction ([code]engagefriction[/code]).
+		</member>
+		<member name="torque_converter_unlock_velocity" type="float" setter="set_torque_converter_unlock_velocity" getter="get_torque_converter_unlock_velocity" default="3.0">
+			The speed below which the torque converter disengages [km/h] ([code]MaxVelANS[/code]).
+		</member>
+		<member name="retarder_engage_velocity" type="float" setter="set_retarder_engage_velocity" getter="get_retarder_engage_velocity" default="1.0">
+			The speed the retarder engages above [km/h] ([code]R_EngageVel[/code]).
+		</member>
+		<member name="retarder_clutch_speed" type="float" setter="set_retarder_clutch_speed" getter="get_retarder_clutch_speed" default="10.0">
+			How fast the retarder's clutch engages ([code]R_ClutchSpeed[/code]).
+		</member>
+		<member name="torque_converter_max_torque_ratio" type="float" setter="set_torque_converter_max_torque_ratio" getter="get_torque_converter_max_torque_ratio" default="2.0">
+			[code]Engine:TC_TMMax[/code]
+			Maximum torque multiplication ratio of the torque converter.
+		</member>
+		<member name="torque_converter_coupling_point" type="float" setter="set_torque_converter_coupling_point" getter="get_torque_converter_coupling_point" default="0.85">
+			[code]Engine:TC_CP[/code]
+			Relative speed at which the torque converter transitions into fluid-coupling mode.
+		</member>
+		<member name="torque_converter_lockup_torque" type="float" setter="set_torque_converter_lockup_torque" getter="get_torque_converter_lockup_torque" default="3000.0">
+			[code]Engine:TC_LT[/code]
+			Maximum torque of the torque converter's lockup clutch, in Nm.
+		</member>
+		<member name="torque_converter_lockup_rate" type="float" setter="set_torque_converter_lockup_rate" getter="get_torque_converter_lockup_rate" default="1.0">
+			[code]Engine:TC_LR[/code]
+			Torque converter lockup clutch engagement rate, in 1/s.
+		</member>
+		<member name="torque_converter_unlock_rate" type="float" setter="set_torque_converter_unlock_rate" getter="get_torque_converter_unlock_rate" default="1.0">
+			[code]Engine:TC_ULR[/code]
+			Torque converter lockup clutch release rate, in 1/s.
+		</member>
+		<member name="torque_converter_fill_rate_increase" type="float" setter="set_torque_converter_fill_rate_increase" getter="get_torque_converter_fill_rate_increase" default="1.0">
+			[code]Engine:TC_FRI[/code]
+			Torque converter filling rate, in 1/s.
+		</member>
+		<member name="torque_converter_fill_rate_decrease" type="float" setter="set_torque_converter_fill_rate_decrease" getter="get_torque_converter_fill_rate_decrease" default="1.0">
+			[code]Engine:TC_FRD[/code]
+			Torque converter emptying rate, in 1/s.
+		</member>
+		<member name="torque_converter_torque_in_in" type="float" setter="set_torque_converter_torque_in_in" getter="get_torque_converter_torque_in_in" default="4.5">
+			[code]Engine:TC_TII[/code]
+			Torque converter constant proportional to the square of input RPM, in Nm/(rps)².
+		</member>
+		<member name="torque_converter_torque_in_out" type="float" setter="set_torque_converter_torque_in_out" getter="get_torque_converter_torque_in_out" default="0.0">
+			[code]Engine:TC_TIO[/code]
+			Torque converter constant: input-output coupling, in Nm/(rps).
+		</member>
+		<member name="torque_converter_torque_out_out" type="float" setter="set_torque_converter_torque_out_out" getter="get_torque_converter_torque_out_out" default="0.0">
+			[code]Engine:TC_TOO[/code]
+			Torque converter constant proportional to the square of output RPM, in Nm/(rps)².
+		</member>
+		<member name="torque_converter_lockup_speed" type="float" setter="set_torque_converter_lockup_speed" getter="get_torque_converter_lockup_speed" default="1.0">
+			[code]Engine:TC_LS[/code]
+			Velocity threshold at which the lockup clutch engages.
+		</member>
+		<member name="torque_converter_unlock_speed" type="float" setter="set_torque_converter_unlock_speed" getter="get_torque_converter_unlock_speed" default="1.0">
+			[code]Engine:TC_ULS[/code]
+			Velocity threshold at which the lockup clutch releases.
+		</member>
+		<member name="vel2nmax_table" type="VehicleCurvePointItem[]" setter="set_vel2nmax_table" getter="get_vel2nmax_table" default="[]">
+			The engine's highest speed by the vehicle's speed ([code]V2NList[/code], [code]dizel_vel2nmax_Table[/code]).
+		</member>
+		<member name="retarder_torque_in_in" type="float" setter="set_retarder_torque_in_in" getter="get_retarder_torque_in_in" default="1.0">
+			[code]Engine:R_TII[/code]
+			Retarder torque constant proportional to the square of input RPM.
+		</member>
+		<member name="retarder_fill_rate_increase" type="float" setter="set_retarder_fill_rate_increase" getter="get_retarder_fill_rate_increase" default="1.0">
+			[code]Engine:R_FRI[/code]
+			Retarder filling rate, in 1/s.
+		</member>
+		<member name="retarder_fill_rate_decrease" type="float" setter="set_retarder_fill_rate_decrease" getter="get_retarder_fill_rate_decrease" default="1.0">
+			[code]Engine:R_FRD[/code]
+			Retarder emptying (fill decrease) rate, in 1/s.
+		</member>
+		<member name="retarder_min_velocity" type="float" setter="set_retarder_min_velocity" getter="get_retarder_min_velocity" default="1.0">
+			[code]Engine:R_MinVel[/code]
+			Minimum velocity at which the retarder operates, in km/h.
+		</member>
+		<member name="throttle_table_nominal_fuel_dose" type="float" setter="set_throttle_table_nominal_fuel_dose" getter="get_throttle_table_nominal_fuel_dose" default="0.0">
+			[code]DList:nominalfill[/code]
+			Nominal (rated) fuel dose, dimensionless (0..1).
+		</member>
+		<member name="throttle_table_positions" type="MaszynaMoverThrottlePositionItem[]" setter="set_throttle_table_positions" getter="get_throttle_table_positions" default="[]">
+			[code]DList[/code]
+			Throttle table: for each throttle position (starting from 0), the fuel dose and clutch/governor behavior.
+		</member>
+		<member name="cooling_heat_kw" type="float" setter="set_cooling_heat_kw" getter="get_cooling_heat_kw" default="0.35">
+			[code]Engine:HeatKW[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heat_kv" type="float" setter="set_cooling_heat_kv" getter="get_cooling_heat_kv" default="0.6">
+			[code]Engine:HeatKV[/code]
+			Heat exchange factor of the radiator in the air flow.
+		</member>
+		<member name="cooling_heat_kfe" type="float" setter="set_cooling_heat_kfe" getter="get_cooling_heat_kfe" default="1.0">
+			[code]Engine:HeatKFE[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heat_kfs" type="float" setter="set_cooling_heat_kfs" getter="get_cooling_heat_kfs" default="80.0">
+			[code]Engine:HeatKFS[/code]
+			Heat exchange factor.
+		</member>
+		<member name="cooling_heat_kfo" type="float" setter="set_cooling_heat_kfo" getter="get_cooling_heat_kfo" default="25.0">
+			[code]Engine:HeatKFO[/code]
+			Heat exchange factor of the oil.
+		</member>
+		<member name="cooling_heat_kfo2" type="float" setter="set_cooling_heat_kfo2" getter="get_cooling_heat_kfo2" default="25.0">
+			[code]Engine:HeatKFO2[/code]
+			Heat exchange factor of the oil to the auxiliary water circuit.
+		</member>
+		<member name="cooling_fan_speed" type="float" setter="set_cooling_fan_speed" getter="get_cooling_fan_speed" default="0.075">
+			[code]Engine:WaterCoolingFanSpeed[/code]
+			Cooling fan speed: a share of the engine's revolutions, or an absolute value when negative.
+		</member>
+		<member name="cooling_nominal_power" type="float" setter="set_cooling_nominal_power" getter="get_cooling_nominal_power" default="1235.0">
+			[code]Engine:NominalCoolingPower[/code]
+			Nominal cooling power; the engine's heat is scaled by 1235 (su45) over it.
+		</member>
+		<member name="mechanical_inertia" type="float" setter="set_mechanical_inertia" getter="get_mechanical_inertia" default="1.0">
+			[code]Engine:AIM[/code]
+			Moment of inertia of the engine/shaft.
+		</member>
+		<member name="mechanical_min_rpm_hydro_drive" type="float" setter="set_mechanical_min_rpm_hydro_drive" getter="get_mechanical_min_rpm_hydro_drive" default="0.0">
+			The idle speed while driving on the torque converter [1/s] ([code]nmin_hdrive[/code]).
+		</member>
+		<member name="mechanical_min_rpm_retarder" type="float" setter="set_mechanical_min_rpm_retarder" getter="get_mechanical_min_rpm_retarder" default="0.0">
+			The engine's speed while the retarder brakes [1/s] ([code]nmin_retarder[/code]).
+		</member>
+		<member name="torque_converter_table" type="VehicleCurvePointItem[]" setter="set_torque_converter_table" getter="get_torque_converter_table" default="[]">
+			[code]HTCList[/code]
+			Torque converter's torque-ratio table. Recommended when the converter's real characteristic is known and
+			cannot be reproduced with the basic formula. Each item's [member VehicleCurvePointItem.x] is the output/input
+			RPM ratio and [member VehicleCurvePointItem.y] is the torque multiplication ratio.
+		</member>
+		<member name="retarder_placement" type="int" setter="set_retarder_placement" getter="get_retarder_placement" enum="RailVehicleDieselEngine.RetarderPlacement" default="0">
+			[code]Engine:R_Place[/code]
+			Where the retarder is placed within the transmission.
+		</member>
+		<member name="throttle_table_resistance_torque" type="float" setter="set_throttle_table_resistance_torque" getter="get_throttle_table_resistance_torque" default="0.0">
+			[code]DList:Mstand[/code]
+			Engine's own resistance torque at zero RPM, in Nm.
+		</member>
+	</members>
+	<constants>
+		<constant name="RETARDER_PLACEMENT_AFTER_GEARBOX" value="0" enum="RetarderPlacement">
+			Retarder placed after the gearbox.
+		</constant>
+		<constant name="RETARDER_PLACEMENT_BETWEEN_GEARBOX_AND_TC" value="1" enum="RetarderPlacement">
+			Retarder placed between the gearbox and the torque converter.
+		</constant>
+		<constant name="RETARDER_PLACEMENT_BETWEEN_TC_AND_ENGINE" value="2" enum="RetarderPlacement">
+			Retarder placed between the torque converter and the engine.
+		</constant>
+	</constants>
+</class>

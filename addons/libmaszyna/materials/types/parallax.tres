@@ -1,0 +1,16 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bvdl58gawffgn"]
+
+[ext_resource type="Shader" uid="uid://yuv8etyinc1v" path="res://addons/libmaszyna/materials/types/parallax.gdshader" id="1_lww6b"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_lww6b")
+shader_parameter/albedo_multiplier = Color(1, 1, 1, 1)
+shader_parameter/specular_strength = 0.05
+shader_parameter/reflection_strength = 0.0
+shader_parameter/glossiness = 10.0
+shader_parameter/height_scale = 0.03
+shader_parameter/height_offset = 0.015
+shader_parameter/transparency = 0
+shader_parameter/use_alpha_scissor = true
+shader_parameter/alpha_scissor_threshold = 0.7

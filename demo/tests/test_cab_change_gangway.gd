@@ -17,7 +17,7 @@ var driver:RID
 
 
 func before_each() -> void:
-    first = build_vehicle("GangwayFirst", SM42, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid()
+    first = build_vehicle("GangwayFirst", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
     second = build_vehicle("GangwaySecond", SM42).get_rid()
     driver = get_vehicle_driver(first)
     await wait_idle_frames(SETTLE_FRAMES)

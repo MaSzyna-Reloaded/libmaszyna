@@ -1,18 +1,18 @@
 extends MaszynaGutTest
 
 const BOUND_CLASSES: Array[StringName] = [
-    &"RailVehicleBrakePressureTableItem",
-    &"RailVehicleCompressorListItem",
+    &"MaszynaMoverBrakePressureTableItem",
+    &"MaszynaMoverCompressorListItem",
     &"VehicleCurvePointItem",
     &"RailVehicleDimmerListItem",
-    &"E3DModel",
-    &"E3DSubModel",
-    &"E3DMesh",
+    &"MaszynaE3DModel",
+    &"MaszynaE3DSubModel",
+    &"MaszynaE3DMesh",
     &"RailVehicleLightListItem",
     &"RailVehicleLoadListItem",
-    &"RailVehicleMotorParameter",
-    &"RailVehicleRelayListItem",
-    &"RailVehicleThrottlePositionItem",
+    &"MaszynaMoverMotorParameter",
+    &"MaszynaMoverRelayListItem",
+    &"MaszynaMoverThrottlePositionItem",
     &"RailVehicleAIHints",
     &"RailVehicleBrake",
     &"RailVehicleBuffCoupl",
@@ -37,8 +37,8 @@ const BOUND_CLASSES: Array[StringName] = [
     &"RailVehicleUniversalController",
     &"RailVehicleWheels",
     &"RailVehicleWipers",
-    &"RailVehicleUniversalControllerListItem",
-    &"RailVehicleWWListItem",
+    &"MaszynaMoverUniversalControllerListItem",
+    &"MaszynaMoverWWListItem",
     &"RailVehicleWiperListItem",
 ]
 
@@ -86,11 +86,11 @@ func test_properties_are_stored_configuration() -> void:
 
 
 func test_properties_are_available_through_direct_gdscript_access() -> void:
-    var brake: RailVehicleBrake = MoverRailVehicleBrake.new()
+    var brake: RailVehicleBrake = MaszynaMoverRailVehicleBrake.new()
     brake.brake_force_max = 85.0
     assert_eq(brake.brake_force_max, 85.0)
 
-    var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.power_cable_source = RailVehicleController.POWER_TYPE_STEAM
     assert_eq(power_source.power_cable_source, RailVehicleController.POWER_TYPE_STEAM)
 
@@ -124,17 +124,17 @@ func test_group_paths_do_not_change_public_property_names() -> void:
 ## scene of component nodes; a vehicle is described by its controller and components now, stored
 ## as they are - and this asserts the same thing through that description.
 func test_authored_configuration_reaches_the_built_vehicle() -> void:
-    var brake: RailVehicleBrake = MoverRailVehicleBrake.new()
+    var brake: RailVehicleBrake = MaszynaMoverRailVehicleBrake.new()
     brake.valve_type = 20
     brake.brake_force_max = 85.0
     brake.compressor_cab_a_min_pressure = 7.0
-    var engine: RailVehicleDieselEngine = MoverRailVehicleDieselElectricEngine.new()
+    var engine: RailVehicleDieselEngine = MaszynaMoverRailVehicleDieselElectricEngine.new()
     engine.oil_pump_pressure_minimum = 0.15
-    var security: RailVehicleSecuritySystem = MoverRailVehicleSecuritySystem.new()
+    var security: RailVehicleSecuritySystem = MaszynaMoverRailVehicleSecuritySystem.new()
     security.aware_system_active = true
     security.emergency_brake_delay = 2.5
 
-    var description:RailVehicleController = MoverRailVehicleController.new()
+    var description:RailVehicleController = MaszynaMoverRailVehicleController.new()
     description.vehicle_id = "PropertyBindingsTest"
     description.mass = 74000.0
     var components: Array[VehicleComponent] = [brake, engine, security]

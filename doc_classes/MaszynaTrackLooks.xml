@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrackLooks" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What [MaszynaTrackRenderingBackend] draws a [TrackData] with that is no .scn's track.
+	</brief_description>
+	<description>
+		A rail track's look by its bed, a road's by its surface; a feature with no look of its own takes the default's.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="default_bed" type="int" setter="set_default_bed" getter="get_default_bed" enum="TrackData.Bed" default="0">
+			The bed whose look a rail track of a bed with none of its own takes.
+		</member>
+		<member name="default_surface" type="int" setter="set_default_surface" getter="get_default_surface" enum="TrackData.Surface" default="0">
+			The surface whose look a road of a surface with none of its own takes.
+		</member>
+		<member name="rail_looks" type="Dictionary" setter="set_rail_looks" getter="get_rail_looks" default="{}">
+			[MaszynaTrackLook]s by [enum TrackData.Bed].
+		</member>
+		<member name="road_looks" type="Dictionary" setter="set_road_looks" getter="get_road_looks" default="{}">
+			[MaszynaTrackLook]s by [enum TrackData.Surface].
+		</member>
+	</members>
+</class>

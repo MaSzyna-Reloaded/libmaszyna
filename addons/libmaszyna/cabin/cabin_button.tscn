@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://c0toij1foexq6"]
-
-[ext_resource type="Script" uid="uid://brys456def41l" path="res://addons/libmaszyna/cabin/cabin_button.gd" id="1_glqim"]
-
-[node name="CabinButton" type="Node3D" unique_id=863207262]
-script = ExtResource("1_glqim")

@@ -6,7 +6,7 @@ extends VBoxContainer
 ## listed again whenever one of the scene's sceneries has loaded. "Show" centres the 3D view on the
 ## trainset's vehicles. A scenery's `dynamic` outside a `trainset` has no name and is not listed.
 ## "Spawn..." asks for the browser of vehicles to add one to the scene. "Set as start vehicle", while
-## the edited scene has a MaszynaPlayer, makes the trainset's first vehicle with a cab the player's
+## the edited scene has a Player, makes the trainset's first vehicle with a cab the player's
 ## start_vehicle_id.
 
 ## "Spawn..." was pressed: the browser of vehicles is wanted
@@ -40,26 +40,26 @@ func _exit_tree() -> void:
 ## The edited scene: its trainsets are listed now, and again whenever one of its sceneries loads
 func set_scene_root(root:Node) -> void:
     for include_id:int in _include_ids:
-        var include:MaszynaIncludeNode = instance_from_id(include_id) as MaszynaIncludeNode
+        var include:SceneryContentNode = instance_from_id(include_id) as SceneryContentNode
         if include:
             include.loaded.disconnect(list_trainsets)
     _include_ids.clear()
     _free_show_markers()
     _scene_root = root
     if root:
-        var includes:Array[Node] = root.find_children("", "MaszynaIncludeNode", true, false)
-        if root is MaszynaIncludeNode:
+        var includes:Array[Node] = root.find_children("", "SceneryContentNode", true, false)
+        if root is SceneryContentNode:
             includes.append(root)
         for node:Node in includes:
             if _is_scene_scenery(node):
-                (node as MaszynaIncludeNode).loaded.connect(list_trainsets)
+                (node as SceneryContentNode).loaded.connect(list_trainsets)
                 _include_ids.append(node.get_instance_id())
     list_trainsets()
 
 
 ## A scenery coming into the edited scene after it was set - the one a test scene shows (the
 ## scenery importer's scenery_test.tscn)
-func add_scenery(include:MaszynaIncludeNode) -> void:
+func add_scenery(include:SceneryContentNode) -> void:
     if not _is_scene_scenery(include) or _include_ids.has(include.get_instance_id()):
         return
     include.loaded.connect(list_trainsets)
@@ -68,7 +68,7 @@ func add_scenery(include:MaszynaIncludeNode) -> void:
 
 
 ## A scenery leaving the edited scene - its trainsets go from the list
-func remove_scenery(include:MaszynaIncludeNode) -> void:
+func remove_scenery(include:SceneryContentNode) -> void:
     if not _include_ids.has(include.get_instance_id()):
         return
     include.loaded.disconnect(list_trainsets)
@@ -84,7 +84,7 @@ func _is_scene_scenery(include:Node) -> bool:
     var node:Node = include
     while not node == _scene_root:
         node = node.get_parent()
-        if node is MaszynaIncludeNode:
+        if node is SceneryContentNode:
             return false
     return true
 
@@ -99,7 +99,7 @@ func list_trainsets() -> void:
     for node:Node in _scene_root.find_children("", "TrainSet3D", true, false):
         trainsets.append((node as TrainSet3D).get_rid())
     for include_id:int in _include_ids:
-        trainsets.append_array((instance_from_id(include_id) as MaszynaIncludeNode).get_trainsets())
+        trainsets.append_array((instance_from_id(include_id) as SceneryContentNode).get_trainsets())
     for trainset:RID in trainsets:
         var trainset_name:String = RailVehicleServer.trainset_get_name(trainset)
         if not trainset_name:
@@ -114,17 +114,19 @@ func list_trainsets() -> void:
         row.set_start_vehicle_enabled(not _find_player(null) == null)
         var file_names:Array[String] = []
         for vehicle:RID in vehicles:
-            if MaszynaLegacyVehicleSystem.vehicle_exists(vehicle):
-                file_names.append(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).file_name)
+            var data:VehicleData = VehicleCatalogServer.vehicle_get_data(vehicle)
+            if data:
+                file_names.append(data.vehicle.get_file())
         row.set_vehicle_types(file_names)
         for vehicle:RID in vehicles:
-            if MaszynaLegacyVehicleSystem.vehicle_exists(vehicle):
-                var dynamic:MaszynaDynamicData = MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle)
-                var tooltip:String = "%s (%s)" % [VehicleServer.vehicle_get_name(vehicle), dynamic.file_name]
-                _profile_queue.enqueue(dynamic.data_path, dynamic.file_name, dynamic.skin, dynamic.vehicle_id,
+            var dynamic:VehicleData = VehicleCatalogServer.vehicle_get_data(vehicle)
+            if dynamic:
+                var data_path:String = dynamic.vehicle.get_base_dir()
+                var file_name:String = dynamic.vehicle.get_file()
+                var tooltip:String = "%s (%s)" % [VehicleServer.vehicle_get_name(vehicle), file_name]
+                _profile_queue.enqueue(data_path, file_name, dynamic.livery, dynamic.vehicle_id,
                         row.show_profile.bind(row.add_vehicle_profile(tooltip),
-                                MaszynaVehicleProfileManager.get_profile_coupling_width(
-                                        dynamic.data_path, dynamic.file_name)))
+                                MaszynaVehicleProfileManager.get_profile_coupling_width(data_path, file_name)))
 
 
 func _on_spawn_button_pressed() -> void:
@@ -141,13 +143,13 @@ func show_trainset(vehicles:Array[RID]) -> void:
         marker.global_transform = RailVehicleRenderingServer.vehicle_get_transform(vehicle)
         _show_markers.append(marker)
         selection.add_node(marker)
-    MaszynaEditorViewFocus.focus_selection()
+    EditorViewFocus.focus_selection()
 
 
 ## The scene's player starts in the trainset's first vehicle with a cab (the first vehicle when
 ## none has one) - as one action to undo
 func set_start_vehicle(vehicles:Array[RID]) -> void:
-    var player:MaszynaPlayer = _find_player(null)
+    var player:Player = _find_player(null)
     if not player or not vehicles:
         return
     var vehicle:RID = vehicles[0]
@@ -169,25 +171,25 @@ func set_start_vehicle(vehicles:Array[RID]) -> void:
 
 
 ## The edited scene's player, [param leaving] (a node leaving the tree) left out; null when it has none
-func _find_player(leaving:Node) -> MaszynaPlayer:
+func _find_player(leaving:Node) -> Player:
     if not _scene_root:
         return null
     var nodes:Array[Node] = _scene_root.find_children("*", "", true, false)
     nodes.append(_scene_root)
     for node:Node in nodes:
-        if node is MaszynaPlayer and not node == leaving:
+        if node is Player and not node == leaving:
             return node
     return null
 
 
 ## A player coming into or leaving the edited scene turns "Set as start vehicle" on or off
 func _on_node_added(node:Node) -> void:
-    if node is MaszynaPlayer:
+    if node is Player:
         _set_start_vehicle_enabled(not _find_player(null) == null)
 
 
 func _on_node_removed(node:Node) -> void:
-    if node is MaszynaPlayer:
+    if node is Player:
         _set_start_vehicle_enabled(not _find_player(node) == null)
 
 

@@ -6,19 +6,19 @@ var universal_controller: RailVehicleUniversalController
 func before_each():
     train = build_vehicle("TestTrain")
 
-    universal_controller = MoverRailVehicleUniversalController.new()
+    universal_controller = MaszynaMoverRailVehicleUniversalController.new()
     train.add_component(universal_controller)
     await wait_idle_frames(2)
 
-func _make_position(min_percentage: float, max_percentage: float, target_value: float) -> RailVehicleUniversalControllerListItem:
-    var item = RailVehicleUniversalControllerListItem.new()
+func _make_position(min_percentage: float, max_percentage: float, target_value: float) -> MaszynaMoverUniversalControllerListItem:
+    var item = MaszynaMoverUniversalControllerListItem.new()
     item.min_percentage = min_percentage
     item.max_percentage = max_percentage
     item.target_value = target_value
     return item
 
 func test_default_position_parameters_have_expected_defaults():
-    var item = RailVehicleUniversalControllerListItem.new()
+    var item = MaszynaMoverUniversalControllerListItem.new()
     assert_eq(item.pneumatic_brake_position, -1, "pneumatic_brake_position should default to -1")
     assert_eq(item.min_percentage, 0.0, "min_percentage should default to 0.0")
     assert_eq(item.max_percentage, 0.0, "max_percentage should default to 0.0")
@@ -30,7 +30,7 @@ func test_default_position_parameters_have_expected_defaults():
     assert_eq(item.nearest_stable_up, 0, "nearest_stable_up should default to 0")
 
 func test_position_parameters_round_trip_values():
-    var item = RailVehicleUniversalControllerListItem.new()
+    var item = MaszynaMoverUniversalControllerListItem.new()
     item.pneumatic_brake_position = 2
     item.min_percentage = 0.1
     item.max_percentage = 0.9
@@ -57,8 +57,8 @@ func test_positions_property_accepts_universal_controller_list_items():
     universal_controller.positions = [first, second]
 
     assert_eq(universal_controller.positions.size(), 2, "positions should hold the assigned items")
-    assert_eq((universal_controller.positions[0] as RailVehicleUniversalControllerListItem).max_percentage, 0.5)
-    assert_eq((universal_controller.positions[1] as RailVehicleUniversalControllerListItem).max_percentage, 1.0)
+    assert_eq((universal_controller.positions[0] as MaszynaMoverUniversalControllerListItem).max_percentage, 0.5)
+    assert_eq((universal_controller.positions[1] as MaszynaMoverUniversalControllerListItem).max_percentage, 1.0)
 
 func test_selector_position_is_forwarded_to_mover():
     universal_controller.positions = [_make_position(0.0, 1.0, 0.5)]
@@ -68,7 +68,7 @@ func test_selector_position_is_forwarded_to_mover():
     assert_eq(train.get_state()["selector_position"], 3, "Mover's MainCtrlPos should follow selector_position")
 
 func test_oversized_positions_array_is_truncated_without_crashing():
-    var positions: Array[RailVehicleUniversalControllerListItem] = []
+    var positions: Array[MaszynaMoverUniversalControllerListItem] = []
     for i in range(40):
         positions.append(_make_position(0.0, 1.0, float(i) / 40.0))
     universal_controller.positions = positions

@@ -184,6 +184,9 @@ var _wall_tween:Tween
 
 func _ready() -> void:
     set_process(false)
+    # the listener is the core's (the player's TrainSoundListener3D): taken as it enters the tree
+    get_tree().node_added.connect(_on_node_added)
+    get_tree().node_removed.connect(_on_node_removed)
     SimulationServer.simulation_advanced.connect(_on_simulation_advanced)
     SimulationServer.simulation_paused.connect(_on_runtime_paused)
     SimulationServer.simulation_unpaused.connect(_on_runtime_unpaused)
@@ -196,6 +199,18 @@ func _ready() -> void:
     RailVehicleServer.vehicle_derailed.connect(_on_derailed)
     VehicleServer.vehicle_controller_changed.connect(_on_vehicle_controller_changed)
     _on_simulation_current_speed_changed()
+
+
+func _on_node_added(node:Node) -> void:
+    var listener:TrainSoundListener3D = node as TrainSoundListener3D
+    if listener:
+        set_listener(listener)
+
+
+func _on_node_removed(node:Node) -> void:
+    var listener:TrainSoundListener3D = node as TrainSoundListener3D
+    if listener:
+        clear_listener(listener)
 
 
 func set_listener(listener:TrainSoundListener3D) -> void:

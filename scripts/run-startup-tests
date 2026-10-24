@@ -4,6 +4,9 @@
 # Logs go to $STARTUP_LOG_DIR (default: /tmp/maszyna-startup-tests). An argument narrows the
 # vehicles by name: scripts/run-startup-tests ep09
 #
+# The test project needs the library built into it (make compile-debug, libreloaded's with this
+# plugin in it) and libreloaded's demo pieces linked (make links: the tests' pre-run hook).
+#
 # .claude/skills/testing/SKILL.md "Start-up test of a vehicle"
 set -u
 cd "$(dirname "$0")/.."

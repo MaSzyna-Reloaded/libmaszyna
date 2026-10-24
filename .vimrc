@@ -1,6 +1,6 @@
 set expandtab
 
-let &path.= "godot-cpp/gen/include,godot-cpp/gdextension/godot-cpp/inlcude,"
+let &path.= "vendor/libreloaded/src,vendor/libreloaded/godot-cpp/gen/include,vendor/libreloaded/godot-cpp/gdextension,vendor/libreloaded/godot-cpp/include,"
 let g:ale_c_build_dir_names = ['build-clang-tidy', 'build', 'bin']
 
 let g:ale_fixers = {

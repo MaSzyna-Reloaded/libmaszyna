@@ -9,14 +9,14 @@ const MAX_CYLINDER_PRESSURE:float = 4.0
 const TOLERANCE:float = 0.0001
 
 
-func _model(sources:Array[MmdSoundSourceDefinition], handle_type:int = RailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE) -> BrakeSoundModel:
+func _model(sources:Array[MmdSoundSourceDefinition], handle_type:int = MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE) -> BrakeSoundModel:
     var model := BrakeSoundModel.new()
     var no_chunks:Array[StringName] = []
     for source:MmdSoundSourceDefinition in sources:
         model.add_sound(source, StringName(source.label), no_chunks)
     model.readings.max_speed = MAX_SPEED
     model.readings.max_cylinder_pressure = MAX_CYLINDER_PRESSURE
-    model.readings.handle_sounds = handle_type == RailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A
+    model.readings.handle_sounds = handle_type == MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A
     return model
 
 
@@ -74,7 +74,7 @@ func test_local_brake_engage_hiss_follows_the_rate_of_pressure_rise() -> void:
 
 
 func test_fv4a_handle_hisses_from_its_own_flows_at_half_volume() -> void:
-    var model:BrakeSoundModel = _model(_sources(_source("airsound")), RailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A)
+    var model:BrakeSoundModel = _model(_sources(_source("airsound")), MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A)
 
     # flow filtered 0.05 -> 0.5; volume 0.5 * 0.25 = 0.125, half of it heard
     var result:Dictionary = _update(model, {"handle_braking_flow": 10.0, "main_valve_flow": 1.0}, 0, DELTA)[&"airsound"]

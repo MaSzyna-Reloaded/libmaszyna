@@ -1,9 +1,9 @@
 extends MaszynaGutTest
 
-const EventImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_event_importer.gd")
-const NodeImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_importer.gd")
-const IsolatedImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_isolated_importer.gd")
-const ConfigImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_config_importer.gd")
+const EventImporter = preload("res://addons/libmaszyna/scenery/maszyna_event_importer.gd")
+const NodeImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_importer.gd")
+const IsolatedImporter = preload("res://addons/libmaszyna/scenery/maszyna_isolated_importer.gd")
+const ConfigImporter = preload("res://addons/libmaszyna/scenery/maszyna_config_importer.gd")
 ## The scenery animation's turn [degrees] and its speed [degrees a simulated second]
 const QUARTER_TURN:float = 90.0
 const TURN_SPEED:float = 900.0
@@ -62,6 +62,19 @@ class RequeueingAction extends ScenarioEventAction:
         ScenarioEventServer.event_queue(event)
 
 
+## The event system the test's memories, launchers and events are of, the original's
+var _event_system:RID
+
+
+func before_each() -> void:
+    _event_system = ScenarioEventServer.system_create()
+    ScenarioEventServer.system_attach_implementation(_event_system, MaszynaScenarioEventServer.implementation_get())
+
+
+func after_each() -> void:
+    ScenarioEventServer.system_free(_event_system)
+
+
 func test_events_run_in_time_order_and_in_queue_order_on_equal_times() -> void:
     var action:RecordingAction = RecordingAction.new()
     var late:RID = _create_event(action, LATE_DELAY)
@@ -84,8 +97,8 @@ func test_a_queued_event_is_not_queued_again_and_keeps_its_activator() -> void:
     var action:RecordingAction = RecordingAction.new()
     var event:RID = _create_event(action, 0.0)
     # any RID stands in for a vehicle - the server does not look into its activators
-    var activator:RID = ScenarioEventServer.memory_create()
-    var other_activator:RID = ScenarioEventServer.memory_create()
+    var activator:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    var other_activator:RID = MaszynaScenarioEventServer.memory_create(_event_system)
 
     assert_true(ScenarioEventServer.event_queue(event, activator))
     assert_false(ScenarioEventServer.event_queue(event, other_activator), "a waiting event should refuse")
@@ -98,8 +111,8 @@ func test_a_queued_event_is_not_queued_again_and_keeps_its_activator() -> void:
     assert_eq(action.activators, expected)
     assert_false(ScenarioEventServer.event_is_queued(event))
     _free_events([event])
-    ScenarioEventServer.memory_free(activator)
-    ScenarioEventServer.memory_free(other_activator)
+    MaszynaScenarioEventServer.memory_free(activator)
+    MaszynaScenarioEventServer.memory_free(other_activator)
 
 
 func test_an_event_queueing_itself_runs_once_a_step() -> void:
@@ -121,30 +134,30 @@ func test_an_event_queueing_itself_runs_once_a_step() -> void:
 
 func test_the_condition_chooses_between_the_events_and_the_else_events() -> void:
     var action:RecordingAction = RecordingAction.new()
-    var memory:RID = ScenarioEventServer.memory_create()
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
     var chosen:RID = _create_event(action, 0.0)
     var otherwise:RID = _create_event(action, 0.0)
-    var multiple_action:MaszynaLegacyMultipleAction = MaszynaLegacyMultipleAction.new()
+    var multiple_action:MaszynaMultipleAction = MaszynaMultipleAction.new()
     var events:Array[RID] = [chosen]
     var else_events:Array[RID] = [otherwise]
     multiple_action.events = events
     multiple_action.else_events = else_events
     var multiple:RID = _create_event(multiple_action, 0.0)
-    var condition:MaszynaLegacyEventCondition = MaszynaLegacyEventCondition.new()
+    var condition:MaszynaEventCondition = MaszynaEventCondition.new()
     var memories:Array[RID] = [memory]
     condition.memories = memories
     condition.text = "go*"
-    condition.mask = ScenarioEventServer.MEMORY_FIELD_TEXT
+    condition.mask = MaszynaScenarioEventServer.MEMORY_FIELD_TEXT
     ScenarioEventServer.event_attach_condition(multiple, condition)
-    var activator:RID = ScenarioEventServer.memory_create()
+    var activator:RID = MaszynaScenarioEventServer.memory_create(_event_system)
 
-    ScenarioEventServer.memory_set_values(memory, "go_ahead", 0.0, 0.0)
+    MaszynaScenarioEventServer.memory_set_values(memory, "go_ahead", 0.0, 0.0)
     ScenarioEventServer.event_queue(multiple, activator)
     # the multiple runs on one pass of the queue, the event it queues on the next
     if not await wait_simulated_until(func() -> bool: return action.runs.size() == 1, CHAINED_EVENT_SECONDS,
             "the chosen event run"):
         return
-    ScenarioEventServer.memory_set_values(memory, "stop", 0.0, 0.0)
+    MaszynaScenarioEventServer.memory_set_values(memory, "stop", 0.0, 0.0)
     ScenarioEventServer.event_queue(multiple)
     if not await wait_simulated_until(func() -> bool: return action.runs.size() == 2, CHAINED_EVENT_SECONDS,
             "the else event run"):
@@ -154,8 +167,8 @@ func test_the_condition_chooses_between_the_events_and_the_else_events() -> void
     assert_eq(action.runs, expected, "a text with * should be compared up to it")
     assert_eq(action.activators[0], activator, "multiple should hand its activator on")
     _free_events([chosen, otherwise, multiple])
-    ScenarioEventServer.memory_free(memory)
-    ScenarioEventServer.memory_free(activator)
+    MaszynaScenarioEventServer.memory_free(memory)
+    MaszynaScenarioEventServer.memory_free(activator)
 
 
 func test_pause_stops_the_time_and_the_speed_scales_it() -> void:
@@ -181,24 +194,24 @@ func test_pause_stops_the_time_and_the_speed_scales_it() -> void:
 
 func test_a_launcher_fires_only_when_its_condition_passes() -> void:
     var event:RID = _create_event(RecordingAction.new(), NEVER)
-    var memory:RID = ScenarioEventServer.memory_create()
-    var condition:MaszynaLegacyEventCondition = MaszynaLegacyEventCondition.new()
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    var condition:MaszynaEventCondition = MaszynaEventCondition.new()
     var memories:Array[RID] = [memory]
     condition.memories = memories
     condition.value1 = 1.0
-    condition.mask = ScenarioEventServer.MEMORY_FIELD_VALUE1
-    var launcher:RID = ScenarioEventServer.launcher_create()
-    ScenarioEventServer.launcher_set_events(launcher, event, RID())
-    ScenarioEventServer.launcher_attach_condition(launcher, condition)
+    condition.mask = MaszynaScenarioEventServer.MEMORY_FIELD_VALUE1
+    var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+    MaszynaScenarioEventServer.launcher_set_events(launcher, event, RID())
+    MaszynaScenarioEventServer.launcher_attach_condition(launcher, condition)
 
-    ScenarioEventServer.launcher_fire(launcher)
+    MaszynaScenarioEventServer.launcher_fire(launcher)
     assert_false(ScenarioEventServer.event_is_queued(event))
-    ScenarioEventServer.memory_set_values(memory, "", 1.0, 0.0)
-    ScenarioEventServer.launcher_fire(launcher)
+    MaszynaScenarioEventServer.memory_set_values(memory, "", 1.0, 0.0)
+    MaszynaScenarioEventServer.launcher_fire(launcher)
     assert_true(ScenarioEventServer.event_is_queued(event))
 
-    ScenarioEventServer.launcher_free(launcher)
-    ScenarioEventServer.memory_free(memory)
+    MaszynaScenarioEventServer.launcher_free(launcher)
+    MaszynaScenarioEventServer.memory_free(memory)
     _free_events([event])
 
 
@@ -209,11 +222,11 @@ func test_a_radio_call_fires_the_launchers_listening_in_range() -> void:
     var launchers:Array[RID] = []
     for setup:Array in [[near, RailVehicleRadio.RADIO_CALL3, Vector3.ZERO], [far, RailVehicleRadio.RADIO_CALL3, Vector3(500, 0, 0)],
             [other_call, RailVehicleRadio.RADIO_CALL1, Vector3.ZERO]]:
-        var launcher:RID = ScenarioEventServer.launcher_create()
-        ScenarioEventServer.launcher_set_events(launcher, setup[0], RID())
-        ScenarioEventServer.launcher_set_radio_call(launcher, setup[1])
-        ScenarioEventServer.launcher_set_position(launcher, setup[2])
-        ScenarioEventServer.launcher_set_radius(launcher, 100.0)
+        var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+        MaszynaScenarioEventServer.launcher_set_events(launcher, setup[0], RID())
+        MaszynaScenarioEventServer.launcher_set_radio_call(launcher, setup[1])
+        MaszynaScenarioEventServer.launcher_set_position(launcher, setup[2])
+        MaszynaScenarioEventServer.launcher_set_radius(launcher, 100.0)
         launchers.append(launcher)
 
     var radio:SceneryVirtualRadio = SceneryVirtualRadio.new()
@@ -223,14 +236,14 @@ func test_a_radio_call_fires_the_launchers_listening_in_range() -> void:
     assert_false(ScenarioEventServer.event_is_queued(far), "out of range")
     assert_false(ScenarioEventServer.event_is_queued(other_call), "listens to call 1")
     for launcher:RID in launchers:
-        ScenarioEventServer.launcher_free(launcher)
+        MaszynaScenarioEventServer.launcher_free(launcher)
     _free_events([near, far, other_call])
 
 
 func test_putvalues_cab_signal_reaches_the_security_system() -> void:
     var controller:VehicleController = build_vehicle("CabSignalTest", load("res://tests/fixtures/sm42_vehicle.tres"))
     var vehicle:RID = controller.get_rid()
-    var action:MaszynaLegacyVehicleCommandAction = MaszynaLegacyVehicleCommandAction.new()
+    var action:MaszynaVehicleCommandAction = MaszynaVehicleCommandAction.new()
     action.command = "CabSignal"
     var event:RID = _create_event(action, 0.0)
     watch_signals(VehicleServer)
@@ -250,12 +263,12 @@ func test_putvalues_cab_signal_reaches_the_security_system() -> void:
 ## departure by its timetable; queued by nothing, after its delay alone
 func test_a_departure_delay_counts_from_the_departure_of_the_train() -> void:
     var vehicle:RID = build_vehicle(
-            "DepartureDelayTest", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid()
+            "DepartureDelayTest", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
     var departing:DepartingDriver = DepartingDriver.new()
     departing.seconds = UNTIL_DEPARTURE
     attach_driver_implementation(get_vehicle_driver(vehicle), departing)
     var event:RID = _create_event(RecordingAction.new(), EVENT_DELAY)
-    ScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
+    MaszynaScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
     var now:float = SimulationServer.simulation_get_time()
 
     ScenarioEventServer.event_queue(event, vehicle)
@@ -264,14 +277,14 @@ func test_a_departure_delay_counts_from_the_departure_of_the_train() -> void:
     ScenarioEventServer.event_free(event)
 
     event = _create_event(RecordingAction.new(), EVENT_DELAY)
-    ScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
+    MaszynaScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
     ScenarioEventServer.event_queue(event)
     assert_almost_eq(ScenarioEventServer.event_get_run_time(event), now + EVENT_DELAY, RUN_TIME_EPSILON,
             "no train, no departure")
     ScenarioEventServer.event_free(event)
 
     event = _create_event(RecordingAction.new(), EVENT_DELAY)
-    ScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
+    MaszynaScenarioEventServer.event_set_departure_delay(event, DEPARTURE_DELAY)
     departing.seconds = -UNTIL_DEPARTURE
     ScenarioEventServer.event_queue(event, vehicle)
     assert_almost_eq(ScenarioEventServer.event_get_run_time(event), now, RUN_TIME_EPSILON, "departed long ago: at once")
@@ -281,16 +294,16 @@ func test_a_departure_delay_counts_from_the_departure_of_the_train() -> void:
 func test_a_launcher_fires_when_the_clock_shows_its_time() -> void:
     var clock:float = SimulationServer.time_of_day
     var event:RID = _create_event(RecordingAction.new(), NEVER)
-    var launcher:RID = ScenarioEventServer.launcher_create()
-    ScenarioEventServer.launcher_set_events(launcher, event, RID())
-    ScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
+    var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+    MaszynaScenarioEventServer.launcher_set_events(launcher, event, RID())
+    MaszynaScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
 
     SimulationServer.time_of_day = 10.5
     assert_false(ScenarioEventServer.event_is_queued(event), "10:30 is not its time")
     SimulationServer.time_of_day = 10.0 + 50.5 / 60.0
     assert_true(ScenarioEventServer.event_is_queued(event), "10:50 is")
 
-    ScenarioEventServer.launcher_free(launcher)
+    MaszynaScenarioEventServer.launcher_free(launcher)
     _free_events([event])
     SimulationServer.time_of_day = clock
 
@@ -300,14 +313,14 @@ func test_a_launcher_fires_when_the_clock_shows_its_time() -> void:
 func test_a_launcher_fires_at_a_start_minute_the_clock_holds_inexactly() -> void:
     var clock:float = SimulationServer.time_of_day
     var event:RID = _create_event(RecordingAction.new(), NEVER)
-    var launcher:RID = ScenarioEventServer.launcher_create()
-    ScenarioEventServer.launcher_set_events(launcher, event, RID())
-    ScenarioEventServer.launcher_set_time_of_day(launcher, 21, 5)
+    var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+    MaszynaScenarioEventServer.launcher_set_events(launcher, event, RID())
+    MaszynaScenarioEventServer.launcher_set_time_of_day(launcher, 21, 5)
 
     SimulationServer.time_of_day = 21.0 + 5.0 / 60.0
     assert_true(ScenarioEventServer.event_is_queued(event))
 
-    ScenarioEventServer.launcher_free(launcher)
+    MaszynaScenarioEventServer.launcher_free(launcher)
     _free_events([event])
     SimulationServer.time_of_day = clock
 
@@ -316,24 +329,24 @@ func test_a_launcher_fires_at_a_start_minute_the_clock_holds_inexactly() -> void
 func test_a_launcher_waits_within_its_minute_for_its_condition() -> void:
     var clock:float = SimulationServer.time_of_day
     var event:RID = _create_event(RecordingAction.new(), NEVER)
-    var memory:RID = ScenarioEventServer.memory_create()
-    var condition:MaszynaLegacyEventCondition = MaszynaLegacyEventCondition.new()
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    var condition:MaszynaEventCondition = MaszynaEventCondition.new()
     var memories:Array[RID] = [memory]
     condition.memories = memories
     condition.value1 = 1.0
-    condition.mask = ScenarioEventServer.MEMORY_FIELD_VALUE1
-    var launcher:RID = ScenarioEventServer.launcher_create()
-    ScenarioEventServer.launcher_set_events(launcher, event, RID())
-    ScenarioEventServer.launcher_attach_condition(launcher, condition)
-    ScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
+    condition.mask = MaszynaScenarioEventServer.MEMORY_FIELD_VALUE1
+    var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+    MaszynaScenarioEventServer.launcher_set_events(launcher, event, RID())
+    MaszynaScenarioEventServer.launcher_attach_condition(launcher, condition)
+    MaszynaScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
 
     SimulationServer.time_of_day = 10.0 + 50.25 / 60.0
     assert_false(ScenarioEventServer.event_is_queued(event), "its condition does not pass yet")
-    ScenarioEventServer.memory_set_values(memory, "", 1.0, 0.0)
+    MaszynaScenarioEventServer.memory_set_values(memory, "", 1.0, 0.0)
     assert_true(ScenarioEventServer.event_is_queued(event), "it passes within the minute")
 
-    ScenarioEventServer.launcher_free(launcher)
-    ScenarioEventServer.memory_free(memory)
+    MaszynaScenarioEventServer.launcher_free(launcher)
+    MaszynaScenarioEventServer.memory_free(memory)
     _free_events([event])
     SimulationServer.time_of_day = clock
 
@@ -342,41 +355,41 @@ func test_a_launcher_waits_within_its_minute_for_its_condition() -> void:
 func test_a_timed_launcher_of_a_radius_fires_only_near_the_camera() -> void:
     var clock:float = SimulationServer.time_of_day
     var event:RID = _create_event(RecordingAction.new(), NEVER)
-    var launcher:RID = ScenarioEventServer.launcher_create()
-    ScenarioEventServer.launcher_set_events(launcher, event, RID())
-    ScenarioEventServer.launcher_set_radius(launcher, 10.0)
-    ScenarioEventServer.launcher_set_position(launcher, Vector3(0.0, 0.0, 1.0e6))
-    ScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
+    var launcher:RID = MaszynaScenarioEventServer.launcher_create(_event_system)
+    MaszynaScenarioEventServer.launcher_set_events(launcher, event, RID())
+    MaszynaScenarioEventServer.launcher_set_radius(launcher, 10.0)
+    MaszynaScenarioEventServer.launcher_set_position(launcher, Vector3(0.0, 0.0, 1.0e6))
+    MaszynaScenarioEventServer.launcher_set_time_of_day(launcher, 10, 50)
 
     SimulationServer.time_of_day = 10.0 + 50.5 / 60.0
     assert_false(ScenarioEventServer.event_is_queued(event))
 
-    ScenarioEventServer.launcher_free(launcher)
+    MaszynaScenarioEventServer.launcher_free(launcher)
     _free_events([event])
     SimulationServer.time_of_day = clock
 
 
 func test_a_passenger_stop_is_named_as_the_timetable_names_it() -> void:
-    var models:Array[MaszynaModelData] = []
+    var models:Array[ModelData] = []
     var root:MaszynaIncludeNode = await _build_scenery(
         "event w4_stopinfo putvalues 0 none 1 2 3 PassengerStopPoint:Jawor#2 -4 151 endevent", models
     )
     var event:RID = ScenarioEventServer.event_get_rid_by_name(&"w4_stopinfo")
-    var action:MaszynaLegacyVehicleCommandAction = ScenarioEventServer.event_get_action(event)
+    var action:MaszynaVehicleCommandAction = ScenarioEventServer.event_get_action(event)
 
     assert_eq(action.command, "PassengerStopPoint:Jawor", "unique only past its #")
-    assert_true(ScenarioEventServer.event_is_passive(event), "read by the drivers ahead, never queued")
+    assert_true(MaszynaScenarioEventServer.event_is_passive(event), "read by the drivers ahead, never queued")
     root.free()
 
 
 func test_a_departure_delay_is_read_from_the_scenery() -> void:
-    var models:Array[MaszynaModelData] = []
+    var models:Array[ModelData] = []
     var root:MaszynaIncludeNode = await _build_scenery("event odjazd multiple 2 none endevent "
             + "event odjazd_signal multiple 0 none departuredelay %s endevent" % DEPARTURE_DELAY, models)
 
-    assert_eq(ScenarioEventServer.event_get_departure_delay(ScenarioEventServer.event_get_rid_by_name(&"odjazd_signal")),
+    assert_eq(MaszynaScenarioEventServer.event_get_departure_delay(ScenarioEventServer.event_get_rid_by_name(&"odjazd_signal")),
             DEPARTURE_DELAY)
-    assert_true(is_nan(ScenarioEventServer.event_get_departure_delay(ScenarioEventServer.event_get_rid_by_name(&"odjazd"))),
+    assert_true(is_nan(MaszynaScenarioEventServer.event_get_departure_delay(ScenarioEventServer.event_get_rid_by_name(&"odjazd"))),
             "none without the keyword")
     root.free()
 
@@ -391,27 +404,27 @@ func test_scenery_memcells_and_value_events() -> void:
         []
     )
     # the node's name is read in lower case, as the original reads it (cParser::getTokens())
-    var cell1:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell1")
-    var cell2:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell2")
-    assert_eq(ScenarioEventServer.memory_get_text(cell1), "Start")
+    var cell1:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"cell1")
+    var cell2:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"cell2")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell1), "Start")
 
     if not await _run_event(&"set_cell"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(cell1), "Go", "the text keeps its case")
-    assert_eq(ScenarioEventServer.memory_get_value1(cell1), 1.0, "* should leave the value")
-    assert_eq(ScenarioEventServer.memory_get_value2(cell1), 5.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell1), "Go", "the text keeps its case")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(cell1), 1.0, "* should leave the value")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(cell1), 5.0)
 
     if not await _run_event(&"add_cell"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(cell1), "Go_x")
-    assert_eq(ScenarioEventServer.memory_get_value1(cell1), 2.0)
-    assert_eq(ScenarioEventServer.memory_get_value2(cell1), 5.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell1), "Go_x")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(cell1), 2.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(cell1), 5.0)
 
     if not await _run_event(&"copy_cell"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(cell2), "Other", "mask 2 copies only value 1")
-    assert_eq(ScenarioEventServer.memory_get_value1(cell2), 2.0)
-    assert_eq(ScenarioEventServer.memory_get_value2(cell2), 8.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell2), "Other", "mask 2 copies only value 1")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(cell2), 2.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(cell2), 8.0)
     root.free()
 
 
@@ -432,19 +445,20 @@ func test_scenery_onstart_and_negative_delay_events_are_queued() -> void:
 
 
 func test_scenery_lights_event_shows_the_aspect() -> void:
-    var instance:E3DModelInstance = E3DModelInstance.new()
-    instance.model = E3DModel.new()
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    instance.model = MaszynaE3DModel.new()
     add_child_autoqfree(instance)
-    var signal_head:RID = SignallingServer.signal_head_create(instance.get_e3d_instance())
+    var signal_head:RID = SignallingServer.signal_head_create()
+    instance.attach_signal_head(signal_head)
     SignallingServer.signal_head_set_name(signal_head, &"Sem_A")
     var aspects:Dictionary = {&"sem_ligh1": PackedFloat32Array([1.0])}
-    SignallingServer.signal_head_set_kind(signal_head, MaszynaLegacySignalHeadKindFactory.create_kind(aspects))
+    SignallingServer.signal_head_set_kind(signal_head, MaszynaSignalHeadKindFactory.create_kind(aspects))
     var system:RID = SignallingServer.system_create()
-    SignallingServer.system_attach_implementation(system, MaszynaLegacySignallingImplementation.new())
+    SignallingServer.system_attach_implementation(system, MaszynaSignallingImplementation.new())
     SignallingServer.system_add_signal_head(system, signal_head)
     var model_data:MaszynaModelData = MaszynaModelData.new()
     model_data.name = "Sem_A"
-    var models:Array[MaszynaModelData] = [model_data]
+    var models:Array[ModelData] = [model_data]
     var root:MaszynaIncludeNode = await _build_scenery("event sem_a_sem_ligh1 lights 0 sem_a 1 endevent", models)
 
     if not await _run_event(&"sem_a_sem_ligh1"):
@@ -460,45 +474,49 @@ func test_a_track_event_fires_once_per_entry_in_its_direction() -> void:
     var action:RecordingAction = RecordingAction.new()
     var to_end:RID = _create_event(action, 0.0)
     var to_start:RID = _create_event(action, 0.0)
-    var track:RID = ScenarioEventServer.memory_create() # stands in for a track
-    var other_track:RID = ScenarioEventServer.memory_create()
-    var vehicle:RID = ScenarioEventServer.memory_create() # and for a vehicle
-    ScenarioEventServer.track_add_event(track, ScenarioEventServer.TRACK_EVENTALL2, to_end)
-    ScenarioEventServer.track_add_event(track, ScenarioEventServer.TRACK_EVENTALL1, to_start)
+    var track:RID = TrackServer.track_create()
+    var other_track:RID = TrackServer.track_create()
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
+    MaszynaScenarioEventServer.track_add_event(track, MaszynaScenarioEventServer.TRACK_EVENTALL2, to_end)
+    MaszynaScenarioEventServer.track_add_event(track, MaszynaScenarioEventServer.TRACK_EVENTALL1, to_start)
 
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    TrackServer.track_report_vehicle_entered(track, vehicle, TrackServer.TRAVEL_TOWARD_END)
     assert_true(ScenarioEventServer.event_is_queued(to_end))
     if not await wait_simulated_until(func() -> bool: return action.runs.size() == 1, TICK,
             "the track event run"):
         return
-    RailVehicleServer.vehicle_stopped_on_track.emit(vehicle, track)
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    TrackServer.track_report_vehicle_stopped(track, vehicle)
+    TrackServer.track_report_vehicle_started(track, vehicle, TrackServer.TRAVEL_TOWARD_END)
     assert_false(ScenarioEventServer.event_is_queued(to_end), "once per entry")
-    RailVehicleServer.vehicle_heading_to_track_start.emit(vehicle, track)
+    TrackServer.track_report_vehicle_started(track, vehicle, TrackServer.TRAVEL_TOWARD_START)
     assert_true(ScenarioEventServer.event_is_queued(to_start), "the other direction once too")
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, other_track)
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    TrackServer.track_report_vehicle_left(track, vehicle)
+    TrackServer.track_report_vehicle_entered(other_track, vehicle, TrackServer.TRAVEL_TOWARD_END)
+    TrackServer.track_report_vehicle_left(other_track, vehicle)
+    TrackServer.track_report_vehicle_entered(track, vehicle, TrackServer.TRAVEL_TOWARD_END)
     assert_true(ScenarioEventServer.event_is_queued(to_end), "a new entry fires again")
 
-    ScenarioEventServer.track_clear_events(track)
     _free_events([to_end, to_start])
-    for rid:RID in [track, other_track, vehicle]:
-        ScenarioEventServer.memory_free(rid)
+    TrackServer.track_report_vehicle_left(track, vehicle)
+    TrackServer.track_free(track)
+    TrackServer.track_free(other_track)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_a_standing_event_goes_on_while_the_vehicle_stands() -> void:
     var action:RecordingAction = RecordingAction.new()
     var standing:RID = _create_event(action, 0.0)
-    var track:RID = ScenarioEventServer.memory_create()
-    var vehicle:RID = ScenarioEventServer.memory_create()
-    ScenarioEventServer.track_add_event(track, ScenarioEventServer.TRACK_EVENTALL0, standing)
+    var track:RID = TrackServer.track_create()
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
+    MaszynaScenarioEventServer.track_add_event(track, MaszynaScenarioEventServer.TRACK_EVENTALL0, standing)
+    TrackServer.track_report_vehicle_entered(track, vehicle)
 
-    RailVehicleServer.vehicle_stopped_on_track.emit(vehicle, track)
+    TrackServer.track_report_vehicle_stopped(track, vehicle)
     if not await wait_simulated_until(func() -> bool: return action.runs.size() >= 2, CHAINED_EVENT_SECONDS,
             "the standing event run again"):
         return
     assert_gt(action.runs.size(), 1, "queued again after its run")
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    TrackServer.track_report_vehicle_started(track, vehicle, TrackServer.TRAVEL_TOWARD_END)
     if not await wait_simulated_until(func() -> bool: return not ScenarioEventServer.event_is_queued(standing), TICK,
             "the standing event let go"):
         return
@@ -506,26 +524,27 @@ func test_a_standing_event_goes_on_while_the_vehicle_stands() -> void:
     await get_tree().process_frame
     assert_eq(action.runs.size(), runs, "not once the vehicle moves")
 
-    ScenarioEventServer.track_clear_events(track)
     _free_events([standing])
-    ScenarioEventServer.memory_free(track)
-    ScenarioEventServer.memory_free(vehicle)
+    TrackServer.track_report_vehicle_left(track, vehicle)
+    TrackServer.track_free(track)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_the_other_axles_standing_event_goes_on_too() -> void:
     var action:RecordingAction = RecordingAction.new()
     var standing:RID = _create_event(action, 0.0)
-    var track:RID = ScenarioEventServer.memory_create() # stands in for the primary axle's track
-    var other_track:RID = ScenarioEventServer.memory_create() # and for the other axle's
-    var vehicle:RID = ScenarioEventServer.memory_create()
-    ScenarioEventServer.track_add_event(other_track, ScenarioEventServer.TRACK_EVENTALL0, standing)
+    var track:RID = TrackServer.track_create() # the vehicle's own track
+    var other_track:RID = TrackServer.track_create() # and the other axle's
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
+    MaszynaScenarioEventServer.track_add_event(other_track, MaszynaScenarioEventServer.TRACK_EVENTALL0, standing)
+    TrackServer.track_report_vehicle_entered(track, vehicle)
 
-    RailVehicleServer.vehicle_stopped_on_track.emit(vehicle, track)
-    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.emit(vehicle, other_track)
+    TrackServer.track_report_vehicle_stopped(track, vehicle)
+    TrackServer.track_report_vehicle_stopped(other_track, vehicle)
     if not await wait_simulated_until(func() -> bool: return action.runs.size() >= 2, CHAINED_EVENT_SECONDS,
             "the other track's standing event run again"):
         return
-    RailVehicleServer.vehicle_heading_to_track_end.emit(vehicle, track)
+    TrackServer.track_report_vehicle_started(track, vehicle, TrackServer.TRAVEL_TOWARD_END)
     if not await wait_simulated_until(func() -> bool: return not ScenarioEventServer.event_is_queued(standing), TICK,
             "the standing event let go"):
         return
@@ -533,22 +552,23 @@ func test_the_other_axles_standing_event_goes_on_too() -> void:
     await get_tree().process_frame
     assert_eq(action.runs.size(), runs, "not once the vehicle moves")
 
-    ScenarioEventServer.track_clear_events(other_track)
     _free_events([standing])
-    for rid:RID in [track, other_track, vehicle]:
-        ScenarioEventServer.memory_free(rid)
+    TrackServer.track_report_vehicle_left(track, vehicle)
+    TrackServer.track_free(track)
+    TrackServer.track_free(other_track)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_an_isolated_section_counts_axles_not_vehicles() -> void:
     var track:RID = TrackServer.track_create()
-    var vehicle:RID = ScenarioEventServer.memory_create() # stands in for a vehicle
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
     var section:RID = TrackServer.isolated_create()
     TrackServer.isolated_add_track(section, track)
     var entered:Array[RID] = []
     var record:Callable = func(_isolated:RID, axle_vehicle:RID) -> void: entered.append(axle_vehicle)
     TrackServer.isolated_axle_entered.connect(record)
 
-    TrackServer.track_vehicle_entered(track, vehicle)
+    TrackServer.track_report_vehicle_entered(track, vehicle)
     assert_false(TrackServer.isolated_is_occupied(section), "listing the vehicle on the track counts no axle")
     TrackServer.track_axle_entered(track, vehicle)
     TrackServer.track_axle_entered(track, vehicle)
@@ -559,26 +579,26 @@ func test_an_isolated_section_counts_axles_not_vehicles() -> void:
 
     TrackServer.isolated_axle_entered.disconnect(record)
     assert_eq(entered, [vehicle, vehicle] as Array[RID], ":inc for each axle")
-    TrackServer.track_vehicle_left(track, vehicle)
+    TrackServer.track_report_vehicle_left(track, vehicle)
     TrackServer.isolated_free(section)
     TrackServer.track_free(track)
-    ScenarioEventServer.memory_free(vehicle)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_scenery_animation_turns_the_submodel() -> void:
-    var instance:E3DModelInstance = E3DModelInstance.new()
-    var model:E3DModel = E3DModel.new()
-    var arm:E3DSubModel = E3DSubModel.new()
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
+    var arm:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     arm.resource_name = "Ramie01"
-    arm.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
-    var submodels:Array[E3DSubModel] = [arm]
+    arm.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+    var submodels:Array[MaszynaE3DSubModel] = [arm]
     model.submodels = submodels
     instance.model = model
     add_child_autoqfree(instance)
     var model_data:MaszynaModelData = MaszynaModelData.new()
     model_data.name = "rog1"
-    var models:Array[MaszynaModelData] = [model_data]
-    var instances:Dictionary[String, RID] = {"rog1": instance.get_e3d_instance()}
+    var models:Array[ModelData] = [model_data]
+    var instances:Dictionary[String, RID] = {"rog1": instance.get_model_instance()}
     var root:MaszynaIncludeNode = await _build_scenery(
         "node -1 0 c1 memcell 0 0 0 moving 0 0 none endmemcell "
         + "event rog1on animation 0 rog1 rotate ramie01 0 0 %.0f %.0f endevent " % [QUARTER_TURN, TURN_SPEED]
@@ -586,18 +606,18 @@ func test_scenery_animation_turns_the_submodel() -> void:
         models, instances
     )
     var arm_node:Node3D = instance.find_child("Ramie01", true, false)
-    var cell:RID = ScenarioEventServer.memory_get_rid_by_name(&"c1")
+    var cell:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"c1")
 
     if not await _run_event(&"rog1on"):
         return
     # the arm turns on the simulation's clock at its speed - the quarter turn in QUARTER_TURN / TURN_SPEED
     # simulated seconds, its :done event on the step it arrives
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(cell) == "done",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(cell) == "done",
             QUARTER_TURN / TURN_SPEED + TICK, "the animation's arrival"):
         return
 
     assert_true(arm_node.basis.is_equal_approx(Basis(Vector3(0, 0, 1), deg_to_rad(QUARTER_TURN))), "turned by 90 degrees about z")
-    assert_eq(ScenarioEventServer.memory_get_text(cell), "done", "the :done event runs when it arrives")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell), "done", "the :done event runs when it arrives")
     root.free()
 
 
@@ -607,15 +627,15 @@ func test_scenery_voltage_event_sets_the_power_source() -> void:
     var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
     root.autoload = false
     add_child(root)
-    var power_source_data:MaszynaPowerSourceData = MaszynaPowerSourceData.new()
+    var power_source_data:PowerSourceData = PowerSourceData.new()
     power_source_data.name = "Pwr1"
-    var power_sources:Array[MaszynaPowerSourceData] = [power_source_data]
+    var power_sources:Array[PowerSourceData] = [power_source_data]
     var context:MaszynaImporterContext = _parse("event keyctrl05 voltage 0.1 pwr1 2400 endevent")
     var tracks:Array[RID] = []
-    var models:Array[MaszynaModelData] = []
+    var models:Array[ModelData] = []
     var model_rids:Array[RID] = []
     var isolated_sections:Array[MaszynaIsolatedData] = []
-    await MaszynaLegacyEventFactory.build(
+    await MaszynaEventFactory.build(
         root, context.events, context.memcells, context.launchers, context.sounds, isolated_sections, context.tracks,
         tracks, models, model_rids, power_sources
     )
@@ -629,7 +649,7 @@ func test_scenery_voltage_event_sets_the_power_source() -> void:
 
 
 func test_shift_and_a_digit_queue_the_keyctrl_event() -> void:
-    var keyboard:ScenarioKeyboard = ScenarioKeyboard.new()
+    var keyboard:MaszynaScenarioKeyboard = MaszynaScenarioKeyboard.new()
     add_child_autoqfree(keyboard)
     var event:RID = _create_event(RecordingAction.new(), NEVER)
     ScenarioEventServer.event_set_name(event, &"keyctrl03")
@@ -647,9 +667,9 @@ func test_shift_and_a_digit_queue_the_keyctrl_event() -> void:
 
 func test_scenery_isolated_section_fires_busy_and_marks_its_memory() -> void:
     var track:RID = TrackServer.track_create()
-    var vehicle:RID = ScenarioEventServer.memory_create() # stands in for a vehicle
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
     var tracks:Dictionary[String, RID] = {"t1": track}
-    var models:Array[MaszynaModelData] = []
+    var models:Array[ModelData] = []
     var root:MaszynaIncludeNode = await _build_scenery(
         "node -1 0 c1 memcell 0 0 0 idle 0 0 none endmemcell "
         + "isolated s1 t1 endisolated "
@@ -657,50 +677,50 @@ func test_scenery_isolated_section_fires_busy_and_marks_its_memory() -> void:
         models, {}, tracks
     )
     var section:RID = TrackServer.isolated_get_rid_by_name(&"s1")
-    var cell:RID = ScenarioEventServer.memory_get_rid_by_name(&"c1")
-    var own_memory:RID = ScenarioEventServer.memory_get_rid_by_name(&"s1")
+    var cell:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"c1")
+    var own_memory:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"s1")
     assert_true(own_memory.is_valid(), "a section has a memory of its name")
 
     TrackServer.track_axle_entered(track, vehicle)
     assert_true(TrackServer.isolated_is_occupied(section))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(cell) == "busy", TICK,
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(cell) == "busy", TICK,
             "the busy event run"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(cell), "busy")
-    assert_eq(int(ScenarioEventServer.memory_get_value2(own_memory)) & 1, 1, "value 2 made odd")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell), "busy")
+    assert_eq(int(MaszynaScenarioEventServer.memory_get_value2(own_memory)) & 1, 1, "value 2 made odd")
 
     TrackServer.track_axle_left(track, vehicle)
     assert_false(TrackServer.isolated_is_occupied(section))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_value2(own_memory) == 0.0, TICK,
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_value2(own_memory) == 0.0, TICK,
             "the section's memory cleared"):
         return
-    assert_eq(ScenarioEventServer.memory_get_value2(own_memory), 0.0, "the low byte cleared")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(own_memory), 0.0, "the low byte cleared")
     root.free()
     TrackServer.track_free(track)
-    ScenarioEventServer.memory_free(vehicle)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_memcompareex_and_track_tests() -> void:
-    var memory:RID = ScenarioEventServer.memory_create()
-    ScenarioEventServer.memory_set_values(memory, "b", 5.0, 0.0)
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    MaszynaScenarioEventServer.memory_set_values(memory, "b", 5.0, 0.0)
     var memories:Array[RID] = [memory]
-    var condition:MaszynaLegacyEventCondition = MaszynaLegacyEventCondition.new()
+    var condition:MaszynaEventCondition = MaszynaEventCondition.new()
     condition.memories = memories
     condition.text = "a"
-    condition.text_operator = MaszynaLegacyEventCondition.OPERATOR_GREATER
+    condition.text_operator = MaszynaEventCondition.OPERATOR_GREATER
     condition.value1 = 3.0
-    condition.value1_operator = MaszynaLegacyEventCondition.OPERATOR_LESS
-    condition.mask = ScenarioEventServer.MEMORY_FIELD_TEXT | ScenarioEventServer.MEMORY_FIELD_VALUE1
+    condition.value1_operator = MaszynaEventCondition.OPERATOR_LESS
+    condition.mask = MaszynaScenarioEventServer.MEMORY_FIELD_TEXT | MaszynaScenarioEventServer.MEMORY_FIELD_VALUE1
     var action:RecordingAction = RecordingAction.new()
     var event:RID = _create_event(action, 0.0)
     ScenarioEventServer.event_attach_condition(event, condition)
 
-    condition.pass = MaszynaLegacyEventCondition.PASS_ANY
+    condition.pass = MaszynaEventCondition.PASS_ANY
     ScenarioEventServer.event_queue(event)
     if not await wait_simulated_until(func() -> bool: return action.runs.size() == 1, TICK,
             "the event run"):
         return
-    condition.pass = MaszynaLegacyEventCondition.PASS_ALL
+    condition.pass = MaszynaEventCondition.PASS_ALL
     ScenarioEventServer.event_queue(event)
     if not await wait_simulated_until(func() -> bool: return action.else_runs.size() == 1, TICK,
             "the else events run"):
@@ -712,12 +732,12 @@ func test_memcompareex_and_track_tests() -> void:
     var condition_tracks:Array[RID] = [track]
     condition.mask = 0
     condition.tracks = condition_tracks
-    condition.track_test = MaszynaLegacyEventCondition.TRACK_TEST_OCCUPIED
+    condition.track_test = MaszynaEventCondition.TRACK_TEST_OCCUPIED
     ScenarioEventServer.event_queue(event)
     if not await wait_simulated_until(func() -> bool: return action.else_runs.size() == 2, TICK,
             "the else events run for an empty track"):
         return
-    TrackServer.track_vehicle_entered(track, memory)
+    TrackServer.track_report_vehicle_entered(track, memory)
     ScenarioEventServer.event_queue(event)
     if not await wait_simulated_until(func() -> bool: return action.runs.size() == 2, TICK,
             "the events run for an occupied track"):
@@ -725,10 +745,10 @@ func test_memcompareex_and_track_tests() -> void:
     assert_eq(action.else_runs.size(), 2, "an empty track is not occupied")
     assert_eq(action.runs.size(), 2, "a track with a vehicle is")
 
-    TrackServer.track_vehicle_left(track, memory)
+    TrackServer.track_report_vehicle_left(track, memory)
     TrackServer.track_free(track)
     _free_events([event])
-    ScenarioEventServer.memory_free(memory)
+    MaszynaScenarioEventServer.memory_free(memory)
 
 
 func test_the_queue_lists_the_queued_events_in_the_order_they_run() -> void:
@@ -765,14 +785,14 @@ func test_a_name_defined_more_than_once_runs_every_definition_when_joined() -> v
         + "config joinduplicatedevents no endconfig",
         []
     )
-    var exit:RID = ScenarioEventServer.memory_get_rid_by_name(&"exit")
+    var exit:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"exit")
 
     ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"check"))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(exit) == "out",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(exit) == "out",
             JOINED_CHAIN_SECONDS, "the first definition's route set"):
         return
     await step(2)
-    assert_eq(ScenarioEventServer.memory_get_text(exit), "out", "the second definition's condition fails")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(exit), "out", "the second definition's condition fails")
     root.free()
 
 
@@ -787,15 +807,15 @@ func test_a_joined_definition_sees_what_the_one_before_it_wrote() -> void:
         + "event mark updatevalues 0 done yes * * endevent",
         []
     )
-    var done:RID = ScenarioEventServer.memory_get_rid_by_name(&"done")
+    var done:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"done")
 
-    var track:RID = ScenarioEventServer.memory_get_rid_by_name(&"track")
+    var track:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"track")
 
     ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"reserve"))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(done) == "yes",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(done) == "yes",
             JOINED_CHAIN_SECONDS, "the reservation marked"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(track), "taken", "the first definition wrote it")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(track), "taken", "the first definition wrote it")
     root.free()
 
 
@@ -812,14 +832,14 @@ func test_a_duplicated_multiple_runs_without_its_comparison_when_not_joined() ->
         + "event set_second updatevalues 0 second ran * * endevent",
         []
     )
-    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
-    var second:RID = ScenarioEventServer.memory_get_rid_by_name(&"second")
+    var first:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"first")
+    var second:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"second")
 
     ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"check"))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(second) == "ran",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(second) == "ran",
             JOINED_CHAIN_SECONDS, "the second definition run"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(first), "ran", "the comparison of the first is dropped")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(first), "ran", "the comparison of the first is dropped")
     root.free()
 
 
@@ -836,18 +856,18 @@ func test_a_duplicated_name_does_nothing_when_not_joined_but_its_onstart_runs_th
         + "event cells_onstart updatevalues 0 second started * * endevent",
         []
     )
-    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
-    var second:RID = ScenarioEventServer.memory_get_rid_by_name(&"second")
+    var first:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"first")
+    var second:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"second")
 
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(second) == "started",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(second) == "started",
             JOINED_CHAIN_SECONDS, "the later onstart definition run"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(first), "none", "the disabled first does not run")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(first), "none", "the disabled first does not run")
 
     ScenarioEventServer.event_queue(ScenarioEventServer.event_get_rid_by_name(&"set_cells"))
     await step(roundi(JOINED_CHAIN_SECONDS / TICK))
-    assert_eq(ScenarioEventServer.memory_get_text(first), "none")
-    assert_eq(ScenarioEventServer.memory_get_text(second), "started", "the name does nothing")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(first), "none")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(second), "started", "the name does nothing")
     root.free()
 
 
@@ -862,16 +882,16 @@ func test_a_duplicate_of_a_dropped_name_is_left_out() -> void:
         + "event horn_warning updatevalues 0 cell fourth * * endevent",
         []
     )
-    var cell:RID = ScenarioEventServer.memory_get_rid_by_name(&"cell")
+    var cell:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"cell")
 
     if not await _run_event(&"magnet_shp"):
         return
     await step(2)
-    assert_eq(ScenarioEventServer.memory_get_text(cell), "first")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell), "first")
     if not await _run_event(&"horn_warning"):
         return
     await step(2)
-    assert_eq(ScenarioEventServer.memory_get_text(cell), "third")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(cell), "third")
     root.free()
 
 
@@ -888,14 +908,14 @@ func test_a_joined_definition_of_a_negative_delay_starts_the_ones_after_it() -> 
         + "event chain updatevalues 0 third ran * * endevent",
         []
     )
-    var first:RID = ScenarioEventServer.memory_get_rid_by_name(&"first")
-    var third:RID = ScenarioEventServer.memory_get_rid_by_name(&"third")
+    var first:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"first")
+    var third:RID = MaszynaScenarioEventServer.memory_get_rid_by_name(&"third")
 
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(third) == "ran",
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(third) == "ran",
             START_DELAY + JOINED_CHAIN_SECONDS, "the definitions after the started one run"):
         return
-    assert_eq(ScenarioEventServer.memory_get_text(ScenarioEventServer.memory_get_rid_by_name(&"second")), "ran")
-    assert_eq(ScenarioEventServer.memory_get_text(first), "none", "the first is not started")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(MaszynaScenarioEventServer.memory_get_rid_by_name(&"second")), "ran")
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(first), "none", "the first is not started")
     root.free()
 
 
@@ -927,6 +947,7 @@ func test_join_duplicated_events_holds_past_the_include_that_sets_it() -> void:
 
 func _create_event(action:ScenarioEventAction, delay:float) -> RID:
     var event:RID = ScenarioEventServer.event_create()
+    ScenarioEventServer.system_add_event(_event_system, event)
     ScenarioEventServer.event_set_delay(event, delay)
     ScenarioEventServer.event_attach_action(event, action)
     return event
@@ -937,10 +958,10 @@ func _free_events(events:Array[RID]) -> void:
         ScenarioEventServer.event_free(event)
 
 
-## Parses the scenery text and builds it through MaszynaLegacyEventFactory; the returned include
+## Parses the scenery text and builds it through MaszynaEventFactory; the returned include
 ## frees what was built when it is freed
 func _build_scenery(
-    text:String, models:Array[MaszynaModelData], model_instances:Dictionary[String, RID] = {},
+    text:String, models:Array[ModelData], model_instances:Dictionary[String, RID] = {},
     tracks:Dictionary[String, RID] = {}
 ) -> MaszynaIncludeNode:
     var context:MaszynaImporterContext = _parse(text)
@@ -950,17 +971,17 @@ func _build_scenery(
     var model_rids:Array[RID] = []
     for model_data:MaszynaModelData in models:
         model_rids.append(model_instances.get(model_data.name, RID()))
-    var scenery_tracks:Array[MaszynaTrackData] = []
+    var scenery_tracks:Array[TrackData] = []
     var track_rids:Array[RID] = []
     for track_name:String in tracks:
         # the scenery names its tracks in TrackServer, where the events find them
         TrackServer.track_update(tracks[track_name], TrackServer.TRACK_NORMAL, track_name, SCENERY_TRACK_WIDTH)
         var track_data:MaszynaTrackData = MaszynaTrackData.new()
-        track_data.track_name = track_name
+        track_data.name = track_name
         scenery_tracks.append(track_data)
         track_rids.append(tracks[track_name])
-    var power_sources:Array[MaszynaPowerSourceData] = []
-    await MaszynaLegacyEventFactory.build(
+    var power_sources:Array[PowerSourceData] = []
+    await MaszynaEventFactory.build(
         root, context.events, context.memcells, context.launchers, context.sounds, context.isolated_sections,
         scenery_tracks, track_rids, models, model_rids, power_sources
     )

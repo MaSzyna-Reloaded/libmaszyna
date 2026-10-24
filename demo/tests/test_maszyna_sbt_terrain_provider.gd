@@ -1,0 +1,123 @@
+extends MaszynaGutTest
+
+## The original's binary region file (.sbt): its sections are listed as streaming cells, and a
+## cell's shapes are supplied as terrain chunks the way "triangles" nodes make them, its "lines"
+## nodes as the section's lines. With a region
+## file the scenery's own "triangles", terrain models and "_ter.scm" includes are left out.
+
+const FIXTURES:String = "res://tests/fixtures/region"
+## The fixture's one section has the original's index 7 - column 7 of row 0
+## (MaszynaSBTTerrainProvider.REGION_SIDE_SECTION_COUNT)
+const FIXTURE_CELL:Vector2i = Vector2i(7 - 250, -250)
+## The fixture's section shape: three vertices around this origin
+const GROUND_ORIGIN:Vector3 = Vector3(100.5, 2.0, 200.25)
+
+
+func _region_path(file_name:String) -> String:
+    return ProjectSettings.globalize_path(FIXTURES.path_join(file_name))
+
+
+func _provider() -> MaszynaSBTTerrainProvider:
+    var provider:MaszynaSBTTerrainProvider = MaszynaSBTTerrainProvider.new()
+    assert_true(provider.open(_region_path("test_region.sbt")))
+    return provider
+
+
+func _geometry(geometries:Array, texture:String) -> MaszynaTrianglesChunkGeometry:
+    for geometry:MaszynaTrianglesChunkGeometry in geometries:
+        if geometry.texture == texture:
+            return geometry
+    return null
+
+
+func _world_vertex(geometry:MaszynaTrianglesChunkGeometry, index:int) -> Vector3:
+    var vertices:PackedFloat32Array = geometry.vertices
+    return geometry.origin + Vector3(
+            vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2])
+
+
+func test_a_region_file_of_another_version_is_not_one() -> void:
+    assert_true(MaszynaSBTTerrainProvider.is_region(_region_path("test_region.sbt")))
+    assert_false(MaszynaSBTTerrainProvider.is_region(_region_path("bad_version.sbt")))
+    assert_false(MaszynaSBTTerrainProvider.is_region(_region_path("missing.sbt")))
+
+
+func test_the_sections_are_listed_as_streaming_cells_without_being_read() -> void:
+    var provider:MaszynaSBTTerrainProvider = _provider()
+    assert_eq(provider.get_chunk_cells(), [FIXTURE_CELL] as Array[Vector2i])
+    assert_eq(provider.chunk_get_overhang(FIXTURE_CELL), 0.0, "a section of the default radius reaches out")
+    assert_eq(provider.get_content_kinds(), PackedInt32Array([
+        SceneryStreamingProvider.CONTENT_TERRAIN, SceneryStreamingProvider.CONTENT_LINES
+    ]))
+
+
+## The section's own shapes are merged per texture around the section's centre, one group; a cell's
+## shapes are a chunk per texture and range around the cell's centre, each shape a group around the
+## centre the file gives it - its range is measured from there (opengl33renderer.cpp:2814)
+func test_a_cell_is_its_visible_shapes_the_sections_merged_and_the_cells_as_they_are() -> void:
+    var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_TERRAIN)
+    assert_eq(geometries.size(), 2, "the hidden shape and the lines are left out")
+    assert_not_null(_geometry(geometries, "test_grass"), "textures/ is not trimmed")
+    assert_not_null(_geometry(geometries, "test_bush"), "a cell's shape with user data is read past its user data")
+    assert_eq(_geometry(geometries, "test_grass").origin, MaszynaTrianglesSink.cell_get_origin(FIXTURE_CELL))
+    assert_eq(_geometry(geometries, "test_grass").get_group_count(), 1)
+    var bush:MaszynaTrianglesChunkGeometry = _geometry(geometries, "test_bush")
+    assert_eq(bush.get_group_count(), 1)
+    assert_eq(bush.origin + bush.group_centres[0], Vector3.ZERO, "the fixture's cell shape is centred at 0")
+
+
+func test_vertices_are_in_world_space_and_turned_around_like_a_triangles_node() -> void:
+    var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_TERRAIN)
+    var ground:MaszynaTrianglesChunkGeometry = _geometry(geometries, "test_grass")
+    assert_almost_eq(_world_vertex(ground, 0), GROUND_ORIGIN + Vector3(0.0, 0.0, 1.0), Vector3.ONE * 0.001)
+    assert_almost_eq(_world_vertex(ground, 2), GROUND_ORIGIN, Vector3.ONE * 0.001)
+
+
+func test_visibility_ranges_are_the_square_roots_and_no_limit_is_none() -> void:
+    var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_TERRAIN)
+    assert_eq(_geometry(geometries, "test_grass").range_max, -1.0)
+    assert_almost_eq(_geometry(geometries, "test_bush").range_max, 500.0, 0.001)
+
+
+func test_a_cell_without_a_section_or_another_kind_has_nothing() -> void:
+    var provider:MaszynaSBTTerrainProvider = _provider()
+    assert_eq(provider.chunk_load(Vector2i.ZERO, SceneryStreamingProvider.CONTENT_TERRAIN), [])
+    assert_eq(provider.chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_MODELS), [])
+
+
+func test_a_region_file_leaves_out_the_terrain_after_it_and_is_recorded() -> void:
+    var context := MaszynaImporterContext.new()
+    context.load_binary_terrain(_region_path("test_region.sbt"))
+    assert_true(context.binary_terrain)
+    assert_true(context.binary_terrain_state)
+    assert_eq(context.region_files, [_region_path("test_region.sbt")] as Array[String])
+    var included := MaszynaImporterContext.from_state(context.get_state())
+    assert_true(included.binary_terrain, "an include inherits it")
+    context.push_state()
+    context.pop_state()
+    assert_true(context.binary_terrain, "it holds for the rest of the load")
+
+
+func test_a_missing_region_file_still_leaves_out_the_terrain_includes() -> void:
+    var context := MaszynaImporterContext.new()
+    context.load_binary_terrain(_region_path("missing.sbt"))
+    assert_false(context.binary_terrain)
+    assert_true(context.binary_terrain_state, "deserialize_terrain() sets it whatever the file")
+    assert_eq(context.region_files, [] as Array[String])
+
+
+## A cell's "lines" nodes (lines_node::deserialize(), scenenode.cpp:513): the fixture's one, a white
+## line of width 2 within 1000 m - one geometry around the section's centre, its range the square
+## root of the file's
+func test_a_cells_lines_are_supplied_as_the_sections_lines() -> void:
+    var geometries:Array = _provider().chunk_load(FIXTURE_CELL, SceneryStreamingProvider.CONTENT_LINES)
+
+    assert_eq(geometries.size(), 1)
+    var geometry:SceneryLinesGeometry = geometries[0]
+    assert_eq(geometry.origin, MaszynaTrianglesSink.cell_get_origin(FIXTURE_CELL))
+    assert_eq(geometry.get_node_count(), 1)
+    var arrays:Array = geometry.build_mesh().surface_get_arrays(0)
+    assert_eq((arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)[0], -geometry.origin, "the point at the world's origin")
+    var looks:PackedFloat32Array = arrays[Mesh.ARRAY_CUSTOM2]
+    assert_eq(Vector3(looks[0], looks[1], looks[2]), Vector3(2, 0, 1000), "the width and the range")
+    assert_eq((arrays[Mesh.ARRAY_COLOR] as PackedColorArray)[0], Color.WHITE)

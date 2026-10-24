@@ -1,9 +1,9 @@
 extends MaszynaGutTest
 
-## Scenery "node model" becomes MaszynaModelData (built as an E3DRenderingServer RID by
-## SceneryInstancer), not an E3DModelInstance node.
+## Scenery "node model" becomes MaszynaModelData (built as an MaszynaE3DRenderingServer RID by
+## MaszynaSceneryProvider), not an MaszynaE3DModelInstance node.
 
-const NodeImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_importer.gd")
+const NodeImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_importer.gd")
 
 
 func test_model_node_is_imported_as_data_with_context_transform() -> void:
@@ -18,7 +18,7 @@ func test_model_node_is_imported_as_data_with_context_transform() -> void:
     assert_eq(context.models.size(), 1)
     var model: MaszynaModelData = context.models[0]
     assert_eq(model.data_path, "models/budynki")
-    assert_eq(model.model_filename, "dom")
+    assert_eq(model.model, "dom")
     assert_eq(model.skins, PackedStringArray(["skin1", "skin2"]))
     assert_eq(model.position, Vector3(101, 2, 3))
     assert_almost_eq(model.rotation.y, deg_to_rad(90.0), 0.0001)
@@ -29,8 +29,8 @@ func test_model_node_is_imported_as_data_with_context_transform() -> void:
 ## A model is looked for as its path is given, from the game directory, then under models/
 ## (MdlMngr.cpp:146-150): Sandomierz's platform is "models\linia053\peron_sandomierz.t3d"
 func test_model_path_is_looked_for_as_given_then_under_models() -> void:
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir("res://tests/fixtures")
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir("res://tests/fixtures")
     var parser: MaszynaParser = MaszynaParser.new()
     parser.initialize((
         "-1 0 given model 0 0 0 0 models\\t3d\\legacy.t3d none endmodel "
@@ -40,7 +40,7 @@ func test_model_path_is_looked_for_as_given_then_under_models() -> void:
 
     NodeImporter.new().import(parser, context)
     NodeImporter.new().import(parser, context)
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
     assert_eq(context.models.size(), 2)
     assert_eq(context.models[0].data_path, "models/t3d", "a path given from the game directory")
@@ -66,4 +66,4 @@ func test_lights_end_at_the_next_keyword() -> void:
     assert_almost_eq(factory.rotation.y, deg_to_rad(80.0), 0.0001, "the angles lost")
     var lamp: MaszynaModelData = context.models[1]
     assert_eq(lamp.lights, PackedFloat32Array([3.0, 1.0]))
-    assert_eq(lamp.light_colors, PackedColorArray([Color8(0xff, 0, 0), Color(-1.0, -1.0, -1.0)]))
+    assert_eq(lamp.lights_colors, {"00": Color8(0xff, 0, 0)}, "by name; the -1 keeps the model's own")

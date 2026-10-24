@@ -4,7 +4,7 @@
 		Reads a scenery's [code]triangles[/code] node.
 	</brief_description>
 	<description>
-		Reads a [code]triangles[/code] node of a scenery, rotated and moved into place, into a [SceneryTrianglesSink] with its draw range.
+		Reads a [code]triangles[/code] node of a scenery, rotated and moved into place, into a [MaszynaTrianglesSink] with its draw range.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -14,7 +14,7 @@
 			<param index="0" name="parser" type="MaszynaParser" />
 			<param index="1" name="rotate" type="Vector3" />
 			<param index="2" name="origin" type="Vector3" />
-			<param index="3" name="sink" type="SceneryTrianglesSink" />
+			<param index="3" name="sink" type="MaszynaTrianglesSink" />
 			<param index="4" name="range_min" type="float" />
 			<param index="5" name="range_max" type="float" />
 			<description>

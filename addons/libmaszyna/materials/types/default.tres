@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dvx3jlgj2wa0j"]
+
+[ext_resource type="Shader" uid="uid://dgq18u5k4mckh" path="res://addons/libmaszyna/materials/types/default.gdshader" id="1_q4onj"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_q4onj")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/transparency = 0
+shader_parameter/alpha_scissor_threshold = 0.5
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/normal_scale = 1.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)

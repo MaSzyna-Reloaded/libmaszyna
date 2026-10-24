@@ -6,7 +6,7 @@ extends MaszynaGutTest
 ## interior's cab0. The fabricated vehicle (demo/tests/fixtures/dynamic/test/synthetic_v1) has a
 ## hi-fi cab 1 and a machine room like that.
 
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## cab0, cab1 and cab2 of the low-poly interior
@@ -16,12 +16,12 @@ signal scenery_loaded(first_vehicle_id:String)
 
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
-var player:MaszynaPlayer
+var player:Player
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
@@ -33,7 +33,7 @@ func after_each() -> void:
         vehicle.free()
     if is_instance_valid(player):
         player.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _low_poly_cab_visible(cab_index:int) -> bool:
@@ -45,7 +45,7 @@ func _low_poly_cab_visible(cab_index:int) -> bool:
 
 func test_machine_room_without_cab_model_shows_low_poly_interior() -> void:
     vehicle = await spawn_maszyna_vehicle("dynamic/test/synthetic_v1", "synthetic", "", "test_machine_room",
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     if not await wait_detailed(vehicle):
         return
     var controller:VehicleController = vehicle.get_controller()

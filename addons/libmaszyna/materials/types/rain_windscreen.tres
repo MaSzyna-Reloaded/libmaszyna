@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://addons/libmaszyna/materials/types/rain_windscreen.gdshader" id="1_rainw"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_rainw")
+shader_parameter/raindrop_grid_size = 1.0
+shader_parameter/specular = 0.5
+shader_parameter/roughness = 0.2
+shader_parameter/drop_lod_bias = -2.0
+shader_parameter/specular_intensity = 1.0
+shader_parameter/wobble_strength = 0.002
+shader_parameter/wobble_speed = 30.0
+shader_parameter/refraction_strength = 0.04
+shader_parameter/heavy_rain_start = 0.4
+shader_parameter/large_drop_scale = 2.0
+shader_parameter/film_strength = 0.9
+shader_parameter/film_blur = 6.0
+shader_parameter/film_distortion = 0.03
+shader_parameter/rivulet_spacing = 6.0
+shader_parameter/rivulet_width = 0.11
+shader_parameter/rivulet_length = 0.35
+shader_parameter/rivulet_speed = 0.25
+shader_parameter/edge_rivulet_band = 0.12
+shader_parameter/edge_rivulet_fade = 6.0
+shader_parameter/blade_bead_width = 0.05
+shader_parameter/gathered_water_start = 0.6

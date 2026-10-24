@@ -38,10 +38,11 @@
   "C_Cpp_Runner.compilerArgs": [],
   "C_Cpp_Runner.linkerArgs": [],
   "C_Cpp_Runner.includePaths": [
-    "${workspaceFolder}/godot-cpp/gdextension",
-    "${workspaceFolder}/godot-cpp/gen/**",
-    "${workspaceFolder}/godot-cpp/include/**",
-    "${workspaceFolder}/godot-cpp/src/**"
+    "${workspaceFolder}/vendor/libreloaded/src",
+    "${workspaceFolder}/vendor/libreloaded/godot-cpp/gdextension",
+    "${workspaceFolder}/vendor/libreloaded/godot-cpp/gen/**",
+    "${workspaceFolder}/vendor/libreloaded/godot-cpp/include/**",
+    "${workspaceFolder}/vendor/libreloaded/godot-cpp/src/**"
   ],
   "C_Cpp_Runner.includeSearch": [
     "*",
@@ -64,7 +65,7 @@
   "C_Cpp.intelliSenseEngine": "disabled",
   "C_Cpp.codeAnalysis.clangTidy.enabled": false,
   "clangd.arguments": [
-    "--compile-commands-dir=${workspaceFolder}",
+    "--compile-commands-dir=${workspaceFolder}/build-clang-tidy",
     "--clang-tidy",
     "--header-insertion=never",
     "--fallback-style=none"

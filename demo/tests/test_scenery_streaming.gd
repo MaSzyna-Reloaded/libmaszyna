@@ -24,20 +24,20 @@ func before_each() -> void:
     ResourceLazyLoader.lazy_loading = true
     _camera = Camera3D.new()
     add_child_autoqfree(_camera)
-    E3DRenderingServer.model_set_loader(_load_test_model)
+    MaszynaE3DRenderingServer.model_set_loader(_load_test_model)
     SceneryStreamingServer.streaming_set_camera(_camera.get_instance_id())
 
 
 func after_each() -> void:
     for rid:RID in _rids:
-        E3DRenderingServer.instance_free(rid)
+        MaszynaE3DRenderingServer.instance_free(rid)
     _rids.clear()
     for rid:RID in _stream_rids:
         SceneryStreamingServer.stream_free(rid)
     _stream_rids.clear()
     _build_order.clear()
     SceneryStreamingServer.streaming_set_camera(0)
-    E3DRenderingServer.model_set_loader(E3DModelManager.load_model)
+    MaszynaE3DRenderingServer.model_set_loader(MaszynaE3DModelManager.load_model)
     ResourceLazyLoader.lazy_loading = _previous_lazy_loading
 
 
@@ -87,7 +87,7 @@ func test_registered_instance_is_freed_before_it_is_ever_built() -> void:
     var rid:RID = _register(Vector3.ZERO, 200.0)
 
     await wait_streaming(STREAMING_FRAMES)
-    E3DRenderingServer.instance_free(rid)
+    MaszynaE3DRenderingServer.instance_free(rid)
     _rids.erase(rid)
 
     await _move_camera(Vector3.ZERO)
@@ -278,13 +278,13 @@ func test_a_chunk_whose_last_piece_is_cleared_is_announced() -> void:
     assert_signal_emitted_with_parameters(SceneryStreamingServer, "chunk_cleared", [Vector2i.ZERO])
 
 
-## E3DModelInstance.set_e3d_instance(): the node stands for an instance it does not own - a
+## MaszynaE3DModelInstance.set_e3d_instance(): the node stands for an instance it does not own - a
 ## scenery's model ("Edit SCN" sectors)
 func test_a_proxy_moves_the_instance_and_leaves_it_alive() -> void:
     var position := Vector3(CHUNK_SIZE_M * 0.5, 0, 0)
     var rid:RID = _register(position, 200.0)
     await _move_camera(position)
-    var proxy := E3DModelInstance.new()
+    var proxy := MaszynaE3DModelInstance.new()
     proxy.set_e3d_instance(rid)
     add_child(proxy)
 
@@ -295,16 +295,16 @@ func test_a_proxy_moves_the_instance_and_leaves_it_alive() -> void:
     var moved := Vector3(CHUNK_SIZE_M * 0.5, 0, 10.0)
     proxy.global_position = moved
     await wait_idle_frames(1)
-    assert_eq(E3DRenderingServer.instance_get_transform(rid).origin, moved, "the instance did not move")
+    assert_eq(MaszynaE3DRenderingServer.instance_get_transform(rid).origin, moved, "the instance did not move")
 
     proxy.free()
-    assert_eq(E3DRenderingServer.instance_get_data_path(rid), "models/test", "the instance went with its proxy")
-    assert_eq(E3DRenderingServer.instance_get_transform(rid).origin, moved)
+    assert_eq(MaszynaE3DRenderingServer.instance_get_data_path(rid), "models/test", "the instance went with its proxy")
+    assert_eq(MaszynaE3DRenderingServer.instance_get_transform(rid).origin, moved)
 
 
 func _register(position:Vector3, range_max:float) -> RID:
-    var rid:RID = E3DRenderingServer.instance_register(
-        "models/test", "streamed", PackedStringArray(),
+    var rid:RID = MaszynaE3DRenderingServer.instance_register(
+        "models/test/streamed", PackedStringArray(),
         Transform3D(Basis(), position), 0.0, range_max, get_tree().root.world_3d.scenario
     )
     _rids.append(rid)
@@ -333,12 +333,12 @@ func _move_camera(position:Vector3) -> void:
     await wait_streaming(STREAMING_FRAMES)
 
 
-func _load_test_model(_data_path:String, _filename:String) -> E3DModel:
-    var mesh_submodel:E3DSubModel = E3DSubModel.new()
+func _load_test_model(_data_path:String, _filename:String) -> MaszynaE3DModel:
+    var mesh_submodel:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     mesh_submodel.resource_name = "mesh"
-    mesh_submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    mesh_submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     mesh_submodel.mesh = _create_mesh()
-    var model:E3DModel = E3DModel.new()
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
     model.submodels = [mesh_submodel]
     return model
 

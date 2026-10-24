@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/vehicles_panel.gd" id="1_panel"]
-[ext_resource type="Script" path="res://addons/libmaszyna/editor/editor_viewport_drop.gd" id="2_drop"]
+[ext_resource type="Script" path="res://addons/libreloaded/editor/editor_viewport_drop.gd" id="2_drop"]
 [ext_resource type="Script" path="res://addons/libmaszyna/editor/maszyna_vehicles/track_drop_hint.gd" id="3_hint"]
 
 [node name="VehiclesPanel" type="VBoxContainer"]

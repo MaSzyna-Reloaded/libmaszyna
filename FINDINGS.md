@@ -5,6 +5,11 @@ names the entry in `docs/findings-archive.md` that has the symptom, the proof an
 comments cite those entries by date and title. Check the matching area before diagnosing
 anything. Open work belongs in `TODO.md`.
 
+These are libmaszyna's: MaSzyna's code, data, the Mover and the original engine, and the general
+rules (Godot, GDScript, threads, tests) that bind its code. A root cause wholly in libreloaded's
+code is in libreloaded's own `FINDINGS.md` (`vendor/libreloaded/FINDINGS.md`); one in the game's
+code belongs to the game's `FINDINGS.md`.
+
 ## Diagnosing
 * A local clang-tidy older than CI's (`LLVM_VERSION` in `clang-tidy.yml`) passes what CI fails:
   checks added since are unknown to it. Run CI's major version (`pip install clang-tidy==22.*`).
@@ -24,7 +29,7 @@ anything. Open work belongs in `TODO.md`.
   streaming hitches)*
 * When a build or a code change "has no effect", prove that the binary running is the one built
   (mtime, md5), then read the cache file (`strings`, `.hash`) before any other hypothesis.
-  *(09-21 release never unpacked; 09-20 low-poly interior)*
+  *(09-20 low-poly interior)*
 * When a cache "does not work", load an entry and run its own validity check before suspecting
   invalidation. *(09-23 game dir ".")*
 * "One action late" means a read of a snapshot taken before the write. Look for the cache
@@ -137,8 +142,9 @@ anything. Open work belongs in `TODO.md`.
   the one root most of the data uses. *(10-03 Sandomierz without its platform)*
 * A list in the data ends where the original's loader ends it - at its keywords, not at the end
   of the node. *(10-03 l107's factory turned by 80 degrees)*
-* A workaround in a `Mover*` call is a sign that a FIZ key is not ported yet. Before keeping one,
-  read the key's default in `LoadFIZ_*`. *(09-25 pantographs raised only with the master valve forced)*
+* A workaround in a `MaszynaMover*` call is a sign that a FIZ key is not ported yet. Before keeping
+  one, read the key's default in `LoadFIZ_*`. *(09-25 pantographs raised only with the master valve
+  forced)*
 * A Mover field every engine type computes (EngineVoltage) is published by the part they all
   have, not by the first subclass that needed it. *(09-29 the E186 screen showed no line voltage)*
 * Grep every `extract_value(..., "Key")` of LoadFIZ_Cntrl against the parser before calling the
@@ -161,11 +167,10 @@ anything. Open work belongs in `TODO.md`.
   read the geometry drawn for a glow before adding a tuning constant. *(09-21 spot cone, street
   lamp; 09-20 missing shaders)*
 * A lit E3D lamp is drawn as its texture times its diffuse (opengl33, `light_common.glsl:164`) -
-  a light standing for it samples the texture (`LegacyCabinLampIslands.submodel_color()`), never
+  a light standing for it samples the texture (`MaszynaCabinLampIslands.submodel_color()`), never
   takes the diffuse alone. *(10-12 ST45's blue lamps glowed orange)*
 * When porting a contract consumed by scripts nobody here maintains, run the real scripts against
   it. *(09-24 Python cab screens)*
-* Check sun-altitude thresholds against a winter day. *(09-20 orange fog)*
 * A section is parsed for every `EngineType` that has it, and a parser never reaches its engine
   node by a cast to one engine class - a failed cast drops the section without a word. Check each
   `EngineType` against its `LoadFIZ_*` case and its `readMPT*()`. *(09-27 SA134 without a gearbox)*
@@ -253,9 +258,6 @@ anything. Open work belongs in `TODO.md`.
   that stopped against the other and never coupled)*
 
 ## State, ownership, events
-* An operation somebody awaits is done only when everything its waiter relies on is; a signal
-  relayed after an `await` arrives after the call that caused it returned. *(10-03 the loading
-  screen faded onto a world not streamed yet)*
 * A thing enters the world with its first position, not with its construction: drawn before it
   has a place, it is drawn in the wrong one. *(10-03 a scenery's vehicles drawn at the origin)*
 * A default changed for one owner of a field is checked against every other writer of it, and
@@ -327,13 +329,10 @@ anything. Open work belongs in `TODO.md`.
   announced to nobody. *(10-05 cab change in RailVehicleServer)*
 
 ## Godot / GDExtension
-* A compute effect never samples the texture it writes in the same dispatch: D3D12 refuses the
-  command list (`Close` E_INVALIDARG) and removes the device - every allocation after fails with
-  `0x887a0005`. Copy the source first. *(10-06 crash at 0% loading on D3D12)*
 * Godot measures a visibility range to the centre of the instance's box, the original from the
   model's origin for every submodel: an E3D submodel's box is centred on the model's origin
-  (`E3DInstanceBackend::_visibility_aabb()`), or two LODs with meshes of their own centres leave a
-  gap around their common bound. *(10-04 34WE's body missing at 80 m)*
+  (`MaszynaE3DInstanceBackend::_visibility_aabb()`), or two LODs with meshes of their own centres
+  leave a gap around their common bound. *(10-04 34WE's body missing at 80 m)*
 * An extension that creates or frees objects off the main thread is not `reloadable`: Godot
   tracks a reloadable extension's instances in a set it does not lock (`_track_instance()`), in
   the editor only - the editor crashed in the engine at ever different places of ours, the game
@@ -412,7 +411,7 @@ anything. Open work belongs in `TODO.md`.
 * A model rebuilt is a view change: nothing the simulation reads lives in the node that draws it
   (a pantograph's raise), and a rebuild resets nothing. *(09-29 a model rebuilt dropped the
   vehicle's voltage)*
-* `instance_set_submodel_visible(true)` overrides a dynamic model's `dynamic_hidden` default;
+* `instance_set_part_visible(true)` overrides a dynamic model's `dynamic_hidden` default;
   pose and material settings do not imply visibility. *(09-30 coupled vehicles lost their
   couplers)*
 * A bilateral detach that clears both backend links retains the former neighbour until both
@@ -450,17 +449,12 @@ anything. Open work belongs in `TODO.md`.
 * A RenderingServer RID inherits none of its node's defaults. Set every parameter the node's
   constructor sets, and place particles through the instance transform. *(09-21 RenderingServer
   light; 09-21 smoke at origin)*
-* A full-screen pass that reads `hint_screen_texture` only adds (`blend_add`): the copy is taken
-  before translucent geometry, and writing it back erases it. *(09-30 the torch put out the
-  signals)*
 * `color`, `color_initial_ramp` and `amount_ratio` reach particles already in the air. Only the
   emission itself affects new ones. *(09-21 plume cut off)*
 * An emitter whose rate its owner drives spawns nothing until the owner has set it - a default
   rate spawns before the first tick, and emits on a culled system burst when it comes into view.
   *(09-28 puff from a diesel that is off)*
 * A valid RID does not mean its `Node3D` is in the tree. *(09-20 E3D node leaving tree)*
-* The sky and the geometry are fogged by different parameters. An opacity summed from two sources
-  is summed where it is set, and unclamped values extrapolate. *(09-21 fogged sky)*
 * An `EditorImportPlugin`'s save extension changes with `_get_resource_type()`. Godot reimports
   on md5, not mtime. *(09-24 .fiz stopped importing)*
 * `global_script_class_cache.cfg` is updated only by an editor scan. Run `--import`. *(09-20
@@ -473,16 +467,10 @@ anything. Open work belongs in `TODO.md`.
   is moved out (scenario `RID()`), as `VisualInstance3D` does - never freed and made again, its
   RIDs are held elsewhere - and freed with the node. *(10-03 a scenery's vehicles drawn on every
   editor tab)*
-* A new catalogue in the same locale re-translates nothing: `set_locale()` of an unchanged locale
-  and `add_translation()`/`remove_translation()` send no `NOTIFICATION_TRANSLATION_CHANGED`.
-  The code that swaps it notifies the main loop. *(09-25 catalogue swapped, UI unchanged)*
 
 * The Mover's train brake handle has three positions and only `BrakeLevelSet()` moves them
   together, comparing with `fBrakeCtrlPos`: a second setup leaves `BrakeCtrlPosR` at lap. A pipe
   that will not charge - read `dpMainValve` first. *(09-26 FV4a handle left at lap)*
-* Setting a `Range`'s `min_value`/`max_value`/`step` clamps its value and emits `value_changed`: a
-  control is only shown a value, and saving happens on an explicit apply of what differs from what
-  was shown. *(10-04 settings saved their minimums)*
 * A runtime loaded from the player's game directory (CPython 2.7) runs in a process of its own,
   never in the game's: its fatal error is `abort()` on a stderr nobody sees, and Godot's crash
   handler covers only the main thread. The host's stderr and exit code go to the log.
@@ -501,7 +489,7 @@ anything. Open work belongs in `TODO.md`.
   ("vulkan"); `DisplayServer.get_name() == "headless"` tells it, and with it no resource is made off
   the main thread (`ResourceLazyLoader.get_loads_off_main_thread()`). *(10-12 vehicles read off the
   main thread)*
-* A mesh that is saved, picked or read is an `E3DMesh` with its arrays in memory, never an
+* A mesh that is saved, picked or read is an `MaszynaE3DMesh` with its arrays in memory, never an
   `ArrayMesh`: saving or reading an `ArrayMesh` reads its buffers back from the GPU, a stall of
   every frame in flight, on the main thread. *(10-12 E3D models saved on the main thread)*
 * A resource is saved only through `ResourceCache.resource_save()` and a scene packed only through
@@ -514,7 +502,7 @@ anything. Open work belongs in `TODO.md`.
   free memory is given back (`ProcessMemory.release_unused()`). *(10-01 a task per include; 10-02 a
   queue task for every placed object over 16 KB)*
 * A parse that repeats an include in world space reduces each node to its final form as it reads
-  it (`SceneryTrianglesSink`), with a bound on memory; nothing is kept per include until the end.
+  it (`MaszynaTrianglesSink`), with a bound on memory; nothing is kept per include until the end.
   *(10-01 the parse kept every include's triangles)*
 * Nothing on a worker reads back from the RenderingServer (saving a mesh does - off the main thread
   it waits for the main thread), and nothing that loads or saves runs on the `WorkerThreadPool`,
@@ -525,7 +513,7 @@ anything. Open work belongs in `TODO.md`.
   made an empty chunk, cached and failing as a mesh when streamed (`array_len == 0`). *(10-02 an
   empty terrain chunk)*
 * What a streamed piece loads is held by its build and let go by its clear
-  (`ResourceLazyLoader`, with `maszyna/resources/lazy_loading`; off - the default - it is loaded
+  (`ResourceLazyLoader`, with `reloaded/resources/lazy_loading`; off - the default - it is loaded
   at registration and kept); a memo that never evicts grows with the session, and a cache file
   holds data, never a mesh. *(10-01 a scenery's whole terrain kept in memory)*
 * An object is never taken back from its `ObjectID` on another thread than the one that may drop
@@ -551,13 +539,7 @@ anything. Open work belongs in `TODO.md`.
   *(10-02 a C++ stream crashed the release build)*
 * A game or editor still running the old library writes cache entries under a version the new
   scripts bumped - rebuild with Godot closed, or bump the version again. *(09-28 ED72 cache)*
-* glibc is only forward compatible. Check the highest `GLIBC_` of every shipped binary, and build
-  on an old sysroot. *(09-24 Linux release glibc)*
 * A path handed to `FileAccess` is absolute, or it is silently `res://`. *(09-23 game dir ".")*
-* A script-source default does not survive export (`get_property_default_value()` is null), and
-  EditorPlugin settings do not exist in a release. *(09-21 no fog in release)*
-* A one-liner that `cd`s and uses a relative destination has two working directories.
-  *(09-21 release never unpacked)*
 * Code whose output is cached on disk bumps its cache tag (`structure-vN`, `CACHE_VERSION`,
   `FIZ_PARSER_FORMAT_VERSION`) in the same commit, and every `ResourceCache` is wired into "Clear
   cache". *(09-20 low-poly interior; 09-20 E186 main tank)*
@@ -567,22 +549,17 @@ anything. Open work belongs in `TODO.md`.
 * Never apply clang-tidy `--fix` per file: a rename lands in the declaration, not in its uses
   elsewhere. `style-fix` only formats, headers are self-contained, and style-check binds the same
   double API as the build. *(09-29 style-fix broke the build)*
-* The export reconverts a scene only when its own file changes; a scene instancing another,
-  changed one (`[editable]` above all) ships its old diff of it. A release is exported from an
-  empty `demo/.godot/exported`. *(09-29 vehicle card missing in release)*
-* The export is run by the editor, and the editor loads the debug library whatever the export:
-  every `release-*` export builds `compile-debug` too. *(09-30 release export without CabinSystem)*
 
 ## Tests
-* `user://` is `~/.local/share/MaSzyna-Reloaded/` (`custom_user_dir_name`); a killed test may
-  leave `game_dir` there pointing at the fixtures - check it before a run on the game's data.
+* The demo's `user://` is `~/.local/share/Libmaszyna-Demo/` (`custom_user_dir_name` in
+  `demo/project.godot`); a killed test may leave `game_dir` there pointing at the fixtures - check
+  it before a run on the game's data.
   *(10-06 a killed test leaves the game directory pointing at the fixtures)*
 * The game directory is changed only while nothing built from it is alive: saving it reloads the
   game's data, and a vehicle rebuilds itself from the directory current then. *(10-03 a test's
   vehicle was built twice)*
 * A test is checked against a build without the fix, and one that cannot fail is deleted.
   *(09-24 line breaker opened; 09-24 parser)*
-* Test the invariant, not the intermediate. *(09-21 no fog in release)*
 * The headless dummy renderer keeps no texture data. A vehicle without mass or a track is NaN, and
   NaN never compares equal or culls. *(09-24 Python screens; 09-24 parked vehicle; 09-22 sound
   cost)*
@@ -638,13 +615,13 @@ anything. Open work belongs in `TODO.md`.
   is then never run. A test asserts the end of the sequence the player sees, after simulated time,
   never only the flag it switched or a key's presence. *(10-04 test audit)*
 
-* Hold an `E3DModel` in a variable for as long as its submodels are used: freeing it clears
-  every submodel (`E3DModel::clear()`), so `load_model(...).get_node(...)` gives a mesh-less
+* Hold an `MaszynaE3DModel` in a variable for as long as its submodels are used: freeing it clears
+  every submodel (`MaszynaE3DModel::clear()`), so `load_model(...).get_node(...)` gives a mesh-less
   submodel. *(09-29 submodels without meshes)*
 * A pantograph-air report is reproduced on a fixture whose FIZ matches its `PantAutoValve`: the
   EP09 fixture has it, the EP07 (303E) does not, and the valve matters only without it.
   *(10-06 EP09 fixture fills its pantographs on its own)*
-* A test never reads a cache: `maszyna/cache/enabled` is off in the GUT hooks, so every run
+* A test never reads a cache: `reloaded/cache/enabled` is off in the GUT hooks, so every run
   builds from its fixtures. A cache keyed by a format version is stale the moment the same version
   is reused with other code, and the test then reports the old data as a regression of the new.
   *(10-12 the stale scenery cache that looked like a name regression)*
@@ -678,9 +655,6 @@ anything. Open work belongs in `TODO.md`.
 * An extension class named like an engine class (`CameraServer`) builds fine and is refused at
   run time: check the name against Godot's classes, and the `--import` log for "already
   registered". *(09-29 an extension class named like an engine class never registered)*
-* When the API godot-cpp is generated from changes (`extension_api.json`, precision), rebuild
-  godot-cpp from clean objects in every build dir, and check the library for undefined `godot::`
-  symbols (`nm -D -C --undefined-only`). *(09-29 debug library would not load)*
 * The scenery parser reads cp1250 (as the original's files are written); a byte past ASCII taken
   as a signed char became U+FFFD and every W4 of a Polish-named station (`Krzyżowa#...`) matched
   no timetable. A W4's station is cut at `#` and made plain ASCII (Event.cpp:715-719). Look for
@@ -716,7 +690,7 @@ anything. Open work belongs in `TODO.md`.
   of a vehicle crashed the editor on its first rebuild. *(09-30 editor crash on a game dir change)*
 * A loaded scenery runs nothing: `SimulationServer`'s clock ticks only under a `SimulationRuntime`
   the game places, and the scenario's scripts and sounds are started by the game
-  (`MaszynaLegacyScenario`). A loader that starts the simulation runs it in the editor too.
+  (`MaszynaScenario`). A loader that starts the simulation runs it in the editor too.
   *(10-03 the editor ran the scenario)*
 * A vehicle's models are made before it stands on its track: its detail is decided where it is
   placed, never assumed - born detailed, every vehicle of a scenery built its whole node hierarchy

@@ -32,8 +32,8 @@ var scenery:MaszynaSceneryNode
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
     add_child(scenery)
@@ -46,7 +46,7 @@ func after_each():
     # out of the cab before the vehicle goes
     PlayerServer.player_leave_vehicle()
     scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _find_train_controller(vehicle_name:String) -> VehicleController:
@@ -61,7 +61,7 @@ func test_ep07_main_switch_stays_closed_while_advancing_controller() -> void:
         return
 
     # the scenery gives EP07-424 its driver (headdriver); the test drives it as a player does, who
-    # takes the controls from the driver (MaszynaPlayer, drivermode.cpp:266)
+    # takes the controls from the driver (Player, drivermode.cpp:266)
     PlayerServer.player_take_over_vehicle(controller.get_rid())
     var power_supply:RailVehiclePowerSupply = RailVehicleServer.vehicle_component_get(
             controller.get_rid(), RailVehicleComponentType.COMPONENT_POWER_SUPPLY) as RailVehiclePowerSupply

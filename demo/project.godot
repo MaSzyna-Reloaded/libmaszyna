@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="libmaszyna demo"
-config/description="The demo of libmaszyna (MaSzyna Reloaded Core): the Mover, a 3D scene and the debug HUD"
+config/description="The demo of libmaszyna, the MaSzyna plugin of Rails Reloaded: the Mover, a 3D scene, its tests"
 config/version="2026-09-19"
 run/main_scene="res://demo_3d.tscn"
 run/print_header=false
@@ -36,28 +36,31 @@ general/3d_panning_strength=0.55
 
 [autoload]
 
-TrackRenderingServer="*res://addons/libmaszyna/tracks/track_rendering_server.gd"
-TractionRenderingServer="*res://addons/libmaszyna/traction/traction_rendering_server.gd"
-MaszynaSceneryChunkRenderingServer="*res://addons/libmaszyna/legacy/scenery/maszyna_scenery_chunk_rendering_server.gd"
-SmokeSourceLibrary="*res://addons/libmaszyna/smoke/smoke_source_library.gd"
+TractionRenderingServer="*res://addons/libreloaded/traction/traction_rendering_server.gd"
+VehicleCatalogServer="*res://addons/libreloaded/vehicles/vehicle_catalog_server.gd"
+MaszynaSceneryChunkRenderingServer="*res://addons/libmaszyna/scenery/maszyna_scenery_chunk_rendering_server.gd"
+MaszynaSmokeSourceLibrary="*res://addons/libmaszyna/smoke/maszyna_smoke_source_library.gd"
 NodebankLibraryBuilder="*uid://dv25nc25tcanw"
 Console="*uid://d046w0soh2iou"
-MaterialManager="*uid://wsbd7kr83ncg"
+MaszynaMaterialManager="*uid://wsbd7kr83ncg"
 MaszynaMaterialParser="*uid://7b48fl428yqa"
 MaszynaMaterialFactory="*uid://v144f3irjg7m"
-E3DModelManager="*uid://b2v733o52i40x"
-MaszynaLegacyVehicleSystem="*res://addons/libmaszyna/legacy/vehicle/maszyna_legacy_vehicle_system.gd"
-MaszynaVehicleProfileManager="*res://addons/libmaszyna/legacy/vehicle/maszyna_vehicle_profile_manager.gd"
-E3DModelTool="*uid://df7a5f7f35wd1"
+MaszynaE3DModelManager="*uid://b2v733o52i40x"
+MaszynaVehicleSystem="*res://addons/libmaszyna/vehicle/maszyna_vehicle_system.gd"
+MaszynaVehicleCatalogProvider="*res://addons/libmaszyna/vehicle/maszyna_vehicle_catalog_provider.gd"
+MaszynaVehicleProfileManager="*res://addons/libmaszyna/vehicle/maszyna_vehicle_profile_manager.gd"
+MaszynaE3DModelTool="*uid://df7a5f7f35wd1"
 AudioStreamManager="*uid://cp8sgfk334adm"
-TranscriptSystem="*res://addons/libmaszyna/sound/transcript_system.gd"
+TranscriptSystem="*res://addons/libreloaded/sound/transcript_system.gd"
 TrainSoundSystem="*res://addons/libmaszyna/sound/train_sound_system.gd"
-CabinSystem="*res://addons/libmaszyna/cabin/cabin_system.gd"
+CabinSystem="*res://addons/libreloaded/cabin/cabin_system.gd"
 GndSfxServer="*res://addons/gnd_sfx/gnd_sfx_server.gd"
-ScenerySoundServer="*res://addons/libmaszyna/sound/scenery_sound_server.gd"
+ScenerySoundServer="*res://addons/libreloaded/sound/scenery_sound_server.gd"
 FIZResourceLoaderRegistrar="*uid://c3g4562u11dp2"
 DebugMenu="*uid://cggqb75a8w8r"
-SceneryInstancer="*uid://d33kyubri6utw"
+SceneryServer="*res://addons/libreloaded/scenery/scenery_server.gd"
+WorldSceneryProvider="*res://addons/libreloaded/world/world_scenery_provider.gd"
+MaszynaSceneryProvider="*uid://d33kyubri6utw"
 
 [debug]
 
@@ -74,7 +77,7 @@ text_editor/behavior/files/trim_trailing_whitespace_on_save=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/gnd_sfx/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/libmaszyna/editor/scenery_streaming/plugin.cfg", "res://addons/libmaszyna/editor/maszyna_vehicles/plugin.cfg", "res://addons/libmaszyna/editor/e3d_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/fiz_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/nodebank/plugin.cfg", "res://addons/libmaszyna/editor/scenery_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/tracks/plugin.cfg", "res://addons/libmaszyna/editor/user_settings_dock/plugin.cfg", "res://addons/libmaszyna/plugin.cfg")
+enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/gnd_sfx/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/libreloaded/editor/scenery_streaming/plugin.cfg", "res://addons/libmaszyna/editor/maszyna_vehicles/plugin.cfg", "res://addons/libmaszyna/editor/e3d_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/fiz_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/nodebank/plugin.cfg", "res://addons/libmaszyna/editor/scn_toolbar/plugin.cfg", "res://addons/libreloaded/editor/scenery_toolbar/plugin.cfg", "res://addons/libreloaded/editor/tracks/plugin.cfg", "res://addons/libmaszyna/editor/user_settings_dock/plugin.cfg", "res://addons/libreloaded/plugin.cfg", "res://addons/libmaszyna/plugin.cfg")
 
 [input]
 
@@ -707,26 +710,33 @@ radio_call3_send={
 
 [maszyna]
 
-locale/translations=PackedStringArray("res://addons/libmaszyna/translations/cz.po", "res://addons/libmaszyna/translations/hu.po", "res://addons/libmaszyna/translations/pl.po", "res://addons/libmaszyna/translations/zh.po")
-scenery/shadows/blur=0.4
-cabin/shadows/blur=0.4
-scenery/track_curve_bake_interval=0.5
-weather/fog/volumetric_energy=4.0
-scenery/draw_distance=2500.0
-weather/fog/curve=2.0
 scenery/lights/energy=2.0
 scenery/lights/volumetric_fog_energy=16.0
-weather/fog/night_distance_factor=6.0
 scenery/lights/lamp_attenuation=0.10000000000000002
 smoke/generator_mode=1
-smoke/dynamic/density=3.0
-smoke/static/density=0.5
-smoke/modern/atlas="res://vfx/smoke_atlas.png"
 
 [physics]
 
 common/physics_ticks_per_second=30
 common/max_physics_steps_per_frame=2
+
+[reloaded]
+
+locale/translations=PackedStringArray("res://addons/libreloaded/translations/cz.po", "res://addons/libreloaded/translations/hu.po", "res://addons/libreloaded/translations/pl.po", "res://addons/libreloaded/translations/zh.po")
+scenery/shadows/blur=0.4
+cabin/shadows/blur=0.4
+scenery/track_curve_bake_interval=0.5
+weather/fog/volumetric_energy=4.0
+scenery/draw_distance=20000.0
+weather/fog/curve=2.0
+weather/fog/night_distance_factor=6.0
+models/backend="maszyna"
+tracks/backend="maszyna"
+traction/backend="maszyna"
+vehicles/provider="maszyna"
+smoke/dynamic/density=3.0
+smoke/static/density=0.5
+smoke/modern/atlas="res://vfx/smoke_atlas.png"
 
 [rendering]
 
@@ -740,39 +750,39 @@ anti_aliasing/quality/use_taa=true
 
 [shader_globals]
 
-maszyna_hdr_output={
+reloaded_hdr_output={
 "type": "bool",
 "value": false
 }
-maszyna_overcast={
+reloaded_overcast={
 "type": "float",
 "value": 0.0
 }
-maszyna_fog_range={
+reloaded_fog_range={
 "type": "float",
 "value": 25000.0
 }
-maszyna_light_level={
+reloaded_light_level={
 "type": "float",
 "value": 1.0
 }
-maszyna_rain_intensity={
+reloaded_rain_intensity={
 "type": "float",
 "value": 0.0
 }
-maszyna_wiper_regen_time={
+reloaded_wiper_regen_time={
 "type": "float",
 "value": 10.0
 }
-maszyna_wiper_pos={
+reloaded_wiper_pos={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
-maszyna_wiper_since_out={
+reloaded_wiper_since_out={
 "type": "vec4",
 "value": Vector4(1000, 1000, 1000, 1000)
 }
-maszyna_wiper_since_return={
+reloaded_wiper_since_return={
 "type": "vec4",
 "value": Vector4(1000, 1000, 1000, 1000)
 }

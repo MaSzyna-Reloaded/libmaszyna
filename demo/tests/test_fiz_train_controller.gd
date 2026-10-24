@@ -12,9 +12,9 @@ var _temp_fiz_path: String
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
     DirAccess.make_dir_recursive_absolute(TEST_GAME_DIR)
-    UserSettings.save_maszyna_game_dir(TEST_GAME_DIR)
+    MaszynaGameDirectory.save_game_dir(TEST_GAME_DIR)
     _temp_fiz_dir = TEST_GAME_DIR.path_join(FIXTURE_DATA_PATH)
     DirAccess.make_dir_recursive_absolute(_temp_fiz_dir)
     _temp_fiz_path = _temp_fiz_dir.path_join(FIXTURE_FILENAME + ".fiz")
@@ -36,7 +36,7 @@ func after_each():
         DirAccess.remove_absolute(_temp_fiz_path)
     DirAccess.remove_absolute(_temp_fiz_dir)
     DirAccess.remove_absolute(TEST_GAME_DIR)
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _set_fixture_path() -> void:

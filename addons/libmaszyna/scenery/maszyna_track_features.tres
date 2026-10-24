@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="MaszynaTrackFeatures" format=3 uid="uid://diaiyewfydpy8"]
+
+[ext_resource type="Script" uid="uid://bm1eoprtehqxa" path="res://addons/libmaszyna/scenery/maszyna_track_bed_rule.gd" id="1_5mu3p"]
+[ext_resource type="Script" uid="uid://b3j6ygmpsg8ey" path="res://addons/libmaszyna/scenery/maszyna_road_surface_rule.gd" id="2_nk0cu"]
+[ext_resource type="Script" uid="uid://coicayu10ik21" path="res://addons/libmaszyna/scenery/maszyna_track_features.gd" id="3_mwl70"]
+
+[sub_resource type="Resource" id="Resource_3sh82"]
+script = ExtResource("1_5mu3p")
+material = "1435mm/tpb*"
+
+[sub_resource type="Resource" id="Resource_86w06"]
+script = ExtResource("2_nk0cu")
+material = "*solidwhite*"
+centre_line = true
+
+[sub_resource type="Resource" id="Resource_qif2l"]
+script = ExtResource("2_nk0cu")
+material = "*dashedwhite*"
+centre_line = true
+
+[sub_resource type="Resource" id="Resource_lu5hf"]
+script = ExtResource("2_nk0cu")
+material = "asphalt*"
+
+[sub_resource type="Resource" id="Resource_fx5k3"]
+script = ExtResource("2_nk0cu")
+material = "droga_polna*"
+surface = 4
+
+[resource]
+script = ExtResource("3_mwl70")
+bed_rules = Array[ExtResource("1_5mu3p")]([SubResource("Resource_3sh82")])
+road_rules = Array[ExtResource("2_nk0cu")]([SubResource("Resource_86w06"), SubResource("Resource_qif2l"), SubResource("Resource_lu5hf"), SubResource("Resource_fx5k3")])

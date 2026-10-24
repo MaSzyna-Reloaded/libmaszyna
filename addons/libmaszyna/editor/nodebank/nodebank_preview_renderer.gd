@@ -32,7 +32,7 @@ func get_preview(item_data: NodebankGridItem) -> Texture2D:
 
 func _render_preview(item_data: NodebankGridItem) -> Texture2D:
     var instance = item_data.model.duplicate()
-    var model = E3DModelManager.load_model(instance.data_path, instance.model_filename)
+    var model = MaszynaE3DModelManager.load_model(instance.data_path, instance.model_filename)
     instance.model = model
 
     var viewport: SubViewport = SubViewport.new()
@@ -46,7 +46,7 @@ func _render_preview(item_data: NodebankGridItem) -> Texture2D:
     viewport.add_child(root)
     viewport.add_child(instance)
 
-    var aabb: AABB = E3DModelTool.get_aabb(instance.model)
+    var aabb: AABB = MaszynaE3DModelTool.get_aabb(instance.model)
 
     if aabb.size.length_squared() <= 0.0:
         viewport.queue_free()
@@ -93,13 +93,13 @@ func _fit_camera(camera: Camera3D, aabb: AABB) -> void:
 
 
 func _get_source_path(item_data: NodebankGridItem) -> String:
-    var game_dir:String = UserSettings.get_maszyna_game_dir()
+    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_base_path:String = item_data.model.data_path.path_join(item_data.model.model_filename)
-    var relative_path:String = MaszynaDataPath.resolve(game_dir, relative_base_path + ".e3d")
+    var relative_path:String = ReloadedPluginServer.data_path_resolve(game_dir, relative_base_path + ".e3d")
     var source_path:String = game_dir.path_join(relative_path)
     if FileAccess.file_exists(source_path):
         return source_path
-    relative_path = MaszynaDataPath.resolve(game_dir, relative_base_path + ".t3d")
+    relative_path = ReloadedPluginServer.data_path_resolve(game_dir, relative_base_path + ".t3d")
     return game_dir.path_join(relative_path)
 
 
@@ -110,7 +110,7 @@ func _make_cache_path(item_data: NodebankGridItem) -> String:
 func _make_cache_hash(item_data: NodebankGridItem, source_path: String) -> String:
     return "%s:%s:%s:%s:%s" % [
         CACHE_VERSION,
-        E3DModel.FORMAT_VERSION,
+        MaszynaE3DModel.FORMAT_VERSION,
         source_path,
         FileAccess.get_modified_time(source_path),
         JSON.stringify(item_data.model.skins),

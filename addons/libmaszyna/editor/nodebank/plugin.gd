@@ -4,11 +4,11 @@ extends EditorPlugin
 var nodebank_panel_scene = preload("./nodebank_panel.tscn")
 var nodebank_panel_instance
 var nodebank_bottom_button
-var _viewport_drop: MaszynaEditorViewportDrop
+var _viewport_drop: EditorViewportDrop
 
 func drag_start(item_data: NodebankGridItem) -> void:
     if item_data:
-        _viewport_drop.start(item_data.model.duplicate() as E3DModelInstance, drag_end.bind(item_data))
+        _viewport_drop.start(item_data.model.duplicate() as MaszynaE3DModelInstance, drag_end.bind(item_data))
 
 func drag_end(world_position: Vector3, item_data: NodebankGridItem) -> void:
     var scene_root: Node = EditorInterface.get_edited_scene_root()
@@ -17,7 +17,7 @@ func drag_end(world_position: Vector3, item_data: NodebankGridItem) -> void:
         return
 
     var parent: Node3D = scene_root as Node3D
-    var instance: E3DModelInstance = item_data.model.duplicate()
+    var instance: MaszynaE3DModelInstance = item_data.model.duplicate()
     instance.position = parent.global_transform.affine_inverse() * world_position
 
     var undo_redo: EditorUndoRedoManager = get_undo_redo()
@@ -36,7 +36,7 @@ func drag_end(world_position: Vector3, item_data: NodebankGridItem) -> void:
 func _enter_tree() -> void:
     set_input_event_forwarding_always_enabled()
 
-    _viewport_drop = MaszynaEditorViewportDrop.new()
+    _viewport_drop = EditorViewportDrop.new()
     add_child(_viewport_drop)
     nodebank_panel_instance = nodebank_panel_scene.instantiate()
     nodebank_panel_instance.set_plugin_runtime()

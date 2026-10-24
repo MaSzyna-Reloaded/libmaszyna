@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaFrictionAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]friction[/code] event.
+	</brief_description>
+	<description>
+		Sets the scenery's rail friction multiplier, [member SimulationServer.friction] (friction_event, [code]Event.cpp:2077-2110[/code]; [code]Global.fFriction[/code]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="friction" type="float" setter="set_friction" getter="get_friction" default="1.0">
+			The multiplier the event sets [member SimulationServer.friction] to.
+		</member>
+	</members>
+</class>

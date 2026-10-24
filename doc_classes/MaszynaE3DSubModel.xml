@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DSubModel" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Represents a single subcomponent of an E3D model, containing geometry and metadata.
+	</brief_description>
+	<description>
+		[MaszynaE3DSubModel] is a resource that stores the data for a specific part of an [MaszynaE3DModel]. It contains the [MaszynaE3DMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="animation" type="int" setter="set_animation" getter="get_animation" enum="MaszynaE3DSubModel.AnimationType" default="0">
+			The type of animation logic applied to this submodel (e.g., rotating wheels, moving clock hands, or wind effects).
+		</member>
+		<member name="cos_hotspot_angle" type="float" setter="set_cos_hotspot_angle" getter="get_cos_hotspot_angle" default="0.0">
+			Cosine of the inner hotspot cone angle.
+		</member>
+		<member name="cos_view_angle" type="float" setter="set_cos_view_angle" getter="get_cos_view_angle" default="0.0">
+			Cosine of the current viewing angle (used for visibility calculation).
+		</member>
+		<member name="diffuse_color" type="Color" setter="set_diffuse_color" getter="get_diffuse_color" default="Color(1, 1, 1, 1)">
+			The base color of the submodel's material.
+		</member>
+		<member name="dynamic_hidden" type="bool" setter="set_dynamic_hidden" getter="get_dynamic_hidden" default="false">
+			A [code]&lt;name&gt;_on[/code]/[code]&lt;name&gt;_xon[/code] submodel: a control in its lit state, hidden by default only in a dynamic (vehicle) model ([code]Model3d.cpp:275, 2221[/code]).
+		</member>
+		<member name="dynamic_material" type="bool" setter="set_dynamic_material" getter="get_dynamic_material" default="false">
+			If [code]true[/code], the submodel uses a dynamic material that can change based on the environment or seasonal settings.
+		</member>
+		<member name="dynamic_material_index" type="int" setter="set_dynamic_material_index" getter="get_dynamic_material_index" default="0">
+			The index mapping for the dynamic material state.
+		</member>
+		<member name="far_attenuation_decay" type="int" setter="set_far_attenuation_decay" getter="get_far_attenuation_decay" default="0">
+			The type of distance attenuation (0: none, 1 or 2: inverse distance powers).
+		</member>
+		<member name="light_angle" type="float" setter="set_light_angle" getter="get_light_angle" default="45.0">
+			The cone angle of the spotlight in degrees.
+		</member>
+		<member name="light_attenuation" type="float" setter="set_light_attenuation" getter="get_light_attenuation" default="1.0">
+			The attenuation factor of the light source.
+		</member>
+		<member name="light_energy" type="float" setter="set_light_energy" getter="get_light_energy" default="0.0">
+			The light's power, as the model file gives it.
+		</member>
+		<member name="light_range" type="float" setter="set_light_range" getter="get_light_range" default="0.0">
+			The maximum range of the light source.
+		</member>
+		<member name="lights_on_threshold" type="float" setter="set_lights_on_threshold" getter="get_lights_on_threshold" default="0.0">
+			The ambient light level threshold at which the submodel's self-illumination becomes active.
+		</member>
+		<member name="material_colored" type="bool" setter="set_material_colored" getter="get_material_colored" default="false">
+			If [code]true[/code], the diffuse color is applied to the material.
+		</member>
+		<member name="material_name" type="String" setter="set_material_name" getter="get_material_name" default="&quot;&quot;">
+			The name of the [code].mat[/code] file associated with this submodel.
+		</member>
+		<member name="material_transform" type="Transform3D" setter="set_material_transform" getter="get_material_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">
+			The transformation matrix applied to the UV coordinates of the material.
+		</member>
+		<member name="material_transparent" type="bool" setter="set_material_transparent" getter="get_material_transparent" default="false">
+			The submodel's material is translucent (bit 5 of the submodel's flags) - drawn with the blended variant.
+		</member>
+		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
+			The geometry of this submodel - an [MaszynaE3DMesh] when read from a model file, keeping its arrays in memory.
+		</member>
+		<member name="near_attenuation_end" type="float" setter="set_near_attenuation_end" getter="get_near_attenuation_end" default="0.0">
+			Distance where the near attenuation ends.
+		</member>
+		<member name="near_attenuation_start" type="float" setter="set_near_attenuation_start" getter="get_near_attenuation_start" default="0.0">
+			Distance where the near attenuation starts (used for halo/aureola effects).
+		</member>
+		<member name="self_illumination" type="Color" setter="set_self_illumination" getter="get_self_illumination" default="Color(1, 1, 1, 1)">
+			The emissive color of the submodel, used for lights and glowing parts.
+		</member>
+		<member name="skin_translucent" type="bool" setter="set_skin_translucent" getter="get_skin_translucent" default="false">
+			A replaceable skin drawn in the translucent phase - flags 1, 2, 4, 8 instead of 0x20 ([code]Model3d.cpp:421-441[/code]).
+		</member>
+		<member name="skip_rendering" type="bool" setter="set_skip_rendering" getter="get_skip_rendering" default="false">
+			If [code]true[/code], the submodel is excluded from the rendering pass but remains part of the model hierarchy and animation logic.
+		</member>
+		<member name="submodel_type" type="int" setter="set_submodel_type" getter="get_submodel_type" enum="MaszynaE3DSubModel.SubModelType" default="4">
+			The geometric primitive type or special node type of the submodel.
+		</member>
+		<member name="submodels" type="MaszynaE3DSubModel[]" setter="set_submodels" getter="get_submodels" default="[]">
+			A list of child [MaszynaE3DSubModel] resources that are nested under this submodel.
+		</member>
+		<member name="transform" type="Transform3D" setter="set_transform" getter="get_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">
+			The local transformation matrix of the submodel relative to its parent.
+		</member>
+		<member name="use_near_attenuation" type="bool" setter="set_use_near_attenuation" getter="get_use_near_attenuation" default="false">
+			If [code]true[/code], near attenuation (halo effects) is enabled for this light source.
+		</member>
+		<member name="visibility_light" type="float" setter="set_visibility_light" getter="get_visibility_light" default="0.0">
+			Factor for visibility based on ambient light conditions.
+		</member>
+		<member name="visibility_range_begin" type="float" setter="set_visibility_range_begin" getter="get_visibility_range_begin" default="0.0">
+			The distance from the camera at which the submodel starts becoming visible.
+		</member>
+		<member name="visibility_range_end" type="float" setter="set_visibility_range_end" getter="get_visibility_range_end" default="0.0">
+			The distance from the camera at which the submodel becomes invisible.
+		</member>
+		<member name="visible" type="bool" setter="set_visible" getter="get_visible" default="true">
+			The general visibility state of the submodel.
+		</member>
+	</members>
+	<constants>
+		<constant name="SUBMODEL_GL_POINTS" value="0" enum="SubModelType">
+			Render as points.
+		</constant>
+		<constant name="SUBMODEL_GL_LINES" value="1" enum="SubModelType">
+			Render as individual lines.
+		</constant>
+		<constant name="SUBMODEL_GL_LINE_STRIP" value="2" enum="SubModelType">
+			Render as a continuous line strip.
+		</constant>
+		<constant name="SUBMODEL_GL_LINE_LOOP" value="3" enum="SubModelType">
+			Render as a closed line loop.
+		</constant>
+		<constant name="SUBMODEL_GL_TRIANGLES" value="4" enum="SubModelType">
+			Render as individual triangles (Standard).
+		</constant>
+		<constant name="SUBMODEL_GL_TRIANGLE_STRIP" value="5" enum="SubModelType">
+			Render as a triangle strip.
+		</constant>
+		<constant name="SUBMODEL_GL_TRIANGLE_FAN" value="6" enum="SubModelType">
+			Render as a triangle fan.
+		</constant>
+		<constant name="SUBMODEL_GL_QUADS" value="7" enum="SubModelType">
+			Render as individual quadrilaterals.
+		</constant>
+		<constant name="SUBMODEL_GL_QUAD_STRIP" value="8" enum="SubModelType">
+			Render as a quad strip.
+		</constant>
+		<constant name="SUBMODEL_GL_POLYGON" value="9" enum="SubModelType">
+			Render as a generic polygon.
+		</constant>
+		<constant name="SUBMODEL_TRANSFORM" value="256" enum="SubModelType">
+			Special node type representing a pure transformation without geometry.
+		</constant>
+		<constant name="SUBMODEL_FREE_SPOTLIGHT" value="257" enum="SubModelType">
+			Special node type for a light source.
+		</constant>
+		<constant name="SUBMODEL_STARS" value="258" enum="SubModelType">
+			Special node type for star rendering.
+		</constant>
+		<constant name="ANIMATION_NONE" value="0" enum="AnimationType">
+			No animation applied.
+		</constant>
+		<constant name="ANIMATION_ROTATE_VEC" value="1" enum="AnimationType">
+			Rotation around a specific vector.
+		</constant>
+		<constant name="ANIMATION_ROTATE_XYZ" value="2" enum="AnimationType">
+			Rotation around X, Y, or Z axes based on parameters.
+		</constant>
+		<constant name="ANIMATION_MOVE" value="3" enum="AnimationType">
+			Translation along an axis.
+		</constant>
+		<constant name="ANIMATION_JUMP_SECONDS" value="4" enum="AnimationType">
+			Stepped rotation for clock seconds.
+		</constant>
+		<constant name="ANIMATION_JUMP_MINUTES" value="5" enum="AnimationType">
+			Stepped rotation for clock minutes.
+		</constant>
+		<constant name="ANIMATION_JUMP_HOURS" value="6" enum="AnimationType">
+			Stepped rotation for clock hours (12h).
+		</constant>
+		<constant name="ANIMATION_JUMP_HOURS24" value="7" enum="AnimationType">
+			Stepped rotation for clock hours (24h).
+		</constant>
+		<constant name="ANIMATION_SECONDS" value="8" enum="AnimationType">
+			Continuous rotation for clock seconds.
+		</constant>
+		<constant name="ANIMATION_MINUTES" value="9" enum="AnimationType">
+			Continuous rotation for clock minutes.
+		</constant>
+		<constant name="ANIMATION_HOURS" value="10" enum="AnimationType">
+			Continuous rotation for clock hours (12h).
+		</constant>
+		<constant name="ANIMATION_HOURS24" value="11" enum="AnimationType">
+			Continuous rotation for clock hours (24h).
+		</constant>
+		<constant name="ANIMATION_BILLBOARD" value="12" enum="AnimationType">
+			Always faces the camera.
+		</constant>
+		<constant name="ANIMATION_WIND" value="13" enum="AnimationType">
+			Swaying animation based on wind simulation.
+		</constant>
+		<constant name="ANIMATION_SKY" value="14" enum="AnimationType">
+			Special behavior for sky-related submodels.
+		</constant>
+		<constant name="ANIMATION_DIGITAL" value="15" enum="AnimationType">
+			Digital display segments animation.
+		</constant>
+		<constant name="ANIMATION_DIGICLK" value="16" enum="AnimationType">
+			Digital clock specific animation.
+		</constant>
+		<constant name="ANIMATION_UNDEFINED" value="17" enum="AnimationType">
+			Placeholder for undefined animation logic.
+		</constant>
+		<constant name="ANIMATION_IK" value="256" enum="AnimationType">
+			Inverse Kinematics animation.
+		</constant>
+		<constant name="ANIMATION_IK1" value="257" enum="AnimationType">
+			IK variant 1.
+		</constant>
+		<constant name="ANIMATION_IK2" value="258" enum="AnimationType">
+			IK variant 2.
+		</constant>
+		<constant name="ANIMATION_UNKNOWN" value="-1" enum="AnimationType">
+			Unknown animation type.
+		</constant>
+	</constants>
+</class>

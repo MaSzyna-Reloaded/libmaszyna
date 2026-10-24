@@ -88,15 +88,15 @@ func before_all() -> void:
         var controller: VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
 
         # the two biggest publishers the fixture has no section for, added as a scene would
-        var engine: RailVehicleElectricSeriesEngine = MoverRailVehicleElectricSeriesEngine.new()
+        var engine: RailVehicleElectricSeriesEngine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
         controller.add_component(engine)
         # what the engine used to publish of its power source, now a component of its own
-        var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+        var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
         power_source.source_type = RailVehicleController.POWER_SOURCE_ACCUMULATOR
         controller.add_component(power_source)
-        var lighting: RailVehicleLighting = MoverRailVehicleLighting.new()
+        var lighting: RailVehicleLighting = MaszynaMoverRailVehicleLighting.new()
         controller.add_component(lighting)
-        var spring_brake: RailVehicleSpringBrake = MoverRailVehicleSpringBrake.new()
+        var spring_brake: RailVehicleSpringBrake = MaszynaMoverRailVehicleSpringBrake.new()
         controller.add_component(spring_brake)
 
         _controllers.append(controller)

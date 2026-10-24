@@ -22,7 +22,7 @@ const SHORT_FRAME:float = 0.1
 ## What the clock adds between the calls of a test - a frame or two at most [s]
 const FRAME_TOLERANCE:float = 0.05
 ## SimulationServer::SPEED_CHANGE_TIME_SETTING - how long the running speed takes to reach one set
-const SPEED_CHANGE_TIME_SETTING:String = "maszyna/simulation/speed_change_time"
+const SPEED_CHANGE_TIME_SETTING:String = "reloaded/simulation/speed_change_time"
 const SPEED_CHANGE_TIME:float = 0.4
 ## Enough frames for the running speed to have reached the one set, many times over
 const SETTLE_FRAMES:int = 100
@@ -49,7 +49,7 @@ func before_each() -> void:
     # a real vehicle, because the dynamics need a mass - an empty Mover integrates to NaN
     var model:VehicleController = load("res://tests/fixtures/sm42_vehicle.tres") as VehicleController
     # an unmanned vehicle is not simulated at all (Mover.cpp:4485) - see FINDINGS.md, 2026-09-23
-    _controller = build_vehicle("clock_test", model, VELOCITY_MS * 3.6, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    _controller = build_vehicle("clock_test", model, VELOCITY_MS * 3.6, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     _vehicle = _controller.get_rid()
     RailVehicleServer.vehicle_set_track(_vehicle, _track, 100.0, TrackServer.DIRECTION_NORMAL)
     await wait_idle_frames(1)

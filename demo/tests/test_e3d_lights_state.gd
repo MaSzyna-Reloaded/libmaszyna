@@ -6,17 +6,17 @@ var _previous_game_dir: String = ""
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(MATERIALS_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(MATERIALS_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_model_instance_synchronizes_lights_state_with_model() -> void:
-    var instance: E3DModelInstance = E3DModelInstance.new()
-    instance.instancer = E3DModelInstance.Instancer.OPTIMIZED
+    var instance: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    instance.instancer = MaszynaE3DModelInstance.Instancer.OPTIMIZED
     instance.model = _create_model_with_lights(["front", "rear"])
     add_child_autoqfree(instance)
 
@@ -31,12 +31,12 @@ func test_model_instance_synchronizes_lights_state_with_model() -> void:
 
 
 func test_nodes_instancer_maps_light_on_prefix_family() -> void:
-    var target_node: E3DModelInstance = E3DModelInstance.new()
-    var model: E3DModel = E3DModel.new()
-    var light_on: E3DSubModel = _create_transform_submodel("light_on00", false)
-    var light_off: E3DSubModel = _create_transform_submodel("light_off00", true)
-    var spotlight: E3DSubModel = _create_spotlight_submodel("spotlight", false)
-    var light_definition: E3DModelLightDefinition = E3DModelLightDefinition.new()
+    var target_node: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var light_on: MaszynaE3DSubModel = _create_transform_submodel("light_on00", false)
+    var light_off: MaszynaE3DSubModel = _create_transform_submodel("light_off00", true)
+    var spotlight: MaszynaE3DSubModel = _create_spotlight_submodel("spotlight", false)
+    var light_definition: MaszynaE3DModelLightDefinition = MaszynaE3DModelLightDefinition.new()
 
     light_on.submodels = [spotlight]
     model.submodels = [light_on, light_off]
@@ -68,11 +68,11 @@ func test_nodes_instancer_maps_light_on_prefix_family() -> void:
 ## and hide exactly those submodels, so the instrument backlight and the cab lamp blinked on for
 ## one frame in ten and were dark in between (see FINDINGS.md, 2026-09-23).
 func test_moving_a_model_does_not_reapply_its_lights_state() -> void:
-    var target_node: E3DModelInstance = E3DModelInstance.new()
-    var model: E3DModel = E3DModel.new()
-    var light_on: E3DSubModel = _create_transform_submodel("light_on00", false)
-    var light_off: E3DSubModel = _create_transform_submodel("light_off00", true)
-    var light_definition: E3DModelLightDefinition = E3DModelLightDefinition.new()
+    var target_node: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var light_on: MaszynaE3DSubModel = _create_transform_submodel("light_on00", false)
+    var light_off: MaszynaE3DSubModel = _create_transform_submodel("light_off00", true)
+    var light_definition: MaszynaE3DModelLightDefinition = MaszynaE3DModelLightDefinition.new()
 
     model.submodels = [light_on, light_off]
     light_definition.on_submodel_path = NodePath("light_on00")
@@ -93,7 +93,7 @@ func test_moving_a_model_does_not_reapply_its_lights_state() -> void:
     assert_false(light_on_node.visible, "moving the model must leave its light submodels alone")
 
 
-## Regression: the E3D submodel material override (now MaterialManager.get_submodel_material())
+## Regression: the E3D submodel material override (now MaszynaMaterialManager.get_submodel_material())
 ## never populated MaterialOptions.diffuse_color from the real parsed submodel (left as a TODO, silently leaving
 ## every textured/named-material submodel's albedo at the shader's default white) - unlike
 ## test_material_manager_variants.gd's MaszynaMaterialFactory-level coverage, which only ever built
@@ -102,15 +102,15 @@ func test_moving_a_model_does_not_reapply_its_lights_state() -> void:
 ## "wylszybki_on"/"_off" main-breaker indicator lamp submodels, diffuse (0, 0.749, 0) over a
 ## textured material, rendered white in-game despite the model file's own diffuse being green.
 func test_get_material_override_uses_real_submodel_diffuse_color() -> void:
-    var submodel: E3DSubModel = E3DSubModel.new()
+    var submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     submodel.resource_name = "wylszybki_on"
-    submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     submodel.material_name = "nontransparent_manager"
     submodel.diffuse_color = Color(0.0, 0.749, 0.0, 1.0)
 
-    var material: ShaderMaterial = MaterialManager.get_submodel_material(
-        submodel, "test", [], E3DRenderingServer.TRANSLUCENCY_CUTOUT,
-        MaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT
+    var material: ShaderMaterial = MaszynaMaterialManager.get_submodel_material(
+        submodel, "test", [], MaszynaE3DRenderingServer.TRANSLUCENCY_CUTOUT,
+        MaszynaMaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT
     ) as ShaderMaterial
 
     assert_not_null(material, "a submodel with material_name should get a material override")
@@ -118,26 +118,26 @@ func test_get_material_override_uses_real_submodel_diffuse_color() -> void:
         assert_eq(material.get_shader_parameter("albedo"), submodel.diffuse_color)
 
 
-func _create_model_with_lights(light_names: Array[String]) -> E3DModel:
-    var model: E3DModel = E3DModel.new()
+func _create_model_with_lights(light_names: Array[String]) -> MaszynaE3DModel:
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
 
     for light_name: String in light_names:
-        model.register_light(light_name, E3DModelLightDefinition.new())
+        model.register_light(light_name, MaszynaE3DModelLightDefinition.new())
 
     return model
 
 
-func _create_transform_submodel(name: String, visible: bool) -> E3DSubModel:
-    var submodel: E3DSubModel = E3DSubModel.new()
+func _create_transform_submodel(name: String, visible: bool) -> MaszynaE3DSubModel:
+    var submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     submodel.resource_name = name
-    submodel.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
+    submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
     submodel.visible = visible
     return submodel
 
 
-func _create_spotlight_submodel(name: String, visible: bool) -> E3DSubModel:
-    var submodel: E3DSubModel = E3DSubModel.new()
+func _create_spotlight_submodel(name: String, visible: bool) -> MaszynaE3DSubModel:
+    var submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     submodel.resource_name = name
-    submodel.submodel_type = E3DSubModel.SUBMODEL_FREE_SPOTLIGHT
+    submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_FREE_SPOTLIGHT
     submodel.visible = visible
     return submodel

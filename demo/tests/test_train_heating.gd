@@ -6,7 +6,7 @@ var heating: RailVehicleHeating
 func before_each():
     train = build_vehicle("TestTrain")
 
-    heating = MoverRailVehicleHeating.new()
+    heating = MaszynaMoverRailVehicleHeating.new()
     train.add_component(heating)
     await wait_idle_frames(2)
 

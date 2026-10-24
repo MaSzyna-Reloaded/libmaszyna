@@ -22,7 +22,7 @@ var spot_light:CabinSpotLight3D
 func before_each() -> void:
     # a driven vehicle is simulated (FINDINGS, 09-23); the test drives it, no AI sits aboard
     train = build_vehicle("TestLampsLowVoltage", FizVehicleBuilder.build_description_at(EP07_PATH), 0.0,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     indicator = CabinIndicator3D.new()
     indicator.state_property = "radio_enabled"
     add_child_autofree(indicator)

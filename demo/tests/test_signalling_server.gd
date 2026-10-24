@@ -1,6 +1,6 @@
 extends MaszynaGutTest
 
-const EventImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_event_importer.gd")
+const EventImporter = preload("res://addons/libmaszyna/scenery/maszyna_event_importer.gd")
 ## Where a listed signal head's model stands
 const SIGNAL_HEAD_POSITION: Vector3 = Vector3(5.0, 0.0, 0.0)
 
@@ -291,7 +291,7 @@ func test_a_locked_route_holds_its_sections_until_released_one_by_one() -> void:
 
 
 func test_signal_head_node_registers_the_model_under_its_name() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_registered", model)
 
     var signal_head: RID = SignallingServer.signal_head_get_rid_by_name(&"test_registered")
@@ -300,7 +300,7 @@ func test_signal_head_node_registers_the_model_under_its_name() -> void:
 
 
 func test_enabling_a_light_shows_its_submodel_and_reports_the_change() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_enable", model)
     watch_signals(signal_head_node)
 
@@ -313,7 +313,7 @@ func test_enabling_a_light_shows_its_submodel_and_reports_the_change() -> void:
 
 
 func test_a_blinking_light_goes_on_and_off() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_blink", model)
     var light_on: Node3D = model.get_node(NodePath("light_on00"))
 
@@ -332,7 +332,7 @@ func test_a_blinking_light_goes_on_and_off() -> void:
 
 
 func test_a_system_implementation_receives_its_signal_heads_and_events() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     _create_signal_head_node(&"test_system", model)
     var signal_head: RID = SignallingServer.signal_head_get_rid_by_name(&"test_system")
     var implementation: RecordingImplementation = RecordingImplementation.new()
@@ -349,7 +349,7 @@ func test_a_system_implementation_receives_its_signal_heads_and_events() -> void
 
 
 func test_freeing_the_model_removes_its_signal_head_from_the_system() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     _create_signal_head_node(&"test_freed", model)
     var system: RID = SignallingServer.system_create()
     SignallingServer.system_add_signal_head(system, SignallingServer.signal_head_get_rid_by_name(&"test_freed"))
@@ -363,7 +363,7 @@ func test_freeing_the_model_removes_its_signal_head_from_the_system() -> void:
 
 
 func test_a_reloaded_model_is_registered_again_and_picked_up_by_its_system_node() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_reload", model)
     var system_node: SignallingSystemNode = SignallingSystemNode.new()
     system_node.signal_head_names = PackedStringArray(["test_reload"])
@@ -385,24 +385,25 @@ func test_a_signal_head_node_attaches_to_a_signal_head_registered_later() -> voi
     add_child_autoqfree(signal_head_node)
     assert_false(signal_head_node.get_signal_head().is_valid())
 
-    var model: E3DModelInstance = _create_model_instance()
-    var signal_head: RID = SignallingServer.signal_head_create(model.get_e3d_instance())
+    var model: MaszynaE3DModelInstance = _create_model_instance()
+    var signal_head: RID = SignallingServer.signal_head_create()
+    model.attach_signal_head(signal_head)
     SignallingServer.signal_head_set_name(signal_head, &"test_late")
 
     assert_eq(signal_head_node.get_signal_head(), signal_head)
 
 
 func test_legacy_kind_turns_lights_events_into_aspects() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     _create_signal_head_node(&"test_legacy", model)
     var signal_head: RID = SignallingServer.signal_head_get_rid_by_name(&"test_legacy")
     var aspects: Dictionary = {
         &"sem_ligh1": PackedFloat32Array([1.35, 1.0]),
         &"sem_ligh2": PackedFloat32Array([-1.0, 0.0]),
     }
-    SignallingServer.signal_head_set_kind(signal_head, MaszynaLegacySignalHeadKindFactory.create_kind(aspects))
+    SignallingServer.signal_head_set_kind(signal_head, MaszynaSignalHeadKindFactory.create_kind(aspects))
     var system: RID = SignallingServer.system_create()
-    SignallingServer.system_attach_implementation(system, MaszynaLegacySignallingImplementation.new())
+    SignallingServer.system_attach_implementation(system, MaszynaSignallingImplementation.new())
     SignallingServer.system_add_signal_head(system, signal_head)
 
     SignallingServer.system_send_event(system, &"lights", {"signal_head": signal_head, "aspect": &"sem_ligh1"})
@@ -432,26 +433,26 @@ func test_lights_events_of_an_include_give_its_copies_one_kind() -> void:
     var context: MaszynaImporterContext = MaszynaImporterContext.new()
     parser.register_handler("event", func(p: MaszynaParser) -> Array: return EventImporter.new().import(p, context))
     parser.parse()
-    var models: Array[MaszynaModelData] = [
+    var models: Array[ModelData] = [
         _create_model_data("sem_a", PackedFloat32Array([0, 0, 1])),
         _create_model_data("sem_b", PackedFloat32Array()),
         _create_model_data("lamp", PackedFloat32Array([3])),
         _create_model_data("house", PackedFloat32Array()),
     ]
 
-    SceneryInstancer.assign_signal_head_kinds(models, context.events)
+    MaszynaSceneryProvider.assign_signal_head_kinds(models, context.events)
 
     assert_eq(context.events.size(), 5, "every event should be kept, only lights events make aspects")
     var kind: SignalHeadKind = models[0].signal_head_kind
     assert_eq(kind.get_aspect_names(), PackedStringArray(["sem_ligh1", "sem_ligh3o"]))
     assert_eq(kind.get_aspect(&"sem_ligh3o").lights, PackedInt32Array([SignalAspect.LIGHT_BLINK, 0, 0]))
     assert_same(models[1].signal_head_kind, kind, "the copies of one include should share their kind")
-    assert_eq(models[2].signal_head_kind, SceneryInstancer.GENERIC_SIGNAL_HEAD_KIND, "a lit model no event reaches")
+    assert_eq(models[2].signal_head_kind, MaszynaSceneryProvider.GENERIC_SIGNAL_HEAD_KIND, "a lit model no event reaches")
     assert_null(models[3].signal_head_kind, "a model neither lit nor aimed at is no signal head")
 
 
 func test_the_light_count_comes_from_the_model() -> void:
-    var model: E3DModelInstance = _create_model_instance()
+    var model: MaszynaE3DModelInstance = _create_model_instance()
     var signal_head_node: SignalHeadNode = _create_signal_head_node(&"test_light_count", model)
 
     assert_eq(SignallingServer.signal_head_get_light_count(signal_head_node.get_signal_head()), 2)
@@ -499,26 +500,26 @@ func _create_model_data(model_name: String, lights: PackedFloat32Array) -> Maszy
 
 
 func test_signal_heads_are_listed_with_the_instance_they_light() -> void:
-    var model: E3DModelInstance = _create_model_instance(SIGNAL_HEAD_POSITION)
+    var model: MaszynaE3DModelInstance = _create_model_instance(SIGNAL_HEAD_POSITION)
     _create_signal_head_node(&"test_listed", model)
 
     var signal_head: RID = SignallingServer.signal_head_get_rid_by_name(&"test_listed")
     assert_has(SignallingServer.signal_head_get_rids(), signal_head)
-    var instance: RID = SignallingServer.signal_head_get_instance(signal_head)
+    var instance: RID = MaszynaE3DRenderingServer.signal_head_get_instance(signal_head)
     assert_true(instance.is_valid(), "the signal head should give the instance it was made of")
-    assert_eq(E3DRenderingServer.instance_get_transform(instance).origin, SIGNAL_HEAD_POSITION)
+    assert_eq(MaszynaE3DRenderingServer.instance_get_transform(instance).origin, SIGNAL_HEAD_POSITION)
 
 
 ## The model stands at position from the start - a NODES instance does not follow a node moved later
-func _create_model_instance(position: Vector3 = Vector3.ZERO) -> E3DModelInstance:
-    var instance: E3DModelInstance = E3DModelInstance.new()
+func _create_model_instance(position: Vector3 = Vector3.ZERO) -> MaszynaE3DModelInstance:
+    var instance: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
     instance.position = position
-    var model: E3DModel = E3DModel.new()
-    var submodels: Array[E3DSubModel] = []
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var submodels: Array[MaszynaE3DSubModel] = []
     for light_name: String in ["00", "01"]:
-        var light_on: E3DSubModel = _create_transform_submodel("light_on" + light_name, false)
-        var light_off: E3DSubModel = _create_transform_submodel("light_off" + light_name, true)
-        var definition: E3DModelLightDefinition = E3DModelLightDefinition.new()
+        var light_on: MaszynaE3DSubModel = _create_transform_submodel("light_on" + light_name, false)
+        var light_off: MaszynaE3DSubModel = _create_transform_submodel("light_off" + light_name, true)
+        var definition: MaszynaE3DModelLightDefinition = MaszynaE3DModelLightDefinition.new()
         definition.on_submodel_path = NodePath(light_on.resource_name)
         definition.off_submodel_path = NodePath(light_off.resource_name)
         model.register_light(light_name, definition)
@@ -530,7 +531,7 @@ func _create_model_instance(position: Vector3 = Vector3.ZERO) -> E3DModelInstanc
     return instance
 
 
-func _create_signal_head_node(signal_head_name: StringName, model: E3DModelInstance) -> SignalHeadNode:
+func _create_signal_head_node(signal_head_name: StringName, model: MaszynaE3DModelInstance) -> SignalHeadNode:
     var signal_head_node: SignalHeadNode = SignalHeadNode.new()
     signal_head_node.signal_head_name = signal_head_name
     signal_head_node.model = model
@@ -538,10 +539,10 @@ func _create_signal_head_node(signal_head_name: StringName, model: E3DModelInsta
     return signal_head_node
 
 
-func _create_transform_submodel(submodel_name: String, visible: bool) -> E3DSubModel:
-    var submodel: E3DSubModel = E3DSubModel.new()
+func _create_transform_submodel(submodel_name: String, visible: bool) -> MaszynaE3DSubModel:
+    var submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     submodel.resource_name = submodel_name
-    submodel.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
+    submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
     submodel.visible = visible
     return submodel
 

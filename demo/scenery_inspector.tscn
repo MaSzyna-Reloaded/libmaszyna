@@ -1,17 +1,17 @@
 [gd_scene format=3 uid="uid://b35jd5w5pa4rw"]
 
-[ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libmaszyna/environment/maszyna_environment_node.gd" id="1_gij37"]
-[ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libmaszyna/player/player.tscn" id="1_qu2xm"]
-[ext_resource type="Script" uid="uid://b1awg5iad35ss" path="res://addons/libmaszyna/legacy/scenery/maszyna_scenery.gd" id="1_y7igu"]
-[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d.gd" id="5_7xkf5"]
-[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libmaszyna/player/free_look_view.gd" id="5_qu2xm"]
-[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libmaszyna/scenery/scenery_streamer.gd" id="streamer"]
+[ext_resource type="Script" uid="uid://b0r5vydn7ve4l" path="res://addons/libreloaded/environment/environment_node.gd" id="1_gij37"]
+[ext_resource type="PackedScene" uid="uid://dmhikrkk2qsjl" path="res://addons/libreloaded/player/player.tscn" id="1_qu2xm"]
+[ext_resource type="Script" uid="uid://b1awg5iad35ss" path="res://addons/libmaszyna/scenery/maszyna_scenery.gd" id="1_y7igu"]
+[ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d.gd" id="5_7xkf5"]
+[ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libreloaded/player/free_look_view.gd" id="5_qu2xm"]
+[ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="streamer"]
 
 [node name="SceneryInspector" type="Node3D" unique_id=2049876890]
 
 [node name="Player" parent="." unique_id=1819896729 instance=ExtResource("1_qu2xm")]
 
-[node name="MaszynaEnvironmentNode" type="Node" parent="." unique_id=2133298923]
+[node name="EnvironmentNode" type="Node" parent="." unique_id=2133298923]
 script = ExtResource("1_gij37")
 fog_enabled = false
 fog_distance = 174.0

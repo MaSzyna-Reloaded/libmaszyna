@@ -11,12 +11,12 @@ var _previous_game_dir:String = ""
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_a_vehicles_name_is_read_in_lower_case() -> void:
@@ -24,10 +24,10 @@ func test_a_vehicles_name_is_read_in_lower_case() -> void:
     assert_eq(info.trainsets.size(), 1, "the scenery's trainset")
     if not info.trainsets:
         return
-    var trainset:MaszynaSceneryInfo.Trainset = info.trainsets[0]
+    var trainset:TrainsetData = info.trainsets[0]
     assert_eq(trainset.vehicles[0].vehicle_id, "en57-636ra", "EN57-636ra as the importer names it")
     assert_eq(trainset.get_driver_vehicle().vehicle_id, "en57-636ra", "the player's vehicle by that name")
-    assert_eq(trainset.vehicles[0].get_name(), "EN57-636ra", "shown as the .scn writes it")
+    assert_eq(trainset.vehicles[0].name, "EN57-636ra", "shown as the .scn writes it")
 
 
 func test_a_vehicle_knows_its_place_in_the_declared_trainset() -> void:
@@ -36,6 +36,6 @@ func test_a_vehicle_knows_its_place_in_the_declared_trainset() -> void:
     if not info.trainsets:
         return
     var places:Array[int] = []
-    for vehicle:MaszynaSceneryInfo.Vehicle in info.trainsets[0].vehicles:
+    for vehicle:VehicleData in info.trainsets[0].vehicles:
         places.append(vehicle.trainset_index)
     assert_eq(places, [0, 1, 2, 3], "front first - the wagons share one id")

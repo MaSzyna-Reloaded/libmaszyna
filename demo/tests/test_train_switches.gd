@@ -6,7 +6,7 @@ var switches: RailVehicleSwitches
 func before_each():
     train = build_vehicle("TestTrain")
 
-    switches = MoverRailVehicleSwitches.new()
+    switches = MaszynaMoverRailVehicleSwitches.new()
     train.add_component(switches)
     await wait_idle_frames(2)
 

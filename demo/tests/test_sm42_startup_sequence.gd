@@ -21,7 +21,7 @@ func before_each():
     # off once LastSwitchingTime passes 5 s (Mover.cpp:4485) - the engine runs and the vehicle
     # never moves.
     train = build_vehicle("TestTrain", load("res://tests/fixtures/sm42_vehicle.tres"), 0.0,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     engine = train.get_component(VehicleComponentType.COMPONENT_ENGINE) as RailVehicleDieselEngine
     master_controller = train.get_rail_component(RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER) \
             as RailVehicleMasterController

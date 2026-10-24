@@ -1,0 +1,29 @@
+[gd_resource type="MaszynaTrackLooks" format=3 uid="uid://bbr7as7ymgov1"]
+
+[sub_resource type="MaszynaTrackLook" id="MaszynaTrackLook_8wa4w"]
+material1 = "rail_screw_used1"
+material2 = "1435mm/tpbps-new2"
+tex_length = 6.0
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 1.1
+
+[sub_resource type="MaszynaTrackLook" id="MaszynaTrackLook_vhsxh"]
+material1 = "asphalt1_nolines"
+material1_centre_line = "asphalt1_dashedwhite"
+material2 = "asphalt1_side1"
+tex_height = 0.2
+tex_width = 0.5
+tex_slope = 0.5
+
+[sub_resource type="MaszynaTrackLook" id="MaszynaTrackLook_itbod"]
+material1 = "droga_polna"
+
+[resource]
+rail_looks = {
+0: SubResource("MaszynaTrackLook_8wa4w")
+}
+road_looks = {
+0: SubResource("MaszynaTrackLook_vhsxh"),
+4: SubResource("MaszynaTrackLook_itbod")
+}

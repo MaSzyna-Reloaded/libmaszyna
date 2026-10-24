@@ -72,19 +72,19 @@ func test_parked_electric_locomotive_keeps_stable_wire_voltage_and_main_switch_c
 
     # the vehicle's own configuration is authored, not written afterwards - a property set after
     # the vehicle is built does not reach the backend until apply_configuration()
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
     model.add_component(build_power_supply(110.0))
     physics_node = build_vehicle_node("test_idle_pantograph_train", model)
     controller = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
 
-    engine = MoverRailVehicleElectricSeriesEngine.new()
-    var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
+    var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     power_source.current_collector_physical_layout = 1
     power_source.current_collector_max_voltage = 3600.0
     power_source.current_collector_number_of_collectors = 1
-    var master_controller: RailVehicleMasterController = MoverRailVehicleMasterController.new()
+    var master_controller: RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master_controller.main_position_count = 6
     controller.add_component(master_controller)
     controller.add_component(engine)

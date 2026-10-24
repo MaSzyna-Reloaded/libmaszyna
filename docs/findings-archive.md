@@ -3,6 +3,8 @@
 The full entries behind the rules in `FINDINGS.md`: the symptom, what proved the cause, the fix,
 and the rule. Headings keep their date and title, because comments in the code cite them
 (`see FINDINGS.md, 2026-09-23`). Open work belongs in `TODO.md`, not here.
+Entries wholly about libreloaded's code are in libreloaded's own
+`docs/findings-archive.md`.
 
 ## 2026-10-09 - Mover configured five times, spring brake released
 
@@ -32,9 +34,9 @@ and the rule. Headings keep their date and title, because comments in the code c
   times) asks for 99 = coupler | brakehose | mainhose | heating; the SN61 has `AllowedFlag=39`, no
   heating. `test_zzz_driver_shunt_coupling.gd`: joined by coupler and both hoses within a few
   seconds, then `coupler_connect` again and again in CONNECT.
-* **Cause:** `MoverRailVehicleController::coupler_connect()` joins only what both couplers allow,
-  and `_is_coupled_as_asked()` waited for all of 99. The original's `Attach(..., iCoupler)` sets
-  `CouplingFlag = iCoupler` whatever `AllowedFlag` is (Mover.cpp:576-583) and compares it with
+* **Cause:** `MaszynaMoverRailVehicleController::coupler_connect()` joins only what both couplers
+  allow, and `_is_coupled_as_asked()` waited for all of 99. The original's `Attach(..., iCoupler)`
+  sets `CouplingFlag = iCoupler` whatever `AllowedFlag` is (Mover.cpp:576-583) and compares it with
   `iCoupler` (Driver.cpp:7028) - it never waits, at the price of a heating line on a vehicle without
   one (a quirk, not ported).
 * **Fix:** `RailVehicleServer.vehicle_get_coupler_joinable_flags()` - what both ends allow, the
@@ -54,7 +56,7 @@ and the rule. Headings keep their date and title, because comments in the code c
 * **Cause:** `CheckLocomotiveParameters(ReadyFlag = fVel != 0)` (DynObj.cpp:2034) puts every
   standing vehicle on its full hand brake (Mover.cpp:8946). Only `AutoRewident()` releases it,
   and only on vehicles nobody drives by hand (`AIControllFlag || d != pVehicle`,
-  Driver.cpp:2193; `MaszynaLegacyDriverBraking._set_brake_delays()`). The original cues no
+  Driver.cpp:2193; `MaszynaDriverBraking._set_brake_delays()`). The original cues no
   "manualbrakoff" hint. Before 2e6e863 the player took the vehicle a frame after
   `scenery_loaded`, after the AI's first update had released it; since then the player is in the
   cab first. The game matches the original; the test followed the hints only.
@@ -68,7 +70,7 @@ and the rule. Headings keep their date and title, because comments in the code c
 * **Symptom:** `style-check / clang-tidy` failed on the PR with
   `llvm-prefer-static-over-anonymous-namespace` (RailVehicleRenderingServer.cpp),
   `readability-avoid-nested-conditional-operator` and `readability-math-missing-parentheses`
-  (MoverRailVehicleLoad.cpp), while a local clang-tidy run on changed files reported nothing.
+  (MaszynaMoverRailVehicleLoad.cpp), while a local clang-tidy run on changed files reported nothing.
 * **What proved it:** the local clang-tidy was LLVM 18; CI runs 22.1.4 (`LLVM_VERSION`). The three
   checks do not exist in 18, and 18 also refuses the `.clang-tidy` key `RemovedArgs`. clang-tidy
   22.1.0 from PyPI reported the same findings, and none after the fix.
@@ -95,17 +97,6 @@ and the rule. Headings keep their date and title, because comments in the code c
   `test_control_holding_another_control_is_its_own_mesh_only`.
 * **Rule:** a control is its mesh and its subtree, a panel (a control over another control) its
   own mesh only.
-
-## 2026-09-30 - the torch put out the signals
-
-* **Symptom:** switching the player's torch on made the signal lights and the cab's emissive
-  displays (the radio's) disappear.
-* **Cause:** `headlamp_glow.gdshader`, a full-screen quad, wrote `screen * (1 + glow)` over the
-  whole screen. `hint_screen_texture` is copied after the opaque pass, before translucent geometry
-  is drawn, and the quad (nearest, drawn last) put that copy back over everything translucent -
-  outside the cone as well, where the glow is 0. Read off Godot's pipeline, not measured in-game.
-* **Fix:** `blend_add`, and the pass writes only the light it adds (`screen * boost * glow`).
-* **Rule:** a full-screen pass that reads the screen texture only adds to the screen.
 
 ## 2026-09-30 - a test ran on the stack of the signal it awaited
 
@@ -229,13 +220,13 @@ and the rule. Headings keep their date and title, because comments in the code c
 * **Symptom:** toggling "Edit FIZ" on a vehicle aborted the editor (SIGABRT).
 * **What proved it:** core dump + `addr2line`: `Variant(const Object*)` in
   `RailVehicle3D::apply_track_placement()` (`bogie_rest_global_bases.get(bogie_node)`).
-  `_apply_editable_in_editor()` re-adds the vehicle; `E3DModelInstance._exit_tree()` freed the
-  submodels without `e3d_loading`, so `RailVehicle3D` kept raw pointers to freed bogie nodes.
-* **Fix:** `E3DModelInstance` announces `e3d_loading`/`e3d_loaded` where its submodels are freed
-  and built (`_free_instance()`/`_create_instance()`); `RailVehicle3D` holds every scene node it
-  does not own as an `ObjectID` and reads the vehicle's components from `RailVehicleServer` by RID.
-  The toolbar no longer set `editable_in_editor` on `FizVehiclePhysicsNode`, which has none - the
-  script error had left the vehicle shown.
+  `_apply_editable_in_editor()` re-adds the vehicle; `MaszynaE3DModelInstance._exit_tree()` freed
+  the submodels without `e3d_loading`, so `RailVehicle3D` kept raw pointers to freed bogie nodes.
+* **Fix:** `MaszynaE3DModelInstance` announces `e3d_loading`/`e3d_loaded` where its submodels are
+  freed and built (`_free_instance()`/`_create_instance()`); `RailVehicle3D` holds every scene node
+  it does not own as an `ObjectID` and reads the vehicle's components from `RailVehicleServer` by
+  RID. The toolbar no longer set `editable_in_editor` on `FizVehiclePhysicsNode`, which has none -
+  the script error had left the vehicle shown.
 * **Rule:** a node in the scene tree keeps no pointer to another object.
 
 ## 2026-09-30 - a raw pointer returned to GDScript freed the vehicle
@@ -301,8 +292,8 @@ and the rule. Headings keep their date and title, because comments in the code c
   nearer than the button. Every cab mesh was an occluder, translucent ones included, while the
   original's pick pass draws only opaque submodels (`Render_cab(..., Alpha = false)`,
   `opengl33renderer.cpp:1208`, `iAlpha & iFlags & 0x1F` at 3674).
-* **Fix:** `E3DRenderingServer.instance_get_opaque_meshes()`; the cab takes its occluders from it.
-  Test: `test_opaque_meshes_leave_out_translucent_submodels`.
+* **Fix:** `MaszynaE3DRenderingServer.instance_get_opaque_meshes()`; the cab takes its occluders
+  from it. Test: `test_opaque_meshes_leave_out_translucent_submodels`.
 * **Rule:** only an opaque submodel hides a cab control from the mouse.
 
 ## 2026-09-29 - a rebuilt cab showed the E186 screen's page button off
@@ -346,7 +337,7 @@ and the rule. Headings keep their date and title, because comments in the code c
   time after power returns (MainsCheck(), Mover.cpp:1591-1603; MainSwitch() waits for it,
   Mover.cpp:3360) closed its line breaker at once.
 * **Fix:** `RailVehicleEngine.main_init_time`, read from `MainInitTime` and applied in
-  `MoverDriveUnit::apply_configuration()`; `FIZ_PARSER_FORMAT_VERSION` 28.
+  `MaszynaMoverDriveUnit::apply_configuration()`; `FIZ_PARSER_FORMAT_VERSION` 28.
 * **Rule:** as the other Cntrl. entries - grep every `extract_value(..., "Key")` of LoadFIZ_Cntrl
   against the parser before calling a section ported.
 
@@ -458,7 +449,7 @@ and the rule. Headings keep their date and title, because comments in the code c
   `RailVehicleSwitches`, so no `sand` command; the driver sent it on every update.
 * **Fix:** only the hand acts - `CabinButton.press()`/`release()`; showing the state sets `pushed`
   and nothing else. `DebugSwitch` shows the state with `set_pressed_no_signal()`. The driver sends
-  every command through `MaszynaLegacyDriverHints.send()`, which skips one the vehicle does not
+  every command through `MaszynaDriverHints.send()`, which skips one the vehicle does not
   have (`RailVehicleServer.vehicle_has_command()`), as the original's Mover call does nothing
   without the device (`Sandbox()`, Mover.cpp:3070).
 * **Rule:** a control showing the vehicle's state never acts on it - one road to an effect, the
@@ -513,12 +504,12 @@ and the rule. Headings keep their date and title, because comments in the code c
   `SCENERY_LIGHT_OWNER_LAYER` alone (2026-09-27).
 * **Proof:** a scratch scene rendered off screen (`xvfb-run`) showed that Godot honours
   `shadow_caster_mask` for a RenderingServer light and a node light alike - neither cast from the
-  excluded layer - but the RenderingServer spot darkened the ground straight under itself.
-  A one-lamp test scenery (`td_latarnia.scn`) through the real `SceneryInstancer` path gave the
+  excluded layer - but the RenderingServer spot darkened the ground straight under itself. A
+  one-lamp test scenery (`td_latarnia.scn`) through the real `MaszynaSceneryProvider` path gave the
   same dark pool in economy mode and diagonal acne across the whole pool in high quality. Godot:
-  `_light_initialize()` sets `LIGHT_PARAM_SHADOW_BLUR = 0` (`light_storage.cpp:161`),
-  `Light3D`'s constructor sets 1.0 (`light_3d.cpp:505`), and a spot's depth bias is multiplied by
-  it (`light_storage.cpp:1232`). Every scenery spot had a depth bias of 0 - the tuned 0.06 never
+  `_light_initialize()` sets `LIGHT_PARAM_SHADOW_BLUR = 0` (`light_storage.cpp:161`), `Light3D`'s
+  constructor sets 1.0 (`light_3d.cpp:505`), and a spot's depth bias is multiplied by it
+  (`light_storage.cpp:1232`). Every scenery spot had a depth bias of 0 - the tuned 0.06 never
   applied - and its `size` never softened anything (PCSS is off at blur 0).
 * **Fix:** `_light_build()` sets `LIGHT_PARAM_SHADOW_BLUR` to 1.0 and gives omni lights
   `LIGHT_OMNI_SHADOW_CUBE`, the rest of what the two constructors set. Both modes render a clean
@@ -562,7 +553,7 @@ and the rule. Headings keep their date and title, because comments in the code c
   disabled in the shadow pass (`:3609`).
 * **Fix:** the world's sun takes the original's layout (1/32, 1/8, 1/2 of 250 m) with Godot's
   default normal bias 1.0; the cab gets a sun of its own lighting only its render layer
-  (`maszyna/cabin/improve_shadows_quality`), with two splits over 8 m; track materials are a
+  (`reloaded/cabin/improve_shadows_quality`), with two splits over 8 m; track materials are a
   `cull_disabled` variant. Two shadowed directional lights halve Godot's directional atlas
   (`light_storage.cpp` `_get_directional_shadow_rect`), so the setting raises it to 8192.
 * **Also found:** the E3D data is consistently CCW (17753 of 18135 scenery, 253235 of 253643
@@ -622,8 +613,9 @@ and the rule. Headings keep their date and title, because comments in the code c
   changes an input publishes it. One event plus a consumed dirty flag loses the race, and it loses
   it silently - the value stays at its default.
 * **Trap met on the way:** removing an exported property needs a grep for *reads*, not only for
-  assignments. `demo/hud/track_traction_panel.gd` read both offsets off the node and started
-  erroring per frame.
+  assignments. `demo/hud/track_traction_panel.gd` (today libreloaded's
+  `debug_hud/track_traction_panel.gd`) read both offsets off the node and started erroring per
+  frame.
 * **Latent, not fixed:** `RailVehicle3D` binds its tick as `ClassDB::bind_method(D_METHOD("_process",
   ...))`, i.e. it registers a method under a virtual's name. No GDScript subclass defines `_process`
   today, so the trap of 2026-09-23 (a script replacing a native virtual) is not active - but it is
@@ -637,7 +629,7 @@ and the rule. Headings keep their date and title, because comments in the code c
 * **What proved it:** the brake inputs per vehicle (only the locomotive braked, pipe 5.0), then a
   trace of the controller and a listener on `RailVehicleServer.vehicle_command_received` printing
   `get_stack()`: in one driver update `_decrease_eim()` stepped the controller up to 3 and
-  `_control_releaser()` -> `MaszynaLegacyDriverHints.set_zero_speed()` stepped it back to 0.
+  `_control_releaser()` -> `MaszynaDriverHints.set_zero_speed()` stepped it back to 0.
 * **Cause:** the 6Dg's universal controller works its local brake (`UCList: IntegratedLocBrake=yes`,
   `EIMCtrlType=3`): the Mover takes the local brake from `eimic_real` (`Mover.cpp:4503-4506`), and
   positions 0-2 brake, 3 is the no-power position. The original's `ZeroSpeed()` steps the master
@@ -716,7 +708,7 @@ and the rule. Headings keep their date and title, because comments in the code c
 
 * **Symptom:** an AI EU07 on a synthetic track with a live catenary kept its line breaker open;
   `main_switch_closable` was true.
-* **Proof:** `LegacyCabinMainSwitch` closes after `main_on_bt` is held for `InitialCtrlDelay`,
+* **Proof:** `MaszynaCabinMainSwitch` closes after `main_on_bt` is held for `InitialCtrlDelay`,
   counted in `CabinSystem._process(delta)` - real seconds. The driver holds the button from one
   update to the next, `PREPARE_TIME` of simulation time: at x5 that is 0.4 s of real time, short of
   the delay. The original counts it in `TTrain::Update(dt)` with the scaled time.
@@ -766,7 +758,7 @@ and the rule. Headings keep their date and title, because comments in the code c
 
 * **Symptom:** on Stary Jawor at x20 the probe stopped printing at t=91 s; the process ran on
   until the timeout at 100 % CPU.
-* **Proof:** `MaszynaLegacyDriverDieselElectricTraction.decrease()` took the second controller to zero and
+* **Proof:** `MaszynaDriverDieselElectricTraction.decrease()` took the second controller to zero and
   returned true whenever it stood above zero. `DecScndCtrl()` refuses a diesel-electric engine
   with its automatic relay on (`Mover.cpp:2815`), so the position stayed, and `zero()`'s
   `while decrease()` never ended.
@@ -858,9 +850,9 @@ and the rule. Headings keep their date and title, because comments in the code c
 ## 2026-09-26 - headless test crashes at teardown: the dummy renderer is not thread safe
 
 * **Symptom:** `test_zzz_ep07_cabin_main_switch` crashed in about half of the runs, in
-  `MaszynaInclude._free_owned_rids()` -> `E3DRenderingServer::instance_free()` ->
-  `E3DOptimizedBackend::clear()` -> `RenderingServer::free_rid()`, SIGSEGV. Other runs logged
-  `mesh_add_surface: Parameter "m" is null` from `E3DModelManager.load_model()` while the cab
+  `MaszynaInclude._free_owned_rids()` -> `MaszynaE3DRenderingServer::instance_free()` ->
+  `MaszynaE3DOptimizedBackend::clear()` -> `RenderingServer::free_rid()`, SIGSEGV. Other runs logged
+  `mesh_add_surface: Parameter "m" is null` from `MaszynaE3DModelManager.load_model()` while the cab
   loaded, "unimplemented base type encountered in renderer scene cull", or aborted with glibc
   `double free or corruption (!prev)` right after those errors.
 * **Proof:** gdb on the crash: a built optimized instance, its model still referenced, its three
@@ -870,8 +862,8 @@ and the rule. Headings keep their date and title, because comments in the code c
   where the damage shows. In the engine source (4.7.2) the dummy renderer's mesh storage is
   `RID_Owner<DummyMesh>`, not thread safe, while the real one is `RID_Owner<Mesh, true>`.
 * **Cause:** the streaming worker preloads E3D models, which creates meshes, while the main thread
-  loads the cab's model (`MmdCabinInstancer.build_into()` -> `E3DModelManager.load_model()`). The
-  RenderingServer allows mesh creation from any thread; the headless dummy renderer does not
+  loads the cab's model (`MmdCabinInstancer.build_into()` -> `MaszynaE3DModelManager.load_model()`).
+  The RenderingServer allows mesh creation from any thread; the headless dummy renderer does not
   honour it, and two threads allocating in its mesh owner corrupt the heap.
 * **Fix:** none yet (TODO.md, "Tests").
 * **Rule:** a headless crash or heap corruption in rendering code that meshes are created in from
@@ -890,21 +882,6 @@ and the rule. Headings keep their date and title, because comments in the code c
 * **Fix:** the header lists `node_paths=PackedStringArray("model")`.
 * **Rule:** when writing a node-typed property into a `.tscn` by hand, add it to `node_paths` - or
   set it once in the editor and let the editor write the scene.
-
-## 2026-09-25 - catalogue swapped, UI unchanged
-
-* **Symptom:** a UI translated through Godot's i18n kept its old texts after the game directory
-  changed. The language stayed the same, so only the game's catalogue was replaced.
-* **What proved it:** a headless probe with a `Node` counting `NOTIFICATION_TRANSLATION_CHANGED`
-  (Godot 4.7). `set_locale()` to a new locale: one notification. `set_locale()` to the same
-  locale, `add_translation()` and `remove_translation()`: none. A node entering the tree gets one
-  of its own.
-* **Fix:** `MaszynaTranslationServer::translation_load()` sends
-  `MainLoop::NOTIFICATION_TRANSLATION_CHANGED` itself when the locale did not change, and calls
-  `set_locale()` only when it did, so the tree is told once either way.
-* **Rule:** whoever swaps a translation in an unchanged locale notifies the main loop; a composed
-  text is built in `_notification(NOTIFICATION_TRANSLATION_CHANGED)`, which also arrives on
-  entering the tree.
 
 ## 2026-09-25 - cab clicks cut each other off: the controls bypassed gnd-sfx
 
@@ -1047,8 +1024,8 @@ visible that way.
   in the global namespace. The vendored files have no `stdafx.h`. This hits the control reservoir
   of `MHZ_EN57`, `MHZ_K5P`, `MHZ_6P`, `M394` and `St113`, and the EP step of `TEStEP1` (11 calls
   in `hamulce.cpp`). `FV4a` does not use it.
-* **Fix:** CMake force-includes `stdlib.h` into `src/legacy/maszyna-mover/*.cpp` (non-MSVC). The vendored files
-  stay untouched.
+* **Fix:** `plugin.cmake` force-includes `stdlib.h` into `src/maszyna/maszyna-mover/*.cpp`
+  (non-MSVC). The vendored files stay untouched.
 * **Rule:** the vendored engine was written against its own precompiled header. A name that
   resolves differently without it compiles silently (vendored files build with warnings off), so
   check overload-sensitive calls (`abs`, `min`, `max`) when something numeric just stops.
@@ -1107,19 +1084,6 @@ visible that way.
   `i-springbrakeactive` showed `Activate` where the original shows `IsActive` (Train.cpp:9195).
 * **Rule:** port the whole loader function, including the state it sets at the end. A struct
   default is what a vehicle *without* that section gets.
-
-## 2026-09-24 - the Linux release would not start on most machines, because of the build host's glibc
-
-* **Proof:** `objdump -T <file> | grep -oE 'GLIBC_[0-9.]+' | sort -Vu | tail -1`.
-  `libmaszyna.64.so` needed GLIBC_2.43 and the `reloaded` template needed 2.44, both built on
-  Manjaro. Ubuntu 24.04 has 2.39, Debian 12 2.36, Ubuntu 22.04 2.35. libstdc++ is static and was
-  not the problem.
-* **Trap:** the CI image `jezsonic/build-tools:4.7.stable` is Ubuntu 26.04 with glibc 2.43.
-  Rebuilding only the library is not enough, because the template needs the newer glibc.
-* **Fix:** `make release-linux` builds both in `ci/docker/linux-sdk`, Godot's buildroot SDK
-  (`godot-2026.05.x-1`, GCC 15.2, glibc 2.34). The template is built once from `4.7.2-stable`.
-* **Rule:** glibc is only forward compatible. Check the highest `GLIBC_` of every shipped binary,
-  and build on a sysroot as old as the oldest target distribution.
 
 ## 2026-09-24 - switch blades in a scenery never moved, because only a node listened
 
@@ -1286,9 +1250,10 @@ Porting `loadcount`/`loadtype` from a `.scn` `dynamic` line.
 * **Proof:** running `_is_cache_valid()`'s checks over `user://cache/scenery_compiled/*.res`. The
   editor entries carry absolute `src` and resolve. The release entries carry
   `src=scenery/baltyk/mod/drogi.scm`, with 102 of 102 dependencies missing.
-* **Cause:** `get_maszyna_game_dir()` returned `"."` in an export (`UserSettings.cpp:119`, since
-  `d3e7d52`), and a relative path given to `FileAccess` resolves against `res://`, which is the
-  pack. The parser reaches files by another route, which hid it.
+* **Cause:** `get_maszyna_game_dir()` (today `MaszynaGameDirectory.get_game_dir()`) returned `"."`
+  in an export (`UserSettings.cpp:119`, since `d3e7d52`), and a relative path given to `FileAccess`
+  resolves against `res://`, which is the pack. The parser reaches files by another route, which hid
+  it.
 * **Fix:** in a release the game dir is `OS::get_executable_path().get_base_dir()`. The editor and
   the release now share cache keys.
 * **Rules:**
@@ -1307,7 +1272,7 @@ Porting `loadcount`/`loadtype` from a `.scn` `dynamic` line.
   `Callable::call` -> freed code. The parse runs as a `SceneryLoadingTaskQueue` task, and nothing
   stopped the queue before the scripts went away. Its destructor runs during teardown, too late.
   `callback.is_valid()` does not help.
-* **Fix:** `SceneryLoadingTaskQueue::drain()`. `SceneryInstancer` keeps `_active_queues`, and
+* **Fix:** `SceneryLoadingTaskQueue::drain()`. `MaszynaSceneryProvider` keeps `_active_queues`, and
   `cancel_loading()` drains them, called from `maszyna_include.gd::_exit_tree()`.
 * **Regression 1:** draining waits for a multi-second parse, so quitting hung instead.
   `MaszynaParser` now has a static `cancelled` checked by the token loop and by
@@ -1414,11 +1379,11 @@ Porting `loadcount`/`loadtype` from a `.scn` `dynamic` line.
 * **Proof:** the state dump was stable (`11 11 11`). With the cab entered, `podswietlenie_on` was
   visible one frame in fifteen and `_off` was its complement: one writer at 10 Hz, one every
   frame.
-* **Cause:** `E3DRenderingServer::instance_set_transform()` ended in `_update_if_built()`, which
-  in `E3DNodesBackend` re-applies `lights_state` to the `_on`/`_off` submodels. `9ca6b9f` made the
-  transform notification unconditional (for smoke), so every node-instanced model re-applied its
-  lights every frame.
-* **Fix:** `E3DInstanceBackend::apply_transform()`. It does nothing for nodes and does
+* **Cause:** `MaszynaE3DRenderingServer::instance_set_transform()` ended in `_update_if_built()`,
+  which in `MaszynaE3DNodesBackend` re-applies `lights_state` to the `_on`/`_off` submodels.
+  `9ca6b9f` made the transform notification unconditional (for smoke), so every node-instanced model
+  re-applied its lights every frame.
+* **Fix:** `MaszynaE3DInstanceBackend::apply_transform()`. It does nothing for nodes and does
   `instance_set_transform` per RID for optimized instances. This also dropped a per-frame
   re-resolve of the optimized instances. The czuwak/SHP blinker was broken by the same thing.
 * **Rule:** a setter applies what it is named after. Routing every `instance_set_*` through "apply
@@ -1430,13 +1395,14 @@ Porting `loadcount`/`loadtype` from a `.scn` `dynamic` line.
 * **Symptom:** `test_zzz_ep07_cabin_main_switch` aborts during scenery teardown in about half the
   runs.
 * **Instruments:** a print per group in `_free_owned_rids()` found it dying in group 5
-  (`E3DRenderingServer.instance_free`, 324 instances). `coredumpctl debug` showed
-  `E3DOptimizedBackend::clear` -> RenderingServer -> **SIGABRT**. The errors were "Initializing
-  already initialized RID", "Attempting to initialize the wrong RID" and "unimplemented base type
-  encountered in renderer scene cull", which means allocator corruption, not a double free.
+  (`MaszynaE3DRenderingServer.instance_free`, 324 instances). `coredumpctl debug` showed
+  `MaszynaE3DOptimizedBackend::clear` -> RenderingServer -> **SIGABRT**. The errors were
+  "Initializing already initialized RID", "Attempting to initialize the wrong RID" and
+  "unimplemented base type encountered in renderer scene cull", which means allocator corruption,
+  not a double free.
 * **Mechanism:** `_stream_preload()` runs on `SceneryStreamingServer`'s worker and calls the
-  GDScript `model_loader` (`e3d_model_manager.gd::load_model`), which runs `load()` and creates
-  renderer resources while the main thread frees them. A cold `rail_vehicle`/`fiz` cache
+  GDScript `model_loader` (`maszyna_e3d_model_manager.gd::load_model`), which runs `load()` and
+  creates renderer resources while the main thread frees them. A cold `rail_vehicle`/`fiz` cache
   reproduces it.
 * **Fixed on the way, not the cause:** a double free across an await in `_free_owned_rids()`, 14
   unguarded `get_instance()->` calls, and a HashMap iterator held across re-entry in
@@ -1618,9 +1584,10 @@ Found by reading every `_do_fetch_state_from_mover()` in #184 stage 1:
 
 * **Cause:** `particles_set_amount_ratio()` deactivates live particles with index >=
   `amount * ratio`. A ratio of 0 on a notch change killed the whole plume.
-* **Fix:** emitting is off. `E3DRenderingServer::process_smoke()` (ticked by `SmokeSourceLibrary`)
-  accumulates `spawn_rate * intensity * delta` and calls `particles_emit()`: the original's
-  `m_spawncount` (`particles.cpp:157-212`).
+* **Fix:** emitting is off. `MaszynaE3DRenderingServer::process_smoke()` (ticked by
+  `MaszynaSmokeSourceLibrary`; today libreloaded's `SmokeServer::_process_smoke()`) accumulates
+  `spawn_rate * intensity * delta` and calls `particles_emit()`: the original's `m_spawncount`
+  (`particles.cpp:157-212`).
 * **Opacity, twice:** `dizel_fill` in `color` alpha, and then in `color_initial_ramp`, both reach
   live particles, so the plume stepped when the Mover floored it at 0.05 (Mover.cpp:5508). The
   initial opacity ramp is now written once at build time, and `dizel_fill` is folded into the
@@ -1681,7 +1648,7 @@ lighting or the trainset.
 * **Not the cause:** the three `WorldEnvironment`s (own worlds), the skydome's clouds shadow, the
   terrain normals.
 * **Fix:** the override is removed, `NORMAL_MAP_DEPTH = 1.0`, and the material cache key carries
-  `MaterialManager.CACHE_VERSION`.
+  `MaszynaMaterialManager.CACHE_VERSION`.
 * **Rule:** a tuning factor with no counterpart in the original scales the data's errors along
   with the data.
 
@@ -1702,43 +1669,16 @@ lighting or the trainset.
   from the lower edge end so no crack opens.
 * **Rule:** whatever is streamed or culled by a cell must not reach outside it.
 
-### A winter afternoon turning the fog into orange milk
-
-* **Cause:** Skydome's hard-coded windows put full day above 17.5 degrees of sun elevation and
-  sunset colours up to 23.6. A winter sun at 50 N peaks at 16-19 degrees, so the day took night
-  fog (24x density) and a sunset tint. The sky shader copies both.
-* **Fix:** `day_full_elevation` (6), `sunset_fade_start/end_elevation` (4, 10) as uniforms and
-  `gnd_skydome/*` settings.
-* **Rule:** check sun-altitude thresholds against a winter day.
-
-### Two fog layers that did not agree
-
-* The original's fog is `1 - exp(-(z / range)^2)`, with `range = fFogEnd / max(1, Overcast * 2)`
-  (`apply_fog.glsl:16`, `opengl33renderer.cpp:4685`). A depth fog complete at 1.5x the range with
-  curve 1.5 fits it best.
-* Volumetric fog is extinction per metre. Its density follows the distance inversely and the
-  length stays fixed. Scaling the length made milk, and Skydome's shortening made it pulse.
-* The volumetric fog affects the sky (`volumetric_fog_sky_affect` 1.0). The depth fog reaches the
-  sky only up to `maszyna/rendering/fog_sky_height`, and rain reaches it fully.
-* `fog_aerial_perspective` 1.0 left fogged objects dark at dusk, so it is off by default.
-* The `PROPERTY_HINT_EXP_EASING` editor invites values like 0.01, so the value is floored in code.
-
 ### A weather change freezing the game
 
-* **Cause:** `MaterialManager._refresh_managed_material()` wrote every material (0.7-3 MB each)
-  to disk on the main thread, even without variants (169 of 805 `.mat` files have a rain one).
+* **Cause:** `MaszynaMaterialManager._refresh_managed_material()` wrote every material (0.7-3 MB
+  each) to disk on the main thread, even without variants (169 of 805 `.mat` files have a rain one).
 * **Fix:** no write on refresh, and materials without variants are skipped.
 
 ### A new `class_name` unknown to the running game
 
 * `.godot/global_script_class_cache.cfg` is updated only by the editor's scan. Run
   `godot-double --headless --import`.
-
-### Duplicated HUD in the demo scenes
-
-* `TopBar`, `ControlWindows` and the menu were pasted into `demo_3d` and `demo_scenery_loading`.
-  They are one scene now (`demo/hud/game_hud.tscn`), and a scene adds its own `Button` under
-  `MenuActions`.
 
 ## 2026-09-20 - material shaders missing from the wrapper
 
@@ -1802,8 +1742,8 @@ lighting or the trainset.
 
 * The E186 MMD has no `cabactivation_sw:`, and keys are polled by cab widgets. The original runs
   `OnCommand_cabactivationtoggle` regardless (Train.cpp:3077).
-* **Fix:** `LegacyCabinCabActivation`, added by `LegacyCabinLogicDelegate`, like
-  `LegacyCabinBattery`.
+* **Fix:** `MaszynaCabinCabActivation`, added by `LegacyCabinLogicDelegate`, like
+  `MaszynaCabinBattery`.
 * **Rule:** every `OnCommand_*` works without its gauge. A control mapped only in
   `MmdSemanticCatalog` is dead in a cab that does not model it.
 * **Correction (2026-10-05):** not every one - about thirty handlers return early when the cab has
@@ -1832,9 +1772,9 @@ lighting or the trainset.
 
 * E186 models `main_sw:`, three `dir*_bt:` buttons and `shp_reset_bt:` (`SeparateAcknowledge`),
   and none of them was in the catalog.
-* **Fix:** the labels are mapped (`LegacyCabinMainSwitch`, `LegacyCabinReverser`), with new
+* **Fix:** the labels are mapped (`MaszynaCabinMainSwitch`, `MaszynaCabinReverser`), with new
   commands `security_cabsignal_acknowledge` and `pantographs_drop_all`.
-  `LegacyCabinUnmodelledControls` registers every catalog control whose key no modelled control
+  `MaszynaCabinUnmodelledControls` registers every catalog control whose key no modelled control
   has taken.
 
 ## 2026-09-20 - Scenery streaming started from the menu camera
@@ -1852,17 +1792,10 @@ lighting or the trainset.
 
 ### Global transform requested while an E3D node leaves the tree
 
-* **Cause:** `E3DModelInstance` forwarded `global_transform` on the notification while its RID was
-  valid, but the node was already out of the tree.
+* **Cause:** `MaszynaE3DModelInstance` forwarded `global_transform` on the notification while its
+  RID was valid, but the node was already out of the tree.
 * **Fix:** it forwards only while the node is in the tree.
 * **Rule:** a valid RID does not imply that its `Node3D` has a global transform.
-
-## 2026-09-20 - Skydome clouds behind alpha-blended cabin windows
-
-* **Symptom:** visible cloud cover in a cabin with alpha-blended windows pushes a 60 FPS frame
-  past V-Sync to 30 FPS.
-* **Cause:** the cost of `light_angular_distance` under PSSM, even with the medium filter.
-* **Fix:** the fastest filter. The option to disable it is in TODO.md.
 
 ## 2026-09-20 - double slips impassable and painted with the missing-texture checker
 
@@ -1911,21 +1844,6 @@ lighting or the trainset.
     constant.
   * A gain derived as a normalisation divisor must never also be applied as a gain.
 
-## 2026-09-21 - distant buildings cut out of the fogged sky, whatever the fog distance
-
-* **Proof:** the sky pixels were exactly the fog colour `(149, 113, 95)`, and distant objects came
-  out brighter `(170, 133, 113)`. That is only possible with a fog amount above 1.
-* **Cause:** `fog_density` was applied twice (scaling `day/night_fog_density` and as
-  `storm_fog_intensity`), and Skydome sums the two (`Skydome.gd:1265`, clamp 1.5). Godot does not
-  clamp `fog_amount`. Separately, `fog_sky_affect` ignored the density.
-* **Fix:** the base density stays Skydome's haze (0.005/0.02), and the storm carries
-  `fog_density - base_density`. `sky_affect` is multiplied by the opacity.
-* **Rules:**
-  * An opacity summed from two sources is summed where it is set. An unclamped value turns a blend
-    into an extrapolation.
-  * The sky and the geometry are fogged by different parameters (`fog_sky_affect` vs
-    `fog_density`), and they agree only when the sky carries the depth fog's opacity.
-
 ## 2026-09-21 - the whole scenery unlit, day and night, since the OPTIMIZED instancer
 
 * **Data:** model-node `lights` modes across 975 files: `ls_Dark` 3180, `ls_Off` 1797, `ls_On`
@@ -1935,9 +1853,9 @@ lighting or the trainset.
   * `e3d_parser.cpp` hides `light_on*`, and `lights_state` lived on the node, while scenery models
     are node-less RIDs since `2125898`.
   * The importer dropped `lights`/`lightcolors` (`obj.lights` commented out since `923b293`).
-* **Fix:** the light state lives in `E3DRenderingServer`, resolved against the time of day and
-  the light level from `MaszynaEnvironmentNode`. Real lights are server RIDs streamed with their
-  own range. The `light_onNN`/`light_offNN` pairing is `E3DLightFactory::discover()`.
+* **Fix:** the light state lives in `MaszynaE3DRenderingServer`, resolved against the time of day
+  and the light level from `EnvironmentNode`. Real lights are server RIDs streamed with their own
+  range. The `light_onNN`/`light_offNN` pairing is `MaszynaE3DLightFactory::discover()`.
 * **Rule:** state an instancer must honour belongs to the server. A light that is never switched
   on looks exactly like one never implemented.
 
@@ -1979,38 +1897,6 @@ lighting or the trainset.
 * **Rule:** porting from a node to a RID carries nothing over. Set each parameter the node's
   constructor sets.
 
-## 2026-09-21 - "the release runs old GDScript" - the release was never unpacked into the game dir
-
-* **Proof:** the zip's `.so` matched `demo/bin/...` and the pck's `build_number.txt` was fresh. The
-  game dir's `reloaded` had mtime 23:11 and md5 `5aa4a837...` against a fresh `4fa78d7a...`, and
-  the repo root held the unpacked files.
-* **Cause:** `upgrade-*.sh` ran `cd <repo> && ... && unzip -o <zip>`, which unpacked into the repo.
-* **Fix:** `make -C "$REPO"` and `unzip -o "$REPO/bin/linux/<zip>" -d "$GAME"`.
-* **Rules:**
-  * When a build "has no effect", prove the binary being run is the one built (mtime, md5).
-  * A one-liner that `cd`s and uses a relative destination has two working directories. Name the
-    destination absolutely.
-
-## 2026-09-21 - no fog in the exported release, perfect fog in the editor
-
-* **Symptom:** no fog at 80 m and a white-out at 4160 m in the release. The editor is fine.
-* **Ruled out:** a stale binary. The symlinked addons (`gnd_skydome`, `gnd_weather`, `gnd_sfx`,
-  `libmaszyna`) are exported with their content.
-* **Instrument traps:** `grep -c` on a binary counts lines. `FileAccess.file_exists()` on a `.gd`
-  in a pck is false (`.gdc` + `.gd.remap`), so inspect the pck with `load_resource_pack()` +
-  `DirAccess`.
-* **Cause:** `Script.get_property_default_value()` returns null for every property of a GDScript
-  compiled into a pck. The control was `maszyna_model_data.gd`. `SkydomeSettings.get_value()` falls
-  back to it, and the `gnd_skydome/*` settings do not exist in a release, so every value became 0.
-* **Fix:** `GndSkydomeMaszynaEnvironment._skydome_value()` falls back to the live Skydome node's
-  value, cached on first read because five call sites write it back scaled.
-* **Rules:**
-  * A default that exists only in the script's source does not survive export. Fall back to a
-    live object.
-  * A setting registered by an EditorPlugin does not exist in an export unless it is in
-    `project.godot`, and values equal to the default are exactly the ones kept out.
-  * Test the invariant, not the intermediate (density × length, not density).
-
 ## 2026-09-27 - EN57's motor car refused its line breaker: no master controller positions
 
 * **Symptom:** EN57 `s` had its pantographs up at 3300 V and reported `main_switch_closable`, but
@@ -2042,11 +1928,11 @@ lighting or the trainset.
      `MoverVehicleSecuritySystem::_apply_configuration()`) saw the cab activated, started the cab
      signalling nobody acknowledged and braked. The original enables the alerter only in
      `CabActivisation()` of the master cab (Mover.cpp:2905).
-* **Fix:** no cab activation at creation; `SceneryInstancer._wait_for_vehicles()` waits until the
-  vehicles stand on their tracks and `_build_drivers()` couples the trainsets (`TrainSet3D.couple()`)
-  before any driver exists; the alerter is left to the cab's activation. Since 2026-09-30
-  `RailVehicleServer.trainset_place()` stands and couples a trainset's vehicles, and
-  `_wait_for_vehicles()` awaits each vehicle's `vehicle_built`.
+* **Fix:** no cab activation at creation; `MaszynaSceneryProvider._wait_for_vehicles()` waits until
+  the vehicles stand on their tracks and `_build_drivers()` couples the trainsets
+  (`TrainSet3D.couple()`) before any driver exists; the alerter is left to the cab's activation.
+  Since 2026-09-30 `RailVehicleServer.trainset_place()` stands and couples a trainset's vehicles,
+  and `_wait_for_vehicles()` awaits each vehicle's `vehicle_built`.
 * **Rule:** a command sent along the couplers is sent once the trainset is coupled and placed; a
   configuration never sets what the original switches at run time.
 
@@ -2066,11 +1952,11 @@ lighting or the trainset.
 
 * **Symptom:** a scenery started with the player in a trainset's cab; the AI driver kept operating
   its controls. Leaving the cab and entering again gave it to the player.
-* **Cause:** the player's `_process` enters the start vehicle as soon as it has a controller -
-  while `SceneryInstancer._wait_for_vehicles()` still awaits frames, before `_build_drivers()`.
-  `RailVehicle3D.enter_cabin()` then called `DriverSystem.vehicle_set_control_active(rid, false)`
-  on a vehicle without a driver, which returned without recording anything; the driver created
-  next started with its own `control_active = true`.
+* **Cause:** the player's `_process` enters the start vehicle as soon as it has a controller - while
+  `MaszynaSceneryProvider._wait_for_vehicles()` still awaits frames, before `_build_drivers()`.
+  `RailVehicle3D.enter_cabin()` then called `DriverSystem.vehicle_set_control_active(rid, false)` on
+  a vehicle without a driver, which returned without recording anything; the driver created next
+  started with its own `control_active = true`.
 * **Fix:** `DriverSystem` keeps the vehicles a player drives per vehicle
   (`player_controlled_vehicles`), recorded whether the vehicle has a driver yet or not;
   `vehicle_is_control_active()` reads it, so a driver attached later starts not driving.
@@ -2082,7 +1968,7 @@ lighting or the trainset.
 
 * **Symptom:** Stary Jawor, the SU46 the player starts in: once the player left the cab, its AI
   driver did not move it at all.
-* **Cause:** the player enters before `SceneryInstancer._build_drivers()`. The cab
+* **Cause:** the player enters before `MaszynaSceneryProvider._build_drivers()`. The cab
   (`MaszynaDynamicTrainCabin._on_vehicle_rid_changed()`) found no cab logic and attached its own,
   keeping only the vehicle's RID; `_build_drivers()` then replaced it with the driver's. The cab
   leaving the tree detached "the vehicle's" logic - the driver's - so every `CabinSystem.act()` of
@@ -2139,7 +2025,7 @@ lighting or the trainset.
   loading: `demo_scenery_loading.gd` set `start_train_id` before `load()`, and the player's
   `_process` took the vehicle as soon as it had a controller, before `_build_drivers()` coupled the
   trainsets. The activation went out over couplers not connected yet.
-* **Fix:** the scene hands the player its train on `scenery_loaded`; `MaszynaPlayer.auto_start`
+* **Fix:** the scene hands the player its train on `scenery_loaded`; `Player.auto_start`
   (off in that scene) keeps it from taking the first vehicle on its own meanwhile.
 * **Rule:** anything that sends along the couplers happens only once the trainset is coupled -
   the player takes a vehicle only after the scenery says it is loaded.
@@ -2258,12 +2144,13 @@ lighting or the trainset.
 
 ## 2026-09-28 - no vehicle without DoorPermitList could permit its doors from the cab
 
-* **Symptom:** the new door permit switches (`LegacyCabinDoorPermits`) did nothing on the Impuls
+* **Symptom:** the new door permit switches (`MaszynaCabinDoorPermits`) did nothing on the Impuls
   36WEa, whose FIZ has `DoorNeedPermit=Yes` and no `DoorPermitList`.
 * **Cause:** `RailVehicleDoors.permit_list` defaulted to `[0, 0, 0]`, so
-  `MoverRailVehicleDoors::_apply_configuration()` gave every such vehicle three permit presets. The
-  original has none unless `DoorPermitList` names them (Mover.cpp:10559), and its permit switches
-  step aside for the presets (Train.cpp:7203). The dump showed `doors_permit_preset_count=3`.
+  `MaszynaMoverRailVehicleDoors::_apply_configuration()` gave every such vehicle three permit
+  presets. The original has none unless `DoorPermitList` names them (Mover.cpp:10559), and its
+  permit switches step aside for the presets (Train.cpp:7203). The dump showed
+  `doors_permit_preset_count=3`.
 * **Fix:** the default is an empty list; `FIZ_PARSER_FORMAT_VERSION` 26 drops the cached
   vehicles built with it. Measured: `doors_permit_preset_count=0`, the switch permits the left
   doors and the left mirror unfolds.
@@ -2275,7 +2162,7 @@ lighting or the trainset.
 
 * **Symptom:** a parked diesel with its engine off gave one puff of smoke the first time the camera
   looked at it.
-* **Cause:** read from the code, not measured. `E3DRenderingServer::SmokeObject::intensity`
+* **Cause:** read from the code, not measured. `MaszynaE3DRenderingServer::SmokeObject::intensity`
   defaulted to `1.0`, and the emitters are built with the model. The engine's rate (0 when off)
   came only from `RailVehicle3D::_update_smoke()` in its 0.25 s block, and on the first load even
   later: the model builds in its own `_ready()`, before the vehicle wires `model_node`, and the
@@ -2458,24 +2345,6 @@ lighting or the trainset.
   forward-declares what it names; every touched C++ file is formatted before commit; the style
   check sees the same precision as the build.
 
-## 2026-09-29 - after the double extension_api.json, the debug library would not load
-
-* **Symptom:** after pulling `70ee1b4a` (godot-cpp bound to the versioned double
-  `extension_api.json`), `make compile-debug` succeeded, but Godot could not open
-  `libmaszyna.debug.64.so` - "undefined symbol: _ZN5godot8Resource21_setup_local_to_sceneEv" - so
-  every C++ class was missing: the tests hung, `release-linux` failed while exporting (the headless
-  editor loads the debug library, not the release one).
-* **What proved it:** `nm` on `build-debug/bin/libgodot-cpp...template_debug.double.x86_64.a`
-  showed `Resource::_setup_local_to_scene()` only as undefined references, while the regenerated
-  `gen/src/classes/resource.cpp` defines it: the archive held objects of the previous generation.
-  The library was not even relinked on a second build.
-* **Fix:** remove `build-debug/godot-cpp/CMakeFiles/godot-cpp.dir` and the godot-cpp archive in
-  `build-debug/bin`, build again; `nm -D -C --undefined-only` on the library shows no `godot::`
-  symbol afterwards. The release build dir, configured afresh, was not affected.
-* **Rule:** when the API godot-cpp is generated from changes (`extension_api.json`, precision,
-  `GODOT_VERSION`), rebuild godot-cpp from clean objects in every build dir; check the library with
-  `nm -D -C --undefined-only ... | grep godot::` before trusting a green build.
-
 ## 2026-09-29 - an extension class named like an engine class never registered
 
 * **Symptom:** the new `CameraServer` singleton built and linked without a warning, but none of its
@@ -2486,7 +2355,7 @@ lighting or the trainset.
   extension method ... for unexisting class" for every binding - Godot has its own `CameraServer`
   (camera feeds), and `GDREGISTER_CLASS` of the same name is refused at run time, not at build time.
 * **Fix:** the class renamed `PlayerCameraServer` (singleton of the same name); Lua keeps
-  `maszyna.camera`.
+  `reloaded.camera`.
 * **Rule:** before naming a new extension class or singleton, check that Godot has no class of that
   name (`ClassDB.class_exists()` in the editor, or the class reference); after adding one, read
   the `--import` log for "already registered".
@@ -2494,13 +2363,13 @@ lighting or the trainset.
 ## 2026-09-29 - every vehicle's cab ran each step
 
 * **Symptom:** a clear fps drop in game (38 fps, `Process` 33 ms). The editor profiler's Script
-  Functions put `CabinSystem._on_simulation_advanced` -> `LegacyCabinMainSwitch._process` at
+  Functions put `CabinSystem._on_simulation_advanced` -> `MaszynaCabinMainSwitch._process` at
   165-259 calls a frame, with `CabinState.vehicle_of` (39k of 63k self time) and `vehicle_state`
   (15k) under it.
-* **What proved it:** the call count of `LegacyCabinMainSwitch._process` matched the number of
-  vehicles with an MMD, not the few driven ones. `git log -S"LegacyCabinLogic.from_mmd(data_path"`
+* **What proved it:** the call count of `MaszynaCabinMainSwitch._process` matched the number of
+  vehicles with an MMD, not the few driven ones. `git log -S"MaszynaCabinLogic.from_mmd(data_path"`
   led to 495c3538, where `MaszynaRailVehicle3D._on_controller_changed()` attached a cab logic to
-  every vehicle; before, only the AI's vehicles (`SceneryInstancer._build_drivers()`) and the
+  every vehicle; before, only the AI's vehicles (`MaszynaSceneryProvider._build_drivers()`) and the
   player's 3D cab had one. Each cab's `_process` behaviours walk the trainset
   (`vehicle_find_powered`) and rebuild the vehicle's state dump every step.
 * **Fix:** `DriverSystem` announces `vehicle_driven_changed(vehicle, driven)` (a driver or a
@@ -2508,7 +2377,7 @@ lighting or the trainset.
   vehicle becomes driven and detaches it when it stops. Same session: `set_end()` of the AI's lights
   skips a vehicle without `RailVehicleLighting` (the original masks lamps by `iInventory`,
   DynObj.cpp:7293) instead of flooding the log with "Unknown command: light", and reads the lamps
-  with `RailVehicleLighting.light_is_enabled()` instead of the state dump; `E3DModelInstance`
+  with `RailVehicleLighting.light_is_enabled()` instead of the state dump; `MaszynaE3DModelInstance`
   processes only in the editor and follows its transform only where the server needs it; scenery
   sounds became one streamed `SfxPlayer3D` (`ScenerySoundServer`).
 * **Rule:** the original keeps a TTrain only for a driven train - a cab at work on every vehicle is
@@ -2518,30 +2387,14 @@ lighting or the trainset.
 ## 2026-09-29 - submodels without meshes
 
 * **Symptom:** in `test_t3d_parser.gd` every submodel taken as
-  `E3DModelManager.load_model(...).get_node(...)` had `mesh == null`, while a probe iterating
+  `MaszynaE3DModelManager.load_model(...).get_node(...)` had `mesh == null`, while a probe iterating
   `model.submodels` of the same file saw its meshes.
-* **What proved it:** the only difference was the model held in a variable. `~E3DModel()` calls
-  `E3DModel::clear()`, which clears every submodel (`E3DSubModel::clear()` unrefs its mesh); the
-  temporary model is released at the end of the expression, the submodel survives it empty.
+* **What proved it:** the only difference was the model held in a variable. `~MaszynaE3DModel()`
+  calls `MaszynaE3DModel::clear()`, which clears every submodel (`MaszynaE3DSubModel::clear()`
+  unrefs its mesh); the temporary model is released at the end of the expression, the submodel
+  survives it empty.
 * **Fix:** the test keeps the model in a variable while it reads the submodels.
-* **Rule:** hold an `E3DModel` for as long as its submodels are used.
-
-## 2026-09-29 - the vehicle card missing in the release build
-
-* **Symptom:** after the card moved to the bottom left corner (13b92be0) it opened in the editor
-  but not in the exported release; its row in the trainset list still lit up.
-* **What proved it:** the release has `print`/`push_warning` switched off
-  (`run/disable_stdout.release`, `run/disable_stderr.release`), so the probe wrote a file past the
-  logger: `VehicleCards` 0x0 with anchors `[0, 0, 0, 0]` and `layout_mode=0`, the card at
-  y = -566. The pack read with `godot-double --main-pack` held an override
-  `GameHud/VehicleCards: layout_mode=0` in `demo_scenery_loading.scn` - converted at 10:20 from
-  the old `game_hud` (`layout_mode=3`) and never again, since `demo_scenery_loading.tscn` itself
-  did not change (`.godot/exported/<id>/file_cache` is keyed by the scene's own md5).
-  `_set_layout_mode(POSITION)` resets the anchors to top-left.
-* **Fix:** every release target (`release-linux`, `-windows`, `-android`, `-linux-symbols`)
-  depends on `release-clear-godot-cache`, which deletes `demo/.godot/exported`.
-* **Rule:** a release is exported from an empty export cache; a layout that differs between the
-  editor and the release - dump the exported pack's `SceneState` before reading engine code.
+* **Rule:** hold an `MaszynaE3DModel` for as long as its submodels are used.
 
 ## 2026-09-30 - Krzyżowa 2: the timetable panel never left Krzyżowa
 
@@ -2578,15 +2431,15 @@ lighting or the trainset.
 * **Symptom:** the E186 cab (td_e186.scn) showed its gauges blurred - digits and scale marks
   smeared - where the original draws them sharp.
 * **What proved it:** the cab textures (`dynamic/pkp/e186_v2/kabina_a/b/c.dds`, `fst.dds`) are
-  2048x2048 DXT, and `MaterialManager.load_texture()` loaded every DDS under
+  2048x2048 DXT, and `MaszynaMaterialManager.load_texture()` loaded every DDS under
   `maszyna/import/dds_max_texture_size`, default 1024 - `dds_texture_loader.gd` dropped the top
   mip, so the cab ran at half resolution. The original has two limits, `iMaxTextureSize` and
   `iMaxCabTextureSize`, both 4096 (Globals.h:164-165), and loads the cab under the second
   (Train.cpp:660-666).
-* **Fix:** `maszyna/import/dds_max_cab_texture_size` (default 4096); the cab's `E3DModelInstance`
-  carries it as `max_texture_size` through `E3DRenderingServer.instance_set_options()` and the
-  material resolver to `MaterialOptions`. Both settings' enum hints now store the size, not the
-  index of the entry.
+* **Fix:** `maszyna/import/dds_max_cab_texture_size` (default 4096); the cab's
+  `MaszynaE3DModelInstance` carries it as `max_texture_size` through
+  `MaszynaE3DRenderingServer.instance_set_options()` and the material resolver to `MaterialOptions`.
+  Both settings' enum hints now store the size, not the index of the entry.
 * **Rule:** a blurry texture - compare its DDS size with the limit it loaded under before blaming
   mipmaps or filtering.
 
@@ -2599,14 +2452,14 @@ lighting or the trainset.
   alone.
 * **What proved it:** the Mover's step differed between CI and a local run
   (`main_switch_time` -0.00985 against -0.00667). `test_weather_controls.gd` moves the time scale
-  slider to its end, `MaszynaEnvironmentNode.simulation_speed` writes it to
+  slider to its end, `EnvironmentNode.simulation_speed` writes it to
   `SimulationServer.simulation_speed` (x20, x60 before) and nothing set it back, so every later
   script ran at it; `-gpre_run_script` setting x20 reproduced all four EP07 failures run alone.
   The clock test's 28.5 s is the speed ramp (`speed_change_time` 0.4 s, from `c476726a`) from
   1 to 100 at 0.25 s frames: 99 * 0.535 * 0.25 / 0.465; its neighbour passed only because the
   ramp had already been run up by it.
 * **Fix:** `test_weather_controls.gd` restores the speed in `after_each`;
-  `test_maszyna_environment_node.gd` sets `maszyna/simulation/speed_change_time` to 0 for its
+  `test_maszyna_environment_node.gd` sets `reloaded/simulation/speed_change_time` to 0 for its
   tests, as `test_simulation_clock.gd` does.
 * **Rule:** a test that changes a server's state restores it; a failure only in the suite is
   reproduced by setting that state before the script alone.
@@ -2616,15 +2469,15 @@ lighting or the trainset.
 * **Symptom:** a game directory changed in the editor, then "Reload models": the models came from
   the new directory, the track textures stayed the old ones until the whole scene was reloaded.
 * **What proved it:** reading who holds what was read from the game directory. "Reload models"
-  called `reload()` on the `E3DModelInstance` nodes and nothing else; every other owner kept its
-  memo in memory with nothing telling it the data had changed - `TrackRenderingServer` its
-  tracks' materials, `MaterialManager` its handed-out materials (a lookup by the same key hands
-  the same object back), `E3DRenderingServer` its loaded models (keyed by path without the game
-  directory) and resolved materials, `SmokeSourceLibrary` its templates (its `clear_cache()` was
-  connected to nothing), `MaszynaAudioStream` its loaded file. Two disk caches (`materials`,
-  `vehicle_profiles`) had no game directory in their key, and `ResourceCache::set()` saved a new
-  resource to the path of one still held, so `get()` - `ResourceLoader` in REUSE mode - handed out
-  the old object again.
+  called `reload()` on the `MaszynaE3DModelInstance` nodes and nothing else; every other owner kept
+  its memo in memory with nothing telling it the data had changed - `TrackRenderingServer` its
+  tracks' materials, `MaszynaMaterialManager` its handed-out materials (a lookup by the same key
+  hands the same object back), `MaszynaE3DRenderingServer` its loaded models (keyed by path without
+  the game directory) and resolved materials, `MaszynaSmokeSourceLibrary` its templates (its
+  `clear_cache()` was connected to nothing), `MaszynaAudioStream` its loaded file. Two disk caches
+  (`materials`, `vehicle_profiles`) had no game directory in their key, and `ResourceCache::set()`
+  saved a new resource to the path of one still held, so `get()` - `ResourceLoader` in REUSE mode -
+  handed out the old object again.
 * **Fix:** `GameDataServer` (the caches moved there from `SimulationServer`): `data_reload()`,
   called on every game directory change and by "Reload game data", emits
   `data_unload_requested` then `data_reload_requested`, and every owner follows them itself -
@@ -2657,16 +2510,16 @@ lighting or the trainset.
   to change.
 * **What proved it:** both real models contain `coupler1/2_off` and `coupler1/2_on`. The parser
   marks every `*_on` and `*_xon` as `dynamic_hidden`, as the original does for a vehicle. After
-  `RailVehicleRenderingServer` hid `_off` and called
-  `instance_set_submodel_visible(..., true)` for `_on`, `E3DInstanceBackend::_is_submodel_shown()`
-  still rejected `_on` solely because it was `dynamic_hidden`. The original's
-  `AirCoupler::TurnOn()` shows it (`AirCoupler.h:32`, `DynObj.cpp:819-850`). The pneumatic
-  fallback also returned a straight variant when `GetPneumatic()` found no connected hose,
-  unlike `TDynamicObject::SetPneumatic()` (`DynObj.cpp:497-545`).
+  `RailVehicleRenderingServer` hid `_off` and called `instance_set_part_visible(..., true)` for
+  `_on`, `MaszynaE3DInstanceBackend::_is_submodel_shown()` still rejected `_on` solely because it
+  was `dynamic_hidden`. The original's `AirCoupler::TurnOn()` shows it (`AirCoupler.h:32`,
+  `DynObj.cpp:819-850`). The pneumatic fallback also returned a straight variant when
+  `GetPneumatic()` found no connected hose, unlike `TDynamicObject::SetPneumatic()`
+  (`DynObj.cpp:497-545`).
 * **Fix:** an explicit per-instance visible setting overrides `dynamic_hidden`, while a model's
   own `visible=false`, an invisible parent and an explicit hide still win. Coupler and pneumatic
   layouts use named enums, and a vehicle with no connected hose geometry keeps its hanging hose.
-* **Rule:** `instance_set_submodel_visible(true)` overrides a dynamic model's default-hidden
+* **Rule:** `instance_set_part_visible(true)` overrides a dynamic model's default-hidden
   state; merely posing or changing the material of that submodel does not.
 
 ## 2026-09-30 - a recoupled wagon kept stale coupler rendering state
@@ -2682,12 +2535,12 @@ lighting or the trainset.
   skipped what appeared to be an unchanged state. The rendering callback's own comment promised
   to redraw the neighbours whose hoses depend on this vehicle, but its implementation redrew only
   the RID carried by the signal.
-* **Fix:** `MoverRailVehicleController::uncouple()` retains the neighbouring controller before
-  `Dettach()`, consumes the initiating end's events, then announces the trainset change to the
-  former neighbour. The interactive disconnect operation goes through that same public
+* **Fix:** `MaszynaMoverRailVehicleController::uncouple()` retains the neighbouring controller
+  before `Dettach()`, consumes the initiating end's events, then announces the trainset change to
+  the former neighbour. The interactive disconnect operation goes through that same public
   operation. A coupling or trainset event redraws the directly connected neighbours too, so
-  attaching an individual hose from one end updates both models. The regression now covers
-  couple, uncouple and recouple.
+  attaching an individual hose from one end updates both models. The regression now covers couple,
+  uncouple and recouple.
 * **Rule:** a bilateral operation whose backend severs the relationship retains both owners long
   enough to announce the resulting state change to both; a state cache is not invalidated as a
   substitute for the missing event.
@@ -2731,7 +2584,7 @@ lighting or the trainset.
 * **What proved it:** a full state dump at the end of the drive, failing against passing: the
   failing run had `brake_local_position_normalized` 1.0 and the brake cylinder at 4.4 bar. A
   listener on `vehicle_command_received` caught `local_brake_set 1.0` during the parked frames,
-  before the test took the vehicle over, sent by `MaszynaLegacyAIDriver._update()` ->
+  before the test took the vehicle over, sent by `MaszynaAIDriver._update()` ->
   `_apply_independent_brake_only()` - the driver holds a standing locomotive by its independent
   brake (Driver.cpp:8166-8180). Whether its scheduled update fell inside the parked frames
   depended on the timing left by the scripts before.
@@ -2747,7 +2600,7 @@ lighting or the trainset.
   never moved; a later assertion read the old load straight after `load_add()`.
 * **What proved it:** `MaszynaMoverVehicleServer::stepping_advance()` steps only the vehicles
   `RailVehicleServer` has on a track, and the car was built without one; the component the test
-  held was the `MoverRailVehicleLoad` it had added to the controller description, while the
+  held was the `MaszynaMoverRailVehicleLoad` it had added to the controller description, while the
   running vehicle's component came from `VehicleServer.vehicle_component_get()`. The state dump
   (`vehicle_dump_state()`) is built once per step, so it still showed the load before the call.
 * **Fix:** `MaszynaGutTest.build_passenger_car()` stands the car on a test track; the tests take
@@ -2793,20 +2646,6 @@ lighting or the trainset.
   `NominalCoolingPower`) were not imported at all.
 * **Rule:** a FIZ key given twice counts once, with its first value - read how `extract_value`
   looks a key up before reading a line into a dictionary.
-
-## 2026-09-30 - release export without CabinSystem
-
-* **Symptom:** `make release-linux` printed `Failed to create an autoload, script
-  'uid://lx8tmya3o3dj' is not compiling`, `Identifier not found: CabinSystem` (`player.gd:209`) and
-  `!info->node` from `debug_menu/plugin.gd:27` while saving the pack.
-* **What proved it:** the export is `godot-double --headless --export-release`, the editor, and an
-  editor build carries the `debug` feature tag: it loads `linux.debug.x86_64` from
-  `libmaszyna.gdextension` even for a release export. `release-linux` built only
-  `libmaszyna.64.so`; the debug library predated `vehicle_set_cab_light_level()`, so
-  `cabin_system.gd:197` failed to parse and the `CabinSystem` autoload was never created.
-* **Fix:** `release-linux`, `release-linux-symbols`, `release-windows` and `release-android`
-  depend on `compile-debug`.
-* **Rule:** the library the exporting editor loads is the debug one - build it with every export.
 
 ## 2026-10-01 - the start offset that never reached the game, and the pitch every emitter shares
 
@@ -2881,7 +2720,7 @@ lighting or the trainset.
   `window_input` signal comes before `push_input()`, which resets the handled flag
   (`window.cpp` `_window_input`, `viewport.cpp` `push_input`), and `_input` reaches an autoload
   last.
-* **Fix:** the starter's keys are the project's `menu_*` actions (`demo/project.godot`), each
+* **Fix:** the starter's keys are the project's `menu_*` actions (the game's `project.godot`), each
   matched with `exact_match` true; `toggle_fullscreen` is Alt+Enter.
 * **Rule:** a key is the project's input action, matched exactly - never a keycode, never a
   built-in `ui_*` action, never a loose match (`AGENTS.md`, `CODE_STYLE.md` "Input is the
@@ -2896,8 +2735,9 @@ lighting or the trainset.
   (`MaszynaCompiledScenery.triangle_chunks`) carried an `ArrayMesh` for every terrain chunk, so
   reading the cache loaded the whole terrain into RAM and VRAM at once, and the parse built every
   mesh at once from raw triangles it kept as well. Three memos never let go:
-  `E3DRenderingServer.models` (every model ever streamed), `MaterialManager._dds_cache` (strong
-  refs to every texture) and `ChunkState.mesh` (every chunk mesh until the scenery unloaded).
+  `MaszynaE3DRenderingServer.models` (every model ever streamed),
+  `MaszynaMaterialManager._dds_cache` (strong refs to every texture) and `ChunkState.mesh` (every
+  chunk mesh until the scenery unloaded).
 * **Fix:** `ResourceLazyLoader` holds a resource while something built uses it and lets it go
   after; the E3D models go through it. A terrain chunk's geometry is a cache file of its own
   (`MaszynaTrianglesChunkGeometry`), written on a worker as it is built and read only while the
@@ -2910,7 +2750,7 @@ lighting or the trainset.
 * **Since 2026-10-12:** lazy loading is on by default again: the loads run on the streaming's
   workers, not on the main thread (findings 2026-10-12, vehicles and materials read off the main
   thread).
-* **Since 2026-10-10:** this is lazy loading, an option (`maszyna/resources/lazy_loading`,
+* **Since 2026-10-10:** this is lazy loading, an option (`reloaded/resources/lazy_loading`,
   `--enable-lazy-loading`), off by default at the operator's decision. Off, `ResourceLazyLoader`
   loads a resource when it is registered and keeps it until its last registration is freed - the
   memory this entry measured is spent again - and the streaming only builds and clears.
@@ -2927,7 +2767,7 @@ lighting or the trainset.
   packed-array wrappers per node; the chunks were cut only after the parse, so for a while both were
   held. The cutting itself needs no more than one triangle: it clips to a fixed grid and appends to
   the chunk of its texture, cell and range.
-* **Fix:** the triangles go to a `SceneryTrianglesSink` as each node is read - cut into chunks at
+* **Fix:** the triangles go to a `MaszynaTrianglesSink` as each node is read - cut into chunks at
   once, kept as floats, and past 256 MB written to disk part by part; the parse ends by writing a
   file per chunk. The parsed scenery is packed and let go of, and built from that the same way as a
   cached one.
@@ -2945,8 +2785,8 @@ lighting or the trainset.
   its file, and its file read from disk each time. The resident size stayed up because glibc keeps
   what each worker's arena freed.
 * **Fix:** includes under 16 KB are parsed in place and read once per parse
-  (`SceneryInstancer.INLINE_INCLUDE_MAX_SIZE`); `ProcessMemory.release_unused()` (`malloc_trim`)
-  after the parsed scenery is packed. Galicja loaded: 2.8-2.9 GB.
+  (`MaszynaSceneryProvider.INLINE_INCLUDE_MAX_SIZE`); `ProcessMemory.release_unused()`
+  (`malloc_trim`) after the parsed scenery is packed. Galicja loaded: 2.8-2.9 GB.
 * **Rule:** a unit of parallel work costs a context; an object placed thousands of times is not a
   task. After a parse on many threads, give the allocator's free memory back, and measure the
   resident size, not Godot's own count.
@@ -2975,7 +2815,7 @@ lighting or the trainset.
   once. The same includes in the scenery file itself kept nothing (+48 MB for 30 000, all freed).
 * **Fix:** a subscene's sink writes to a directory beside its cache entry with a 32 MB limit
   (`SUBSCENE_TRIANGLES_BUDGET_BYTES`); its cache entry keeps the chunk file paths, and the
-  scenery's sink takes them file by file (`SceneryTrianglesSink.add_geometry_file()`). Peak +80 MB.
+  scenery's sink takes them file by file (`MaszynaTrianglesSink.add_geometry_file()`). Peak +80 MB.
 * **Rule:** every sink of parsed geometry has a directory and a limit, a subscene's too; geometry
   moves between sinks as files, never as a copy of everything.
 
@@ -3032,7 +2872,7 @@ lighting or the trainset.
 * **Symptom:** loading a scenery logged `Condition "array_len == 0" is true` from
   `mesh_create_surface_data_from_arrays()` in `MaszynaSceneryChunkRenderingServer._stream_build()`.
 * **What proved it:** `to_mesh_arrays()` drops nothing, so the chunk's geometry itself was empty. A
-  probe adding to a `SceneryTrianglesSink` one triangle of cell (0, 0) with an edge on the border
+  probe adding to a `MaszynaTrianglesSink` one triangle of cell (0, 0) with an edge on the border
   x = 1000 got two chunks back: (0, 0) with 9 floats and (1, 0) with none. `add_triangles()` made
   the cell's piece before testing the area of its triangles, and a piece of only slivers became a
   chunk with nothing in it, written to the cache like any other.
@@ -3047,14 +2887,14 @@ lighting or the trainset.
 * **What proved it:** the full game under `xvfb-run` with `--rendering-driver opengl3` reproduced it;
   `kill -ABRT` and `coredumpctl info` (ptrace is blocked here) gave the stacks: the main thread in
   an engine wait under a GDScript call, the pool's threads in `SceneryStreamingServer::_preload` ->
-  `E3DRenderingServer::_stream_preload` -> `model_load` -> `ResourceCache::set` ->
+  `MaszynaE3DRenderingServer::_stream_preload` -> `model_load` -> `ResourceCache::set` ->
   `ResourceSaver.save`, waiting on a condition. Saving a mesh needs the main thread with a real
   renderer; the main thread's own loading needed the pool, whose threads were all ours.
 * **The cause in the preload:** every model cache was cold after the cache versions were bumped, so
-  each preload read the model from its source and saved it (`E3DModelManager.load_model`). Saving
-  an `ArrayMesh` reads its surfaces back from the RenderingServer, and off the main thread with a
-  real renderer that call waits for the main thread to flush its commands; the dummy renderer does
-  not, so headless never waited.
+  each preload read the model from its source and saved it (`MaszynaE3DModelManager.load_model`).
+  Saving an `ArrayMesh` reads its surfaces back from the RenderingServer, and off the main thread
+  with a real renderer that call waits for the main thread to flush its commands; the dummy renderer
+  does not, so headless never waited.
 * **Fix:** preloads run in batches on the streaming's own queue (`SceneryLoadingTaskQueue`, renamed
   `WorkerTaskQueue` the same day - the entries above keep the name they had), which the main thread
   never waits for; a model read off the main thread is saved into the cache by the main thread
@@ -3089,7 +2929,7 @@ lighting or the trainset.
   `SceneryStreamingServer::BUDGET_MSEC` (4 ms) and the preload threads.
 * **What proved it:** a probe driving the camera at 25-30 m/s, `streaming_get_statistics()` each
   second (main-thread time and the longest single piece per owner) on a real GPU, and the
-  material resolver timed per call, then `MaterialManager.get_material()` timed step by step:
+  material resolver timed per call, then `MaszynaMaterialManager.get_material()` timed step by step:
   single pieces took 85-169 ms (a track), 163 ms (a model) - the budget is checked between pieces,
   so it cannot split one. A track's geometry is at most 2.8 ms with its textures loaded; the 163 ms
   model was 160.6 ms of one material: reading the disk-cached material (up to 80 ms - its `.res`
@@ -3100,8 +2940,8 @@ lighting or the trainset.
   draw calls, ~8400 objects and ~11 M triangles a frame, GPU ~32 ms - the steady drop is the
   rendering load; the streaming adds the hitches on top.
 * **Fix (partial):** the material disk cache is gone - a material is always built from its `.mat`
-  (`MaterialManager.get_material()`). Not measured yet. Open: textures loaded on the streaming's
-  preload threads (`TODO.md`).
+  (`MaszynaMaterialManager.get_material()`). Not measured yet. Open: textures loaded on the
+  streaming's preload threads (`TODO.md`).
 * **Trap on the way:** `xvfb-run` does not hide Godot under Wayland - it ignores `DISPLAY` and
   opens its window on the operator's desktop; Xvfb has no DRI3, so Vulkan cannot present there at
   all. `gamescope --backend headless -- godot-double ...` (with `WAYLAND_DISPLAY` unset) renders on
@@ -3122,23 +2962,24 @@ lighting or the trainset.
   other ~560 vehicles 22 ms, the GPU 17.5 ms.
 * **The causes:**
   * The cab logic of every driven vehicle (322, the road cars among them) read
-    `vehicle_dump_state()` on every simulation slice (`LegacyCabinCabLights`,
-    `LegacyCabinMainSwitch`) - and the dump is invalidated by every step, so it was composed anew
+    `vehicle_dump_state()` on every simulation slice (`MaszynaCabinCabLights`,
+    `MaszynaCabinMainSwitch`) - and the dump is invalidated by every step, so it was composed anew
     for each.
   * Every vehicle carried a `RainVolume`; `WeatherServer` walks all of them every frame.
   * Roads are not built, so the road cars could never be placed - yet each was a whole vehicle:
     stepped, with an AI driver and cab logic, and a third of the Vehicles stage.
   * Every vehicle took longer than `BUILD_BUDGET_MSEC` (8 ms), so each frame of the loading
     screen built one and paid the scenery's drawing on top.
-* **Fix:** the cab logic reads typed getters (`CabinState.vehicle_component()`); one
-  `RainVolume`, in the shown cab (`MaszynaDynamicTrainCabin`); a vehicle or trainset on a track
-  that is not registered is left out at attach (`SceneryInstancer._attach_objects()`); the build
-  budget is 33 ms. Wrzosy: 131 -> 62 ms a frame (debug build), Vehicles 59 -> 17.8 s.
-* **Trap on the way:** a headless load of Wrzosy crashed in `E3DModelManager.load_model()` after
-  "Attempting to initialize the wrong RID" from `servers/rendering/dummy/storage/mesh_storage.h`:
-  the dummy renderer's RID owners are not thread-safe, and models are made on the preload threads
-  and the main thread at once. Not a game defect - a real renderer's are - but a headless run of
-  a large scenery is no proof of anything; use `gamescope --backend headless`.
+* **Fix:** the cab logic reads typed getters (`CabinState.vehicle_component()`); one `RainVolume`,
+  in the shown cab (`MaszynaDynamicTrainCabin`); a vehicle or trainset on a track that is not
+  registered is left out at attach (`MaszynaSceneryProvider._attach_objects()`); the build budget is
+  33 ms. Wrzosy: 131 -> 62 ms a frame (debug build), Vehicles 59 -> 17.8 s.
+* **Trap on the way:** a headless load of Wrzosy crashed in `MaszynaE3DModelManager.load_model()`
+  after "Attempting to initialize the wrong RID" from
+  `servers/rendering/dummy/storage/mesh_storage.h`: the dummy renderer's RID owners are not
+  thread-safe, and models are made on the preload threads and the main thread at once. Not a game
+  defect - a real renderer's are - but a headless run of a large scenery is no proof of anything;
+  use `gamescope --backend headless`.
 * **Rule:** a per-step reader takes typed getters, never the dump; something every vehicle carries
   for the player alone (a rain volume, a cab) belongs to the player's vehicle; a scenery object
   that cannot be placed is not built.
@@ -3163,7 +3004,7 @@ lighting or the trainset.
     time like 21:05 gives 4 (21.0833... * 60 = 1264.99999...), so a launcher on the start minute
     never fired (622 of 1440 start times); a timed launcher's condition was tried once and the
     launcher spent even when it failed; a timed launcher's radius was ignored.
-* **Fix:** pantograph valves operated by the vehicle command (`MaszynaLegacyDriverHints.cue()`);
+* **Fix:** pantograph valves operated by the vehicle command (`MaszynaDriverHints.cue()`);
   `backward_scan()` and the turn back in the driver's update; launchers: `floor(t * 60)`, spent only
   once their condition passes, tried again when a memory changes and when the clock starts, a radius
   >= 0 within reach of the camera. Wrzosy: the freight leaves 09:24:30, `Sandomierz_N` proceeds
@@ -3175,12 +3016,12 @@ lighting or the trainset.
 
 * **Symptom:** a scenery opened in the editor (`demo/scenery_inspector.tscn`) flooded the log -
   `Invalid access to property or key 'sound_free'` on `ScenerySoundServer`, `occupied_cab` and
-  `control_changed` on `CabinSystem`, `emit_signalp()` from `E3DModelManager` off the main thread,
-  `Unicode parsing error ... after f3` - loaded twice, left its tracks and models behind on unload
-  and took long in the Vehicles stage; another scenery (`zwierzyniec_osob.scn`) crashed the editor
-  while its models streamed.
+  `control_changed` on `CabinSystem`, `emit_signalp()` from `MaszynaE3DModelManager` off the main
+  thread, `Unicode parsing error ... after f3` - loaded twice, left its tracks and models behind on
+  unload and took long in the Vehicles stage; another scenery (`zwierzyniec_osob.scn`) crashed the
+  editor while its models streamed.
 * **What proved it:**
-  * The loader started the simulation: `SceneryInstancer` built AI drivers and ran the Lua
+  * The loader started the simulation: `MaszynaSceneryProvider` built AI drivers and ran the Lua
     scripts, the event factory queued the onstart events and made the scenery sounds, and the
     clock ticked wherever something held it. `CabinSystem` and `ScenerySoundServer` are not
     `@tool`, so in the editor every such call failed - and `_free_owned_rids()` built its list of
@@ -3189,21 +3030,21 @@ lighting or the trainset.
   * The editor freed the first instance of the scene mid-load (it reopens a scene changed on
     disk); its `_exit_tree()` drained the parse queue, and the load went on reading
     `root.filename` on the freed node.
-  * `E3DModelManager` emits `model_loaded_uncached` on a streaming preload worker: Godot's thread
-    guard rejects the emit itself, so no model loaded off the main thread was ever cached.
+  * `MaszynaE3DModelManager` emits `model_loaded_uncached` on a streaming preload worker: Godot's
+    thread guard rejects the emit itself, so no model loaded off the main thread was ever cached.
   * The crashes: four backtraces, all faulting inside the Godot binary at the same two addresses -
-    `godot+0x180932a` three times, each while an extension object was destroyed (`E3DModel` in
-    `_drop_stale_work()` and at the end of `_plan()`), and `godot+0x18097a5` once, while an
-    `E3DSubModel` was constructed on a preload worker - called from two adjacent functions. The
-    core (`coredumpctl debug`, `thread apply all bt`) had no other thread in libmaszyna: the main
-    thread was swapping buffers, the preload workers idle. Godot's source names them
+    `godot+0x180932a` three times, each while an extension object was destroyed (`MaszynaE3DModel`
+    in `_drop_stale_work()` and at the end of `_plan()`), and `godot+0x18097a5` once, while an
+    `MaszynaE3DSubModel` was constructed on a preload worker - called from two adjacent functions.
+    The core (`coredumpctl debug`, `thread apply all bt`) had no other thread in libmaszyna: the
+    main thread was swapping buffers, the preload workers idle. Godot's source names them
     (`core/extension/gdextension.cpp:1086-1098`): `_track_instance()`/`_untrack_instance()` insert
     into and erase from `HashSet<ObjectID> instances` with no lock, for every object of a
-    **reloadable** extension, in the editor only (`main.cpp:2224`, `object.cpp:190`). The
-    extension said `reloadable = true`, and the streaming creates and frees models on its workers.
-    Three guesses read off our own code came first and were wrong (the cache save, the
-    destructor's `clear()`, the reload without a drain); what settled it was laying the
-    backtraces side by side and looking at the other threads of the core.
+    **reloadable** extension, in the editor only (`main.cpp:2224`, `object.cpp:190`). The extension
+    said `reloadable = true`, and the streaming creates and frees models on its workers. Three
+    guesses read off our own code came first and were wrong (the cache save, the destructor's
+    `clear()`, the reload without a drain); what settled it was laying the backtraces side by side
+    and looking at the other threads of the core.
   * `node.cpp:1441 p_name.is_empty()`: the scenery's nodes were packed under a `Node3D.new()` that
     never had a name (`_pack_objects()`), so every `instantiate()` of the packed scene tried to
     set an empty one. The first guess (an unnamed E3D submodel) was wrong; the GDScript backtrace
@@ -3212,13 +3053,13 @@ lighting or the trainset.
     `detailed = true`: every vehicle built its exterior and interior as nodes.
   * The FIZ line reader decoded cp1250 as UTF-8 (`dynamic/pkp/11xa_v2/111a_old.fiz`, "wagonów").
 * **Fix:** `SimulationRuntime` (the clock runs only with one in the tree; the game scenes and the
-  GUT pre-run hook place it), `MaszynaLegacyScenario` started by the game's world on
-  `scenery_loaded` and stopped on `MaszynaIncludeNode.unloading` (scripts, `MaszynaLegacyScenerySounds`);
-  the load ends when the drained queue returns nothing; vehicles born optimized, detailed on
-  placement by distance; `Windows1250.decode()`/`encode()` in the FIZ reader; `_clear_content()`
-  drains the streaming before it frees anything, as `_exit_tree()` does; `E3DModelManager` saves
-  by `_save_model.call_deferred()`; `reloadable = false` in `libmaszyna.gdextension`; the packed
-  root is named.
+  GUT pre-run hook place it), `MaszynaScenario` started by the game's world on `scenery_loaded` and
+  stopped on `MaszynaIncludeNode.unloading` (scripts, `MaszynaScenerySounds`); the load ends when
+  the drained queue returns nothing; vehicles born optimized, detailed on placement by distance;
+  `Windows1250.decode()`/`encode()` in the FIZ reader; `_clear_content()` drains the streaming
+  before it frees anything, as `_exit_tree()` does; `MaszynaE3DModelManager` saves by
+  `_save_model.call_deferred()`; `reloadable = false` in `libmaszyna.gdextension`; the packed root
+  is named.
 * **Rule:** a loader builds, the game runs. A crash at changing places is one cause: lay the
   backtraces side by side and find the frame they share, in the engine's binary too, before
   reading our code. An extension with worker threads is not reloadable.
@@ -3229,20 +3070,20 @@ lighting or the trainset.
 * **Symptom:** with `demo/scenery_inspector.tscn` loaded in the editor, its trains stayed in the
   viewport of every other scene tab; back on its own tab the scenery was gone - only the vehicles
   were there, and flying over it streamed no terrain chunks.
-* **What proved it:** the editor removes the edited scene from the tree when another tab is
-  shown, and every edited scene renders into the same `World3D`. `RailVehicleRenderingServer`
-  built a vehicle's models in the node's scenario and freed them only with the vehicle.
+* **What proved it:** the editor removes the edited scene from the tree when another tab is shown,
+  and every edited scene renders into the same `World3D`. `RailVehicleRenderingServer` built a
+  vehicle's models in the node's scenario and freed them only with the vehicle.
   `MaszynaIncludeNode._exit_tree()` freed every RID of the scenery (tracks, traction, models,
   chunks, the region files' providers) while its nodes stayed, so nothing was there to draw or
-  stream on return. A first fix freed the vehicle's models on leaving the tree and built them
-  again on entering: `E3DRenderingServer.cpp:1371 Parameter "instance" is null` - the couplers
-  and the rest of the server still held the freed model's RID.
+  stream on return. A first fix freed the vehicle's models on leaving the tree and built them again
+  on entering: `MaszynaE3DRenderingServer.cpp:1371 Parameter "instance" is null` - the couplers and
+  the rest of the server still held the freed model's RID.
 * **Fix:** out of the world, moved out of it: `RailVehicle3D` on `NOTIFICATION_ENTER_WORLD`/
   `EXIT_WORLD` calls `RailVehicleRenderingServer.vehicle_set_scenario()`;
   `MaszynaIncludeNode` sets the scenario of its tracks, traction, models, chunks
   (`chunk_set_scenario()`) and providers (`SceneryStreamingServer.provider_set_scenario()`,
   which lets go of what was supplied and supplies it again into the new scenario) and frees
-  them on `NOTIFICATION_PREDELETE`. `E3DRenderingServer.instance_set_scenario()` moves the
+  them on `NOTIFICATION_PREDELETE`. `MaszynaE3DRenderingServer.instance_set_scenario()` moves the
   RenderingServer instances of a built model (submodels, lights, smoke) instead of building it
   again.
 * **Rule:** whatever is made in a world's scenario leaves it with its node and comes back with
@@ -3253,7 +3094,7 @@ lighting or the trainset.
 
 * **Symptom:** `test_rail_vehicle_track_movement.gd` - "bogies should follow different tangents on
   a curved track", the powered wheel at its rest angle - on a vehicle assembled by hand
-  (`RailVehicle3D` with an `E3DModelInstance`).
+  (`RailVehicle3D` with an `MaszynaE3DModelInstance`).
 * **What proved it:** the test had passed before the same day's commit that made
   `RailVehicleRenderingServer`'s vehicles "born optimized" (`Visual::detailed = false`), and was
   not among the scripts run for that commit. The running gear is posed only while a vehicle is
@@ -3270,30 +3111,13 @@ lighting or the trainset.
 * **Symptom:** a test that set the fixtures' game directory, spawned a `MaszynaRailVehicle3D` and
   set the directory back at once logged `Cannot open FIZ file: <the real game dir>/...` and found
   no vehicle.
-* **What proved it:** the path in the error was the restored directory's. `UserSettings` saving the
-  game directory makes `GameDataServer` reload the game's data, and a vehicle built from that data
-  frees itself and is built anew from the directory current then.
+* **What proved it:** the path in the error was the restored directory's. `UserSettings` (today
+  `MaszynaGameDirectory.save_game_dir()`) saving the game directory makes `GameDataServer` reload
+  the game's data, and a vehicle built from that data frees itself and is built anew from the
+  directory current then.
 * **Fix:** the test frees its vehicle before it restores the directory (as the tests that restore
   it in `after_each()` do).
 * **Rule:** the game directory is changed only while nothing built from it is alive.
-
-## 2026-10-03 the loading screen faded onto a world not streamed yet
-
-* **Symptom:** after a scenery loaded, the loading screen dissolved onto the world before the
-  chunk around the cab was built (operator's report, in the game).
-* **What proved it:** read off the order of the calls. `demo_scenery_loading.gd` awaits
-  `world.load_scenery()`, then waits a bounded number of frames for the player's vehicle
-  (`_wait_for_cabin()`), then for `area_is_ready(0)` around the current camera. Since the scenario
-  is started by the game, `world.gd` started it in its `scenery_loaded` handler and relayed the
-  signal only after that start (the scenery's sounds are built over frames) - while
-  `load_scenery()` had long returned. The player got its vehicle after the bounded wait had run
-  out, the camera was still where the menu left it, and that empty area was "ready" at once.
-* **Fix:** `SceneryWorld.load_scenery()` returns only once the world has emitted `scenery_loaded`
-  (its scenario runs, the player has been given its train). `test_zzz_scenery_scene_smoke.gd`
-  checks that the streaming camera is at the player's vehicle and its chunk built when the
-  loading screen goes.
-* **Rule:** an operation somebody awaits is done only when everything its waiter goes on to rely
-  on is; a signal relayed after an `await` arrives after the call that caused it has returned.
 
 ## 2026-10-03 a scenery's vehicles drawn at the origin until their trainset stood
 
@@ -3365,12 +3189,12 @@ lighting or the trainset.
   `master_controller_position`, `current0..2`, `relay_*`, `converter_*`, `circuit_rlist_size`, the
   horns and the radio (operator).
 * **What proved it:** two sources. `RailVehicleController::_fill_state_dictionary()` wrote the
-  master controller's, the engine's, the low voltage's and the radio's state for every vehicle
-  from the controller's own getters; and the FIZ factory made a `MoverRailVehicleMasterController`
+  master controller's, the engine's, the low voltage's and the radio's state for every vehicle from
+  the controller's own getters; and the FIZ factory made a `MaszynaMoverRailVehicleMasterController`
   on every `Cntrl.` line (`fiz_train_cntrl_parser.gd`, "every vehicle's") and attached
-  `MoverRailVehicleHorns`/`MoverRailVehicleRadio` to every vehicle (`fiz_vehicle_builder.gd`). A
-  wagon's `Cntrl.` carries its brake keys, and 239 wagons write `MCPN=1` there (counted over the
-  data's `Category=train` files, includes resolved).
+  `MaszynaMoverRailVehicleHorns`/`MaszynaMoverRailVehicleRadio` to every vehicle
+  (`fiz_vehicle_builder.gd`). A wagon's `Cntrl.` carries its brake keys, and 239 wagons write
+  `MCPN=1` there (counted over the data's `Category=train` files, includes resolved).
 * **Fix:** the state moved to its owners - the master controller (positions, the active cab, the
   Hasler recorder, the distance counter), the engine (relays, `RlistSize`, the ammeters), the
   radio (Radio-Stop) and a new `RailVehiclePowerSupply` (battery, converter, 24 V / 110 V, made
@@ -3390,13 +3214,13 @@ lighting or the trainset.
   the material's `opacity:` (0.5 without one, `opengl33renderer.cpp:2247-2258, 3422`); 0x20 in the
   alpha one (`:4313`); a replaceable skin with Opacity < 1 - bits 1, 2, 4, 8, not 0x20
   (`Model3d.cpp:421-441`) - in the alpha one when the skin has alpha (`DynObj.cpp:331-346`). The
-  wrapper cut every vehicle submodel out, and `E3DModelBuilder` read 0x20 only: SM42's and EU07's
-  glass is the skin-painted `szyby` of the low-poly interior. `szyby` hangs under `cab1`, and
+  wrapper cut every vehicle submodel out, and `MaszynaE3DModelBuilder` read 0x20 only: SM42's and
+  EU07's glass is the skin-painted `szyby` of the low-poly interior. `szyby` hangs under `cab1`, and
   `CabinSystem` hid the occupied low-poly cab (`vehicle_set_cab()`) while the player's cab stood -
   from outside too, where the original shows it (`DynObj.cpp:1389-1397`).
-* **Fix:** `E3DSubModel.skin_translucent`; a vehicle's models force alpha
+* **Fix:** `MaszynaE3DSubModel.skin_translucent`; a vehicle's models force alpha
   (`RailVehicleRenderingServer::_create_models()`), and a forced submodel is blended by the nodes
-  backend and opaque in the optimized one (`E3DRenderingServer.Translucency`,
+  backend and opaque in the optimized one (`MaszynaE3DRenderingServer.Translucency`,
   `MaterialOptions.force_opaque`); a material with `opacity:` is cut out at it (EP09's skin: 0.92,
   glass at 0.79). A blended surface mirrors the sky by the material's reflectivity and takes the
   lights' diffuse part only (`types/blended_reflection.gdshaderinc`): with the lights' highlights
@@ -3410,21 +3234,6 @@ lighting or the trainset.
   never uses the alpha pass; what is drawn for a view is told to the drawing by the owner of the
   view, never by the cab layer.
 
-## 2026-10-04 settings saved their minimums
-
-* **Symptom:** opening the new settings screen once changed the game: draw distance 100 m, smoke
-  at its least, the external view stuck close (operator: "dziwne wartości, pojebane min/max").
-* **What proved it:** `user://settings.cfg` held a `[project_settings]` section with every slider
-  at its minimum (`draw_distance=100.0`, `lights/distance=10.0`, ...). A headless probe printed the
-  slider at its minimum before any step: building the row set `min_value` while the value was 0,
-  `Range` clamped it and emitted `value_changed`, and the row's handler saved it.
-* **Fix:** the controls only hold what the player chose; "Apply" saves, "Cancel" forgets, and a row
-  saves only when its control differs from what it showed after the stored value was put on it -
-  the control rounds and clamps (0.564628 at step 0.01), so comparing with the stored value saved
-  untouched settings too.
-* **Rule:** a control is only shown a value; saving is an explicit operation, of what differs from
-  what was shown.
-
 ## 2026-10-04 CI red on a setting the server took a frame late
 
 * **Symptom:** every CI run on `dev/integrate-track-rendering` failed the same three tests:
@@ -3432,7 +3241,7 @@ lighting or the trainset.
   `test_maszyna_environment_node` (an hour at x100 ended at 0.492 h, not 0.5) and
   `test_scenario_script_server` (`LuaTestTrain: Unknown command: battery`).
 * **What proved it:** all three reproduced locally, one script at a time. Since `e4ce54b4`
-  `SimulationServer` takes `maszyna/simulation/speed_change_time` on ProjectSettings'
+  `SimulationServer` takes `reloaded/simulation/speed_change_time` on ProjectSettings'
   `settings_changed`, which Godot emits deferred; the tests set the setting and advanced the
   clock in the same frame, so the old value (0.0, or the default 0.4) ran. `76136f44` moved
   `battery` to `RailVehiclePowerSupply`, which a bare test vehicle no longer has.
@@ -3455,8 +3264,9 @@ lighting or the trainset.
   origin for every submodel (`opengl33renderer.cpp:3388`, `3654`) - around 80 m one LOD had left
   and the other not come yet (or, from the other end, both were drawn).
 * **Fix:** both E3D backends give every mesh submodel a custom box: its mesh's, widened to be
-  centred on the model's origin (`E3DInstanceBackend::_visibility_aabb()`). `MeshInstance3D.get_aabb()`
-  still returns the mesh's own box, so picking and cab code are unchanged.
+  centred on the model's origin (`MaszynaE3DInstanceBackend::_visibility_aabb()`).
+  `MeshInstance3D.get_aabb()` still returns the mesh's own box, so picking and cab code are
+  unchanged.
 * **Rule:** a distance the original takes once per model is measured from the model's origin in
   Godot too; a per-instance box centre is not the same point.
 
@@ -3464,19 +3274,20 @@ lighting or the trainset.
 
 * **Symptom:** a tester (build with b5e744f1) could not start an EU07, nor the ED78 and 36WE
   units: "an interlock does not work after the battery is switched on".
-* **What proved it (so far):** headless probes from the scratchpad, A/B against b5e744f1^ built
-  in a copy (`git archive`, own `build-debug`). 4E, EP07, 36WE and ED78 built from their FIZ get
-  `MoverRailVehiclePowerSupply`; battery -> `power24_available`, pantographs, relay reset, main
-  switch, converter work on HEAD and on the parent alike - through commands, through the cab logic
-  of `4e.mmd` and through the FIZ cache. On l053_poludnie.scn EU06-17, taken over by the player,
-  starts through its cab and runs (122 A, 32 km/h at position 6) - identical on both builds. The
-  state the player takes over: battery on, pantographs up, 3400 V, **ground relay not reset**, main
-  switch open (the original's ReadyFlag leaves the main switch to the driver, Mover.cpp:8915-8921):
-  the main switch closes only after the reverser and the relay reset (`fuse_bt`). Not reproduced
-  yet: an ED78/36WE trainset (a motor car started from a control car's cab), the keyboard path.
-  What did show: no test asserts the low voltage or the start sequence - `test_train_battery.gd`
-  checks only `battery_enabled` (the flag `BatterySwitch()` sets), and b5e744f1 removed
-  `battery_voltage = 110` from five tests without a replacement while they stayed green.
+* **What proved it (so far):** headless probes from the scratchpad, A/B against b5e744f1^ built in a
+  copy (`git archive`, own `build-debug`). 4E, EP07, 36WE and ED78 built from their FIZ get
+  `MaszynaMoverRailVehiclePowerSupply`; battery -> `power24_available`, pantographs, relay reset,
+  main switch, converter work on HEAD and on the parent alike - through commands, through the cab
+  logic of `4e.mmd` and through the FIZ cache. On l053_poludnie.scn EU06-17, taken over by the
+  player, starts through its cab and runs (122 A, 32 km/h at position 6) - identical on both builds.
+  The state the player takes over: battery on, pantographs up, 3400 V, **ground relay not reset**,
+  main switch open (the original's ReadyFlag leaves the main switch to the driver,
+  Mover.cpp:8915-8921): the main switch closes only after the reverser and the relay reset
+  (`fuse_bt`). Not reproduced yet: an ED78/36WE trainset (a motor car started from a control car's
+  cab), the keyboard path. What did show: no test asserts the low voltage or the start sequence -
+  `test_train_battery.gd` checks only `battery_enabled` (the flag `BatterySwitch()` sets), and
+  b5e744f1 removed `battery_voltage = 110` from five tests without a replacement while they stayed
+  green.
 * **Probe traps on the way:** a vehicle not on a track is not stepped; without a
   `SimulationRuntime` the clock stands at 0; a standing vehicle nobody drives switches its physics
   off; headless frames are microseconds (wait in time); a `-s` script does not compile against
@@ -3495,8 +3306,8 @@ lighting or the trainset.
   2026-10-04; a GUT run on a scratch directory with a script that does not parse. Causes, each
   with its offenders listed in `TODO.md` "Tests":
   * the test hands in what it is about - `build_power_supply(110.0)`, `_feed_wire()`, vehicles put
-    together with `MoverRailVehicleController.new()` + `add_component()` (46 scripts) - so the way
-    the game builds a vehicle (FIZ factory, `apply_configuration` order) never runs in it;
+    together with `MaszynaMoverRailVehicleController.new()` + `add_component()` (46 scripts) - so
+    the way the game builds a vehicle (FIZ factory, `apply_configuration` order) never runs in it;
   * it asserts what it set or that a key exists - 97 setter/getter round trips in 25 scripts,
     `has("key")` in 20, `assert_true(true)` in a benchmark;
   * physics without simulated time - 43 of 60 physics scripts read state right after a command or
@@ -3521,16 +3332,16 @@ lighting or the trainset.
 
 * **Symptom:** the Linux release build 20261004-1932 crashed with SIGSEGV on Wrzosy, with a 36WE;
   its log was already rotated away.
-* **What proved it:** `coredumpctl info` of the crash, the stripped `libmaszyna.64.so` relinked
-  from the same objects without `-s` in the SDK container (its `.text` identical to the shipped
-  one) and the frames resolved with `addr2line`. A `WorkerTaskQueue` thread:
-  `E3DRenderingServer::_stream_preload` -> `ResourceLazyLoader::resource_load` -> `_get_loaded`
-  -> `Object::is_class`; the main thread at the same moment:
-  `SceneryStreamingServer::_drop_stale_work` -> `PendingBuild` freed -> `E3DModel::~E3DModel`.
-  `_get_loaded` took a loaded but not held model back from its `ObjectID`
-  (`ObjectDB::get_instance` + `cast_to`) to share it with a second preload; the main thread was
-  dropping that model's last reference, and an object being destroyed is still in `ObjectDB`
-  until `~Object` - the worker called into a half-destroyed object.
+* **What proved it:** `coredumpctl info` of the crash, the stripped `libmaszyna.64.so` relinked from
+  the same objects without `-s` in the SDK container (its `.text` identical to the shipped one) and
+  the frames resolved with `addr2line`. A `WorkerTaskQueue` thread:
+  `MaszynaE3DRenderingServer::_stream_preload` -> `ResourceLazyLoader::resource_load` ->
+  `_get_loaded` -> `Object::is_class`; the main thread at the same moment:
+  `SceneryStreamingServer::_drop_stale_work` -> `PendingBuild` freed ->
+  `MaszynaE3DModel::~MaszynaE3DModel`. `_get_loaded` took a loaded but not held model back from its
+  `ObjectID` (`ObjectDB::get_instance` + `cast_to`) to share it with a second preload; the main
+  thread was dropping that model's last reference, and an object being destroyed is still in
+  `ObjectDB` until `~Object` - the worker called into a half-destroyed object.
 * **Fix:** the `ObjectID` is gone; a copy not held is not shared. `resource_fetch(rid)` became
   `resource_hold(rid, loaded)`: the build holds the copy its preload loaded, or the one already
   held. Two preloads of one model before it is built load it twice (`TODO.md`).
@@ -3545,10 +3356,10 @@ lighting or the trainset.
 * **What proved it:** `test_zzz_startup_ep07` red at "battery: low voltage" with no 3D cab built.
   A control the cab's MMD models (`battery_sw`, `cabactivation_sw`, `main_on_bt`, `jointctrl`,
   `brakectrl`) took its key only in its widget (`CabinButton/CabinSwitch._input`, polling in
-  `CabinKnob`); `LegacyCabinUnmodelledControls` skipped every modelled control. No widget - the
+  `CabinKnob`); `MaszynaCabinUnmodelledControls` skipped every modelled control. No widget - the
   fixture has no models, a game install whose cab model fails to load - no key.
 * **Fix:** the keys of every control - modelled, unmodelled, keyboard-only - are mapped by
-  `LegacyCabinLogic` from the MMD and the catalog (`MmdSemanticCatalog.resolve_fields()`, also used
+  `MaszynaCabinLogic` from the MMD and the catalog (`MmdSemanticCatalog.resolve_fields()`, also used
   by the widget build) and go through its `press/release/increase/decrease`, which a click on a
   widget calls too. Widgets lost `_input`, key polling and `CabinCommand`.
 * **Rule:** a key is the cab logic's, never a widget's.
@@ -3564,7 +3375,7 @@ lighting or the trainset.
   Moving those handles to running filled the pipe to 4.98. `BrakeOpModes=PN` is bom_PS + bom_PN
   (Mover.cpp:10757), so the original lets only a car whose cab is occupied work its handle
   (`CabOccupied != 0`, Mover.cpp:4548) - and the wrapper overrode every unmanned car's cab 0 with
-  1 (MoverRailVehicleController, a known FIXME).
+  1 (MaszynaMoverRailVehicleController, a known FIXME).
 * **Fix:** the cab a driver sits in is the scenery's driver type's (DynObj.cpp:1948-1964), 0 for
   nobody; the override is gone. Tests that drive a hand-built vehicle's cab give it a driver
   (`build_vehicle(..., VehicleController.DRIVER_HEAD)`).
@@ -3582,11 +3393,12 @@ lighting or the trainset.
   (`EnginePower=Accumulator`) read its accumulator's bytes as collector parameters. The original
   zeroes the collector before reading it (`TCurrentCollector{0, ...}`, Mover.cpp:11547); the
   wrapper did not, so `FakePower` (never written) kept whatever the memory held.
-* **Fix:** `RailVehicleEnginePowerSource` (`MoverRailVehicleEnginePowerSource`) is a component of
-  its own, built from `Power:` whether there is an engine or not (`FizTrainPowerParser`); it zeroes
-  the collector, reads `FakePower`, the defaults of `LoadFIZ_PowerParamsDecode` and `Power == 0`
-  making the source NotDefined (`LoadFIZ_Power`), and returns its collector values only for a
-  current collector. The DebugWindow "Power source" shows the pantograph carrier.
+* **Fix:** `RailVehicleEnginePowerSource` (`MaszynaMoverRailVehicleEnginePowerSource`) is a
+  component of its own, built from `Power:` whether there is an engine or not
+  (`FizTrainPowerParser`); it zeroes the collector, reads `FakePower`, the defaults of
+  `LoadFIZ_PowerParamsDecode` and `Power == 0` making the source NotDefined (`LoadFIZ_Power`), and
+  returns its collector values only for a current collector. The DebugWindow "Power source" shows
+  the pantograph carrier.
 * **Rule:** a value in a Mover union is read only under the tag that says it is there.
 
 ## 2026-10-05 A series motor's MotorParamTable: was read as a diesel-electric's
@@ -3637,8 +3449,8 @@ lighting or the trainset.
   car has no engine, so the wrapper wrote no `IminLo`/`IminHi`/`Imin` and all three stayed 0: the
   switch "succeeded" every time and the direction never moved. The original sets 1/2/1 for every
   EZT in `LoadFIZ_Param` (Mover.cpp:10300-10305), before `Circuit:` overrides them.
-* **Fix:** `MoverRailVehicleController` gives an EZT those thresholds when nothing has written them;
-  the FIZ factory gives an EZT's electric engine the same defaults before `Circuit:`.
+* **Fix:** `MaszynaMoverRailVehicleController` gives an EZT those thresholds when nothing has
+  written them; the FIZ factory gives an EZT's electric engine the same defaults before `Circuit:`.
 * **Rule:** a default the original sets in one section for keys another section owns is carried
   over to the vehicle even when the other section's component is absent.
 
@@ -3648,11 +3460,11 @@ lighting or the trainset.
   dropped.
 * **What proved it:** a headless probe on td.scn tracing the roles - at the hand-over and the
   take-back only the player's own role changed, and after the take-back the player was DRIVER while
-  `DriverSystem.vehicle_is_control_active()` was true. The player (`MaszynaPlayer.auto_start`) takes
-  the first vehicle on `vehicle_configured`, inside its build, while the scenery is still loading;
-  the scenery's driver goes to OBSERVER. `SceneryInstancer` then gave the AI delegate to whoever sat
-  in the DRIVER role - the player's person - so the AI drove with the player, as the player.
-* **Fix:** the AI delegate goes to the person `MaszynaLegacyVehicleSystem` seated for the scenery
+  `DriverSystem.vehicle_is_control_active()` was true. The player (`Player.auto_start`) takes the
+  first vehicle on `vehicle_configured`, inside its build, while the scenery is still loading; the
+  scenery's driver goes to OBSERVER. `MaszynaSceneryProvider` then gave the AI delegate to whoever
+  sat in the DRIVER role - the player's person - so the AI drove with the player, as the player.
+* **Fix:** the AI delegate goes to the person `MaszynaVehicleSystem` seated for the scenery
   (`vehicle_get_driver()`), whatever role it has by then
   (`test_zzz_ep07_ai_hand_over.gd`).
 * **Rule:** a role, a delegate or a seat is given to the person its owner created, never to
@@ -3671,7 +3483,7 @@ lighting or the trainset.
 
 ## 2026-10-05 Test vehicles lost their brake handle and doors to the original's defaults
 
-* **Symptom:** `test_legacy_cabin_keys` - the brake handle did not move on its key, and
+* **Symptom:** `test_maszyna_cabin_keys` - the brake handle did not move on its key, and
   `brake_level_set` did not move it either; `test_rail_vehicle_load_exchange`,
   `test_station_server`, `test_driver_station` - the car never opened its doors.
 * **What proved it:** `ad2d7b1e7` set `RailVehicleBrake`'s defaults to the original's for absent
@@ -3689,13 +3501,13 @@ lighting or the trainset.
 * **Symptom:** in CI only, `test_zzz_startup_en57_2000_v1`: "EN57-2067ra has the engine of
   ELECTRIC_MULTIPLE_UNIT" got engine 0; ED72 and EN57AL red only in the full run.
 * **What proved it:** the CI log - the test reached the check 0.4 s after the scenery loaded.
-  `MaszynaLegacyVehicleSystem` builds vehicles within a per-frame budget, a trainset is coupled
+  `MaszynaVehicleSystem` builds vehicles within a per-frame budget, a trainset is coupled
   only once all its vehicles are ready (`RailVehicleServer.trainset_place()`), and the test waited
   for the player's car alone: on a slow runner `vehicle_find_powered()` returned the cab car. The
   next test's load then resumed the freed scenery's coroutine, and `_is_load_given_up()`'s typed
   parameter refused the freed node before `is_instance_valid()` could say so.
 * **Fix:** `MaszynaStartupTest` waits for every vehicle of the scenery and resets the clock to 1x
-  at once after a test; `SceneryInstancer._is_load_given_up()` takes an untyped `root`.
+  at once after a test; `MaszynaSceneryProvider._is_load_given_up()` takes an untyped `root`.
 * **Rule:** a test of a trainset waits for the whole trainset, not for the car it acts on; a
   function asked whether an object is gone takes it untyped - a typed parameter fails on a freed
   object at the call.
@@ -3768,10 +3580,12 @@ lighting or the trainset.
   `user://` is `~/.local/share/MaSzyna-Reloaded/`, not `app_userdata/MaSzyna Reloaded/` (which
   still held the right directory). Its `settings.cfg` had `game_dir="res://tests/fixtures"`,
   written at 08:56 by a test that points the game directory at the fixtures
-  (`save_maszyna_game_dir(FIXTURES_GAME_DIR)`) and was killed before restoring it.
+  (`save_maszyna_game_dir(FIXTURES_GAME_DIR)`, today `MaszynaGameDirectory.save_game_dir()`) and
+  was killed before restoring it.
 * **Fix:** the setting restored by hand; the `godot-frame-time` skill checks it before a run.
 * **Rule:** before a run that loads the game's data, read `game_dir` in
-  `~/.local/share/MaSzyna-Reloaded/settings.cfg`; a test run that was killed may have left the
+  `~/.local/share/MaSzyna-Reloaded/settings.cfg` (the demo's `custom_user_dir_name` since the
+  split: `~/.local/share/Libmaszyna-Demo/`); a test run that was killed may have left the
   fixtures there.
 
 ## 2026-10-06 The eszelon stood at a dwarf that had opened
@@ -3822,7 +3636,7 @@ lighting or the trainset.
 * **What proved it:** the original binds M to `linebreakertoggle` and nothing to
   `linebreakeropen`/`linebreakerclose` (driverkeyboardinput.cpp:108-110, 293-294); the demo's
   M/Shift+M on/off pair dates from its first commit and was never the original's.
-* **Fix:** M toggles the line breaker as `linebreakertoggle` - a key of LegacyCabinMainSwitch's
+* **Fix:** M toggles the line breaker as `linebreakertoggle` - a key of MaszynaCabinMainSwitch's
   own (`main_switch_key`), pressed and let go whatever switches the cab has: tied to an unmodelled
   `main_sw` it only flipped the switch, never let go, and no series motor cab closed the breaker.
   The opening alone moved to Ctrl+Shift+M, which the original leaves free; Shift+M is the rear
@@ -3835,7 +3649,7 @@ lighting or the trainset.
 * **Symptom:** demo_3d made the player drive impuls-a, but the view stayed outside: no cab was shown.
 * **What proved it:** a headless probe of demo_3d. The player takes over the first vehicle that gets
   its controller (`player.gd` `_on_vehicle_configured()`), which happens inside
-  `MaszynaLegacyVehicleSystem._build()` at `vehicle_bind_controller()`. At that moment the vehicle
+  `MaszynaVehicleSystem._build()` at `vehicle_bind_controller()`. At that moment the vehicle
   is not in `RailVehicleRenderingServer` yet ("Parameter visual is null" in `vehicle_mount_node()`)
   and `CabinSystem` has no cab scene ("the vehicle has no cab interior to show"). Nothing showed
   the cab later. Showing it when the scene came, but before the cab logic was attached, hung the
@@ -3870,13 +3684,13 @@ lighting or the trainset.
 
 * **Symptom:** on Stary Jawor's SU46 the Tb1 hint ("switch on Tb 1 head lamp code") stayed
   whatever the operator lit, from either cab.
-* **What proved it:** probes on the SU46, SU45 and ST45 fixtures, driven by the keys. With the
-  right lamps (the occupied cab's end showing only its right lamp, the far end only its left; on
-  the ST45 the presets "Tb1b" from the front cab and "TB1a" from the rear) the hint cleared in
-  every cab, as the original's check does (driverhints.cpp:1281-1288). In the SU46's rear cab
-  switched off (`CabActive` 0), though, its right-lamp switch put out the front end's right lamp.
-  `MoverRailVehicleLighting::_active_end()` took the end from `CabActive`. The original takes it
-  from the cab the driver sits in (`cab_to_end()`, `iCabn`, Train.h:220-227).
+* **What proved it:** probes on the SU46, SU45 and ST45 fixtures, driven by the keys. With the right
+  lamps (the occupied cab's end showing only its right lamp, the far end only its left; on the ST45
+  the presets "Tb1b" from the front cab and "TB1a" from the rear) the hint cleared in every cab, as
+  the original's check does (driverhints.cpp:1281-1288). In the SU46's rear cab switched off
+  (`CabActive` 0), though, its right-lamp switch put out the front end's right lamp.
+  `MaszynaMoverRailVehicleLighting::_active_end()` took the end from `CabActive`. The original takes
+  it from the cab the driver sits in (`cab_to_end()`, `iCabn`, Train.h:220-227).
 * **Fix:** the end is taken from `CabOccupied`, and the machine room counts as the front.
 * **Rule:** a cab's controls act on the end of the cab the player sits in (`cab_to_end()`), not on
   the active cab. A cab switched off is still the one the player works.
@@ -3888,12 +3702,12 @@ lighting or the trainset.
   showed that every vehicle's materials were being resolved, near the player or not. Even
   `demo_3d.tscn` built its few vehicles slowly.
 * **What proved it:** a headless probe timed each part of a vehicle's build. The simulation took
-  about 2 ms a vehicle (the FIZ description, configure and bind), and the appearance took 45-140
-  ms even with every cache warm. `vehicle_set_appearance()` built every model at once.
-  Splitting it further, `E3DRenderingServer.instance_build()` took 12-40 ms a model. The same model
-  built again while its materials were still held took about 1 ms, so the cost was the materials
-  and textures created for each type and skin. The only part the simulation took from the drawing
-  was `_publish_pantograph_geometry()`, read off the built instance.
+  about 2 ms a vehicle (the FIZ description, configure and bind), and the appearance took 45-140 ms
+  even with every cache warm. `vehicle_set_appearance()` built every model at once. Splitting it
+  further, `MaszynaE3DRenderingServer.instance_build()` took 12-40 ms a model. The same model built
+  again while its materials were still held took about 1 ms, so the cost was the materials and
+  textures created for each type and skin. The only part the simulation took from the drawing was
+  `_publish_pantograph_geometry()`, read off the built instance.
 * **Fix:** `RailVehicleRenderingServer` builds a vehicle's own models when it stands within the
   streaming's draw distance of its camera. The nearest go first, `BUILD_BUDGET_MSEC` a frame,
   from the vehicles' sweep in `_update_detail()`. It frees them beyond the draw distance and its
@@ -3931,16 +3745,16 @@ lighting or the trainset.
 * **Rule:** a build step that runs on every cab change is measured on the largest real cab, not
   on a fixture. A fixture without models skips the code that is slow.
 * **Follow-up, the same day:** the remaining 1.1 s was mostly the lamps' texture. Every lamp mesh
-  decompressed its whole 4096 px BC3 texture (53 ms) and scanned it in `detect_used_channels()`. That
-  happened again for every mesh, and the decompression also changed the image the texture returned
-  in place. In the player's cab (`36wea-a_kd.mmd`) the dashboard light is one mesh of 13277
+  decompressed its whole 4096 px BC3 texture (53 ms) and scanned it in `detect_used_channels()`.
+  That happened again for every mesh, and the decompression also changed the image the texture
+  returned in place. In the player's cab (`36wea-a_kd.mmd`) the dashboard light is one mesh of 13277
   triangles in 7237 pieces, which merged into one light in 2.0 s (debug build). The islands moved to
-  C++ (`LegacyCabinLampIslands`, described as a workaround for E3D models). A sample decodes only its
-  DXT block, with bcdec's formulas, and a grid finds each piece's nearest. A mesh of more than 1024
-  pieces is a backlight and gets one light at once. Against the GDScript on all 26 lamps of the
+  C++ (`MaszynaCabinLampIslands`, described as a workaround for E3D models). A sample decodes only
+  its DXT block, with bcdec's formulas, and a grid finds each piece's nearest. A mesh of more than
+  1024 pieces is a backlight and gets one light at once. Against the GDScript on all 26 lamps of the
   36WEa cab, the same lights at the same positions, colours within 0.024. The cab build went from
-  1.1 s to 0.43 s; the dashboard light from 2.0 s to 42 ms. A walk through the unit took at most
-  288 ms a cab change (the first entry of the other driver's cab).
+  1.1 s to 0.43 s; the dashboard light from 2.0 s to 42 ms. A walk through the unit took at most 288
+  ms a cab change (the first entry of the other driver's cab).
 
 ## 2026-10-06 SN61: the independent brake did not brake, the engine stopped after the start
 
@@ -4021,7 +3835,7 @@ lighting or the trainset.
 * **What proved it:** `test_zzz_driver_ready_36wea_014a.gd` - the unit started by the keys and moved
   off - printed every car: the A and C cars (`PWR=1000`) with their line breakers closed, the B car
   `PWR=2`, no engine, `main_switch_enabled` absent; and the pantograph unit, the A car, with
-  `CollectorsNo=1`, pantograph A up at 3499 V. `MaszynaLegacyDriverTrainset` counted every car over
+  `CollectorsNo=1`, pantograph A up at 3499 V. `MaszynaDriverTrainset` counted every car over
   `Power > 0.01` (`IsAnyLineBreakerOpen`, Driver.cpp:6143-6144) and a car without an engine as a
   line breaker open, so the readiness was taken away on every update; `_prepare_engine()` read the
   controlling car alone and listed nothing. The original closes the B car's `Mains` like any car
@@ -4042,9 +3856,9 @@ lighting or the trainset.
   its departure at 12:47; once the player readied the SU42 and drew up to the signal, the
   timetable passed Zagórz and the panel showed -15 min.
 * **What proved it:** the first station has no arrival, so it is made a stop (mtable.cpp:570-574,
-  `MaszynaLegacyTimetableFactory`); the wait was right. The SU42's FIZ has `BrakeDelays=GP`, which
+  `MaszynaTimetableFactory`); the wait was right. The SU42's FIZ has `BrakeDelays=GP`, which
   starts the Mover at G (Mover.cpp:12040-12042), and a player's own locomotive is never re-set
-  (Driver.cpp:2194). `MaszynaLegacyDriverBraking.read_trainset()` took `cargo` from that setting
+  (Driver.cpp:2194). `MaszynaDriverBraking.read_trainset()` took `cargo` from that setting
   (IsCargoTrain, Driver.cpp:2303) once the order became OBEY_TRAIN, and a goods train leaves a stop
   at once (`route.gd`, Driver.cpp:1297). The -15 is the arrival delay stored at 12:32.
 * **Fix:** `RailVehicleServer.trainset_determine_type()` / `trainset_get_type()`
@@ -4067,7 +3881,7 @@ lighting or the trainset.
   (`CompressorFlag`), which an EN57 has not got and which stops by itself once the reservoir is
   full. The original's hint is done by `IsAnyCompressorEnabled` - any vehicle under control with
   its compressor allowed to run (driverhints.cpp:394-414, Driver.cpp:6136-6137).
-* **Fix:** `MaszynaLegacyDriverTrainset` keeps `compressor_enabled` and
+* **Fix:** `MaszynaDriverTrainset` keeps `compressor_enabled` and
   `compressor_explicitly_enabled` of every vehicle under control, and the compressor hints are done
   by them.
 * **Rule:** a hint about a device is done by the device's switch on any vehicle of the consist
@@ -4108,32 +3922,6 @@ lighting or the trainset.
   player moves the driver; which pantographs a vehicle has is its `PhysicalLayout`.
 
 
-## 2026-10-06 Crash at 0% loading on D3D12
-
-* **Symptom:** a player on Windows (GTX 960, D3D12) crashed at 0% of loading Galicja, build
-  20261006-1712. The log has `Close failed with error 0x80070057` in `command_buffer_end` right
-  after `[Skydome] (Re)Initialized`, then ~1400 `Can't create buffer ... 0x887a0005`, failed
-  pipelines and textures, and the crash on a texture read-back; the scenery went on parsing on the
-  CPU meanwhile (`FILES 27.9 s`).
-* **What proved it:** `0x887a0005` is `DXGI_ERROR_DEVICE_REMOVED`, and the first error before it is
-  E_INVALIDARG on closing a command list - an invalid operation recorded, in the first frames with
-  a 3D camera. The one compute effect there is gnd-skydome's sun shafts
-  (`SunShaftsCompositorEffect.gd`): with no MSAA there is no `resolved_color`, so the colour it
-  samples (`get_color_layer(view)`) is the image it writes - one texture as a sampler and a
-  storage image in one dispatch. Vulkan allows it (GENERAL layout); D3D12 cannot hold a subresource
-  as SRV and UAV at once. `project.godot` sets `driver.windows="d3d12"`, sun shafts are on by
-  default. On Vulkan the same is a silent race: the shader reads pixels already overwritten.
-* **Fix:** a compute pass copies the colour into a texture of the effect's own (`imageLoad`/
-  `imageStore`; the scene colour has no `CAN_COPY_FROM`, `texture_copy()` refuses it) and the
-  shafts sample the copy; the colour layer is only written. Checked on Vulkan under gamescope
-  headless (`$td.scn`): no errors; D3D12 unconfirmed until a Windows player reports. The Windows
-  build runs on Vulkan again (`driver.windows`, d3d12 since the Godot 4.6 bump `64dbf13a0`), the
-  renderer the game is developed and tested on. Regression tests: `test_project_rendering_driver.gd`
-  and `test_sun_shafts_compositor_effect.gd` (renders on a GPU, pending under `--headless`), both
-  red on the broken versions.
-* **Rule:** a compute effect never samples the texture it writes in the same dispatch.
-
-
 ## 2026-10-07 Tests waited on the machine's speed
 
 * **Symptom:** tests on GitHub CI failed at random and some ran for minutes: a wait of 120 s for a
@@ -4148,13 +3936,13 @@ lighting or the trainset.
   Counting the simulated time of the failing runs gave a different number per run for the same
   script.
 * **Fix:** a test steps the simulation itself, like a step debugger (inspired by #301):
-  `MaszynaGutTest.step(count)` advances by `TICK` (1/30 s) per step, `wait_simulated_until()`
-  steps until a condition holds or a limit in simulated seconds runs out (the limit from the
-  vehicle's data, the margin one `TICK`), `SimulationRuntime` is not used in tests. Everything that
-  moves with the simulation goes by the simulation's time: `SimulationClock` for the cab elements
-  and the train sound system, `simulation_advanced` for the held knobs and
-  `E3DRenderingServer`'s animations. Only loading a scenery keeps a real-time limit - as a hang
-  guard, a failure when it runs out.
+  `MaszynaGutTest.step(count)` advances by `TICK` (1/30 s) per step, `wait_simulated_until()` steps
+  until a condition holds or a limit in simulated seconds runs out (the limit from the vehicle's
+  data, the margin one `TICK`), `SimulationRuntime` is not used in tests. Everything that moves with
+  the simulation goes by the simulation's time: `SimulationClock` for the cab elements and the train
+  sound system, `simulation_advanced` for the held knobs and `MaszynaE3DRenderingServer`'s
+  animations. Only loading a scenery keeps a real-time limit - as a hang guard, a failure when it
+  runs out.
 * **Rule:** a test advances simulated time by stepping it and waits for a condition with a limit in
   simulated seconds; never a real-time wait, a frame count or a raised simulation speed.
 
@@ -4204,13 +3992,13 @@ lighting or the trainset.
   `test_weather_controls`, `test_simulation_clock` and `test_scenario_event_server` set
   `simulation_speed` to 20-1000 and set it back by `simulation_speed = ...` only: the clock's
   current speed stays where it was and closes on 1 over `speed_change_time`, so the scripts after
-  ran at up to 100x. The local 80 came from the game directory: `UserSettings` finds the real game
-  in `HOME` and uses it in place of the fixtures; with an empty `HOME` and `XDG_DATA_HOME` the
-  run is CI's. There the EN57 failed alone too: a trace of the commands showed the player's
-  `cab_activation_auto` at t=0.033 with `ra` coupled to nothing - `enter_vehicle()` seated the
-  player once the vehicles had their simulation, before `_build_trainsets()` coupled the unit -
-  so `SendCtrlToNext("CabActivisation")` never reached `s`, and `IncMainCtrl` on `s` refused
-  without `CabActive` (Mover.cpp:2663).
+  ran at up to 100x. The local 80 came from the game directory: `UserSettings` (today
+  `MaszynaGameDirectory`) finds the real game in `HOME` and uses it in place of the fixtures; with
+  an empty `HOME` and `XDG_DATA_HOME` the run is CI's. There the EN57 failed alone too: a trace of
+  the commands showed the player's `cab_activation_auto` at t=0.033 with `ra` coupled to nothing -
+  `enter_vehicle()` seated the player once the vehicles had their simulation, before
+  `_build_trainsets()` coupled the unit - so `SendCtrlToNext("CabActivisation")` never reached `s`,
+  and `IncMainCtrl` on `s` refused without `CabActive` (Mover.cpp:2663).
 * **Fix:** the four scripts set the speed back with `simulation_reset_speed()`;
   `MaszynaGutTest.after_all()` asserts every script leaves the simulation running at 1, so the
   one that does not goes red itself. `enter_vehicle()` seats the player on `scenery_loaded`, as
@@ -4228,7 +4016,7 @@ lighting or the trainset.
   loading.
 * **What proved it:** every failure reached a valid, fully loaded vehicle but
   `PlayerServer.player_get_vehicle()` remained invalid. The shared start-up fixture instantiated
-  `MaszynaPlayer` only after `MaszynaSceneryNode.scenery_loaded` had already fired, while other
+  `Player` only after `MaszynaSceneryNode.scenery_loaded` had already fired, while other
   fixtures never connected that signal after `auto_start` was removed. `SceneryWorld` also passed
   an empty selection straight through instead of resolving it to the scenery's first vehicle.
 * **Fix:** fixtures create and configure the player, connect `scenery_loaded`, and only then start
@@ -4243,11 +4031,12 @@ lighting or the trainset.
 ## 2026-10-09 Classes moved out of the project, hidden by a warm class cache
 
 * **Symptom:** after the AI driver moved to the game, CI's run-tests failed with parse errors -
-  `MaszynaLegacyDriverTrainset` and `MaszynaLegacyDriverTimetable` not found in
-  `legacy/station/maszyna_legacy_station.gd`, `SunShaftsCompositorEffect` not found in
-  `test_sun_shafts_compositor_effect.gd` - and a translation test expecting the game's "Skład".
-  The same tests had passed locally; in the game, `test_maszyna_legacy_ai_driver.gd` used a helper
-  class left in libmaszyna's test, and its 21 tests never ran while the run reported all green.
+  `MaszynaDriverTrainset` and `MaszynaDriverTimetable` not found in
+  `legacy/station/maszyna_legacy_station.gd` (today
+  `addons/libmaszyna/ai_driver/maszyna_station.gd`), `SunShaftsCompositorEffect` not found in
+  `test_sun_shafts_compositor_effect.gd` - and a translation test expecting the game's "Skład". The
+  same tests had passed locally; in the game, `test_maszyna_ai_driver.gd` used a helper class left
+  in libmaszyna's test, and its 21 tests never ran while the run reported all green.
 * **What proved it:** the local check ran in a copy whose `.godot/global_script_class_cache.cfg`
   still listed the moved classes; CI imports from no cache. GUT leaves a script that fails to parse
   out of the run without failing it, so the game's count simply lacked that file.
@@ -4294,7 +4083,7 @@ lighting or the trainset.
   first place Windows looks for DLLs, and CPython adds the executable's directory to `sys.path`.
   The player's actual error is not known yet.
 * **Fix:** CPython runs in `maszyna-python-host`, a program of its own beside the library
-  (`src/legacy/cabin/python_host/`), started in the game directory with it on the DLL search path,
+  (`src/maszyna/cabin/python_host/`), started in the game directory with it on the DLL search path,
   as eu07.exe is. When it ends, `PythonScreenServer` logs its stderr and exit code, emits
   `python_runtime_failed` once and leaves the screens blank; the scripts' tracebacks reach the log
   through a captured `sys.stderr` (PyInt.cpp:265).
@@ -4420,7 +4209,8 @@ lighting or the trainset.
 * **Fix:** `RailVehicleEnginePowerSource.get_collector_pantograph_first/second_valve_active()`
   (the valve's `is_active`); the driver's pantograph hints end on them, both pantographs are asked
   for and the suggested setup applies to every vehicle, `CollectorsNo > 1` where the original
-  reads it (`MaszynaLegacyDriverPantographs`, the game's `ai_driver/`). The quirk "Pantograph B of
+  reads it (`MaszynaDriverPantographs`, then the game's `ai_driver/`, today
+  `addons/libmaszyna/ai_driver/`). The quirk "Pantograph B of
   a vehicle with one" is gone. `test_zzz_driver_prepare_engine_elf.gd` (the EN76 cut from
   `ic8310_dekoracje.scm`): red before, green after.
 * **Rule:** a hint ends on the state the original's hint reads, of the vehicle it reads it from -
@@ -4432,7 +4222,7 @@ lighting or the trainset.
 * **Symptom:** with its pantographs fixed (the entry above), the EN76 of Wrzosy's IC EIE8310 stood
   ready, its driver at "increase tractive force", the master controller at 4 ("add to 1") - and
   `eimic_real` at 0.01 for good.
-* **What proved it:** a print in `MoverDriveUnit::process()` (removed): `MainCtrlPos` and
+* **What proved it:** a print in `MaszynaMoverDriveUnit::process()` (removed): `MainCtrlPos` and
   `MainCtrlActualPos` 4 all the time, `LastRelayTime` back to 0 on every driver update (0.5 s),
   never reaching `InitialCtrlDelay` (1.0 s), so `CheckEIMIC()` case 2 added nothing past the first
   0.01. On every update the driver puts the controller to holding (3, `eimic > 0`,
@@ -4442,7 +4232,7 @@ lighting or the trainset.
   `LastRelayTime` (Mover.cpp:2361, 2558).
 * **Fix:** `RailVehicleController.main_controller_set_position()`, a command; the driver puts an
   EIM controller of kind 1, 2 and 3 at its position where the original assigns it
-  (`MaszynaLegacyDriverTraction.put_main_controller()`: IncSpeedEIM/DecSpeedEIM, IncBrakeEIM/
+  (`MaszynaDriverTraction.put_main_controller()`: IncSpeedEIM/DecSpeedEIM, IncBrakeEIM/
   DecBrakeEIM, CheckTimeControllers). `test_zzz_driver_prepare_engine_elf.gd`,
   `test_the_driver_told_to_go_moves_the_unit_off`: red before, green after.
 * **Rule:** where the original's driver assigns a control, the port does not step it - a step is a
@@ -4492,9 +4282,9 @@ lighting or the trainset.
 
 ## 2026-10-12 The SN61 that stopped against the other and never coupled
 
-* **Symptom:** `test_zzz_driver_shunt_coupling` (game) hung: SN61-02, told to `Shunt -3 -99`, drove
-  up to SN61-03, stood with its buffers touching and never sent `coupler_connect`. Red in CI since
-  the bump to libmaszyna cbe4b54c.
+* **Symptom:** `test_zzz_driver_shunt_coupling` (then the game's) hung: SN61-02, told to `Shunt -3
+  -99`, drove up to SN61-03, stood with its buffers touching and never sent `coupler_connect`. Red
+  in CI since the bump to libmaszyna cbe4b54c.
 * **What proved it:** a bisect with the game at b812b62a and libmaszyna built per commit - 75411a77
   passes, ab404141 hangs. ab404141 made `RailVehicleServer.vehicle_find_vehicle()` return the track
   distance between the two primary axles, as the original's `find_vehicle()` (DynObj.cpp:7688),
@@ -4522,7 +4312,7 @@ lighting or the trainset.
   `vehicle_get_rid_by_id()` hold the id - the lower-case name, what events, the console, Lua
   `find`, the player's start and the logs use; `vehicle_set_name()`/`vehicle_get_name()` the name
   as the `.scn` writes it (the id when it has none), what the HUD, the starter and the minimap
-  show. `MaszynaDynamicData` and `MaszynaSceneryInfo.Vehicle` carry both (`vehicle_id`, `name`);
+  show. `MaszynaVehicleData` and `MaszynaSceneryInfo.Vehicle` carry both (`vehicle_id`, `name`);
   Lua has `id(v)` and `name(v)`.
 * **Rule:** what the original lowers is an identity; the player reads what the data writes.
   Never one word for both - a getter called `name` that returns the id is how the lower case
@@ -4539,13 +4329,14 @@ lighting or the trainset.
   the failing runs printed it 0 times, the passing ones once. `MaszynaSceneryNode.use_cache`
   defaults to true and the harness never switched it off, so the tests read
   `user://cache/scenery_compiled`, keyed by `CACHE_FORMAT_VERSION:source:parameters`
-  (`scenery_instancer.gd:594`). The fixtures had been compiled at version 43 a few minutes earlier
-  by a short-lived variant of the importer that kept the names' case; the lowercase importer kept
-  43 and loaded those files. The "order" was which version each run happened to use: every run at
-  43 failed, every run at a fresh version compiled and passed.
-* **Fix:** `ResourceCache` reads the project setting `maszyna/cache/enabled` on every `has()`,
+  (`scenery_instancer.gd:594`, today `MaszynaSceneryProvider`). The fixtures had been compiled at
+  version 43 a few minutes earlier by a short-lived variant of the importer that kept the names'
+  case; the lowercase importer kept 43 and loaded those files. The "order" was which version each
+  run happened to use: every run at 43 failed, every run at a fresh version compiled and passed.
+* **Fix:** `ResourceCache` reads the project setting `reloaded/cache/enabled` on every `has()`,
   `get()` and `set()` - off, nothing is read or written. The GUT pre-run hooks
-  (`demo/tests/simulation_runtime_hook.gd`, the game's) switch it off, so no test of either repo
+  (libreloaded's `tests/simulation_runtime_hook.gd`, linked into `demo/tests/`, and the game's)
+  switch it off, so no test of either repo
   sees what a previous run compiled; the eleven stale files were deleted.
 * **Rule:** a test never reads a cache. And a cache keyed by a format version is only as fresh as
   the discipline of bumping the version: the same number reused with other code hands the old data
@@ -4556,18 +4347,18 @@ lighting or the trainset.
 
 * **Symptom:** after walking through the unit to the B car's cab and activating it, the player
   had the pipe charged, the brakes released, the controller at 5 and no movement.
-* **What proved it:** a hints test walking SA132 to the far cab (`test_zzz_driver_hints_sa132.gd`
-  of the game) showed three things in turn, each in the cars' dumps: both door permits on with
+* **What proved it:** a hints test walking SA132 to the far cab (`test_zzz_driver_hints_sa132.gd`,
+  then the game's) showed three things in turn, each in the cars' dumps: both door permits on with
   `eimic_real=0` (a deactivated cab grants them, `InactiveCabFlag` doorpermition, and an EIM
   controller gives no power under a permit, `Mover.cpp:6758-6769`); the A car's independent brake
   left applied (2.9 bar, it brakes its car whatever cab drives, `Mover.cpp:4025`); and with both
   cleared, `tractive_force` +43.9 kN on the A car and -43.9 kN on the B car with `direction` -1 and
   1. `CabActivisation()` sends the other cars `DirAbsolute` as their `DirActive`
   (`Mover.cpp:2664`) - from a rear cab (`CabActive=-1`) with the reverser set, the opposite way.
-* **Fix:** `MoverRailVehicleController` sends `DirActive` again after every cab activation, as
-  every reverser step does; the hints tell the player to revoke the permits while asking for power
-  (on the preset switch) and to let off the independent brake left at the other end with the cab
-  deactivation there. The B car moves off in the test.
+* **Fix:** `MaszynaMoverRailVehicleController` sends `DirActive` again after every cab activation,
+  as every reverser step does; the hints tell the player to revoke the permits while asking for
+  power (on the preset switch) and to let off the independent brake left at the other end with the
+  cab deactivation there. The B car moves off in the test.
 * **Rule:** a value sent along the trainset is the one the receiver stores - check the receiving
   `RunCommand` before trusting the sender's name for it.
 
@@ -4581,7 +4372,7 @@ lighting or the trainset.
   `RaLightsSet()` puts it on the vehicle's end by its direction (DynObj.cpp:7326-7330, 7380) - the
   two swaps cancel out, so the end driven from always gets the list's first column. The port did
   the first swap alone.
-* **Fix:** `MoverRailVehicleLighting.apply_light_preset()` lights `Lights[front]` ahead and
+* **Fix:** `MaszynaMoverRailVehicleLighting.apply_light_preset()` lights `Lights[front]` ahead and
   `Lights[rear]` behind; `test_the_b_cars_cab_lights_pc1_ahead`.
 * **Rule:** a port of two functions that each swap by an end checks the composite on a rear cab -
   porting one swap breaks every vehicle driven from cab 2.
@@ -4589,7 +4380,7 @@ lighting or the trainset.
 ## 2026-10-12 The Mover never saw the track
 
 * **Symptom:** asked whether derailment is handled: only a collision ever derailed a vehicle.
-* **What proved it:** `MoverRailVehicleController::_integrate()` handed the Mover its own
+* **What proved it:** `MaszynaMoverRailVehicleController::_integrate()` handed the Mover its own
   `RunningShape`/`RunningTrack` back, never set since the constructor (Mover.cpp:521-528: R=0,
   dHtrack=0, Width=TrackW). So no curve resistance (`Curvature`, Mover.cpp:4434), no grade force
   (`TotalMassxg * dHtrack`, Mover.cpp:4601), no overturning on a curve, no derailment on a track
@@ -4601,7 +4392,7 @@ lighting or the trainset.
   (`vehicle_derailed`), heard (`derail:`), logged and shown; the body is drawn off the track. The
   friction is the track's (a `friction <memcell>` modifying it, `ScenarioEventServer.memory_add_friction_track()`)
   times `SimulationServer.friction` (Global.fFriction, the `friction` event,
-  `MaszynaEnvironmentNode.friction`) times the weather's factor (`SimulationServer.weather`, rain
+  `EnvironmentNode.friction`) times the weather's factor (`SimulationServer.weather`, rain
   0.85, snow 0.75), which the AI's braking distance and proximity margins take too.
   `test_rail_vehicle_track_physics.gd`, `test_driver_weather.gd`.
 * **Rule:** a backend integrated by the wrapper gets every input its original caller gave it -
@@ -4674,11 +4465,11 @@ lighting or the trainset.
   lit colour is diffuse x emission x texture (shaders/light_common.glsl:158-164,221), so the lamp
   is blue with a warm tint - and EP07's `wylszybki` (green diffuse over a grey texture) green. The
   original lights no surface from an indicator; the glow is ours.
-* **Fix:** `LegacyCabinLampIslands.submodel_color()` - the lamp mesh sampled as one piece, texture
+* **Fix:** `MaszynaCabinLampIslands.submodel_color()` - the lamp mesh sampled as one piece, texture
   x albedo, the albedo alone for a texture without colour channels (SM42's BC5), at full
   brightness - colours the indicator glow and the `light_color_from_submodel` lights. Probe on the
   game data: ST45 CA/SHP (0.42, 0.41, 1.0), EP07 `wylszybki` (0, 1, 0).
-  `test_legacy_cabin_lamp_islands.gd`, `test_mmd_cabin_instancer.gd`.
+  `test_maszyna_cabin_lamp_islands.gd`, `test_mmd_cabin_instancer.gd`.
 * **Rule:** a lit E3D lamp is its texture times its diffuse; a light standing for it samples the
   texture, never takes the diffuse alone.
 
@@ -4703,14 +4494,15 @@ lighting or the trainset.
     range is measured from a nearby centre (`opengl33renderer.cpp:2814`), not from a kilometre-wide
     mesh.
 * **Fix:**
-  - `SceneryTrianglesSink` merges as the original:
+  - `MaszynaTrianglesSink` merges as the original:
     - a section's shapes cut along the 1 km grid, their range dropped;
     - a cell's shapes whole, merged within `MERGE_DISTANCE_M` around their vertex-weighted centre.
   - `MaszynaTrianglesChunkGeometry` keeps that centre as its `origin` (was `cell`).
   - The chunk server sets a custom box centred on it (`get_visibility_aabb()`).
-  - `MaszynaLegacySBTTerrainProvider` reads the region file's own split the same way.
+  - `MaszynaSBTTerrainProvider` reads the region file's own split the same way.
   - Translucency is the original's "@ and alpha" rule, in one place:
-    `MaterialManager.is_material_translucent()` (`MASZYNA_ORIGINAL_QUIRKS.md`, "Scenery shapes").
+    `MaszynaMaterialManager.is_material_translucent()` (`MASZYNA_ORIGINAL_QUIRKS.md`, "Scenery
+    shapes").
   - `draw_distance` 2500 as the original's `BaseDrawRange` (`Globals.h:141`).
 * **Rule:** port where the original keeps a shape and whether it tests its range, not only the
   range. A range the original measures from a shape's centre is measured from a merged group of
@@ -4735,7 +4527,7 @@ lighting or the trainset.
     (`class_db.cpp:2172-2207`): on a class's first lookup it instantiates the class and writes the
     static `default_values` and `default_values_cached` maps, without a lock.
   - `ResourceSaver` makes that lookup for every property it saves (`property_utils.cpp:177`).
-  - The sink saved its chunk files on several parse workers at once (`SceneryTrianglesSink`), and
+  - The sink saved its chunk files on several parse workers at once (`MaszynaTrianglesSink`), and
     so did `ResourceCache::set` for the subscenes. Two first saves at once corrupted the maps.
   - `PackedScene.pack()` makes the same lookup for every node's properties
     (`packed_scene.cpp:982`), and the subscenes pack their nodes on the parse workers
@@ -4764,18 +4556,18 @@ lighting or the trainset.
     (`mesh_storage.cpp:641-686`). Each of those is `_flush_and_stall_for_all_frames()`
     (`rendering_device.cpp:1316`).
   - So the main thread stalled the GPU three times a submodel, outside any streaming budget.
-  - The parse kept no arrays (`E3DModelBuilder` made the `ArrayMesh` and dropped them), so there
-    was nothing else to save from.
+  - The parse kept no arrays (`MaszynaE3DModelBuilder` made the `ArrayMesh` and dropped them), so
+    there was nothing else to save from.
   - Picking, the cab's mirrors, lamp glows and screen glows read the same meshes back
     (`get_faces()`, `surface_get_arrays()`).
-* **Fix:** `E3DMesh`, a `Mesh` of the extension:
+* **Fix:** `MaszynaE3DMesh`, a `Mesh` of the extension:
   - It keeps its one surface's arrays as floats and makes the RenderingServer mesh of them when
     they are set: by the parse, or by the cache's loader.
   - It answers `_get_rid()`, `_surface_get_arrays()` and `_get_aabb()` itself. Godot's own
     `get_faces()` and `MeshInstance3D` therefore read memory, and a saved model writes its arrays.
-  - `E3DModelManager.load_model()` saves the cache on the thread that loaded the model, and the
-    deferred save is gone.
-  - `E3DModel.FORMAT_VERSION` 20261012.
+  - `MaszynaE3DModelManager.load_model()` saves the cache on the thread that loaded the model, and
+    the deferred save is gone.
+  - `MaszynaE3DModel.FORMAT_VERSION` 20261012.
 * **Rule:** never save or read back an `ArrayMesh` - its data lives on the GPU. Geometry the
   extension saves or reads keeps its arrays in memory.
 
@@ -4813,7 +4605,7 @@ lighting or the trainset.
 * **What proved it:**
   - `RailVehicleRenderingServer` loaded the models at registration (`ResourceLazyLoader` without
     lazy loading), and `model_load()` for the cargo and the adapters.
-  - `MaszynaLegacyVehicleSystem._build()` read the structure, the FIZ and the cab logic, all on
+  - `MaszynaVehicleSystem._build()` read the structure, the FIZ and the cab logic, all on
     the main thread.
   - Moving those reads to workers exposed shared state:
     - `FizVehicleBuilder`'s section table held one set of parser instances for every parse, and
@@ -4829,7 +4621,7 @@ lighting or the trainset.
   - `RailVehicleRenderingServer` preloads a vehicle's files on a `WorkerTaskQueue`, and a build
     waits for them. The cargo and the coupler adapters are registered like the appearance.
     `preloads_drain()` runs before the scripts go.
-  - `MaszynaLegacyVehicleSystem` reads a vehicle's files on its own queue (`_read_vehicle()`),
+  - `MaszynaVehicleSystem` reads a vehicle's files on its own queue (`_read_vehicle()`),
     including its cabs' models, so a cab is built from a resident model.
   - Each FIZ parse makes its own section table (`FizImportContext.sections`).
   - The MMD catalogs are built in `_static_init()`.
@@ -4844,7 +4636,7 @@ lighting or the trainset.
     piece of 2026-10-02.
   - `_texture_has_alpha()` read each diffuse texture back from the GPU (`texture.get_image()`).
 * **What proved it:**
-  - Reading `MaterialManager.get_material()` down to `DDSTextureLoader`: only
+  - Reading `MaszynaMaterialManager.get_material()` down to `DDSTextureLoader`: only
     `ImageTexture.create_from_image()` and the ShaderMaterial need the main thread.
   - A first preload read the images per instance into weak caches, so each queued build held its
     own copy of a texture another one had read.
@@ -4852,9 +4644,9 @@ lighting or the trainset.
     measurement runs were still alive then, ~3 GB between them, left by a script that killed
     gamescope and not the game under it. The copies' share of it is not measured.
 * **Fix:**
-  - `MaterialManager.material_preload()` / `preload_model_materials()`, called on the streaming's
-    and the vehicles' workers (`E3DRenderingServer.material_preload()`, the chunk server's
-    preload), parse the `.mat` and read the images (`DDSTextureLoader.load_image()`).
+  - `MaszynaMaterialManager.material_preload()` / `preload_model_materials()`, called on the
+    streaming's and the vehicles' workers (`MaszynaE3DRenderingServer.material_preload()`, the chunk
+    server's preload), parse the `.mat` and read the images (`DDSTextureLoader.load_image()`).
   - Each is shared by key in a counted registry and held by the `MaterialPreload` its build keeps.
     A texture already made (`_dds_cache`) or held is not read again.
   - The main thread takes them in `load_material()` and `_load_dds_clamped()`, and reads a file
@@ -4887,8 +4679,8 @@ lighting or the trainset.
   - `MaszynaImporterContext.join_duplicated_events` follows the flag in the order of the load. It
     is carried past includes when they are merged, and into the subscene cache key.
     `MaszynaEventData.joined` keeps the flag where each event is read.
-  - `MaszynaLegacyEventFactory` gives a name defined more than once one event of its own: a
-    `MaszynaLegacyMultipleAction` queuing the unnamed definitions in order, with no delay. It
+  - `MaszynaEventFactory` gives a name defined more than once one event of its own: a
+    `MaszynaMultipleAction` queuing the unnamed definitions in order, with no delay. It
     also ports the original's rules for a duplicate read with the flag off, an instant or a
     passive first, a later one of a negative delay, and the names whose duplicates are dropped
     (`MASZYNA_ORIGINAL_QUIRKS.md`).
@@ -4910,7 +4702,7 @@ lighting or the trainset.
     only where the vehicle ahead was the ET22 or a `45413912`.
   - The `.scn` declares the wagons coupled `3`, with the last at `0`. Their ids repeat:
     `31514541864-8` 13 times, `45413912` 4 times.
-  - The game's selector always sends an arranged trainset. `MaszynaTrainsetData.get_arranged_dynamics()`
+  - The game's selector always sends an arranged trainset. `TrainsetData.get_arranged_vehicles()`
     paired its entries with the declared dynamics through `by_id[vehicle_id]`, where the last
     declaration of an id overwrote the others. Every `31514541864-8` took the couplings, crew and
     load of the last wagon, coupling 0. The defect has been there since 40cc3a4a, keyed by `name`
@@ -4919,9 +4711,9 @@ lighting or the trainset.
     (`simulationstateserializer.cpp:818-834`, `1079-1081`). A repeated name only goes to the log
     (`:449-451`).
 * **Fix:**
-  - `MaszynaSceneryInfo.Vehicle.trainset_index` and `MaszynaDynamicData.trainset_index` carry a
+  - `MaszynaSceneryInfo.Vehicle.trainset_index` and `MaszynaVehicleData.trainset_index` carry a
     vehicle's place in the declared trainset from the selector to the scenery, -1 for one added.
-  - `get_arranged_dynamics()` takes the declaration at that place. The arrangement is the
+  - `get_arranged_vehicles()` takes the declaration at that place. The arrangement is the
     trainset's only when every place it names holds a vehicle of that id.
 * **Rule:** a vehicle's id may repeat within one trainset. A vehicle is paired with its
   declaration by its place, never by its id.
@@ -4943,7 +4735,7 @@ lighting or the trainset.
     for the buffers. With the force clamped, a gap of 52 m pulls no harder than one of 1 m, so the
     train never straightened out; the ET42's 213 kN did not move it.
   - The Mover's V runs along the vehicle's own front. The original creates a reversed vehicle with
-    `-fVel` (`DynObj.cpp:1989, 2019`). `MaszynaLegacyVehicleSystem._build()` handed every vehicle
+    `-fVel` (`DynObj.cpp:1989, 2019`). `MaszynaVehicleSystem._build()` handed every vehicle
     `dynamic.velocity` as it was, so each reversed WAP started at 11 m/s against its neighbours.
 * **Fix:** `_build()` hands a reversed vehicle the trainset's velocity negated. After it, the
   same probe shows the reversed wagons at -11.11 m/s and the couplers at a few kN.

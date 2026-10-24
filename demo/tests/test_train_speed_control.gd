@@ -6,7 +6,7 @@ var speed_control: RailVehicleSpeedControl
 func before_each():
     train = build_vehicle("TestTrain")
 
-    speed_control = MoverRailVehicleSpeedControl.new()
+    speed_control = MaszynaMoverRailVehicleSpeedControl.new()
     train.add_component(speed_control)
     await wait_idle_frames(2)
 

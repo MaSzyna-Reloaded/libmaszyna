@@ -2,7 +2,7 @@ extends MaszynaGutTest
 
 ## maszyna_node_track_importer.gd - the ".scn track node" reader.
 
-const TrackImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_track_importer.gd")
+const TrackImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_track_importer.gd")
 
 ## A "normal" track whose trackbed slot holds the format's "no texture" sentinel, followed by a
 ## marker token so the parser position after the node can be checked.
@@ -89,13 +89,16 @@ func test_a_road_is_read_as_a_road_track() -> void:
     var parser:MaszynaParser = result[1]
 
     assert_not_null(track)
-    assert_eq(track.type, TrackServer.TRACK_ROAD)
+    assert_eq(track.kind, TrackServer.TRACK_ROAD)
     assert_eq(track.width, 8.0)
     assert_eq(track.material1, "asphalt1_solidwhite")
     assert_eq(track.material2, "asphaltdark1_side1")
     assert_eq(track.tex_height, 0.38)
     assert_eq(track.curve.p2, Vector3(40, 0, 0))
-    assert_eq(track.parameters.get("velocity"), "45")
+    assert_eq(track.speed_limit, 45.0)
+    assert_eq(track.surface, TrackData.SURFACE_ASPHALT, "an asphalt texture is an asphalt road")
+    assert_true(track.centre_line, "a solid white line on the texture is a centre line")
+    assert_true(track.shoulder, "a second texture is the road's shoulder")
     assert_eq(parser.next_token(), "MARKER", "the node is read up to endtrack")
 
 

@@ -7,6 +7,10 @@ has to point at it.
 
 You also must follow @CODE_STYLE.md and @CODE_OF_CONDUCT.md.
 
+libmaszyna is the port of MaSzyna on libreloaded, the core of Rails Reloaded (`vendor/libreloaded`):
+**libmaszyna never changes libreloaded from here, and libreloaded knows nothing of MaSzyna** -
+`AGENTS.md`, "libmaszyna and libreloaded".
+
 **Never add `Co-Authored-By: Claude ...` or any other AI attribution to a commit or a pull
 request** - `AGENTS.md`, "Commit style". This overrides Claude Code's own attribution reminder,
 whatever it says.

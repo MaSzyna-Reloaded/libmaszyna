@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DRenderingServer" inherits="ModelRenderingBackend" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		RID based server of E3D model instances.
+	</brief_description>
+	<description>
+		The [ModelRenderingServer] backend [code]maszyna[/code], with an API similar to [RenderingServer]. An instance is created with [method instance_create], set up with the [code]instance_set_*[/code] methods and [method instance_attach_object_instance_id], and built with [method instance_build]. The [enum ModelRenderingServer.Instancer] of an instance selects how it is built: [constant ModelRenderingServer.INSTANCER_OPTIMIZED] renders every submodel as a [RenderingServer] instance without creating any nodes (used for scenery models), [constant ModelRenderingServer.INSTANCER_NODES] and [constant ModelRenderingServer.INSTANCER_EDITABLE_NODES] build a [Node3D]/[MeshInstance3D]/[SpotLight3D] tree under the attached node. [code]MaszynaE3DModelInstance[/code] is a node client of this server. [RenderingServer] instances are freed when the singleton is deleted.
+		Scenery placements are registered with [method instance_register] instead: [SceneryStreamingServer] builds them only while its camera is within their visibility range of the chunk they fall into, and clears them again when it leaves.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="emission_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<description>
+				An addressable light [param light_name] of [param instance] that only switches the model's own [code]light_onNN[/code]/[code]light_offNN[/code] submodels.
+			</description>
+		</method>
+		<method name="environment_set_light_level">
+			<return type="void" />
+			<param index="0" name="level" type="float" />
+			<description>
+				How bright the scene is, 0-1 - what the [constant LIGHT_MODE_DARK] and [constant LIGHT_MODE_HOME] lights follow. Pushed by [code]EnvironmentNode[/code].
+			</description>
+		</method>
+		<method name="environment_set_time">
+			<return type="void" />
+			<param index="0" name="hours" type="float" />
+			<description>
+				The time of day [param hours] - what the [constant LIGHT_MODE_HOME] lights follow. Pushed by [code]EnvironmentNode[/code].
+			</description>
+		</method>
+		<method name="instance_get_attached_node" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The instance id of the node attached with [method instance_attach_object_instance_id] - the one a node tree is built under - or [code]0[/code] for none, or for one that is gone.
+			</description>
+		</method>
+		<method name="instance_get_data_path" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The directory the instance's model and textures are read from.
+			</description>
+		</method>
+		<method name="instance_get_light_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				How many lights of [param instance] are addressed by index ([code]light_on00[/code]...), 0 until the instance is built.
+			</description>
+		</method>
+		<method name="instance_get_model" qualifiers="const">
+			<return type="MaszynaE3DModel" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The model the instance draws.
+			</description>
+		</method>
+		<method name="instance_get_model_filename" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The model file of a registered instance ([method instance_register]); empty for one created from a model ([method instance_create]).
+			</description>
+		</method>
+		<method name="instance_get_opaque_meshes" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The instance ids of the [MeshInstance3D] nodes of the instance's opaque submodels - what the original draws into its pick buffer; a translucent submodel is left out. Empty for an instance not built as nodes.
+			</description>
+		</method>
+		<method name="instance_get_skins" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="instance" type="RID" />
+			<description>
+				The skins the instance's model is drawn with.
+			</description>
+		</method>
+		<method name="instance_set_layer_mask">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="mask" type="int" />
+			<description>
+				Render layers of an [constant ModelRenderingServer.INSTANCER_OPTIMIZED] instance.
+			</description>
+		</method>
+		<method name="instance_set_light_blink">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="on_time" type="float" />
+			<param index="3" name="off_time" type="float" />
+			<param index="4" name="phase" type="float" />
+			<description>
+				The light [param light] of [param instance] blinks: [param on_time] seconds lit, [param off_time] dark, starting [param phase] into the cycle.
+			</description>
+		</method>
+		<method name="instance_set_light_mode">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light" type="int" />
+			<param index="2" name="mode" type="int" enum="MaszynaE3DRenderingServer.LightMode" />
+			<description>
+				The light [param light] of [param instance] in [param mode], blinking at the default times.
+			</description>
+		</method>
+		<method name="instance_set_lights_colors">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="lights_colors" type="Dictionary" />
+			<description>
+				The colours of the lights of [param instance], by name ([method light_get_name] of a scenery node's light): a scenery node's [code]lightcolors[/code].
+			</description>
+		</method>
+		<method name="instance_set_lights_modes">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="modes" type="PackedFloat32Array" />
+			<description>
+				The scenery node's [code]lights[/code] list of [param instance], by light index (light 0 is [code]"00"[/code], [code]AnimModel.cpp:303[/code]); a fraction of a mode is its own darkness threshold.
+			</description>
+		</method>
+		<method name="instance_set_smoke_intensity">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="intensity" type="float" />
+			<description>
+				Spawn rate multiplier of every particle emitter of the instance, as the engine state drives it. [code]1.0[/code] is the emitter template's own rate - what a scenery chimney keeps. An [constant ModelRenderingServer.INSTANCE_KIND_DYNAMIC] instance starts at [code]0.0[/code] and spawns nothing until its client sets the rate.
+				Only the rate: nothing here may reach a particle that is already in the air. Both the process material's colour and its initial colour ramp are read on every frame, so driving either of them from the engine state steps the whole plume down together instead of letting it thin out.
+			</description>
+		</method>
+		<method name="instance_set_submodel_done_event">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="event" type="RID" />
+			<description>
+				Queues the [ScenarioEventServer] [param event] whenever [param submodel] of [param instance] finishes an animation - the scenery's [code]&lt;model&gt;.&lt;submodel&gt;:done[/code] (TAnimContainer::EventAssign(), Event.cpp:1588-1592). Forgotten when the event or the instance is freed.
+			</description>
+		</method>
+		<method name="instance_set_submodel_rotation">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="degrees" type="Vector3" />
+			<param index="3" name="speed" type="float" />
+			<description>
+				Turns [param submodel] of [param instance] towards [param degrees] about its own x, y and z at [param speed] degrees per second (a scenery [code]animation ... rotate[/code] event, [code]TAnimContainer::SetRotateAnim()[/code]); [signal instance_submodel_animation_finished] when it gets there.
+			</description>
+		</method>
+		<method name="instance_set_submodel_translation">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="offset" type="Vector3" />
+			<param index="3" name="speed" type="float" />
+			<description>
+				Moves [param submodel] of [param instance] towards [param offset] at [param speed] metres per second ([code]animation ... translate[/code], [code]TAnimContainer::SetTranslateAnim()[/code]); [signal instance_submodel_animation_finished] when it gets there.
+			</description>
+		</method>
+		<method name="instance_set_visibility_range">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="begin" type="float" />
+			<param index="2" name="end" type="float" />
+			<description>
+				Limits the visibility range of all submodels of an [constant ModelRenderingServer.INSTANCER_OPTIMIZED] instance, [code]0[/code] - no limit. Rebuilds an already built instance.
+			</description>
+		</method>
+		<method name="light_disable">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+				Puts [param light] out, whatever its mode says.
+			</description>
+		</method>
+		<method name="light_enable">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+				Lights [param light], whatever its mode says.
+			</description>
+		</method>
+		<method name="light_free">
+			<return type="void" />
+			<param index="0" name="light" type="RID" />
+			<description>
+				Frees [param light].
+			</description>
+		</method>
+		<method name="light_get_name" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+				The name of the scenery node's light [param index]: its [code]light_onNN[/code] submodel's, [code]"00"[/code] for light 0.
+			</description>
+		</method>
+		<method name="light_get_statistics" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
+			</description>
+		</method>
+		<method name="material_set_preloader">
+			<return type="void" />
+			<param index="0" name="material_preloader" type="Callable" />
+			<description>
+				Sets [code]material_preloader(model: MaszynaE3DModel, data_path: String, skins: PackedStringArray, max_texture_size: int) -&gt; Variant[/code], called on the streaming's and the vehicles' preload workers ([code]MaszynaMaterialManager.preload_model_materials[/code]).
+			</description>
+		</method>
+		<method name="material_set_resolver">
+			<return type="void" />
+			<param index="0" name="material_resolver" type="Callable" />
+			<description>
+				Called as [code]material_resolver(submodel: MaszynaE3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int) -&gt; Material[/code] for every rendered submodel. Set by [code]MaszynaMaterialManager[/code].
+			</description>
+		</method>
+		<method name="model_set_loader">
+			<return type="void" />
+			<param index="0" name="model_loader" type="Callable" />
+			<description>
+				Called as [code]model_loader(data_path: String, filename: String) -&gt; MaszynaE3DModel[/code] - a model's name split into its directory and its file - by [method ModelRenderingBackend.model_load], and on the streaming worker thread for instances registered with [method instance_register] that enter the camera's range. The result is memoized per path. Set by [code]MaszynaE3DModelManager[/code].
+			</description>
+		</method>
+		<method name="omni_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<param index="2" name="submodel_path" type="NodePath" />
+			<description>
+				An addressable light [param light_name] of [param instance] that also owns an omni [RenderingServer] light, made of the submodel at [param submodel_path].
+			</description>
+		</method>
+		<method name="smoke_rebuild">
+			<return type="void" />
+			<description>
+				Makes every instance's particle emitters again, resolved anew - what the source resolver makes them of or draws them with has changed (the sprite of [code]maszyna/smoke/generator_mode[/code]). The emitters are [SmokeServer]'s; it builds them again itself when one of its settings changes.
+			</description>
+		</method>
+		<method name="smoke_set_source_resolver">
+			<return type="void" />
+			<param index="0" name="smoke_source_resolver" type="Callable" />
+			<description>
+				Called as [code]smoke_source_resolver(template_name: String) -&gt; Dictionary[/code] when an instance's emitters are made: [code]source[/code] is the [SmokeSource] the [SmokeServer] emitter is made of (null leaves it unbuilt), [code]sprite[/code] the [Texture2D] a particle is drawn with, null for the core's own smoke. Set by [code]MaszynaSmokeSourceLibrary[/code], which reads the templates from the game's [code]data/[/code] directory.
+			</description>
+		</method>
+		<method name="spot_light_create">
+			<return type="RID" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light_name" type="String" />
+			<param index="2" name="submodel_path" type="NodePath" />
+			<description>
+				An addressable light [param light_name] of [param instance] that also owns a spot [RenderingServer] light, made of the submodel at [param submodel_path].
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="instance_submodel_animation_finished">
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+				[param submodel] of [param instance] reached what [method instance_set_submodel_rotation] or [method instance_set_submodel_translation] sent it to ([code]TAnimContainer[/code]'s [code]evDone[/code], [code]AnimModel.cpp:112-120, 175-180[/code]).
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="TRANSLUCENCY_CUTOUT" value="0" enum="Translucency">
+			The submodel is drawn as its material says: opaque, or cut out at the alpha threshold.
+		</constant>
+		<constant name="TRANSLUCENCY_BLENDED" value="1" enum="Translucency">
+			Alpha-blended - a forced submodel drawn as nodes.
+		</constant>
+		<constant name="TRANSLUCENCY_OPAQUE" value="2" enum="Translucency">
+			Opaque whatever its texture's alpha - a forced submodel of the optimized instancer, which never draws in the alpha pass.
+		</constant>
+		<constant name="LIGHT_MODE_OFF" value="0" enum="LightMode">
+			The light is out ([code]TLightState[/code], [code]AnimModel.h:27-33[/code]).
+		</constant>
+		<constant name="LIGHT_MODE_ON" value="1" enum="LightMode">
+			The light is lit.
+		</constant>
+		<constant name="LIGHT_MODE_BLINK" value="2" enum="LightMode">
+			The light blinks.
+		</constant>
+		<constant name="LIGHT_MODE_DARK" value="3" enum="LightMode">
+			The light comes on by itself once it gets dark.
+		</constant>
+		<constant name="LIGHT_MODE_HOME" value="4" enum="LightMode">
+			Like [constant LIGHT_MODE_DARK], but out late at night ([code]AnimModel.cpp:601-607[/code]).
+		</constant>
+	</constants>
+</class>

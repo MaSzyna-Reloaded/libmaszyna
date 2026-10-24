@@ -39,7 +39,7 @@ func test_param_and_dimensions():
     assert_eq(controller.max_velocity, 90.0)
     assert_eq(controller.power, 590.0)
     assert_eq(controller.category, VehicleController.CATEGORY_TRAIN)
-    assert_eq(controller.train_type, RailVehicleController.TRAIN_TYPE_DEFAULT)
+    assert_eq(controller.train_type, MaszynaMoverRailVehicleController.TRAIN_TYPE_DEFAULT)
     assert_eq(controller.dimensions_length, 16.6)
     assert_eq(controller.dimensions_height, 4.28)
     assert_eq(controller.dimensions_width, 3.07)
@@ -121,20 +121,20 @@ func test_brake_and_bpt_table():
     assert_eq(brake.max_cylinder_pressure, 3.8)
     assert_eq(brake.cylinder_count, 4)
     assert_eq(brake.rig_effectiveness, 0.85)
-    assert_eq(brake.valve_type, RailVehicleBrake.BRAKE_VALVE_W_LU_L)
+    assert_eq(brake.valve_type, MaszynaMoverRailVehicleBrake.BRAKE_VALVE_W_LU_L)
     assert_eq(brake.cntrl_brake_system, RailVehicleBrake.BRAKE_SYSTEM_PNEUMATIC)
     assert_eq(brake.cntrl_brake_ctrl_position_count, 6)
     assert_eq(brake.cntrl_brake_delay_1, 15.0)
-    assert_eq(brake.cntrl_brake_handle_type, RailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A)
+    assert_eq(brake.cntrl_brake_handle_type, MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A)
     assert_true(brake.cntrl_manual_brake_present)
 
     var bpt: Array = brake.brake_pressure_table
     assert_eq(bpt.size(), 3)
-    var row0: RailVehicleBrakePressureTableItem = bpt[0]
+    var row0: MaszynaMoverBrakePressureTableItem = bpt[0]
     assert_eq(row0.handle_position, -1)
     assert_eq(row0.pipe_pressure, 0.0)
     assert_eq(row0.brake_cylinder_pressure, -1.0)
-    var row2: RailVehicleBrakePressureTableItem = bpt[2]
+    var row2: MaszynaMoverBrakePressureTableItem = bpt[2]
     assert_eq(row2.handle_position, 3)
     assert_eq(row2.pipe_pressure, 3.5)
 
@@ -237,15 +237,15 @@ func test_a_diesel_gearbox_of_motor_param_table0() -> void:
     assert_not_null(engine, "SA132 has a diesel engine")
     if engine == null:
         return
-    var gears: Array = engine.motor_param_table
+    var gears: Array = engine.engine_configuration.motor_param_table
     assert_eq(gears.size(), 6, "the gears 0-5")
     if not gears.size() == 6:
         return
-    var neutral: RailVehicleMotorParameter = gears[0]
+    var neutral: MaszynaMoverMotorParameter = gears[0]
     assert_eq(neutral.saturation_current_multiplier, 0.0, "gear 0 drives nothing")
     assert_eq(neutral.initial_voltage_constant_multiplier, -1.0, "and is shifted out of standing (mfi0)")
     assert_true(neutral.auto_switch, "by the gearbox itself")
-    var first: RailVehicleMotorParameter = gears[1]
+    var first: MaszynaMoverMotorParameter = gears[1]
     assert_almost_eq(first.saturation_current_multiplier, 2.81, 0.0001, "mIsat: the first gear's ratio")
     assert_eq(first.initial_voltage_constant, -1.0, "fi0")
     assert_eq(first.voltage_constant, -1.0, "fi")

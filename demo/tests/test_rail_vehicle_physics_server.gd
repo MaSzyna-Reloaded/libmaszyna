@@ -620,15 +620,14 @@ func test_a_vehicle_stopped_across_a_joint_reports_both_tracks() -> void:
     var vehicle: RID = _create_spaced_fiz_vehicle(0.0).get_rid()
     RailVehicleServer.vehicle_set_track(vehicle, first, 47.0, TrackServer.DIRECTION_REVERSED)
     var reported: Array[RID] = []
-    var primary: Callable = func(_vehicle: RID, track: RID) -> void: reported.append(track)
-    var secondary: Callable = func(_vehicle: RID, track: RID) -> void: reported.append(track)
-    RailVehicleServer.vehicle_stopped_on_track.connect(primary)
-    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.connect(secondary)
+    var stopped: Callable = func(track: RID, stopped_vehicle: RID) -> void:
+        if stopped_vehicle == vehicle:
+            reported.append(track)
+    TrackServer.track_vehicle_stopped.connect(stopped)
 
     SimulationServer.simulation_advance(COLLISION_FRAME)
 
-    RailVehicleServer.vehicle_stopped_on_track.disconnect(primary)
-    RailVehicleServer.vehicle_secondary_axle_stopped_on_track.disconnect(secondary)
+    TrackServer.track_vehicle_stopped.disconnect(stopped)
     assert_eq(reported, [first, second] as Array[RID], "the primary axle's track, then the other one's")
 
 

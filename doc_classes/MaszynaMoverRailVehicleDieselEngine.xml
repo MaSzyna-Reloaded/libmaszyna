@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleDieselEngine" inherits="RailVehicleDieselEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleDieselEngine] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleDieselEngine] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleDieselEngine].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_circuit_nmax_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+				The engine's highest speed [rpm] ([code]nmax[/code]).
+			</description>
+		</method>
+		<method name="get_clutch_desired" qualifiers="const">
+			<return type="float" />
+			<description>
+				The clutch engagement the master controller's position asks for ([code]RList[lb]MainCtrlPos[rb].Mn[/code]).
+			</description>
+		</method>
+		<method name="get_eimic_real" qualifiers="const">
+			<return type="float" />
+			<description>
+				The traction an EIM controller actually asks for, -1-1 ([code]eimic_real[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="diesel_configuration" type="MaszynaMoverDieselConfiguration" setter="set_diesel_configuration" getter="get_diesel_configuration">
+			What the Mover's model of the diesel engine is configured with.
+		</member>
+		<member name="engine_configuration" type="MaszynaMoverEngineConfiguration" setter="set_engine_configuration" getter="get_engine_configuration">
+			What the Mover's model of the engine is configured with beyond its facts, read by the drive.
+		</member>
+	</members>
+</class>

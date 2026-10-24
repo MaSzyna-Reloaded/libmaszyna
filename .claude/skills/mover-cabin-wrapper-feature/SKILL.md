@@ -1,21 +1,24 @@
 ---
 name: mover-cabin-wrapper-feature
-description: Wire a new player-facing Mover control end-to-end in this Godot wrapper - vendored Mover method -> wrapper command -> state/config exposure -> MMD cabin catalog entry (mouse) -> InputMap keybind (keyboard). Use when a cab control (lever, button, knob) does nothing in-game, when it cannot be clicked, dragged or outlined with the mouse (CabinHUDMouseSystem), when its caption or position sounds are wrong, or when porting a control the wrapper never implemented (e.g. the independent/local brake handle, "localbrake:").
+description: Wire a new player-facing Mover control end-to-end in libmaszyna - vendored Mover method -> wrapper command -> state/config exposure -> MMD cabin catalog entry (mouse) -> InputMap keybind (keyboard). Use when a cab control (lever, button, knob) does nothing in-game, when it cannot be clicked, dragged or outlined with the mouse (CabinHUDMouseSystem), when its caption or position sounds are wrong, or when porting a control the wrapper never implemented (e.g. the independent/local brake handle, "localbrake:").
 ---
 
 # Wiring a new Mover cabin control end-to-end
 
-This wrapper exposes the vendored `TMoverParameters` (`src/legacy/maszyna-mover/`, never edited
+libmaszyna exposes the vendored `TMoverParameters` (`src/maszyna/maszyna-mover/`, never edited
 directly - see [[mover-parity-check]] for tracing *what* the original does) to the
 player through several independent layers. A control that "does nothing" is almost
 always missing one specific layer, not all of them - find the missing layer instead of
-reimplementing the whole stack from scratch. This was confirmed end-to-end while adding
+reimplementing the whole stack from scratch. The layers span both repositories: the interfaces,
+the cab widgets, `CabinSystem` and `CabinHUDMouseSystem` are libreloaded's (`vendor/libreloaded`),
+changed only in libreloaded's own repository (`make libreloaded-local`), never from here; the Mover,
+its adapters, the MMD catalog and the cab logic are libmaszyna's. This was confirmed end-to-end while adding
 the independent/local brake handle (`localbrake:`), which had **zero** wrapper support
 in any layer before.
 
 ## The five layers, outside-in
 
-1. **Vendored Mover method** (`src/legacy/maszyna-mover/McZapkie/Mover.cpp`/`MOVER.h`) - the ground
+1. **Vendored Mover method** (`src/maszyna/maszyna-mover/McZapkie/Mover.cpp`/`MOVER.h`) - the ground
    truth. Find it via [[mover-parity-check]]'s Step 2-3 first: what method mutates the
    field (`IncLocalBrakeLevel`/`DecLocalBrakeLevel` for `LocalBrakePosA`), and what real
    command/key triggers it in `~/src/maszyna/Train.cpp` + `command.h` +
@@ -23,23 +26,26 @@ in any layer before.
 
 2. **Wrapper command** - every component is an interface/implementation pair, and the
    backend never appears in the interface (`AGENTS.md`):
-   - **Interface** `VehicleX` (`src/vehicles/rail/RailVehicleBrake.hpp`, `src/vehicles/rail/RailVehicleEngine.hpp`,
-     `src/vehicles/base/VehicleController.hpp`, ...): declare the command as pure virtual next to its
+   - **Interface** `VehicleX` (libreloaded's `src/vehicles/rail/RailVehicleBrake.hpp`,
+     `src/vehicles/rail/RailVehicleEngine.hpp`, `src/vehicles/base/VehicleController.hpp`, ...: a
+     change in libreloaded's repository, in the core's own words - no Mover name or original's
+     citation there): declare the command as pure virtual next to its
      sibling (`virtual void local_brake_increase() = 0;`, `RailVehicleBrake.hpp:262`), bind it with
      `ClassDB::bind_method(...)` in `_bind_methods()`, and add it to both
      `_register_commands()` and `_unregister_commands()` (`RailVehicleBrake.cpp:369,385`) - forgetting
      the second leaks a dangling command entry when the node is freed.
-   - **Implementation** `MoverVehicleX` (`src/legacy/vehicles/MoverRailVehicleBrake.cpp`,
-     `src/legacy/vehicles/MoverRailVehicleController.cpp`, ...): the `override` takes the Mover with
-     `get_mover()` (from `MoverComponent`, `src/legacy/vehicles/MoverComponent.hpp`) and calls the vendored
-     method directly (`mover->IncLocalBrakeLevel(1)`, `MoverRailVehicleBrake.cpp:91`).
+   - **Implementation** `MaszynaMoverVehicleX` (`src/maszyna/vehicles/MaszynaMoverRailVehicleBrake.cpp`,
+     `src/maszyna/vehicles/MaszynaMoverRailVehicleController.cpp`, ...): the `override` takes the Mover with
+     `get_mover()` (from `MaszynaMoverComponent`, `src/maszyna/vehicles/MaszynaMoverComponent.hpp`) and calls the vendored
+     method directly (`mover->IncLocalBrakeLevel(1)`, `MaszynaMoverRailVehicleBrake.cpp:91`).
    - Keep the existing step-size convention: one command invocation is one notch/step, like
      `main_controller_increase(step=1)`, not a new continuous-time API. The original's
      key-hold behavior is a UI-layer concern (repeat-fire).
    - If the Mover field is already normalized (0..1, `LocalBrakePosA`), a `_set(double)` variant
      assigns it after `CLAMP`. Do not replicate the main brake's `Handle->GetPos(bh_MIN/MAX)`
      rescaling unless the field genuinely uses a different unit.
-   - Document the new method in `doc_classes/VehicleX.xml` (C++ API only).
+   - Document the new method in the interface's `doc_classes/VehicleX.xml` (libreloaded's) and an
+     implementation's own in `doc_classes/MaszynaMoverVehicleX.xml` here (C++ API only).
 
 3. **State exposure** - if a UI widget needs to *read* the control's position (a knob/lever
    that shows where it is), it becomes a typed state getter. Skip this for pure buttons that
@@ -49,19 +55,20 @@ in any layer before.
      (`_fill_state_dictionary`) publishes it by key, next to the closest analogous one
      (`get_local_position_normalized`, `RailVehicleBrake.hpp`).
    - **Implementation:** the getter reads the Mover field and stores nothing
-     (`return mover != nullptr ? mover->LocalBrakePosA : 0.0;`, `MoverRailVehicleBrake.cpp:266`).
+     (`return mover != nullptr ? mover->LocalBrakePosA : 0.0;`, `MaszynaMoverRailVehicleBrake.cpp:266`).
      A getter never changes state - no filters, flags or signals in it (`CODE_STYLE.md`).
    - **Dump key:** publish it in the implementation's `_fill_state_dictionary()` next to its
      sibling (`p_state["brake_local_position_normalized"] = get_local_position_normalized();`,
-     `MoverRailVehicleBrake.cpp:351`). This key, as it appears in
+     `MaszynaMoverRailVehicleBrake.cpp:351`). This key, as it appears in
      `VehicleServer.vehicle_dump_state(rid)`, is what a catalog entry's `state_property` and
      `CabinState.vehicle_state_value()` read.
 
-4. **MMD cabin catalog entry** (`addons/libmaszyna/legacy/mmd/mmd_semantic_catalog.gd`) - this
+4. **MMD cabin catalog entry** (`addons/libmaszyna/mmd/mmd_semantic_catalog.gd`) - this
    is what makes the *mouse* reach the command. Find the real MMD label first
    (`grep` the vehicle's actual `.mmd` under `~/Games/Maszyna/dynamic/...` - confirmed
    against the original's own `initialize_gauge()`/`initialize_button()` label tables in
-   `Train.cpp`, not guessed) and pick the matching `widget_class`:
+   `Train.cpp`, not guessed) and pick the matching `widget_class` (the widgets are libreloaded's,
+   `addons/libreloaded/cabin/`):
    - `CabinKnob` for a continuous lever/handle (`command`, `state_property`,
      `action_increase`/`action_decrease`, `value_min`/`value_max`).
    - `CabinSwitch` for a discrete stepped control (`command_increase`/`_decrease`,
@@ -95,14 +102,13 @@ in any layer before.
    vanilla, so don't assume vanilla's key for an unrelated control is still free without
    checking).
    For a control with **no MMD instrument at all** (a pure keyboard driver aid, like
-   `brake_level_set_position("drive")`), skip layer 4 and instead add a `CabinCommand`
-   node in `maszyna_dynamic_train_cabin.gd`'s `_build_driver_aid_commands()` (see
-   `BrakeLevelSet_Drive` there for the exact pattern:
-   `action_name`/`command`/`command_param`/`controller_path`).
+   `brake_level_set_position("drive")`), skip layer 4 and instead add it to the cab's controls
+   in `MaszynaCabinControls` (`addons/libmaszyna/cabin/controls.gd`; see `BRAKE_LEVEL_DRIVE` /
+   `BRAKE_LEVEL_DRIVE_FIELDS` there for the exact pattern: `command`/`command_param`/`action`).
 
 **Sending commands:** code outside the vehicle composition (player, UI, console) sends
 commands by the vehicle's handle, `VehicleServer.vehicle_send_command(vehicle_rid, command,
-p1, p2)`, using the vehicle it already holds (e.g. `MaszynaPlayer.controlled_vehicle.get_rid()`);
+p1, p2)`, using the vehicle it already holds (e.g. `PlayerServer.player_get_vehicle()`);
 a vehicle known only by its id is found with `vehicle_get_rid_by_id` - never
 `vehicle.get_controller().send_command(...)`. Direct `VehicleController` access is fine only
 where the composition already holds that controller (e.g. `VehicleComponent`s).
@@ -112,17 +118,19 @@ where the composition already holds that controller (e.g. `VehicleComponent`s).
 (`hold`/`release`/`toggle`/`increase`/`decrease`/`set`) with
 `CabinSystem.act(cabin, control_id, action, value)`. `control_id` is the MMD label, set by
 `MmdCabinInstancer._build_widget()`. What a manipulation does is decided by handlers registered in
-`CabinSystem` by `LegacyCabinLogic` (`addons/libmaszyna/legacy/cabin/cabin_logic.gd`), the
-vehicle's cab logic - attached with `CabinSystem.vehicle_attach_cab_logic()` by `MaszynaDynamicTrainCabin`
-for the player and by `SceneryInstancer._build_trainsets()` for the AI, and registered for the
-occupied cab. It needs no widget: the cab's controls are read from its MMD (`LegacyCabinControls`):
+libreloaded's `CabinSystem` by `MaszynaCabinLogic` (`addons/libmaszyna/cabin/cabin_logic.gd`, a
+libreloaded `CabinLogic`), the vehicle's cab logic - attached with
+`CabinSystem.vehicle_attach_cab_logic()` by `MaszynaVehicleSystem`
+(`addons/libmaszyna/vehicle/maszyna_vehicle_system.gd`) to every vehicle it builds with a cab, for
+the player and the AI alike, and registered for the occupied cab. It needs no widget: the cab's
+controls are read from its MMD (`MaszynaCabinControls`):
 - `forward_commands.gd` wires every remaining control straight to its vehicle command (the
   `command`/`controller_mode`/`command_set`/... of its `MmdSemanticCatalog` entry);
 - controls with their own cab logic from `Train.cpp` (`OnCommand_*` state, timers) get a dedicated
   behaviour file, e.g. `main_switch.gd` (line breaker held for `InitialCtrlDelay`).
 
 A new cab control that only maps to a vehicle command needs no code there, just the catalog entry.
-One whose original behaviour lives in `TTrain` gets a new `legacy_cabin/<name>.gd` behaviour that
+One whose original behaviour lives in `TTrain` gets a new `addons/libmaszyna/cabin/<name>.gd` behaviour that
 claims its control ids. Behaviours reach the train only through `CabinState.vehicle_state()` /
 `send_vehicle_command()`, never the Mover. Anything they need to read must first be a key of the
 vehicle's dump (`_fill_state_dictionary()`, layer 3) - `CabinSystem` reads
@@ -131,9 +139,9 @@ vehicle's dump (`_fill_state_dictionary()`, layer 3) - `CabinSystem` reads
 **Where the logic of a `Train.cpp` handler goes.** Split it by what it touches:
 - whatever changes the vehicle (a Mover call, a counter the vehicle keeps: `OperatePantographsValve`,
   `FuelPumpSwitchOff`, the distance counter, Radio-Stop, the light presets) goes into the
-  matching `Mover*` component as a command - the cab only chooses which one to send;
+  matching `MaszynaMover*` component as a command - the cab only chooses which one to send;
 - whatever is about the physical control (its position, what a press or a release means for this
-  kind of switch) stays in the cab's `legacy_cabin/` behaviour.
+  kind of switch) stays in the cab's behaviour in `addons/libmaszyna/cabin/`.
 
 **The kind of switch (`TGaugeType`).** An MMD instrument may say `type: push|impulse|return|
 delayed|pushtoggle|toggle`; without one it is a toggle (`Gauge.h:89`). The MMD factory maps it
@@ -143,7 +151,7 @@ delayed|pushtoggle|toggle`; without one it is a toggle (`Gauge.h:89`). The MMD f
 carries `"shape_from_button_type": true` with a comment naming the handler line, and the factory
 then makes a push spring back (`monostable`) and show no state at rest (the original returns it to
 neutral on release). The behaviour owning the control gets its type from
-`LegacyCabinControls.button_type(control_id)` when it is created, and ports the handler's
+`MaszynaCabinControls.button_type(control_id)` when it is created, and ports the handler's
 branches on it - e.g. `pump.gd` (a push pump runs while held, a two-state one flips and sets
 `*SwitchOff`), `pantograph_selected.gd` (`ENABLE_ON`/`NONE` vs `ENABLE`/`DISABLE`),
 `main_switch.gd` (only an impulse switch reacts to its release). A control the cab does not model
@@ -152,7 +160,7 @@ is a toggle, exactly like an undefined gauge in the original.
 Every other control keeps the fixed `monostable` of its entry: most original handlers act on press
 and release whatever the gauge (`sand_bt`, `security_reset_bt`), and flipping them by type would
 break them. The fixed `monostable` is also what the keyboard path of an unmodelled control
-(`unmodelled_controls.gd`) uses.
+(`addons/libmaszyna/cabin/unmodelled_controls.gd`) uses.
 
 How the factory builds such a control: a `CabinButton` shows `offset + mesh_rotation * value`, and
 `value_rest` is where a spring-back switch returns to (0.5 for a three-position lever). A catalog
@@ -161,12 +169,12 @@ submodel, which is how TGauge shows a lit control (`Gauge.cpp:204-210`). A submo
 not wired to any mesh.
 
 Keep the original's operation enums out of the interface. For example, the pantograph valves take
-our `RailVehicleEnginePowerSource.ValveOperation`, and only `MoverRailVehicleEnginePowerSource` maps it to
+our `RailVehicleEnginePowerSource.ValveOperation`, and only `MaszynaMoverRailVehicleEnginePowerSource` maps it to
 `operation_t`. Their start mode comes from the FIZ `Cntrl.` keys, with the defaults of
 `LoadFIZ_Cntrl`.
 
 **The port is data-driven - ABSOLUTE.** Every name, prefix, count, flag and default the original
-reads from data (FIZ, MMD, SCN/SCM/INC, CHK, lang, models) is read from that data in the wrapper, the
+reads from data (FIZ, MMD, SCN/SCM/INC, CHK, lang, models) is read from that data in the port, the
 way the original reads it, with the original's default when absent. Only what the original itself
 hardcodes, or a quirk documented in `MASZYNA_ORIGINAL_QUIRKS.md`, may be hardcoded - with the
 original's line cited. "Confirmed identical across the vehicles checked" is never a reason: the
@@ -199,8 +207,8 @@ its position in `CabinState`, where `python_screen_state.gd` reads it.
 
 ## Mouse operation (`CabinHUDMouseSystem`)
 
-The mouse reaches a control through the C++ singleton `CabinHUDMouseSystem`
-(`src/cabin/CabinHUDMouseSystem.*`, the original's `drivermouseinput.cpp` + `drivermode.cpp:352`
+The mouse reaches a control through libreloaded's C++ singleton `CabinHUDMouseSystem`
+(`vendor/libreloaded/src/cabin/CabinHUDMouseSystem.*`, our counterpart of the original's `drivermouseinput.cpp` + `drivermode.cpp:352`
 tooltip). A new widget gets it for free if it follows the pattern; a control that "cannot be
 clicked" is usually missing one of these:
 
@@ -218,7 +226,7 @@ clicked" is usually missing one of these:
   with it, a reverser its handle. A control with another control under it is a panel and only its
   own mesh (E186's universal1 holds op1/op2, so op12 on it is nobody's, `Train.cpp:64`). The model's
   tree decides this in `CabinHUDMouseSystem`, never the widget class or the cab. Dump a cab's
-  E3D tree with `E3DParser.parse(FileAccess)` and `E3DSubModel.resource_name`/`.submodels` to see it.
+  E3D tree with `MaszynaE3DParser.parse(FileAccess)` and `MaszynaE3DSubModel.resource_name`/`.submodels` to see it.
 - **Occlusion.** `MaszynaDynamicTrainCabin` registers every mesh of its `CabModel` as an occluder once the
   model is loaded (`e3d_loaded`): the desk hides the shaft under it, like the original's pick buffer
   (`opengl33renderer.cpp:1188-1214`). Hand-authored cabin scenes register none (`TODO.md`).
@@ -240,19 +248,19 @@ clicked" is usually missing one of these:
   never onto the mesh's own material, the cab's materials are shared. Small controls
   (`SMALL_CONTROL_SIZE`) get a heavier ring and a faint tint, large ones a thin ring only.
 - **Captions** come from `MmdCabControlCaptions` (port of `locale::label_cab_control`,
-  `translation.cpp:174-347`, keyed by MMD label without the colon) through
-  `MaszynaLocale.gettext()`, which reads `<game_dir>/lang/<SimulationServer.language>.po`. There is
-  no `en.po` - English is the msgids themselves. Key hints come from the widget's InputMap actions;
+  `translation.cpp:174-347`, keyed by MMD label without the colon), translated by the game
+  directory's `lang/<language>.po`, which libreloaded's `ReloadedTranslationServer` takes from
+  `MaszynaGameDirectory`. There is no `en.po` - English is the msgids themselves. Key hints come from the widget's InputMap actions;
   captions are taken when the cab is built.
 - **State** under the caption is the widget's own (`_set_mouse_state()` -> `control_set_state`):
   on/off, pressed/released, a position number, or a position's name from the widget's
   `position_names` (position -> msgid). The catalog entry fills it: `"position_names"` in
   `fixed_fields` for fixed names (`dirkey`, `horn_bt`), `"position_names_config"` for positions the
   vehicle's config places (`brakectrl`: the handle type's `bh_*` positions, exposed as
-  `brakes_controller_position_*`). Every label goes through `MaszynaLocale.gettext()`, which looks in
-  the game's `lang/<language>.po` first, then in the wrapper's own `addons/libmaszyna/translations/`
-  (Godot translations, one `.po` per game language plus `template.po`, registered in
-  `project.godot`). A new state word gets a msgid in all of them.
+  `brakes_controller_position_*`). Every label is looked up in the game's `lang/<language>.po`
+  first, then in libreloaded's own `addons/libreloaded/translations/` (Godot translations, one
+  `.po` per game language plus `template.po`, registered in `project.godot`; a new msgid there is
+  a change in libreloaded's repository). A new state word gets a msgid in all of them.
 
 **Positions of a knob (brake valve).** `CabinKnob.position_min/max` is the raw range its normalized
 value spans - set by the instancer from the entry's `animation_range_config_properties` (for
@@ -274,16 +282,19 @@ continuous, as FV4a is in the original (`Train.cpp:1960`).
   tests are blackbox - components' getters and the state dump only, never Mover internals.
   Breaking this breaks the project's rules.
 
-- After any C++ change, rebuild with `make compile-debug` and check the result.
+- After any C++ change, rebuild with `make compile-debug` (libreloaded's build with this
+  repository as its plugin), then `make import`, and check the result.
 - Parse-check each changed or added GDScript first:
   `godot-double --headless --path demo --check-only -s res://<path>.gd`.
-- Run only the test scripts you wrote or modified, one at a time
-  (`-gdir=res://tests/ -gselect=<script name>`), with the output redirected to a file. Never run
+- Run only the test scripts you wrote or modified ([[testing]], "Running": `make test TEST=<name>`
+  for one, all of them in one process otherwise), with the output redirected to a file. Never run
   the whole suite (`AGENTS.md`, Checks).
 - A throwaway headless probe (`-s probe.gd` in the scratchpad) that adds scenes must do it in
   `_initialize()`, not `_init()` - before the tree runs, `_ready()` has not happened yet.
-- A headless `--import` or test run rewrites `addons/libmaszyna/debug_hud/mover_switches_general.tscn` (adds
-  `unique_id`s); revert it with `git checkout` - it is not part of the change.
+- A headless `--import` or test run rewrites libreloaded's
+  `addons/libreloaded/debug_hud/mover_switches_general.tscn` (adds `unique_id`s) in the checkout in
+  use (`vendor/libreloaded`, or the one of `make libreloaded-local`); revert it there with
+  `git checkout` - it is not part of the change.
 - A new command needs no test of its own unless the operator asks for one. Do not report a fix
   as done from reading the wiring alone, though: confirm that the command reaches the Mover and
   that the dump key changes.

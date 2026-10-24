@@ -1,6 +1,42 @@
 Every rule marked "see `CODE_STYLE.md`" has its reasoning and examples there; the rule itself
 binds as written here. Unless stated otherwise, a rule applies to GDScript and C++ alike.
 
+libmaszyna and libreloaded:
+
+* this repository is **libmaszyna**, the port of MaSzyna on the core of Rails Reloaded,
+  **libreloaded** - the `vendor/libreloaded` submodule. libmaszyna is the vendored Mover and the
+  vehicles on it, the original's formats (FIZ, MMD, E3D, `.scn`), sceneries, cabs, drawing and
+  python screens; its C++ (`src/`) is compiled into libreloaded's library (`plugin.cmake`, taken
+  by libreloaded's CMake through `LIBRELOADED_PLUGINS`), its addon `addons/libmaszyna` stands
+  beside libreloaded's `addons/libreloaded`
+* the servers and systems these rules name without a path - `VehicleServer`,
+  `RailVehicleServer`, `PlayerServer`, `PlayerCameraServer`, `SimulationServer`,
+  `SceneryStreamingServer`, `SmokeServer`, `CabinSystem`, `GameLog`, ... - are libreloaded's;
+  libmaszyna's own are named `Maszyna*` (the Mover adapters `MaszynaMover*`), as the split named
+  them (libreloaded's `LIBMASZYNA_SPLIT.md`)
+* REQUIRED: **libmaszyna never changes libreloaded from here.** `vendor/libreloaded`, and the pieces
+  of its demo linked into `demo/` (`make links`), are libreloaded's; a change libmaszyna needs in
+  the core is made in libreloaded's own repository (built against here with
+  `make libreloaded-local LIBRELOADED_LOCAL=<path>`), and the submodule is moved to it once it is
+  pushed
+* REQUIRED, ALARM: **separation of concerns between the two repositories.** libreloaded knows
+  nothing of MaSzyna: no `Maszyna*` class, MaSzyna format, path, setting or vocabulary is named in
+  it, and no citation of the original's sources (`Train.cpp:8516`) - those stay in libmaszyna
+  alone (libreloaded's `LIBMASZYNA_SPLIT.md`, LS-050, LS-051). What libmaszyna needs from the core
+  is a public API, a signal, a base class or a registration there (`ReloadedPlugin`,
+  `VehicleServer.implementation_register()`, a `ModelRenderingServer` backend); a breach is
+  reported to the operator
+* libmaszyna knows nothing of the game (`maszyna-reloaded`): no game class, path, setting or
+  input action is named in it
+* the Godot project is `demo/`, libmaszyna's test project (`demo/project.godot`, `demo/tests/`,
+  `demo/tests/fixtures/`); libreloaded's tests stay in libreloaded
+* build, import, test and style only through this repository's `Makefile`: `make compile-debug`
+  / `compile-release` (libreloaded's build, with this repository as its plugin and `demo/` as the
+  project), `make import`, `make test TEST=<name>`, `make style-check` / `style-fix
+  STYLE_FILE=<file>` (libreloaded's scripts); `make libreloaded-submodule` goes back to the
+  submodule after `make libreloaded-local`
+* `.clang-format` and `.clang-tidy` are copies of libreloaded's, kept identical to them
+
 Planning and architecture:
 
 * REQUIRED: **separation of concerns, enforced, not aspired to.** A layer owns one kind of thing
@@ -34,7 +70,7 @@ Code generation:
   `CODE_STYLE.md`
 * REQUIRED, ABSOLUTE: **whoever introduces something generic moves everything onto it - no
   leftovers, no second road to the same goal.** A generic component, operation or class (a
-  `UIDialog`, a server method, a shared scene) is not done when it works in the one place it was
+  dialog, a server method, a shared scene) is not done when it works in the one place it was
   written for: in the same work, search the codebase for everything that already does the same job
   by other means (hand-made copies, Godot's built-ins used for it, older variants) and refactor it
   onto the generic one, deleting the old code - not leaving it beside the new. What cannot be moved
@@ -126,10 +162,11 @@ Code generation:
   that says the value has landed - see `CODE_STYLE.md`
 * PROHIBITED, ABSOLUTE: **a key is an input action of the project, matched exactly - never a
   keycode, never Godot's built-in `ui_*` actions, never a loose match.** Every key, button and
-  shortcut the game reacts to is an action in `demo/project.godot`'s input map, named after what
-  it does (`menu_activate`, `toggle_fullscreen`, `cabin_next`), and is tested with
+  shortcut the game reacts to is an action in the project's input map - `demo/project.godot`
+  here, the game's own `project.godot` in the game, as Godot keeps no input map per addon - named
+  after what it does (`menu_back`, `hud_toggle`, `cabin_next`), and is tested with
   `is_action_pressed(action, echo, true)` - `exact_match` true, always. A loose match takes
-  Alt+Enter for Enter: the starter's sections ran their Enter on the fullscreen shortcut. The
+  Alt+Enter for Enter: the game's starter sections ran their Enter on the fullscreen shortcut. The
   `ui_*` actions belong to Godot's controls, which consume them in their own `gui_input` - see
   `CODE_STYLE.md`
 * PROHIBITED: **never build shader code at run time** - no `code.replace()`, no string put
@@ -163,8 +200,13 @@ Custom nodes and Godot Editor:
 * place editor related code in addons/libmaszyna/editor
 * assets of demo scenes (sounds, sfx banks, textures, materials, ...) belong in `demo/`, never in
   `addons/libmaszyna` - the addon exposes a property/slot the demo scene fills
-* use libmaszyna.gd just for bootstrapping and proxying to editor plugins
+* use libmaszyna.gd just for bootstrapping (the addon's autoloads, custom types and import
+  plugins) and proxying to editor plugins
 * make sure C++ singletons never inherit from RefCounted
+* a C++ class or singleton is registered by libmaszyna's plugin, `MaszynaPlugin`
+  (`src/maszyna/MaszynaPlugin.cpp`), in libreloaded's `ReloadedPlugin` stages:
+  `register_classes()`, and `create_servers()`/`free_servers()` for the singletons - never in
+  libreloaded's `register_types.cpp`
 
 Documentation:
 
@@ -173,13 +215,14 @@ Documentation:
 
 Build:
 
-* if C++ code changes, use cmake to build c++ extension (check Makefile and compile-debug target)
+* if C++ code changes, build it with `make compile-debug` (libreloaded's CMake build of its
+  library, with this repository as its plugin), then `make import`
 * if GDSCRIPT code changes, check errors with godot (out of sandbox)
 
 Sound:
 
-* use the vendored `gnd-sfx` addon, never a bare `AudioStreamPlayer`; bank-building convention in
-  `CODE_STYLE.md`
+* use libreloaded's vendored `gnd-sfx` addon (`addons/gnd_sfx` of the project), never a bare
+  `AudioStreamPlayer`; bank-building convention in `CODE_STYLE.md`
 * before changing any sound constant, dump the built bank first - every event with its clips'
   `track.volume_db`, `unit_size` and `max_distance` - and look for the value that stands out.
   Never test a hypothesis by changing a number and asking the operator to relaunch and listen
@@ -207,22 +250,22 @@ Checks:
 * TESTS: never run the whole test suite. Before a commit run only the test scripts you wrote or
   modified, all of them in one Godot process - not one process per script (each pays Godot's and
   GUT's start-up): `-gconfig= -gpre_run_script=res://tests/simulation_runtime_hook.gd
-  -gtest=res://tests/a.gd,res://tests/b.gd`. `-gconfig=` is required: `.gutconfig.json`'s `dirs`
-  adds the whole directory to `-gtest`
+  -gtest=res://tests/a.gd,res://tests/b.gd` in `demo/` (the hook is libreloaded's, linked by
+  `make links`; `make test TEST=<name>` runs one script). `-gconfig=` is required:
+  `.gutconfig.json`'s `dirs` adds the whole directory to `-gtest`
 * do not run tests or headless Godot after every edit - only before a commit, or when operator asks
 * TESTS: **redirect a headless run to a file and read the file** - do not pipe it through
   `grep | head`: `head` closes the pipe, the run dies of SIGPIPE, and a pass reads as a hang.
 * REQUIRED: **every headless Godot run (a test, a probe, `--import`, `--check-only`) passes
-  `--log-file <scratchpad>/godot.log`** - it shares the game's user directory, and without it each
-  run rotates the operator's `logs/app.log` (five runs delete it). A headless run's game log files
-  go to `logs/headless/` by themselves (the game's `game.gd`, `HEADLESS_LOG_DIRECTORY`)
+  `--log-file <scratchpad>/godot.log`** - without it each run rotates the project's
+  `user://logs/app.log` (five runs delete it), which the operator's own runs of the demo write
 * TESTS: a GDScript that fails to **parse** is not reported as failing - GUT ignores it, finds no
   match for `-gselect` and runs the whole directory until the timeout, so a syntax error looks
   like a hang. Run it with `-gtest=` (never `-gselect`) and read the log for `Parse Error` and
   `Compile Error`: the run loads the project's autoloads, so what it reports is real (`--import`
   does not catch type errors).
 * `--check-only -s <file>.gd` runs **without the project's autoloads**: a script that reaches one
-  (`CabinSystem`, `AudioStreamManager`, `SceneryInstancer`, ...), itself or through a script it
+  (`CabinSystem`, `AudioStreamManager`, `MaszynaSceneryProvider`, ...), itself or through a script it
   depends on, always reports `Identifier not found: <autoload>` and `Failed to compile depended
   scripts` - noise that says nothing about the script and hides its real errors. Use it only for
   a script that reaches no autoload; any other is checked by the run above
