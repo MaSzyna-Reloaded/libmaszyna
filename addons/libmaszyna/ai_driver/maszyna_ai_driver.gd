@@ -214,6 +214,9 @@ class AIDriverState:
     var timetable:MaszynaDriverTimetable = MaszynaDriverTimetable.new()
     ## ReactionTime - until its next update
     var reaction_time:float = PREPARE_TIME
+    ## When that update was due [s of simulation time]: DriverServer runs it then or, with its frame's
+    ## budget spent, up to DriverServer.UPDATE_MAX_DELAY later
+    var update_due:float = 0.0
     ## What it read of its trainset on its last update
     var trainset:MaszynaDriverTrainset = MaszynaDriverTrainset.new()
     ## The speed and acceleration it wants
@@ -286,6 +289,7 @@ func _driver_attached(driver:RID) -> void:
     state.timetable.changed.connect(DriverServer.driver_report_timetable_changed.bind(driver))
     state.guard_handheld = RadioServer.radio_create()
     _drivers[driver] = state
+    state.update_due = SimulationServer.simulation_get_time()
     DriverServer.driver_schedule_update(driver, 0.0)
 
 
@@ -696,8 +700,9 @@ func _update(driver:RID) -> void:
     var vehicle:RID = VehicleServer.person_get_vehicle(driver)
     if not state or not vehicle.is_valid():
         return
-    # the time since the last update is the reaction time it was scheduled with
-    var elapsed:float = state.reaction_time
+    # the time since the last update: the reaction time it was scheduled with, and how late it came -
+    # the original's timers take every frame's dt (LastReactionTime += dt, Driver.cpp:5985)
+    var elapsed:float = state.reaction_time + maxf(0.0, SimulationServer.simulation_get_time() - state.update_due)
     # the horn sounds while there is time left (fWarningDuration -= dt, Driver.cpp:5993)
     state.warning_duration -= elapsed
     state.trainset.update(vehicle, state.direction, _has_diesel_engine(vehicle))
@@ -938,6 +943,7 @@ func _update(driver:RID) -> void:
         if state.direction == state.direction_order:
             _prepare_engine(_read_situation(state))
             _jump_to_next_order(state, vehicle)
+    state.update_due = SimulationServer.simulation_get_time() + state.reaction_time
     DriverServer.driver_schedule_update(driver, state.reaction_time)
 
 
