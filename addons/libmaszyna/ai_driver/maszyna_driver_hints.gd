@@ -653,8 +653,11 @@ static func cue(situation:MaszynaDriverTraction.Situation, hint:Hint, parameter:
                 var power_supply:RailVehiclePowerSupply = _power_supply(vehicle)
                 done = power_supply == null or not power_supply.get_battery_enabled()
             Hint.OIL_PUMP_ON:
+                # a pump that starts on its own takes no switching (start_type != manual,
+                # driverhints.cpp:171)
                 var diesel:RailVehicleDieselEngine = _diesel(vehicle)
-                done = diesel == null or diesel.get_oil_pump_enabled()
+                done = diesel == null or not diesel.oil_pump_start_mode == RailVehicleController.START_MODE_MANUAL \
+                        or diesel.get_oil_pump_enabled()
             Hint.SANDING_ON:
                 var switches:RailVehicleSwitches = _switches(situation.controlling)
                 done = switches == null or switches.get_sand_active()
@@ -780,21 +783,22 @@ static func cue(situation:MaszynaDriverTraction.Situation, hint:Hint, parameter:
                         break
                     current = stepped
     var hints:Array[Queued] = situation.state.hints
-    var ruled_out:Array = GROUPS.get(hint, []) + OPPOSITES.get(hint, [])
     # the hint's own parameter, where the original works it out (driverhints.cpp:557-561, 834,
-    # 851-855, 897, 546)
-    var tractive_force:float = absf(_tractive_force(situation.controlling))
-    var braking_force:float = absf(_braking_force(situation.controlling))
+    # 851-855, 897, 546) - the forces read only for the hints that take them: cue() runs dozens of
+    # times on every update of every driver
     match hint:
         # the horn's hint keeps no parameter of its own (driverhints.cpp:998)
         Hint.HORN_ON:
             parameter = 0.0
         # quirk kept: min(0, ...) makes the force to reach 0 - the hint stays until no force is left
         Hint.TRACTIVE_FORCE_DECREASE:
+            var tractive_force:float = absf(_tractive_force(situation.controlling))
             parameter = minf(0.0, maxf(tractive_force * DECREASE_SHARE, tractive_force - DECREASE_MIN))
         Hint.BRAKING_FORCE_DECREASE:
+            var braking_force:float = absf(_braking_force(situation.controlling))
             parameter = minf(0.0, DECREASE_SHARE * braking_force)
         Hint.BRAKING_FORCE_INCREASE:
+            var braking_force:float = absf(_braking_force(situation.controlling))
             parameter = maxf(0.0, maxf(braking_force * BRAKING_INCREASE_SHARE, braking_force + BRAKING_INCREASE_MIN))
         Hint.INDEPENDENT_BRAKE_APPLY:
             var configuration:MaszynaMoverEngineConfiguration = MaszynaDriverTraction.engine_configuration(
@@ -807,6 +811,7 @@ static func cue(situation:MaszynaDriverTraction.Situation, hint:Hint, parameter:
     var unkept:bool = hint in UNKEPT
     if not unkept and is_done(situation, hint, parameter):
         return true
+    var ruled_out:Array = GROUPS.get(hint, []) + OPPOSITES.get(hint, [])
     # the list keeps the order the steps came in, which is the order a player follows it: a hint
     # rules out the others of its group, not itself, and a kept one only when it is listed itself.
     # The original removes the whole group, the hint with it, before its check
@@ -988,9 +993,12 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
         Hint.REAR_PANTOGRAPH_VALVE_OFF:
             var power_source:RailVehicleEnginePowerSource = _power_source(unit)
             return power_source == null or not power_source.get_collector_pantograph_second_valve_active()
-        Hint.CONVERTER_ON, Hint.CONVERTER_OFF:
-            var power_supply:RailVehiclePowerSupply = _power_supply(controlling)
-            return power_supply == null or power_supply.get_converter_enabled() == (hint == Hint.CONVERTER_ON)
+        # the converters' switches, not whether they run (driverhints.cpp:315-335): a road car's
+        # converter is switched on and never runs
+        Hint.CONVERTER_ON:
+            return situation.trainset.converter_enabled
+        Hint.CONVERTER_OFF:
+            return not situation.trainset.converter_explicitly_enabled
         Hint.PRIMARY_CONVERTER_OVERLOAD_RESET:
             var electric:RailVehicleElectricEngine = _engine(controlling) as RailVehicleElectricEngine
             return electric == null or not electric.get_converter_overload()

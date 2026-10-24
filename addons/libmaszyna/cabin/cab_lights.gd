@@ -58,7 +58,7 @@ func register(_vehicle_rid:RID, cabin:RID) -> void:
     CabinSystem.register_control(cabin, INSTRUMENT_LIGHT, _instrument_light)
     CabinSystem.register_control(cabin, DASHBOARD_LIGHT, _dashboard_light)
     CabinSystem.register_control(cabin, TIMETABLE_LIGHT, _timetable_light)
-    CabinSystem.register_process(cabin, _process)
+    CabinSystem.register_display_process(cabin, _process)
 
 
 func unregister() -> void:
@@ -67,7 +67,7 @@ func unregister() -> void:
     CabinSystem.unregister_control(_cabin, INSTRUMENT_LIGHT, _instrument_light)
     CabinSystem.unregister_control(_cabin, DASHBOARD_LIGHT, _dashboard_light)
     CabinSystem.unregister_control(_cabin, TIMETABLE_LIGHT, _timetable_light)
-    CabinSystem.unregister_process(_cabin, _process)
+    CabinSystem.unregister_display_process(_cabin, _process)
 
 
 func _switch(state:CabinState, action:StringName, value:Variant, control:StringName) -> Variant:

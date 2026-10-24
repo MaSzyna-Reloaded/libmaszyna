@@ -570,6 +570,11 @@ func set_time_controllers(situation:MaszynaDriverTraction.Situation) -> void:
     var pressed:int = (UNIVERSAL_HIGH_PRESSURE | UNIVERSAL_OVERLOAD if charging else 0) \
             | (UNIVERSAL_UNLOCK_PIPE if _unlocking_pipe else 0)
     var buttons:Array[int] = [brake.universal_brake_button_1, brake.universal_brake_button_2, brake.universal_brake_button_3]
+    # a vehicle whose buttons do nothing (no UBB1-3, most of them) is left alone: the Mover's flag
+    # stays 0 and the releaser untouched whatever is pressed (Mover.cpp:3670-3689), and a command
+    # renews the vehicle's whole state
+    if not (buttons[0] or buttons[1] or buttons[2]):
+        return
     for index:int in buttons.size():
         MaszynaDriverHints.send(vehicle, "universal_brake_button", index, bool(pressed & buttons[index]))
 

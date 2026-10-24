@@ -178,13 +178,15 @@ func _process(state:CabinState, delta:float) -> void:
         linebreaker_state = OPEN
 
     var relay_timer:float = state.data.get("relay_timer", 0.0)
-    if state.get_value(ON_BUTTON, false) \
-            or float(state.get_value(TOGGLE_SWITCH, LEVER_OPEN)) > LEVER_HELD_THRESHOLD:
+    # the values read in place (CabinState.get_value()): this runs for every driven cab on every step
+    var values:Dictionary = state.values
+    if values.get(ON_BUTTON, false) \
+            or float(values.get(TOGGLE_SWITCH, LEVER_OPEN)) > LEVER_HELD_THRESHOLD:
         if engine and engine.get_main_switch_closable():
             relay_timer += delta
     else:
         relay_timer = 0.0
-    if state.get_value(OFF_BUTTON, false):
+    if values.get(OFF_BUTTON, false):
         relay_timer = 0.0
 
     var electric:RailVehicleElectricEngine = engine as RailVehicleElectricEngine

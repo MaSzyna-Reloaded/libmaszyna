@@ -22,11 +22,39 @@ class MaszynaShaderMeta:
     var base_material: Material
     var factory: Callable
     var texture_map: TextureMap
+    ## The base material's shader parameters by property name ("shader_parameter/<name>"), read
+    ## once. A ShaderMaterial's property list and a parameter it does not set come from the
+    ## RenderingServer (shader_get_parameter_list, shader_get_parameter_default), and each such
+    ## read waits for the rendering thread when it runs on its own - for every material a
+    ## scenery streams in, that held the main thread a thousand times and more a run.
+    var shader_parameters: Dictionary[String, Variant] = {}
 
     func _init(factory: Callable, base_material: Material, texture_map: TextureMap) -> void:
-        self.base_material = base_material
         self.factory = factory
         self.texture_map = texture_map
+        self.base_material = base_material
+        if base_material is ShaderMaterial:
+            for property: Dictionary in base_material.get_property_list():
+                var property_name: String = property.get("name", "")
+                if property_name.begins_with("shader_parameter/"):
+                    shader_parameters[property_name] = base_material.get(property_name)
+
+    ## A material of the type, as base_material.duplicate(true) made it: the type's files hold the
+    ## shader, the render priority and the shader parameters, and no resource of their own
+    func instantiate() -> Material:
+        if not base_material is ShaderMaterial:
+            return base_material.duplicate(true)
+        var material: ShaderMaterial = ShaderMaterial.new()
+        apply_base(material, (base_material as ShaderMaterial).shader)
+        return material
+
+    ## `shader` - the base material's or a variant of it - and the base material's render priority
+    ## and shader parameters on `target`, in the order its property list gives them
+    func apply_base(target: ShaderMaterial, shader: Shader) -> void:
+        target.shader = shader
+        target.render_priority = (base_material as ShaderMaterial).render_priority
+        for property_name: String in shader_parameters:
+            target.set(property_name, shader_parameters[property_name])
 
 # Named texture keys of a material without "shader:" (texture_bindings, material.cpp:60-65)
 const LEGACY_TEXTURE_BINDINGS: Dictionary[int, String] = {
@@ -178,7 +206,7 @@ func create(
 ) -> Material:
     var variant: MaszynaMaterial.MaszynaMaterialVariant = mmat.get_variant(season, weather)
     var shader_meta:MaszynaShaderMeta = _get_shader_meta(variant)
-    var material: Material = shader_meta.base_material.duplicate(true)
+    var material: Material = shader_meta.instantiate()
     _apply(
         material,
         mmat,
@@ -264,16 +292,12 @@ func _apply(
         source_shader_material.shader.code.contains(SPECGLOSS_DEFINE)
         and not _texture_path(variant, texture_map, texture_map.specgloss) == ""
     )
-    for property: Dictionary in source_shader_material.get_property_list():
-        var property_name: String = property.get("name", "")
-        if property_name == "shader":
-            target_shader_material.shader = (
-                _get_shader_variant(source_shader_material.shader, options, specgloss)
-                if options.force_transparent or options.cull_disabled or specgloss
-                else source_shader_material.shader
-            )
-        elif property_name == "render_priority" or property_name.begins_with("shader_parameter/"):
-            target_shader_material.set(property_name, source_shader_material.get(property_name))
+    shader_meta.apply_base(
+        target_shader_material,
+        _get_shader_variant(source_shader_material.shader, options, specgloss)
+        if options.force_transparent or options.cull_disabled or specgloss
+        else source_shader_material.shader
+    )
 
     shader_meta.factory.call(mmat, variant, material, texture_map, model_path, options)
     # The original's opaque pass keeps the texels at the material's "opacity:" and above

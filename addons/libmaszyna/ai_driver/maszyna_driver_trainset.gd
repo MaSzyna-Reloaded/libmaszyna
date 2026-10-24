@@ -84,6 +84,14 @@ var converter_overload_relay_open:bool = false
 ## by hand
 var compressor_enabled:bool = false
 var compressor_explicitly_enabled:bool = false
+## IsAnyConverterPresent, IsAnyConverterEnabled, IsAnyConverterExplicitlyEnabled
+## (Driver.cpp:6141-6144): a vehicle under control has a converter (ConverterStart not disabled),
+## has it allowed to run - switched on, or started on its own - and switched on by hand. Its switch,
+## not whether it runs: a road car's converter is switched on and never runs. ConverterAllowLocal is
+## not modelled - always on
+var converter_present:bool = false
+var converter_enabled:bool = false
+var converter_explicitly_enabled:bool = false
 ## IsAnyCouplerStretched (Driver.cpp:6087-6090): a coupler pulled past its strength
 var coupler_stretched:bool = false
 ## FmaxC of the driver's vehicle's coupler behind it, the way it drives [N] (Driver.cpp:7784)
@@ -116,6 +124,9 @@ func update(vehicle:RID, driver_direction:int, diesel_driven:bool) -> void:
     converter_overload_relay_open = false
     compressor_enabled = false
     compressor_explicitly_enabled = false
+    converter_present = false
+    converter_enabled = false
+    converter_explicitly_enabled = false
     for other:RID in controlled:
         var power:float = VehicleServer.vehicle_get_controller(other).power
         if power > POWERED:
@@ -141,6 +152,13 @@ func update(vehicle:RID, driver_direction:int, diesel_driven:bool) -> void:
             compressor_enabled = compressor_enabled or brake.get_compressor_allowed() \
                     or brake.compressor_power == RailVehicleBrake.COMPRESSOR_POWER_ENGINE
             compressor_explicitly_enabled = compressor_explicitly_enabled or brake.get_compressor_allowed()
+        var power_supply:RailVehiclePowerSupply = RailVehicleServer.vehicle_component_get(
+                other, RailVehicleComponentType.COMPONENT_POWER_SUPPLY) as RailVehiclePowerSupply
+        if power_supply and not power_supply.cntrl_converter_start_mode == RailVehicleController.START_MODE_DISABLED:
+            converter_present = true
+            converter_enabled = converter_enabled or power_supply.get_converter_allowed() \
+                    or power_supply.cntrl_converter_start_mode == RailVehicleController.START_MODE_AUTOMATIC
+            converter_explicitly_enabled = converter_explicitly_enabled or power_supply.get_converter_allowed()
     var couplers:RailVehicleBuffCoupl = RailVehicleServer.vehicle_component_get(
             vehicle, RailVehicleComponentType.COMPONENT_BUFFERS) as RailVehicleBuffCoupl
     var behind:RailVehicleController.CouplerEnd = RailVehicleController.opposite_end(ahead)
