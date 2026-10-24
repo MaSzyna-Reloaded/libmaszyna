@@ -1,5 +1,6 @@
 #pragma once
 #include "traction/TractionServer.hpp"
+#include "utils/RIDHash.hpp"
 
 namespace godot {
     /* The traction network as the original computes it - Traction.cpp/TractionPower.cpp: named
@@ -107,8 +108,8 @@ namespace godot {
                     double resistance = 0.0;
             };
 
-            HashMap<RID, SourceState> source_states;
-            HashMap<RID, WireNetwork> networks;
+            RIDMap<SourceState> source_states;
+            RIDMap<WireNetwork> networks;
 
             /// Port of TTractionPowerSource::Update(dt).
             static void _source_tick(const PowerSource &p_source, SourceState &p_state, double p_delta);

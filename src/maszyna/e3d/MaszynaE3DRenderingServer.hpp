@@ -6,6 +6,7 @@
 #include "MaszynaE3DOptimizedBackend.hpp"
 #include "MaszynaE3DSmokeSourceFactory.hpp"
 #include "rendering/ModelRenderingBackend.hpp"
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -133,13 +134,13 @@ namespace godot {
                     bool streamed_in = false;
             };
 
-            HashMap<RID, MaszynaE3DInstanceData> instances;
+            RIDMap<MaszynaE3DInstanceData> instances;
             /// The instance drawing each attached signal head (instance_attach_signal_head())
-            HashMap<RID, RID> signal_head_instances;
+            RIDMap<RID> signal_head_instances;
             /// The instance each `:done` event is of (instance_set_submodel_done_event()), to forget
             /// it when the event goes
-            HashMap<RID, RID> done_event_instances;
-            HashMap<RID, LightObject> lights;
+            RIDMap<RID> done_event_instances;
+            RIDMap<LightObject> lights;
             /// Taken once: the blinking lights read the clock every frame
             Time *time = nullptr;
             MaszynaE3DOptimizedBackend optimized_backend;
@@ -172,7 +173,7 @@ namespace godot {
             double current_time = 12.0; // hours, 0..24
             double light_level = 1.0;   // Global.fLuminance equivalent (simulationenvironment.cpp:184)
             /// The instances built now - the only ones whose lights a change of time or light reaches
-            HashSet<RID> built_instances;
+            RIDSet built_instances;
             Callable model_loader;
             /// `material_preloader(model, data_path, skins, max_texture_size) -> Variant`, on a worker
             Callable material_preloader;
@@ -185,7 +186,7 @@ namespace godot {
                     String data_path;
                     PackedStringArray skins;
             };
-            HashMap<RID, StreamModel> stream_models;
+            RIDMap<StreamModel> stream_models;
             Mutex models_mutex;
 
             MaszynaE3DInstanceBackend &_get_backend(const MaszynaE3DInstanceData &p_instance);

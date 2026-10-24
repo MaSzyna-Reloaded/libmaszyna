@@ -2,6 +2,7 @@
 #include "maszyna/scenario/MaszynaScenarioEventImplementation.hpp"
 #include "scenario/ScenarioEventCondition.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/RIDHash.hpp"
 #include "vehicles/rail/RailVehicleRadio.hpp"
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/object.hpp>
@@ -121,21 +122,21 @@ namespace godot {
             };
 
             Ref<MaszynaScenarioEventImplementation> implementation;
-            HashMap<RID, SystemData> systems;
-            HashMap<RID, MemoryData> memories;
-            HashMap<RID, LauncherData> launchers;
+            RIDMap<SystemData> systems;
+            RIDMap<MemoryData> memories;
+            RIDMap<LauncherData> launchers;
             /// The launchers that fire at a time of day
             Vector<RID> timed_launchers;
             /// ...and the ones a radio call fires (m_radiodrivenlaunchers, Event.h)
             Vector<RID> radio_launchers;
-            HashMap<RID, TrackEvents> track_events;
-            HashMap<RID, IsolatedEvents> isolated_events;
-            HashMap<RID, VehicleOnTrack> vehicles_on_tracks;
+            RIDMap<TrackEvents> track_events;
+            RIDMap<IsolatedEvents> isolated_events;
+            RIDMap<VehicleOnTrack> vehicles_on_tracks;
             HashMap<StringName, RID> memories_by_name;
             HashMap<StringName, RID> launchers_by_name;
             /// The events waiting for their train's departure, by the seconds after it
-            HashMap<RID, double> departure_delays;
-            HashSet<RID> passive_events;
+            RIDMap<double> departure_delays;
+            RIDSet passive_events;
 
             void _on_time_of_day_changed();
             /* The launchers of the clock's HH:MM fire, those of another hour are armed again */

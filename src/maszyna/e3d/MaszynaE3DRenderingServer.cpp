@@ -7,6 +7,7 @@
 #include "scenery/SceneryStreamingServer.hpp"
 #include "signalling/SignallingServer.hpp"
 #include "simulation/SimulationServer.hpp"
+#include "utils/RIDHash.hpp"
 #include "utils/Units.hpp"
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -1729,7 +1730,7 @@ namespace godot {
     }
 
     void MaszynaE3DRenderingServer::light_free(const RID &p_light) {
-        const HashMap<RID, LightObject>::Iterator item = lights.find(p_light);
+        const RIDMap<LightObject>::Iterator item = lights.find(p_light);
         ERR_FAIL_COND(item == lights.end());
         if (MaszynaE3DInstanceData *instance = instances.getptr(item->value.owner); instance != nullptr) {
             instance->light_objects.erase(p_light);

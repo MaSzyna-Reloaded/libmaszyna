@@ -1,5 +1,6 @@
 #pragma once
 #include "maszyna/e3d/MaszynaE3DModel.hpp"
+#include "utils/RIDHash.hpp"
 #include "vehicles/rail/RailVehicleCabinKind.hpp"
 #include "vehicles/rail/RailVehicleController.hpp"
 #include "vehicles/rail/RailVehicleEnginePowerSource.hpp"
@@ -96,7 +97,7 @@ namespace godot {
                 COUPLER_VARIANT_COUNT,
             };
 
-            HashMap<RID, MaszynaVisual> maszyna_vehicles;
+            RIDMap<MaszynaVisual> maszyna_vehicles;
             /* The vehicles whose low-poly cabs are still following their cab lights */
             Vector<RID> fading;
 

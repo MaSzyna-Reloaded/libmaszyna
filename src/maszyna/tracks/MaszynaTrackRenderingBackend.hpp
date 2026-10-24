@@ -5,6 +5,7 @@
 #include "tracks/TrackCurve.hpp"
 #include "tracks/TrackEndpointRef.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/classes/curve3d.hpp>
 #include <godot_cpp/classes/material.hpp>
@@ -187,9 +188,9 @@ namespace godot {
                     static uint32_t hash(const RoadCellKey &p_key);
             };
 
-            HashMap<RID, Track> tracks;
+            RIDMap<Track> tracks;
             /// Road cells by their RID, and by their scenario and coordinates
-            HashMap<RID, RoadCell> road_cells;
+            RIDMap<RoadCell> road_cells;
             HashMap<RoadCellKey, RID, RoadCellKeyHasher> road_cells_by_key;
             int road_stream_owner = 0;
             bool road_rebuild_pending = false;
@@ -290,7 +291,7 @@ namespace godot {
             double _load_road_texture_length(const Track &p_track, const String &p_material_name);
             void _resolve_materials(Track &p_track) const;
             Ref<Material> _resolve_trackbed_material(Track &p_track);
-            const Track *_copy_adjacent_trackbed_material(const Track *p_track, HashSet<RID> &p_visited);
+            const Track *_copy_adjacent_trackbed_material(const Track *p_track, RIDSet &p_visited);
             Vector<RID> _get_trackbed_material_sources(const RID &p_track, bool p_is_switch) const;
             void _build_switch_trackbed_sections(
                     const Track &p_track, const TrackGeometry &p_geometry, TrackServer::SwitchTrack p_switch_track,

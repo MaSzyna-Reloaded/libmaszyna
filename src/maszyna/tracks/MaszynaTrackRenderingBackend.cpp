@@ -7,6 +7,7 @@
 #include "rendering/ReloadedMaterialServer.hpp"
 #include "rendering/TrackRenderingServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
+#include "utils/RIDHash.hpp"
 
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/reg_ex_match.hpp>
@@ -1521,7 +1522,7 @@ namespace godot {
 
     Ref<Material> MaszynaTrackRenderingBackend::_resolve_trackbed_material(Track &p_track) {
         if (!p_track.resolved_trackbed_material_valid) {
-            HashSet<RID> visited;
+            RIDSet visited;
             const Track *owner = _copy_adjacent_trackbed_material(&p_track, visited);
             String material_name;
             p_track.resolved_trackbed_material.unref();
@@ -1548,7 +1549,7 @@ namespace godot {
     /// which cannot stop a longer loop of track from recursing forever.
     /// Returns the track whose own trackbed material is used - its size sets the mapping too.
     const MaszynaTrackRenderingBackend::Track *
-    MaszynaTrackRenderingBackend::_copy_adjacent_trackbed_material(const Track *p_track, HashSet<RID> &p_visited) {
+    MaszynaTrackRenderingBackend::_copy_adjacent_trackbed_material(const Track *p_track, RIDSet &p_visited) {
         if (p_track == nullptr || p_visited.has(p_track->track)) {
             return nullptr;
         }
