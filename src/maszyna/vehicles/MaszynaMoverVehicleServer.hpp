@@ -48,10 +48,15 @@ namespace godot {
             static constexpr const char *IMPLEMENTATION_NAME = "maszyna_mover";
 
             static MaszynaMoverVehicleServer *get_instance() {
-                return Object::cast_to<MaszynaMoverVehicleServer>(
-                        Engine::get_singleton()->get_singleton("MaszynaMoverVehicleServer"));
+                return singleton;
             }
 
+        private:
+            /// The one instance, as the engine's servers keep theirs (RenderingServer::singleton):
+            /// set by the constructor, cleared by the destructor
+            static inline MaszynaMoverVehicleServer *singleton = nullptr;
+
+        public:
             MaszynaMoverVehicleServer();
             ~MaszynaMoverVehicleServer() override;
 

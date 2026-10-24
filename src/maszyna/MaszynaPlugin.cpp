@@ -110,7 +110,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaE3DRailVehicleRenderingServer);
         GDREGISTER_CLASS(MaszynaTractionServer);
         GDREGISTER_CLASS(MaszynaE3DResourceFormatLoader);
-        GDREGISTER_CLASS(MaszynaMoverVehicleServer);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaMoverVehicleServer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaSignalHeadKindFactory);
         GDREGISTER_CLASS(MaszynaSignallingImplementation);
         GDREGISTER_CLASS(MaszynaScenarioEventServer);

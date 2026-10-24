@@ -14,6 +14,7 @@ namespace godot {
     /* A freed vehicle's last velocity goes with it. No explicit disconnect: callable_mp reports
      * this instance as the callable's object, so the engine drops the connection when it dies. */
     MaszynaMoverVehicleServer::MaszynaMoverVehicleServer() {
+        singleton = this;
         diagnostics = ProjectSettings::get_singleton()->get_setting(DIAGNOSTICS_SETTING, false);
         ProjectSettings::get_singleton()->connect(
                 "settings_changed", callable_mp(this, &MaszynaMoverVehicleServer::_on_project_settings_changed));
@@ -27,6 +28,7 @@ namespace godot {
         for (const KeyValue<RID, TMoverParameters *> &entry: movers) {
             delete entry.value;
         }
+        singleton = nullptr;
     }
 
     TMoverParameters *MaszynaMoverVehicleServer::mover_create(
