@@ -249,15 +249,19 @@ func _init() -> void:
 ## DirAbsolute, else CabActive, Driver.cpp:2384-2392), its trainset read again on a change; with
 ## neither it keeps its way, the driver here never drives none
 func _on_vehicle_command_received(vehicle:RID, command:String, _p1:Variant, _p2:Variant) -> void:
-    var controller:RailVehicleController = VehicleServer.vehicle_get_controller(vehicle) as RailVehicleController
-    if not controller or DriverServer.vehicle_is_control_active(vehicle):
-        return
-    var reverser:bool = (command == "direction_increase" or command == "direction_decrease") \
-            and not controller.get_direction() == VehicleController.DIRECTION_NEUTRAL
+    # the name first: every command of every vehicle comes here, hundreds a second on a busy
+    # scenery, and only a cab switched on or the reverser moved concerns the driver
     # a cab switched on by hand as well - a vehicle without the automatic activation
     # (AutomaticCabActivation=No, SA132) never sends the automatic one, and its driver kept the way
     # of the cab the player had left
     var activated:bool = command == "cab_activation_auto" or (command == "cab_activation" and _p1 == true)
+    var direction_moved:bool = command == "direction_increase" or command == "direction_decrease"
+    if not (activated or direction_moved):
+        return
+    var controller:RailVehicleController = VehicleServer.vehicle_get_controller(vehicle) as RailVehicleController
+    if not controller or DriverServer.vehicle_is_control_active(vehicle):
+        return
+    var reverser:bool = direction_moved and not controller.get_direction() == VehicleController.DIRECTION_NEUTRAL
     if not (activated or reverser):
         return
     var direction:int = controller.get_direction_absolute()
