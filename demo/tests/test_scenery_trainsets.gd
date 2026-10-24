@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 ## A loaded scenery places its trainsets and vehicles through the servers, without a node for
-## either: MaszynaLegacyVehicleSystem builds the vehicles, RailVehicleServer stands each trainset
+## either: MaszynaVehicleSystem builds the vehicles, RailVehicleServer stands each trainset
 ## on its track and couples it, and the scenery holds their handles until it unloads.
 
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
@@ -28,8 +28,8 @@ var _scenery:MaszynaSceneryNode
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     _scenery = MaszynaSceneryNode.new()
     _scenery.filename = SCENERY
     _scenery.autoload = false
@@ -38,7 +38,7 @@ func before_each() -> void:
 
 func after_each() -> void:
     _scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_a_loaded_scenery_has_no_node_for_a_vehicle_or_a_trainset() -> void:
@@ -100,8 +100,8 @@ func test_a_skin_chosen_for_the_load_is_that_vehicles_alone() -> void:
     await _scenery.load()
 
     var vehicles:Array[RID] = _scenery.get_vehicles()
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[0]).skin, "chosen")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[1]).skin, "none")
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[0]).skin, "chosen")
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[1]).skin, "none")
 
 
 func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> void:
@@ -119,13 +119,13 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
     var vehicles:Array[RID] = []
     vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
     assert_eq(_ids(vehicles), ["second", "first", "second_2"], "in the arranged order, the added one named")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[1]).file_name, "animated")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[0]).direction,
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[1]).file_name, "animated")
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[0]).direction,
             TrackServer.DIRECTION_REVERSED, "the turned vehicle stands the other way round")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[1]).driver_type,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD, "the changed vehicle keeps its driver")
-    assert_eq(MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicles[2]).driver_type,
-            MaszynaDynamicData.DriverType.DRIVER_NOBODY, "nobody aboard the added one")
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[1]).driver_type,
+            MaszynaVehicleData.DriverType.DRIVER_HEAD, "the changed vehicle keeps its driver")
+    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[2]).driver_type,
+            MaszynaVehicleData.DriverType.DRIVER_NOBODY, "nobody aboard the added one")
     var coupled:Array[RID] = []
     coupled.assign(RailVehicleServer.vehicle_get_coupled(
             vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER))
@@ -197,18 +197,18 @@ func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
     assert_eq(_scenery.get_vehicles().size(), 0)
     assert_eq(_scenery.get_trainsets().size(), 0)
     for vehicle:RID in vehicles:
-        assert_false(MaszynaLegacyVehicleSystem.vehicle_exists(vehicle))
+        assert_false(MaszynaVehicleSystem.vehicle_exists(vehicle))
     assert_false(VehicleServer.vehicle_get_rid_by_id("first").is_valid())
 
 
 func _loads(vehicles:Array[RID]) -> Array:
     return vehicles.map(func(vehicle:RID) -> String:
-        return MaszynaLegacyVehicleSystem.vehicle_get_dynamic(vehicle).load_name)
+        return MaszynaVehicleSystem.vehicle_get_dynamic(vehicle).load_name)
 
 
 ## The trainset of REPEATED_IDS_SCENERY as the selector sends it, its vehicles at `places`
-func _arranged_repeated_ids(places:Array[int]) -> Array[MaszynaDynamicData]:
-    var arranged:Array[MaszynaDynamicData] = []
+func _arranged_repeated_ids(places:Array[int]) -> Array[VehicleData]:
+    var arranged:Array[VehicleData] = []
     for place:int in places:
         arranged.append(_arranged("loco" if place == 0 else "wagon", place, "dynamic/test/synthetic_v1",
                 "synthetic", "none"))
@@ -222,8 +222,8 @@ func _ids(vehicles:Array[RID]) -> Array:
 ## An entry of the player's trainset as the scenery selector arranges it: a declared vehicle at
 ## its place in the declared trainset, -1 for one added
 func _arranged(vehicle_name:String, trainset_index:int, data_path:String, file_name:String,
-        skin:String) -> MaszynaDynamicData:
-    var dynamic:MaszynaDynamicData = MaszynaDynamicData.new()
+        skin:String) -> MaszynaVehicleData:
+    var dynamic:MaszynaVehicleData = MaszynaVehicleData.new()
     dynamic.vehicle_id = vehicle_name
     dynamic.trainset_index = trainset_index
     dynamic.data_path = data_path

@@ -1,0 +1,3 @@
+horn1: { soundbegin: 20786_en62_horn_low_1.wav soundmain: 20786_en62_horn_low_2.wav soundend: 20786_en62_horn_low_3.wav range: 1000 offset: [ -0.55, 1.54 , -9.94 ] pitchvariation: 0 } 
+horn2: { soundbegin: 20786_en62_horn_high_1.wav soundmain: 20786_en62_horn_high_2.wav soundend: 20786_en62_horn_high_3.wav range: 1000 offset: [ 0.55, 1.54 , -9.94 ] pitchvariation: 0 } 
+horn3: { soundbegin: 20786_en62_whistle_1.wav soundmain: 20786_en62_whistle_2.wav soundend: 20786_en62_whistle_3.wav range: 200 offset: [ 0.55, 1.54 , -9.94 ] pitchvariation: 0 } 

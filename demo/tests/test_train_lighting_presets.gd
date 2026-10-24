@@ -9,7 +9,7 @@ var lighting: RailVehicleLighting
 
 
 func before_each():
-    lighting = MoverRailVehicleLighting.new()
+    lighting = MaszynaMoverRailVehicleLighting.new()
     var upper := RailVehicleLightListItem.new()
     upper.cabin_a_head_light = true
     upper.cabin_b_left_red_signal = true
@@ -22,7 +22,7 @@ func before_each():
     lighting.lights_default_selector_position = 1
     # in the description before the vehicle takes it, as the game builds one: the selector starts
     # where CheckLocomotiveParameters() puts it, after the configuration (Mover.cpp:8885)
-    var description:VehicleController = MoverRailVehicleController.new()
+    var description:VehicleController = MaszynaMoverRailVehicleController.new()
     description.add_component(lighting)
     train = build_vehicle("TestLightPresets", description)
 

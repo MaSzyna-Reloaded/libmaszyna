@@ -3,7 +3,7 @@
 What the original (`~/src/maszyna`) or the game data does wrong, oddly or not at all, found while
 porting. Each entry: where it is, what it does, and what the wrapper does instead. The rule for
 all of them is in `AGENTS.md`: port the behaviour, not the quirk - and where a quirk must be kept
-for the data to work, it lives in a factory or a `MaszynaLegacy*` class, never in a core
+for the data to work, it lives in a factory or a `Maszyna*` class, never in a core
 interface.
 
 ## Timetable (`world/mtable.cpp`)
@@ -13,7 +13,7 @@ interface.
   (`mtable.cpp:486`). Wrapper: not ported.
 * **100 km/h without a timetable.** `NewName()` sets `TTVmax = 100` with the comment "wykasowac"
   (`mtable.cpp:224`), so a train with `Timetable:none` is capped at 100. Wrapper: no timetable is
-  no limit (`MaszynaLegacyDriverTimetable`).
+  no limit (`MaszynaDriverTimetable`).
 * **The first station is reached through a fake name.** `NewName()` sets `NextStationName =
   "nowhere"`, and the `Timetable:` command then calls `UpdateMTable(..., "nowhere")` so that it
   matches and moves on to the first station (`Driver.cpp:4533`). Wrapper: `take()` names the
@@ -32,7 +32,7 @@ interface.
 * **The obstacle distance jumps at 100 m.** Beyond 100 m `scan_obstacles()` keeps
   `find_vehicle()`'s distance between the vehicles' positions on the track; nearer it switches to
   the distance between couplers (`Driver.cpp:6674-6677`). Wrapper: the gap between the ends at
-  every distance (`RailVehicleServer.vehicle_find_vehicle()`).
+  every distance (libreloaded's `RailVehicleServer.vehicle_find_vehicle()`).
 * **The vehicle ahead is assumed to run the same way.** `adjust_desired_speed_for_obstacles()`
   compares our speed with the other's `Vel`, which has no sign (`Driver.cpp:7416`). Kept as is.
 * **`find_vehicle()`'s range only limits which tracks are entered** - a vehicle on a track that
@@ -54,15 +54,15 @@ interface.
 * **The front engine counts twice.** `CheckVehicles()` starts `ControlledEnginesCount` at 1 for a
   powered front vehicle, then counts again every powered vehicle under control that is not the
   driver's own - the front one among them when the driver sits elsewhere (`Driver.cpp:2470-2489`).
-  Wrapper: every engine under control once (`MaszynaLegacyDriverTrainset._read_control()`).
+  Wrapper: every engine under control once (`MaszynaDriverTrainset._read_control()`).
 * **A train is a goods train when its driver's locomotive is set to G.** `IsCargoTrain` is the
   occupied vehicle's own `BrakeDelayFlag & bdelay_G` (`Driver.cpp:2302-2304`), and a player's
   locomotive is never re-set (`Driver.cpp:2194`). A locomotive with `BrakeDelays=GP` starts at G
   (`Mover.cpp:12040-12042`), so a passenger train behind it (Galicja, Os33733 behind the SU42) is
   taken for a goods train once the order becomes Obey_train: it keeps further from obstacles and
   leaves every stop without waiting for the departure time (`Driver.cpp:1297`). Wrapper: the type
-  comes from the cars (`RailVehicleServer.trainset_determine_type()`, by their `BrakeDelays` as
-  `AutoRewident()` counts them), determined where `AutoRewident()` runs.
+  comes from the cars (libreloaded's `RailVehicleServer.trainset_determine_type()`, by their
+  `BrakeDelays` as `AutoRewident()` counts them), determined where `AutoRewident()` runs.
 * **A series motor's power is "taken off" when it is not.** `DecMainCtrl(2)` of an electric series
   motor returns true whatever it did (`Mover.cpp:2616-2622`), so `ZeroSpeed()`'s loop ends only
   on the next position check. Wrapper: true only when the controller moved - a controller the
@@ -79,7 +79,7 @@ interface.
   `Mover.cpp:7841`) and drops the start-up; SN61's position 0 is such one. The AI gets round it
   with a special case, "specjalnie dla SN61 żeby nie zgasł" - the controller up to the first
   position with the clutch in, before closing the circuit and after setting the reverser
-  (`Driver.cpp:2840-2843, 5778-5784`). Wrapper: `MaszynaLegacyDriverHints.set_idle()` before the
+  (`Driver.cpp:2840-2843, 5778-5784`). Wrapper: `MaszynaDriverHints.set_idle()` before the
   line breaker, as the original; the reverser's copy is not ported.
 * **One cab, three vehicles, two ways to reach them.** An EMU's cab car (EN57's `ra`/`rb`, the
   control cars with `EngineType` none) has no engine, no pantographs and no battery of its own:
@@ -91,7 +91,7 @@ interface.
   car and reach the rest through `SendCtrlToNext()` along the couplers (the battery, the brakes).
   The AI keeps the same three (`mvOccupied`, `mvControlling`, `mvPantographUnit`) and checks each
   step on whichever of them holds the device. Which command takes which path is written nowhere
-  but in each handler. Wrapper: the driver reads the three (`MaszynaLegacyDriverTrainset`); the
+  but in each handler. Wrapper: the driver reads the three (`MaszynaDriverTrainset`); the
   cab's own `mvControlled` - see TODO.md.
 * **9.81 means "no blended brake".** `IncBrakeEIM()`/`DecBrakeEIM()` test `MED_amax != 9.81`
   (the struct's default) to tell a vehicle with the blended EP/ED brake from one without
@@ -99,30 +99,31 @@ interface.
   the vehicle's (`Driver.h:377`). Kept as is (`NO_MED_DECELERATION`, `EIM_MAX_DECELERATION`).
 * **IncBrake() divides by `ActualProximityDist` unguarded** in the DMU's stronger braking
   (`fBrakeDist / ActualProximityDist`, `Driver.cpp:3140`). Kept as is.
-* **The wait at a stop is a negative timer.** The station's passenger exchange sets
-  `fStopTime` to minus the longest exchange (`WaitingSet()`, `Driver.cpp:2652`), the timer counts
-  up (`Driver.cpp:5910`), `check_load_exchange()` pushes it back down while any car still
-  exchanges (`Driver.cpp:6767-6781`), a speed above 2 km/h resets it (the "force timer reset" HACK,
+* **The wait at a stop is a negative timer.** The station's passenger exchange sets `fStopTime` to
+  minus the longest exchange (`WaitingSet()`, `Driver.cpp:2652`), the timer counts up
+  (`Driver.cpp:5910`), `check_load_exchange()` pushes it back down while any car still exchanges
+  (`Driver.cpp:6767-6781`), a speed above 2 km/h resets it (the "force timer reset" HACK,
   `Driver.cpp:7449-7452`) and `VelDesired` is 0 while it is negative (`Driver.cpp:7454-7457`); the
   same field is the wait of `Wait_for_orders` and `Shunt`. The doors are closed in `Doors(false)`,
-  called from the tractive force code before adding power (`Driver.cpp:7949`). Wrapper: not
-  ported as such - `StationServer` keeps the dispatch as steps (exchange, wait for the departure,
-  doors closed), each over on the cars' own events, and the driver stands while there is one.
-* **A pantograph car's line breaker.** The data gives an EMU's car without traction motors a
-  power of its own (36WE B, `36wea-b_kd.fiz`: `PWR=2`, `EnginePower=CurrentCollector`) - without
-  one its current collector would not count (`LoadFIZ_Power`). The driver's readiness then counts
-  its `Mains` among the consist's line breakers (`Power > 0.01`, `IsAnyLineBreakerOpen`,
-  `Driver.cpp:6143-6144`), and the original closes it like any other: `MainSwitch_()` sets
-  `Mains` on any vehicle with a master controller (`MainCtrlPosNo > 0`, `Mover.cpp:3621-3645`),
-  engine or not. Wrapper: the line breaker is the engine's (`RailVehicleEngine`); a car without
-  an engine has none and is not counted (`MaszynaLegacyDriverTrainset`) - counted, it stood open
-  for ever and the driver never took the unit ready.
+  called from the tractive force code before adding power (`Driver.cpp:7949`). Wrapper: not ported
+  as such - libreloaded's `StationServer` keeps the dispatch as steps (exchange, wait for the
+  departure, doors closed), each over on the cars' own events, and the driver stands while there is
+  one.
+* **A pantograph car's line breaker.** The data gives an EMU's car without traction motors a power
+  of its own (36WE B, `36wea-b_kd.fiz`: `PWR=2`, `EnginePower=CurrentCollector`) - without one its
+  current collector would not count (`LoadFIZ_Power`). The driver's readiness then counts its
+  `Mains` among the consist's line breakers (`Power > 0.01`, `IsAnyLineBreakerOpen`,
+  `Driver.cpp:6143-6144`), and the original closes it like any other: `MainSwitch_()` sets `Mains`
+  on any vehicle with a master controller (`MainCtrlPosNo > 0`, `Mover.cpp:3621-3645`), engine or
+  not. Wrapper: the line breaker is the engine's (libreloaded's `RailVehicleEngine`); a car without
+  an engine has none and is not counted (`MaszynaDriverTrainset`) - counted, it stood open for ever
+  and the driver never took the unit ready.
 * **The locked brake pipe has no hint.** A vehicle whose pipe locks when it empties
   (`Brake: LPOn= LPOff=`, SA132 `218ma_a_p4.fiz`) charges it again only while a universal brake
   button with `ub_UnlockPipe` is held (`UBB1=2`). The AI holds it in `control_main_pipe()`
   (`Driver.cpp:8252-8261`), only to go and only once ready, but no `driver_hint` cues it:
   `trainbrakesetpipeunlock` is only the handle's `HandleUnlock` position (`Driver.cpp:8213-8218`).
-  Wrapper: `MaszynaLegacyDriverBraking.control_main_pipe()` runs on every update and cues
+  Wrapper: `MaszynaDriverBraking.control_main_pipe()` runs on every update and cues
   `MAIN_PIPE_UNLOCK` (the button's control) also while the handle stands at running, once the main
   reservoir is full.
 * **"Neutral" and "release" contradict each other on a controller carrying the train brake.**
@@ -194,7 +195,7 @@ interface.
   (`MaszynaImporterContext.join_duplicated_events`, resolved past includes when they are merged).
   The factory gives a name defined more than once one event of its own, which queues the unnamed
   definitions with no delay, so they run one frame later than the original runs them, in their
-  order. `ScenarioEventServer` knows nothing of it.
+  order. libreloaded's `ScenarioEventServer` knows nothing of it.
 * **Setting the clock by hand can break a scenario.** A time-of-day launcher fires only in its
   exact minute (`EvLaunch.cpp:197-211`), so one jumped over never fires, and the timetables
   compare departures with the clock, so every train is late or early by the jump. Kept as is;
@@ -205,11 +206,11 @@ interface.
 * **Blinking stops while the model is not drawn.** `RaAnimate()` advances `m_lighttimers` and is
   called only by the renderer as it draws the instance (`opengl33renderer.cpp:2914`,
   `openglrenderer.cpp:2396`), so a culled semaphore's blinking pauses and resumes out of phase.
-  Wrapper: every blinking light runs on one clock (`E3DRenderingServer::_process_lights()`),
+  Wrapper: every blinking light runs on one clock (`MaszynaE3DRenderingServer::_process_lights()`),
   drawn or not.
 * **A negative dark/home value is never lit.** The mode is taken from `|value|`, the threshold from
   the signed value - `lsLights[i] - ls_Dark` (`AnimModel.cpp:601`, `:611` for `ls_Home`) - so
-  `-3.4` gives a threshold of -6.4. Wrapper: the fraction of `|value|` (`LegacyLightMode`).
+  `-3.4` gives a threshold of -6.4. Wrapper: the fraction of `|value|` (`MaszynaLightMode`).
 * **A model hides different submodels depending on who loads it.** `TSubModel::Load()` and
   `BinInit()` hide a `*_on` submodel only when the model is loaded as `dynamic` - a vehicle, its
   cab, its load - and in any other model hide `Light_On*` alone, compared with its letter case
@@ -223,30 +224,31 @@ interface.
 * **`ls_winter` (5) is declared and never handled** (`AnimModel.h:34`): `RaPrepare()` has no case
   for it, so such a light stays as it was. Wrapper: parsed as off.
 
-## Mover (`src/legacy/maszyna-mover`, vendored)
+## Mover (`src/maszyna/maszyna-mover`, vendored)
 
 * **A vehicle running off a track end continues on an invisible track.** `TTrackFollower` makes an
   "auto_null" 450 m straight past an open end (`TTrack::NullCreate()`, Track.cpp:226-262) with
   `dtrack_norail`, and the vehicle derails on it as it runs on. Wrapper: no track is made; the
-  vehicle stops at the end (`RailVehicleServer._move_placement()`) and the track it is handed
-  carries `TRACK_DAMAGE_NO_RAIL`, so it derails there, cause no rails.
+  vehicle stops at the end (libreloaded's `RailVehicleServer._move_placement()`) and the track it is
+  handed carries `TRACK_DAMAGE_NO_RAIL`, so it derails there, cause no rails.
 * **A derailment is told to nobody.** The original plays `derail:` and logs nothing ("Bad
-  driving" is commented out). Wrapper: `RailVehicleServer.vehicle_derailed(vehicle, cause)`, a
+  driving" is commented out). Wrapper: libreloaded's
+  `RailVehicleServer.vehicle_derailed(vehicle, cause)`, a
   `vehicle ... derailed cause=` line of the gameplay log and "Vehicle derailed" with its cause on
   the driving aid's tile.
 * **The free-rail derailment factor read a boolean.** `Track.DamageFlag && dtrack_freerail` in the
   vendored copy (Mover.cpp:1346) where the original has `&` (Mover.cpp:1441). Fixed in the vendored
   copy.
-* **A rear cab activated with the reverser set reverses the other cars.** `CabActivisation()`
-  sends `SendCtrlToNext("Direction", DirAbsolute, CabActive)` (`Mover.cpp:2664`, original 2907),
-  and the receiver takes the value as its `DirActive` (`Mover.cpp:9302-9304`); every other
-  reverser change sends `DirActive` (`Mover.cpp:670, 2973`). From an SA132's B-car cab both cars
-  pulled against each other. Wrapper: `MoverRailVehicleController` sends `DirActive` again after
-  every cab activation (`_send_direction()`).
+* **A rear cab activated with the reverser set reverses the other cars.** `CabActivisation()` sends
+  `SendCtrlToNext("Direction", DirAbsolute, CabActive)` (`Mover.cpp:2664`, original 2907), and the
+  receiver takes the value as its `DirActive` (`Mover.cpp:9302-9304`); every other reverser change
+  sends `DirActive` (`Mover.cpp:670, 2973`). From an SA132's B-car cab both cars pulled against each
+  other. Wrapper: `MaszynaMoverRailVehicleController` sends `DirActive` again after every cab
+  activation (`_send_direction()`).
 * **The light preset is not applied on cab (de)activation by the Mover.** `TTrain` calls
   `SetLights()` after `CabActivisation()` and, with `InactiveCabFlag` redmarkers, after
   `CabDeactivisation()` (`Train.cpp:3101-3104, 3134-3137`). Wrapper: `cab_activation()` calls
-  `MoverRailVehicleLighting.apply_light_preset()` the same way.
+  `MaszynaMoverRailVehicleLighting.apply_light_preset()` the same way.
 * **A cab switched on sends itself only backwards.** `SendCtrlToNext()` picks the coupler from the
   sign of the cab (`d = (1 + Sign(dir)) / 2`, "wysyłanie tylko w tył"), and `CabActivisation()`
   does nothing when a cab is already active - so a cab switched on before the unit was coupled
@@ -261,7 +263,7 @@ interface.
   and `BrakeLevelSet()` returns early when `fBrakeCtrlPos` already equals the new position - so a
   vehicle set up a second time kept its FV4a handle at lap and never charged the pipe
   (`FINDINGS.md`, 2026-09-26). Wrapper: `fBrakeCtrlPos` synced before `BrakeLevelSet()` in
-  `MoverRailVehicleController::initialize_mover_state()`.
+  `MaszynaMoverRailVehicleController::initialize_mover_state()`.
 * **`BrakeOpModes` defaults to a mode no FIZ asks for.** Wrapper: `BRAKE_OP_MODE_NONE` as the
   default, `pnep` parsed.
 * **The spring brake reads its two valve areas crossed.** FIZ `ValveOnArea` goes into
@@ -286,9 +288,10 @@ interface.
 * **The vendored sources need the original's precompiled header to compile correctly.** Every file
   of the original is built with `stdafx.h`, which includes `<stdlib.h>`; libstdc++ then puts
   `std::abs`'s overloads in the global namespace. Without it the unqualified `abs()` in
-  `hamulce.cpp` (11 calls) is C's `int abs(int)`, so every difference below 1 bar truncates to
-  zero and the control reservoir of `MHZ_6P`, `MHZ_EN57`, `MHZ_K5P`, `M394` and `St113` freezes.
-  It compiles silently. Wrapper: CMake force-includes `stdlib.h` into `src/legacy/maszyna-mover/*.cpp`.
+  `hamulce.cpp` (11 calls) is C's `int abs(int)`, so every difference below 1 bar truncates to zero
+  and the control reservoir of `MHZ_6P`, `MHZ_EN57`, `MHZ_K5P`, `M394` and `St113` freezes. It
+  compiles silently. Wrapper: `plugin.cmake` force-includes `stdlib.h` into
+  `src/maszyna/maszyna-mover/*.cpp`.
 * **The pantographs' master valve opens by itself unless the FIZ says otherwise.** The struct
   default of every `basic_device` is `start_t::manual` (`McZapkie/MOVER.h:1323`), but
   `LoadFIZ_Cntrl` gives `PantsValve` a missing `PantEPValveStart` as automatic, "legacy code
@@ -296,7 +299,7 @@ interface.
   pantograph's own valve stays manual. The E186 declares none of these keys, so in the original
   `P` alone raises its pantograph; porting only the keys that are present left the master valve
   shut, and the wrapper grew a workaround opening it on every raise. Wrapper: the loader's
-  defaults in `RailVehicleElectricEngine`, the workaround removed.
+  defaults in libreloaded's `RailVehicleElectricEngine`, the workaround removed.
 * **The couplers depend on the frame rate.** `CouplerForce()` (`Mover.cpp:4779-4784`) takes a
   coupler's length as the distance set by the last refresh plus *ten times* the relative
   movement since (`dMoveLen`), and the original refreshes once a frame, before all its physics
@@ -307,7 +310,7 @@ interface.
   every sub-step (`MaszynaMoverVehicleServer::stepping_advance()`, `FINDINGS.md` 2026-09-27); the Mover untouched.
 * **The FIZ loader is not in the vendored copy.** Ours is 9598 lines against the original's 12813
   and holds no `LoadFIZ_*` at all, so every quirk of how a FIZ key reaches a Mover field has to be
-  read in `~/src/maszyna`, not in `src/legacy/maszyna-mover`.
+  read in `~/src/maszyna`, not in `src/maszyna/maszyna-mover`.
 
 * **`LoadFIZ_Engine` and `readMPT()` pick their keys by the engine type.** The clutch of a plain
   diesel (`minVelfullengage`, `engageDia`, `engageMaxForce`, `engagefriction`) is read from the
@@ -364,7 +367,7 @@ interface.
   be measured by (`DynObj.cpp:5577-5633`). No FIZ of the game data names `PantType=`. Wrapper: a FIZ
   that names it takes that type's dimensions; one that does not - every FIZ today - has its arms
   measured from the model as the original does, until the FIZ files name their pantographs
-  (`RailVehicleRenderingServer::_publish_pantograph_geometry`).
+  (libreloaded's `RailVehicleRenderingServer::_publish_pantograph_geometry`).
 
 ## Cab definitions (MMD data)
 
@@ -375,12 +378,13 @@ interface.
   never get a caption.
 * The SM42 6D cab has no `mainctrl` - its master controller is `jointctrl`. Anything that
   commands "the master controller" by name must fall back to it
-  (`MaszynaLegacyDriverHints.master_controller()`).
-* **What a cab command does depends on the gauge's `type:` in the MMD.** `Train.cpp` handlers
-  branch on `ggX.type()` (`rg -o 'gg\w+\.type\(\)' vehicle/Train.cpp` lists them): the same key
-  flips a two-state `main_sw`, but an impulse one acts only on release; a push pump runs while held,
-  a toggle one sets `*SwitchOff`. A switch without `type:` is a toggle (`Gauge.h:89`). Wrapper: the
-  MMD factory maps the type onto the widget, the branching lives in `legacy_cabin/` behaviours.
+  (`MaszynaDriverHints.master_controller()`).
+* **What a cab command does depends on the gauge's `type:` in the MMD.** `Train.cpp` handlers branch
+  on `ggX.type()` (`rg -o 'gg\w+\.type\(\)' vehicle/Train.cpp` lists them): the same key flips a
+  two-state `main_sw`, but an impulse one acts only on release; a push pump runs while held, a
+  toggle one sets `*SwitchOff`. A switch without `type:` is a toggle (`Gauge.h:89`). Wrapper: the
+  MMD factory maps the type onto the widget, the branching lives in `addons/libmaszyna/cabin/`
+  behaviours.
 * **A vehicle's own MMD takes parameters.** The original never opens it directly: it parses the
   text `include <TypeName>.mmd <name> <TypeName> <skin> end` (`DynObj.cpp:5260`), so the MMD's
   `(p1)` is the vehicle's scenery name, `(p2)` its type name and `(p3)` its skin. The data relies
@@ -396,7 +400,7 @@ interface.
   then `components/decals/none`, which `cParser` gives any parameter not passed (`parser.cpp:290`).
   The original fails to find the model, logs "Bad file: failed to locate 3d model file" once and
   remembers the miss (`TModelsManager::GetModel()`, `MdlMngr.cpp`). Wrapper: the same miss, warned
-  by `E3DModelManager.load_model()` for every vehicle.
+  by `MaszynaE3DModelManager.load_model()` for every vehicle.
 
 * **Every vehicle has three cab positions, whatever its MMD defines.** The Mover's `CabOccupied`
   is -1, 0 or 1 for any vehicle: a scenery `headdriver`/`reardriver` sets it to ±1 straight from
@@ -406,7 +410,7 @@ interface.
   A cab change steps through all three positions the same way and fails only after moving onto a
   missing one (`TTrain::CabChange()`, `Train.cpp:10324-10351`). Wrapper: a rail vehicle has the
   cabins its MMD defines a cab for (`MaszynaVehicleStructure.cabin_kinds`), no more. For the data
-  that puts a driver at an end without a cab definition, `MaszynaLegacyVehicleSystem._build()`
+  that puts a driver at an end without a cab definition, `MaszynaVehicleSystem._build()`
   adds that end's cabin - only for a vehicle that can have a cab, one with a master controller
   (`FizTrainCntrlParser`, `MCPN` > 1). A wagon given a driver stays without one (a warning): the
   original's AI only moves to vehicles under its control (`FirstFind(dir, coupling::control)`,
@@ -415,18 +419,19 @@ interface.
   `TTrain::CabChange()` moves `CabOccupied` first and only then looks for the MMD's definition
   (`Train.cpp:10334-10349`): past a missing `cab0definition:` the driver stands in no cab, and one
   more press goes on. Through a gangway the neighbour is entered by the cab position facing it,
-  `CabOccupied = ±1`, whether it has a cab or not (`Train.cpp:8301-8306`) - an EMU's middle car
-  is entered with no cab view at all. After the change the handler applies two of its own
-  "HACK"s: the door permit preset (`ChangeDoorPermitPreset(0)`) and the lights (`SetLights()`)
-  (`Train.cpp:8309-8318`). Wrapper (`RailVehicleServer.person_change_cabin()`): a person always
-  sits in a cabin - a position without one is passed by, and through the gangways the person
-  goes on to the nearest vehicle that has a cabin, entering it from the side it came from. The two
-  hacks are not ported.
+  `CabOccupied = ±1`, whether it has a cab or not (`Train.cpp:8301-8306`) - an EMU's middle car is
+  entered with no cab view at all. After the change the handler applies two of its own "HACK"s: the
+  door permit preset (`ChangeDoorPermitPreset(0)`) and the lights (`SetLights()`)
+  (`Train.cpp:8309-8318`). Wrapper (libreloaded's `RailVehicleServer.person_change_cabin()`): a
+  person always sits in a cabin - a position without one is passed by, and through the gangways the
+  person goes on to the nearest vehicle that has a cabin, entering it from the side it came from.
+  The two hacks are not ported.
 * **A cab change while the AI drives moves the AI's cab with the player's view.** The player and
   the AI driver share one `TTrain`: with the AI at the controls Home/End only shifts the vehicle's
   `CabOccupied` by one (`TTrain::CabChange()`, Train.cpp:10326-10333), so the vehicle counts its
   driver in whichever cab the player looks from. Wrapper: the player and the driver are persons of
-  their own - only the player's person goes over (`RailVehicleServer.person_change_cabin()`), the
+  their own - only the player's person goes over (libreloaded's
+  `RailVehicleServer.person_change_cabin()`), the
   AI keeps its cabin and the vehicle answers to it.
 
 ## Scenery data
@@ -436,10 +441,10 @@ interface.
   what the original's Starter offers is the trainsets whose mission description `//$o` does not
   begin with "-" - a convention of the data, written down nowhere in it and not followed by the
   original's own launcher, which lists every trainset (`launcher/scenery_list.cpp`). 1467 of the
-  data's 1938 trainsets are marked so; `calkowo_tartak2.scn` declares 19 and offers one,
-  6Dg-1248, as the Starter shows it, and every scenario offers at least one. Wrapper: the scenery
-  selector lists the offered occupied trainsets (`MaszynaSceneryInfo.Trainset.is_offered()`), and
-  every other one under its "all trainsets" check box.
+  data's 1938 trainsets are marked so; `calkowo_tartak2.scn` declares 19 and offers one, 6Dg-1248,
+  as the Starter shows it, and every scenario offers at least one. Wrapper: `MaszynaSceneryInfo`
+  marks the offered trainsets `player_drivable`; the game's scenery selector lists the offered
+  occupied ones, and every other one under its "all trainsets" check box.
 * **A model's path has two roots.** A `node ... model` names its file either from the game
   directory (`models\linia053\peron_sandomierz.t3d` - Sandomierz's platform, `l053_tri.scm:59325`;
   `dynamic\pkp\...` for a vehicle standing as scenery) or from `models/` (`bud\dombale.t3d`). The
@@ -489,16 +494,16 @@ interface.
   names `terrain l107/l107_teren.sbt` (955 MB) on its third line - after `l107_deko.scm`, before
   `l107_ziel.scm` with its `deko/107_*_ter.scm` and before `nmt100_podkarpackie_ter.scm`, which
   `linia_107_*.scn` include next; the original leaves all three out. A `terrain` line sets the
-  include flag even when its file is missing; the shapes are left out only when the file is a
-  region file. Wrapper: the two flags in `MaszynaImporterContext` (`binary_terrain`,
+  include flag even when its file is missing; the shapes are left out only when the file is a region
+  file. Wrapper: the two flags in `MaszynaImporterContext` (`binary_terrain`,
   `binary_terrain_state`), which `pop_state()` keeps; the region file is not read at load but
-  supplied section by section as the camera comes near (`MaszynaLegacySBTTerrainProvider`, a
+  supplied section by section as the camera comes near (`MaszynaSBTTerrainProvider`, a libreloaded
   `SceneryStreamingProvider` - a section is the streaming's own 1 km cell, its radius in the header
-  says how far its shapes reach out of it). A small include is parsed
-  in place, so a `terrain` line in it reaches the rest of the including file as the original's
-  does; one in an include large enough to be parsed as a task of its own
-  (`SceneryInstancer.INLINE_INCLUDE_MAX_SIZE`) reaches only what it includes itself - the datapack
-  has none. The region file's lines are left out, as `lines` nodes are.
+  says how far its shapes reach out of it). A small include is parsed in place, so a `terrain` line
+  in it reaches the rest of the including file as the original's does; one in an include large
+  enough to be parsed as a task of its own (`MaszynaSceneryProvider.INLINE_INCLUDE_MAX_SIZE`)
+  reaches only what it includes itself - the datapack has none. The region file's lines are drawn as
+  the scenery's own `lines` nodes (libreloaded's `SceneryLines`).
 * A timetable file saved as UTF-8 rather than cp1250 keeps mangled Polish letters in its labels
   (`linia053/scenariusz_os`).
 * **A load count with no type behind it is not a load.** The `dynamic` line gives the count
@@ -551,7 +556,7 @@ interface.
   (`scenenode.cpp:430`), and the section draws it with `Render(shape, true)`, which skips the range
   test (`opengl33renderer.cpp:2495`). So `node 1000 0 ... triangles` terrain (all of Całkowo's
   `v2_terennowy.scm`) shows wherever its section is in view, whatever the 1000.
-  - Wrapper: `SceneryTrianglesSink` and `MaszynaLegacySBTTerrainProvider` merge such shapes per
+  - Wrapper: `MaszynaTrianglesSink` and `MaszynaSBTTerrainProvider` merge such shapes per
     1 km section and drop their range.
   - Applied as a Godot visibility range, it was measured to the centre of a whole merged section,
     and the ground went missing under houses and trees ~500 m inside the section.
@@ -571,10 +576,10 @@ interface.
   - Neither the `.mat` nor the shape can say it otherwise (a submodel converted to a shape uses the
     material's `opacity: 0` instead, `scenenode.cpp:352`).
   - 8 textures in the datapack are named so (`@water03`, `@oslonatrakcji`, ...).
-  - Wrapper: the rule lives in one place, `MaterialManager.is_material_translucent()`, which
-    `SceneryTrianglesSink` asks per material. It reads only a `.dds` header
-    (`DDSTextureLoader.has_alpha()`), as `MaterialManager` loads only `.dds` textures. Another
-    source of translucency is set there and nowhere else.
+  - Wrapper: the rule lives in one place, `MaszynaMaterialManager.is_material_translucent()`, which
+    `MaszynaTrianglesSink` asks per material. It reads only a `.dds` header
+    (`DDSTextureLoader.has_alpha()`), as `MaszynaMaterialManager` loads only `.dds` textures.
+    Another source of translucency is set there and nowhere else.
 
 ## Sound (`audio/audiorenderer.cpp`, `vehicle/DynObj.cpp`)
 
@@ -587,10 +592,10 @@ interface.
   vehicle**, so a vehicle keeps its own phase for good.
 * **The pantograph "up" sound is keyed to the voltage, not to the arm.** `sPantUp` plays when
   `PantFrontVolt`/`PantRearVolt` goes from 0 to above 0 (`vehicle/DynObj.cpp:3881-3934`, with the
-  original's own TODO to make it "a sound event for specific pantograph"), so raising a
-  pantograph under a dead or missing wire is silent. `sPantDown` follows the pantograph's
-  `is_active` instead (`vehicle/DynObj.cpp:4007-4036`). Wrapper: the same two conditions, reported
-  as `RailVehicleElectricEngine.pantograph_up`/`pantograph_down`; which pantograph it was is not yet
+  original's own TODO to make it "a sound event for specific pantograph"), so raising a pantograph
+  under a dead or missing wire is silent. `sPantDown` follows the pantograph's `is_active` instead
+  (`vehicle/DynObj.cpp:4007-4036`). Wrapper: the same two conditions, reported as libreloaded's
+  `RailVehicleElectricEngine.pantograph_up`/`pantograph_down`; which pantograph it was is not yet
   used for the sound's position (`TODO.md`).
 
 ## Cab Python screens (`pyscreen:`, the original's Python 2 scripts)

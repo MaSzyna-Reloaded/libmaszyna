@@ -44,25 +44,32 @@ jobs:
           sudo ln -s /usr/local/llvm-${{ env.LLVM_VERSION }}/bin/run-clang-tidy /usr/local/bin/run-clang-tidy
           sudo ln -s /usr/local/llvm-${{ env.LLVM_VERSION }}/bin/clang-format /usr/local/bin/clang-format
 
-      # CMake dumps the double precision API from it (CMakeLists.txt) when it configures the
-      # clang-tidy database
+      # CMake dumps the double precision API from it (libreloaded's CMakeLists.txt) when it
+      # configures the clang-tidy database
       - name: Fetch the double precision Godot
         run: |
-          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          vendor/libreloaded/ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run style-check
         id: run
         shell: bash
         run: |
-          set -o pipefail
           : > style-check.log
-          
-          # make style-check configures the clang-tidy database if needed; the checkout's path is
-          # stripped so annotations point at repository files
-          make style-check 2>&1 | sed "s#$GITHUB_WORKSPACE/##g" | tee style-check.log
 
-          issues=$(grep -E "^[^=][^=]*:[0-9]+:[0-9]+: (warning|error): .* \[[^]]+\]" style-check.log | grep -v -E "godot[-_]?cpp" | wc -l || true)
+          # make style-check (libreloaded's scripts) configures the clang-tidy database if needed
+          # and checks libreloaded's sources with this plugin's; only this repository's issues
+          # count here - libreloaded's are its own CI's. The checkout's path is stripped so
+          # annotations point at repository files
+          make style-check 2>&1 | sed "s#$GITHUB_WORKSPACE/##g" | tee style-check.log || true
+
+          pattern="^[^=][^=]*:[0-9]+:[0-9]+: (warning|error): .* \[[^]]+\]"
+          # a run that died before checking anything (configuration, the database) reports no issue
+          if ! grep -q "Style check: OK" style-check.log && ! grep -qE "$pattern" style-check.log; then
+            echo "style-check failed before checking the sources" >&2
+            exit 1
+          fi
+          issues=$(grep -E "$pattern" style-check.log | grep -v -E "godot[-_]?cpp|^vendor/libreloaded/" | wc -l || true)
           echo "issues=$issues" >> $GITHUB_OUTPUT
 
       - name: Build Markdown table report
@@ -89,7 +96,7 @@ jobs:
             echo "|------|------|--------|----------|-------|---------|"
             # Parse lines like: path:line:col: severity: message [check]
             grep -E "^[^=][^=]*:[0-9]+:[0-9]+: (warning|error): .* \[[^]]+\]" style-check.log | \
-              grep -v -E "godot[-_]?cpp" | \
+              grep -v -E "godot[-_]?cpp|^vendor/libreloaded/" | \
               awk '
                 function html_escape(s){gsub(/\|/ ,"\\|", s); gsub(/\\\\/ ,"\\\\\\\\", s); return s}
                 {
@@ -113,7 +120,7 @@ jobs:
         run: |
           # Parse clang-tidy log and create GitHub annotations
           grep -E ": (warning|error): .* \[[^]]+\]" style-check.log | \
-          grep -v -E "godot[-_]?cpp|src/legacy/maszyna-mover|src/gen" | \
+          grep -v -E "godot[-_]?cpp|^vendor/libreloaded/|src/maszyna/maszyna-mover" | \
           awk '
             function esc(s) {
               gsub(/%/, "%25", s); gsub(/\r/, "%0D", s); gsub(/\n/, "%0A", s);

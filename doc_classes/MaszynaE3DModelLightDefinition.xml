@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DModelLightDefinition" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Describes a E3D model light
+	</brief_description>
+	<description>
+		MaszynaE3DModelLightDefinition holds node paths to submodels with "on" and "off" light state.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="off_submodel_path" type="NodePath" setter="set_off_submodel_path" getter="get_off_submodel_path" default="NodePath(&quot;&quot;)">
+			Node path to submodel that should be shown, when light is off.
+		</member>
+		<member name="on_submodel_path" type="NodePath" setter="set_on_submodel_path" getter="get_on_submodel_path" default="NodePath(&quot;&quot;)">
+			Node path to submodel that should be shown, when light is on.
+		</member>
+		<member name="xon_submodel_path" type="NodePath" setter="set_xon_submodel_path" getter="get_xon_submodel_path" default="NodePath(&quot;&quot;)">
+			Node path to submodel that should be shown instead of the "on" one, when the light is dimmed ("_xon").
+		</member>
+	</members>
+</class>

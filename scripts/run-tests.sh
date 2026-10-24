@@ -15,6 +15,10 @@
 #   JOBS=6 TIMEOUT=200 scripts/run-tests.sh --changed
 #
 # Exit status is the number of scripts that did not come back fully green.
+#
+# The test project needs the library built into it (make compile-debug, libreloaded's with this
+# plugin in it) and libreloaded's demo pieces linked (make links: the tests' pre-run hook,
+# res://tests/simulation_runtime_hook.gd of demo/.gutconfig.json).
 
 set -uo pipefail
 

@@ -31,8 +31,8 @@ const MODELS_TIMEOUT:float = 5.0
 var _track:RID
 var _vehicle:RailVehicle3D
 var _other_vehicle:RailVehicle3D
-var _model:E3DModelInstance
-var _other_model:E3DModelInstance
+var _model:MaszynaE3DModelInstance
+var _other_model:MaszynaE3DModelInstance
 
 
 func before_each() -> void:
@@ -48,7 +48,7 @@ func after_each() -> void:
     TrackServer.topology_rebuild()
 
 
-func _coupler_model(hose:String, geometry:HoseGeometry) -> E3DModelInstance:
+func _coupler_model(hose:String, geometry:HoseGeometry) -> MaszynaE3DModelInstance:
     var submodels:Dictionary = {
         "coupler1_off": Transform3D(),
         "coupler1_on": Transform3D(),
@@ -59,15 +59,15 @@ func _coupler_model(hose:String, geometry:HoseGeometry) -> E3DModelInstance:
     if geometry == HoseGeometry.CONNECTED:
         submodels[hose + "_on"] = Transform3D()
     var no_parents:Dictionary = {}
-    var model:E3DModelInstance = build_model_instance(submodels, no_parents)
-    for submodel:E3DSubModel in model.model.submodels:
+    var model:MaszynaE3DModelInstance = build_model_instance(submodels, no_parents)
+    for submodel:MaszynaE3DSubModel in model.model.submodels:
         if submodel.resource_name.ends_with("_on"):
             submodel.dynamic_hidden = true
     return model
 
 
 func _build_coupler_vehicle(
-        vehicle_name:String, offset:float, description:VehicleController, model:E3DModelInstance) -> RailVehicle3D:
+        vehicle_name:String, offset:float, description:VehicleController, model:MaszynaE3DModelInstance) -> RailVehicle3D:
     var physics_node:VehiclePhysicsNode = build_vehicle_node(vehicle_name, description)
     var vehicle:RailVehicle3D = RailVehicle3D.new()
     vehicle.start_track_name = TRACK_NAME
@@ -118,8 +118,8 @@ func test_a_mounted_node_rides_on_the_vehicle() -> void:
 ## The player finds a vehicle by the area around its model, which names the vehicle - there is no
 ## node of it to find
 func test_the_detection_area_names_its_vehicle() -> void:
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     var vehicle:MaszynaRailVehicle3D = await spawn_maszyna_vehicle(
             "dynamic/test/synthetic_v1", "synthetic", "", "rendering_detection")
     if not await wait_detailed(vehicle):
@@ -131,7 +131,7 @@ func test_the_detection_area_names_its_vehicle() -> void:
     var query:PhysicsPointQueryParameters3D = PhysicsPointQueryParameters3D.new()
     query.position = (RailVehicleRenderingServer.vehicle_get_transform(rid)
             * RailVehicleRenderingServer.vehicle_get_appearance(rid).model_transform
-            * E3DRenderingServer.instance_get_aabb(RailVehicleRenderingServer.vehicle_get_model(rid)).get_center())
+            * MaszynaE3DRenderingServer.instance_get_aabb(RailVehicleRenderingServer.vehicle_get_model(rid)).get_center())
     query.collide_with_areas = true
     query.collide_with_bodies = false
     var hits:Array[Dictionary] = get_viewport().world_3d.direct_space_state.intersect_point(query)
@@ -142,14 +142,14 @@ func test_the_detection_area_names_its_vehicle() -> void:
     # the vehicle goes before the game directory it was read from: the game's data read again
     # would build it anew
     vehicle.free()
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
 
 ## "Edit FIZ": an editable vehicle's models stand as nodes under a holder the Scene dock shows - not
 ## an internal child of the vehicle's node - and are hidden again with it off
 func test_an_editable_vehicle_shows_its_model_as_nodes() -> void:
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     var vehicle:MaszynaRailVehicle3D = await spawn_maszyna_vehicle(
             "dynamic/test/synthetic_v1", "synthetic", "", "rendering_editable")
     if not await wait_detailed(vehicle):
@@ -171,7 +171,7 @@ func test_an_editable_vehicle_shows_its_model_as_nodes() -> void:
     assert_eq(vehicle.get_child_count(false), 0, "the holder is hidden again")
     # the vehicle goes before the game directory it was read from
     vehicle.free()
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
 
 func _has_model(vehicle:RID) -> bool:
@@ -199,8 +199,8 @@ func test_a_vehicle_loads_its_model_at_once_without_lazy_loading() -> void:
 func _drive_camera_past_a_vehicle(lazy_loading:bool, vehicle_id:String) -> void:
     var previous_lazy_loading:bool = ResourceLazyLoader.lazy_loading
     ResourceLazyLoader.lazy_loading = lazy_loading
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     var camera:Camera3D = add_child_autoqfree(Camera3D.new())
     var far:Vector3 = Vector3(BEYOND_DRAW_DISTANCE * SceneryStreamingServer.streaming_get_draw_distance(), 0.0, 0.0)
     camera.global_position = far
@@ -238,7 +238,7 @@ func _drive_camera_past_a_vehicle(lazy_loading:bool, vehicle_id:String) -> void:
     SceneryStreamingServer.streaming_set_camera(0)
     # the vehicle goes before the game directory it was read from
     vehicle.free()
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
     ResourceLazyLoader.lazy_loading = previous_lazy_loading
 
 
@@ -246,7 +246,7 @@ func test_a_rebuilt_model_is_announced() -> void:
     _vehicle = build_rail_vehicle("RenderingRebuilt", TRACK_NAME, OFFSET)
     var submodels:Dictionary = {"body": Transform3D()}
     var no_parents:Dictionary = {}
-    var model:E3DModelInstance = build_model_instance(submodels, no_parents)
+    var model:MaszynaE3DModelInstance = build_model_instance(submodels, no_parents)
     _vehicle.add_child(model)
     _vehicle.model_instance_path = NodePath("Model")
     await wait_idle_frames(SETTLE_FRAMES)
@@ -258,14 +258,14 @@ func test_a_rebuilt_model_is_announced() -> void:
 
 
 func test_the_low_poly_interior_hides_the_cab_whose_interior_is_drawn() -> void:
-    _vehicle = build_rail_vehicle("RenderingCabs", TRACK_NAME, OFFSET, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    _vehicle = build_rail_vehicle("RenderingCabs", TRACK_NAME, OFFSET, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var exterior_submodels:Dictionary = {"body": Transform3D()}
     var cab_submodels:Dictionary = {}
     for cab:String in LOW_POLY_CABS:
         cab_submodels[cab] = Transform3D()
     var no_parents:Dictionary = {}
-    var exterior:E3DModelInstance = build_model_instance(exterior_submodels, no_parents)
-    var low_poly:E3DModelInstance = build_model_instance(cab_submodels, no_parents)
+    var exterior:MaszynaE3DModelInstance = build_model_instance(exterior_submodels, no_parents)
+    var low_poly:MaszynaE3DModelInstance = build_model_instance(cab_submodels, no_parents)
     low_poly.name = "LowPoly"
     _vehicle.add_child(exterior)
     _vehicle.add_child(low_poly)

@@ -2,10 +2,10 @@ extends MaszynaGutTest
 
 ## SceneryHUDMouseServer: a scenery model is hovered through the camera ray, a click calls its
 ## operation, Shift+click the other one (basic_cell::on_click(), scene.cpp:33-43, 691-704); and
-## E3DRenderingServer's ray test the picking stands on.
+## MaszynaE3DRenderingServer's ray test the picking stands on.
 
-const EventImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_event_importer.gd")
-const NodeImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_importer.gd")
+const EventImporter = preload("res://addons/libmaszyna/scenery/maszyna_event_importer.gd")
+const NodeImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_importer.gd")
 ## Longer than any test runs, so a fired event stays queued
 const NEVER:float = 3600.0
 ## Where the model stands in front of the camera
@@ -30,21 +30,21 @@ func after_each() -> void:
 func test_the_segment_hits_a_built_instance_and_misses_beside_it() -> void:
     var instance:RID = _create_instance()
 
-    var hit:Dictionary = E3DRenderingServer.instance_intersect_segment(instance, Vector3.ZERO, Vector3(0.0, 0.0, -100.0))
-    var miss:Dictionary = E3DRenderingServer.instance_intersect_segment(instance, Vector3(5.0, 0.0, 0.0), Vector3(5.0, 0.0, -100.0))
+    var hit:Dictionary = MaszynaE3DRenderingServer.instance_intersect_segment(instance, Vector3.ZERO, Vector3(0.0, 0.0, -100.0))
+    var miss:Dictionary = MaszynaE3DRenderingServer.instance_intersect_segment(instance, Vector3(5.0, 0.0, 0.0), Vector3(5.0, 0.0, -100.0))
 
     # the box is 1 m wide, its near face half a metre in front of its middle
     assert_almost_eq(float(hit["distance"]), 9.5, 0.001)
     assert_true((hit["position"] as Vector3).is_equal_approx(Vector3(0.0, 0.0, -9.5)))
     assert_true(miss.is_empty())
-    E3DRenderingServer.instance_free(instance)
+    MaszynaE3DRenderingServer.instance_free(instance)
 
 
 func test_an_instance_not_built_is_not_hit() -> void:
-    var instance:RID = E3DRenderingServer.instance_create(_create_model(), E3DRenderingServer.INSTANCER_OPTIMIZED, E3DRenderingServer.INSTANCE_KIND_STATIC)
+    var instance:RID = MaszynaE3DRenderingServer.instance_create(_create_model(), ModelRenderingServer.INSTANCER_OPTIMIZED, ModelRenderingServer.INSTANCE_KIND_STATIC)
 
-    assert_true(E3DRenderingServer.instance_intersect_segment(instance, Vector3.ZERO, Vector3(0.0, 0.0, -100.0)).is_empty())
-    E3DRenderingServer.instance_free(instance)
+    assert_true(MaszynaE3DRenderingServer.instance_intersect_segment(instance, Vector3.ZERO, Vector3(0.0, 0.0, -100.0)).is_empty())
+    MaszynaE3DRenderingServer.instance_free(instance)
 
 
 func test_a_click_calls_pressed_and_a_shift_click_shift_pressed() -> void:
@@ -59,7 +59,7 @@ func test_a_click_calls_pressed_and_a_shift_click_shift_pressed() -> void:
     var expected:Array[StringName] = [&"pressed", &"shift_pressed"]
     assert_eq(_presses, expected)
     SceneryHUDMouseServer.pickable_free(pickable)
-    E3DRenderingServer.instance_free(instance)
+    MaszynaE3DRenderingServer.instance_free(instance)
 
 
 func test_nothing_is_hovered_off_the_model_or_while_inactive() -> void:
@@ -77,7 +77,7 @@ func test_nothing_is_hovered_off_the_model_or_while_inactive() -> void:
 
     assert_true(_presses.is_empty())
     SceneryHUDMouseServer.pickable_free(pickable)
-    E3DRenderingServer.instance_free(instance)
+    MaszynaE3DRenderingServer.instance_free(instance)
 
 
 func test_a_click_on_a_vehicle_model_announces_the_vehicle() -> void:
@@ -92,7 +92,7 @@ func test_a_click_on_a_vehicle_model_announces_the_vehicle() -> void:
     assert_signal_emitted_with_parameters(SceneryHUDMouseServer, "vehicle_pressed", [vehicle])
 
     SceneryHUDMouseServer.pickable_free(pickable)
-    E3DRenderingServer.instance_free(instance)
+    MaszynaE3DRenderingServer.instance_free(instance)
     VehicleServer.vehicle_free(vehicle)
 
 
@@ -103,7 +103,7 @@ func test_a_pickable_goes_with_its_instance() -> void:
     SceneryHUDMouseServer.mouse_input(_motion(_camera.unproject_position(MODEL_POSITION)))
     watch_signals(SceneryHUDMouseServer)
 
-    E3DRenderingServer.instance_free(instance)
+    MaszynaE3DRenderingServer.instance_free(instance)
 
     assert_false(SceneryHUDMouseServer.pickable_get_hovered().is_valid())
     assert_signal_emitted(SceneryHUDMouseServer, "pickable_unhovered")
@@ -115,8 +115,8 @@ func test_a_scenery_model_fires_the_launcher_of_its_name_that_has_it_in_range() 
     var lever:RID = _create_instance()
     var far_lever:RID = _create_instance()
     var beside:Vector3 = MODEL_POSITION + Vector3(5.0, 0.0, 0.0)
-    E3DRenderingServer.instance_set_transform(far_lever, Transform3D(Basis(), beside))
-    var models:Array[MaszynaModelData] = [_model_data("zwr1", MODEL_POSITION), _model_data("zwr2", beside)]
+    MaszynaE3DRenderingServer.instance_set_transform(far_lever, Transform3D(Basis(), beside))
+    var models:Array[ModelData] = [_model_data("zwr1", MODEL_POSITION), _model_data("zwr2", beside)]
     var model_rids:Array[RID] = [lever, far_lever]
     # zwr1 is within 20 m of its launcher; zwr2's launcher has a negative radius, which the
     # original never finds a model within (EvLaunch.cpp:57-58, scene.cpp:37)
@@ -131,10 +131,10 @@ func test_a_scenery_model_fires_the_launcher_of_its_name_that_has_it_in_range() 
     var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
     root.autoload = false
     add_child(root)
-    var tracks:Array[MaszynaTrackData] = []
+    var tracks:Array[TrackData] = []
     var track_rids:Array[RID] = []
-    var power_sources:Array[MaszynaPowerSourceData] = []
-    await MaszynaLegacyEventFactory.build(
+    var power_sources:Array[PowerSourceData] = []
+    await MaszynaEventFactory.build(
         root, context.events, context.memcells, context.launchers, context.sounds, context.isolated_sections,
         tracks, track_rids, models, model_rids, power_sources
     )
@@ -151,8 +151,8 @@ func test_a_scenery_model_fires_the_launcher_of_its_name_that_has_it_in_range() 
     assert_true(ScenarioEventServer.event_is_queued(ScenarioEventServer.event_get_rid_by_name(&"zwr1-")), "Shift fires event2")
     assert_false(ScenarioEventServer.event_is_queued(ScenarioEventServer.event_get_rid_by_name(&"zwr1+")))
     root.free()
-    E3DRenderingServer.instance_free(lever)
-    E3DRenderingServer.instance_free(far_lever)
+    MaszynaE3DRenderingServer.instance_free(lever)
+    MaszynaE3DRenderingServer.instance_free(far_lever)
 
 
 func _model_data(model_name:String, position:Vector3) -> MaszynaModelData:
@@ -177,22 +177,22 @@ func _press(operation:StringName) -> void:
 
 
 func _create_instance() -> RID:
-    var instance:RID = E3DRenderingServer.instance_create(_create_model(), E3DRenderingServer.INSTANCER_OPTIMIZED, E3DRenderingServer.INSTANCE_KIND_STATIC)
-    E3DRenderingServer.instance_set_scenario(instance, _camera.get_world_3d().scenario)
-    E3DRenderingServer.instance_set_transform(instance, Transform3D(Basis(), MODEL_POSITION))
-    E3DRenderingServer.instance_build(instance)
+    var instance:RID = MaszynaE3DRenderingServer.instance_create(_create_model(), ModelRenderingServer.INSTANCER_OPTIMIZED, ModelRenderingServer.INSTANCE_KIND_STATIC)
+    MaszynaE3DRenderingServer.instance_set_scenario(instance, _camera.get_world_3d().scenario)
+    MaszynaE3DRenderingServer.instance_set_transform(instance, Transform3D(Basis(), MODEL_POSITION))
+    MaszynaE3DRenderingServer.instance_build(instance)
     return instance
 
 
-func _create_model() -> E3DModel:
-    var model:E3DModel = E3DModel.new()
-    var mesh_submodel:E3DSubModel = E3DSubModel.new()
+func _create_model() -> MaszynaE3DModel:
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
+    var mesh_submodel:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     mesh_submodel.resource_name = "lever"
-    mesh_submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    mesh_submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     var mesh:ArrayMesh = ArrayMesh.new()
     mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, BoxMesh.new().get_mesh_arrays())
     mesh_submodel.mesh = mesh
-    var submodels:Array[E3DSubModel] = [mesh_submodel]
+    var submodels:Array[MaszynaE3DSubModel] = [mesh_submodel]
     model.submodels = submodels
     return model
 

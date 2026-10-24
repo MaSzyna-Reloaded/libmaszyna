@@ -1,8 +1,9 @@
 @tool
 extends VBoxContainer
 
-## Every vehicle of the game (MaszynaVehiclesBank) to search through and add to the edited scene:
-## "Spawn" adds the selected vehicle with the selected skin as a MaszynaRailVehicle3D - on the
+## Every MaSzyna vehicle of the catalogue (VehicleCatalogServer) to search through and add to the
+## edited scene: "Spawn" adds the selected vehicle in the selected livery - its provider's, a skin -
+## as a MaszynaRailVehicle3D - on the
 ## named track at the offset when a track is named, else where the 3D view's centre looks. A tile
 ## dragged into the 3D view, as a nodebank model is, adds its vehicle where it is dropped.
 
@@ -14,11 +15,14 @@ const TILE_SIZE:Vector2 = Vector2(180.0, 60.0)
 ## Size of the popup the start track is picked in [px]
 const TRACK_PICKER_SIZE:Vector2i = Vector2i(480, 400)
 
-var _vehicles:Array[MaszynaVehiclesBank.Vehicle] = []
+## The catalogue's MaSzyna vehicles, by name
+var _vehicles:Array[VehicleInfo] = []
+## The skins of each of them - its provider's liveries, by name - by the vehicle's name
+var _skins:Dictionary[String, PackedStringArray] = {}
 ## The vehicles the search finds, all pages
-var _found:Array[MaszynaVehiclesBank.Vehicle] = []
+var _found:Array[VehicleInfo] = []
 var _page:int = 0
-var _selected:MaszynaVehiclesBank.Vehicle = null
+var _selected:VehicleInfo = null
 var _profile_queue:VehicleProfileQueue = VehicleProfileQueue.new()
 
 
@@ -30,15 +34,32 @@ func _exit_tree() -> void:
     GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
 
 
-## The vehicles are read from the game's data again and searched anew
+## The vehicles are taken from the catalogue again and searched anew
 func load_vehicles() -> void:
-    _vehicles = MaszynaVehiclesBank.scan(UserSettings.get_maszyna_game_dir())
+    _vehicles.clear()
+    _skins.clear()
+    for category:VehicleInfo.VehicleCategory in VehicleInfo.VehicleCategory.values():
+        for info:VehicleInfo in VehicleCatalogServer.vehicle_list(category):
+            if not info.vehicle_provider == MaszynaVehicleData.VEHICLE_PROVIDER:
+                continue
+            _vehicles.append(info)
+            var skins:PackedStringArray = []
+            for livery:VehicleLivery in VehicleCatalogServer.livery_list(info):
+                # a player's livery is not drawn yet
+                if not livery.base:
+                    skins.append(livery.name)
+            _skins[info.vehicle] = skins
+    _vehicles.sort_custom(func(a:VehicleInfo, b:VehicleInfo) -> bool: return a.vehicle < b.vehicle)
     search_vehicles()
 
 
-## The vehicles whose name, directory or a skin contains the search text, from the first page
+## The vehicles whose name or a skin contains the search text (any case), from the first page; all
+## of them for none
 func search_vehicles() -> void:
-    _found = MaszynaVehiclesBank.filter(_vehicles, %Search.text)
+    var text:String = %Search.text.strip_edges().to_lower()
+    _found = _vehicles.filter(func(info:VehicleInfo) -> bool:
+            return not text or info.vehicle.to_lower().contains(text) \
+                    or " ".join(_skins[info.vehicle]).to_lower().contains(text))
     show_page(0)
 
 
@@ -53,32 +74,35 @@ func show_page(page:int) -> void:
     for tile:Node in %Vehicles.get_children():
         tile.queue_free()
     var start:int = _page * ITEMS_PER_PAGE
-    for vehicle:MaszynaVehiclesBank.Vehicle in _found.slice(start, start + ITEMS_PER_PAGE):
+    for vehicle:VehicleInfo in _found.slice(start, start + ITEMS_PER_PAGE):
+        var skins:PackedStringArray = _skins[vehicle.vehicle]
         var tile:Button = Button.new()
         tile.custom_minimum_size = TILE_SIZE
-        tile.text = vehicle.file_name
-        tile.tooltip_text = vehicle.data_path.path_join(vehicle.file_name)
+        tile.text = vehicle.title
+        tile.tooltip_text = vehicle.vehicle
         tile.expand_icon = true
         tile.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
         tile.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
         tile.clip_text = true
         tile.gui_input.connect(_on_tile_gui_input.bind(vehicle))
         %Vehicles.add_child(tile)
-        if vehicle.skins:
-            _profile_queue.enqueue(vehicle.data_path, vehicle.file_name, vehicle.skins[0], "", tile.set_button_icon)
+        if skins:
+            _profile_queue.enqueue(
+                    vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), skins[0], "", tile.set_button_icon)
 
 
 ## The vehicle whose skins are listed and which "Spawn" adds, with its first skin selected
-func select_vehicle(vehicle:MaszynaVehiclesBank.Vehicle) -> void:
+func select_vehicle(vehicle:VehicleInfo) -> void:
     _selected = vehicle
-    %VehicleName.text = vehicle.file_name
-    %VehiclePath.text = vehicle.data_path
+    var skins:PackedStringArray = _skins[vehicle.vehicle]
+    %VehicleName.text = vehicle.title
+    %VehiclePath.text = vehicle.vehicle.get_base_dir()
     %Skins.clear()
-    for skin:String in vehicle.skins:
+    for skin:String in skins:
         %Skins.add_item(skin)
-    %SpawnButton.disabled = not vehicle.skins
+    %SpawnButton.disabled = not skins
     %SpawnStatus.text = ""
-    if vehicle.skins:
+    if skins:
         %Skins.select(0)
         select_skin(0)
 
@@ -86,8 +110,8 @@ func select_vehicle(vehicle:MaszynaVehiclesBank.Vehicle) -> void:
 ## The side view of the selected vehicle in the skin at index
 func select_skin(index:int) -> void:
     %Profile.texture = null
-    _profile_queue.enqueue(_selected.data_path, _selected.file_name, _selected.skins[index], "",
-            %Profile.set_texture)
+    _profile_queue.enqueue(_selected.vehicle.get_base_dir(), _selected.vehicle.get_file(),
+            _skins[_selected.vehicle][index], "", %Profile.set_texture)
 
 
 ## The popup the start track is picked in, every named track listed and its search box ready
@@ -126,10 +150,10 @@ func spawn_vehicle(world_position:Vector3, track_name:String, track_offset:float
     %SpawnStatus.text = ""
 
     var vehicle:MaszynaRailVehicle3D = MaszynaRailVehicle3D.new()
-    vehicle.name = _selected.file_name
-    vehicle.data_path = _selected.data_path
-    vehicle.file_name = _selected.file_name
-    vehicle.skin = _selected.skins[%Skins.get_selected_items()[0]]
+    vehicle.name = _selected.title
+    vehicle.data_path = _selected.vehicle.get_base_dir()
+    vehicle.file_name = _selected.vehicle.get_file()
+    vehicle.skin = _skins[_selected.vehicle][%Skins.get_selected_items()[0]]
     if track_name:
         vehicle.start_track_name = track_name
         vehicle.start_track_offset = track_offset
@@ -138,7 +162,7 @@ func spawn_vehicle(world_position:Vector3, track_name:String, track_offset:float
         vehicle.position = scene_root.global_transform.affine_inverse() * world_position
 
     var undo_redo:EditorUndoRedoManager = EditorInterface.get_editor_undo_redo()
-    undo_redo.create_action("Spawn vehicle %s" % _selected.file_name)
+    undo_redo.create_action("Spawn vehicle %s" % _selected.title)
     undo_redo.add_do_method(scene_root, "add_child", vehicle, true)
     # the node alone: the vehicle it builds is never saved with the scene
     undo_redo.add_do_property(vehicle, "owner", scene_root)
@@ -154,7 +178,7 @@ func spawn_vehicle(world_position:Vector3, track_name:String, track_offset:float
 ## "Spawn": where the centre of the 3D view looks, unless a track is named
 func _on_spawn_button_pressed() -> void:
     var viewport:SubViewport = EditorInterface.get_editor_viewport_3d(0)
-    var centre:Vector3 = MaszynaEditorViewportPoint.world_point(
+    var centre:Vector3 = EditorViewportPoint.world_point(
             viewport.get_camera_3d(), viewport.get_visible_rect().get_center())
     var track_name:String = %TrackName.text.strip_edges()
     var vehicle:MaszynaRailVehicle3D = spawn_vehicle(centre, track_name, %TrackOffset.value)
@@ -165,12 +189,12 @@ func _on_spawn_button_pressed() -> void:
 
 ## A tile pressed selects its vehicle and starts dragging it, its exterior under the mouse in the
 ## 3D view: dropped there, the vehicle stands where it is dropped
-func _on_tile_gui_input(event:InputEvent, vehicle:MaszynaVehiclesBank.Vehicle) -> void:
+func _on_tile_gui_input(event:InputEvent, vehicle:VehicleInfo) -> void:
     var button:InputEventMouseButton = event as InputEventMouseButton
     if button and button.button_index == MOUSE_BUTTON_LEFT and button.pressed:
         select_vehicle(vehicle)
-        var preview:E3DModelInstance = MaszynaRailVehicle3DInstancer.build_exterior(
-                vehicle.data_path, vehicle.file_name, vehicle.skins[0], "")
+        var preview:MaszynaE3DModelInstance = MaszynaRailVehicle3DInstancer.build_exterior(
+                vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), _skins[vehicle.vehicle][0], "")
         preview.transform = MaszynaRailVehicle3DInstancer.MASZYNA_VEHICLE_FRAME
         %TrackDropHint.set_vehicle_category(vehicle.category)
         %ViewportDrop.start(preview, _on_vehicle_dropped)
@@ -186,7 +210,7 @@ func _on_vehicle_dropped(world_position:Vector3) -> void:
 func _on_spawned_vehicle_built(vehicle:MaszynaRailVehicle3D) -> void:
     EditorInterface.get_selection().clear()
     EditorInterface.get_selection().add_node(vehicle)
-    MaszynaEditorViewFocus.focus_selection()
+    EditorViewFocus.focus_selection()
 
 
 func _on_track_search_text_changed(_text:String) -> void:
@@ -215,7 +239,7 @@ func _on_search_text_changed(_text:String) -> void:
     search_vehicles()
 
 
-## The bank is read the first time the panel is shown, not with the editor
+## The vehicles are taken the first time the panel is shown
 func _on_visibility_changed() -> void:
     if visible and not _vehicles:
         load_vehicles()

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaPlugin" inherits="ReloadedPlugin" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		MaSzyna's vehicles and sceneries for Rails Reloaded.
+	</brief_description>
+	<description>
+		The vehicles simulated on MaSzyna's vendored Mover, its E3D models, and the original's scenery, scenario, signalling and cab formats. Its servers are [MaszynaE3DParser], [MaszynaE3DRenderingServer], [MaszynaMoverVehicleServer] and [PythonScreenServer].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

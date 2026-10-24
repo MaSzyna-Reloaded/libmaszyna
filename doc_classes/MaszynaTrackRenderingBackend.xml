@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrackRenderingBackend" inherits="TrackRenderingBackend" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The tracks drawn as the original draws them ([code]Track.cpp[/code]).
+	</brief_description>
+	<description>
+		MaSzyna's backend of [TrackRenderingServer], registered as [code]"maszyna"[/code] and chosen by a [MaszynaTrackData] ([method TrackData.get_rendering_backend]). Rails are swept from a rail profile ([code]&lt;game dir&gt;/models/tory/railprofile_&lt;name&gt;.txt[/code], its lines after [code]// switch blade[/code] the blade's), a switch's blades turn with its offsets, a trackbed of the track's section turns into the unique neighbour's ([code]Track.cpp:2825-2982[/code]), and a road is its surface and shoulders or curbs ([code]Track.cpp:3008-3256[/code]). A .scn's track is drawn with its own textures; any other [TrackData] with those its features map to ([code]maszyna_track_looks.tres[/code], a [MaszynaTrackLooks]). Streamed roads are drawn by cells of 125 m, one mesh of a surface per material each, streamed by [SceneryStreamingServer] as [code]"roads"[/code]. The materials come from [ReloadedMaterialServer], drawing both faces. Draws no sleepers - the original does not.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="mesh_curve_bake_interval" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="curve" type="TrackCurve" />
+			<description>
+				How far apart a track of [param curve] is sampled as it is drawn [m]: 2% of an arc's radius, 10% of a curve's chord, 10 m for a straight line, within 2-10 m.
+			</description>
+		</method>
+		<method name="road_cell_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="cell" type="RID" />
+			<description>
+				Whether the road cell [param cell] holds a road still.
+			</description>
+		</method>
+		<method name="road_cell_get_instance" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="cell" type="RID" />
+			<description>
+				The [RenderingServer] instance of the road cell; none before it is first built.
+			</description>
+		</method>
+		<method name="road_cell_get_mesh" qualifiers="const">
+			<return type="ArrayMesh" />
+			<param index="0" name="cell" type="RID" />
+			<description>
+				The cell's roads as one mesh, a surface per material, while the cell is built; null otherwise.
+			</description>
+		</method>
+		<method name="switch_blade_layout" qualifiers="static">
+			<return type="Dictionary" />
+			<param index="0" name="is_right_switch" type="bool" />
+			<param index="1" name="f_offset1" type="float" />
+			<param index="2" name="f_offset2" type="float" />
+			<param index="3" name="f_max_offset" type="float" />
+			<description>
+				Which rail of each curve of a switch is its blade, and how far each blade is moved: [code]primary_blade_mirrored[/code], [code]primary_other_mirrored[/code], [code]secondary_blade_mirrored[/code], [code]secondary_other_mirrored[/code], [code]primary_blade_offset[/code], [code]secondary_blade_offset[/code].
+			</description>
+		</method>
+		<method name="track_get_instances" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="track_render" type="RID" />
+			<description>
+				The [RenderingServer] instances the track has made so far, by their [enum Slot].
+			</description>
+		</method>
+		<method name="track_get_look" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="track_render" type="RID" />
+			<description>
+				What the track is drawn with: [code]material1[/code], [code]material2[/code], [code]material_trackbed[/code], [code]tex_length[/code], [code]tex_height[/code], [code]tex_width[/code], [code]tex_slope[/code] and [code]railprofile[/code], by [MaszynaTrackData]'s names.
+			</description>
+		</method>
+		<method name="track_get_meshes" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="track_render" type="RID" />
+			<description>
+				The meshes the track draws now, by their [enum Slot].
+			</description>
+		</method>
+		<method name="track_get_road_cell" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="track_render" type="RID" />
+			<description>
+				The road cell drawing the streamed road; none for any other track.
+			</description>
+		</method>
+		<method name="unique_endpoint_connection" qualifiers="static">
+			<return type="TrackEndpointRef" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="endpoint_index" type="int" />
+			<description>
+				The one track joined to the endpoint [param endpoint_index] ([enum TrackServer.EndpointIndex]) of [param track]; null when none or several are.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="SLOT_PRIMARY_RAIL" value="0" enum="Slot">
+			The rails of the track's main curve - a road's surface.
+		</constant>
+		<constant name="SLOT_SECONDARY_RAIL" value="1" enum="Slot">
+			The rails of its second curve.
+		</constant>
+		<constant name="SLOT_PRIMARY_BLADE" value="2" enum="Slot">
+			The blade of a switch's main curve.
+		</constant>
+		<constant name="SLOT_SECONDARY_BLADE" value="3" enum="Slot">
+			The blade of its diverging curve.
+		</constant>
+		<constant name="SLOT_TRACKBED" value="4" enum="Slot">
+			The trackbed - a road's shoulders or sidewalks; it casts no shadow.
+		</constant>
+		<constant name="SLOT_MAX" value="5" enum="Slot">
+			The number of slots.
+		</constant>
+	</constants>
+</class>

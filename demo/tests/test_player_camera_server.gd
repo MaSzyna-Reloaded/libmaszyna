@@ -169,7 +169,7 @@ func test_show_vehicle_places_the_free_camera_beside_it_looking_at_it() -> void:
     assert_eq(PlayerCameraServer.camera_get_mode(), PlayerCameraServer.CAMERA_MODE_FREE)
     assert_eq(_announced, [&"camera_placed", &"camera_changed"] as Array[StringName])
     assert_eq(_placed, PlayerCameraServer.camera_get_show_transform(_vehicle.get_rid()),
-            "where a far follow jumps to (MaszynaPlayer) as well")
+            "where a far follow jumps to (Player) as well")
     var body:Vector3 = _vehicle.global_position
     var aside:Vector3 = _placed.origin - body
     assert_true(Vector2(aside.x, aside.z).length() >= SHOW_MIN_DISTANCE, "beside the vehicle, not in it: %s" % aside)

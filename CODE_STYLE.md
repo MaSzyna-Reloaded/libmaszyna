@@ -1,5 +1,8 @@
 ## Code style
-Unless a section says otherwise, every rule here applies to GDScript and C++ alike.
+Unless a section says otherwise, every rule here applies to GDScript and C++ alike. A class or a
+server named here without a path that is not `Maszyna*` (`VehicleServer`, `SmokeServer`,
+`CabinSystem`, `GameLog`, ...) is libreloaded's, the core this repository is built on - see
+`AGENTS.md`, "libmaszyna and libreloaded".
 
 > [!IMPORTANT]  
 > Exported/All classes used in Godot do live in the `godot` namespace   
@@ -65,8 +68,9 @@ hides the new ones.
   earlier `#include` in the `.cpp` breaks as soon as the file is formatted.
 * The `clang-tidy` stage of `make style-check` runs after clang-format and fails on any warning
   (`WarningsAsErrors: "*"`). A ported external name that the naming rule rejects (the Python C API
-  in `PythonScreenServer`) is fenced with `NOLINTBEGIN/END(readability-identifier-naming)` and a
-  comment saying why - never renamed.
+  that `PythonScreenServer`'s `maszyna-python-host` resolves,
+  `src/maszyna/cabin/python_host/main.cpp`) is fenced with
+  `NOLINTBEGIN/END(readability-identifier-naming)` and a comment saying why - never renamed.
 
 ### GDScript
 The short GDScript rules (singleton guards, `/root/...`, `is_connected()`, setters and `_dirty`,
@@ -94,7 +98,7 @@ The short GDScript rules (singleton guards, `/root/...`, `is_connected()`, sette
    order of preference:
    1. **C++** - a singleton connects itself to `SceneTree`'s `process_frame` and does the work
       natively (`SceneryStreamingServer::_process_streaming()`,
-      `E3DRenderingServer::_process_smoke()`). No script runs per frame at all.
+      `SmokeServer::_process_smoke()`). No script runs per frame at all.
    2. **A `Timer`** - the engine fires the callback, so nothing is interpreted between ticks. Use
       it whenever the work is periodic and the node carrying it is a single one (an autoload, a
       system, a screen). Not when it would be one `Timer` per instance of something there are many
@@ -486,16 +490,16 @@ polled. If it truly has to run every frame:
 * **No loops.** A per-frame loop makes the frame cost scale with the number of things iterated.
   Keep the path flat: mirror what the loop would have looked up onto the object that needs it, at
   the moment it changes, and let the frame do arithmetic on that alone (as
-  `E3DRenderingServer::SmokeObject` carries its own transform and visibility instead of looking
-  its instance up).
+  `SmokeServer::Emitter` carries its own transform and visibility instead of its owner's model
+  instance being looked up).
 * No allocations, no `get_node()`, no string work, no `find`/`has` over a collection, no singleton
   or `ProjectSettings` lookups - resolve all of it once and cache it.
 * Nothing at all while the work is idle: turn the processing off (`set_process(false)`, or
   disconnect from `process_frame`) when there is nothing to do, and back on when there is.
 * If a per-frame loop is genuinely unavoidable, **bound it** - a fixed budget per frame, or the
   nearest N, the way `SceneryStreamingServer` spends a few milliseconds per frame and leaves the
-  rest for the next one, or `E3DRenderingServer::_process_smoke()` visits at most
-  `MAX_SMOKE_SOURCES_PER_FRAME` emitters and carries on round-robin.
+  rest for the next one, or `SmokeServer::_process_smoke()` visits at most
+  `MAX_EMITTERS_PER_FRAME` emitters and carries on round-robin.
 
 ### A hot path reads a component, never a dump
 
@@ -540,7 +544,7 @@ acted on (`VehicleController::send_command()`, `command_executed()`):
   console, a test, `get_state()`) sees the vehicle as it was before it, until the next step;
 * **it is announced.** `command_received` is emitted, relayed as
   `VehicleServer.vehicle_command_received` - the cab (`CabinSystem.vehicle_command_received`) and
-  the scenario scripts (`maszyna.vehicle.on_command_received`) follow the vehicle's commands by it;
+  the scenario scripts (`reloaded.vehicle.on_command_received`) follow the vehicle's commands by it;
 * **it has a name.** It is reached by the vehicle's handle alone - no controller or component held,
   no class known - so the cab's controls, the console, the AI, the player, Lua and the tests all
   act on a vehicle the same way; an unknown name is reported, and the handler's return value says
@@ -564,8 +568,8 @@ is no command because nobody but `RailVehicleServer` may decide it.
 
 An operation another layer has to start (`cabin_leave`, `cabin_enter` for a crossing through a
 gangway) is therefore registered as a command (`_register_commands()`) and bound, even when only
-one server sends it. The two ways side by side: `docs/architecture.md`, "Commands and method
-calls".
+one server sends it. The two ways side by side: libreloaded's `docs/architecture.md`, "Commands and
+method calls".
 
 ## Classes
 1. Explicit privacy declarations
@@ -619,7 +623,7 @@ getter never changes state": it creates a logger missing yet (and emits `logger_
 Python's `logging.getLogger()` does, so whoever logs never has to know who made the logger first.
 
 ### Sound
-This project has a sound system - the vendored `gnd-sfx` addon (`SfxBank` / `SfxEvent` /
+This project has a sound system - libreloaded's vendored `gnd-sfx` addon (`SfxBank` / `SfxEvent` /
 `SfxPlayer`, `SfxPlayer3D` for positional sound). Use it. A bare `AudioStreamPlayer` with a
 `preload`ed stream is not the way to add a sound, not even a single UI click.
 
@@ -693,9 +697,10 @@ if event.is_action_pressed("ui_text_submit"):
 if event.is_action_pressed("menu_activate", false, true):
 ```
 
-* **An action of the project** (`demo/project.godot`, `[input]`) is named after what it does -
-  `menu_activate`, `menu_back`, `toggle_fullscreen`, `cabin_next` - so the binding can be changed
-  in one place and read in the input map, and the code says what happens, not which key it was.
+* **An action of the project** (`demo/project.godot`, `[input]`, here; the game's `project.godot`
+  in the game) is named after what it does - `menu_back`, `hud_toggle`, `cabin_next` - so the
+  binding can be changed in one place and read in the input map, and the code says what happens,
+  not which key it was.
 * **Not `ui_*`.** Those are Godot's own, for its controls: a `LineEdit` takes `ui_text_submit`,
   `ui_left`, `ui_home` in its `gui_input`, a `Button` takes `ui_accept` (Space too). Binding game
   behaviour to them shares the keys with every control on the screen, and a remap of the editor's
@@ -717,7 +722,8 @@ the logic into a separate class) instead of reaching into internals.
 ### Singletons C++
 
 * Never inherit from RefCounted (use plain `Object` as a base)
-* Register and de-register signletons in a proper order (check dependencies)
+* Register and de-register signletons in a proper order (check dependencies) - libmaszyna's in
+  `MaszynaPlugin::create_servers()`, freed in reverse in `free_servers()`
 * De-registering sequence should follow the schema:
   - call `Engine::unregister_singleton()` with checking `Engine::has_singleton()`
   - call `memdelete()` if pointer is not nullptr, then assign nullptr to the pointer
@@ -737,10 +743,10 @@ the logic into a separate class) instead of reaching into internals.
 * Avoid circular dependencies between Refs - they may cause infinite lifecycle and memory leaks
 * Use raw pointers to avoid circular dependencies
 
-### E3DModel / E3DSubModel
+### MaszynaE3DModel / MaszynaE3DSubModel
 
-* when public API of `E3DModel` or `E3DSubModel` changes,
-  the `E3DModel.FORMAT_VERSION` must be updated to invalidate the E3D cache automatically
+* when public API of `MaszynaE3DModel` or `MaszynaE3DSubModel` changes,
+  the `MaszynaE3DModel.FORMAT_VERSION` must be updated to invalidate the E3D cache automatically
 
 ### Godot properties
 
@@ -770,7 +776,9 @@ the logic into a separate class) instead of reaching into internals.
 
 * use sub-plugins https://docs.godotengine.org/en/stable/tutorials/plugins/editor/making_plugins.html#using-sub-plugins
 * place editor plugins in `addons/libmaszyna/editor` directory
-* register all types and singletons in main plugin: `addons/libmaszyna/libmaszyna.gd`
+* register all GDScript types and autoloads in main plugin: `addons/libmaszyna/libmaszyna.gd`;
+  the C++ classes and singletons are registered by `MaszynaPlugin` (`src/maszyna/MaszynaPlugin.cpp`,
+  libreloaded's `ReloadedPlugin` stages)
 * register / unregister custom types and singletons in `_enable_plugin()` and `_disable_plugin()` methods,
   see: https://docs.godotengine.org/en/stable/tutorials/plugins/editor/making_plugins.html#registering-autoloads-singletons-in-plugins
 * avoid leaking instances at runtime/editor exit

@@ -1,22 +1,17 @@
 name: build
 
-# The unit tests and the library of each platform, with the double precision Godot fetched from the
-# release godot-<version>-double (ci/fetch-godot.sh), which the godot-engine workflow builds once
-# per engine version. The tests and the Windows and Android libraries are built on the runner; the
-# Linux release library in ci/docker/linux-sdk, for an old glibc. Exporting and releasing the game
-# is the game's repository's.
+# The unit tests and the library of each platform - libreloaded's library with this plugin built in,
+# by libreloaded's rules (the vendor/libreloaded submodule) - with the double precision Godot fetched
+# from the release godot-<version>-double (libreloaded's ci/fetch-godot.sh), which libreloaded's
+# godot-engine workflow builds once per engine version. The tests and the Windows and Android
+# libraries are built on the runner; the Linux release library in libreloaded's ci/docker/linux-sdk,
+# for an old glibc. Exporting and releasing the game is the game's repository's.
 on:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  godot-engine:
-    uses: ./.github/workflows/godot-engine.yml
-    permissions:
-      contents: write
-
   run-tests:
-    needs: godot-engine
     runs-on: ubuntu-24.04
     # the start-up report is a comment of the pull request
     permissions:
@@ -32,21 +27,17 @@ jobs:
 
       - name: Fetch the double precision Godot
         run: |
-          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          vendor/libreloaded/ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      # the addons the demo links in from the checkout (see .gitignore)
-      - name: Link the addons
-        run: |
-          ln -s ../../vendor/gut/addons/gut demo/addons/gut
-          ln -s ../../addons/libmaszyna demo/addons/libmaszyna
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: tests
 
       # the tests need no old glibc, so the library is built on the runner itself; the empty
-      # overrides leave out the clang-tidy database compile-debug prepares for the IDE
+      # overrides leave out the clang-tidy database libreloaded's compile-debug prepares for the
+      # IDE. CMake links the addons into demo/ (libreloaded, libmaszyna, gut, gnd_sfx) and make
+      # links libreloaded's demo pieces (the Makefile's DEMO_LINKS)
       - name: Build the library
         run: make compile-debug CLANG_TIDY_COMPILE_COMMANDS_FILE= CLANG_TIDY_BINDINGS_FILE=
 
@@ -93,7 +84,6 @@ jobs:
           fi
 
   build:
-    needs: godot-engine
     strategy:
       fail-fast: false
       matrix:
@@ -115,11 +105,11 @@ jobs:
         with:
           submodules: recursive
 
-      # CMake dumps the double precision API from it (CMakeLists.txt) - on the runner also for the
-      # Linux library, whose SDK container has no Godot
+      # CMake dumps the double precision API from it (libreloaded's CMakeLists.txt) - on the runner
+      # also for the Linux library, whose SDK container has no Godot
       - name: Fetch the double precision Godot
         run: |
-          ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
+          vendor/libreloaded/ci/fetch-godot.sh godot.linuxbsd.editor.double.x86_64
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install MinGW
@@ -140,5 +130,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: lib-${{ matrix.platform }}-template_release
-          path: demo/bin/libmaszyna/${{ matrix.platform }}
+          path: demo/bin/libreloaded/${{ matrix.platform }}
           if-no-files-found: error

@@ -16,9 +16,9 @@ func before_each():
     train = build_vehicle("TestPantographTrain")
     train.add_component(build_power_supply(110.0))
     train.apply_configuration()
-    engine = MoverRailVehicleElectricSeriesEngine.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
     train.add_component(engine)
-    power_source = MoverRailVehicleEnginePowerSource.new()
+    power_source = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     power_source.current_collector_physical_layout = 3 # both pantographs physically present
     power_source.current_collector_max_voltage = 3600.0

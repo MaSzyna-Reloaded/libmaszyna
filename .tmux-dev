@@ -6,7 +6,7 @@ tmux send-keys "vim" C-m
 tmux rename-window 'code'
 
 tmux new-window
-tmux send-keys "make watch-and-compile" C-m
+tmux send-keys "make compile-debug" C-m
 tmux rename-window 'shell'
 
 tmux new-window

@@ -16,7 +16,7 @@ Contributors should follow these rules:
 * Review your own changes before requesting review.
 * Use Draft Pull Requests for work in progress.
 * Format the code according to the project style before requesting review
-  (see: `scripts/style-<fix|check>`).
+  (`make style-fix STYLE_FILE=<file>`, then `make style-check STYLE_FILE=<file>`).
 * Explain non-trivial design or ownership decisions in the pull request
   description.
 
@@ -75,6 +75,34 @@ Contributors should follow these rules:
 If a change affects ownership, caching, reload logic, singleton lifetime,
 resource lifetime, or `RID` management, the pull request description should
 explain the intended lifetime model.
+
+## Building and testing
+
+libmaszyna is built into the library of libreloaded, the core of Rails Reloaded, which is the
+`vendor/libreloaded` submodule. Everything goes through this repository's `Makefile`:
+
+```sh
+# libreloaded from the submodule (or a local checkout of it: make libreloaded-local LIBRELOADED_LOCAL=<path>)
+make libreloaded-submodule
+
+# the library with libmaszyna in it, into the test project demo/ (compile-release for a release build)
+make compile-debug
+
+# import the test project once after a build
+make import
+
+# the test scripts you wrote or changed, one by one (res://tests/<name>.gd); without TEST, all of them
+make test TEST=<name>
+
+# formatting and clang-tidy of the C++ files you touched
+make style-fix STYLE_FILE=<file>
+make style-check STYLE_FILE=<file>
+```
+
+A change libmaszyna needs in libreloaded is made in libreloaded's own repository, never in
+`vendor/libreloaded`; build against your checkout of it with `make libreloaded-local`, and go back
+to the submodule with `make libreloaded-submodule` once the change is pushed and the submodule moved
+to it. See `AGENTS.md`, "libmaszyna and libreloaded".
 
 ## Request for changes/ Pull Requests
 You first need to create a fork of this repository to commit your changes to it. Methods to fork a repository can be found in the [GitHub Documentation](https://docs.github.com/en/get-started/quickstart/fork-a-repo).

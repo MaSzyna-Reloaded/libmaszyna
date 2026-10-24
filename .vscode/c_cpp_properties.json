@@ -3,10 +3,11 @@
     {
       "name": "linux-gcc-x64",
       "includePath": [
-        "${workspaceFolder}/**",
-        "${workspaceFolder}/godot-cpp/gdextension",
-        "${workspaceFolder}/godot-cpp/gen/**",
-        "${workspaceFolder}/godot-cpp/include/**"
+        "${workspaceFolder}/src/**",
+        "${workspaceFolder}/vendor/libreloaded/src/**",
+        "${workspaceFolder}/vendor/libreloaded/godot-cpp/gdextension",
+        "${workspaceFolder}/vendor/libreloaded/godot-cpp/gen/**",
+        "${workspaceFolder}/vendor/libreloaded/godot-cpp/include/**"
       ],
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "${default}",

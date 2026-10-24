@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleDieselElectricEngine" inherits="RailVehicleDieselElectricEngine" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleDieselElectricEngine] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleDieselElectricEngine] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleDieselElectricEngine].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_circuit_nmax_rpm" qualifiers="const">
+			<return type="float" />
+			<description>
+				The engine's highest speed [rpm] ([code]nmax[/code]).
+			</description>
+		</method>
+		<method name="get_clutch_desired" qualifiers="const">
+			<return type="float" />
+			<description>
+				The clutch engagement the master controller's position asks for ([code]RList[lb]MainCtrlPos[rb].Mn[/code]).
+			</description>
+		</method>
+		<method name="get_eimic_real" qualifiers="const">
+			<return type="float" />
+			<description>
+				The traction an EIM controller actually asks for, -1-1 ([code]eimic_real[/code]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="diesel_configuration" type="MaszynaMoverDieselConfiguration" setter="set_diesel_configuration" getter="get_diesel_configuration">
+			What the Mover's model of the diesel engine is configured with.
+		</member>
+		<member name="engine_configuration" type="MaszynaMoverEngineConfiguration" setter="set_engine_configuration" getter="get_engine_configuration">
+			What the Mover's model of the engine is configured with beyond its facts, read by the drive.
+		</member>
+		<member name="generator_voltage_flat" type="bool" setter="set_generator_voltage_flat" getter="get_generator_voltage_flat" default="false">
+			[code]Engine:Flat[/code]
+			Whether the generator's voltage output is capped (flattened characteristic).
+		</member>
+		<member name="hyperbolic_speed" type="float" setter="set_hyperbolic_speed" getter="get_hyperbolic_speed" default="1.0">
+			[code]Engine:Vhyp[/code]
+		</member>
+		<member name="additional_speed" type="float" setter="set_additional_speed" getter="get_additional_speed" default="1.0">
+			[code]Engine:Vadd[/code]
+		</member>
+		<member name="power_correction_ratio" type="float" setter="set_power_correction_ratio" getter="get_power_correction_ratio" default="1.0">
+			[code]Engine:Cr[/code]
+			Power correction ratio (characteristic correction coefficient).
+		</member>
+		<member name="shunt_relay_type" type="int" setter="set_shunt_relay_type" getter="get_shunt_relay_type" default="0">
+			[code]Engine:RelayType[/code]
+			Field-shunting relay behavior flag: 0 - current dependent, 1 - velocity dependent, 2 - velocity and power
+			dependent, 41/45/46 - extended variants for specific locomotive types.
+		</member>
+		<member name="wwlist" type="MaszynaMoverWWListItem[]" setter="set_wwlist" getter="get_wwlist" default="[]">
+			[code]WWList[/code]
+			Diesel-electric generator characteristics table. Each item describes a main controller position starting
+			from 0.
+		</member>
+	</members>
+</class>

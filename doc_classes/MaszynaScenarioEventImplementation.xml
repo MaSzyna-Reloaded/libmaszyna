@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaScenarioEventImplementation" inherits="ScenarioEventImplementation" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's event system as the implementation of a [ScenarioEventServer] event system.
+	</brief_description>
+	<description>
+		Forwards to [MaszynaScenarioEventServer] what it keeps of the system's events, memories and launchers: a passive event is not queued, an event of [code]departuredelay[/code] runs after its train's departure, a track's [code]event0[/code] goes on while its vehicle stands there, a launcher's interval fires it, and everything of the system goes when the implementation is detached. Take it from [method MaszynaScenarioEventServer.implementation_get].
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

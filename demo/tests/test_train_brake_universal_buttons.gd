@@ -6,7 +6,7 @@ var brake: RailVehicleBrake
 func before_each():
     train = build_vehicle("TestTrain")
 
-    brake = MoverRailVehicleBrake.new()
+    brake = MaszynaMoverRailVehicleBrake.new()
     train.add_component(brake)
     await wait_idle_frames(2)
 

@@ -3,15 +3,15 @@ extends Node
 
 const EMPTY_NODEBANK = preload("./empty_nodebank.tscn")
 const CACHE_FILE: String = "nodebank.tscn"
-const CACHE_VERSION: String = "4"
+const CACHE_VERSION: String = "6"
 const STOP_TOKENS: Array = [" ", ";", char(9), char(10), char(13)]
 
 var _cache: ResourceCache = ResourceCache.create("nodebank")
 
 
 func load_library(force_rebuild: bool = false) -> PackedScene:
-    var game_dir:String = UserSettings.get_maszyna_game_dir()
-    var nodebank_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, "nodebank.txt"))
+    var game_dir:String = MaszynaGameDirectory.get_game_dir()
+    var nodebank_path:String = game_dir.path_join(ReloadedPluginServer.data_path_resolve(game_dir, "nodebank.txt"))
     if not FileAccess.file_exists(nodebank_path):
         push_warning("Nodebank file does not exist: %s" % nodebank_path)
         return EMPTY_NODEBANK
@@ -61,7 +61,7 @@ func _parse_nodebank_txt(file:FileAccess) -> PackedScene:
             "]":
                 current_group = null
             "node":
-                var item:E3DModelInstance = _parse_nodebank_node(parser)
+                var item:MaszynaE3DModelInstance = _parse_nodebank_node(parser)
                 if item:
                     current_group.add_child(item)
                     item.owner = root
@@ -91,7 +91,7 @@ func _get_or_create_group(root: Node, group_name: String) -> Node:
     return group
 
 
-func _parse_nodebank_node(parser: MaszynaParser) -> E3DModelInstance:
+func _parse_nodebank_node(parser: MaszynaParser) -> MaszynaE3DModelInstance:
     var tokens = parser.get_tokens(10, STOP_TOKENS)
     var visibility_range := float(tokens[0])
     var model_path:String = tokens[8].replace("\\\\", "/").get_basename()
@@ -100,7 +100,7 @@ func _parse_nodebank_node(parser: MaszynaParser) -> E3DModelInstance:
     var skin = null if tokens[9] == "none" else tokens[9]
     var skin_name = tokens[9].get_file()
 
-    var item: E3DModelInstance = E3DModelInstance.new()
+    var item: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
     item.name = "%s %s" % [model_path.capitalize(), skin_name.capitalize()] if skin else model_path.capitalize()
     item.data_path = "models".path_join(data_path)  # nodebank.txt does not include models dir
     item.model_filename = model_path

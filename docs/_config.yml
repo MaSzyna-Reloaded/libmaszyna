@@ -1,17 +1,8 @@
-title: MaSzyna Reloaded Core
-
-description: >- # this means to ignore newlines until "baseurl:"
-  MaSzyna: Reloaded is a development organization dedicated to creating
-  a next-generation train simulator based on https://eu07.pl experience
-  built with the Godot Engine.
-
-github_username: MaSzyna-Reloaded
-
-baseurl: /MaSzyna-API-wrapper
-theme: minima
-
+# libmaszyna's guides on the site libreloaded assembles (its scripts/make-docs-site, make docs-site):
+# this docs/ goes under libmaszyna/ beside libreloaded's guides and the class reference, and the
+# pages below join the site's menu. The site's configuration and layouts are libreloaded's.
 header_pages:
+  - index.md
   - architecture.md
-  - api/index.md
   - wrapping-mover.md
   - lua-scripting.md

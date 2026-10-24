@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DRailVehicleRenderingServer" inherits="RailVehicleRenderingServer" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Draws MaSzyna vehicles as the original does.
+	</brief_description>
+	<description>
+		Over [RailVehicleRenderingServer]'s drawing of the models and running gear: the pantographs, wipers, mirrors, doors, steps and pendulums animated from the vehicle's state, the couplers and hoses shown as they are coupled, the lamps and the smoke, the cargo, the coupler adapters fitted to the ends, and the low-poly cabs of the interior hidden and lit ([code]TDynamicObject[/code], [code]DynObj.cpp[/code]). What moves is found by the names the vehicle's MMD gives ([MaszynaRailVehicleAppearance]). Registered as [code]RailVehicleRenderingServer[/code] too, in its place.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="cabin_set_light_level">
+			<return type="void" />
+			<param index="0" name="cabin" type="RID" />
+			<param index="1" name="level" type="float" />
+			<description>
+				The level (0-1) of the light of the [VehicleServer] [param cabin] its low-poly cab - of the cabin's kind ([RailVehicleServer]) - is lit at ([code]TDynamicObject::set_cab_lights()[/code], [code]DynObj.cpp:841-853[/code]); with [code]jointcabs:[/code] every cab at the brightest.
+			</description>
+		</method>
+		<method name="vehicle_set_load_model">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="data_path" type="String" />
+			<param index="2" name="model_filename" type="String" />
+			<description>
+				The cargo, drawn at the floor of the vehicle; none for an empty file name.
+			</description>
+		</method>
+	</methods>
+</class>

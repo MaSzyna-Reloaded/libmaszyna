@@ -8,7 +8,7 @@ func before_each():
 
 func test_param_and_dimensions_defaults():
     assert_eq(train.category, VehicleController.CATEGORY_TRAIN)
-    assert_eq(train.train_type, RailVehicleController.TRAIN_TYPE_DEFAULT)
+    assert_eq(train.train_type, MaszynaMoverRailVehicleController.TRAIN_TYPE_DEFAULT)
     assert_eq(train.reduced_mass, 0.0)
     assert_eq(train.sand_capacity, 0.0)
     assert_eq(train.heating_power, 0.0)
@@ -21,7 +21,7 @@ func test_param_and_dimensions_defaults():
 
 func test_param_and_dimensions_round_trip_and_update():
     train.category = VehicleController.CATEGORY_ROAD
-    train.train_type = RailVehicleController.TRAIN_TYPE_ET22
+    train.train_type = MaszynaMoverRailVehicleController.TRAIN_TYPE_ET22
     train.reduced_mass = 500.0
     train.sand_capacity = 300.0
     train.heating_power = 20.0
@@ -34,7 +34,7 @@ func test_param_and_dimensions_round_trip_and_update():
     await wait_idle_frames(2)
 
     assert_eq(train.category, VehicleController.CATEGORY_ROAD)
-    assert_eq(train.train_type, RailVehicleController.TRAIN_TYPE_ET22)
+    assert_eq(train.train_type, MaszynaMoverRailVehicleController.TRAIN_TYPE_ET22)
     assert_eq(train.reduced_mass, 500.0)
     assert_eq(train.sand_capacity, 300.0)
     assert_eq(train.heating_power, 20.0)

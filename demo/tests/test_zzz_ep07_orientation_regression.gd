@@ -32,8 +32,8 @@ var scenery:MaszynaSceneryNode
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
     add_child(scenery)
@@ -46,7 +46,7 @@ func after_each():
     # out of the cab before the vehicle goes
     PlayerServer.player_leave_vehicle()
     scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 ## The way the vehicle is drawn facing (RailVehicleRenderingServer)

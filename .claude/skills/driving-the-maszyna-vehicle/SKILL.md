@@ -5,11 +5,14 @@ description: How a driver starts a MaSzyna locomotive or multiple unit from cold
 
 # Driving a MaSzyna vehicle
 
-Every step below is a condition of the original engine, not a habit of this wrapper. A test or a
+Every step below is a condition of the original engine, not a habit of this port. A test or a
 probe that skips one sees a vehicle "that does not start" which is only driven wrong - check this
 list before calling it a regression. The keys are actions of `demo/project.godot`; the cab logic
-takes them (`LegacyCabinLogic.input()`), with or without the 3D cab. `demo/tests/maszyna_startup_test.gd`
-drives this sequence.
+takes them (`MaszynaCabinLogic.input()`), with or without the 3D cab. `demo/tests/maszyna_startup_test.gd`
+drives this sequence. The getters below are libreloaded's `RailVehicle*` component interfaces
+(`vendor/libreloaded/src/vehicles/rail/`), implemented for MaSzyna's vehicles by the `MaszynaMover*`
+adapters (`src/maszyna/vehicles/`); `PlayerServer`, `RailVehicleServer` and `SimulationServer` are
+libreloaded's.
 
 ## From cold to moving off
 
@@ -32,7 +35,7 @@ drives this sequence.
    `RailVehicleEngine.get_main_switch_closable()` is false.
 6. **Main switch** - hold `main_switch_toggle` (M, the original's `linebreakertoggle`) for at least the line breaker's InitialCtrlDelay
    (`RailVehicleElectricEngine.get_line_breaker_initial_delay()`), then release: a series motor
-   vehicle closes it on the release (`LegacyCabinMainSwitch`, Train.cpp:3809). Diesel: the same
+   vehicle closes it on the release (`MaszynaCabinMainSwitch`, Train.cpp:3809). Diesel: the same
    key starts the engine, after `oil_pump_toggle` and `fuel_pump_toggle`.
 7. **Converter, compressor** - `converter_toggle`, `compressor_toggle`; wait for the main
    reservoir (`RailVehicleBrake.get_compressor_pressure()` above 4.5 bar, the AI's ready check).
@@ -135,7 +138,7 @@ the original's line, in the same work. The operator should never have to say it 
   released before moving off. Not every locomotive has a hand releaser - newer ones do not.
 * 2026-10-04, every cab: the keys of controls the MMD models went only to the 3D cab's widgets, so
   without the cab model (a fixture, a model that failed to load) they did nothing - the keys are
-  the cab logic's now (`LegacyCabinLogic.input()`).
+  the cab logic's now (`MaszynaCabinLogic.input()`).
 * 2026-10-04, ET41: P/O did nothing from the cab - its pantograph cocks (pantfront_sw,
   pantrear_sw) and its pantograph compressor are in cab0definition, the machine room, and from a
   cab a pantograph is raised only by a switch the cab has (Train.cpp:3228). The driver goes to the

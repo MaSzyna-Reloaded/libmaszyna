@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaGameDirectory" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where the original's data is.
+	</brief_description>
+	<description>
+		The MaSzyna game directory the player chose ([code]maszyna/game_dir[/code] of [UserSettings]) or the one found, and the search for an installation. A different directory is different data: the game's data is read again ([GameDataServer]) and the translations take its [code]lang/[/code] ([method ReloadedTranslationServer.translation_set_catalogue_dir]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="find_game_dirs" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns the game directories found where an installation is usually kept: the executable's directory and the one above it, every game of every Steam library, the folders at the root of each drive and in its [code]Games[/code] folder, and the same in the home directory. Only directories passing [method is_game_dir] are returned, the executable's own first.
+			</description>
+		</method>
+		<method name="get_game_dir" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the Maszyna game directory in use, as an absolute path.
+				The configured [code]maszyna/game_dir[/code] (resolved against the executable's directory when relative; empty stands for [code]"."[/code]) when it is a game directory (see [method is_game_dir]); otherwise the executable's directory when that one is; otherwise the configured one.
+			</description>
+		</method>
+		<method name="is_game_dir" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns [code]true[/code] when [param path] holds the original's data - the [code]scenery[/code], [code]dynamic[/code] and [code]textures[/code] directories.
+			</description>
+		</method>
+		<method name="is_game_dir_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the directory returned by [method get_game_dir] is a game directory.
+			</description>
+		</method>
+		<method name="save_game_dir">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Saves the Maszyna game directory path to the config file.
+				This is a shortcut for writing the [code]maszyna/game_dir[/code] setting.
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="game_dir_changed">
+			<description>
+				Emitted when the [code]maszyna/game_dir[/code] setting changes.
+			</description>
+		</signal>
+	</signals>
+</class>

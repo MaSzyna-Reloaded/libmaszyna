@@ -10,8 +10,8 @@ var train: VehicleController
 
 
 func before_each():
-    train = build_vehicle("TestLightSwitches", SM42, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
-    train.add_component(MoverRailVehicleLighting.new())
+    train = build_vehicle("TestLightSwitches", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    train.add_component(MaszynaMoverRailVehicleLighting.new())
     train.apply_configuration()
     await wait_idle_frames(2)
 

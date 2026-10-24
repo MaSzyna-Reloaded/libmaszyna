@@ -25,18 +25,18 @@ var vehicle:RailVehicle3D
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
     if is_instance_valid(vehicle):
         vehicle.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_the_factors_are_read_with_the_originals_corrections() -> void:
-    var appearance:RailVehicleAppearance = MaszynaRailVehicle3DInstancer.read_structure(
+    var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicle3DInstancer.read_structure(
             DATA_PATH, "pantslider", "", "pantslider").appearance
     assert_eq(appearance.pantograph_factors, PackedFloat64Array([FIRST_PLACE, -FIRST_PLACE, SLIDER_HEIGHT, SLIDER_HEIGHT]))
     assert_eq(appearance.pantograph_front_arms, PackedStringArray(["", "", "", "", "slizg_pant01"]),

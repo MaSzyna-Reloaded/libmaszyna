@@ -9,7 +9,7 @@ const EZT_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
 const LOCOMOTIVE_PATH:String = "res://tests/fixtures/dynamic/pkp/ep09_v1/104e-039.fiz"
 const DIRECTION:String = "direction"
 
-var logic:LegacyCabinLogic
+var logic:MaszynaCabinLogic
 
 
 func after_each() -> void:
@@ -20,11 +20,11 @@ func after_each() -> void:
 
 func _drive(fiz_path:String) -> RID:
     var train:VehicleController = build_vehicle("TestDirectionKey", FizVehicleBuilder.build_description_at(fiz_path),
-            0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var vehicle_rid:RID = train.get_rid()
     await wait_idle_frames(2)
-    var controls:LegacyCabinControls = LegacyCabinControls.new()
-    logic = LegacyCabinLogic.new(func(_cabin:RID) -> LegacyCabinControls: return controls)
+    var controls:MaszynaCabinControls = MaszynaCabinControls.new()
+    logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls)
     logic.register(vehicle_rid, RailVehicleServer.vehicle_get_front_cabin(vehicle_rid))
     VehicleServer.vehicle_send_command(vehicle_rid, "battery", true)
     VehicleServer.vehicle_send_command(vehicle_rid, "cab_activation", true)

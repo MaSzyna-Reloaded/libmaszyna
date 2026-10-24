@@ -28,8 +28,8 @@ class IdleDriver extends DriverImplementation:
 func before_each() -> void:
     _announced.clear()
     _track = build_track(TRACK_NAME, TRACK_LENGTH)
-    _first = build_rail_vehicle("PlayerServerFirst", TRACK_NAME, FIRST_OFFSET, MaszynaDynamicData.DriverType.DRIVER_HEAD)
-    _second = build_rail_vehicle("PlayerServerSecond", TRACK_NAME, SECOND_OFFSET, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    _first = build_rail_vehicle("PlayerServerFirst", TRACK_NAME, FIRST_OFFSET, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    _second = build_rail_vehicle("PlayerServerSecond", TRACK_NAME, SECOND_OFFSET, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     PlayerServer.player_vehicle_changed.connect(_on_player_vehicle_changed)
 
 
@@ -97,7 +97,7 @@ func test_taking_over_activates_the_cab() -> void:
     var physics_node:VehiclePhysicsNode = _first.get_node(_first.controller_path) as VehiclePhysicsNode
     var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     # the active cab is the master controller's - a vehicle with a cab has one
-    controller.add_component(MoverRailVehicleMasterController.new())
+    controller.add_component(MaszynaMoverRailVehicleMasterController.new())
     controller.apply_configuration()
     await wait_idle_frames(SETTLE_FRAMES)
     var vehicle:RID = _first.get_rid()

@@ -12,9 +12,9 @@ var engine: RailVehicleElectricInductionEngine
 func before_each():
     train = build_vehicle("TestTrain")
 
-    engine = MoverRailVehicleElectricInductionEngine.new()
+    engine = MaszynaMoverRailVehicleElectricInductionEngine.new()
     train.add_component(engine)
-    var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     train.add_component(power_source)
     await step(2)
@@ -65,14 +65,14 @@ func test_line_breaker_stays_closed_under_the_nominal_wire_voltage():
     # Regression: CollectorParameters.MaxV (FIZ MaxVoltage, Mover.cpp:11622) was never set, so an
     # induction motor opened the line breaker above 0 + 200 V right after it closed. The cab is
     # occupied - an unmanned vehicle is not simulated and would never open it.
-    var driven:VehicleController = build_vehicle("TestEimTrain", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var driven:VehicleController = build_vehicle("TestEimTrain", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     driven.add_component(build_power_supply(110.0))
     # the breaker is checked against the voltage in TractionForce(), run only with Power > 0
     driven.power = 5600.0
-    var eim: RailVehicleElectricInductionEngine = MoverRailVehicleElectricInductionEngine.new()
-    var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    var eim: RailVehicleElectricInductionEngine = MaszynaMoverRailVehicleElectricInductionEngine.new()
+    var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
-    var master_controller: RailVehicleMasterController = MoverRailVehicleMasterController.new()
+    var master_controller: RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master_controller.main_position_count = 4
     driven.add_component(master_controller)
     power_source.current_collector_max_voltage = 3900.0
@@ -101,18 +101,18 @@ func test_line_breaker_stays_closed_under_the_nominal_wire_voltage():
 ## Built as the game builds a vehicle: every component in its description before the vehicle takes
 ## it, so the backend is configured once and CheckLocomotiveParameters() runs after all of it
 func _powered_up_eim(vehicle_id: String) -> VehicleController:
-    var description:VehicleController = MoverRailVehicleController.new()
+    var description:VehicleController = MaszynaMoverRailVehicleController.new()
     description.add_component(build_power_supply(110.0))
     description.power = 5600.0
     description.mass = 81000.0
-    var wheels: RailVehicleWheels = MoverRailVehicleWheels.new()
+    var wheels: RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
     wheels.powered_wheel_diameter = 1.25
     wheels.axle_arrangement = "Bo'Bo'"
     description.add_component(wheels)
-    var eim: RailVehicleElectricInductionEngine = MoverRailVehicleElectricInductionEngine.new()
-    var power_source: RailVehicleEnginePowerSource = MoverRailVehicleEnginePowerSource.new()
+    var eim: RailVehicleElectricInductionEngine = MaszynaMoverRailVehicleElectricInductionEngine.new()
+    var power_source: RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
-    var master_controller: RailVehicleMasterController = MoverRailVehicleMasterController.new()
+    var master_controller: RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master_controller.main_position_count = 4
     description.add_component(master_controller)
     eim.transmission_gear_teeth_motor = 48
@@ -128,7 +128,7 @@ func _powered_up_eim(vehicle_id: String) -> VehicleController:
     power_source.current_collector_number_of_collectors = 2
     description.add_component(eim)
     description.add_component(power_source)
-    var driven:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var driven:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     # the vehicle's own copy of the description's power source, the one the wire feeds
     power_source = driven.get_rail_component(RailVehicleComponentType.COMPONENT_ENGINE_POWER_SOURCE)
     driven.send_command("battery", true)
