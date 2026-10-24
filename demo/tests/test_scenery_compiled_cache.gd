@@ -82,6 +82,32 @@ func test_nested_dependency_change_invalidates_cache() -> void:
     node.free()
 
 
+## An include the game directory lacks is skipped, as the original skips it - Wrzosy names three
+## (`none`, 9a-jerzynianka-podg_trawy.scm, pkp/d1_stajaca.inc), and taken as uncacheable it was
+## parsed again on every load. Its absence is what the cache depends on: the file appearing makes
+## the entry stale.
+func test_a_missing_include_keeps_the_scenery_cacheable_until_it_appears() -> void:
+    var missing_path:String = _source_path.get_basename() + "_missing.inc"
+    var context:MaszynaImporterContext = _make_context()
+    context.register_dependency(missing_path)
+    assert_true(context.cacheable, "a missing include does not stop the scenery being cached")
+    var node := Node3D.new()
+    var parameters_hash:String = MaszynaSceneryProvider._get_parameters_hash({})
+    var compiled:MaszynaCompiledScenery = MaszynaSceneryProvider._compile_scenery(
+        _source_path,
+        parameters_hash,
+        context,
+        [node],
+    )
+    assert_true(MaszynaSceneryProvider._is_cache_valid(compiled, _source_path, parameters_hash))
+
+    _write_file(missing_path, "include now there")
+    assert_false(MaszynaSceneryProvider._is_cache_valid(compiled, _source_path, parameters_hash),
+            "the include written since is read on the next load")
+    DirAccess.remove_absolute(missing_path)
+    node.free()
+
+
 func test_parameter_hash_is_deterministic_and_part_of_cache_key() -> void:
     var first_hash:String = MaszynaSceneryProvider._get_parameters_hash({"p2": "b", "p1": "a"})
     var reordered_hash:String = MaszynaSceneryProvider._get_parameters_hash({"p1": "a", "p2": "b"})

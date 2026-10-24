@@ -32,6 +32,10 @@ code belongs to the game's `FINDINGS.md`.
   *(09-20 low-poly interior)*
 * When a cache "does not work", load an entry and run its own validity check before suspecting
   invalidation. *(09-23 game dir ".")*
+* A cache entry missing beside its directory of chunks was never saved: look for what made the
+  parse uncacheable. A file the parse looks for and does not find is a dependency that must stay
+  missing, never a reason not to cache - the original skips a missing include. *(10-22 Wrzosy
+  parsed again on every load)*
 * "One action late" means a read of a snapshot taken before the write. Look for the cache
   between them. *(09-23 cab one keypress late)*
 * Crashes at changing places are one cause: lay the backtraces side by side and find the frame
