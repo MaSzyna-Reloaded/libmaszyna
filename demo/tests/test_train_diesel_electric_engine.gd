@@ -6,12 +6,12 @@ var engine: RailVehicleDieselElectricEngine
 func before_each():
     train = build_vehicle("TestTrain")
 
-    engine = MoverRailVehicleDieselElectricEngine.new()
+    engine = MaszynaMoverRailVehicleDieselElectricEngine.new()
     train.add_component(engine)
     await wait_idle_frames(2)
 
-func _make_row(rpm: float, gen_power: float) -> RailVehicleWWListItem:
-    var item = RailVehicleWWListItem.new()
+func _make_row(rpm: float, gen_power: float) -> MaszynaMoverWWListItem:
+    var item = MaszynaMoverWWListItem.new()
     item.rpm = rpm
     item.max_power = gen_power
     return item
@@ -62,7 +62,7 @@ func test_fiz_wwlist_row_uses_canonical_shunting_property():
     parser.end_table(context)
 
     assert_eq(engine.wwlist.size(), 1)
-    assert_true((engine.wwlist[0] as RailVehicleWWListItem).has_shunting)
+    assert_true((engine.wwlist[0] as MaszynaMoverWWListItem).has_shunting)
 
 ## BR285's Engine: gives Vadd and Cr twice; the original reads the first (extract_value's find(),
 ## utilities.h:170). The last one, Vadd=0, made the traction force 0/0 on a standing vehicle.
@@ -81,10 +81,10 @@ func test_fiz_repeated_key_keeps_its_first_value():
 
 func test_fiz_diesel_electric_inertia_and_rpm_decrease_rate():
     _apply_engine_line("EngineType=DieselElectric")
-    assert_eq(engine.mechanical_inertia, 1.25, "the diesel-electric's own AIM default (Mover.cpp:11282)")
+    assert_eq(engine.diesel_configuration.mechanical_inertia, 1.25, "the diesel-electric's own AIM default (Mover.cpp:11282)")
     _apply_engine_line("EngineType=DieselElectric AIM=2 RPMDecRate=3")
-    assert_eq(engine.mechanical_inertia, 2.0)
-    assert_eq(engine.mechanical_rpm_decrease_rate, 3.0)
+    assert_eq(engine.diesel_configuration.mechanical_inertia, 2.0)
+    assert_eq(engine.diesel_configuration.mechanical_rpm_decrease_rate, 3.0)
 
 func test_fiz_diesel_cooling_keys():
     _apply_engine_line(BR285_ENGINE)
@@ -98,6 +98,6 @@ func test_fiz_diesel_cooling_keys():
     assert_eq(engine.cooling_water_aux_max_temperature, 74.0)
     assert_eq(engine.cooling_water_aux_min_temperature, -1.0, "a key the line lacks keeps the default")
     assert_true(engine.cooling_water_aux_shutters)
-    assert_eq(engine.cooling_heat_kfo2, 33.0)
-    assert_eq(engine.cooling_heat_kw, 0.35)
-    assert_eq(engine.cooling_nominal_power, 1235.0)
+    assert_eq(engine.diesel_configuration.cooling_heat_kfo2, 33.0)
+    assert_eq(engine.diesel_configuration.cooling_heat_kw, 0.35)
+    assert_eq(engine.diesel_configuration.cooling_nominal_power, 1235.0)

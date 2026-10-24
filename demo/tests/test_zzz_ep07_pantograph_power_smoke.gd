@@ -18,8 +18,8 @@ var scenery:MaszynaSceneryNode
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
     add_child(scenery)
@@ -29,7 +29,7 @@ func before_each():
 
 func after_each():
     scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_ep07_pantograph_draws_wire_voltage_from_td_scn() -> void:

@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Write, change, run and judge tests in this wrapper (GUT, demo/tests) and headless probes. Use before adding or editing a test, before "fixing" a test that went red, before running tests ahead of a commit, when a change touches physics (Mover wrapper, vehicle components, FIZ factory, cab logic), and when a headless probe has to prove a hypothesis. Answers "what may a test assert", "is this red test a regression", "how do I run just my test" and "why does my probe read frozen values".
+description: Write, change, run and judge tests in libmaszyna (GUT, demo/tests) and headless probes. Use before adding or editing a test, before "fixing" a test that went red, before running tests ahead of a commit, when a change touches physics (Mover wrapper, vehicle components, FIZ factory, cab logic), and when a headless probe has to prove a hypothesis. Answers "what may a test assert", "is this red test a regression", "how do I run just my test" and "why does my probe read frozen values".
 ---
 
 # Testing
@@ -44,15 +44,18 @@ real frame time x the speed, up to 25 simulated seconds a frame at x100), the te
 frames, and it waited 120 simulated seconds for line contactors after a key that had not moved
 the master controller at all. The rules that came out of it:
 
-- **No SimulationRuntime in the tests.** `simulation_runtime_hook.gd` places none: no frame moves
-  SimulationServer's clock. The test steps it, tick by tick, as a step debugger does -
-  `MaszynaGutTest.step(count)`, `wait_simulated_until(done, seconds, what)`, `ticks(seconds)`,
-  `TICK` = 1/30 s (the simulation's tick to come, #301). Never `wait_seconds()`, never
+- **No SimulationRuntime in the tests.** `simulation_runtime_hook.gd` (libreloaded's, linked into
+  `demo/tests/` by `make links`) places none: no frame moves SimulationServer's clock. The test
+  steps it, tick by tick, as a step debugger does - `step(count)`,
+  `wait_simulated_until(done, seconds, what)`, `ticks(seconds)`, `TICK` = 1/30 s (the simulation's
+  tick to come, #301), of libreloaded's `ReloadedGutTest` (`demo/tests/reloaded_gut_test.gd`, a
+  link), which `MaszynaGutTest` extends. Never `wait_seconds()`, never
   `wait_idle_frames()` or `Time.get_ticks_msec()` to let the simulation run, never a loop on
   `simulation_get_time()` awaiting frames (with no runtime it never ends).
 - **Everything that moves with the simulation moves by simulation time** - the vehicles, the
-  drivers, the events, and the cab's view of them: a widget's animation (`BaseCabinTool3D._process`)
-  and a knob a key holds (`CabinLogic`, on `simulation_advanced`). A test step moves them all; no
+  drivers, the events, and the cab's view of them: a widget's animation (libreloaded's
+  `BaseCabinTool3D._process`) and a knob a key holds (`MaszynaCabinLogic`, on
+  `simulation_advanced`). A test step moves them all; no
   frame rate (`--fixed-fps`) is needed or wanted.
 - **A key press lasts at least one tick** (`MaszynaStartupTest.key_tap()`): the cab's logic takes
   keys on the simulation's step, a press that ends before the next tick is never seen.
@@ -64,7 +67,7 @@ the master controller at all. The rules that came out of it:
   turned into ticks: a relay's `InitialCtrlDelay`, the doors' `open_delay + max_shift /
   open_speed`, the brake's `BDelay`, plus one `TICK` for the step that shows it. Never a blanket
   constant ("120 s a step", "20 s for the doors") and never a margin of a file's own (0.1, 0.25 -
-  frame-clock numbers): the margin is `TICK`, from `MaszynaGutTest`.
+  frame-clock numbers): the margin is `TICK`, from `ReloadedGutTest`.
 - **A wait that runs out fails the test there**, saying what did not come about
   (`wait_simulated_until()` does). GUT's `wait_until()`/`wait_for_signal()` only return false -
   one whose result is ignored lets the test run on, or pass. An `await` of a signal with no limit
@@ -75,9 +78,10 @@ the master controller at all. The rules that came out of it:
 
 ## Physics is tested end to end and blackbox - ABSOLUTE
 
-- A change to a physics component - the Mover wrapper (`src/legacy/vehicles/`), a vehicle
-  component (`src/vehicles/`), the FIZ factory (`addons/libmaszyna/legacy/fiz/`), the cab logic
-  that commands them (`addons/libmaszyna/legacy/cabin/`) - is tested through the whole sequence a
+- A change to a physics component - the Mover wrapper (`src/maszyna/vehicles/`), a vehicle
+  component (libreloaded's `src/vehicles/`, implemented here by the `MaszynaMover*` adapters), the
+  FIZ factory (`addons/libmaszyna/fiz/`), the cab logic that commands them
+  (`addons/libmaszyna/cabin/`) - is tested through the whole sequence a
   player goes through, not only the field that moved: battery -> low voltage
   (`power24_available`) -> pantographs -> relay reset -> main switch -> converter
   (`power110_available`) -> controller -> speed. A flag that is set (`battery_enabled`) proves
@@ -87,7 +91,7 @@ the master controller at all. The rules that came out of it:
   and/or on the state built into the dump (`get_state()`, `VehicleServer.vehicle_dump_state()`).
   Never on Mover internals, private members (`_name`) or the way a component got its value.
 - Test the real entry point: commands through `vehicle_send_command`, cab controls through
-  `CabinSystem.act` on a `LegacyCabinLogic` - a hand-built struct can pass while the real path is
+  libreloaded's `CabinSystem.act` on a `MaszynaCabinLogic` - a hand-built struct can pass while the real path is
   broken.
 
 ## Data reading is tested on the data's variants - ABSOLUTE
@@ -111,6 +115,8 @@ proves nothing - the 36WE's pantograph names passed every test for a month.
 
 ## Running
 
+- The test project is `demo/`, and the GUT pre-run hook and `ReloadedGutTest` are links to
+  libreloaded's demo: `make links` first (every `make` target of a build or a run does it).
 - Parse-check first: `godot-double --headless --path demo --check-only -s res://tests/<file>.gd`
   (5 s). A script that does not parse is skipped by GUT, `-gselect` then matches nothing and the
   whole directory runs until the timeout - it looks like a hang.
@@ -119,7 +125,8 @@ proves nothing - the 36WE's pantograph names passed every test for a month.
   `godot-double --headless --path demo --log-file <scratchpad>/godot.log -s addons/gut/gut_cmdln.gd -gconfig= -gpre_run_script=res://tests/simulation_runtime_hook.gd -gtest=res://tests/a.gd,res://tests/b.gd -gexit`.
   `-gconfig=` is required: `.gutconfig.json`'s `dirs` adds the whole directory to `-gtest`, which
   is why it once looked as if `-gtest` did not filter. Many scripts: two or three such processes
-  side by side, the list split between them. One script: `-gdir=res://tests/ -gselect=<script>`.
+  side by side, the list split between them. One script: `make test TEST=<name>`
+  (`-gtest=res://tests/<name>.gd`; it passes no `--log-file`).
   Never the whole suite.
 - Redirect to a file and read the file - `| grep | head` kills the run with SIGPIPE.
 - Every headless run takes `--log-file <scratchpad>/godot.log`: it shares the game's user
@@ -138,7 +145,8 @@ proves nothing - the 36WE's pantograph names passed every test for a month.
   (`SimulationServer.simulation_advance(TICK)` N times between frames), never by a longer
   timeout. Never a tool call that sits in the turn waiting for a probe.
 - A probe never `save_*`s a user setting - a killed probe leaves it written in the operator's
-  `settings.cfg`. In memory only: `UserSettings.set_setting("maszyna", "game_dir", ...)`.
+  `settings.cfg`. In memory only: `UserSettings.set_setting("maszyna", "game_dir", ...)` (libreloaded's
+  `UserSettings`; `MaszynaGameDirectory` follows the setting).
 - `godot-double`, never `godot` (double-precision extension).
 - After every headless run `git status`: Godot rewrites `.tres`/`.tscn`; restore what you did not
   edit.
@@ -151,10 +159,10 @@ A probe reads frozen values - and "proves" anything - unless the vehicle is real
   is set **before** it enters the tree (only `RailVehicleServer.vehicle_is_attached()` vehicles are
   stepped);
 - the clock runs: a probe steps it itself (`SimulationServer.simulation_advance()`, as
-  `MaszynaGutTest.step()` does) - with no `SimulationRuntime` nothing else moves it; check that
+  `ReloadedGutTest.step()` does) - with no `SimulationRuntime` nothing else moves it; check that
   `SimulationServer.simulation_get_time()` grows;
-- it is driven (`PlayerServer.player_take_over_vehicle()` or
-  `DriverServer.vehicle_set_control_active()`), or a standing vehicle switches its physics off;
+- it is driven (`PlayerServer.player_take_over_vehicle()`, or a driver at its controls -
+  `DriverServer.vehicle_is_control_active()`), or a standing vehicle switches its physics off;
 - waits are in simulated time the probe steps, never in frames or `create_timer` - a headless
   frame is microseconds and a real second says nothing of the simulation.
 
@@ -162,15 +170,16 @@ A probe using autoloads (`CabinSystem`, `UserSettings`) runs as a scene
 (`godot-double --headless --audio-driver Dummy --path demo <scratch>/probe.tscn`); a `-s` script
 does not compile against them. Without a wire the step feeds 0 V to the pantographs at its end - a
 voltage fed by hand does not reach the cab's own tick. For a regression with no obvious cause,
-build the commit before it in a copy in the scratchpad (`git archive <rev>^ | tar -x`, symlink
-`godot-cpp` and `vendor/*`, its own `build-debug`) and run the same probe on both: the first step
+build the commit before it in a copy in the scratchpad (`git archive <rev>^ | tar -x`, a copy of
+libreloaded at the commit its `vendor/libreloaded` pinned then, `make libreloaded-local
+LIBRELOADED_LOCAL=<that copy>`, `make compile-debug`) and run the same probe on both: the first step
 that differs is the regression.
 
 ## Start-up test of a vehicle
 
 Every locomotive and unit of the game data has a test that starts it from cold and moves it off
 **by the player's keys** (`demo/tests/maszyna_startup_test.gd`, `MaszynaStartupTest`): the keys
-go through `MaszynaPlayer._unhandled_input` to the cab logic, every step is checked on the car it
+go through libreloaded's `Player._unhandled_input` to the cab logic, every step is checked on the car it
 acts on through component getters, and the first step that does not come about fails the test
 with what the cars show (`start-up stopped at <step> after <n> s: ...`). The steps and the
 original's conditions behind them are in `.claude/skills/driving-the-maszyna-vehicle/SKILL.md` -

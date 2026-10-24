@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleLighting" inherits="RailVehicleLighting" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleLighting] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleLighting] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleLighting].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="source_generator_engine" type="int" setter="set_source_generator_engine" getter="get_source_generator_engine" enum="RailVehicleEngine.EngineType" default="8">
+			An integer representing the engine type, defined by the RailVehicleEngine.EngineType enumeration
+		</member>
+		<member name="source_accumulator_max_voltage" type="float" setter="set_source_accumulator_max_voltage" getter="get_source_accumulator_max_voltage" default="0.0">
+			Represents the highest voltage the accumulator can reach when fully charged.
+		</member>
+		<member name="light_alternative_max_voltage" type="float" setter="set_light_alternative_max_voltage" getter="get_light_alternative_max_voltage" default="0.0">
+			Specifies the maximum voltage of the alternative light source can provide
+		</member>
+		<member name="light_alternative_capacity" type="float" setter="set_light_alternative_capacity" getter="get_light_alternative_capacity" default="0.0">
+			Specifies the capacity of the alternative light source, typically measured in units like Ampere-hours (Ah). Represents the total amount of energy the alternative light source can store
+		</member>
+		<member name="light_source" type="int" setter="set_light_source" getter="get_light_source" enum="RailVehicleController.TrainPowerSource" default="3">
+			An integer representing the power source, defined by the VehicleController.TrainPowerSource enumeration
+		</member>
+		<member name="light_alternative_source" type="int" setter="set_light_alternative_source" getter="get_light_alternative_source" enum="RailVehicleController.TrainPowerSource" default="4">
+			An integer representing the alternative power source, defined by the VehicleController.TrainPowerSource enumeration
+		</member>
+		<member name="source_accumulator_recharge_source" type="int" setter="set_source_accumulator_recharge_source" getter="get_source_accumulator_recharge_source" enum="RailVehicleController.TrainPowerSource" default="3">
+			An integer representing the power source, defined by the VehicleController.TrainPowerSource enumeration.
+		</member>
+	</members>
+</class>

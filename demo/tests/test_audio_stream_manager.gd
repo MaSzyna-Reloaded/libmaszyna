@@ -18,12 +18,12 @@ var _previous_game_dir:String = ""
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_length_read_off_the_pages_is_the_decoded_length() -> void:
@@ -41,7 +41,7 @@ func test_a_vehicle_sound_is_looked_for_in_its_directory_first() -> void:
     var vehicle_dir:String = ProjectSettings.globalize_path(VEHICLE_DIR)
     assert_eq(AudioStreamManager.find_sound(SOUND, vehicle_dir), vehicle_dir.path_join(SOUND + ".ogg"))
     assert_eq(AudioStreamManager.find_sound(SOUND, ""),
-            UserSettings.get_maszyna_game_dir().path_join("sounds").path_join(SOUND + ".ogg"), "no vehicle: sounds/")
+            MaszynaGameDirectory.get_game_dir().path_join("sounds").path_join(SOUND + ".ogg"), "no vehicle: sounds/")
 
 
 func test_a_wav_sound_is_found_and_read() -> void:

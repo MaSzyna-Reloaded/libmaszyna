@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://cfj82gn1nfl36"]
-
-[ext_resource type="Script" uid="uid://c4lj08dvqxvhn" path="res://addons/libmaszyna/cabin/cabin_gauge.gd" id="1_5vh3x"]
-
-[node name="CabinGauge" type="Node3D" unique_id=114221161]
-script = ExtResource("1_5vh3x")

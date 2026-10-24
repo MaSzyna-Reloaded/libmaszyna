@@ -30,7 +30,7 @@ func test_internal_sound_is_silent_without_an_occupied_listener_vehicle() -> voi
 
 
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
-const PLAYER_SCENE:PackedScene = preload("res://addons/libmaszyna/player/player.tscn")
+const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 ## Where the camera stands to hear the vehicle at the origin, and where it cannot
 const NEAR:Vector3 = Vector3(0.0, 0.0, 10.0)
 const FAR:Vector3 = Vector3(0.0, 0.0, 10000.0)
@@ -62,12 +62,12 @@ func after_each() -> void:
 
 
 ## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (MaszynaPlayer, initialization_ready)
+## only now has its camera (Player, initialization_ready)
 signal scenery_loaded(first_vehicle_id:String)
 
 ## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (MaszynaPlayer, initialization_ready)
-func _start_player(player:MaszynaPlayer) -> void:
+## then (Player, initialization_ready)
+func _start_player(player:Player) -> void:
     scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
     scenery_loaded.emit("")
 
@@ -80,7 +80,7 @@ func _build_vehicle() -> void:
     _vehicle = RailVehicle3D.new()
     add_child(_vehicle)
 
-    var player:MaszynaPlayer = PLAYER_SCENE.instantiate()
+    var player:Player = PLAYER_SCENE.instantiate()
     add_child_autoqfree(player)
     _start_player(player)
     # on foot the player looks through the free view

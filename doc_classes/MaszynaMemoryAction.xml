@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMemoryAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]updatevalues[/code], [code]addvalues[/code] and [code]copyvalues[/code] events.
+	</brief_description>
+	<description>
+		Writes the masked fields of its memories, from its own values or from a [member source] memory ([code]Event.cpp:469-571, 876-961[/code]). The [code]*[/code] of the scenery - "leave this field as it is" - is a field left out of the [member mask].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mask" type="int" setter="set_mask" getter="get_mask" enum="MaszynaScenarioEventServer.MemoryField" is_bitfield="true" default="0">
+			The fields written; a field left out stays as it is.
+		</member>
+		<member name="memories" type="RID[]" setter="set_memories" getter="get_memories" default="[]">
+			The [ScenarioEventServer] memories written.
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="MaszynaMemoryAction.Mode" default="0">
+			How the fields are written.
+		</member>
+		<member name="source" type="RID" setter="set_source" getter="get_source" default="RID()">
+			[code]copyvalues[/code]: the memory the values are read from when the event runs; empty for the action's own values.
+		</member>
+		<member name="text" type="String" setter="set_text" getter="get_text" default="&quot;&quot;">
+			The text written.
+		</member>
+		<member name="value1" type="float" setter="set_value1" getter="get_value1" default="0.0">
+			The first value written.
+		</member>
+		<member name="value2" type="float" setter="set_value2" getter="get_value2" default="0.0">
+			The second value written.
+		</member>
+	</members>
+	<constants>
+		<constant name="MODE_SET" value="0" enum="Mode">
+			The fields are set ([code]updatevalues[/code], [code]copyvalues[/code]).
+		</constant>
+		<constant name="MODE_ADD" value="1" enum="Mode">
+			[code]addvalues[/code]: the text is appended, the values added ([code]MemCell.cpp:30-37[/code]).
+		</constant>
+		<constant name="MODE_ISOLATED_BUSY" value="2" enum="Mode">
+			An isolated section's own memory when the section is taken: value 2 made odd ([code]TIsolated::Modify()[/code], [code]Track.cpp:155-156[/code]).
+		</constant>
+		<constant name="MODE_ISOLATED_FREE" value="3" enum="Mode">
+			An isolated section's own memory when it is free again: the low byte of value 2 cleared ([code]Track.cpp:128-130[/code]).
+		</constant>
+	</constants>
+</class>

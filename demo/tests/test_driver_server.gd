@@ -5,7 +5,7 @@ const REGISTERED_LATER:StringName = &"test_registered_later"
 
 
 func test_a_driver_is_a_person_aboard_a_vehicle() -> void:
-    var vehicle:RID = build_vehicle("DriverTest", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid()
+    var vehicle:RID = build_vehicle("DriverTest", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
     var driver:RID = get_vehicle_driver(vehicle)
 
     attach_driver_implementation(driver, UpdateCounter.new())
@@ -71,7 +71,7 @@ func test_a_scheduled_update_reaches_the_implementation() -> void:
 ## under it, it thinks with nothing; registered, the implementation thinks for it - declared before
 ## or after - and with the name unregistered, nothing does again
 func test_a_driver_thinks_with_the_implementation_registered_under_its_name() -> void:
-    var vehicle:VehicleController = build_vehicle("TestTrain", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    var vehicle:VehicleController = build_vehicle("TestTrain", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var driver:RID = get_vehicle_driver(vehicle.get_rid())
     DriverServer.driver_attach_implementation(driver, REGISTERED_LATER)
     assert_has(DriverServer.driver_get_rids(), driver, "declared, it is a driver")
@@ -87,7 +87,7 @@ func test_a_driver_thinks_with_the_implementation_registered_under_its_name() ->
 
 ## The person build_vehicle() seats at the controls of a vehicle of its own, driven by the implementation
 func _create_driver(implementation:DriverImplementation) -> RID:
-    var driver:RID = get_vehicle_driver(build_vehicle("AIDriverTest", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid())
+    var driver:RID = get_vehicle_driver(build_vehicle("AIDriverTest", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid())
     attach_driver_implementation(driver, implementation)
     return driver
 

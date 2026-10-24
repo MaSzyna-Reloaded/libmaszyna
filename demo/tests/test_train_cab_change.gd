@@ -10,9 +10,9 @@ var driver:RID
 
 
 func before_each():
-    train = build_vehicle("TestCabChangeTrain", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    train = build_vehicle("TestCabChangeTrain", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     # the active cab is the master controller's - a vehicle with a cab has one
-    train.add_component(MoverRailVehicleMasterController.new())
+    train.add_component(MaszynaMoverRailVehicleMasterController.new())
     # the cab0definition: of the vehicle - the machine room lies between its two cabs
     RailVehicleServer.vehicle_add_machine_room(train.get_rid())
     driver = get_vehicle_driver(train.get_rid())
@@ -73,8 +73,8 @@ func test_cab_change_stops_at_vehicle_end():
 
 func test_starts_in_cab_two_for_rear_driver():
     var rear_train:VehicleController = build_vehicle("TestCabChangeRearTrain", null, 0.0,
-            MaszynaDynamicData.DriverType.DRIVER_REAR)
-    rear_train.add_component(MoverRailVehicleMasterController.new())
+            MaszynaVehicleData.DriverType.DRIVER_REAR)
+    rear_train.add_component(MaszynaMoverRailVehicleMasterController.new())
 
     assert_eq(_driver_cabin_kind(rear_train.get_rid()), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     assert_eq(rear_train.get_state()["cabin"], 0)
@@ -88,7 +88,7 @@ func test_starts_in_cab_two_for_rear_driver():
 ## position, the controllers at zero (TMoverParameters::ChangeCab(), Mover.cpp:735-749)
 func test_driver_cab_change_leaves_the_controls_at_rest():
     var locomotive:VehicleController = build_vehicle("TestCabChangeControls",
-            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await wait_idle_frames(2)
     var vehicle_rid:RID = locomotive.get_rid()
     var master:RailVehicleMasterController = RailVehicleServer.vehicle_component_get(

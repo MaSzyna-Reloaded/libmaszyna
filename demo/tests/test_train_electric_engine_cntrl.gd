@@ -7,9 +7,9 @@ var power_source: RailVehicleEnginePowerSource
 func before_each():
     train = build_vehicle("TestTrain")
 
-    engine = MoverRailVehicleElectricSeriesEngine.new()
+    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
     train.add_component(engine)
-    power_source = MoverRailVehicleEnginePowerSource.new()
+    power_source = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_ACCUMULATOR
     train.add_component(power_source)
     await step(2)
@@ -20,7 +20,7 @@ func test_defaults():
 
 func test_round_trip_and_update_without_crashing():
     engine.cntrl_converter_overload_relay_start_mode = RailVehicleController.START_MODE_CONVERTER
-    engine.cntrl_converter_overload_relay_off_when_main_is_off = true
+    engine.electric_engine_configuration.cntrl_converter_overload_relay_off_when_main_is_off = true
     power_source.cntrl_pantograph_compressor_start_mode = RailVehicleController.START_MODE_AUTOMATIC
     power_source.cntrl_pantograph_auto_valve = true
     engine.cntrl_main_switch_start_mode = RailVehicleController.START_MODE_AUTOMATIC
@@ -33,9 +33,9 @@ func test_round_trip_and_update_without_crashing():
 func _pantograph_vehicle(master_valve_start:RailVehicleController.StartMode) -> VehicleController:
     var vehicle:VehicleController = build_vehicle("TestPantographValves")
     vehicle.add_component(build_power_supply(110.0))
-    var electric := MoverRailVehicleElectricSeriesEngine.new()
+    var electric := MaszynaMoverRailVehicleElectricSeriesEngine.new()
     vehicle.add_component(electric)
-    var collector := MoverRailVehicleEnginePowerSource.new()
+    var collector := MaszynaMoverRailVehicleEnginePowerSource.new()
     collector.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     collector.current_collector_number_of_collectors = 1
     collector.cntrl_pantographs_valve_start_mode = master_valve_start

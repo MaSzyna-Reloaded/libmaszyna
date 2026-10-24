@@ -72,8 +72,8 @@ func test_explicit_load_consumes_pending_filename_change() -> void:
 
 
 func test_initial_e3d_load_consumes_model_changes() -> void:
-    var instance:E3DModelInstance = E3DModelInstance.new()
-    instance.model = E3DModel.new()
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    instance.model = MaszynaE3DModel.new()
     watch_signals(instance)
     add_child(instance)
     await wait_idle_frames(3)

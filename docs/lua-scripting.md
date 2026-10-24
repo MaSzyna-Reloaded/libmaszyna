@@ -1,134 +1,38 @@
 ---
 layout: page
-title: "Lua Scenario Scripts"
+title: "Lua: MaSzyna modules"
 ---
 
-A scenery can bring its own logic written in Lua: a dispatcher that sets the signals, a switch that
-throws itself, a train that is given its orders when it stops. The scripts run in the simulation,
-through the same servers the rest of the game uses - they are not a mod of the engine, and they
-cannot reach past the scenario.
+This page describes what libmaszyna adds to Lua scripting for MaSzyna's sceneries. The scripting
+itself is part of the core: `ScenarioScriptServer`, the `reloaded.*` modules, how scripts work, the
+sandbox and the API reference. These are described in libreloaded's
+[Lua scenario scripts](../lua-scripting.html).
 
 * [Running a script](#running-a-script)
-* [How a script works](#how-a-script-works)
-* [API reference](#api-reference)
-* [The original's `eu07.events`](#the-originals-eu07events)
+* [`reloaded.memory` - memory cells](#reloadedmemory---memory-cells)
+* [The original `eu07.events`](#the-original-eu07events)
 * [Examples](#examples)
 
 ## Running a script
 
-**From the scenery.** A `lua` line in the `.scn` names a file relative to the `scenery` directory,
-as in the original engine:
+A `lua` line in a `.scn` file names a script. The path is relative to the `scenery` directory, as
+in the original engine:
 
 ```
 lua edobre_2/switches.lua
 ```
 
-The script runs once the scenery is built - its tracks, events, vehicles and drivers all exist by
-then. A scenery may have several `lua` lines; they run in the order of the file.
+The script runs after the scenery is built, when its tracks, events, vehicles and drivers already
+exist. A scenery can have several `lua` lines. They run in the order they appear in the file.
 
-**While playing.** *View > Lua scripts* opens an editor for the scenario being played:
+libmaszyna's Lua modules are compiled only when the core is built with Lua (`LIBRELOADED_LUA`, on
+by default). Without Lua, every script fails with "This build has no Lua runtime: scenario scripts
+do not run."
 
-* **Check** compiles the code without running it and shows the first error with its line
-  (`editor:2: unexpected symbol near <eof>`).
-* **Apply** runs the code. Applying again first takes back everything the previous Apply made -
-  its events, timers and subscriptions - so the code can be changed and applied at will. Applying
-  an empty editor stops whatever it started.
+## `reloaded.memory` - memory cells
 
-Errors of a running script (a callback that fails later) are shown under the editor and written to
-the game log.
-
-**In the build.** Lua 5.4 is the `vendor/lua` submodule, compiled in by the CMake option
-`LIBMASZYNA_LUA` (on by default). A build without it refuses every script with
-"lua scripts not supported in this build.", as the original does.
-
-## How a script works
-
-**Handles.** Everything a script works with - a vehicle, a track, an event, a memory cell, a signal
-head - is a handle of its kind, found by name - a vehicle by its id, its scenery name in lower case
-(`maszyna.vehicle.find("sm42-982")`). A lookup that
-finds nothing returns `nil`. A function taking a vehicle refuses a track. Two handles of the same
-object are equal (`==`), but they are not the same Lua value: do not use a handle as a table key -
-use its name (a vehicle's id).
-
-**Callbacks.** A function given to `on_*`, `event.create`, `sim.after` or `sim.every` never runs
-inside the server that reported something. It runs as a scenario event, on the simulation clock:
-right after the report, in the order the reports came, and not at all while the simulation is
-paused. Time in the API is simulation time - faster simulation, faster timers.
-
-**What a script owns.** The events, timers and subscriptions a script made are freed with the
-scenario, or when the editor applies its code again. A script frees an event of its own with
-`maszyna.event.free()` and stops a timer or a subscription with `maszyna.cancel()`.
-
-**The sandbox.** A script has the `base`, `string`, `table`, `math`, `coroutine` and `utf8`
-libraries - no `io`, `os`, `debug` or `package`, no `dofile`/`loadfile`, and `load` of text only.
-`require("lib.util")` loads `lib/util.lua` of the scenery directory, and nothing outside it.
-`print` writes to the game log. A call that runs too long (a loop that never ends) and a script
-that takes too much memory fail with an error instead of stopping the game.
-
-## API reference
-
-Every module is a table of `maszyna` (`maszyna.vehicle`, ...), also available through `require`.
-The command and state names are the vehicle's own - the ones the console and the cab use.
-
-### `maszyna.sim` - time
-
-| Function | Returns / does |
-|---|---|
-| `time()` | seconds of simulation time since the scenario started |
-| `time_of_day()` | hours since midnight (13.5 at half past one) |
-| `is_paused()` | whether the simulation is paused |
-| `random(a, b)` | a number between `a` and `b` |
-| `after(seconds, fn)` | runs `fn()` once, after the seconds; returns a subscription |
-| `every(seconds, fn)` | runs `fn()` every so many seconds; returns a subscription |
-
-`maszyna.cancel(subscription)` stops a timer or a subscription.
-
-### `maszyna.vehicle` - vehicles
-
-| Function | Returns / does |
-|---|---|
-| `find(id)` | the vehicle of the id - its scenery name in lower case; of several, one |
-| `find_all(id)` | every vehicle of the id |
-| `all()` | every vehicle |
-| `id(v)`, `name(v)` | what `find` takes; its name as the scenery writes it, for the player (its id when it has none) |
-| `speed(v)`, `velocity(v)` | km/h, never negative; km/h, negative backwards |
-| `state(v, key)`, `config(v, key)` | one value of its state or configuration (`"brake/cylinder_pressure"`) |
-| `commands(v)` | the commands it takes |
-| `send_command(v, command, p1, p2)` | sends a command, returns the answer (`send_command(v, "battery", true)`) |
-| `coupled(v, end, element)` | the vehicles joined by `"coupler"`, `"brake_hose"`, `"main_hose"`, `"control"`, `"gangway"`, `"heating"` or `"permanent"` |
-| `track_position(v)` | `{track = <track>, along = <metres>}` - of its primary axle, the one it is listed on its track by |
-| `on_command_received(v, fn)` | `fn(command, p1, p2)` for every command the vehicle gets |
-
-### `maszyna.cabin` - the cab, as the driver's hand
-
-| Function | Returns / does |
-|---|---|
-| `act(cabin, control_id, action, value)` | manipulates a control; `action` is `"increase"`, `"decrease"`, `"hold"`, `"release"`, `"toggle"` or `"set"` |
-| `control(cabin, control_id)` | where the control stands |
-| `controls(cabin)` | the ids of the cabin's controls |
-| `driver_cabin(v)` | the cabin the vehicle's driver sits in, `nil` when nobody drives it |
-| `front_cabin(v)`, `rear_cabin(v)`, `machine_room(v)` | the vehicle's cabin of that kind, `nil` when it has none |
-| `on_control_changed(v, fn)` | `fn(cabin, control_id, value)` when a control of the vehicle's cabins changes |
-
-### `maszyna.driver` - the vehicle's driver
-
-| Function | Returns / does |
-|---|---|
-| `send_command(v, command, value1, value2)` | an order to the driver, as a `putvalues` event gives it (`"SetVelocity", 40, 40`); `false` when nobody drives |
-| `timetable(v)` | the driver's timetable and how far it got; `nil` when nobody drives |
-
-### `maszyna.event` - scenario events
-
-| Function | Returns / does |
-|---|---|
-| `create{name =, delay =, random_delay =, run =, run_else =}` | a new event; `run(event, activator)` when it runs, `run_else` when its condition failed. The scenery's events may queue it by name |
-| `find(name)`, `exists(name)` | the event of the name - the scenery's or a script's |
-| `name(e)`, `is_queued(e)` | |
-| `queue(e, activator, extra_delay)` | runs it after its delay; `false` when it waits already |
-| `free(e)` | frees an event the script created |
-| `on_launched(e, fn)` | `fn(activator)` whenever the event runs |
-
-### `maszyna.memory` - memory cells
+This module gives access to the scenery's memory cells by name. It is available in every script as
+`reloaded.memory` and through `require`. It is implemented by `MaszynaLuaMemoryModule`.
 
 | Function | Returns / does |
 |---|---|
@@ -137,97 +41,35 @@ The command and state names are the vehicle's own - the ones the console and the
 | `write(m, text, value1, value2)` | |
 | `on_values_changed(m, fn)` | `fn()` whenever its values change |
 
-### `maszyna.track` - tracks, switches, isolated sections
+## The original `eu07.events`
 
-| Function | Returns / does |
-|---|---|
-| `find(name)` | the track of the name |
-| `is_occupied(t)`, `vehicles(t)` | |
-| `find_switch(name)` | the switch of the switch track of the name |
-| `switch_get(s)`, `switch_set(s, which)` | `"common"` or `"diverging"` |
-| `isolated_find(name)`, `isolated_is_occupied(i)` | |
-| `on_vehicle_heading_to_start(t, fn)`, `on_vehicle_heading_to_end(t, fn)` | `fn(vehicle)` when a vehicle on the track moves towards its start / end |
-| `on_vehicle_stopped(t, fn)` | `fn(vehicle)` when a vehicle stops on the track |
-| `on_isolated_occupied(i, fn)`, `on_isolated_freed(i, fn)` | `fn(vehicle)` when the first axle comes onto the section / the last one leaves - a vehicle has two |
-| `on_switch_changed(s, fn)` | `fn(which)` when the switch moves |
+Scripts written for the original engine run without changes. The module `eu07.events` (also
+available as `require("eu07.events")`) has the original's 22 functions:
 
-### `maszyna.signal` - signals
-
-A signalling system decides what its signal heads show, so a script asks the system rather than
-lighting a head.
-
-| Function | Returns / does |
-|---|---|
-| `find_head(name)`, `aspect(h)`, `aspects(h)` | a signal head, the aspect it shows, the ones it can show |
-| `find_system(name)` | a signalling system (the scenery's is named after its file) |
-| `send_event(system, event, arguments)` | e.g. `send_event(system, "lights", {signal_head = h, aspect = "S1"})` |
-| `on_aspect_changed(h, fn)` | `fn(aspect)` whenever the head shows another aspect |
-| `find_source(name)` | a source of a system: a sensor, a section |
-| `source_send_event(s, event, arguments)` | a report of the source to its system; a sensor's passage is `source_send_event(s, "impulse", {polarity = p})`, `p` a `SignallingServer.SourcePolarity` (0 none, 1 along the track, 2 against it) |
-| `find_route(name)`, `route_state(r)` | a route, its state: `"idle"`, `"setting"`, `"closed"`, `"locked"`, `"releasing"` |
-| `route_set(r)`, `route_cancel(r)`, `route_release(r)`, `route_emergency_release(r)` | asks the route's system; its implementation decides |
-| `on_route_state_changed(r, fn)` | `fn(state)` whenever the route goes to another state |
-
-### `maszyna.player` - what the player drives
-
-| Function | Returns / does |
-|---|---|
-| `vehicle()` | the vehicle the player drives; `nil` for none |
-| `take_over(v)` | the player takes the vehicle over and sits in its cab; its driver only takes orders meanwhile |
-| `enter(v)` | the player sits in the vehicle's cab; its driver, if it has one, drives on |
-| `leave()` | the player lets the trainset go; its drivers drive it again |
-
-### `maszyna.camera` - where the player looks from
-
-| Function | Returns / does |
-|---|---|
-| `mode()`, `set_mode(mode)` | `"cabin"` (only with a vehicle driven), `"free"` or `"follow"` (only with a target) |
-| `target()`, `set_target(v)` | the vehicle the following camera follows |
-| `follow_view()`, `set_follow_view(view)` | `"trainset_front"`, `"trainset_rear"`, `"bogie"` or `"driveby"` |
-| `cycle_follow_view()` | Shift+F4: following, the next view; else the player's vehicle followed |
-| `toggle_cabin()` | F4: from outside (following or walking) back into the cab of the vehicle driven - following with none, the free camera; in the cab, out of it |
-| `show_vehicle(v)` | the free camera beside the vehicle, looking at it |
-
-Looking from outside is only a view: the player keeps driving the vehicle and its controls work.
-
-### `maszyna.hud` - what the HUD shows
-
-A panel is named by the HUD that shows it; the demo's are `transcripts`, `driving_aid`,
-`timetable`, `scenario`, `controls` (every control window at once), `scripts`, `trainsets`, and
-one per control window (`general`, `engine`, `brakes`, ..., `mini_map`, `weather_and_time`, `help`).
-
-| Function | Returns / does |
-|---|---|
-| `show(panel)`, `hide(panel)`, `toggle(panel)`, `is_visible(panel)` | |
-| `open_card(v)`, `close_card()`, `card()` | the vehicle card; `card()` is `nil` while it is closed |
-
-### `maszyna.log`
-
-`debug(text)`, `info(text)`, `warning(text)`, `error(text)` - to the game log.
-
-## The original's `eu07.events`
-
-Scripts written for the original engine run unchanged: `eu07.events` (also
-`require("eu07.events")`) has the original's 22 functions, built on the modules above -
 `event_create`, `event_find`, `event_exists`, `event_getname`, `event_dispatch`,
 `event_dispatch_n`, `track_find`, `track_isoccupied`, `track_isoccupied_n`, `isolated_find`,
 `isolated_isoccupied`, `isolated_isoccupied_n`, `train_getname`, `dynobj_putvalues`,
 `memcell_find`, `memcell_read`, `memcell_read_n`, `memcell_update`, `memcell_update_n`, `random`,
-`writelog`, `writeerrorlog`. A memory cell's values are the original's table
-`{str =, num1 =, num2 =}`, and an event whose name holds `onstart` is queued as it is created.
+`writelog`, `writeerrorlog`.
 
-One difference: `dynobj_putvalues` on a vehicle nobody drives does nothing - the original hands the
-command to the vehicle itself.
+A memory cell's values are a table `{str =, num1 =, num2 =}`, as in the original. An event whose
+name contains `onstart` is queued as soon as it is created.
+
+One difference: `dynobj_putvalues` does nothing on a vehicle that nobody drives. The original passes
+the command to the vehicle itself.
+
+The module is implemented by `MaszynaLuaEventsModule` on top of the core's modules and
+`reloaded.memory`.
 
 ## Examples
 
 ### Elektrociepłownia Dobre 2 - switches that throw themselves
 
-`elektrocieplownia_dobre_2.scn` starts the SM42-982 on `tor_53`; the nearest switches are
-`test_zwr12` and `test_zwr07`. Every second of simulation time both go to the other track:
+In `elektrocieplownia_dobre_2.scn` the SM42-982 starts on track `tor_53`. The nearest switches are
+`test_zwr12` and `test_zwr07`. This script throws both switches every second of simulation time:
 
 ```lua
-local track, sim, log = maszyna.track, maszyna.sim, maszyna.log
+local track, sim, log = reloaded.track, reloaded.sim, reloaded.log
 
 -- the switches nearest to the SM42's start track (tor_53)
 local switches = {}
@@ -250,21 +92,21 @@ end)
 
 ### td.scn - a dispatcher at the level crossings
 
-In `td.scn` the two level crossings stand on the isolated sections `t1` and `t2`, and the scenery's
-own `keyctrl00` (Shift+0) sets the signals of station 1 to S1. The script reports every train
-crossing the road - its speed at the first crossing, how long it took to clear the second - and
-sets the station's signals to stop behind it:
+In `td.scn` the two level crossings are on the isolated sections `t1` and `t2`. The scenery's own
+event `keyctrl00` (Shift+0) sets the signals of station 1. This script logs every train at the
+crossings: its speed at the first crossing and the time it needed to clear the second. After the
+train has passed, it sets the station's signals to stop:
 
 ```lua
 local event, track, vehicle, sim, log =
-    maszyna.event, maszyna.track, maszyna.vehicle, maszyna.sim, maszyna.log
+    reloaded.event, reloaded.track, reloaded.vehicle, reloaded.sim, reloaded.log
 
 local crossing_1 = track.isolated_find("t1")
 local crossing_2 = track.isolated_find("t2")
 -- the scenery's own event: stacja1_a_s1, stacja1_j-s1, stacja1_k-s1
 local signals_to_stop = event.find("keyctrl00")
 
--- by id: a handle is no table key
+-- keyed by vehicle id, because a handle cannot be a table key
 local entered_at = {}
 
 track.on_isolated_occupied(crossing_1, function(v)
@@ -282,5 +124,4 @@ track.on_isolated_freed(crossing_2, function(v)
 end)
 ```
 
-Both run as they are from *View > Lua scripts*, or from a file named by a `lua` line of the
-scenery.
+Both scripts are run from a `lua` line of the scenery.

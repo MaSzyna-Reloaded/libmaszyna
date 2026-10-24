@@ -1,11 +1,11 @@
 extends MaszynaGutTest
 
-## E3DModelInstance with the OPTIMIZED instancer (scenery models) renders through
-## E3DRenderingServer and must not create any child nodes.
+## MaszynaE3DModelInstance with the OPTIMIZED instancer (scenery models) renders through
+## MaszynaE3DRenderingServer and must not create any child nodes.
 
 
 func test_optimized_instance_loads_without_child_nodes() -> void:
-    var instance: E3DModelInstance = _create_optimized_instance()
+    var instance: MaszynaE3DModelInstance = _create_optimized_instance()
     add_child_autoqfree(instance)
 
     assert_true(instance.is_e3d_loaded())
@@ -13,7 +13,7 @@ func test_optimized_instance_loads_without_child_nodes() -> void:
 
 
 func test_optimized_instance_survives_tree_reentry_and_light_changes() -> void:
-    var instance: E3DModelInstance = _create_optimized_instance()
+    var instance: MaszynaE3DModelInstance = _create_optimized_instance()
     add_child_autoqfree(instance)
 
     remove_child(instance)
@@ -29,24 +29,24 @@ func test_optimized_instance_survives_tree_reentry_and_light_changes() -> void:
     assert_true(instance.lights_state["00"])
 
 
-func _create_optimized_instance() -> E3DModelInstance:
-    var model: E3DModel = E3DModel.new()
-    var light_on: E3DSubModel = E3DSubModel.new()
+func _create_optimized_instance() -> MaszynaE3DModelInstance:
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var light_on: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     light_on.resource_name = "light_on00"
-    light_on.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
+    light_on.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
     light_on.visible = false
-    var mesh_submodel: E3DSubModel = E3DSubModel.new()
+    var mesh_submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     mesh_submodel.resource_name = "mesh"
-    mesh_submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    mesh_submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     mesh_submodel.mesh = _create_array_mesh()
     light_on.submodels = [mesh_submodel]
     model.submodels = [light_on]
-    var light_definition: E3DModelLightDefinition = E3DModelLightDefinition.new()
+    var light_definition: MaszynaE3DModelLightDefinition = MaszynaE3DModelLightDefinition.new()
     light_definition.on_submodel_path = NodePath("light_on00")
     model.register_light("00", light_definition)
 
-    var instance: E3DModelInstance = E3DModelInstance.new()
-    instance.instancer = E3DModelInstance.Instancer.OPTIMIZED
+    var instance: MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    instance.instancer = MaszynaE3DModelInstance.Instancer.OPTIMIZED
     instance.model = model
     return instance
 

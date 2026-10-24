@@ -18,8 +18,8 @@ var _engine:RailVehicleDieselEngine
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     _scenery = MaszynaSceneryNode.new()
     _scenery.filename = SCENERY
     add_child(_scenery)
@@ -34,7 +34,7 @@ func before_each() -> void:
 
 func after_each() -> void:
     _scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 ## A two-state switch flipped, as a key or a click does it

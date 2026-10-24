@@ -44,7 +44,7 @@ func before_each() -> void:
         # the first vehicle is driven - an unmanned one is not simulated (FINDINGS, 09-23)
         var node:VehiclePhysicsNode = build_vehicle_node("TrainsetVehicle%d" % index, model,
                 READY_TO_DEPART_VELOCITY,
-                MaszynaDynamicData.DriverType.DRIVER_HEAD if index == 0 else MaszynaDynamicData.DriverType.DRIVER_NOBODY)
+                MaszynaVehicleData.DriverType.DRIVER_HEAD if index == 0 else MaszynaVehicleData.DriverType.DRIVER_NOBODY)
         nodes.append(node)
         var controller:VehicleController = VehicleServer.vehicle_get_controller(node.get_vehicle_rid())
         controllers.append(controller)

@@ -15,7 +15,7 @@ var vehicle_rid:RID
 func before_each() -> void:
     var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
     var train:VehicleController = build_vehicle("TestMirrors", description, 0.0,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()
     await step(2)
     VehicleServer.vehicle_send_command(vehicle_rid, "battery", true)

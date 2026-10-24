@@ -5,7 +5,7 @@ var _t:float = 0.0
 @onready var train: RailVehiclePhysicsNode = $SM42
 @onready var battery_progress_bar = $%BatteryProgressBar
 
-const DEBUG_PANEL: PackedScene = preload("res://addons/libmaszyna/debug_hud/panel.tscn")
+const DEBUG_PANEL: PackedScene = preload("res://addons/libreloaded/debug_hud/panel.tscn")
 
 ## The vehicle, and one panel for each of its components, made once it stands
 ## (_on_sm_42_vehicle_changed())

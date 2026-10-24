@@ -5,7 +5,7 @@ demo/tests/test_zzz_startup_*.gd scripts, so a script missing from the run still
 
     scripts/startup-report demo/test_results.xml >> "$GITHUB_STEP_SUMMARY"
 
-CI writes it to the run's summary and to a comment of the pull request (.github/workflows/ci.yml).
+CI writes it to the run's summary and to a comment of the pull request (.github/workflows/build.yaml).
 """
 
 import glob

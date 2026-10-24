@@ -15,7 +15,7 @@ standing at the start of it.
     scripts/cut-vehicle-fixture --game-dir ~/Games/Maszyna --scenery wrzosy_roj66582.scn \\
         --vehicle 36WEa-014A
 
-Then import the project (godot-double --headless --path demo --import) and commit the generated
+Then import the project (make import) and commit the generated
 .fiz.import files with the fixture. .claude/skills/testing/SKILL.md "Start-up test of a vehicle".
 """
 

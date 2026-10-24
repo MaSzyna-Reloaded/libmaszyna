@@ -11,8 +11,8 @@ const BATTERY_VOLTAGE:float = 110.0
 ## (VehicleComponent::is_simulation_ready())
 func test_a_component_outside_a_simulated_vehicle_publishes_no_state() -> void:
     var components:Array[VehicleComponent] = [
-        MoverRailVehicleElectricSeriesEngine.new(), MoverRailVehicleElectricInductionEngine.new(),
-        MoverRailVehicleDieselElectricEngine.new(), MoverRailVehicleRadio.new(),
+        MaszynaMoverRailVehicleElectricSeriesEngine.new(), MaszynaMoverRailVehicleElectricInductionEngine.new(),
+        MaszynaMoverRailVehicleDieselElectricEngine.new(), MaszynaMoverRailVehicleRadio.new(),
     ]
     for component:VehicleComponent in components:
         assert_eq(component.get_state(), {}, "%s publishes nothing outside a vehicle" % component.get_class())
@@ -21,7 +21,7 @@ func test_a_component_outside_a_simulated_vehicle_publishes_no_state() -> void:
 ## RC-010: a controller without its backend - a description, or one released - takes an operation
 ## and does nothing, as its getters already answer with nothing
 func test_a_controller_without_its_backend_does_nothing() -> void:
-    var description:MoverRailVehicleController = MoverRailVehicleController.new()
+    var description:MaszynaMoverRailVehicleController = MaszynaMoverRailVehicleController.new()
     description.compartment_lights(true)
     description.cab_activation(true)
     description.cab_controls_reset()
@@ -36,8 +36,8 @@ func test_a_controller_without_its_backend_does_nothing() -> void:
 
 ## RC-006: a component taken out of the vehicle takes all its commands with it
 func test_a_disabled_radio_leaves_no_command_behind() -> void:
-    var description:VehicleController = MoverRailVehicleController.new()
-    description.add_component(MoverRailVehicleRadio.new())
+    var description:VehicleController = MaszynaMoverRailVehicleController.new()
+    description.add_component(MaszynaMoverRailVehicleRadio.new())
     var vehicle:RID = build_vehicle("RadioCommandsTest", description).get_rid()
     var radio:RailVehicleRadio = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio
@@ -49,8 +49,8 @@ func test_a_disabled_radio_leaves_no_command_behind() -> void:
 
 ## A component enabled again takes its commands back at once, and says so
 func test_an_enabled_component_takes_its_commands_at_once() -> void:
-    var description:VehicleController = MoverRailVehicleController.new()
-    description.add_component(MoverRailVehicleRadio.new())
+    var description:VehicleController = MaszynaMoverRailVehicleController.new()
+    description.add_component(MaszynaMoverRailVehicleRadio.new())
     var vehicle:RID = build_vehicle("RadioEnableTest", description).get_rid()
     var radio:RailVehicleRadio = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio
@@ -67,14 +67,14 @@ func test_an_enabled_component_takes_its_commands_at_once() -> void:
 ## RC-019: the master controller's position is the driver's; configuring the universal controller
 ## again does not put it back
 func test_reconfiguring_the_universal_controller_keeps_the_master_controller_where_it_is() -> void:
-    var description:VehicleController = MoverRailVehicleController.new()
+    var description:VehicleController = MaszynaMoverRailVehicleController.new()
     description.add_component(build_power_supply(BATTERY_VOLTAGE))
-    var master:RailVehicleMasterController = MoverRailVehicleMasterController.new()
+    var master:RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master.main_position_count = MAIN_POSITIONS
     description.add_component(master)
-    description.add_component(MoverRailVehicleUniversalController.new())
+    description.add_component(MaszynaMoverRailVehicleUniversalController.new())
     var vehicle:RID = build_vehicle("UniversalControllerTest", description, 0.0,
-            MaszynaDynamicData.DriverType.DRIVER_HEAD).get_rid()
+            MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
     master = RailVehicleServer.vehicle_component_get(
             vehicle, RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER) as RailVehicleMasterController
     VehicleServer.vehicle_send_command(vehicle, "battery", true)

@@ -1,0 +1,26 @@
+// a trainset the scenario offers the player, with its mission, and one it does not ("-", an AI train)
+node -1 0 main_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+0.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+0.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+node -1 0 side_track track normal 300.0 1.435 0.15 25.0 20 0 flat vis
+ rail_screw_used1 6 1435mm/tpbps-new2 0.2 0.5 1.1
+10.0 0.2 0.0  0.0  //point 1
+0.0 0.0 0.0  //control vector 1
+0.0 0.0 0.0  //control vector 2
+10.0 0.2 300.0  0.0  //point 2
+0
+endtrack
+trainset express main_track 150 0
+//$o Take the express to the next station.
+//$o Mind the signals.
+node -1 0 first dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+endtrainset
+trainset freight side_track 150 0
+//$o - an AI train
+node -1 0 loco dynamic test/synthetic_v1 none synthetic 0 headdriver 3 0 enddynamic
+endtrainset

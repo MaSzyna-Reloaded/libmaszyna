@@ -1,5 +1,5 @@
 @tool
-extends AudioStream
+extends LazyAudioStream
 class_name MaszynaAudioStream
 
 @export var file_path:String = "":

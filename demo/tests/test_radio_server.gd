@@ -45,7 +45,7 @@ func _listening_radio(position:Vector3) -> RID:
 
 
 ## The locomotive on a track, its battery on - driven or not
-func _build_locomotive(driver:MaszynaDynamicData.DriverType) -> void:
+func _build_locomotive(driver:MaszynaVehicleData.DriverType) -> void:
     _track = build_track(TRACK, TRACK_LENGTH)
     var physics_node:VehiclePhysicsNode = build_vehicle_node("TestRadioServer",
             FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, driver)
@@ -102,7 +102,7 @@ func test_the_scenery_radio_transmits_from_where_it_is_told() -> void:
 
 
 func test_a_vehicle_calls_on_its_channel_only_while_its_radio_is_powered() -> void:
-    await _build_locomotive(MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    await _build_locomotive(MaszynaVehicleData.DriverType.DRIVER_HEAD)
     _listening_radio(FAR)
     VehicleServer.vehicle_send_command(_vehicle_rid, "radio_call1", true)
     assert_eq(_heard, [], "an unpowered radio sends nothing")
@@ -118,7 +118,7 @@ func test_a_vehicle_calls_on_its_channel_only_while_its_radio_is_powered() -> vo
 
 
 func test_radio_stop_brakes_a_driven_vehicle_in_reach() -> void:
-    await _build_locomotive(MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    await _build_locomotive(MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await _power_radio()
     watch_signals(RailVehicleServer)
     var scenery_radio:SceneryVirtualRadio = SceneryVirtualRadio.new()
@@ -133,7 +133,7 @@ func test_radio_stop_brakes_a_driven_vehicle_in_reach() -> void:
 
 ## The original's condition, kept: the brakes need a crew in the vehicle to act (DynObj.cpp:7229)
 func test_radio_stop_leaves_a_vehicle_nobody_drives() -> void:
-    await _build_locomotive(MaszynaDynamicData.DriverType.DRIVER_NOBODY)
+    await _build_locomotive(MaszynaVehicleData.DriverType.DRIVER_NOBODY)
     await _power_radio()
     SceneryVirtualRadio.new().transmit(VehicleServer.vehicle_get_position(_vehicle_rid), RadioServer.CHANNEL_ALL,
             RadioServer.RADIO_STOP_REACH, RadioServer.KIND_RADIO_STOP)
@@ -141,7 +141,7 @@ func test_radio_stop_leaves_a_vehicle_nobody_drives() -> void:
 
 
 func test_radio_stop_sent_from_a_vehicle_brakes_itself_too() -> void:
-    await _build_locomotive(MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    await _build_locomotive(MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await _power_radio()
     _listening_radio(VehicleServer.vehicle_get_position(_vehicle_rid))
     VehicleServer.vehicle_send_command(_vehicle_rid, "radio_stop", true)

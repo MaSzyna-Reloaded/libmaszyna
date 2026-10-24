@@ -1,0 +1,13 @@
+// EN76-001-A (linia053_wrzosy/ic8310_dekoracje.scm) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture). Given 0.1 km/h as in the scenery, it is ready to drive from the start
+// (CheckLocomotiveParameters(), DynObj.cpp:2034).
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.1
+node -1 0 EN76-001-A dynamic PKP\ELF_V1 EN76-001_A 22WE_P4-A  0 headdriver 119 30 Passengers enddynamic
+node -1 0 EN76-001-B dynamic PKP\ELF_V1 EN76-001_B 22WE_P4-B  0 nobody 119 30 Passengers enddynamic
+node -1 0 EN76-001-C dynamic PKP\ELF_V1 EN76-001_C 22WE_P4-C  0 nobody 119 30 Passengers enddynamic
+node -1 0 EN76-001-D dynamic PKP\ELF_V1 EN76-001_D 22WE_P4-D  0 nobody 119 30 Passengers enddynamic
+endtrainset

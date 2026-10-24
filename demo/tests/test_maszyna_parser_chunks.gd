@@ -1,6 +1,6 @@
 extends MaszynaGutTest
 
-## MaszynaParser.parse_chunk() - SceneryInstancer parses the top-level .scn in chunks to report
+## MaszynaParser.parse_chunk() - MaszynaSceneryProvider parses the top-level .scn in chunks to report
 ## loading progress; the result must match a single parse().
 
 const SOURCE:String = "node a 1 2 end\nnode b 3 4 end\nskip x\nnode c 5 6 end\n"

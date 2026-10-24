@@ -9,13 +9,15 @@ with surrounding classes, is appreciated all over the world.
 Wrapping the original MaSzyna's physics is a core concept of making
 a successful port of the simulator.
 
-The goal is to expose internal MOVER's state and configuration through the wrapper's own vehicle interfaces - typed,
-documented and named in a user-friendly and standardized way - so that nothing outside a thin implementation layer
-knows the Mover is there. The vendored Mover lives in `src/legacy/maszyna-mover` and is never modified.
+The goal is to expose internal MOVER's state and configuration through the vehicle interfaces of libreloaded, the core
+libmaszyna is built on - typed, documented and named in a user-friendly and standardized way - so that nothing outside a
+thin implementation layer, libmaszyna's, knows the Mover is there. The vendored Mover lives in
+`src/maszyna/maszyna-mover` and is never modified.
 
 ## Overall architecture
 
-A vehicle is three layers, and only the last one knows the Mover:
+A vehicle is three layers, and only the last one knows the Mover; the first two are libreloaded's
+(`vendor/libreloaded/src/vehicles`), the last one is libmaszyna's:
 
 1. **The proxy in the scene tree.** `VehiclePhysicsNode` is the vehicle's presence in the tree: it builds the vehicle
    from a copy of its description (a `VehicleController` with its components), owns its `VehicleServer` handle (RID)
@@ -28,13 +30,14 @@ A vehicle is three layers, and only the last one knows the Mover:
    `VehicleServer`, stepped by their implementation once per rendered frame and commanded through the server. Each kind of
    component is an **interface**: `RailVehicleDoors`, `RailVehicleBrake`, ... - authored configuration as properties,
    live state as typed getters, operations as methods and commands. An interface names no backend.
-3. **The implementation on the Mover.** `MoverRailVehicleController` creates and ticks the `TMoverParameters`;
-   every `MoverRailVehicle<X>` implements the `RailVehicle<X>` interface on it (`src/legacy/vehicles`). These are
+3. **The implementation on the Mover.** `MaszynaMoverRailVehicleController` creates and ticks the `TMoverParameters`;
+   every `MaszynaMoverRailVehicle<X>` implements the `RailVehicle<X>` interface on it (`src/maszyna/vehicles`). These are
    the only classes that include `MOVER.h`.
 
 Which implementation a vehicle is built with is chosen once, by the classes of its description: the FIZ parser
-creates `MoverRailVehicleController` and the `MoverRailVehicle<X>` components, and a vehicle with no description
-gets the controller class `register_types.cpp` names (`VehiclePhysicsNode::set_controller_implementation`).
+creates `MaszynaMoverRailVehicleController` and the `MaszynaMoverRailVehicle<X>` components, and a vehicle with no description
+gets the controller class libmaszyna's `MaszynaPlugin::register_classes()` names
+(`VehiclePhysicsNode::set_controller_implementation`).
 
 Responsibility of each layer:
 - proxy node: integration with Godot's engine through the Scene Tree; the handle; building and rebuilding the
@@ -71,9 +74,9 @@ classDiagram
     }
     namespace Mover {
         class MaszynaMoverVehicleServer
-        class MoverRailVehicleController
-        class MoverComponent
-        class MoverRailVehicleDoors
+        class MaszynaMoverRailVehicleController
+        class MaszynaMoverComponent
+        class MaszynaMoverRailVehicleDoors
         class TMoverParameters
     }
     VehiclePhysicsNode <|-- MaszynaRailVehiclePhysicsNode
@@ -87,21 +90,21 @@ classDiagram
     RailVehicle3D --> VehiclePhysicsNode : draws
     GenericVehicleComponentNode *-- GenericVehicleComponent : proxy of
     VehicleController <|-- RailVehicleController
-    RailVehicleController <|-- MoverRailVehicleController
+    RailVehicleController <|-- MaszynaMoverRailVehicleController
     VehicleController *-- VehicleComponent : components
     VehicleComponent <|-- RailVehicleComponent
     VehicleComponent <|-- GenericVehicleComponent
     RailVehicleComponent <|-- RailVehicleDoors
-    RailVehicleDoors <|-- MoverRailVehicleDoors
-    MoverComponent <|-- MoverRailVehicleDoors
-    MoverComponent --> MaszynaMoverVehicleServer : takes the Mover from
-    MoverRailVehicleController --> MaszynaMoverVehicleServer : takes the Mover from
+    RailVehicleDoors <|-- MaszynaMoverRailVehicleDoors
+    MaszynaMoverComponent <|-- MaszynaMoverRailVehicleDoors
+    MaszynaMoverComponent --> MaszynaMoverVehicleServer : takes the Mover from
+    MaszynaMoverRailVehicleController --> MaszynaMoverVehicleServer : takes the Mover from
     MaszynaMoverVehicleServer *-- TMoverParameters
 ```
 
 The components - every interface with its Mover implementation. `RailVehicleEngine` and
 `RailVehicleElectricEngine` are abstract. An engine is composed of units - plain C++ interfaces in
-`src/vehicles/rail/`, each implemented on the Mover in `src/legacy/vehicles/` and installed by the
+libreloaded's `src/vehicles/rail/`, each implemented on the Mover in `src/maszyna/vehicles/` and installed by the
 Mover engine that owns it: the drive in every engine, the diesel engine in the diesel and
 diesel-electric ones, the traction motors in the electric and diesel-electric ones, the current
 collector and the traction circuit in the electric ones. Godot sees only the engine components:
@@ -136,51 +139,72 @@ classDiagram
     RailVehicleElectricEngine <|-- RailVehicleElectricSeriesEngine
     RailVehicleElectricEngine <|-- RailVehicleElectricInductionEngine
 
-    RailVehicleAIHints <|-- MoverRailVehicleAIHints
-    RailVehicleBrake <|-- MoverRailVehicleBrake
-    RailVehicleBuffCoupl <|-- MoverRailVehicleBuffCoupl
-    RailVehicleDoors <|-- MoverRailVehicleDoors
-    RailVehicleElectroPneumaticDynamicBrake <|-- MoverRailVehicleElectroPneumaticDynamicBrake
-    RailVehicleHeating <|-- MoverRailVehicleHeating
-    RailVehicleHorns <|-- MoverRailVehicleHorns
-    RailVehicleLighting <|-- MoverRailVehicleLighting
-    RailVehicleLoad <|-- MoverRailVehicleLoad
-    RailVehicleMasterController <|-- MoverRailVehicleMasterController
-    RailVehicleRadio <|-- MoverRailVehicleRadio
-    RailVehicleSecuritySystem <|-- MoverRailVehicleSecuritySystem
-    RailVehicleSpeedControl <|-- MoverRailVehicleSpeedControl
-    RailVehicleSpringBrake <|-- MoverRailVehicleSpringBrake
-    RailVehicleSwitches <|-- MoverRailVehicleSwitches
-    RailVehicleEnginePowerSource <|-- MoverRailVehicleEnginePowerSource
-    RailVehicleUniversalController <|-- MoverRailVehicleUniversalController
-    RailVehicleWheels <|-- MoverRailVehicleWheels
-    RailVehicleWipers <|-- MoverRailVehicleWipers
-    RailVehicleDieselEngine <|-- MoverRailVehicleDieselEngine
-    RailVehicleDieselElectricEngine <|-- MoverRailVehicleDieselElectricEngine
-    RailVehicleElectricSeriesEngine <|-- MoverRailVehicleElectricSeriesEngine
-    RailVehicleElectricInductionEngine <|-- MoverRailVehicleElectricInductionEngine
+    RailVehicleAIHints <|-- MaszynaMoverRailVehicleAIHints
+    RailVehicleBrake <|-- MaszynaMoverRailVehicleBrake
+    RailVehicleBuffCoupl <|-- MaszynaMoverRailVehicleBuffCoupl
+    RailVehicleDoors <|-- MaszynaMoverRailVehicleDoors
+    RailVehicleElectroPneumaticDynamicBrake <|-- MaszynaMoverRailVehicleElectroPneumaticDynamicBrake
+    RailVehicleHeating <|-- MaszynaMoverRailVehicleHeating
+    RailVehicleHorns <|-- MaszynaMoverRailVehicleHorns
+    RailVehicleLighting <|-- MaszynaMoverRailVehicleLighting
+    RailVehicleLoad <|-- MaszynaMoverRailVehicleLoad
+    RailVehicleMasterController <|-- MaszynaMoverRailVehicleMasterController
+    RailVehicleRadio <|-- MaszynaMoverRailVehicleRadio
+    RailVehicleSecuritySystem <|-- MaszynaMoverRailVehicleSecuritySystem
+    RailVehicleSpeedControl <|-- MaszynaMoverRailVehicleSpeedControl
+    RailVehicleSpringBrake <|-- MaszynaMoverRailVehicleSpringBrake
+    RailVehicleSwitches <|-- MaszynaMoverRailVehicleSwitches
+    RailVehicleEnginePowerSource <|-- MaszynaMoverRailVehicleEnginePowerSource
+    RailVehicleUniversalController <|-- MaszynaMoverRailVehicleUniversalController
+    RailVehicleWheels <|-- MaszynaMoverRailVehicleWheels
+    RailVehicleWipers <|-- MaszynaMoverRailVehicleWipers
+    RailVehicleDieselEngine <|-- MaszynaMoverRailVehicleDieselEngine
+    RailVehicleDieselElectricEngine <|-- MaszynaMoverRailVehicleDieselElectricEngine
+    RailVehicleElectricSeriesEngine <|-- MaszynaMoverRailVehicleElectricSeriesEngine
+    RailVehicleElectricInductionEngine <|-- MaszynaMoverRailVehicleElectricInductionEngine
 
     RailVehicleEngine --> RailVehicleDriveUnit
     RailVehicleDieselEngine --> RailVehicleDieselEngineUnit
     RailVehicleDieselElectricEngine --> RailVehicleTractionMotorsUnit
     RailVehicleElectricEngine --> RailVehicleTractionMotorsUnit
     RailVehicleElectricEngine --> RailVehicleCircuitUnit
-    RailVehicleDriveUnit <|-- MoverDriveUnit
-    RailVehicleDieselEngineUnit <|-- MoverDieselEngineUnit
-    RailVehicleTractionMotorsUnit <|-- MoverTractionMotorsUnit
-    RailVehicleCircuitUnit <|-- MoverCircuitUnit
+    RailVehicleDriveUnit <|-- MaszynaMoverDriveUnit
+    RailVehicleDieselEngineUnit <|-- MaszynaMoverDieselEngineUnit
+    RailVehicleTractionMotorsUnit <|-- MaszynaMoverTractionMotorsUnit
+    RailVehicleCircuitUnit <|-- MaszynaMoverCircuitUnit
 ```
 
-Every `MoverRailVehicle<X>` also inherits `MoverComponent` (see the overview), left out here for readability.
+Every `MaszynaMoverRailVehicle<X>` also inherits `MaszynaMoverComponent` (see the overview), left out here for readability.
+
+## A MaSzyna vehicle on the core
+
+A vehicle is not implemented by its nodes; the node in the scene is the core's proxy, and the vehicle is held by the
+core's `VehicleServer` ([Overall architecture](../architecture.html)). What MaSzyna adds:
+
+* `MaszynaRailVehiclePhysicsNode` supplies the core's `VehiclePhysicsNode` with the vehicle's description - the
+  parsed `.fiz`, a `MaszynaMoverRailVehicleController` with its `MaszynaMoverRailVehicle<X>` components.
+* The vehicle is simulated on the vendored Mover by `MaszynaMoverVehicleServer`, the implementation registered with
+  `VehicleServer`; the components implement the core's `RailVehicle<X>` interfaces on it (the layers above).
+* What draws the vehicle is `MaszynaE3DRailVehicleRenderingServer`, the core's `RailVehicleRenderingServer` drawing
+  the E3D models; the cabin and the sounds (`TrainSoundSystem`, built from the MMD) read the vehicle's components,
+  they do not own them. The cabin is the core's `CabinSystem`; libmaszyna builds a MaSzyna vehicle's cabin from its
+  MMD (`addons/libmaszyna/mmd`) and runs the original's python screens (`PythonScreenServer`).
+* A vehicle needs no node at all. A scenery loaded from MaSzyna data builds its vehicles and trainsets through the
+  servers and holds them by their handles: `MaszynaVehicleSystem.vehicle_create()` makes a vehicle from a
+  `dynamic`, the core's `RailVehicleServer.trainset_*` stands a trainset on its track and couples it.
+  `MaszynaRailVehicle3D` and the core's `TrainSet3D` are for a vehicle or a trainset placed by hand in a scene -
+  proxies over the same operations.
+* It is commanded and read as every vehicle of the core is ([Commands and method
+  calls](../architecture.html#commands-and-method-calls)).
 
 ## Mapping key elements to a new architecture
 
 | Element                       |MaSzyna EU07                         | MaSzyna: Reloaded
 |-------------------------------|-------------------------------------|------------------------------------------
-| Vehicle data container        | FIZ files                           | the vehicle's description - a `MoverRailVehicleController` resource with its components - parsed from the `.fiz` (`FizVehicleBuilder`, `addons/libmaszyna/legacy/fiz`)
-| Vehicle data loading + init   | cParser + Mover's `LoadFIZ_*()`     | Component properties + `_apply_configuration()` of the `Mover*` implementation
+| Vehicle data container        | FIZ files                           | the vehicle's description - a `MaszynaMoverRailVehicleController` resource with its components - parsed from the `.fiz` (`FizVehicleBuilder`, `addons/libmaszyna/fiz`)
+| Vehicle data loading + init   | cParser + Mover's `LoadFIZ_*()`     | Component properties + `_apply_configuration()` of the `MaszynaMover*` implementation
 | Reading vehicle state         | Direct access to Mover's properties | Typed getters of the component; `vehicle_dump_state()` for diagnostics
-| Modyfing vehicle state        | Direct calls to Mover's methods     | `VehicleServer.vehicle_send_command()`; typed calls on a component only within the vehicle's own composition ([Commands and method calls](architecture.html#commands-and-method-calls))
+| Modyfing vehicle state        | Direct calls to Mover's methods     | `VehicleServer.vehicle_send_command()`; typed calls on a component only within the vehicle's own composition ([Commands and method calls](../architecture.html#commands-and-method-calls))
 | Reading runtime config values | Direct property reading or calls    | `Dictionary` with a runtime config (`vehicle_dump_config()`, `config_changed`)
 | Propagating trainset commands | Internal notification + TTrain refs | Using High-Level API commands
 
@@ -188,7 +212,8 @@ Every `MoverRailVehicle<X>` also inherits `MoverComponent` (see the overview), l
 
 A logical subset of Mover's functionality is wrapped as a pair of classes plus a parser:
 
-* **the interface** `RailVehicle<X> : RailVehicleComponent` in `src/vehicles/rail`:
+* **the interface** `RailVehicle<X> : RailVehicleComponent` in libreloaded's `src/vehicles/rail` - a change there is
+  made in libreloaded's own repository (`make libreloaded-local`), never from here:
   * the authored configuration as properties, with defaults (see below) and a setter/getter pair each
   * public enums, bound (`VARIANT_ENUM_CAST`, `BIND_ENUM_CONSTANT`)
   * live state as pure virtual typed getters, operations as pure virtual methods, both bound
@@ -196,13 +221,13 @@ A logical subset of Mover's functionality is wrapped as a pair of classes plus a
   * `_register_commands()` and `_unregister_commands()`
   * signals, if necessary; for internal communication
   * **no Mover** - not in a method name, a parameter, a type or an include
-* **the implementation** `MoverRailVehicle<X> : RailVehicle<X>, MoverComponent` in `src/legacy/vehicles`:
+* **the implementation** `MaszynaMoverRailVehicle<X> : RailVehicle<X>, MaszynaMoverComponent` in `src/maszyna/vehicles`:
   * `_implementation_changed()` taking the vehicle's Mover (`take_mover()`) - handed over when its
     simulation starts, taken back before the Mover is freed
   * `_apply_configuration()`, `_do_process_component()`, the live getters and the operations over `get_mover()`
   * `_fill_state_dictionary()` and `_fill_config_dictionary()`, if necessary
-* **the parser** `Fiz<...>Parser` in `addons/libmaszyna/legacy/fiz`: reads the FIZ section and sets the properties
-  of a new `MoverRailVehicle<X>`
+* **the parser** `Fiz<...>Parser` in `addons/libmaszyna/fiz`: reads the FIZ section and sets the properties
+  of a new `MaszynaMoverRailVehicle<X>`
 
 #### **`VehicleComponent::_apply_configuration()`**
 
@@ -228,7 +253,7 @@ never read in `_apply_configuration()`: there it depends on whether its section 
 State is not copied anywhere. Each getter reads the Mover when it is called:
 
 ```cpp
-bool MoverRailVehicleDoors::get_locked() const {
+bool MaszynaMoverRailVehicleDoors::get_locked() const {
     const TMoverParameters *mover = get_mover();
     return mover != nullptr ? mover->Doors.is_locked : false;
 }
@@ -251,7 +276,7 @@ characteristics like min/max values; these are split out to keep the state minim
 switch has one position per FIZ permit preset (`Train.cpp:7304`):
 
 ```cpp
-void MoverRailVehicleDoors::_fill_config_dictionary(Dictionary &p_config) const {
+void MaszynaMoverRailVehicleDoors::_fill_config_dictionary(Dictionary &p_config) const {
     const TMoverParameters *mover = get_mover();
     if (mover == nullptr) {
         return;
@@ -268,7 +293,7 @@ One step of the component, called by the vehicle on every `RailVehicleServer` st
 Example:
 
 ```cpp
-void MoverRailVehicleDoors::_do_process_component(const double p_delta) {
+void MaszynaMoverRailVehicleDoors::_do_process_component(const double p_delta) {
     TMoverParameters *p_mover = get_mover();
     ASSERT_MOVER(p_mover);
     p_mover->update_doors(p_delta);
@@ -323,7 +348,7 @@ But nothing more - Mover may contain unused code, which will be impossible to te
 
 #### Classes and attributes
 
-* classes and enums should be properly prefixed: `RailVehicle<X>` for an interface, `MoverRailVehicle<X>` for its
+* classes and enums should be properly prefixed: `RailVehicle<X>` for an interface, `MaszynaMoverRailVehicle<X>` for its
   implementation
 * keep consistency between names of attributes and setters/getters (`[set_|get_]some_value`):
   ```cpp
@@ -393,7 +418,7 @@ FIZ files. That's why is very important to add a FIZ property name to properties
 [code]<FIZ Section>:<FIZ property name>[/code]
 ```
 
-Example (`doc_classes/RailVehicleDoors.xml`):
+Example (libreloaded's `doc_classes/RailVehicleDoors.xml`):
 
 ```xml
 <member name="open_method" type="int" setter="set_open_method" getter="get_open_method" enum="RailVehicleDoors.Controls" default="0">
@@ -430,9 +455,9 @@ To handle defaults properly:
 * Mixing Mover's enums with new ones is prohibited
 * Must be exposed to Godot API (`VARIANT_ENUM_CAST`, `BIND_ENUM_CONSTANT`)
 * Must start from `0` and be consecutive integers (0, 1, 2, ... and so on)
-* Must be properly matched with `PROPERTY_HINT_ENUM` - build the hint string with `enum_hint()` (`macros.hpp`) from
+* Must be properly matched with `PROPERTY_HINT_ENUM` - build the hint string with `enum_hint()` (libreloaded's `macros.hpp`) from
   the real constants, not from hand-typed labels
-* Must be properly mapped to Mover's enums - the mapping belongs to the `Mover*` implementation
+* Must be properly mapped to Mover's enums - the mapping belongs to the `MaszynaMover*` implementation
 * Must be defined in a public class scope of the interface
 * Names and item names must be unique in a class scope
 * Should be documented
@@ -495,11 +520,11 @@ namespace godot {
 ```
 
 Mapping the `Voltage` enum to Mover's internal values (for this property Mover has no enum defined) is the
-implementation's business, so it lives in `MoverRailVehicleDoors`:
+implementation's business, so it lives in `MaszynaMoverRailVehicleDoors`:
 
 ```cpp
 namespace godot {
-    class MoverRailVehicleDoors : public RailVehicleDoors, public MoverComponent {
+    class MaszynaMoverRailVehicleDoors : public RailVehicleDoors, public MaszynaMoverComponent {
         private:
             // notice missing VOLTAGE_AUTO - it can't be mapped
             const std::map<Voltage, float> voltage_map = {
@@ -551,7 +576,7 @@ state**, and that's why **`VOLTAGE_AUTO` enum was introduced and set as a defaul
 
 ```cpp
 
-void MoverRailVehicleDoors::_apply_configuration() {
+void MaszynaMoverRailVehicleDoors::_apply_configuration() {
     TMoverParameters *p_mover = get_mover();
     ASSERT_MOVER(p_mover);
     // ...
@@ -596,17 +621,17 @@ A smart approach is to define public methods that can be called in internal comm
 Component. The interface declares them, the implementation carries them out on the Mover:
 
 ```cpp
-void MoverRailVehicleDoors::operate_doors(const Side p_side, const bool p_state) {
+void MaszynaMoverRailVehicleDoors::operate_doors(const Side p_side, const bool p_state) {
     TMoverParameters *mover = get_mover();
     ASSERT_MOVER(mover);
     mover->OperateDoors(p_side == Side::SIDE_LEFT ? side::left : side::right, p_state);
 }
 
-void MoverRailVehicleDoors::operate_left_doors(const bool p_state) {
+void MaszynaMoverRailVehicleDoors::operate_left_doors(const bool p_state) {
     this->operate_doors(Side::SIDE_LEFT, p_state);
 }
 
-void MoverRailVehicleDoors::operate_right_doors(const bool p_state) {
+void MaszynaMoverRailVehicleDoors::operate_right_doors(const bool p_state) {
     this->operate_doors(Side::SIDE_RIGHT, p_state);
 }
 ```
@@ -623,7 +648,7 @@ void RailVehicleDoors::_register_commands() {
 > NOTE: Method `operate_doors` is not exposed as a command, but due to this technique it is available as a typed
 > call on the component - handy in internal communication, between the components of one vehicle. Anything outside the
 > vehicle sends the command: only the command renews the state dump and is announced
-> ([Commands and method calls](architecture.html#commands-and-method-calls)).
+> ([Commands and method calls](../architecture.html#commands-and-method-calls)).
 
 #### Argument type conversion
 
@@ -641,15 +666,16 @@ If it was broken, then it must be still broken. Do not fix Mover (do not touch t
 workarounds. [Report issue here](https://github.com/eu07/maszyna/issues) instead.
 
 Where the wrapper has to reproduce a quirk of the original for the data to work, the quirk lives in a factory (a FIZ
-parser, an importer) or in a `Mover*` / `MaszynaLegacy*` class - never in a `RailVehicle*` interface or a base class.
+parser, an importer) or in a `MaszynaMover*` / `Maszyna*` class of libmaszyna - never in a `RailVehicle*` interface or a base class.
 Known quirks are listed in `MASZYNA_ORIGINAL_QUIRKS.md`.
 
 ### Simulation steps vs. render frames
 
 The original engine updates everything within one simulation step: producers (e.g. `TTractionPowerSource::Update()`)
 and their consumers (e.g. pantographs calling `TTraction::VoltageGet()` from `TDynamicObject`) always run in the same
-step, the producers first (`simulation.cpp:115-116`). This wrapper keeps that order: `TractionServer` ticks its power
-sources on `SimulationServer`'s `simulation_advanced`, connected before `VehicleServer`, so every slice ticks the
+step, the producers first (`simulation.cpp:115-116`). This wrapper keeps that order: `TractionServer` (libmaszyna's
+`MaszynaTractionServer`, registered under the core's name) ticks its power sources on `SimulationServer`'s
+`simulation_advanced`, connected before `VehicleServer`, so every slice ticks the
 sources and then steps the vehicles that draw from them (`wire_draw_current()`) and read their voltage
 (`wire_get_voltage()`).
 

@@ -65,13 +65,13 @@ func _curved_track() -> String:
 
 func _assert_still(track_name:String, offset:float, where:String) -> void:
     # a vehicle with no mass integrates to NaN, which is a fixture of no vehicle at all
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.vehicle_id = "test_at_rest"
     model.mass = 74000.0
     model.type_name = "test"
     var physics_node:VehiclePhysicsNode = build_vehicle_node("test_at_rest", model)
     created_vehicle_nodes.append(physics_node)
-    var wheels:RailVehicleWheels = MoverRailVehicleWheels.new()
+    var wheels:RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
     wheels.bogie_pivot_spacing = 6.0
     VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid()).add_component(wheels)
 

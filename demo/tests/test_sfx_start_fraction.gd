@@ -94,12 +94,12 @@ func test_plain_looping_clip_keeps_playing_past_its_length() -> void:
 ## gnd-sfx has already placed the voice's start in it; the length known at build is what puts the
 ## start there at all (FINDINGS.md, 2026-10-01)
 func test_maszyna_stream_starts_at_the_start_fraction_before_its_first_playback() -> void:
-    var previous:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    var previous:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     var clip:SfxClip = SfxClip.new()
     clip.stream = MmdSoundEventBuilder.build_stream(FIXTURE_LOOP, true, "")
     var runtime:SfxPlaybackRuntime = _play_clip(clip)
-    UserSettings.save_maszyna_game_dir(previous)
+    MaszynaGameDirectory.save_game_dir(previous)
     assert_gt(clip.stream.get_length(), 0.0)
     assert_almost_eq(_start_position(runtime), START_FRACTION, 0.001)
 

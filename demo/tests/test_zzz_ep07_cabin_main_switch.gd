@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 ## Cabin layer (#94) on the REAL EP07-424 from td.scn with the player in the cab: cabin controls go
-## through CabinSystem, whose callbacks are registered by LegacyCabinLogic. The line breaker
+## through CabinSystem, whose callbacks are registered by MaszynaCabinLogic. The line breaker
 ## closes only after main_on_bt is held for InitialCtrlDelay and then released (Train.cpp:2976-3070,
 ## 6779-6827), while the vehicle-level "main_switch" command still acts immediately and returns its
 ## result (#43).
@@ -16,15 +16,15 @@ const SHORT_PRESS_SECONDS:float = 0.2
 
 var _previous_game_dir:String = ""
 var scenery:MaszynaSceneryNode
-var player:MaszynaPlayer
+var player:Player
 var controller:VehicleController
 var vehicle_rid:RID
 
 
 func before_each():
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
-    player = load("res://addons/libmaszyna/player/player.tscn").instantiate()
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
+    player = load("res://addons/libreloaded/player/player.tscn").instantiate()
     player.start_vehicle_id = "ep07-424"
     add_child(player)
     scenery = MaszynaSceneryNode.new()
@@ -44,7 +44,7 @@ func before_each():
 func after_each():
     player.free()
     scenery.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 ## The cabin the player drives from
@@ -102,11 +102,11 @@ func test_main_switch_needs_hold_and_release() -> void:
     assert_true(power_supply and power_supply.get_power24_available(), "the cab's battery switch gives the low voltage")
     assert_true(controller.get_state().get("main_switch_closable", false), "main switch should be closable once powered")
 
-    # the cab's relay timer runs on the simulation's clock (CabinSystem, LegacyCabinMainSwitch)
+    # the cab's relay timer runs on the simulation's clock (CabinSystem, MaszynaCabinMainSwitch)
     CabinSystem.act(_cabin(), &"main_on_bt", &"hold")
     await step(ticks(SHORT_PRESS_SECONDS))
     CabinSystem.act(_cabin(), &"main_on_bt", &"release")
-    # the release closes the breaker at once, if it is to close (LegacyCabinMainSwitch._close_released())
+    # the release closes the breaker at once, if it is to close (MaszynaCabinMainSwitch._close_released())
     assert_false(controller.get_state().get("main_switch_enabled", true), "a short press must not close the breaker")
 
     CabinSystem.act(_cabin(), &"main_on_bt", &"hold")

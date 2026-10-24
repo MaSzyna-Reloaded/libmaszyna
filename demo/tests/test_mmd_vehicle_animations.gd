@@ -15,12 +15,12 @@ var _previous_game_dir:String = ""
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _mmd(file_name:String) -> String:
@@ -31,7 +31,7 @@ func _parameters(file_name:String) -> Dictionary:
     return MmdCabinInstancer.vehicle_parameters("animated", file_name, "")
 
 
-func _appearance(file_name:String) -> RailVehicleAppearance:
+func _appearance(file_name:String) -> MaszynaRailVehicleAppearance:
     return MaszynaRailVehicle3DInstancer.read_structure(DATA_PATH, file_name, "", "animated").appearance
 
 
@@ -45,7 +45,7 @@ func test_pantograph_elements_are_named_by_the_prefixes_the_mmd_declares() -> vo
 
 
 func test_the_model_moves_the_submodels_the_mmd_names() -> void:
-    var appearance:RailVehicleAppearance = _appearance("animated")
+    var appearance:MaszynaRailVehicleAppearance = _appearance("animated")
     assert_eq(appearance.pantograph_front_arms, FRONT_PANTOGRAPH, "the front pantograph by its own prefixes")
     assert_eq(appearance.pantograph_rear_arms, PackedStringArray(),
             "the model's second pantograph is not one the MMD declares")
@@ -56,7 +56,7 @@ func test_the_model_moves_the_submodels_the_mmd_names() -> void:
 
 
 func test_counts_end_at_the_first_negative_number() -> void:
-    var appearance:RailVehicleAppearance = _appearance("animated_short")
+    var appearance:MaszynaRailVehicleAppearance = _appearance("animated_short")
     assert_eq(appearance.powered_wheels, PackedStringArray(["wheel1", "wheel2"]), "the wheels before the end mark")
     assert_eq(appearance.pantograph_front_arms, PackedStringArray(), "no pantograph after it")
     assert_eq(appearance.wiper_arms, PackedStringArray(), "no wiper after it")
@@ -65,7 +65,7 @@ func test_counts_end_at_the_first_negative_number() -> void:
 # DynObj.cpp:5361-5388 - with rolling wheels of their own diameter the axle arrangement, read from its
 # second character, splits the axles: 1A1 makes wheel1 powered (the A) and wheel2 rear rolling
 func test_rolling_wheels_follow_the_axle_arrangement() -> void:
-    var appearance:RailVehicleAppearance = _appearance("rolling")
+    var appearance:MaszynaRailVehicleAppearance = _appearance("rolling")
     assert_eq(appearance.powered_wheels, PackedStringArray(["wheel1"]))
     assert_eq(appearance.rear_rolling_wheels, PackedStringArray(["wheel2"]))
     assert_eq(appearance.front_rolling_wheels, PackedStringArray())
@@ -83,7 +83,7 @@ func test_the_destination_sign_is_the_replaceable_skin_4() -> void:
 # DynObj.cpp:5721-5790 - the doors by animdoorprefix:, each with the two submodels below it a folding
 # door turns (DynObj.cpp:592-622), the steps by animstepprefix:; what the model has not got is empty
 func test_doors_and_steps_are_named_by_their_prefixes() -> void:
-    var appearance:RailVehicleAppearance = _appearance("doors")
+    var appearance:MaszynaRailVehicleAppearance = _appearance("doors")
     assert_eq(appearance.doors, PackedStringArray(["drzwi1", "drzwi1_a", "drzwi1_b", "drzwi2", "", ""]))
     assert_eq(appearance.door_steps, PackedStringArray(["stopien1", ""]))
 
@@ -91,7 +91,7 @@ func test_doors_and_steps_are_named_by_their_prefixes() -> void:
 # DynObj.cpp:5702-5719 - pendulums 1 to 4 of the prefix the model has, with their amplitude; none
 # while animations: declares no levers (DynObj.cpp:1121)
 func test_pendulums_swing_only_with_levers_declared() -> void:
-    var appearance:RailVehicleAppearance = _appearance("pendulum")
+    var appearance:MaszynaRailVehicleAppearance = _appearance("pendulum")
     assert_eq(appearance.pendulums, PackedStringArray(["drzwi1", "drzwi2"]))
     assert_eq(appearance.pendulum_amplitude, 15.0)
     assert_eq(_appearance("doors").pendulums, PackedStringArray())

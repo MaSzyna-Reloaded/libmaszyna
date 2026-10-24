@@ -47,8 +47,8 @@ func test_cablight_inside_a_cab_does_not_swallow_the_next_controls() -> void:
 
 ## TGauge::Load (Gauge.cpp:186-197): a control's submodel by its name, else by its name with "_off"
 func test_a_control_binds_its_off_submodel() -> void:
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
             ProjectSettings.globalize_path(OFF_SUBMODEL_MMD),
             MmdCabinInstancer.vehicle_parameters("cabs", "off_submodel", ""), 1, {})
@@ -57,7 +57,7 @@ func test_a_control_binds_its_off_submodel() -> void:
     MmdCabinInstancer.build_into(root, definition, RID(), DATA_PATH, "", diagnostics)
     await wait_idle_frames(2)
     var buttons:Array[Node] = root.find_children("*", "CabinButton", true, false)
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
     assert_eq(buttons.size(), 1)
     var mesh_path:NodePath = buttons[0].get("mesh_path")
     assert_true(not mesh_path.is_empty(), "bound to kierunek_przod_off")

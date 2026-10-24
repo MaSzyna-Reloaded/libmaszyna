@@ -87,7 +87,7 @@ func refresh_items() -> void:
 
     var results: Array[NodebankGridItem] = []
 
-    for item: E3DModelInstance in search_root.find_children("", "E3DModelInstance", true):
+    for item: MaszynaE3DModelInstance in search_root.find_children("", "MaszynaE3DModelInstance", true):
         var is_matching = true
         if is_searching:
             is_matching = filters.reduce(func(accum, filter: Callable): return accum and filter.call(item), true)
