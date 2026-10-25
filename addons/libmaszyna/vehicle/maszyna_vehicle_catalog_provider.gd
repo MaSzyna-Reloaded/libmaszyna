@@ -1,7 +1,9 @@
 @tool
 extends VehicleCatalogProvider
+class_name MaszynaVehicleCatalogProvider
 
-## MaSzyna's rolling stock for the catalogue (VehicleCatalogServer), registered as
+## MaSzyna's rolling stock for the catalogue (VehicleCatalogServer), registered by libmaszyna's
+## runtime plugin (libmaszyna_runtime.gd) as
 ## MaszynaVehicleData.VEHICLE_PROVIDER: the vehicles of the game's dynamic/ as the launcher of the
 ## original gathers them (MaszynaVehiclesBank), a livery for each of a vehicle's skins, its side view
 ## (MaszynaVehicleProfileManager), and a vehicle built by MaszynaVehicleSystem. A vehicle is named by
@@ -54,14 +56,13 @@ const CARRIAGE_CATEGORIES:Dictionary[String, VehicleInfo.VehicleCategory] = {
 var _vehicles:Dictionary[String, MaszynaVehiclesBank.Vehicle] = {}
 
 
-func _ready() -> void:
+## The index is read as the provider enters the tree, before its runtime plugin registers it
+func _enter_tree() -> void:
     read_vehicles()
     GameDataServer.data_reload_requested.connect(read_vehicles)
-    VehicleCatalogServer.provider_register(MaszynaVehicleData.VEHICLE_PROVIDER, get_instance_id())
 
 
 func _exit_tree() -> void:
-    VehicleCatalogServer.provider_unregister(MaszynaVehicleData.VEHICLE_PROVIDER)
     GameDataServer.data_reload_requested.disconnect(read_vehicles)
 
 

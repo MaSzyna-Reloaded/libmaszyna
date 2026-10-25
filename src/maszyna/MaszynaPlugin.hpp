@@ -23,6 +23,8 @@ namespace godot {
 
         private:
             static constexpr const char *LOGO_PATH = "res://addons/libmaszyna/logo.png";
+            /* The plugin's part of the game: the providers it gives the core (ReloadedRuntimePlugin) */
+            static constexpr const char *RUNTIME_SCRIPT_PATH = "res://addons/libmaszyna/libmaszyna_runtime.gd";
 
             /* Owned: created by create_servers(), freed by free_servers() */
             MaszynaGameDirectory *game_directory = nullptr;

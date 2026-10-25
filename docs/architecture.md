@@ -39,11 +39,15 @@ libmaszyna adds at those extension points and how the port is organized.
 
 `addons/libmaszyna/libmaszyna.gd` registers the GDScript side:
 
-* autoloads, such as `MaszynaMaterialManager`, `MaszynaVehicleSystem`,
-  `MaszynaVehicleCatalogProvider`, `MaszynaE3DModelManager` and
-  `MaszynaSceneryChunkRenderingServer`
+* autoloads, such as `MaszynaMaterialManager`, `MaszynaVehicleSystem`, `MaszynaE3DModelManager`
+  and `MaszynaSceneryChunkRenderingServer`
 * custom types: `MaszynaE3DModelInstance` and `MaszynaRailVehiclePhysicsNode`
 * the FIZ importer, the editor plugins and the `maszyna/*` project settings
+
+Its part of the game is `addons/libmaszyna/libmaszyna_runtime.gd`, the plugin's
+`ReloadedRuntimePlugin` (`MaszynaPlugin`'s `runtime_script`): it makes and registers
+`MaszynaVehicleCatalogProvider` in its `_enter_tree()` - before the main scene, whose vehicles ask
+for it - and unregisters it in its `_exit_tree()`.
 
 ## Extension points
 

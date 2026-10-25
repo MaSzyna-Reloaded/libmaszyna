@@ -19,7 +19,6 @@ func _enable_plugin():
     add_autoload_singleton("MaszynaE3DModelManager", "res://addons/libmaszyna/e3d/maszyna_e3d_model_manager.gd")
     add_autoload_singleton("MaszynaE3DModelTool", "res://addons/libmaszyna/e3d/maszyna_e3d_model_tool.gd")
     add_autoload_singleton("MaszynaVehicleSystem", "res://addons/libmaszyna/vehicle/maszyna_vehicle_system.gd")
-    add_autoload_singleton("MaszynaVehicleCatalogProvider", "res://addons/libmaszyna/vehicle/maszyna_vehicle_catalog_provider.gd")
     add_autoload_singleton("MaszynaVehicleProfileManager", "res://addons/libmaszyna/vehicle/maszyna_vehicle_profile_manager.gd")
     add_autoload_singleton("FIZResourceLoaderRegistrar", "res://addons/libmaszyna/fiz/fiz_resource_loader_registrar.gd")
     add_autoload_singleton("MaszynaSceneryChunkRenderingServer", "res://addons/libmaszyna/scenery/maszyna_scenery_chunk_rendering_server.gd")
@@ -59,7 +58,6 @@ func _disable_plugin():
 
     remove_autoload_singleton("FIZResourceLoaderRegistrar")
     remove_autoload_singleton("MaszynaVehicleProfileManager")
-    remove_autoload_singleton("MaszynaVehicleCatalogProvider")
     remove_autoload_singleton("MaszynaVehicleSystem")
     remove_autoload_singleton("MaszynaE3DModelTool")
     remove_autoload_singleton("MaszynaE3DModelManager")

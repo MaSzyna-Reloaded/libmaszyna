@@ -97,6 +97,7 @@ namespace godot {
         name = "MaSzyna";
         description = "Vehicles and sceneries of MaSzyna EU07: the vehicles simulated on its Mover, its E3D models, "
                       "sceneries, scenarios, signalling and cabs";
+        runtime_script = RUNTIME_SCRIPT_PATH;
     }
 
     void MaszynaPlugin::register_classes() {
