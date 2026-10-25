@@ -7,8 +7,8 @@ extends MaszynaGutTest
 
 const CAB_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6ba.fiz"
 const MOTOR_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
-const SWITCH:PackedScene = preload("res://addons/libmaszyna/debug_hud/switch.tscn")
-const BUTTON:PackedScene = preload("res://addons/libmaszyna/debug_hud/button.tscn")
+const SWITCH:PackedScene = preload("res://addons/libreloaded/debug_hud/switch.tscn")
+const BUTTON:PackedScene = preload("res://addons/libreloaded/debug_hud/button.tscn")
 
 var cab_car:RID
 var motor_car:RID
@@ -18,7 +18,7 @@ var received:Array[Array] = []
 func before_each() -> void:
     received.clear()
     var cab:VehicleController = build_vehicle("TestHudCabCar", FizVehicleBuilder.build_description_at(CAB_CAR_PATH),
-            0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var motor:VehicleController = build_vehicle("TestHudMotorCar", FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH))
     await wait_idle_frames(2)
     cab.couple(motor, RailVehicleController.COUPLER_END_REAR, RailVehicleController.COUPLER_END_FRONT,

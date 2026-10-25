@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverRailVehicleAIHints" inherits="RailVehicleAIHints" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		[RailVehicleAIHints] on the vendored Mover.
+	</brief_description>
+	<description>
+		[RailVehicleAIHints] simulated by the vendored Mover ([code]TMoverParameters[/code]): its configuration is written into the vehicle's Mover and its live values are read straight from it. Created by the FIZ import for a vehicle [MaszynaMoverVehicleServer] simulates; everything else reaches it through [RailVehicleAIHints].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="local_brake_acceleration_factor" type="float" setter="set_local_brake_acceleration_factor" getter="get_local_brake_acceleration_factor" default="1.05">
+			[code]AI:LocalBrakeAccFactor[/code]
+			Suggested braking force multiplier for the AI driver when using the local (independent) brake.
+		</member>
+	</members>
+</class>

@@ -48,10 +48,14 @@ const FRICTION_TOLERANCE:float = 0.0001
 var _derailed:Array[Dictionary] = []
 var _tracks:Array[RID] = []
 var _cars:Array[RailVehicle3D] = []
+## The event system the test's memories, launchers and events are of, the original's
+var _event_system:RID
 
 
 func before_each() -> void:
     _derailed.clear()
+    _event_system = ScenarioEventServer.system_create()
+    ScenarioEventServer.system_attach_implementation(_event_system, MaszynaScenarioEventServer.implementation_get())
     RailVehicleServer.vehicle_derailed.connect(_on_vehicle_derailed)
 
 
@@ -64,6 +68,7 @@ func after_each() -> void:
         TrackServer.track_free(track)
     _tracks.clear()
     TrackServer.topology_rebuild()
+    ScenarioEventServer.system_free(_event_system)
 
 
 func test_a_car_running_off_an_open_track_end_derails() -> void:
@@ -89,8 +94,7 @@ func test_a_car_running_off_an_open_track_end_derails() -> void:
 func test_a_car_running_onto_a_track_without_rails_derails() -> void:
     var track:RID = build_track("broken", LONG_TRACK)
     _tracks.append(track)
-    TrackServer.track_update_properties(track, 0, TrackServer.TRACK_DAMAGE_NO_RAIL, TrackServer.track_get_friction(track),
-            TrackServer.ENVIRONMENT_FLAT, -1.0)
+    TrackServer.track_update_properties(track, TrackServer.TRACK_DAMAGE_NO_RAIL, TrackServer.track_get_friction(track), -1.0)
     var vehicle:RID = await _rolling_car("broken", 0.5 * LONG_TRACK)
     assert_true(await wait_simulated_until(func() -> bool: return _derailed.size() > 0, DERAIL_TIMEOUT,
             "derailed on a track without rails"), "the car derails where the rails are gone")
@@ -124,7 +128,7 @@ func test_a_grade_pulls_a_rolling_car() -> void:
 func test_a_switch_event_on_a_plain_track_works_a_derailer() -> void:
     var track:RID = build_track("derailer", LONG_TRACK)
     _tracks.append(track)
-    var action:MaszynaLegacySwitchAction = MaszynaLegacySwitchAction.new()
+    var action:MaszynaSwitchAction = MaszynaSwitchAction.new()
     var tracks:Array[RID] = [track]
     action.tracks = tracks
     var event:RID = ScenarioEventServer.event_create()
@@ -164,7 +168,7 @@ func test_a_canted_curve_leans_against_its_radius() -> void:
         await step(ticks(TICK) + 1)
         var vehicle:RID = (car.get_node(car.controller_path) as VehiclePhysicsNode).get_vehicle_rid()
         # bogies to measure the curve over; the axles stand at them once the car is placed again
-        var wheels:RailVehicleWheels = MoverRailVehicleWheels.new()
+        var wheels:RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
         wheels.bogie_pivot_spacing = BOGIE_SPACING
         var controller:VehicleController = VehicleServer.vehicle_get_controller(vehicle)
         controller.add_component(wheels)
@@ -182,7 +186,7 @@ func test_a_canted_curve_leans_against_its_radius() -> void:
 func test_the_rails_friction_is_the_tracks_times_the_scenerys_and_the_weathers() -> void:
     var track:RID = build_track("rails", LONG_TRACK)
     _tracks.append(track)
-    TrackServer.track_update_properties(track, 0, TrackServer.TRACK_DAMAGE_NONE, TRACK_FRICTION, TrackServer.ENVIRONMENT_FLAT, -1.0)
+    TrackServer.track_update_properties(track, TrackServer.TRACK_DAMAGE_NONE, TRACK_FRICTION, -1.0)
     SimulationServer.friction = SCENERY_FRICTION
     SimulationServer.weather = SimulationServer.WEATHER_RAIN
     var vehicle:RID = await _rolling_car("rails", 0.5 * LONG_TRACK)
@@ -209,7 +213,7 @@ func test_rain_and_snow_take_the_rails_grip() -> void:
 
 ## The scenery's `friction` event sets its multiplier (friction_event, Event.cpp:2090-2104)
 func test_a_friction_event_sets_the_scenerys_friction() -> void:
-    var action:MaszynaLegacyFrictionAction = MaszynaLegacyFrictionAction.new()
+    var action:MaszynaFrictionAction = MaszynaFrictionAction.new()
     action.friction = SCENERY_FRICTION
     var event:RID = ScenarioEventServer.event_create()
     ScenarioEventServer.event_attach_action(event, action)
@@ -225,14 +229,14 @@ func test_a_friction_event_sets_the_scenerys_friction() -> void:
 func test_a_memory_cell_modifies_a_tracks_friction() -> void:
     var track:RID = build_track("memory_rails", LONG_TRACK)
     _tracks.append(track)
-    TrackServer.track_update_properties(track, 0, TrackServer.TRACK_DAMAGE_NONE, TRACK_FRICTION, TrackServer.ENVIRONMENT_FLAT, -1.0)
-    var memory:RID = ScenarioEventServer.memory_create()
-    ScenarioEventServer.memory_set_values(memory, "", MEMORY_MULTIPLIER, MEMORY_OFFSET)
-    ScenarioEventServer.memory_add_friction_track(memory, track)
+    TrackServer.track_update_properties(track, TrackServer.TRACK_DAMAGE_NONE, TRACK_FRICTION, -1.0)
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    MaszynaScenarioEventServer.memory_set_values(memory, "", MEMORY_MULTIPLIER, MEMORY_OFFSET)
+    MaszynaScenarioEventServer.memory_add_friction_track(memory, track)
     assert_almost_eq(TrackServer.track_get_friction(track), TRACK_FRICTION * MEMORY_MULTIPLIER + MEMORY_OFFSET, FRICTION_TOLERANCE)
-    ScenarioEventServer.memory_set_values(memory, "", MEMORY_SECOND_MULTIPLIER, 0.0)
+    MaszynaScenarioEventServer.memory_set_values(memory, "", MEMORY_SECOND_MULTIPLIER, 0.0)
     assert_almost_eq(TrackServer.track_get_friction(track), TRACK_FRICTION * MEMORY_SECOND_MULTIPLIER, FRICTION_TOLERANCE, "followed as it changes")
-    ScenarioEventServer.memory_free(memory)
+    MaszynaScenarioEventServer.memory_free(memory)
 
 
 ## A car on the track at the offset, rolling at ROLLING_SPEED; its RID

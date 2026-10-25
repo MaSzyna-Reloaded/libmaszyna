@@ -1,6 +1,6 @@
 extends MaszynaGutTest
 
-## E3DMesh: an E3D submodel's surface keeps its arrays, so its faces, its arrays and a saved copy of
+## MaszynaE3DMesh: an E3D submodel's surface keeps its arrays, so its faces, its arrays and a saved copy of
 ## it come from memory, never read back from the RenderingServer (a GPU stall on every frame in
 ## flight).
 
@@ -22,8 +22,8 @@ func after_each() -> void:
         DirAccess.remove_absolute(SAVE_DIRECTORY)
 
 
-func _quad() -> E3DMesh:
-    var mesh:E3DMesh = E3DMesh.new()
+func _quad() -> MaszynaE3DMesh:
+    var mesh:MaszynaE3DMesh = MaszynaE3DMesh.new()
     mesh.surface = {
         "vertices": QUAD_VERTICES,
         "normals": QUAD_NORMALS,
@@ -34,7 +34,7 @@ func _quad() -> E3DMesh:
 
 
 func test_the_surface_is_answered_from_its_arrays() -> void:
-    var mesh:E3DMesh = _quad()
+    var mesh:MaszynaE3DMesh = _quad()
     assert_eq(mesh.get_surface_count(), 1)
     var arrays:Array = mesh.surface_get_arrays(0)
     var vertices:PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
@@ -49,7 +49,7 @@ func test_the_surface_is_answered_from_its_arrays() -> void:
 func test_a_saved_mesh_keeps_its_arrays() -> void:
     DirAccess.make_dir_recursive_absolute(SAVE_DIRECTORY)
     assert_eq(ResourceCache.resource_save(_quad(), SAVE_PATH), OK)
-    var loaded:E3DMesh = ResourceLoader.load(SAVE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as E3DMesh
+    var loaded:MaszynaE3DMesh = ResourceLoader.load(SAVE_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as MaszynaE3DMesh
     assert_not_null(loaded)
     assert_eq(loaded.surface["vertices"], QUAD_VERTICES)
     assert_eq(loaded.surface["indices"], QUAD_INDICES)
@@ -57,7 +57,7 @@ func test_a_saved_mesh_keeps_its_arrays() -> void:
 
 
 func test_an_empty_surface_has_no_mesh() -> void:
-    var mesh:E3DMesh = E3DMesh.new()
+    var mesh:MaszynaE3DMesh = MaszynaE3DMesh.new()
     mesh.surface = {}
     assert_eq(mesh.get_surface_count(), 0)
     assert_false(mesh.get_rid().is_valid())

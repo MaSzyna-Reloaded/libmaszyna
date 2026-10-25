@@ -26,8 +26,8 @@ var _failures:PackedStringArray = PackedStringArray()
 
 func before_each() -> void:
     _previous_home = ProjectSettings.get_setting(HOME_SETTING, "")
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(ProjectSettings.globalize_path(FIXTURES_GAME_DIR))
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(ProjectSettings.globalize_path(FIXTURES_GAME_DIR))
     _commands = PackedStringArray()
     _failures = PackedStringArray()
     PythonScreenServer.screen_rendered.connect(_on_screen_rendered)
@@ -37,7 +37,7 @@ func after_each() -> void:
     PythonScreenServer.screen_rendered.disconnect(_on_screen_rendered)
     PythonScreenServer.screen_free(_screen)
     ProjectSettings.set_setting(HOME_SETTING, _previous_home)
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_script_draws_the_state_into_the_texture_and_sends_commands() -> void:

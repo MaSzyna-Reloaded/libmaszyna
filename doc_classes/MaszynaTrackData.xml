@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrackData" inherits="TrackData" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A .scn's track.
+	</brief_description>
+	<description>
+		What the core's [TrackData] says, and what MaSzyna's format adds: how the track is drawn ([MaszynaTrackRenderingBackend], named by [method TrackData.get_rendering_backend]), its quality and its surroundings for the running sound (in [member TrackData.meta] under [enum MetaKey]), its events. Saved in the compiled scenery's cache by its class name.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="events" type="Dictionary[String, PackedStringArray]" setter="set_events" getter="get_events" default="{}">
+			The events the track names for each of its slots, by the slot's key: a slot may name several, every [code]event2 &lt;name&gt;[/code] line one more ([code]Track.cpp:815-858[/code]).
+		</member>
+		<member name="length" type="float" setter="set_length" getter="get_length" default="0.0">
+			The track's length as the .scn gives it [m].
+		</member>
+		<member name="material1" type="String" setter="set_material1" getter="get_material1" default="&quot;&quot;">
+			The rails' texture - a road's surface; empty for none.
+		</member>
+		<member name="material2" type="String" setter="set_material2" getter="get_material2" default="&quot;&quot;">
+			The trackbed's texture - a switch's diverging rails, a road's sides; empty for none.
+		</member>
+		<member name="parameters" type="Dictionary" setter="set_parameters" getter="get_parameters" default="{}">
+			The .scn's other keywords of the track: [code]trackbed[/code], [code]isolated[/code], [code]friction[/code] (a memory cell).
+		</member>
+		<member name="railprofile" type="String" setter="set_railprofile" getter="get_railprofile" default="&quot;default&quot;">
+			The rail profile the rails are drawn with ([code]models/tory/railprofile_&lt;name&gt;.txt[/code]).
+		</member>
+		<member name="tex_height" type="float" setter="set_tex_height" getter="get_tex_height" default="0.0">
+			The trackbed's height under the rails, a road's shoulder drop; below 0 a road's curb [m].
+		</member>
+		<member name="tex_length" type="float" setter="set_tex_length" getter="get_tex_length" default="4.0">
+			The length the textures cover along the track [m], unless the material gives its own.
+		</member>
+		<member name="tex_slope" type="float" setter="set_tex_slope" getter="get_tex_slope" default="0.0">
+			The width of the trackbed's slope, a road's shoulder slope or right sidewalk [m].
+		</member>
+		<member name="tex_width" type="float" setter="set_tex_width" getter="get_tex_width" default="0.0">
+			The width of the trackbed's crown beyond the rails, a road's shoulder or left sidewalk [m].
+		</member>
+	</members>
+	<constants>
+		<constant name="UNKNOWN" value="-1" enum="MaszynaEnvironmentType">
+			A name the original does not know ([code]Track.cpp:474-477[/code]).
+		</constant>
+		<constant name="FLAT" value="0" enum="MaszynaEnvironmentType">
+			Open ground.
+		</constant>
+		<constant name="MOUNTAINS" value="1" enum="MaszynaEnvironmentType">
+			Mountains.
+		</constant>
+		<constant name="CANYON" value="2" enum="MaszynaEnvironmentType">
+			A canyon.
+		</constant>
+		<constant name="TUNNEL" value="3" enum="MaszynaEnvironmentType">
+			A tunnel.
+		</constant>
+		<constant name="BRIDGE" value="4" enum="MaszynaEnvironmentType">
+			A bridge.
+		</constant>
+		<constant name="BANK" value="5" enum="MaszynaEnvironmentType">
+			An embankment.
+		</constant>
+		<constant name="META_ENVIRONMENT" value="0" enum="MetaKey">
+			The key of [member TrackData.meta] holding the track's [enum MaszynaEnvironmentType].
+		</constant>
+		<constant name="META_QUALITY" value="1" enum="MetaKey">
+			The key of [member TrackData.meta] holding the track's quality, for its running sound.
+		</constant>
+	</constants>
+</class>

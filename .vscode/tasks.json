@@ -11,44 +11,45 @@
         },
         {
             "label": "configure clang-tidy database",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "cmake configure clang-tidy database",
-                "generate clang-tidy bindings"
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "clang-tidy-database"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "import",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "import"
             ],
             "problemMatcher": []
         },
         {
-            "label": "cmake configure clang-tidy database",
+            "label": "test",
+            "group": "test",
             "type": "shell",
-            "command": "cmake",
+            "command": "make",
             "args": [
-                "--log-level=ERROR",
-                "-S",
-                "${workspaceFolder}",
-                "-B",
-                "${workspaceFolder}/build-clang-tidy",
-                "-DCMAKE_CXX_COMPILER=clang++",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "test"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            }
+            "problemMatcher": []
         },
         {
-            "label": "generate clang-tidy bindings",
+            "label": "test current file",
+            "group": "test",
             "type": "shell",
-            "command": "cmake",
+            "command": "make",
             "args": [
-                "--build",
-                "${workspaceFolder}/build-clang-tidy",
-                "--target",
-                "generate_bindings"
+                "test",
+                "TEST=${fileBasenameNoExtension}"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            }
+            "problemMatcher": []
         },
         {
             "label": "style-check current file",
@@ -114,9 +115,10 @@
                 "${workspaceFolder}/build-clang-tidy",
                 "-extra-arg=-std=c++17",
                 "-extra-arg=-I${workspaceFolder}/src",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/include",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/gen/include",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/gdextension",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/src",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/include",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/gen/include",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/gdextension",
                 "-extra-arg=-Wno-macro-redefined",
                 "-line-filter=[{\"name\":\"${relativeFile}\"}]",
                 "${relativeFile}"
@@ -141,9 +143,10 @@
                 "${workspaceFolder}/build-clang-tidy",
                 "-extra-arg=-std=c++17",
                 "-extra-arg=-I${workspaceFolder}/src",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/include",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/gen/include",
-                "-extra-arg=-I${workspaceFolder}/godot-cpp/gdextension",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/src",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/include",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/gen/include",
+                "-extra-arg=-I${workspaceFolder}/vendor/libreloaded/godot-cpp/gdextension",
                 "-extra-arg=-Wno-macro-redefined",
                 "-warnings-as-errors=-*",
                 "-line-filter=[{\"name\":\"${relativeFile}\"}]",

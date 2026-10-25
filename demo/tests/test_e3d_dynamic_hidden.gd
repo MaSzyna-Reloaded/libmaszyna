@@ -15,19 +15,19 @@ var _previous_game_dir:String = ""
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
-func _instance(kind:E3DRenderingServer.InstanceKind, lights:Dictionary[String, bool]) -> E3DModelInstance:
-    var instance:E3DModelInstance = E3DModelInstance.new()
+func _instance(kind:ModelRenderingServer.InstanceKind, lights:Dictionary[String, bool]) -> MaszynaE3DModelInstance:
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
     instance.instance_kind = kind
     instance.data_path = DATA_PATH
-    instance.model = E3DModelManager.load_model(DATA_PATH, MODEL)
+    instance.model = MaszynaE3DModelManager.load_model(DATA_PATH, MODEL)
     instance.lights_state = lights
     add_child_autoqfree(instance)
     return instance
@@ -43,7 +43,7 @@ func _lens(lamp:Node3D) -> MeshInstance3D:
 
 func test_scenery_dwarf_lamp_lights_with_its_lens() -> void:
     var lights:Dictionary[String, bool] = {"00": true}
-    var instance:E3DModelInstance = _instance(E3DRenderingServer.INSTANCE_KIND_STATIC, lights)
+    var instance:MaszynaE3DModelInstance = _instance(ModelRenderingServer.INSTANCE_KIND_STATIC, lights)
     var lamp:Node3D = instance.get_node(LAMP_PATH)
     var lens:MeshInstance3D = _lens(lamp)
     assert_not_null(lens, "the lamp should carry its lens")
@@ -54,25 +54,25 @@ func test_scenery_dwarf_lamp_lights_with_its_lens() -> void:
 
 func test_vehicle_model_hides_its_on_submodels() -> void:
     var lights:Dictionary[String, bool] = {}
-    var instance:E3DModelInstance = _instance(E3DRenderingServer.INSTANCE_KIND_DYNAMIC, lights)
+    var instance:MaszynaE3DModelInstance = _instance(ModelRenderingServer.INSTANCE_KIND_DYNAMIC, lights)
     var on_node:Node3D = instance.get_node(NodePath("karzel2/_on"))
     assert_false(on_node.visible, "a dynamic model should hide a \"_on\" submodel by default")
 
 
 func test_a_client_can_show_a_dynamic_hidden_submodel() -> void:
     var lights:Dictionary[String, bool] = {}
-    var instance:E3DModelInstance = _instance(E3DRenderingServer.INSTANCE_KIND_DYNAMIC, lights)
-    var model:RID = instance.get_e3d_instance()
+    var instance:MaszynaE3DModelInstance = _instance(ModelRenderingServer.INSTANCE_KIND_DYNAMIC, lights)
+    var model:RID = instance.get_model_instance()
 
-    E3DRenderingServer.instance_set_submodel_visible(model, "_on", true)
+    MaszynaE3DRenderingServer.instance_set_part_visible(model, "_on", true)
     assert_true((instance.get_node(NodePath("karzel2/_on")) as Node3D).visible,
             "an explicit visibility setting should override the vehicle default")
 
-    E3DRenderingServer.instance_set_instancer(model, E3DRenderingServer.INSTANCER_OPTIMIZED)
-    E3DRenderingServer.instance_set_instancer(model, E3DRenderingServer.INSTANCER_NODES)
+    MaszynaE3DRenderingServer.instance_set_instancer(model, ModelRenderingServer.INSTANCER_OPTIMIZED)
+    MaszynaE3DRenderingServer.instance_set_instancer(model, ModelRenderingServer.INSTANCER_NODES)
     assert_true((instance.get_node(NodePath("karzel2/_on")) as Node3D).visible,
             "the explicit setting should survive an instancer rebuild")
 
-    E3DRenderingServer.instance_set_submodel_visible(model, "_on", false)
+    MaszynaE3DRenderingServer.instance_set_part_visible(model, "_on", false)
     assert_false((instance.get_node(NodePath("karzel2/_on")) as Node3D).visible,
             "an explicit hide should still win")

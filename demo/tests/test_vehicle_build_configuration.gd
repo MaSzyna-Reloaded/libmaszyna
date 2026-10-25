@@ -20,14 +20,14 @@ var _configuration_changes:int = 0
 
 func before_each() -> void:
     _configuration_changes = 0
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
     if is_instance_valid(_vehicle):
         _vehicle.free()
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 ## CheckLocomotiveParameters() engages the spring brake of a vehicle standing at load

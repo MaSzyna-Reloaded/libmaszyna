@@ -1,15 +1,18 @@
 ---
 name: mover-parity-check
-description: Diagnose Godot-side train behavior bugs (electrical relays, engine startup, main switch/wyłącznik szybki, pantograph, brakes, etc.) by tracing the exact logic in the vendored original MaSzyna C++ simulator (~/src/maszyna) and comparing it against this wrapper's port. Use whenever an in-game behavior looks wrong/inconsistent and the question is "does our port match the original simulator's physics/electrical model, and where does it diverge?"
+description: Diagnose Godot-side train behavior bugs (electrical relays, engine startup, main switch/wyłącznik szybki, pantograph, brakes, etc.) by tracing the exact logic in the vendored original MaSzyna C++ simulator (~/src/maszyna) and comparing it against libmaszyna's port. Use whenever an in-game behavior looks wrong/inconsistent and the question is "does our port match the original simulator's physics/electrical model, and where does it diverge?"
 ---
 
 # Mover parity check
 
-This repo (`MaSzyna-API-wrapper`) ports the original MaSzyna train simulator's
+This repo (libmaszyna) ports the original MaSzyna train simulator's
 C++ physics/electrical core (`TMoverParameters`, vendored untouched under
-`src/legacy/maszyna-mover/`, mirroring `~/src/maszyna`) into a Godot GDExtension, plus a
+`src/maszyna/maszyna-mover/`, mirroring `~/src/maszyna`) onto libreloaded, the Reloaded core
+(`vendor/libreloaded`), compiled into the core's GDExtension library, plus a
 GDScript layer (FIZ import, MMD cabin import, engine/controller nodes,
-servers) that drives it. Bugs reported as in-game behavior ("X doesn't turn
+servers) that drives it. The generic vehicle interfaces, servers and cab system it plugs into are
+libreloaded's; a divergence found there is fixed in libreloaded's repository, in the core's own
+words (no citation of the original there - those stay here). Bugs reported as in-game behavior ("X doesn't turn
 on", "Y resets unexpectedly", "indicator Z never lights") are almost always
 one of:
 
@@ -32,13 +35,13 @@ you actually need saves a lot of grepping in the wrong place.
 
 | Original (`~/src/maszyna`) | Job | This wrapper's counterpart |
 | --- | --- | --- |
-| `McZapkie/Mover.cpp` / `MOVER.h` (`TMoverParameters`) | Physics/electrical core: relays, valves, pressures, engine curves, per-tick `Update()` state machine | `src/legacy/maszyna-mover/McZapkie/` - **vendored byte-identical**, never edited (see Hard constraints below) |
-| `DynObj.cpp` / `DynObj.h` (`TDynamicObject`) | Per-vehicle *scene* layer sitting on top of Mover: submodel animation (`UpdatePant`, `UpdateDoorTranslate`, wheel spin), geometry-derived config read from the model file at load time, wire/traction contact search dispatch | **Not vendored at all** (see `feedback_vendoring_scope` memory - only narrow, isolated pieces may ever be vendored, never this file wholesale). Reimplemented piecemeal in GDScript, mainly `addons/libmaszyna/rail_vehicle_3d.gd` (e.g. `_update_pantograph_raise_state`/`_apply_pantograph_animation` are a from-scratch port of `DynObj.cpp`'s pantograph block, not a vendored copy) |
-| `Train.cpp` (`TTrain`) | Player cab: `OnCommand_*` handlers, `user_command::` table, cab mesh label (`ggXxxButton`) → command wiring, indicator lamp conditions | `src/vehicles/base/VehicleController.cpp` (`send_command`/`register_command` dispatch, mirrors `OnCommand_*`) + `src/vehicles/rail/RailVehicle*Engine.cpp` (one `TrainXxxEngine` per subsystem, e.g. `RailVehicleElectricEngine` for pantograph/converter/compressor) + `addons/libmaszyna/legacy/mmd/mmd_semantic_catalog.gd` (MMD label → command mapping, mirrors `Train.cpp`'s `Load()` label table) |
-| `scene.cpp` (`basic_cell::update_traction`) / `Traction.cpp` (`TTractionPowerSource`, network) | Scenery-level overhead wire geometry search and electrical network solve | `src/traction/TractionServer.cpp` (`TractionServer`) |
-| Track/switch topology (scattered across `scene.cpp`/track pieces) | Track graph, switch state, vehicle-on-track offset math | `src/vehicles/rail/RailVehicleServer.cpp` (`RailVehicleServer`) + `src/tracks/TrackServer.cpp` |
-| `LoadFIZ_*` functions (`Mover.cpp`) | `.fiz` per-vehicle config parsing, including original engine's fallback defaults when a key is absent | `addons/libmaszyna/legacy/fiz/fiz_train_*_parser.gd` - must match the *default*, not just the parsed value, when a key is missing |
-| `.mmd` vehicle and cab file parsing (`DynObj.cpp` `LoadMMediaFile`: `animations:`, `animpant*prefix:`, `animwheelprefix:`, `animwiperprefix:`, `animmirrorprefix:`...; `Train.cpp` `InitializeCab`) | Model animation binding and cab layout, by the names, prefixes and counts the MMD declares | `addons/libmaszyna/legacy/mmd/mmd_cabin_instancer.gd` (`parse_*`) feeding `addons/libmaszyna/legacy/vehicle/maszyna_rail_vehicle_3d_instancer.gd`; cab: `mmd_cabin_instancer.gd`/`mmd_semantic_catalog.gd`. Nothing the MMD declares is assumed by convention (see "The port is data-driven" below) |
+| `McZapkie/Mover.cpp` / `MOVER.h` (`TMoverParameters`) | Physics/electrical core: relays, valves, pressures, engine curves, per-tick `Update()` state machine | `src/maszyna/maszyna-mover/McZapkie/` - **vendored byte-identical**, never edited (see Hard constraints below) |
+| `DynObj.cpp` / `DynObj.h` (`TDynamicObject`) | Per-vehicle *scene* layer sitting on top of Mover: submodel animation (`UpdatePant`, `UpdateDoorTranslate`, wheel spin), geometry-derived config read from the model file at load time, wire/traction contact search dispatch | **Not vendored at all** (see `feedback_vendoring_scope` memory - only narrow, isolated pieces may ever be vendored, never this file wholesale). Reimplemented piecemeal: the drawing and the animations in `src/maszyna/vehicles/MaszynaE3DRailVehicleRenderingServer.cpp` (a libreloaded `RailVehicleRenderingServer`); the pantograph's arm and contact in libreloaded's `RailVehicleServer::Pantograph` (`vendor/libreloaded/src/vehicles/rail/RailVehicleServer.cpp`), rewritten from a written spec (libreloaded's `LIBMASZYNA_SPLIT_SPECS.md`, section 1), not a vendored copy |
+| `Train.cpp` (`TTrain`) | Player cab: `OnCommand_*` handlers, `user_command::` table, cab mesh label (`ggXxxButton`) → command wiring, indicator lamp conditions | libreloaded's `src/vehicles/base/VehicleController.cpp` (`send_command`/`register_command` dispatch, mirrors `OnCommand_*`) + its `src/vehicles/rail/RailVehicle*Engine.cpp` interfaces (e.g. `RailVehicleElectricEngine` for pantograph/converter/compressor), implemented by `src/maszyna/vehicles/MaszynaMover*.cpp` + `addons/libmaszyna/mmd/mmd_semantic_catalog.gd` (MMD label → command mapping, mirrors `Train.cpp`'s `Load()` label table) + the cab logic `addons/libmaszyna/cabin/` (`OnCommand_*` state and timers) |
+| `scene.cpp` (`basic_cell::update_traction`) / `Traction.cpp` (`TTractionPowerSource`, network) | Scenery-level overhead wire geometry search and electrical network solve | libreloaded's `TractionServer` (`vendor/libreloaded/src/traction/`), MaSzyna's network in `src/maszyna/traction/MaszynaTractionServer.cpp` (a `TractionServer`, registered under its name) |
+| Track/switch topology (scattered across `scene.cpp`/track pieces) | Track graph, switch state, vehicle-on-track offset math | libreloaded's `src/vehicles/rail/RailVehicleServer.cpp` (`RailVehicleServer`) + `src/tracks/TrackServer.cpp` |
+| `LoadFIZ_*` functions (`Mover.cpp`) | `.fiz` per-vehicle config parsing, including original engine's fallback defaults when a key is absent | `addons/libmaszyna/fiz/fiz_train_*_parser.gd` - must match the *default*, not just the parsed value, when a key is missing |
+| `.mmd` vehicle and cab file parsing (`DynObj.cpp` `LoadMMediaFile`: `animations:`, `animpant*prefix:`, `animwheelprefix:`, `animwiperprefix:`, `animmirrorprefix:`...; `Train.cpp` `InitializeCab`) | Model animation binding and cab layout, by the names, prefixes and counts the MMD declares | `addons/libmaszyna/mmd/mmd_cabin_instancer.gd` (`parse_*`) feeding `addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d_instancer.gd`; cab: `mmd_cabin_instancer.gd`/`mmd_semantic_catalog.gd`. Nothing the MMD declares is assumed by convention (see "The port is data-driven" below) |
 
 Two-minute rule of thumb: if the question is "what value does a flag/relay
 have, or when does it flip" → `Mover.cpp`/`MOVER.h`. If it's "why doesn't
@@ -53,15 +56,15 @@ registration.
 Ask (or read from the operator's report) for the *exact* in-game
 observation: which indicator lights, which doesn't, in what order, under
 what action. If a live session is available, prefer a runtime state dump
-(e.g. this project's console `get <vehicle-name>` command) over inference -
+(e.g. libreloaded's console `get <vehicle-name>` command) over inference -
 it gives exact boolean/numeric field values (`relay_ground`, `main_switch_enabled`,
-`current_collector_pantograph_first_voltage`, etc.) matching this wrapper's
-`_do_fetch_state_from_mover()`-exposed dictionary keys.
+`current_collector_pantograph_first_voltage`, etc.) matching the dictionary keys the
+`MaszynaMover*` components publish in `_fill_state_dictionary()`.
 
 ## Step 2 — find the flag in the vendored engine
 
 Locate the responsible field/flag in `~/src/maszyna` (or this repo's
-`src/legacy/maszyna-mover/`, which must stay byte-identical to it - see the "never touch
+`src/maszyna/maszyna-mover/`, which must stay byte-identical to it - see the "never touch
 vendored Mover" rule below):
 
 ```
@@ -98,18 +101,18 @@ never sets may be intentionally absent for that vehicle, not a parsing bug.
 
 ## Step 4 — compare against this wrapper's port
 
-- FIZ parsing: `addons/libmaszyna/legacy/fiz/fiz_train_*_parser.gd` - check the key
+- FIZ parsing: `addons/libmaszyna/fiz/fiz_train_*_parser.gd` - check the key
   is read, and that the **default when the key is absent** matches the
   original's `LoadFIZ_*` fallback (grep `extract_value(...,line)` /
   `starts.find(...)` in `Mover.cpp` for the exact default, e.g. `GroundRelayStart`
   defaults to `automatic` only for `dt_EZT`, `manual` otherwise -
   `Mover.cpp` ~line 10703).
-- Command wiring: `src/vehicles/rail/*.cpp`, `src/legacy/vehicles/*.cpp` -
+- Command wiring: libreloaded's `src/vehicles/rail/*.cpp`, `src/maszyna/vehicles/*.cpp` -
   `register_command(...)` calls and their handler bodies. Check the handler
   calls the *right* vendored method (e.g. `fuse_reset()` calls `FuseOn()`,
   the traction-motor-overload reset - it is **not** a ground-relay reset,
   despite both being "fuse-style" buttons).
-- MMD → command mapping: `addons/libmaszyna/legacy/mmd/mmd_semantic_catalog.gd` -
+- MMD → command mapping: `addons/libmaszyna/mmd/mmd_semantic_catalog.gd` -
   grep the MMD label name to confirm a real cab click reaches the command at
   all. A command that exists in C++ but has no catalog entry is unreachable
   from the cab (only from the console/tests).
@@ -137,8 +140,9 @@ bug.
 ## Testing a change to physics - ABSOLUTE
 
 Breaking any point below breaks the project's rules. It applies to every change of a physics
-component: the Mover wrapper (`src/legacy/vehicles/`), a vehicle component (`src/vehicles/`), the
-FIZ factory (`addons/libmaszyna/legacy/fiz/`), and the cab logic that commands them.
+component: the Mover wrapper (`src/maszyna/vehicles/`), a vehicle component (libreloaded's
+`src/vehicles/`), the FIZ factory (`addons/libmaszyna/fiz/`), and the cab logic that commands them
+(`addons/libmaszyna/cabin/`).
 
 - **Test it thoroughly, end to end** - not only the field that moved. An electric vehicle is
   started from cold the way a player does it: battery -> low voltage (`power24_available`) ->
@@ -162,7 +166,7 @@ How to write such a test and how to probe a vehicle headless without reading fro
 ## Hard constraints
 
 - **The port is data-driven - ABSOLUTE.** Every name, prefix, count, flag and default the original
-  reads from data (FIZ, MMD, SCN/SCM/INC, CHK, lang, models) is read from that data in the wrapper, the
+  reads from data (FIZ, MMD, SCN/SCM/INC, CHK, lang, models) is read from that data in the port, the
   way the original reads it, with the original's default when absent. Only what the original itself
   hardcodes, or a quirk documented in `MASZYNA_ORIGINAL_QUIRKS.md`, may be hardcoded - with the
   original's line cited. "Confirmed identical across the vehicles checked" is never a reason: the
@@ -170,7 +174,7 @@ How to write such a test and how to probe a vehicle headless without reading fro
   by the original from `animpant*prefix:`) left 104 vehicles unanimated (36WE, EN57, ET22, 4E...), the
   wheel prefix 109, and searching cab 2 from `cab1definition:` broke 133 cabs.
 
-- **Never edit `src/legacy/maszyna-mover/` (vendored Mover).** All integration lives in
+- **Never edit `src/maszyna/maszyna-mover/` (vendored Mover).** All integration lives in
   the wrapper's own engine/controller classes, writing to the mover's public
   fields from outside - exactly like the original's own `DynObj.cpp`/
   `Train.cpp` split from `Mover.cpp`. If a genuinely vendored file must

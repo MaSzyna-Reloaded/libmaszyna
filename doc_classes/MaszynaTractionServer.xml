@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTractionServer" inherits="TractionServer" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The traction network as the original computes it.
+	</brief_description>
+	<description>
+		Ports [code]Traction.cpp[/code] and [code]TractionPower.cpp[/code] of the original engine: named power sources ([code]TTractionPowerSource[/code], their fuses and recuperation) feeding wire spans, a resistive network built once per scenery load ([code]traction_table::InitTraction()[/code], including the pass that feeds a section's open end from the powered span it hangs beside, and a source made up from a span's own nominal values when it names none that exists, [code]Traction.cpp:704-721[/code]; a span declaring 0.01 Ω/km, the old default, is taken as 0.075, [code]Traction.cpp:107-110[/code]), the voltage a load sees ([code]TTraction::VoltageGet(u, i)[/code]), and the geometric "which wire is above this point" query ([code]scene::basic_cell::update_traction()[/code]) with the pantograph's guide horns. A pantograph already on a span follows the chain of spans ([code]vehicle_table::update_traction()[/code], [code]DynObj.cpp:8742-8770[/code]). Registered as [code]TractionServer[/code], in its place.
+		Not ported: [code]TTraction::PowerSet()[/code]'s section-marker replacement ([code]Traction.cpp:747-806[/code], only relevant when a sectioning cabin sits between two differently named substations).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

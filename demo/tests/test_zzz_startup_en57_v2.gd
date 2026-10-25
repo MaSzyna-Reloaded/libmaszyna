@@ -43,7 +43,7 @@ func test_a_key_press_steps_the_brake_handle_a_position() -> void:
     assert_eq(brake.handle_movement, RailVehicleBrake.BRAKE_HANDLE_MOVEMENT_STEPPED, "an FVel6 steps")
     var before:float = brake.get_controller_position()
     await key_tap(&"brake_level_increase")
-    assert_almost_eq(brake.get_controller_position(), before + brake.handle_step, HANDLE_TOLERANCE,
+    assert_almost_eq(brake.get_controller_position(), before + float(UserSettings.get_setting("controls", "brakestep", 1.0)), HANDLE_TOLERANCE,
             "one press, one position")
 
 

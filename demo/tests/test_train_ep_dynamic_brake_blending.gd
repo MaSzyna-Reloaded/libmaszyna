@@ -6,7 +6,7 @@ var ep_brake: RailVehicleElectroPneumaticDynamicBrake
 func before_each():
     train = build_vehicle("TestTrain")
 
-    ep_brake = MoverRailVehicleElectroPneumaticDynamicBrake.new()
+    ep_brake = MaszynaMoverRailVehicleElectroPneumaticDynamicBrake.new()
     train.add_component(ep_brake)
     await wait_idle_frames(2)
 

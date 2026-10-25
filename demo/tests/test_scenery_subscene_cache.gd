@@ -7,7 +7,7 @@ const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const ROOT:String = "subscene/root.scn"
 
 var _previous_game_dir:String = ""
-var _cache_dir:String = "user://cache".path_join(SceneryInstancer.CACHE_DIRECTORY)
+var _cache_dir:String = "user://cache".path_join(MaszynaSceneryProvider.CACHE_DIRECTORY)
 var _existing_files:PackedStringArray = []
 var _existing_directories:PackedStringArray = []
 var _previous_lazy_loading:bool = false
@@ -19,8 +19,8 @@ func before_each() -> void:
     # the terrain is streamed from its chunk files, loaded when wanted
     _previous_lazy_loading = ResourceLazyLoader.lazy_loading
     ResourceLazyLoader.lazy_loading = true
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     _existing_files = _list_cache_files()
     _existing_directories = DirAccess.get_directories_at(_cache_dir)
 
@@ -35,14 +35,14 @@ func after_each() -> void:
         for file:String in DirAccess.get_files_at(_cache_dir.path_join(directory)):
             DirAccess.remove_absolute(_cache_dir.path_join(directory).path_join(file))
         DirAccess.remove_absolute(_cache_dir.path_join(directory))
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
     ResourceLazyLoader.lazy_loading = _previous_lazy_loading
     ProjectSettings.set_setting(CACHE_ENABLED_SETTING, false)
 
 
 func test_subscenes_are_cached_per_origin_and_match_in_place_parsing() -> void:
     var in_place := MaszynaImporterContext.new()
-    SceneryInstancer.parse_file(ROOT, {}, in_place)
+    MaszynaSceneryProvider.parse_file(ROOT, {}, in_place)
 
     var parsed:MaszynaImporterContext = _parse_threaded()
     # big.scm twice without parameters (two origins); with parameters and small.inc are not cached
@@ -85,14 +85,14 @@ func test_loaded_scenery_writes_its_terrain_chunks_as_files() -> void:
 
 func _parse_threaded() -> MaszynaImporterContext:
     var queue := WorkerTaskQueue.new()
-    return SceneryInstancer.parse_file_task(ROOT, {}, MaszynaImporterContext.new().get_state(), queue)
+    return MaszynaSceneryProvider.parse_file_task(ROOT, {}, MaszynaImporterContext.new().get_state(), queue)
 
 
 ## [models as [filename, position], terrain chunks as [texture, origin, range, vertex floats], sorted -
 ## the order the chunks appear in is the order the workers finished in]
 func _describe(context:MaszynaImporterContext) -> Array:
     var models:Array = context.models.map(
-        func(model:MaszynaModelData) -> Array: return [model.model_filename, model.position]
+        func(model:ModelData) -> Array: return [model.model, model.position]
     )
     var chunks:Array = context.triangles_sink.get_geometries().map(
         func(geometry:MaszynaTrianglesChunkGeometry) -> Array:

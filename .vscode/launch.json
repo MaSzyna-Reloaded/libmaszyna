@@ -8,7 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "program": "godot",
+            "program": "godot-double",
             "args": ["--editor", "--path", "${workspaceFolder}/demo"],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build",

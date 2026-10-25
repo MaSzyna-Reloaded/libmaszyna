@@ -9,10 +9,10 @@ var wipers: RailVehicleWipers
 
 
 func before_each():
-    train = build_vehicle("TestTrainWipers", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+    train = build_vehicle("TestTrainWipers", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     train.add_component(build_power_supply(110.0))
     train.apply_configuration()
-    wipers = MoverRailVehicleWipers.new()
+    wipers = MaszynaMoverRailVehicleWipers.new()
     # WiperList: of ep09_v2/104e-mod-dod-zal.fiz - mask, sweep time, interval, delay at the far end
     wipers.positions = [
         _item(0, 1.0, 0.0, 0.5),
@@ -55,7 +55,7 @@ func test_a_new_list_sets_the_switch_to_its_default():
 
 
 func test_defaults():
-    var defaults: RailVehicleWipers = MoverRailVehicleWipers.new()
+    var defaults: RailVehicleWipers = MaszynaMoverRailVehicleWipers.new()
 
     assert_eq(defaults.angle, 0.0)
     assert_eq(defaults.default_position, 0)

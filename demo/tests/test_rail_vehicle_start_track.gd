@@ -25,7 +25,7 @@ func test_a_vehicle_built_after_the_tracks_is_placed_on_its_start_track() -> voi
     # the tracks are announced while the vehicle does not exist yet
     TrackServer.topology_rebuild()
 
-    var description: RailVehicleController = MoverRailVehicleController.new()
+    var description: RailVehicleController = MaszynaMoverRailVehicleController.new()
     description.mass = RAIL_VEHICLE_MASS
     var physics_node: RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
     physics_node.name = "LateVehicle"

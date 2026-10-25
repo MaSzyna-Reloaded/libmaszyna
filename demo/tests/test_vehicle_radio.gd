@@ -13,7 +13,7 @@ var radio: RailVehicleRadio
 
 func before_each():
     train = build_vehicle("TestRadio")
-    radio = MoverRailVehicleRadio.new()
+    radio = MaszynaMoverRailVehicleRadio.new()
     train.add_component(radio)
     await wait_idle_frames(2)
 

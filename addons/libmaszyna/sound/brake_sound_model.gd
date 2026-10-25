@@ -26,7 +26,7 @@ const MAX_GAIN:float = 1.0
 const UNSET_PRESSURE:float = -1.0
 ## A fading sound stops below this gain (Train.cpp:8500, DynObj.cpp:4657, 4745)
 const STOP_GAIN:float = 0.05
-## MoverRailVehicleBrake._apply_configuration(): an auxiliary pressure below this is not given, and
+## MaszynaMoverRailVehicleBrake._apply_configuration(): an auxiliary pressure below this is not given, and
 ## MaxBrakePress[0] is the cylinders' (Mover.cpp, LoadFIZ_Brake)
 const AUX_PRESSURE_MIN:float = 0.01
 
@@ -170,7 +170,7 @@ var _spring_release:BrakeSound
 
 var _vehicle_rid:RID = RID()
 var _controller:VehicleController
-var _brake:RailVehicleBrake
+var _brake:MaszynaMoverRailVehicleBrake
 var _wheels:RailVehicleWheels
 var _spring_brake:RailVehicleSpringBrake
 var _squeal_amplitude_offset:float = 0.0
@@ -230,7 +230,7 @@ func attach_vehicle(vehicle_rid:RID) -> void:
     _vehicle_rid = vehicle_rid
     _controller = VehicleServer.vehicle_get_controller(vehicle_rid)
     _brake = RailVehicleServer.vehicle_component_get(
-            vehicle_rid, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
+            vehicle_rid, RailVehicleComponentType.COMPONENT_BRAKES) as MaszynaMoverRailVehicleBrake
     _wheels = VehicleServer.vehicle_component_get(
             vehicle_rid, VehicleComponentType.COMPONENT_WHEELS) as RailVehicleWheels
     _spring_brake = RailVehicleServer.vehicle_component_get(
@@ -483,8 +483,8 @@ func _read_vehicle() -> void:
     readings.max_control_pressure = (
             _brake.max_cylinder_pressure if _brake.max_aux_pressure < AUX_PRESSURE_MIN else _brake.max_aux_pressure)
     readings.handle_sounds = (
-            _brake.cntrl_brake_handle_type == RailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A
-            or _brake.cntrl_brake_handle_type == RailVehicleBrake.BRAKE_HANDLE_TYPE_FVEL6)
+            _brake.cntrl_brake_handle_type == MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A
+            or _brake.cntrl_brake_handle_type == MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FVEL6)
     readings.electro_pneumatic = _brake.cntrl_brake_system == RailVehicleBrake.BRAKE_SYSTEM_ELECTRO_PNEUMATIC
 
 

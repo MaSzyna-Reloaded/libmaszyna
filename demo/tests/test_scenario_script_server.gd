@@ -1,6 +1,6 @@
 extends MaszynaGutTest
 
-const LuaImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_lua_importer.gd")
+const LuaImporter = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd")
 const FIXTURES:String = "res://tests/fixtures/lua"
 const OUTPUT:StringName = &"lua_test_output"
 ## SimulationServer::MAX_FRAME_DELTA
@@ -8,7 +8,7 @@ const MAX_FRAME_DELTA:float = 0.25
 ## Simulated seconds an event runs past its delay at most: the frame it falls due in and the frame
 ## that runs it, each counting MAX_FRAME_DELTA at most
 const EVENT_MARGIN:float = 2.0 * MAX_FRAME_DELTA
-## maszyna.sim.after()'s delay in the timer's script [s]
+## reloaded.sim.after()'s delay in the timer's script [s]
 const AFTER_DELAY:float = 0.05
 ## Enough frames for a queued event to have run, were it going to
 const SETTLE_FRAMES:int = 5
@@ -53,24 +53,29 @@ class RecordingSystem extends SignallingImplementation:
 
 var _context:RID
 var _output:RID
+## The event system the test's memories, launchers and events are of, the original's
+var _event_system:RID
 
 
 func before_each() -> void:
+    _event_system = ScenarioEventServer.system_create()
+    ScenarioEventServer.system_attach_implementation(_event_system, MaszynaScenarioEventServer.implementation_get())
     _context = ScenarioScriptServer.context_create(FIXTURES)
-    _output = ScenarioEventServer.memory_create()
-    ScenarioEventServer.memory_set_name(_output, OUTPUT)
+    _output = MaszynaScenarioEventServer.memory_create(_event_system)
+    MaszynaScenarioEventServer.memory_set_name(_output, OUTPUT)
 
 
 func after_each() -> void:
     ScenarioScriptServer.context_free(_context)
-    ScenarioEventServer.memory_free(_output)
+    MaszynaScenarioEventServer.memory_free(_output)
+    ScenarioEventServer.system_free(_event_system)
 
 
 func test_a_file_runs_and_requires_a_lowercase_fallback_module_of_its_directory() -> void:
     assert_true(ScenarioScriptServer.context_run_file(_context, "hello.lua"))
 
-    assert_eq(ScenarioEventServer.memory_get_text(_output), "hello")
-    assert_eq(ScenarioEventServer.memory_get_value2(_output), 2.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(_output), "hello")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(_output), 2.0)
 
 
 func test_an_error_is_reported_and_fails_the_run() -> void:
@@ -82,7 +87,7 @@ func test_an_error_is_reported_and_fails_the_run() -> void:
 
 
 func test_check_compiles_without_running() -> void:
-    assert_eq(ScenarioScriptServer.context_check_source(_context, &"editor", "maszyna.memory.write(nil)"), "")
+    assert_eq(ScenarioScriptServer.context_check_source(_context, &"editor", "reloaded.memory.write(nil)"), "")
     var error:String = ScenarioScriptServer.context_check_source(_context, &"editor", "\nlocal = 1")
     assert_string_contains(error, "editor:2:")
 
@@ -111,20 +116,20 @@ func test_an_endless_loop_fails_instead_of_hanging() -> void:
 
 func test_an_event_the_script_created_runs_and_goes_with_the_context() -> void:
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "local e = maszyna.event.create{ name = 'lua_test_event', run = function(event, activator)\n"
-        + "    maszyna.memory.write(output, maszyna.event.name(event), activator == nil and 1 or 0, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "local e = reloaded.event.create{ name = 'lua_test_event', run = function(event, activator)\n"
+        + "    reloaded.memory.write(output, reloaded.event.name(event), activator == nil and 1 or 0, 0)\n"
         + "end }\n"
-        + "maszyna.event.queue(e)"
+        + "reloaded.event.queue(e)"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"events", source))
     var event:RID = ScenarioEventServer.event_get_rid_by_name(&"lua_test_event")
     assert_true(event.is_valid())
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "lua_test_event", EVENT_MARGIN,
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "lua_test_event", EVENT_MARGIN,
             "the script's event run"):
         return
 
-    assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0, "nothing activated it")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(_output), 1.0, "nothing activated it")
     ScenarioScriptServer.context_free(_context)
     assert_false(ScenarioEventServer.event_get_rid_by_name(&"lua_test_event").is_valid())
     _context = ScenarioScriptServer.context_create(FIXTURES)
@@ -132,28 +137,28 @@ func test_an_event_the_script_created_runs_and_goes_with_the_context() -> void:
 
 func test_after_runs_once_on_the_simulation_clock() -> void:
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "maszyna.sim.after(%s, function()\n" % AFTER_DELAY
-        + "    local text, count = maszyna.memory.read(output)\n"
-        + "    maszyna.memory.write(output, 'after', count + 1, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "reloaded.sim.after(%s, function()\n" % AFTER_DELAY
+        + "    local text, count = reloaded.memory.read(output)\n"
+        + "    reloaded.memory.write(output, 'after', count + 1, 0)\n"
         + "end)"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"timer", source))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "after", AFTER_DELAY + EVENT_MARGIN,
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "after", AFTER_DELAY + EVENT_MARGIN,
             "the timer's function run"):
         return
     await wait_idle_frames(SETTLE_FRAMES)
 
-    assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(_output), 1.0)
 
 
 func test_applying_a_unit_again_frees_what_it_made_before() -> void:
     assert_true(ScenarioScriptServer.context_apply_source(
-            _context, &"unit", "maszyna.event.create{ name = 'lua_test_first' }"))
+            _context, &"unit", "reloaded.event.create{ name = 'lua_test_first' }"))
     assert_true(ScenarioScriptServer.context_apply_source(
-            _context, &"other", "maszyna.event.create{ name = 'lua_test_other' }"))
+            _context, &"other", "reloaded.event.create{ name = 'lua_test_other' }"))
     assert_true(ScenarioScriptServer.context_apply_source(
-            _context, &"unit", "maszyna.event.create{ name = 'lua_test_second' }"))
+            _context, &"unit", "reloaded.event.create{ name = 'lua_test_second' }"))
 
     assert_false(ScenarioEventServer.event_get_rid_by_name(&"lua_test_first").is_valid())
     assert_true(ScenarioEventServer.event_get_rid_by_name(&"lua_test_second").is_valid())
@@ -165,57 +170,57 @@ func test_a_subscription_runs_through_the_queue_until_cancelled() -> void:
     var section:RID = TrackServer.isolated_create()
     TrackServer.isolated_set_name(section, &"lua_test_section")
     TrackServer.isolated_add_track(section, track)
-    var vehicle:RID = ScenarioEventServer.memory_create() # stands in for a vehicle
+    var vehicle:RID = MaszynaScenarioEventServer.memory_create(_event_system) # stands in for a vehicle
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "local section = maszyna.track.isolated_find('lua_test_section')\n"
-        + "subscription = maszyna.track.on_isolated_occupied(section, function(vehicle)\n"
-        + "    local text, count = maszyna.memory.read(output)\n"
-        + "    maszyna.memory.write(output, tostring(vehicle ~= nil), count + 1, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "local section = reloaded.track.isolated_find('lua_test_section')\n"
+        + "subscription = reloaded.track.on_isolated_occupied(section, function(vehicle)\n"
+        + "    local text, count = reloaded.memory.read(output)\n"
+        + "    reloaded.memory.write(output, tostring(vehicle ~= nil), count + 1, 0)\n"
         + "end)"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"subscription", source))
 
     TrackServer.track_axle_entered(track, vehicle)
-    assert_eq(ScenarioEventServer.memory_get_text(_output), "", "never inside the server that reported it")
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "true", EVENT_MARGIN,
+    assert_eq(MaszynaScenarioEventServer.memory_get_text(_output), "", "never inside the server that reported it")
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "true", EVENT_MARGIN,
             "the subscription's function run"):
         return
     TrackServer.track_axle_left(track, vehicle)
-    assert_true(ScenarioScriptServer.context_apply_source(_context, &"cancel", "assert(maszyna.cancel(subscription))"))
+    assert_true(ScenarioScriptServer.context_apply_source(_context, &"cancel", "assert(reloaded.cancel(subscription))"))
     TrackServer.track_axle_entered(track, vehicle)
     await wait_idle_frames(SETTLE_FRAMES)
 
-    assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0, "a cancelled subscription is not called")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(_output), 1.0, "a cancelled subscription is not called")
     TrackServer.track_axle_left(track, vehicle)
     TrackServer.isolated_free(section)
     TrackServer.track_free(track)
-    ScenarioEventServer.memory_free(vehicle)
+    MaszynaScenarioEventServer.memory_free(vehicle)
 
 
 func test_a_vehicle_takes_commands_and_reports_them() -> void:
     var controller:VehicleController = build_vehicle(
-            "LuaTestTrain", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_HEAD)
+            "LuaTestTrain", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     controller.add_component(build_power_supply(BATTERY_VOLTAGE))
     var recording:RecordingDriver = RecordingDriver.new()
     attach_driver_implementation(get_vehicle_driver(controller.get_rid()), recording)
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "local v = maszyna.vehicle.find('LuaTestTrain')\n"
-        + "assert(v == maszyna.vehicle.find_all('LuaTestTrain')[1])\n"
-        + "assert(maszyna.vehicle.name(v) == 'LuaTestTrain')\n"
-        + "maszyna.vehicle.on_command_received(v, function(command, p1)\n"
-        + "    maszyna.memory.write(output, command, p1 and 1 or 0, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "local v = reloaded.vehicle.find('LuaTestTrain')\n"
+        + "assert(v == reloaded.vehicle.find_all('LuaTestTrain')[1])\n"
+        + "assert(reloaded.vehicle.name(v) == 'LuaTestTrain')\n"
+        + "reloaded.vehicle.on_command_received(v, function(command, p1)\n"
+        + "    reloaded.memory.write(output, command, p1 and 1 or 0, 0)\n"
         + "end)\n"
-        + "maszyna.vehicle.send_command(v, 'battery', true)\n"
-        + "assert(maszyna.driver.send_command(v, 'SetVelocity', 40, 30))"
+        + "reloaded.vehicle.send_command(v, 'battery', true)\n"
+        + "assert(reloaded.driver.send_command(v, 'SetVelocity', 40, 30))"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"vehicle", source))
-    if not await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "battery", EVENT_MARGIN,
+    if not await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "battery", EVENT_MARGIN,
             "the command reported to the script"):
         return
 
-    assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(_output), 1.0)
     assert_eq(recording.commands, [["SetVelocity", 40.0, 30.0]])
 
 
@@ -225,8 +230,8 @@ func test_a_signalling_system_gets_the_script_event() -> void:
     SignallingServer.system_attach_implementation(system, recording)
     SignallingServer.system_set_name(system, &"lua_test_system")
     var source:String = (
-        "local system = maszyna.signal.find_system('lua_test_system')\n"
-        + "maszyna.signal.send_event(system, 'lights', { aspect = 'S1' })"
+        "local system = reloaded.signal.find_system('lua_test_system')\n"
+        + "reloaded.signal.send_event(system, 'lights', { aspect = 'S1' })"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"signal", source))
 
@@ -245,18 +250,18 @@ func test_a_script_throws_a_switch_found_by_its_name() -> void:
     TrackServer.track_update_curves(track, straight, diverging)
     TrackServer.track_update(track, TrackServer.TRACK_SWITCH, "lua_test_switch", SWITCH_TRACK_WIDTH)
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "local s = maszyna.track.find_switch('lua_test_switch')\n"
-        + "assert(maszyna.track.find_switch('lua_test_no_switch') == nil)\n"
-        + "maszyna.track.on_switch_changed(s, function(state)\n"
-        + "    maszyna.memory.write(output, state, 0, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "local s = reloaded.track.find_switch('lua_test_switch')\n"
+        + "assert(reloaded.track.find_switch('lua_test_no_switch') == nil)\n"
+        + "reloaded.track.on_switch_changed(s, function(state)\n"
+        + "    reloaded.memory.write(output, state, 0, 0)\n"
         + "end)\n"
-        + "maszyna.track.switch_set(s, 'diverging')\n"
-        + "assert(maszyna.track.switch_get(s) == 'diverging')"
+        + "reloaded.track.switch_set(s, 'diverging')\n"
+        + "assert(reloaded.track.switch_get(s) == 'diverging')"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"switch", source))
 
-    await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "diverging",
+    await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "diverging",
             EVENT_MARGIN, "the switch's movement reported to the script")
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(track)), TrackServer.TRACK_DIVERGING)
     TrackServer.track_free(track)
@@ -273,15 +278,15 @@ func test_a_script_reports_a_sensor_and_sets_a_route() -> void:
     SignallingServer.route_set_name(route, &"lua_test_route")
     SignallingServer.system_add_route(system, route)
     var source:String = (
-        "local output = maszyna.memory.find('lua_test_output')\n"
-        + "local sensor = maszyna.signal.find_source('lua_test_sensor')\n"
-        + "maszyna.signal.source_send_event(sensor, 'impulse', { polarity = 1 })  -- SOURCE_POLARITY_POSITIVE\n"
-        + "local route = maszyna.signal.find_route('lua_test_route')\n"
-        + "maszyna.signal.on_route_state_changed(route, function(state)\n"
-        + "    maszyna.memory.write(output, state, 0, 0)\n"
+        "local output = reloaded.memory.find('lua_test_output')\n"
+        + "local sensor = reloaded.signal.find_source('lua_test_sensor')\n"
+        + "reloaded.signal.source_send_event(sensor, 'impulse', { polarity = 1 })  -- SOURCE_POLARITY_POSITIVE\n"
+        + "local route = reloaded.signal.find_route('lua_test_route')\n"
+        + "reloaded.signal.on_route_state_changed(route, function(state)\n"
+        + "    reloaded.memory.write(output, state, 0, 0)\n"
         + "end)\n"
-        + "maszyna.signal.route_set(route)\n"
-        + "assert(maszyna.signal.route_state(route) == 'locked')"
+        + "reloaded.signal.route_set(route)\n"
+        + "assert(reloaded.signal.route_state(route) == 'locked')"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"route", source))
 
@@ -289,7 +294,7 @@ func test_a_script_reports_a_sensor_and_sets_a_route() -> void:
     assert_eq(recording.events[0][0], &"impulse")
     assert_eq(recording.events[0][1]["polarity"], SignallingServer.SOURCE_POLARITY_POSITIVE)
     assert_eq(recording.route_requests, [route] as Array[RID])
-    await wait_simulated_until(func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "locked",
+    await wait_simulated_until(func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "locked",
             EVENT_MARGIN, "the route's state reported to the script")
     SignallingServer.route_free(route)
     SignallingServer.source_free(sensor)
@@ -300,14 +305,14 @@ func test_the_cabs_are_reached_through_the_implementation() -> void:
     var cabin:RecordingCabin = RecordingCabin.new()
     ScenarioScriptServer.context_attach_cabin_implementation(_context, cabin)
     var controller:VehicleController = build_vehicle(
-            "LuaTestCab", null, 0.0, MaszynaDynamicData.DriverType.DRIVER_REAR)
+            "LuaTestCab", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_REAR)
     var source:String = (
-        "local v = maszyna.vehicle.find('LuaTestCab')\n"
-        + "local cabin = maszyna.cabin.driver_cabin(v)\n"
-        + "assert(cabin == maszyna.cabin.rear_cabin(v))\n"
-        + "assert(not (cabin == maszyna.cabin.front_cabin(v)))\n"
-        + "assert(maszyna.cabin.machine_room(v) == nil)\n"
-        + "assert(maszyna.cabin.act(cabin, 'main_switch', 'toggle') == true)"
+        "local v = reloaded.vehicle.find('LuaTestCab')\n"
+        + "local cabin = reloaded.cabin.driver_cabin(v)\n"
+        + "assert(cabin == reloaded.cabin.rear_cabin(v))\n"
+        + "assert(not (cabin == reloaded.cabin.front_cabin(v)))\n"
+        + "assert(reloaded.cabin.machine_room(v) == nil)\n"
+        + "assert(reloaded.cabin.act(cabin, 'main_switch', 'toggle') == true)"
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"cabin", source))
 
@@ -315,39 +320,39 @@ func test_the_cabs_are_reached_through_the_implementation() -> void:
     assert_eq(cabin.acts, [[rear_cabin, &"main_switch", &"toggle", null]])
 
 
-## maszyna.player, maszyna.camera and maszyna.hud reach PlayerServer, PlayerCameraServer and
+## reloaded.player, reloaded.camera and reloaded.hud reach PlayerServer, PlayerCameraServer and
 ## HUDServer by the scripts' vehicle handles
 func test_the_player_its_view_and_the_hud_are_reached_by_vehicle_handles() -> void:
     var track:RID = build_track(PLAYER_TRACK, PLAYER_TRACK_LENGTH)
     var node:RailVehicle3D = build_rail_vehicle("LuaPlayerTrain", PLAYER_TRACK, PLAYER_TRACK_LENGTH / 2.0)
     await wait_idle_frames(SETTLE_FRAMES)
     var source:String = (
-        "local v = maszyna.vehicle.find('LuaPlayerTrain')\n"
-        + "assert(maszyna.camera.mode() == 'free')\n"
-        + "maszyna.player.take_over(v)\n"
-        + "assert(maszyna.player.vehicle() == v)\n"
-        + "assert(maszyna.camera.mode() == 'cabin')\n"
-        + "maszyna.camera.toggle_cabin()\n"
-        + "assert(maszyna.camera.mode() == 'free')\n"
-        + "maszyna.camera.set_follow_view('bogie')\n"
-        + "assert(maszyna.camera.follow_view() == 'bogie')\n"
-        + "maszyna.camera.set_target(v)\n"
-        + "maszyna.camera.set_mode('follow')\n"
-        + "assert(maszyna.camera.target() == v and maszyna.camera.mode() == 'follow')\n"
-        + "maszyna.camera.show_vehicle(v)\n"
-        + "assert(maszyna.camera.mode() == 'free')\n"
-        + "maszyna.hud.show('lua_test_panel')\n"
-        + "assert(maszyna.hud.is_visible('lua_test_panel'))\n"
-        + "maszyna.hud.hide('lua_test_panel')\n"
-        + "maszyna.hud.open_card(v)\n"
-        + "assert(maszyna.hud.card() == v)\n"
-        + "maszyna.hud.close_card()\n"
-        + "assert(maszyna.hud.card() == nil)\n"
-        + "maszyna.player.leave()\n"
-        + "assert(maszyna.player.vehicle() == nil)\n"
-        + "maszyna.player.enter(v)\n"
-        + "assert(maszyna.player.vehicle() == v)\n"
-        + "maszyna.player.leave()"
+        "local v = reloaded.vehicle.find('LuaPlayerTrain')\n"
+        + "assert(reloaded.camera.mode() == 'free')\n"
+        + "reloaded.player.take_over(v)\n"
+        + "assert(reloaded.player.vehicle() == v)\n"
+        + "assert(reloaded.camera.mode() == 'cabin')\n"
+        + "reloaded.camera.toggle_cabin()\n"
+        + "assert(reloaded.camera.mode() == 'free')\n"
+        + "reloaded.camera.set_follow_view('bogie')\n"
+        + "assert(reloaded.camera.follow_view() == 'bogie')\n"
+        + "reloaded.camera.set_target(v)\n"
+        + "reloaded.camera.set_mode('follow')\n"
+        + "assert(reloaded.camera.target() == v and reloaded.camera.mode() == 'follow')\n"
+        + "reloaded.camera.show_vehicle(v)\n"
+        + "assert(reloaded.camera.mode() == 'free')\n"
+        + "reloaded.hud.show('lua_test_panel')\n"
+        + "assert(reloaded.hud.is_visible('lua_test_panel'))\n"
+        + "reloaded.hud.hide('lua_test_panel')\n"
+        + "reloaded.hud.open_card(v)\n"
+        + "assert(reloaded.hud.card() == v)\n"
+        + "reloaded.hud.close_card()\n"
+        + "assert(reloaded.hud.card() == nil)\n"
+        + "reloaded.player.leave()\n"
+        + "assert(reloaded.player.vehicle() == nil)\n"
+        + "reloaded.player.enter(v)\n"
+        + "assert(reloaded.player.vehicle() == v)\n"
+        + "reloaded.player.leave()"
     )
 
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"player", source))
@@ -360,15 +365,15 @@ func test_the_player_its_view_and_the_hud_are_reached_by_vehicle_handles() -> vo
 
 
 func test_the_original_api_runs_an_onstart_event() -> void:
-    ScenarioEventServer.memory_set_values(_output, "", 0.0, 5.0)
+    MaszynaScenarioEventServer.memory_set_values(_output, "", 0.0, 5.0)
     assert_true(ScenarioScriptServer.context_run_file(_context, "legacy_events.lua"))
     if not await wait_simulated_until(
-            func() -> bool: return ScenarioEventServer.memory_get_text(_output) == "legacy:lua_test_legacy_onstart",
+            func() -> bool: return MaszynaScenarioEventServer.memory_get_text(_output) == "legacy:lua_test_legacy_onstart",
             EVENT_MARGIN, "the onstart event run"):
         return
 
-    assert_eq(ScenarioEventServer.memory_get_value1(_output), 1.0)
-    assert_eq(ScenarioEventServer.memory_get_value2(_output), 0.0, "memcell_update writes every field")
+    assert_eq(MaszynaScenarioEventServer.memory_get_value1(_output), 1.0)
+    assert_eq(MaszynaScenarioEventServer.memory_get_value2(_output), 0.0, "memcell_update writes every field")
 
 
 func test_the_lua_keyword_records_the_script() -> void:

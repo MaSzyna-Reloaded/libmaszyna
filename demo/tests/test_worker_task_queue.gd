@@ -16,12 +16,12 @@ var _max_depth:int = 0
 
 
 func before_each() -> void:
-    _previous_game_dir = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURES_GAME_DIR)
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
 
 
 func after_each() -> void:
-    UserSettings.save_maszyna_game_dir(_previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func test_more_tasks_than_workers_return_results_by_id() -> void:
@@ -94,10 +94,10 @@ func test_waiting_runs_only_the_awaited_task() -> void:
 
 func test_threaded_includes_match_in_place_parsing() -> void:
     var in_place := MaszynaImporterContext.new()
-    SceneryInstancer.parse_file("threaded/root.scn", {}, in_place)
+    MaszynaSceneryProvider.parse_file("threaded/root.scn", {}, in_place)
 
     var queue := WorkerTaskQueue.new()
-    var threaded:MaszynaImporterContext = SceneryInstancer.parse_file_task(
+    var threaded:MaszynaImporterContext = MaszynaSceneryProvider.parse_file_task(
         "threaded/root.scn", {}, MaszynaImporterContext.new().get_state(), queue
     )
 
@@ -112,27 +112,27 @@ func test_threaded_includes_match_in_place_parsing() -> void:
 ## join the trainset where the include stands, with their own gaps and couplings
 func test_an_include_inside_a_trainset_keeps_its_place_in_it() -> void:
     var queue := WorkerTaskQueue.new()
-    var context:MaszynaImporterContext = SceneryInstancer.parse_file_task(
+    var context:MaszynaImporterContext = MaszynaSceneryProvider.parse_file_task(
         "trainset/root.scn", {}, MaszynaImporterContext.new().get_state(), queue
     )
 
     assert_eq(context.trainsets.size(), 2, "the trainset, and the dynamic outside it as one of its own")
-    var trainset:MaszynaTrainsetData = context.trainsets[0]
+    var trainset:TrainsetData = context.trainsets[0]
     assert_eq(trainset.track_name, "main_track")
     assert_eq(trainset.name, "express")
     assert_eq(trainset.timetable, "express", "its driver's timetable is named after it")
-    assert_eq(trainset.dynamics.map(func(dynamic:MaszynaDynamicData) -> String: return dynamic.vehicle_id),
+    assert_eq(trainset.vehicles.map(func(dynamic:MaszynaVehicleData) -> String: return dynamic.vehicle_id),
             ["first", "middle", "last"])
-    assert_almost_eq(trainset.dynamics[1].gap, 0.25, 0.001, "the included vehicle keeps its gap")
-    assert_eq(trainset.dynamics[1].coupling, 7, "and its coupling")
-    var lone:MaszynaTrainsetData = context.trainsets[1]
+    assert_almost_eq(trainset.vehicles[1].gap, 0.25, 0.001, "the included vehicle keeps its gap")
+    assert_eq(trainset.vehicles[1].coupling, 7, "and its coupling")
+    var lone:TrainsetData = context.trainsets[1]
     assert_eq(lone.track_name, "side_track")
     assert_eq(lone.timetable, "", "a dynamic outside a trainset has no timetable")
-    assert_eq(lone.dynamics.size(), 1)
+    assert_eq(lone.vehicles.size(), 1)
 
 
-func _describe(models:Array[MaszynaModelData]) -> Array:
-    return models.map(func(model:MaszynaModelData) -> Array: return [model.model_filename, model.position])
+func _describe(models:Array[ModelData]) -> Array:
+    return models.map(func(model:ModelData) -> Array: return [model.model, model.position])
 
 
 func _double(value:int) -> int:

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaSwitchAction" inherits="ScenarioEventAction" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's [code]switch[/code] event.
+	</brief_description>
+	<description>
+		Sets its switches to one track (switch_event, [code]Event.cpp:1824-1893[/code]). The blade speed and the second blade's delay it may carry are not ported.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="active_track" type="int" setter="set_active_track" getter="get_active_track" enum="TrackServer.SwitchTrack" default="0">
+			The track the switches are set to.
+		</member>
+		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
+			The [TrackServer] switch tracks set.
+		</member>
+	</members>
+</class>

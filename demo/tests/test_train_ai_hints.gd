@@ -6,7 +6,7 @@ var ai_hints: RailVehicleAIHints
 func before_each():
     train = build_vehicle("TestTrain")
 
-    ai_hints = MoverRailVehicleAIHints.new()
+    ai_hints = MaszynaMoverRailVehicleAIHints.new()
     train.add_component(ai_hints)
     await wait_idle_frames(2)
 

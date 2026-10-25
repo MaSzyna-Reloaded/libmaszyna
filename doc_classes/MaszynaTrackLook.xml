@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrackLook" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The textures and the section a [TrackData]'s feature is drawn with.
+	</brief_description>
+	<description>
+		A look of [MaszynaTrackLooks], in the .scn's own terms ([MaszynaTrackData]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="material1" type="String" setter="set_material1" getter="get_material1" default="&quot;&quot;">
+			The rails' texture, a road's surface.
+		</member>
+		<member name="material1_centre_line" type="String" setter="set_material1_centre_line" getter="get_material1_centre_line" default="&quot;&quot;">
+			A road's surface when it has a centre line; empty for [member material1].
+		</member>
+		<member name="material2" type="String" setter="set_material2" getter="get_material2" default="&quot;&quot;">
+			The trackbed's texture, a road's shoulders - drawn only where the road has them.
+		</member>
+		<member name="railprofile" type="String" setter="set_railprofile" getter="get_railprofile" default="&quot;default&quot;">
+			The rail profile the rails are drawn with.
+		</member>
+		<member name="tex_height" type="float" setter="set_tex_height" getter="get_tex_height" default="0.0">
+			As [member MaszynaTrackData.tex_height].
+		</member>
+		<member name="tex_length" type="float" setter="set_tex_length" getter="get_tex_length" default="0.0">
+			The length the textures cover [m]; 0 for the track's width (a road's).
+		</member>
+		<member name="tex_slope" type="float" setter="set_tex_slope" getter="get_tex_slope" default="0.0">
+			As [member MaszynaTrackData.tex_slope].
+		</member>
+		<member name="tex_width" type="float" setter="set_tex_width" getter="get_tex_width" default="0.0">
+			As [member MaszynaTrackData.tex_width].
+		</member>
+	</members>
+</class>

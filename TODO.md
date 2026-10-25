@@ -1,72 +1,85 @@
 # TODO
 
+Open work of libmaszyna. What is open in libreloaded, the core, is in its own `TODO.md` and
+`LIBMASZYNA_SPLIT.md`; the game's in `maszyna-reloaded`'s `TODO.md`.
+
+## Split from libreloaded
+
+What libreloaded's `LIBMASZYNA_SPLIT.md` leaves open on libmaszyna's side (details there, by number):
+
+* **LS-005** - libmaszyna is compiled into libreloaded's library (`plugin.cmake`,
+  `LIBRELOADED_PLUGINS`); it becomes a library of its own with `reloaded_plugin_create()`, a
+  manifest and its addon's `.pck`, once the core's plugin loader exists.
+* **LS-048** - the addon packed into `libmaszyna.pck`; its autoloads made by the plugin, not
+  added to the project by `libmaszyna.gd`.
+* **LS-064** - `addons/libmaszyna/traction/maszyna_traction_rendering_backend.gd` to C++, as the
+  track backend (`MaszynaTrackRenderingBackend`) already is, after libreloaded's
+  `TractionRenderingServer`.
+* **Found by the LS-023 classification** (libreloaded's `LIBMASZYNA_SPLIT_LS023.md` and
+  `TODO.md`) - not changed, the operator decides: the FIZ `AirLeakRate` scaled by 0.01 twice
+  (`fiz_train_brake_parser.gd`, `MaszynaMoverRailVehicleBrake.cpp`); config written to the Mover
+  that the vendored Mover never reads; properties nothing reads; Mover start modes no FIZ sets; the
+  `*_rpm` properties holding revolutions per second.
+* **`test_zzz_machine_room_low_poly_interior.gd` is red since the import** of libmaszyna `652c2348`
+  into libreloaded ("hi-fi cab 1 hides its low-poly counterpart", "camera should stay in the cabin
+  in the machine room"); the change that turned it red is not found yet.
+* **The track features table has only what the fixtures show**
+  (`addons/libmaszyna/scenery/maszyna_track_features.tres`): `1435mm/tpb*` crushed stone,
+  `asphalt*` asphalt, `*solidwhite*` a centre line. The operator fills in the rest of the game's
+  textures.
+
+## Past the core's extension points
+
+Found while documenting what libmaszyna plugs into libreloaded (`docs/architecture.md`); each one
+reaches past the core's extension points, and each is the operator's to decide (a public operation
+in libreloaded, or a change here):
+
+* `MaszynaSceneryProvider` and `maszyna_event_factory.gd` write `SceneryContentNode`'s private fields
+  (`_signalling_system_rids`, `_model_rids`, `_provider_rids`, `_event_system_rids`, `_scenery_radio`,
+  `_isolated_rids`, `_pickable_rids`, `_event_rids`) instead of handing them over by `content_own()`.
+* `MaszynaMaterialManager` sets `ReloadedMaterialServer.material_set_provider()` and never clears it
+  on leaving (the core's slot has no unset).
+* `MaszynaPlugin` sets the process-wide `VehiclePhysicsNode::set_controller_implementation()` - a
+  second vehicle plugin could not coexist.
+* `libmaszyna.gd` declares a setting in the core's namespace, `reloaded/scenery/lights/distance`,
+  read only by `MaszynaE3DRenderingServer`.
+* `MaszynaSceneryProvider` is an autoload only of `demo/project.godot`, not of `libmaszyna.gd`, and
+  it registers the driver (`MaszynaAIDriver`) and the traction backend in its `_enter_tree()` rather
+  than the plugin; it depends on the core's `TractionRenderingServer` autoload being first.
+
 ## Split from the game
 
 * `demo/examples/mover_demo.tscn` and `cabin_demo.tscn` point at `res://vehicles/sm42/*`, deleted in
   af72fa4c0 (`cabin_demo` also at the missing `environment/sky.gd`) - the simple Mover demo the
   demo is to keep does not load.
-* The core input actions live in both `demo/project.godot` and the game's `project.godot`: Godot
-  keeps no input map per addon.
-* A vehicle (`MaszynaRailVehicle3D`, `TrainSet3D`) is not rebuilt on
+* A vehicle (`MaszynaRailVehicle3D`, libreloaded's `TrainSet3D`) is not rebuilt on
   `GameDataServer.data_reload_requested` as models, cabs, tracks and materials are: a game directory
   set while `demo_3d` runs leaves its vehicles unbuilt until the scene starts again.
-* Tests, the demo and the game share one user directory (`MaSzyna-Reloaded`): a test setting
+* Tests and the demo share one user directory (`Libmaszyna-Demo`): a test setting
   `maszyna/game_dir` to the fixtures and restoring it in `after_each` undoes a directory the
   operator sets while the test runs.
-* libsimulator: the MaSzyna-independent core (servers, vehicles, player, HUD state) split out of
-  libmaszyna.
 
 ## Architecture rework (#184)
 
 Each stage is one PR, titled `(#184) <area> - <what>`, and leaves the game runnable.
 
-* **B** - the five common values (`velocity`, `speed`, `mass_total`, `total_distance`,
-  `direction`): only the first two have a server getter.
-* **C** - `vehicle_component_create` does not exist: components still come from
-  `ClassDBSingleton::instantiate()`/`memnew`. `vehicle_generic_component_find` has no callers.
-  `GenericVehicleComponentNode` finds its vehicle via `get_parent()` - turning it round changes
-  how a modder authors a component, to be decided first. A script component still publishes
-  through `_get_component_state` instead of being walked for its variables
-  (`PROPERTY_USAGE_SCRIPT_VARIABLE`). The dump mixes nine `prefix/key` namespaces with flat
-  `component_key` names.
-* **D** - a vehicle assembled by hand out of nodes is still built by `VehiclePhysicsNode`;
-  registering the name and the commands still hangs off `attach_to_system()`.
-* **E - not started.** None of the ~20 proxy nodes; no `VehicleControllerNode`.
-* **G** - 9 cabin scripts still take the whole dump; `cabin_windscreen_wipers.gd` does it per
-  frame.
+* **G** - cabin scripts still take the whole dump (libreloaded's `cabin_windscreen_wipers.gd` does
+  it per frame).
 * **H - not started.** No `UpdatePhase`; the order is hand-written in
   `MaszynaMoverVehicleServer::stepping_advance()`. Check it against
   `TMoverParameters::ComputeMovement`/`Update` and the three ordering bugs on record (#57 line
   breaker, `Mred`, `roof_light_enabled`). A `test_vehicle_doors.gd` must exist first -
   `RailVehicleDoors` ticks and has no test.
 * **Scenery teardown vs. streaming** (`FINDINGS.md`, 2026-09-22): the preload
-  (`e3d_model_manager.gd::load_model`, a full `ResourceLoader.load()`) creates renderer resources
-  off the main thread, so a teardown overlapping a running stream can still race. Remedy: parse on
-  the worker, build on the main thread. Reproduce by clearing `user://cache/rail_vehicle` and
-  `fiz` and running `test_zzz_ep07_cabin_main_switch`.
+  (`maszyna_e3d_model_manager.gd::load_model`, a full `ResourceLoader.load()`) creates renderer
+  resources off the main thread, so a teardown overlapping a running stream can still race. Remedy:
+  parse on the worker, build on the main thread. Reproduce by clearing `user://cache/rail_vehicle`
+  and `fiz` and running `test_zzz_ep07_cabin_main_switch`.
 * **Fixture .fiz files differ from the current game data**: `sr61v1.fiz` lacks
   `DirChangeMaxPos=2`, the ED72/EN57 cars have `BM=P10-Bg BSA=16` where the game has
   `BM=P10-Bgu BSA=5`. Decide whether to refresh them from the game dir (copy only).
 * **The `.fiz` path has not been run in the game** since the components stopped being nodes -
   only in tests.
-
-### Rail concepts in interfaces named "Vehicle"
-
-Rail-only interfaces under generic names (rail-term count per header): `RailVehicleBrake` 43,
-`RailVehicleElectricEngine` 34, `RailVehicleBuffCoupl` 13, `RailVehicleWheels` 12,
-`RailVehicleSecuritySystem` 2, `RailVehicleSpringBrake`/`RailVehicleElectroPneumaticDynamicBrake`
-1-3. Either rename to `Train*` (cost: `RailVehicleWheels` 13 files / 50 mentions,
-`RailVehicleBrake` 24 / 283) or split a generic base from a rail subclass - only once something
-road-side shares the base.
-
-### What still reaches a class by name from C++
-
-Our own classes still in GDScript, fixed when their base moves to C++:
-
-| Class | Named accesses | Where |
-| --- | --- | --- |
-| `E3DModelInstance` | 3 | `get_e3d_instance`, `e3d_instance_created` (connect, disconnect) in `RailVehicle3D` |
-| `TrackCurve` | 10 | `p1`, `c1`, `c2`, `p2`, `roll1`, `roll2` in `TrackServer` and `RailVehicleServer` |
 
 ### Readers still on the state dump
 
@@ -76,61 +89,34 @@ Our own classes still in GDScript, fixed when their base moves to C++:
 
 ### What still reaches the vehicle's controller
 
-* Typed server getters to add: `VehicleServer` - `vehicle_get_direction`, `vehicle_get_power`,
-  `vehicle_get_max_velocity`, `vehicle_get_mass_total`; `RailVehicleServer` -
+* Typed server getters to add in libreloaded: `VehicleServer` - `vehicle_get_direction`,
+  `vehicle_get_power`, `vehicle_get_max_velocity`, `vehicle_get_mass_total`; `RailVehicleServer` -
   `vehicle_get_train_type`, `vehicle_get_coupler_stretched`, `vehicle_get_train_damage`; the load
-  through its component. Move onto them the AI (`maszyna_legacy_driver_*`, `ai_driver`,
-  `auto_rewident`, `station`), sound (`train_sound_system`, `brake_sound_model`,
-  `running_sound_model`), `external_camera.gd`, `RailVehicleRenderingServer.cpp` (smoke, load) and
-  the start-up tests' helper, so only assembling a vehicle keeps the controller
-  (no `vehicle_get_controller(` outside assembly); `CODE_STYLE.md` still allows
-  `controller.max_velocity`.
+  through its component. Move onto them the AI (`ai_driver/maszyna_*`, `maszyna_auto_rewident.gd`),
+  sound (`train_sound_system`, `brake_sound_model`, `running_sound_model`),
+  `MaszynaE3DRailVehicleRenderingServer.cpp` (smoke, load) and the start-up tests' helper, so only
+  assembling a vehicle keeps the controller (no `vehicle_get_controller(` outside assembly);
+  `CODE_STYLE.md` still allows `controller.max_velocity`.
 * The AI's fallbacks and copies of the Mover's defaults -> typed server getters, no invented
-  values: `driver_braking.gd:799, 975, 982`, `driver_pantographs.gd:46, 70, 78`,
-  `driver_traction.gd:133-134, 324, 330, 380-393, 479`, `ai_driver.gd:695, 874`.
+  values: `maszyna_driver_braking.gd`, `maszyna_driver_pantographs.gd`,
+  `maszyna_driver_traction.gd`, `maszyna_ai_driver.gd` (the line numbers were the game's copy's,
+  before the AI came here - to be found again).
 * Where the original's AI bypasses the cab (`driverhints.cpp`: `mvOccupied->RelayReset()`, ...),
   the AI sends `VehicleServer.vehicle_send_command()`, not `CabinSystem.act()`: `fuse_bt` and
-  `converterfuse_bt` (`MaszynaLegacyDriverHints.BUTTONS`).
-* `LegacyCabinDirectionKey` (`legacy/cabin/direction_key.gd`) reads `direction` from the dump
-  until there is `vehicle_get_direction()`.
-
-### Source layout - the GDScript side
-
-The MaSzyna-specific scripts of `addons/libmaszyna/` outside `legacy/` (e.g. `sound/maszyna_*`)
-are still to decide and move (preload/`res://` paths and `.tscn`/`.tres` references follow).
-
-## Player and HUD
-
-The game's screens and HUD are the game repository's (`MaSzyna-Reloaded/maszyna-reloaded`), and
-so is their open work.
-
-* The developer console (`addons/libmaszyna/console/console.gd`) still reads keycodes for
-  Ctrl+~ (size), Escape, the arrows, Page Up/Down and Tab - only its toggle is an action
-  (`console_toggle`).
-* `PlayerServer.player_enter_vehicle()` into a vehicle of the trainset the player drives (the
-  game's vehicle card "Enter cabin") leaves the trainset with nobody at the controls: the driver
-  the take-over made an observer gets the controls back only for another trainset
-  (`trainset_left_drivers_take_control`), and a gangway walk back keeps the player an observer -
-  the chip shows the vehicle unmanned until Q, F5 or the chip (reports#16). Left as it is on the
-  operator's decision; what an observer visit should do to the trainset is open.
+  `converterfuse_bt` (`MaszynaDriverHints.BUTTONS`).
+* `MaszynaCabinDirectionKey` (`cabin/direction_key.gd`) reads `direction` from the dump until
+  there is `vehicle_get_direction()`.
 
 ## Cabins
 
 * **Next, right after the split commit (operator, 2026-10-09):** the occupancy layer drives the cabs
-  by plain vehicle commands instead of `set_driver_cabin_kind()` (`RailVehicleServer.cpp:1007`):
-  `cabin_activate` (today's `cab_activation`), `cabin_change` (`ChangeCab()`, Mover.cpp:736) and,
-  if decided, `cabin_occupy`. Every `cab_*` command renamed to `cabin_*` at once. Open: whether
-  `CabOccupied` is the vehicle's control state (any sender may set it) or the persons' fact (only
-  `RailVehicleServer` sends it) - the first changes `CODE_STYLE.md`, "A vehicle is commanded, not
-  called". `mover_demo` then activates its cab without a seated person.
+  by plain vehicle commands instead of `set_driver_cabin_kind()` (libreloaded's
+  `RailVehicleServer.cpp:1395`): `cabin_activate` (today's `cab_activation`), `cabin_change`
+  (`ChangeCab()`, Mover.cpp:736) and, if decided, `cabin_occupy`. Every `cab_*` command renamed to
+  `cabin_*` at once. Open: whether `CabOccupied` is the vehicle's control state (any sender may set
+  it) or the persons' fact (only `RailVehicleServer` sends it) - the first changes `CODE_STYLE.md`,
+  "A vehicle is commanded, not called". `mover_demo` then activates its cab without a seated person.
 
-* **Cab elements run on a clock of their own** (`SimulationClock`, the simulation's time in their
-  `_process`): every `BaseCabinTool3D` (buttons, switches, knobs, gauges, blinkers), the lamps and
-  lights (`CabinIndicator3D`, `CabinSpotLight3D`, `CabinOmniLight3D` - which also poll the vehicle
-  every 0.1 s) and the windscreen wipers. Their state belongs to the simulation step (#301): taken
-  on an event of `CabinSystem` after a step and after a command; what they show - a lever's
-  travel, a lamp's blinking, a light's fade - is the presentation, interpolated between the
-  previous and the current step's state in the render frame, as #301 lays out for the vehicles.
 * **Gauges that gate their command but have no catalog entry yet** - when ported, they get
   `requires_gauge` (Train.cpp line in brackets): `antislip_bt` (2232), `nextcurrent_sw` (1584),
   `signalling_sw` (2602), `converterlocal_sw` (4463), `compressorlocal_sw` (4629).
@@ -139,8 +125,8 @@ so is their open work.
   render modes they have now (`CODE_STYLE.md`, "A shader variant is a file"). A vehicle's glass
   uses the blended variant, so the first vehicle near the camera compiles it in the game.
 * **A translucent skin submodel is forced whether or not the skin has an alpha channel**
-  (`E3DInstanceBackend::_submodel_translucency()`); the original draws it in the alpha pass only
-  when it has one (`DynObj.cpp:331-346`, `textures_alpha`).
+  (`MaszynaE3DInstanceBackend::_submodel_translucency()`); the original draws it in the alpha pass
+  only when it has one (`DynObj.cpp:331-346`, `textures_alpha`).
 
 ### Controls not in the cab yet
 
@@ -152,7 +138,7 @@ Each needs a catalog entry and, where missing, a vehicle command (with its `type
 
 * The E186 screen's pantograph page (`traxx_renderer.py`) toggles its "odbiornik prądu"
   1 / 2 / 1+2 without OP1/OP2 being pressed - not checked against the original.
-* `MoverRailVehicleEnginePowerSource::pantograph()` opens the master valve itself when a
+* `MaszynaMoverRailVehicleEnginePowerSource::pantograph()` opens the master valve itself when a
   pantograph is raised (1c0c044); the original opens it only from pantselected_sw or by its start
   mode (`PantEPValveStart`). Remove it once every cab has a way to the master valve.
 * Light presets: `SetLights` runs on a preset change only - the original also runs it on cab
@@ -174,32 +160,28 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 `i-doorpermit_left:`/`_right:`, Train.cpp:11754, 12033, 8511-8516) blink by
 `DoorsPermitLightBlinking` unless a door of that side in the trainset is open.
 
-### Mouse operation (CabinHUDMouseSystem) - not ported from drivermouseinput.cpp
+### Mouse operation of the MMD cabs
 
-* Absolute slider for the `*set` levers: `mouse_slider` maps 60% of the window height onto the
-  whole range (drivermouseinput.cpp:27-155).
-* Right button as the control's second binding (decrease), panning only off a control
-  (drivermouseinput.cpp:405-414).
-* Repeat rate growing with the cursor's distance while held (drivermouseinput.cpp:437-443,
-  482-484), and the Shift "fast" variants (:418-428).
-* Debug-mode tooltip with the submodel name (drivermode.cpp:377-382).
-* Key hints only for the first widget of a label (mmd_cabin_instancer.gd:396).
+The mouse system itself is libreloaded's (`CabinHUDMouseSystem`); what is left of
+drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
+
+* Key hints only for the first widget of a label (`mmd_cabin_instancer.gd`, `_build_widget()`).
 * **Brake valve drag direction - cause not found.** `brakectrl` forces its signs in the catalog
-  (`"mouse_drag_signs"`) because the grip heuristic (`_increase_signs`) got SM42's valve backwards
-  in game while a headless check predicted it right. Find what differs in game (6d/6d1/6da have
-  opposite `rot` signs, the occupied cab, the cab's transform), then drop the force.
-* Captions are taken when a control is built - a language change shows after re-entering the cab.
-* Hand-authored cabin scenes register no occluders.
-* EP07: round buttons get a rectangular outline. First dump the button's submodel (AABB, faces,
-  alpha texture): a quad with an alpha-tested texture outlines as its quad.
+  (`"mouse_drag_signs"`) because the grip heuristic (libreloaded's `_increase_signs`) got SM42's
+  valve backwards in game while a headless check predicted it right. Find what differs in game
+  (6d/6d1/6da have opposite `rot` signs, the occupied cab, the cab's transform), then drop the
+  force.
+* Captions are taken when a control is built (`MmdCabControlCaptions`) - a language change shows
+  after re-entering the cab.
 
 ### Python integration
 
 * **Windows runtime tested under wine only** - `maszyna-python-host.64.exe` with Steam MaSzyna's
   `python27.dll` and `python64/` starts and renders a PIL screen; not yet on a player's Windows.
-  `make python-runtime` builds only the Linux one.
-* **`maszyna-python-host` in an export** (`[dependencies]` of `libmaszyna.gdextension`): not yet
-  seen in an exported game; on Linux its executable bit must survive the export.
+  libreloaded's `make python-runtime` builds only the Linux one.
+* **`maszyna-python-host` in an export** (`[dependencies]` of libreloaded's
+  `libreloaded.gdextension`, LS-009): not yet seen in an exported game; on Linux its executable bit
+  must survive the export.
 * **Non-ASCII paths on Windows**: CPython 2.7 takes paths in the ANSI code page, the host hands
   it UTF-8 (`maszyna/python/home` set to an absolute path, the game directory and the scripts'
   paths). The default home is relative, so only a game directory outside the code page breaks.
@@ -233,13 +215,12 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   unmapped.
 * Shift+V/Ctrl+V (pantograph compressor) in cab 0 of the pantograph unit without
   `pantcompressor_sw` (`Train.cpp:2872`, `2915`).
-* `CabinSwitch` has no `mesh_rotation_offset`/`mesh_position_offset`, so the MMD offset is dropped
-  (e.g. SM42 `dirkey: kier rot -0.09 0.01`, `Gauge.cpp:456`); `CabinButton` already has them.
 * Rest of TDynamicObject::Update's driver block (DynObj.cpp:3240-3400): the ED/PN brake force
   split of an induction motor trainset, `EqvtPipePress = GetEPP()`, the unpowered-car copy of
   MainCtrlPos/SpeedCtrl (DynObj.cpp:3272-3276).
-* Wheels turn at half speed: `MoverRailVehicleWheels` adds `rad_to_deg(V*dt/D)`, the original
-  `rad_to_deg(2*V*dt/D)` (DynObj.cpp:3780-3784 at df5a8a8). Waiting for the operator.
+* Wheels turn at half speed: `MaszynaMoverRailVehicleWheels` adds `rad_to_deg(V*dt/D)`, the
+  original `rad_to_deg(2*V*dt/D)` (DynObj.cpp:3780-3784 at df5a8a8);
+  `test_rail_vehicle_wheel_angles.gd` checks only the front/rear ratio. Waiting for the operator.
 * Source citations drifted: many `DynObj.cpp`/`Train.cpp`/`Mover.cpp` line numbers point at an
   older checkout. Refresh against one named revision.
 * EIM `Imaxrpc` and `BRVto` (Mover.cpp:11304-11305) - the vendored Mover lacks them.
@@ -251,26 +232,14 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `doorpermitpreset_sw:`, `distancecounter_sw:`, `universal0-8:`, gauges `brakepressb:`,
   `limpipepress:`, `clock:`, lamps `i-mainpipelock:`, `i-tempomat:`, `i-malfunction:`. Four
   pantographs (`CollectorsNo=4`); the wrapper animates two.
-* `LegacyCabinBattery`, `LegacyCabinCabActivation`, `LegacyCabinManualBrake`, `LegacyCabinWipers`
-  only register what `LegacyCabinUnmodelledControls` registers anyway - fold them in.
-* A tile's placeholder guesses its width (`TileGrid.PLACEHOLDER_STRETCH`): FIZ `Dim=` is parsed
-  nowhere for `MaszynaSceneryInfo.Vehicle`.
-* **Cab shake** (`Cabin3D::_process_engine_shake()`, `TDynamicObject::update_shake`,
-  DynObj.cpp:8048-8137): the acceleration-driven base shake (`AccN`, `AccVert`, `AccSVBased` with
-  `Global.ShakingMultiplier*`, `:8102-8109`) and the hunting shake (`:8083-8097`) are not ported,
-  and the cab shakes only when its vehicle has a diesel engine - the original's base shake moves
-  every cab (`:8064-8065` limits only the engine's vibration to a diesel).
-
-## Translations
-
-* Units (`km/h`, `bar`, `%d m`, ...) are not msgids.
+* `MaszynaCabinBattery`, `MaszynaCabinCabActivation`, `MaszynaCabinManualBrake`,
+  `MaszynaCabinWipers` only register what `MaszynaCabinUnmodelledControls` registers anyway - fold
+  them in.
+* A tile's placeholder guesses its width (the game's `TileGrid.PLACEHOLDER_STRETCH`): FIZ `Dim=` is
+  parsed nowhere for `MaszynaSceneryInfo.Vehicle`.
 
 ## Sounds
 
-* **The UI's sounds follow the simulation's speed too** (`AudioServer.playback_speed_scale`). To
-  do: a pitch multiplier on `SfxPlayer`/`SfxPlayer3D` (vendored `gnd-sfx`,
-  `sfx_playback_runtime.gd:1191`) set on the vehicles' and the weather's players, and the global
-  scale left at 1.
 * MMD offsets of non-running sounds are used raw - not turned 180 degrees like the model
   (`MASZYNA_VEHICLE_FRAME`), so horns, compressor, brakes etc. sit mirrored (x, z). Running sounds
   convert (`MmdSoundBankInstancer._build_running_events()`).
@@ -289,12 +258,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   bookend (`sound.cpp:360-367`); pressure rates reset when a bank is silenced;
   `TrainSoundSystem._process()` counts the `fmod` remainder twice for far banks. Not compared by
   ear with the original.
-* The gnd-sfx tick is GDScript on a worker (12 ms/frame for 200 players, headless). If it limits,
-  move the runtime to a C++ singleton.
-* Scenery sounds (`ScenerySoundServer`): a one-shot played out of reach is not heard when the
-  camera arrives mid-clip; a loop restarts when it comes back into reach; `sound_create()` setting
-  `max_tracks` rebuilds the voices; a loop asked for during a one-shot starts only when back in
-  reach (`scene.cpp:148-152`).
 
 ## Vehicles
 
@@ -307,8 +270,8 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `brake_force` 0.0 while the train creeps on at 0.05-0.1 km/h; the loco itself 365 kN (hand brake
   20, independent brake full, handle 6). "182/183 do not brake" - check the wagons' `BrakeForce()`
   inputs (NBpA, BCN, the brake's friction) first.
-* **Left of the move of the state to its owners**: `MoverRailVehicleBrake` fills the brake valve
-  and the compressor for a wagon too; the master controller's, reverser's and cab's commands
+* **Left of the move of the state to its owners**: `MaszynaMoverRailVehicleBrake` fills the brake
+  valve and the compressor for a wagon too; the master controller's, reverser's and cab's commands
   (`main/second_controller_*`, `direction_*`, `cab_activation*`, `cab_change`) and the cab
   activation config are still the controller's; `ground_relay_reset` and
   `cntrl_ground_relay_start_mode` are the controller's while the relays are the engine's;
@@ -316,33 +279,32 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   per call.
 * **A vehicle's first build costs ~50-140 ms on the main thread** (headless, warm caches): the
   `instance_build()` of each model 12-40 ms, nearly all of it the materials created for the first
-  vehicle of a type and skin (`MaterialManager.get_submodel_material()`: `.mat` parse, DDS loads,
-  path resolution) - the same model built again with its materials held takes ~1 ms. A vehicle
-  coming within the draw distance is one such stall a frame (`BUILD_BUDGET_MSEC`); moving the
-  material and texture reads to a preload thread is the item below.
+  vehicle of a type and skin (`MaszynaMaterialManager.get_submodel_material()`: `.mat` parse, DDS
+  loads, path resolution) - the same model built again with its materials held takes ~1 ms. A
+  vehicle coming within the draw distance is one such stall a frame (`BUILD_BUDGET_MSEC`); moving
+  the material and texture reads to a preload thread is the item below.
 * **"has no skins set, but submodel requires material #3"** for `pkp/11xa_v2` and `pkp/14xa_v1`:
   check what the original draws for a replaceable skin index the skin has no file for, and warn
   once per vehicle type, not per submodel and vehicle.
-* **Road vehicles return with roads:** a vehicle on an unregistered track (every road) is left out
-  at load (`SceneryInstancer._attach_objects()`).
 * **The stepping of parked vehicles** (Wrzosy, profiling build, after the neighbour scan cache):
   the step is 30.9% of the main thread - forces and movement ~8%, the remaining neighbour scans
   ~4% (vehicles near moving ones), placements reported to rendering ~5%. Parked EMUs/DMUs keep
   their physics on by the Mover's own rule (Mover.cpp:4487-4489).
 * **WeatherNode costs ~16 ms a frame** on Wrzosy with one rain volume - measure inside.
 * **Textures loaded on the streaming's preload threads**: every owner's preload parses the `.mat`
-  and loads all its textures into `MaterialManager`'s cache, the build only assembles. Measure
-  before and after with the Braniewo route probe under `gamescope --backend headless`; the disk
-  cache removal is not measured yet either.
+  and loads all its textures into `MaszynaMaterialManager`'s cache, the build only assembles.
+  Measure before and after with the Braniewo route probe under `gamescope --backend headless`; the
+  disk cache removal is not measured yet either.
 * **Braniewo station renders ~5400 draw calls and ~11 M triangles a frame** (~30 fps on an
   RX 580).
 * **One `SfxBank` per vehicle type** instead of per vehicle: needs `random_choices`,
-  `pitch_variation` and `start_fraction` per player in the vendored gnd-sfx.
-* The vehicle build exceeds `MaszynaLegacyVehicleSystem.BUILD_BUDGET_MSEC` (~16 ms a vehicle).
+  `pitch_variation` and `start_fraction` per player in libreloaded's vendored gnd-sfx.
+* The vehicle build exceeds `MaszynaVehicleSystem.BUILD_BUDGET_MSEC` (~16 ms a vehicle).
 * Vehicles and the editor:
-  * "Edit FIZ" (`RailVehicleRenderingServer.vehicle_set_editable()`) shows the exterior and the
-    low-poly interior as nodes; the passengers, attachments, coupler adapters and cargo stay
-    instances, and nothing edited there is kept - the nodes are built again from the model.
+  * "Edit FIZ" (libreloaded's `RailVehicleRenderingServer.vehicle_set_editable()`) shows the
+    exterior and the low-poly interior as nodes; the passengers, attachments, coupler adapters and
+    cargo stay instances, and nothing edited there is kept - the nodes are built again from the
+    model.
   * Trainsets tab: "Show" puts marker nodes and selects them; a hand-made `TrainSet3D` lists no
     vehicles right after its scene is opened.
   * Vehicles tab (spawner): a vehicle is placed only by a track name and offset [m]; spawning at
@@ -351,7 +313,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   * Operator's direction: a toolbar tool "Make trainset" for 1+ selected `MaszynaRailVehicle3D`s
     puts them into a new `TrainSet3D`; vehicles that belong to a trainset are detached from it
     into the new one.
-  * The HUD's "remove trainset" frees only vehicles built from MaSzyna data.
   * A vehicle coming within detail distance is built twice
     (`instance_attach_object_instance_id()` then `instance_set_instancer()`).
   * `compiled.nodes` still carries the Time/Config/Atmo nodes.
@@ -359,21 +320,16 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
     disconnect in `_exit_tree()` what they connected once; `!is_inside_tree()` transform reads -
     count again.
 * A distant vehicle's low-poly interior keeps its baked emission:
-  `instance_set_emission_energy()`/`instance_set_submodel_emission_energy()` reach only the NODES
+  `instance_set_emission_energy()`/`instance_set_part_emission_energy()` reach only the NODES
   backend.
 * The low-poly interior's compartment and corridor sections stay unlit (`DynObj.cpp:1334-1352,
   2425-2433`, CompartmentLights).
-* No test for `RailVehicleRenderingServer`'s low-poly cab lights, nor for the lamps drawn from the
-  lighting (`_update_lights()`).
-* `MaszynaVehicleStructure` and `RailVehicleAppearance` - candidates for a better name.
-* `RailVehicleServer.trainset_move(vehicle, distance)` takes a vehicle RID - rename (e.g.
-  `vehicle_move_coupled`).
-* A vehicle without a start track does not move by its own velocity (the KA car in `demo_3d`).
-  Decide whether `RailVehicleServer` should move off-track vehicles.
-* `RailVehicleLighting::LightEnd` duplicates `RailVehicleController::CouplerEnd`.
+* No test for `MaszynaE3DRailVehicleRenderingServer`'s low-poly cab lights, nor for the lamps drawn
+  from the lighting (`_update_lights()`).
+* `MaszynaVehicleStructure` and `MaszynaRailVehicleAppearance` - candidates for a better name.
 * The 8 m shift of a trainset's first vehicle on a track with `Event0`
   (simulationstateserializer.cpp:1050-1057).
-* The `structure-vN` tag (`maszyna_rail_vehicle_3d_manager.gd`) is bumped by hand.
+* The `structure-vN` tag (`maszyna_vehicle_system.gd`) is bumped by hand.
 * `LoadFIZ_Cntrl` start modes `CompressorStart`, `PantCompressorStart`, `MainStart`,
   `ConverterOverloadWhenMainIsOff` (Mover.cpp:10905-10925) are not parsed; their properties belong
   on `VehicleController`, not `RailVehicleElectricEngine`. The `converter` command is still an
@@ -386,79 +342,51 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * Tests still take the controller and call it directly; "tests go by RID" is not done.
 * `demo/examples/mover_demo.*` and the `custom_*_train_part` examples assume components as nodes
   and do not run.
-* `README.md`, "No simulation time is ever dropped": describes `step_frame()`, owed time and
-  `MAX_PHYSICS_ITERATIONS`, none of which exists - rewrite from
-  `MaszynaMoverVehicleServer::stepping_advance()` and `SimulationServer`.
-* The vehicle selector lacks "Stop and repair", "Reset position", "Refill main tank" and "Rupture
-  main pipe" (vehicleparams.cpp:268-287).
-* The vehicle whose card is open is not marked in the world (idea: a diamond marker with its
-  distance).
-* A vehicle is clicked in free camera only while its model is detailed; its tooltip shows the
-  name taken at registration.
 * **Headlight properties nobody reads**: `RailVehicleLighting.head_light_color` and the normal
   and high-beam multipliers are parsed but not drawn - the original tints and scales the head
   lights by them (`rendering/lightarray.cpp:78-109`); the wrapper applies only the dimmed
-  multiplier (`RailVehicleRenderingServer.cpp:1404`) and a fixed 1.0 otherwise
-  (`E3DNodesBackend.cpp:110`), and has no high beam. `instrument_type` has neither a writer nor a
-  reader.
+  multiplier (`MaszynaE3DRailVehicleRenderingServer.cpp:1125-1126`) and a fixed 1.0 otherwise
+  (`MaszynaE3DNodesBackend.cpp:112`), and has no high beam. `instrument_type` has neither a writer
+  nor a reader.
 * `RailVehicleBrake.friction_elements_per_axle` defaults to 1, the original's `NBpA` to 0
   (`MOVER.h:1607`), which decides `Mover.cpp:5225`.
-* The switch blade is stepped on the wall clock (`TrackServer`, `Time::get_ticks_usec()`), the
-  original's on the simulation's delta (`Track.cpp:1944`).
-* **The second configuration pass runs only with the whole vehicle**
-  (`VehicleController::apply_configuration()`): a component applied again alone - `apply_config()`,
-  `add_component` to a running vehicle, the wipers' count from the appearance - does not run
-  `apply_vehicle_config()`.
 
 ## Rendering
 
-* **GPU 22 ms of a 33 ms frame** (RX 580, 3607 draw calls) - measure on `make compile-profiling`
-  and split by pass before any hypothesis.
-* **Mirror reflections (`PlanarMirror3D`) are smeared** (Impuls 36WEa, `td_impuls`). Not
-  measured: TAA on the per-frame overlay, the mirror camera's framing/projection
-  (`mirror_view_projection`), the texture size in game. Dump the mirror's viewport texture from a
-  running game first.
-* **A light's submodels have two managers**: `E3DRenderingServer` (`lights_state`) and the cab
-  widgets (`CabinIndicator3D`, `CabinSpotLight3D`) writing `visible`; the widgets should ask the
-  model.
+* **GPU 22 ms of a 33 ms frame** (RX 580, 3607 draw calls) - measure on libreloaded's
+  `make compile-profiling` and split by pass before any hypothesis.
+* **A light's submodels have two managers**: `MaszynaE3DRenderingServer` (`lights_state`) and the
+  cab widgets (libreloaded's `CabinIndicator3D`, `CabinSpotLight3D`) writing `visible`; the widgets
+  should ask the model.
 
 ### Self-illumination of light submodels
 
-* `E3DModelInstance` nodes never light automatically: `_merge_lights_state()`
-  (`e3d_model_instance.gd:214`) pushes `false` as an override for every light.
+* `MaszynaE3DModelInstance` nodes never light automatically: `_normalize_lights_state()`
+  (`maszyna_e3d_model_instance.gd:278`) pushes `false` for every light not set.
 * A `colored` light submodel has no emission (`COLORED_MATERIAL` first).
 * `lightcolors` do not tint the submodel (`SetDiffuseOverride`, `AnimModel.cpp:625`).
 * Baked, not per frame: the original lights while `Global.fLuminance < fLight`
-  (`opengl33renderer.cpp:3452`); `material_manager.gd:118` decides once.
+  (`opengl33renderer.cpp:3452`); `maszyna_material_manager.gd:371` decides once.
 * Emission 1.0 after AgX unmeasured - needs a rendered frame of the operator's scenery.
 
 ### Smoke emitters
 
+The emitters are drawn by libreloaded's `SmokeServer`; what is left of `particles.cpp` there is in
+libreloaded's `TODO.md`.
+
 * Vertical decay (`particles.cpp:365-380`): needs `Global.AirTemperature` (a `#define` in the
   vendored Mover), overcast and speed.
-* `MaszynaEnvironmentNode.wind_direction` cannot express a vertical part.
-* The culling box follows the emitter, not the plume (`opengl33particles.cpp:38`,
-  `particles.cpp:284-291`).
 * `min_inclination` dropped (only `smokesource_st45`).
-* Lifetime per emitter, per particle in the original (`particles.cpp:132`).
-* The "Modern" flipbook repeats visibly - needs variants.
-* Smoke is lit by Godot's sun, not the original's daylight modulation
-  (`opengl33particles.cpp:60-66`).
 * Vehicle emitters are not switched off beyond `2 * BaseDrawRange * fDistanceFactor`
   (`particles.cpp:452`).
 
 ### Other
 
-* A vehicle's detection area stays in the physics space while its node is out of the tree.
 * E3D: VNT1, VNT4+ userdata and TRA1 are not read (no data uses them, `Model3d.cpp:1977`, `:2135`).
 * T3D: `priorityLoadText3D` (`Model3d.cpp:1634`), the "banana" root (`Model3d.cpp:2447`), a
   material's `selfillum` (`Model3d.cpp:483`); `stars`/`point` not drawn; `hotspotpower:` /
-  `light_energy` not passed by `E3DModelBuilder`.
+  `light_energy` not passed by `MaszynaE3DModelBuilder`.
 * Vehicle headlamps and cab lights not measured for shadow acne at night.
-* Skydome: an option to disable `light_angular_distance` (`FINDINGS.md`, 2026-09-20).
-* Skydome installs the sun shafts effect twice at start ("Installed sunshafts compositor effect"
-  printed twice before `(Re)Initialized`); the earlier one is removed, but the install runs twice.
-  The D3D12 crash fix (`FINDINGS.md`, 2026-10-06) is unconfirmed on Windows until a player reports.
 * **Windows: td.scn ends the game without a message** (RTX 4080 SUPER, Vulkan, build
   20261007-1333). The `--verbose` log ends at starting the Python interpreter and `--no-python`
   runs without fault (`docs/findings-archive.md`, 2026-10-09): Python now runs in
@@ -467,7 +395,8 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `--verbose 2> stderr.txt` from `cmd`, the event log's faulting module and exception code,
   whether eu07.exe shows the Python screens, another Python 2.7 in the registry
   (`PythonCore\2.7`) or on `PATH`. Also unguarded: a pending vehicle build whose appearance was
-  set to none - `_build_models()` reads the appearance without a check.
+  set to none - libreloaded's `RailVehicleRenderingServer::_build_models()` reads the appearance
+  without a check.
 * Normal maps: Godot's tangents not checked against the original's `f_tbn`.
 * Overexposure in the demo scenery unmeasured. Candidates, one at a time: `tonemap_mode`,
   `soft_shadow_filter_quality` 3 -> 1, `directional_shadow/size=8192` (`042b392`), `fog_enabled`,
@@ -484,26 +413,16 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   name has a space or a parse slip; not looked into.
 * After a scenery has loaded, `Unicode parsing error ... Invalid UTF-8 leading byte (b0)` once
   (td.scn) - source not found.
-* Air temperature (`MaszynaEnvironmentNode.temperature`) is consumed by nothing - the vendored
-  Mover has `#define Global_AirTemperature 15.f`.
+* Air temperature (libreloaded's `EnvironmentNode.temperature`) is consumed by nothing - the
+  vendored Mover has `#define Global_AirTemperature 15.f`.
 * Other `config` entries dropped (`scenario.time.override/offset/current`, `Globals.cpp:356-385`).
 * Include instancing (`grass.inc` included 24078 times): classify includes as `instanced`/`full`,
   cache in local space, invalidate by dependency list.
-* `ResourceLazyLoader` shares only a held copy: a per-model load lock, and the loader holding the
-  copy with a release for a dropped preload.
 * Lazy loading off (default): a vehicle's cargo (`_build_load()`) and coupler adapters
   (`_update_coupler_adapters()`) still load through `model_load()` at their build, outside
   `ResourceLazyLoader` - their files change while the game runs. After a data reload a resource
   resident by registration is loaded again only by its next use.
 * The subscene cache is used only by queued parsing; `parse_file()` reparses every include.
-* Streaming keeps the track/traction instances and drops only meshes (~16k empty in `baltyk`).
-* A track streams by the chunk of its first curve point, not its nearest point.
-* **Trainset placement - what the original does and the port does not** (found on reports#32, not
-  the cause there): `AttachNext()` pushes an overlapping next vehicle back (DynObj.cpp:2819-2829);
-  a vehicle walking off a track end goes on onto a `NullCreate()` track (TrkFoll.cpp:81-86,
-  Track.cpp:226-259), where `RailVehicleServer::_walk_axle()` stops at the end and every later
-  vehicle stacks there (RailVehicleServer.cpp:1585-1591); a switch entered from a branch while
-  placing is thrown (`SwitchForced()`, TrkFoll.cpp:52-56), the port takes the branch and leaves it.
 * **River and cross tracks are not imported** (#318) (`maszyna_node_track_importer.gd` drops them
   whole, without a warning); linia61_towarowy1.scn drops 39 river and 9 cross. Port: rivers drawn
   as roads (`Track.cpp:1686-1712`, `fTexHeight1` negated :507, `fTexLength` instead of the
@@ -511,28 +430,23 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * Tracks and traction have no worker `preload`.
 * A terrain chunk's material is looked up on the main thread (`.mat` parse, DDS decode, md5 key) -
   move to the worker preload once the streaming panel shows terrain dominated by it.
-* The loading screen does not wait for the first pass (`pending_builds == 0`).
 * Stream baked 1 km chunks (MultiMesh per mesh+material, merged triangles, ready track meshes,
   cached on disk) instead of pieces; switch blades stay outside.
 * `MaszynaSceneryChunkRenderingServer` (deprecated) - remove: `SceneryStreamingServer` streams a
   triangle chunk itself.
-* Memory: every model placement keeps a full `E3DInstanceData`; a subscene's terrain sink is kept
-  whole until parsed; a terrain chunk holds arrays beside its mesh while built.
+* Memory: every model placement keeps a full `MaszynaE3DInstanceData`; a subscene's terrain sink is
+  kept whole until parsed; a terrain chunk holds arrays beside its mesh while built.
 * Load model placements and packed `nodes` per 1 km chunk; needs events and signal heads to reach
   a model otherwise than by its RID. Read `[SceneryMemory]` first.
 * Terrain triangle order follows the parse workers (may differ between conversions).
-* `SceneryLoadMeasurement`'s per-stage peak reads `MEMORY_STATIC` only.
-* Main-thread stalls: `TractionServer.network_build()`, `TrackServer.topology_rebuild()`
-  unbudgeted; `ScenerySoundServer.sound_create()` rebuilds the bank per sound (O(n^2)) - needs an
-  append in `gnd-sfx`.
+* Main-thread stalls: `MaszynaTractionServer.network_build()`, libreloaded's
+  `TrackServer.topology_rebuild()` unbudgeted; libreloaded's `ScenerySoundServer.sound_create()`
+  rebuilds the bank per sound (O(n^2)) - needs an append in `gnd-sfx`.
 * `[SceneryLoad]` lines not measured on a heavy scenery.
-* In the editor streaming follows 3D viewport 0 only.
-* A freed streaming camera is not noticed: `SceneryStreamingServer::camera_id` stays set,
-  `streaming_has_camera()` stays true and the streaming stops where it was, silently.
 * `maszyna_node_track_importer.gd` drops `turn`, `table`.
-* Lamp head colour does not match its tinted pool - needs a flag in the `E3DMaterialResolver` key.
+* Lamp head colour does not match its tinted pool - needs a flag in the `MaszynaE3DMaterialResolver`
+  key.
 * An economy-mode merged light takes the max `energy`, not the sum.
-* Scenery light brightness calibrated by eye (`scenery_light_*`).
 * `latarnial_betdziur`'s `zarowka` stays off - should the `_on`/`_off` suffix rule apply to
   scenery models (`AnimModel.cpp:303`)?
 * `m_lightopacities` transition (`AnimModel.cpp:542-549`); `notransition` ignored.
@@ -546,24 +460,15 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   not read.
 * An `include` with no filename in the real data - source unknown.
 * Unloading a scenery leaves its weather; a next scenery without `atmo` inherits it.
-* `SimulationServer.simulation_pause()` does not hold the environment clock, `TractionServer`,
-  `TrackServer` switches and the smoke.
 
 ## Signalling (#296)
+
+The signalling servers are libreloaded's (`SignallingServer`, `SignalHeadNode`); their open work
+is in libreloaded's `TODO.md`.
 
 * **No data joins an isolated section to a source**: `SignallingServer.source_set_isolated()`
   reports a section through a source, but the legacy scenery has no interlocking, so nothing
   creates those sources yet.
-* **Routes (USRK przebiegi)**: the server holds routes, switches, links and the sensor impulse
-  (`SignallingServer.route_*`); no implementation sets a route yet. Left out: flank protection
-  and switches set additionally (a table by switch, not by route), conditional switches, variant
-  routes, through routes, a route ending toward a linked system, release delays on the simulation
-  clock, a switch locked while its route holds it (TrackServer moves any switch), the scenery
-  data the routes come from.
-* **Signal heads by name in SignallingServer**: a system holds its switches by name and resolves
-  them when used; its signal heads are still attached by RID, and `SignallingSystemNode` keeps
-  `signal_head_names` and re-attaches them itself (state in an editor proxy). Move the names and
-  the re-attaching into the server, as for switches.
 * **Point sensors (our USRK layer, not a port)**: the original has no sensor object - a "sensor"
   in its data is a track with an event (`FINDINGS.md`, 2026-10-12 "The original has no point
   sensors"). If a source is ever fed from scenery data, the port is a bridge "track event ->
@@ -575,11 +480,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   daylight.
 * **Semaphore arms** - the `animation` event on a named submodel (`Event.cpp:1569-1735`).
 * **Telling signal heads apart** from other lit models (street lamps included).
-* A scenery signal head's light states read `LIGHT_STATE_OFF` until its first aspect.
-* `SignalHeadNode.model` set while the node is in the tree is not connected
-  (`e3d_instance_created` is connected on `ENTER_TREE` only), and `EXIT_TREE` disconnects the new
-  model instead of the old one.
-* **`SignalAspect.lights` are plain numbers** in the inspector, not an enum.
 
 ## Scenario events
 
@@ -618,61 +518,47 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 ## Drivers (#297)
 
 * **High-level vehicle operations through the servers, executed by components**
-  (`maszyna-architecture`, "Servers forward to components", 2026-10-09): `RailVehicleServer`
-  couples (`vehicle_couple()`, `uncouple`, `is_coupled_by`, `is_coupler_automatic`, adapters,
-  `vehicle_get_coupler_joinable_flags()`) through `RailVehicleController`/
-  `MoverRailVehicleController`; the coupling logic moves to the server, executed by the
-  `RailVehicleBuffCoupl` component (`MoverRailVehicleBuffCoupl` on the Mover), the per-end
-  `AllowedFlag` (`BuffCoupl1/2`) and `control_type` with it. The same for walking through the cabins,
-  managing trainsets and moving a vehicle. The AI then couples by a server operation instead of the
-  `coupler_connect` command. Plan with the operator first.
-* **`scenery_loaded` comes before the vehicles are placed**: `TrainSet3D` places its trainset in
-  `_process` on the next frame (`train_set_3d.gd:119-140`), after `MaszynaScenery._load_content()`
-  emitted `scenery_loaded` (`maszyna_scenery.gd:89`) - the player (`player.gd:104`), `world.gd`,
-  `ScenarioKeyboard` and the tests read it as "built, coupled and placed". A `vehicle_find_vehicle()`
-  right after it finds no neighbour. Needs a "scenario ready" event at its owner (operator: a task of
-  its own; where it lives is to be decided - scenery node or a server).
+  (`maszyna-architecture`, "Servers forward to components", 2026-10-09): libreloaded's
+  `RailVehicleServer` couples (`vehicle_couple()`, `uncouple`, `is_coupled_by`,
+  `is_coupler_automatic`, adapters, `vehicle_get_coupler_joinable_flags()`) through
+  `RailVehicleController`/`MaszynaMoverRailVehicleController`; the coupling logic moves to the
+  server, executed by the `RailVehicleBuffCoupl` component (`MaszynaMoverRailVehicleBuffCoupl` on
+  the Mover), the per-end `AllowedFlag` (`BuffCoupl1/2`) and `control_type` with it. The same for
+  walking through the cabins, managing trainsets and moving a vehicle. The AI then couples by a
+  server operation instead of the `coupler_connect` command. Plan with the operator first.
 * **Commands a vehicle does not have are sent and fail**: `fuse_reset` from the cab key (N, every
-  cab, `mmd_semantic_catalog.gd:224`) and `security_cabsignal_trigger` from an SHP event
-  (`MaszynaLegacyVehicleCommandAction.cpp:38`) on an SN61 - no electric engine, no security system;
+  cab, `mmd_semantic_catalog.gd:221`) and `security_cabsignal_trigger` from an SHP event
+  (`MaszynaVehicleCommandAction.cpp:40`) on an SN61 - no electric engine, no security system;
   "Unknown command" in the log each time.
 * Cab logic without the 3D cab: an AI caller must pass what a widget would have worked out (knob
-  and switch limits, spring return, the horn's value); `LegacyCabinControls` parses the MMD with no
+  and switch limits, spring return, the horn's value); `MaszynaCabinControls` parses the MMD with no
   random choices. The `brake_level_drive` `CabinCommand` node still carries `command`/
   `command_param`, only as the guard of its key.
 * **Cab targets**: the motor car's ammeters, voltmeters and lamps (`mvControlled` in
   `update_gauges`) need `target` in `MmdSemanticCatalog`.
+* **A road car drives with the EN57 control car's traction**: `EngineType=Dumb` (most of
+  `dynamic/road/`) is not built (`fiz/fiz_train_engine_parser.gd:64-67`), the driver reads the
+  engine as `NONE` (`maszyna_ai_driver.gd:808-812`) and `MaszynaDriverTraction.create()` gives it
+  `MaszynaDriverControlCarTraction` (`maszyna_driver_traction.gd:114-115`). The original drives a
+  `Dumb` engine by its main and secondary controllers (`Driver.cpp:3570-3579, 3708-3711`). Road
+  cars as a whole: `TODO_OPTIMIZE_VEHICLES_PROCESSING.md`.
 
-## Game data (GameDataServer)
+## Game data
 
-* The build named at the top of `app.log` is `res://build_number.txt`, written by the last full
-  build - a checkout built incrementally logs an older number than the code it runs.
-* `MaszynaVehicleProfileManager._ensure_viewport()` is an `ensure_*` API: create the viewport
-  where the manager is.
-* An owner that is not a scenery's rebuilds its streamed pieces when the scenery reloads itself in
-  the same reload - wasted clears and builds.
+* `MaszynaVehicleProfileManager._ensure_viewport()` (`maszyna_vehicle_profile_manager.gd:261`) is
+  an `ensure_*` API: create the viewport where the manager is.
 
 ## Tests
 
-* **Tests run inside the demo's and the game's projects** (operator, 2026-10-12: tests may not
-  live in the demo or game project). `demo/tests` (478 files) and `maszyna-reloaded/tests` (71) use
-  the project's `user://`. Both projects had `custom_user_dir_name="MaSzyna-Reloaded"`, so a test's
-  `settings.cfg`, caches, GUT temp and logs land in the player's game directory - fixtures in
-  `game_dir`. Each repo gets a tests project of its own:
-  - its own `project.godot` and `custom_user_dir_name`;
-  - its addons linked as in `demo/addons`;
-  - fixtures for what the tests take from the demo (`vehicles/`, `materials/`, `sounds/`, scenes);
-  - the game's tests reach the game's code through links;
-  - updated: Makefile `run-tests`, CI, `.gutconfig.json`, AGENTS.md, the testing skill.
-
-  The demo has its own `custom_user_dir_name="Libmaszyna-Demo"` already. Until the split, every
-  headless run sets `XDG_DATA_HOME` to a scratch directory.
-* **`test_sun_shafts_compositor_effect.gd` is pending in CI**: it renders on a GPU, and the CI runs
-  GUT `--headless` (no RenderingDevice). Locally it runs under `gamescope --backend headless`. A
-  GPU runner (lavapipe) would make it a CI test; D3D12 itself is not covered anywhere.
-* **Tests that switch the game dir** (`UserSettings.save_maszyna_game_dir()`) write the user's
-  `settings.cfg`, and a crash skips the restore: `test_maszyna_rail_vehicle_3d_manager.gd`,
-  `test_audio_stream_manager.gd`, `test_e3d_lights_state.gd`, `test_fiz_train_controller.gd`,
+* **Tests run inside the demo's project** (operator, 2026-10-12: tests may not live in the demo or
+  game project). `demo/tests` uses the demo project's `user://` (`Libmaszyna-Demo`); a tests
+  project of its own is still to be made - its own `project.godot` and `custom_user_dir_name`, its
+  addons linked as the build links them into `demo/addons`, fixtures for what the tests take from the demo (`vehicles/`,
+  `materials/`, `sounds/`, scenes), and the Makefile's `test`, CI, `.gutconfig.json`, `AGENTS.md`
+  and the testing skill updated.
+* **Tests that switch the game dir** (`MaszynaGameDirectory.save_game_dir()`) write the user's
+  `settings.cfg`, and a crash skips the restore: `test_audio_stream_manager.gd`,
+  `test_e3d_lights_state.gd`, `test_fiz_train_controller.gd`,
   `test_maszyna_node_dynamic_importer_direction.gd`, `test_material_manager_variants.gd`,
   `test_nodebank_library_builder.gd` and the tests spawning a vehicle of
   `demo/tests/fixtures/dynamic/`. Needs a non-persistent override; each switch also reloads the
@@ -693,8 +579,8 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
     `test_traction_power_pantograph.gd`, `test_train_electric_induction_engine.gd`,
     `test_rail_vehicle_idle_pantograph_voltage_regression.gd`,
     `test_rail_vehicle_pantograph_geometry.gd`, `test_cab_lights.gd`, `test_train_wipers.gd`,
-    `test_train_battery.gd`, `test_legacy_cabin_button_types.gd`,
-    `test_legacy_cabin_cab_activation.gd`, `test_legacy_cabin_unmodelled_controls.gd`,
+    `test_train_battery.gd`, `test_maszyna_cabin_button_types.gd`,
+    `test_maszyna_cabin_cab_activation.gd`, `test_maszyna_cabin_unmodelled_controls.gd`,
     `test_scenario_script_server.gd`.
   * *Asserts what it set* - keep only what a parser or `apply_config` turns into an effect:
     `test_train_controller_param_dimensions.gd`, `test_train_universal_controller.gd`,
@@ -710,24 +596,22 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
     `test_vehicle_state_bench.gd:158,173` assert `true` and belong outside CI.
   * *Physics without simulated time*: `test_train_*` (brake, engine, controller, switches, spring
     brake, speed control, EP fuse, heating, lighting presets), `test_traction_power_pantograph.gd`,
-    `test_traction_power_sections.gd`, `test_rail_vehicle_track_movement.gd`,
-    `test_rail_vehicle_at_rest.gd`, `test_rail_vehicle_start_track.gd`,
-    `test_rail_vehicle_idle_*_regression.gd`.
+    `test_rail_vehicle_track_movement.gd`, `test_rail_vehicle_at_rest.gd`,
+    `test_rail_vehicle_start_track.gd`, `test_rail_vehicle_idle_*_regression.gd`.
   * *Stops before what the player sees*: `test_driver_server.gd` (`Prepare_engine` only to
     `battery_enabled`, `:185` asserts an open main switch).
   * *Fixtures that build a 0 V vehicle unnoticed*: `test_vehicle.fiz`, `test_wagon.fiz`,
     `dynamic/test/synthetic_v1/synthetic.fiz`.
   * *Private members*: `test_maszyna_environment_node.gd`, `test_scenery_compiled_cache.gd`,
-    `test_track_rendering_server.gd`, `test_cabin_switch.gd`, `test_weather_controls.gd`,
-    `test_mmd_cabin_instancer.gd`, `test_cabin_spot_light_3d.gd`,
-    `test_mmd_sound_bank_instancer.gd`, `test_train_sound_system.gd` and 8 more; hand-written
-    state dictionaries in `test_brake_sound_model.gd:107,120,184`.
-  * *Harness*: CI runs on pull requests and tags, not on a push to `main`.
+    `test_track_rendering_server.gd`, `test_weather_controls.gd`, `test_mmd_cabin_instancer.gd`,
+    `test_cabin_spot_light_3d.gd`, `test_mmd_sound_bank_instancer.gd`,
+    `test_train_sound_system.gd` and 8 more; hand-written state dictionaries in
+    `test_brake_sound_model.gd:107,120,184`.
 * **`test_zzz_ep07_cabin_main_switch` crashes or flips** (SIGSEGV in about half of the runs, core
   dump in `_free_owned_rids`): the headless dummy renderer's mesh storage is not thread safe and
   the streaming worker preloads models while the main thread loads the cab's. Decide: one lock in
-  `E3DModelManager.load_model()`, or load on the worker only with a real renderer. It also loads
-  `scenery/td.scn` from the game dir - needs a fixture scenery.
+  `MaszynaE3DModelManager.load_model()`, or load on the worker only with a real renderer. It also
+  loads `scenery/td.scn` from the game dir - needs a fixture scenery.
 * **A headless test run sometimes crashes at exit** (SIGSEGV inside Godot after the main loop,
   no symbols; `test_scenery_subscene_cache` 2 of 6 runs) - a debug build of Godot and a core dump
   to find which singleton frees out of order.
@@ -763,11 +647,6 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
   `_move_placement()` (writes TrackServer, emits signals) and `Curve3D` baking on first sample.
   The original's function is `vehicle_table::update()`, `DynObj.cpp:8686`.
 
-## CI
-
-* The Linux library is built in the SDK container without ccache.
-* The engine is built without Swappy and AccessKit, which the official builds carry.
-
 ## Data the original reads that the wrapper does not read yet
 
 * **The destination sign**: `DestinationFind`, `pydestinationsign:` (133 MMDs),
@@ -780,7 +659,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 * **`.flac`** sounds: Godot reads no FLAC; no game data uses it.
 * **`eimscreen: i j`**: no gauge reads `fEIMParams` (no data uses it).
 * **`Cntrl.` keys no FIZ parser reads** (`LoadFIZ_Cntrl`, Mover.cpp:10707; grep of every
-  `extract_value()` key against `addons/libmaszyna/legacy/fiz/`, 2026-10-06 - each to be checked,
+  `extract_value()` key against `addons/libmaszyna/fiz/`, 2026-10-06 - each to be checked,
   some may be read under another spelling): `BackwardsBranchesAllowed`, `BBHT`, `BDelay` (the
   plain one), `ConverterOverloadWhenMainIsOff`, `DBAM`, `DBPN`, `DCDPP`, `DCMB`, `HAO`, `HGDP1`,
   `HGDP2`, `HideDirStatusSpeed`, `HideDirStatusWhenMoving`, `HMO`, `IBTB`, `MaxTachoSpeed`, `OMP`,
@@ -789,7 +668,7 @@ and a catalog `state_light`. The lamps also light without low voltage - TGauge g
 
 ## Grass and trees vanishing up close (report 2026-10-05)
 
-* Models: whether a model's node range (`E3DOptimizedBackend.cpp:196-205`) still goes by the
+* Models: whether a model's node range (`MaszynaE3DOptimizedBackend.cpp:226-234`) still goes by the
   submodel's own centre instead of the model origin (`opengl33renderer.cpp:2935-2942, 3617, 3654`).
 * Measure at the reported spot (Linia053_Wrzosy, the 36WE) before changing it. The triangles were
   fixed 2026-10-12 (`docs/findings-archive.md`, "Całkowo's ground missing under its houses").

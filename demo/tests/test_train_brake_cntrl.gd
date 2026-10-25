@@ -14,7 +14,7 @@ func before_each():
     add_child(vehicle)
     train = VehicleServer.vehicle_get_controller(vehicle.get_vehicle_rid())
 
-    brake = MoverRailVehicleBrake.new()
+    brake = MaszynaMoverRailVehicleBrake.new()
     train.add_component(brake)
     await wait_idle_frames(2)
 
@@ -36,13 +36,13 @@ func test_defaults_match_original_mover():
     assert_eq(brake.cntrl_brake_delays, RailVehicleBrake.BRAKE_DELAY_NONE)
     # none unless the FIZ says (MOVER.h:1580, Mover.cpp:10746) - with PS the handle works only from an occupied cab
     assert_eq(brake.cntrl_brake_op_modes, RailVehicleBrake.BRAKE_OP_MODE_NONE)
-    assert_eq(brake.cntrl_brake_handle_type, RailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
-    assert_eq(brake.cntrl_local_brake_handle_type, RailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
+    assert_eq(brake.cntrl_brake_handle_type, MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
+    assert_eq(brake.cntrl_local_brake_handle_type, MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_NO_HANDLE)
     assert_eq(brake.cntrl_anti_skid_brake_type, RailVehicleBrake.ANTI_SKID_BRAKE_NONE)
     assert_eq(brake.cntrl_local_brake_type, RailVehicleBrake.LOCAL_BRAKE_TYPE_NONE)
     assert_false(brake.cntrl_manual_brake_present)
     assert_true(brake.cntrl_spring_brake_cuts_off_drive)
-    assert_eq(brake.brake_method, RailVehicleBrake.BRAKE_METHOD_NONE)
+    assert_eq(brake.brake_method, MaszynaMoverRailVehicleBrake.BRAKE_METHOD_NONE)
     # LPOn/LPOff/HandlePipeUnlockPos absent (Mover.cpp:10505-10507)
     assert_eq(brake.main_pipe_blocking_pressure, MAIN_PIPE_LOCK_NONE)
     assert_eq(brake.main_pipe_unblocking_pressure, MAIN_PIPE_LOCK_NONE)
@@ -54,8 +54,8 @@ func test_round_trip_and_update_without_crashing():
     brake.cntrl_brake_ctrl_position_count = 8
     brake.cntrl_brake_delays = RailVehicleBrake.BRAKE_DELAY_GPR_MG
     brake.cntrl_brake_op_modes = RailVehicleBrake.BRAKE_OP_MODE_PN
-    brake.cntrl_brake_handle_type = RailVehicleBrake.BRAKE_HANDLE_TYPE_KNORR
-    brake.cntrl_local_brake_handle_type = RailVehicleBrake.BRAKE_HANDLE_TYPE_WESTINGHOUSE
+    brake.cntrl_brake_handle_type = MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_KNORR
+    brake.cntrl_local_brake_handle_type = MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_WESTINGHOUSE
     brake.cntrl_anti_skid_brake_type = RailVehicleBrake.ANTI_SKID_BRAKE_AUTOMATIC
     brake.cntrl_local_brake_type = RailVehicleBrake.LOCAL_BRAKE_TYPE_HYDRAULIC
     brake.cntrl_manual_brake_present = false

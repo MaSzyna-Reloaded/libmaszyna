@@ -2,7 +2,7 @@
 extends EditorPlugin
 
 var user_settings_dock
-var user_settings_dock_scene = preload("res://addons/libmaszyna/user_settings/user_settings_dock.tscn")
+var user_settings_dock_scene = preload("res://addons/libmaszyna/editor/user_settings_dock/user_settings_dock.tscn")
 
 
 func _enter_tree() -> void:

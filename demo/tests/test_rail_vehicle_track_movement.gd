@@ -72,7 +72,7 @@ func test_bogies_follow_track_tangents() -> void:
     # the pivot spacing belongs to the wheels, and RailVehicle3D reads it off the vehicle's
     # composed configuration - so the vehicle has to actually have wheels
     # a component is configured and then attached - attaching is what writes it to the backend
-    var wheels: RailVehicleWheels = MoverRailVehicleWheels.new()
+    var wheels: RailVehicleWheels = MaszynaMoverRailVehicleWheels.new()
     wheels.bogie_pivot_spacing = 6.0
     controller.add_component(wheels)
     var vehicle:RailVehicle3D = RailVehicle3D.new()

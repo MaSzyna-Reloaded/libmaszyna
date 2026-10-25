@@ -15,11 +15,11 @@ func test_parse_loads_reads_every_cargo_model_including_the_passengers():
 
 
 func test_resolve_skins_maps_numbered_materials_directly_to_dynamic_slots():
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir("res://tests/materials")
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir("res://tests/materials")
     var numbered_skins:Array = MmdCabinInstancer.resolve_skins("", "multi_skin")
     var single_skin:Array = MmdCabinInstancer.resolve_skins("", "nontransparent_manager")
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
     assert_eq(numbered_skins, ["multi_skin,1", "multi_skin,2"])
     assert_eq(single_skin, ["nontransparent_manager"])
@@ -27,10 +27,10 @@ func test_resolve_skins_maps_numbered_materials_directly_to_dynamic_slots():
 
 ## dynamic/pkp/e186_v2: "<skin>,1.dds" and "<skin>,2.dds" with no .mat, next to a 1x1 "<skin>.dds"
 func test_resolve_skins_maps_numbered_textures_without_materials():
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir("res://tests/fixtures/skins_textures")
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir("res://tests/fixtures/skins_textures")
     var numbered_skins:Array = MmdCabinInstancer.resolve_skins("", "PLAIN")
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
     assert_eq(numbered_skins, ["PLAIN,1", "PLAIN,2"])
 
@@ -543,10 +543,10 @@ func test_localbrake_rotation_is_scaled_by_local_brake_position_count():
 ## neither brings logic of its own nor takes the vehicle's away (FINDINGS.md, 2026-09-27 the AI
 ## stood still in the cab the player left)
 func test_a_cab_leaves_the_vehicles_logic_alone():
-    var previous_game_dir:String = UserSettings.get_maszyna_game_dir()
-    UserSettings.save_maszyna_game_dir(FIXTURE_PATH.get_base_dir())
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURE_PATH.get_base_dir())
     var vehicle:RID = build_vehicle("CabLogicOwnerTest").get_rid()
-    var vehicle_logic:LegacyCabinLogic = LegacyCabinLogic.from_mmd("", FIXTURE_PATH.get_file().get_basename(), "", "")
+    var vehicle_logic:MaszynaCabinLogic = MaszynaCabinLogic.from_mmd("", FIXTURE_PATH.get_file().get_basename(), "", "")
     CabinSystem.vehicle_attach_cab_logic(vehicle, vehicle_logic)
     var cabin:MaszynaDynamicTrainCabin = MaszynaDynamicTrainCabin.new()
     cabin.mmd_filename = FIXTURE_PATH.get_file().get_basename()
@@ -557,7 +557,7 @@ func test_a_cab_leaves_the_vehicles_logic_alone():
 
     remove_child(cabin)
     cabin.free()
-    UserSettings.save_maszyna_game_dir(previous_game_dir)
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
 
     assert_eq(CabinSystem.vehicle_get_cab_logic(vehicle), vehicle_logic, "freed, the cab takes nothing away")
     CabinSystem.vehicle_attach_cab_logic(vehicle, null)

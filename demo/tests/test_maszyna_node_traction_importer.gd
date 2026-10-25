@@ -4,7 +4,7 @@ extends MaszynaGutTest
 ## parallel span are named in lower case, as the nodes they name are (Traction.cpp:101-103, 147-148;
 ## simulationstateserializer.cpp:425-430) - "PWR01" would leave the wire without its power source
 
-const TractionImporter = preload("res://addons/libmaszyna/legacy/scenery/maszyna_node_traction_importer.gd")
+const TractionImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_traction_importer.gd")
 
 ## ep07.scn's first span, its power source and a parallel span named with capitals
 const SOURCE:String = """

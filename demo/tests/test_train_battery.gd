@@ -12,7 +12,7 @@ var train: VehicleController
 ## is authored into the model - writing it afterwards does not reach the backend until a step
 ## (see test_battery_start_disabled_from_zero_voltage_blocks_switching).
 func _model(battery_voltage:float) -> VehicleController:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.add_component(build_power_supply(battery_voltage))
     return model
 

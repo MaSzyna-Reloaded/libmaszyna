@@ -1,11 +1,9 @@
-extends GutTest
+extends ReloadedGutTest
 class_name MaszynaGutTest
 
-## ResourceCache's switch: simulation_runtime_hook.gd turns it off, so a test never reads what a
-## previous run compiled; a test of the cache itself turns it on for its duration
-const CACHE_ENABLED_SETTING:String = "maszyna/cache/enabled"
-## Standard gauge of build_track() [m]
-const BUILT_TRACK_GAUGE:float = 1.435
+## The core's test helpers and MaSzyna's: vehicles on the Mover, models of E3D, the game data's
+## vehicles
+
 ## build_rail_vehicle()'s mass [kg]
 const RAIL_VEHICLE_MASS:float = 74000.0
 ## build_passenger_car()'s door travel [m] - a car without it has no doors (Mover.cpp:7920)
@@ -19,80 +17,6 @@ const DETAIL_TIMEOUT:float = 5.0
 ## Real seconds a vehicle of the game data may take to be built - parsed and configured, a few
 ## frames of work
 const BUILD_TIMEOUT:float = 5.0
-## Real seconds a scenery fixture may take to load: parsing and building is the machine's work, not
-## simulated time - a fixture loads in under 0.1 s, this only catches a hang
-const LOAD_TIMEOUT:float = 5.0
-## A few of the streaming's camera watch intervals (SceneryStreamingServer WATCH_INTERVAL_SEC 0.1 s)
-const STREAMING_WATCH_SEC:float = 0.3
-## One step of the test's clock [simulated s]: the simulation's tick to come (#301, 30 Hz). The run
-## has no SimulationRuntime - no frame moves the simulation; a test steps it tick by tick, as a step
-## debugger does, and what happens does not depend on how fast the machine is
-const TICK:float = 1.0 / 30.0
-
-
-## A script leaves the simulation as the hook set it: running, at speed 1, there already - a speed
-## only set back (simulation_speed) leaves the clock at the old one, and every script after it runs
-## at that until the speed change closes (FINDINGS.md); SimulationServer.simulation_reset_speed()
-## sets both. Asserted here, so the script that leaves it is the one that goes red.
-func after_all() -> void:
-    assert_false(SimulationServer.simulation_is_paused(), "the script left the simulation paused")
-    assert_eq(SimulationServer.simulation_speed, 1.0, "the script left the simulation's speed set")
-    assert_eq(SimulationServer.simulation_get_current_speed(), 1.0,
-            "the script left the simulation's clock at another speed")
-
-
-## The ticks `seconds` of simulated time take, the last one whole
-static func ticks(seconds:float) -> int:
-    return ceili(seconds / TICK)
-
-
-## `count` ticks of the simulation, one after the other - a frame between them for what runs on the
-## frames (the keys, a knob a key holds)
-func step(count:int) -> void:
-    for _tick:int in count:
-        SimulationServer.simulation_advance(TICK)
-        await Engine.get_main_loop().process_frame
-
-
-## Steps the simulation tick by tick until `done`, for at most `simulated_seconds` - worked out from
-## the data of what is waited for. Not coming about by then fails the test there, saying `what`;
-## true when it came
-func wait_simulated_until(done:Callable, simulated_seconds:float, what:String) -> bool:
-    for _tick:int in ticks(simulated_seconds):
-        if done.call():
-            return true
-        SimulationServer.simulation_advance(TICK)
-        await Engine.get_main_loop().process_frame
-    if done.call():
-        return true
-    fail_test("%s did not come about within %.2f simulated seconds (%d ticks)" % [
-            what, simulated_seconds, ticks(simulated_seconds)])
-    return false
-
-
-## The loading that `loaded` announces is done; one that does not end within LOAD_TIMEOUT fails the
-## test there, saying `what`
-func wait_loaded(loaded:Signal, what:String) -> bool:
-    if await wait_for_signal(loaded, LOAD_TIMEOUT):
-        return true
-    fail_test("%s did not load within %.0f s" % [what, LOAD_TIMEOUT])
-    return false
-
-
-func wait_idle_frames(frames, message = ""):
-    while frames > 0:
-        await Engine.get_main_loop().process_frame
-        frames -= 1
-
-
-## The streaming looks at its camera, anchor and content every 0.1 s of real time
-## (SceneryStreamingServer WATCH_INTERVAL_SEC) and applies what it planned per frame: a change of
-## them is waited for by both
-func wait_streaming(frames:int) -> void:
-    await wait_seconds(STREAMING_WATCH_SEC)
-    await wait_idle_frames(frames)
-
-
 ## A vehicle is an object owned by RailVehicleServer and stepped by the server's own tick - it is
 ## not a node, so a test cannot put one in the tree. VehiclePhysicsNode is what brings a vehicle
 ## into being; autofree owns the node, so the vehicle goes away with the test.
@@ -104,7 +28,7 @@ func wait_streaming(frames:int) -> void:
 ## takes it from VehicleServer.vehicle_list_persons().
 func build_vehicle(vehicle_id:String = "TestTrain", description:VehicleController = null,
         initial_velocity:float = 0.0,
-        driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> VehicleController:
+        driver:MaszynaVehicleData.DriverType = MaszynaVehicleData.DriverType.DRIVER_NOBODY) -> VehicleController:
     return VehicleServer.vehicle_get_controller(
             build_vehicle_node(vehicle_id, description, initial_velocity, driver).get_vehicle_rid())
 
@@ -112,7 +36,7 @@ func build_vehicle(vehicle_id:String = "TestTrain", description:VehicleControlle
 ## The node itself, for a test that needs a NodePath to the vehicle (RailVehicle3D.controller_path).
 func build_vehicle_node(vehicle_id:String = "TestTrain", description:VehicleController = null,
         initial_velocity:float = 0.0,
-        driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> VehiclePhysicsNode:
+        driver:MaszynaVehicleData.DriverType = MaszynaVehicleData.DriverType.DRIVER_NOBODY) -> VehiclePhysicsNode:
     var physics_node: RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
     physics_node.controller = description
     physics_node.vehicle_id = vehicle_id
@@ -122,62 +46,39 @@ func build_vehicle_node(vehicle_id:String = "TestTrain", description:VehicleCont
     var vehicle_rid:RID = physics_node.get_vehicle_rid()
     RailVehicleServer.vehicle_add_front_cabin(vehicle_rid)
     RailVehicleServer.vehicle_add_rear_cabin(vehicle_rid)
-    if driver == MaszynaDynamicData.DriverType.DRIVER_NOBODY:
+    if driver == MaszynaVehicleData.DriverType.DRIVER_NOBODY:
         return physics_node
     var person:RID = PersonServer.person_create()
     # persons outlive vehicles: one left behind would sit in the next test's world
     physics_node.tree_exited.connect(PersonServer.person_free.bind(person))
-    if driver == MaszynaDynamicData.DriverType.DRIVER_HEAD:
+    if driver == MaszynaVehicleData.DriverType.DRIVER_HEAD:
         RailVehicleServer.person_enter_front_cabin(person, vehicle_rid, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     else:
         RailVehicleServer.person_enter_rear_cabin(person, vehicle_rid, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     return physics_node
 
 
-## The person becomes a driver thinking with `implementation` (null: no driver any more): it is
-## registered with DriverServer under a name of its own, which the driver is declared with
-func attach_driver_implementation(driver:RID, implementation:DriverImplementation) -> void:
-    if not implementation:
-        DriverServer.driver_attach_implementation(driver, &"")
-        return
-    var implementation_name:StringName = StringName("test_%d" % implementation.get_instance_id())
-    DriverServer.implementation_register(implementation_name, implementation)
-    DriverServer.driver_attach_implementation(driver, implementation_name)
-
-
-## The person build_vehicle() seated as the DRIVER of the vehicle
-func get_vehicle_driver(vehicle_rid:RID) -> RID:
-    var drivers:Array[VehiclePerson] = VehicleServer.vehicle_list_persons(
-            vehicle_rid, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
-    return drivers[0].get_person()
+## What the original's AI keeps of the driver (MaszynaAIDriver.get_internal_state()); empty for a
+## driver another implementation thinks for
+func get_driver_internal_state(driver:RID) -> Dictionary:
+    var ai:MaszynaAIDriver = DriverServer.driver_get_implementation(driver) as MaszynaAIDriver
+    return ai.get_internal_state(driver) if ai else {}
 
 
 ## A power supply whose battery is `battery_voltage` [V] nominal - the low voltage a test's vehicle
 ## needs for its cab, which a bare vehicle has none of
-func build_power_supply(battery_voltage:float) -> MoverRailVehiclePowerSupply:
-    var power_supply:MoverRailVehiclePowerSupply = MoverRailVehiclePowerSupply.new()
+func build_power_supply(battery_voltage:float) -> MaszynaMoverRailVehiclePowerSupply:
+    var power_supply:MaszynaMoverRailVehiclePowerSupply = MaszynaMoverRailVehiclePowerSupply.new()
     power_supply.battery_voltage = battery_voltage
     return power_supply
-
-
-## A straight track along +X to stand vehicles on; the test frees it (TrackServer.track_free(), then
-## topology_rebuild())
-func build_track(track_name:String, length:float) -> RID:
-    var curve:TrackCurve = TrackCurve.new()
-    curve.p2 = Vector3(length, 0.0, 0.0)
-    var track:RID = TrackServer.track_create()
-    TrackServer.track_update_curves(track, curve, null)
-    TrackServer.track_update(track, TrackServer.TRACK_NORMAL, track_name, BUILT_TRACK_GAUGE)
-    TrackServer.topology_rebuild()
-    return track
 
 
 ## A RailVehicle3D standing on the track at the offset, with a mass - a vehicle with none integrates
 ## to NaN (test_rail_vehicle_at_rest.gd). It takes its controller within a few frames; the test frees
 ## it, before its physics node goes with autofree.
 func build_rail_vehicle(vehicle_id:String, track_name:String, offset:float,
-        driver:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> RailVehicle3D:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+        driver:MaszynaVehicleData.DriverType = MaszynaVehicleData.DriverType.DRIVER_NOBODY) -> RailVehicle3D:
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.vehicle_id = vehicle_id
     model.mass = RAIL_VEHICLE_MASS
     model.type_name = "test"
@@ -195,14 +96,14 @@ func build_rail_vehicle(vehicle_id:String, track_name:String, offset:float,
 ## for `capacity` passengers getting off and on `exchange_speed` a second through one open side
 func build_passenger_car(vehicle_id:String, track_name:String, offset:float, capacity:float,
         exchange_speed:float, initial_velocity:float = 0.0) -> RailVehicle3D:
-    var model:RailVehicleController = MoverRailVehicleController.new()
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.vehicle_id = vehicle_id
     model.mass = RAIL_VEHICLE_MASS
     model.type_name = "test"
-    var doors:MoverRailVehicleDoors = MoverRailVehicleDoors.new()
+    var doors:MaszynaMoverRailVehicleDoors = MaszynaMoverRailVehicleDoors.new()
     doors.max_shift = PASSENGER_CAR_DOOR_SHIFT
     model.add_component(doors)
-    var load:MoverRailVehicleLoad = MoverRailVehicleLoad.new()
+    var load:MaszynaMoverRailVehicleLoad = MaszynaMoverRailVehicleLoad.new()
     load.max_load = capacity
     load.load_speed = exchange_speed
     load.unload_speed = exchange_speed
@@ -218,40 +119,31 @@ func build_passenger_car(vehicle_id:String, track_name:String, offset:float, cap
     return vehicle
 
 
-## The vehicle build_rail_vehicle() made, gone: the node first - it lets go of its controller - then
-## its physics node, which takes the vehicle out of RailVehicleServer (vehicle_freed)
-func free_rail_vehicle(vehicle:RailVehicle3D) -> void:
-    var physics_node:Node = vehicle.get_node(vehicle.controller_path)
-    remove_child(vehicle)
-    vehicle.free()
-    physics_node.free()
-
-
 ## An exterior model built in code, drawn as nodes - what a vehicle assembled by hand names its
 ## parts in (RailVehicle3D.model_instance_path): a transform submodel for every name, placed as
 ## given, under the submodel `parents` names for it or at the top. Added by the test to its vehicle.
-func build_model_instance(submodels:Dictionary, parents:Dictionary) -> E3DModelInstance:
-    var built:Dictionary[String, E3DSubModel] = {}
+func build_model_instance(submodels:Dictionary, parents:Dictionary) -> MaszynaE3DModelInstance:
+    var built:Dictionary[String, MaszynaE3DSubModel] = {}
     for submodel_name:String in submodels:
-        var submodel:E3DSubModel = E3DSubModel.new()
+        var submodel:MaszynaE3DSubModel = MaszynaE3DSubModel.new()
         submodel.resource_name = submodel_name
-        submodel.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
+        submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
         submodel.transform = submodels[submodel_name]
         built[submodel_name] = submodel
-    var top:Array[E3DSubModel] = []
+    var top:Array[MaszynaE3DSubModel] = []
     for submodel_name:String in built:
         if parents.has(submodel_name):
-            var parent:E3DSubModel = built[parents[submodel_name]]
+            var parent:MaszynaE3DSubModel = built[parents[submodel_name]]
             var children:Array = parent.submodels
             children.append(built[submodel_name])
             parent.submodels = children
         else:
             top.append(built[submodel_name])
-    var model:E3DModel = E3DModel.new()
+    var model:MaszynaE3DModel = MaszynaE3DModel.new()
     model.submodels = top
-    var instance:E3DModelInstance = E3DModelInstance.new()
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
     instance.name = "Model"
-    instance.instance_kind = E3DRenderingServer.INSTANCE_KIND_DYNAMIC
+    instance.instance_kind = ModelRenderingServer.INSTANCE_KIND_DYNAMIC
     instance.model = model
     return instance
 
@@ -260,7 +152,7 @@ func build_model_instance(submodels:Dictionary, parents:Dictionary) -> E3DModelI
 ## (as nodes, which a test looks into) only once wait_detailed() says so: a fixture without model
 ## files is never drawn in detail
 func spawn_maszyna_vehicle(data_path:String, file_name:String, skin:String, vehicle_id:String,
-        driver_type:MaszynaDynamicData.DriverType = MaszynaDynamicData.DriverType.DRIVER_NOBODY) -> MaszynaRailVehicle3D:
+        driver_type:MaszynaVehicleData.DriverType = MaszynaVehicleData.DriverType.DRIVER_NOBODY) -> MaszynaRailVehicle3D:
     var vehicle:MaszynaRailVehicle3D = MaszynaRailVehicle3D.new()
     vehicle.driver_type = driver_type
     vehicle.data_path = data_path
@@ -296,26 +188,26 @@ func wait_detailed(vehicle:MaszynaRailVehicle3D) -> bool:
 ## A static E3D instance of build_lit_model(), drawn as nodes under `parent` and built - its
 ## `light_on00` submodel is shown while light 00 is on
 func build_lit_instance(parent: Node3D) -> RID:
-    var rid: RID = E3DRenderingServer.instance_create(build_lit_model(), E3DRenderingServer.INSTANCER_NODES, E3DRenderingServer.INSTANCE_KIND_STATIC)
-    E3DRenderingServer.instance_attach_object_instance_id(rid, parent.get_instance_id())
-    E3DRenderingServer.instance_build(rid)
+    var rid: RID = MaszynaE3DRenderingServer.instance_create(build_lit_model(), ModelRenderingServer.INSTANCER_NODES, ModelRenderingServer.INSTANCE_KIND_STATIC)
+    MaszynaE3DRenderingServer.instance_attach_object_instance_id(rid, parent.get_instance_id())
+    MaszynaE3DRenderingServer.instance_build(rid)
     return rid
 
 
-func build_lit_model() -> E3DModel:
-    var model: E3DModel = E3DModel.new()
-    var light_on: E3DSubModel = E3DSubModel.new()
+func build_lit_model() -> MaszynaE3DModel:
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var light_on: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     light_on.resource_name = "light_on00"
-    light_on.submodel_type = E3DSubModel.SUBMODEL_TRANSFORM
-    var mesh_submodel: E3DSubModel = E3DSubModel.new()
+    light_on.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+    var mesh_submodel: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
     mesh_submodel.resource_name = "mesh"
-    mesh_submodel.submodel_type = E3DSubModel.SUBMODEL_GL_TRIANGLES
+    mesh_submodel.submodel_type = MaszynaE3DSubModel.SUBMODEL_GL_TRIANGLES
     var mesh: ArrayMesh = ArrayMesh.new()
     mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, BoxMesh.new().get_mesh_arrays())
     mesh_submodel.mesh = mesh
     light_on.submodels = [mesh_submodel]
     model.submodels = [light_on]
-    var light_definition: E3DModelLightDefinition = E3DModelLightDefinition.new()
+    var light_definition: MaszynaE3DModelLightDefinition = MaszynaE3DModelLightDefinition.new()
     light_definition.on_submodel_path = NodePath("light_on00")
     model.register_light("00", light_definition)
     return model

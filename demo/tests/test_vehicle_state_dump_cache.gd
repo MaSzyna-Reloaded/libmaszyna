@@ -10,7 +10,7 @@ var _radio: RailVehicleRadio = null
 
 func before_each() -> void:
     _controller = build_vehicle("dump_cache_test")
-    _radio = MoverRailVehicleRadio.new()
+    _radio = MaszynaMoverRailVehicleRadio.new()
     _controller.add_component(_radio)
     _rid = _controller.get_rid()
     await wait_idle_frames(2)
@@ -73,7 +73,7 @@ func test_a_freed_vehicle_dumps_nothing() -> void:
 ## The public way in: a consumer names the kind, not the implementation, and gets the interface
 ## that kind promises - whatever the vehicle turns out to be built from.
 func test_a_component_is_reached_by_its_kind() -> void:
-    var heating: MoverRailVehicleHeating = MoverRailVehicleHeating.new()
+    var heating: MaszynaMoverRailVehicleHeating = MaszynaMoverRailVehicleHeating.new()
     _controller.add_component(heating)
     await wait_idle_frames(2)
 
