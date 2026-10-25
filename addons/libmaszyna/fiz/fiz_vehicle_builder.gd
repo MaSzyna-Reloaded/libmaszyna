@@ -14,6 +14,16 @@ class_name FizVehicleBuilder
 const _INCLUDE_KEYWORD := "include"
 const _INCLUDE_END_KEYWORD := "end"
 
+## How the original's driver drives a car (TController of is_car()), which RoadVehicleServer drives
+## it by: the gap it keeps before a vehicle (fDriverDist, Driver.cpp:1878) [m], the acceleration it
+## keeps within either way (Driver.cpp:7395-7398) [m/s2] and how far ahead it looks for one - its
+## awareness range, at least 750 m (Driver.cpp:4993-4997), over a car's 250 m (obstaclescanrange,
+## Driver.cpp:6665) [m]. The 20 km/h it slows to at its road's end (Driver.cpp:434-437) is the loop's
+## it turns back by there (MaszynaRoadNetwork)
+const CAR_FOLLOWING_GAP:float = 5.0
+const CAR_ACCELERATION_LIMIT:float = 2.0
+const CAR_OBSTACLE_RANGE:float = 750.0
+
 ## Bump whenever a fiz_train_*_parser.gd file's parsing/field-mapping LOGIC changes (not just
 ## FIZ data) - mirrors MaszynaE3DModel.FORMAT_VERSION (plugins/libmaszyna/addons/libmaszyna/e3d/maszyna_e3d_model_manager.gd), the
 ## same on-disk-cache-invalidation pattern for the same reason: _make_cache_hash() below is keyed
@@ -21,7 +31,7 @@ const _INCLUDE_END_KEYWORD := "end"
 ## is otherwise silently served from a stale pre-fix cache entry until something touches that
 ## specific vehicle's file. Confirmed the hard way: a MotorParamTable0/nmax column-mapping fix
 ## had zero effect in a running game because of exactly this.
-const FIZ_PARSER_FORMAT_VERSION := 49
+const FIZ_PARSER_FORMAT_VERSION := 50
 
 ## Ordered (longest-prefix-first where ambiguity is possible) table of recognized FIZ section
 ## headers. `parser` is a section parser instance (see fiz_train_*_parser.gd) exposing
@@ -116,6 +126,36 @@ static func create_sections() -> Array[Dictionary]:
     return sections
 
 
+## The sections a road vehicle is read of (RoadVehicleController): what it is, its size, its
+## wheels and its engine's transmission - every other section describes the Mover's rail vehicle
+static func create_road_sections() -> Array[Dictionary]:
+    var controller_parser := FizTrainControllerParser.new()
+    var sections:Array[Dictionary] = [
+        {"prefix": "Param.", "parser": controller_parser, "table_end": ""},
+        {"prefix": "Dimensions:", "parser": controller_parser, "table_end": ""},
+        {"prefix": "Wheels:", "parser": controller_parser, "table_end": ""},
+        {"prefix": "Engine:", "parser": controller_parser, "table_end": ""},
+    ]
+    return sections
+
+
+## Reads a FIZ file into `target` by `sections` (create_sections(), create_road_sections()) - the
+## parse's own table; what the parse gathered for the parts made after it is in the context it
+## gives back
+static func parse_into(target: VehicleController, fiz_path: String, sections: Array[Dictionary]) -> FizImportContext:
+    var context := FizImportContext.new()
+    context.base_dir = fiz_path.get_base_dir()
+    context.controller = target
+    context.sections = sections
+
+    var table_state: Dictionary = {"prefix": "", "parser": null, "end": ""}
+    _parse_file(fiz_path, context.base_dir, context, table_state)
+
+    if table_state["parser"] != null:
+        table_state["parser"].end_table(context)
+    return context
+
+
 ## Parses a FIZ file into a fresh VehicleController: root-level properties (Param./Dimensions:/
 ## Cntrl. general subset/...) are applied to `target` and every section's VehicleComponent is
 ## attached to it with add_component(). `target` is expected to carry no components yet - a
@@ -125,16 +165,7 @@ static func create_sections() -> Array[Dictionary]:
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
 ## `include` directives inside the file resolve relative to its own containing directory.
 static func build_into(target: VehicleController, fiz_path: String) -> void:
-    var context := FizImportContext.new()
-    context.base_dir = fiz_path.get_base_dir()
-    context.controller = target
-    context.sections = create_sections()
-
-    var table_state: Dictionary = {"prefix": "", "parser": null, "end": ""}
-    _parse_file(fiz_path, context.base_dir, context, table_state)
-
-    if table_state["parser"] != null:
-        table_state["parser"].end_table(context)
+    var context: FizImportContext = parse_into(target, fiz_path, create_sections())
 
     # a diesel's legacy "main" compressor runs off its engine (CheckLocomotiveParameters, Mover.cpp:11738)
     var brake: RailVehicleBrake = context.get_part("RailVehicleBrake") as RailVehicleBrake
@@ -174,9 +205,9 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
 ## maszyna_e3d_model_manager.gd) - keyed by mtime+path like that cache's own _make_cache_hash(), so an
 ## edited .fiz (or an `include`d one - mtime isn't recursive, but editing a shared .fiz.inc
 ## while iterating is rare enough not to warrant walking every include) invalidates the entry.
-## Stored as the vehicle's description (a MaszynaMoverRailVehicleController with its components) - the
-## parse result, which is the expensive part; a vehicle is built from a copy of it
-## (VehiclePhysicsNode).
+## Stored as the vehicle's description (a MaszynaMoverRailVehicleController with its components, a
+## RoadVehicleController for a road vehicle) - the parse result, which is the expensive part; a
+## vehicle is built from a copy of it (VehiclePhysicsNode).
 static var _cache = ResourceCache.create("fiz")
 
 static func clear_cache() -> void:
@@ -210,10 +241,25 @@ static func build_description_at(fiz_path: String) -> VehicleController:
     if description:
         return description
 
-    # FIZ is the Mover's own format, so the vehicle it describes is built on the Mover; its
-    # components are kept in the order the FIZ sections built them
-    description = MaszynaMoverRailVehicleController.new()
-    build_into(description, fiz_path)
+    # what the file describes is its Param. Category= (LoadFIZ_Param, Mover.cpp:10256), a train
+    # without one (CategoryFlag = 1, MOVER.h:1565): a road vehicle (is_car(), CategoryFlag & 2,
+    # Driver.h:256-257) is a RoadVehicleController, of what it is and its size, driven as the
+    # original drives a car
+    var road: RoadVehicleController = RoadVehicleController.new()
+    road.category = VehicleController.CATEGORY_TRAIN
+    # a file that is not there is reported once, by the Mover's read below
+    if FileAccess.file_exists(fiz_path):
+        parse_into(road, fiz_path, create_road_sections())
+    if road.category & VehicleController.CATEGORY_ROAD:
+        road.following_gap = CAR_FOLLOWING_GAP
+        road.acceleration_limit = CAR_ACCELERATION_LIMIT
+        road.obstacle_range = CAR_OBSTACLE_RANGE
+        description = road
+    else:
+        # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
+        # its components are kept in the order the FIZ sections built them
+        description = MaszynaMoverRailVehicleController.new()
+        build_into(description, fiz_path)
     _cache.set(cache_path, description, cache_hash)
     return description
 

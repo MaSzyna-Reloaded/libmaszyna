@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bniam5t2n8jcs"
+path="res://.godot/imported/test_road_car.fiz-f67dbe5650eb5e97d1ed97232a3e3fad.res"
+
+[deps]
+
+source_file="res://tests/fixtures/test_road_car.fiz"
+dest_files=["res://.godot/imported/test_road_car.fiz-f67dbe5650eb5e97d1ed97232a3e3fad.res"]
+
+[params]
+

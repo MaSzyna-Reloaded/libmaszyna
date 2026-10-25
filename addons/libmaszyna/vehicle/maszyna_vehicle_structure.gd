@@ -25,9 +25,10 @@ class_name MaszynaVehicleStructure
 ## cargo (TDynamicObject::LoadMMediaFile_mdload(), DynObj.cpp:7195).
 @export var load_models:Dictionary[String, String] = {}
 
-## What the vehicle looks like - its models, skins and the submodels that move
-## (RailVehicleRenderingServer draws it from this)
-@export var appearance:MaszynaRailVehicleAppearance = null
+## What the vehicle looks like - its models, skins and the submodels that move: a
+## MaszynaRailVehicleAppearance for RailVehicleRenderingServer, a RoadVehicleAppearance for
+## RoadVehicleRenderingServer (a road vehicle, FizVehicleBuilder)
+@export var appearance:VehicleAppearance = null
 
 ## coupleradapter: - the adapter the vehicle hands a neighbour of another coupler type
 ## (MmdCabinInstancer.parse_coupler_adapter()); empty without the key, the original's own then

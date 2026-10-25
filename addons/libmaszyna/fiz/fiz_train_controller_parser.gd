@@ -34,8 +34,12 @@ const _TRAIN_TYPE_MAP := {
 }
 
 
-func parse(p: MaszynaParser, context: FizImportContext, _prefix: String = "") -> void:
+func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> void:
     var kv: Dictionary = FizLineUtil.read_key_values(p)
+    # a road vehicle's wheels and engine are the controller's own (FizVehicleBuilder.create_road_sections())
+    if prefix == "Wheels:" or prefix == "Engine:":
+        _parse_road_drive(kv, context)
+        return
     if kv.has("M") or kv.has("PWR") or kv.has("Vmax") or kv.has("Category") or kv.has("Type"):
         _parse_param(kv, context)
     if kv.has("L") or kv.has("H") or kv.has("W") or kv.has("Cx") or kv.has("Floor"):
@@ -46,18 +50,10 @@ func _parse_param(kv: Dictionary, context: FizImportContext) -> void:
     var controller: VehicleController = context.controller
     if kv.has("M"):
         controller.mass = FizLineUtil.get_float(kv, "M")
-    if kv.has("Mred"):
-        controller.reduced_mass = FizLineUtil.get_float(kv, "Mred")
     if kv.has("Vmax"):
         controller.max_velocity = FizLineUtil.get_float(kv, "Vmax")
     if kv.has("PWR"):
         controller.power = FizLineUtil.get_float(kv, "PWR")
-    if kv.has("SandCap"):
-        controller.sand_capacity = FizLineUtil.get_float(kv, "SandCap")
-    if kv.has("HeatingP"):
-        controller.heating_power = FizLineUtil.get_float(kv, "HeatingP")
-    if kv.has("LightP"):
-        controller.light_power = FizLineUtil.get_float(kv, "LightP")
 
     if kv.has("Category"):
         var category_str: String = FizLineUtil.get_string(kv, "Category").to_lower()
@@ -66,18 +62,44 @@ func _parse_param(kv: Dictionary, context: FizImportContext) -> void:
         else:
             push_warning("FIZ Param.Category: unknown value '%s'" % category_str)
 
+    # the rest is a rail vehicle's - a road one is read of what it is and its size alone
+    # (FizVehicleBuilder.create_road_sections())
+    var rail: MaszynaMoverRailVehicleController = controller as MaszynaMoverRailVehicleController
+    if not rail:
+        return
+    if kv.has("Mred"):
+        rail.reduced_mass = FizLineUtil.get_float(kv, "Mred")
+    if kv.has("SandCap"):
+        rail.sand_capacity = FizLineUtil.get_float(kv, "SandCap")
+    if kv.has("HeatingP"):
+        rail.heating_power = FizLineUtil.get_float(kv, "HeatingP")
+    if kv.has("LightP"):
+        rail.light_power = FizLineUtil.get_float(kv, "LightP")
+
     # Type= has no "absent" fallback distinct from the compiled default (dt_Default == 0),
     # but context.train_type must always be set (later sections' defaults depend on it) even
     # when Type= wasn't in this line.
     var train_type: int = _TRAIN_TYPE_MAP.get(FizLineUtil.get_string(kv, "Type").to_lower(), MaszynaMoverRailVehicleController.TRAIN_TYPE_DEFAULT)
     if kv.has("Type"):
-        controller.train_type = train_type
+        rail.train_type = train_type
     # the cars of a multiple unit are held together permanently, the powered car found along that
     # (vehicle_find_powered(), DynObj.cpp:7793)
     if train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_EZT \
             or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_DMU:
-        controller.unit_coupling = RailVehicleController.COUPLING_FLAG_PERMANENT
+        rail.unit_coupling = RailVehicleController.COUPLING_FLAG_PERMANENT
     context.train_type = train_type
+
+
+## A road vehicle's wheels' diameter (LoadFIZ_Wheels, Mover.cpp:10361) and its transmission's
+## ratio, the wheel's teeth over the motor's, 1 without a motor's (LoadFIZ_Engine, Mover.cpp:11124-11141)
+func _parse_road_drive(kv: Dictionary, context: FizImportContext) -> void:
+    var road: RoadVehicleController = context.controller as RoadVehicleController
+    if kv.has("D"):
+        road.wheel_diameter = FizLineUtil.get_float(kv, "D")
+    if kv.has("Trans"):
+        var teeth: PackedStringArray = FizLineUtil.get_string(kv, "Trans").split(":")
+        if teeth.size() == 2 and teeth[0].to_int() > 0:
+            road.transmission_ratio = float(teeth[1].to_int()) / teeth[0].to_int()
 
 
 func _parse_dimensions(kv: Dictionary, context: FizImportContext) -> void:

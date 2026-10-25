@@ -127,7 +127,7 @@ func vehicle_get_description(vehicle:VehicleData) -> VehicleController:
 
 ## The vehicle's .mmd read in its skin (VehicleData.livery): its appearance
 ## (MaszynaRailVehicle3DInstancer.read_structure())
-func vehicle_get_appearance(vehicle:VehicleData) -> RailVehicleAppearance:
+func vehicle_get_appearance(vehicle:VehicleData) -> VehicleAppearance:
     var structure:MaszynaVehicleStructure = MaszynaRailVehicle3DInstancer.read_structure(
             vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), vehicle.livery, vehicle.vehicle_id)
     return structure.appearance if structure else null

@@ -63,7 +63,15 @@ static func read_structure(
     var structure := MaszynaVehicleStructure.new()
     structure.data_path = normalized_data_path
     structure.file_name = file_name
-    var appearance := MaszynaRailVehicleAppearance.new()
+    # a road vehicle is drawn with its wheels turned, nothing of a rail vehicle's; the wheels'
+    # diameters and axle arrangement of a rail one split its axles into powered and rolling ones
+    var description:VehicleController = FizVehicleBuilder.build_description(
+            normalized_data_path.trim_prefix("/"), file_name)
+    var road_appearance:RoadVehicleAppearance = (
+            RoadVehicleAppearance.new() if description is RoadVehicleController else null)
+    var rail_appearance:MaszynaRailVehicleAppearance = (
+            null if road_appearance else MaszynaRailVehicleAppearance.new())
+    var appearance:VehicleAppearance = road_appearance if road_appearance else rail_appearance
     appearance.data_path = normalized_data_path
     appearance.model_transform = MASZYNA_VEHICLE_FRAME
     # The exterior body model filename is NOT the same as file_name in general (confirmed
@@ -87,18 +95,30 @@ static func read_structure(
         appearance.passengers_model_filename = passengers_filename
 
     appearance.skins = PackedStringArray(MmdCabinInstancer.resolve_skins(normalized_data_path, skin))
-    appearance.joint_cabs = MmdCabinInstancer.parse_joint_cabs(abs_mmd_path, parameters)
     var model:MaszynaE3DModel = MaszynaE3DModelManager.load_model(normalized_data_path, appearance.model_filename)
     if model:
-        # the wheels' diameters and axle arrangement split the axles into powered and rolling ones
-        var description:VehicleController = FizVehicleBuilder.build_description(
-                normalized_data_path.trim_prefix("/"), file_name)
+        # the destination sign is the submodel with replaceable skin 4 (TSubModel::find_replacable4(),
+        # Model3d.cpp:932-958; init_destination(), DynObj.cpp:2539-2545); none, no sign
+        var sign:MaszynaE3DSubModel = _find_destination_sign(model.submodels, 0)
+        appearance.head_display_submodel = sign.resource_name if sign else ""
+    if model and road_appearance:
+        var names:Dictionary[String, MaszynaE3DSubModel] = {}
+        _index_submodels(model.submodels, names)
+        var wheels:PackedStringArray = []
+        for wheel_name:String in MmdCabinInstancer.parse_wheel_names(abs_mmd_path, parameters):
+            var wheel:String = _find_submodel(names, [wheel_name.to_lower()])
+            if wheel:
+                wheels.append(wheel)
+        road_appearance.wheels = wheels
+    if rail_appearance:
+        rail_appearance.joint_cabs = MmdCabinInstancer.parse_joint_cabs(abs_mmd_path, parameters)
+    if model and rail_appearance:
         var wheels:RailVehicleWheels = null
         if description:
             for component:VehicleComponent in description.get_components():
                 if component is RailVehicleWheels:
                     wheels = component
-        _resolve_parts(appearance, model, wheels, MmdCabinInstancer.parse_wheel_names(abs_mmd_path, parameters),
+        _resolve_parts(rail_appearance, model, wheels, MmdCabinInstancer.parse_wheel_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_pantograph_element_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_wiper_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_mirror_names(abs_mmd_path, parameters),
@@ -199,11 +219,6 @@ static func _resolve_parts(
         pendulums:Dictionary, pantograph_factors:PackedFloat64Array) -> void:
     var names:Dictionary[String, MaszynaE3DSubModel] = {}
     _index_submodels(model.submodels, names)
-
-    # the destination sign is the submodel with replaceable skin 4 (TSubModel::find_replacable4(),
-    # Model3d.cpp:932-958; init_destination(), DynObj.cpp:2539-2545); none, no sign
-    var sign:MaszynaE3DSubModel = _find_destination_sign(model.submodels, 0)
-    appearance.head_display_submodel = sign.resource_name if sign else ""
 
     appearance.front_bogie = _find_submodel(names, FRONT_BOGIE_SUBMODEL_NAMES)
     appearance.rear_bogie = _find_submodel(names, REAR_BOGIE_SUBMODEL_NAMES)

@@ -20,12 +20,15 @@ const STRUCTURES:Dictionary[MaszynaTrackData.MaszynaEnvironmentType, TrackData.S
 ## names (TrackData's features; the .scn knows only textures)
 const FEATURES:MaszynaTrackFeatures = preload("maszyna_track_features.tres")
 ## The track types built so far; a road is read as a normal track (Track.cpp:397-438: road is
-## tt_Normal with the road category)
+## tt_Normal with the road category), a crossroad of roads as its two curves (tt_Cross, Track.cpp:422-426)
 const TYPES:Dictionary[String, TrackServer.TrackType] = {
     "normal": TrackServer.TRACK_NORMAL,
     "switch": TrackServer.TRACK_SWITCH,
     "road": TrackServer.TRACK_ROAD,
+    "cross": TrackServer.TRACK_CROSS,
 }
+## The types with a second curve: a switch's diverging one, a crossroad's second road
+const TWO_CURVE_TYPES:Array[String] = ["switch", "cross"]
 
 
 ## Plain data holder - scenery-loaded tracks are built directly against TrackServer/
@@ -36,7 +39,7 @@ const TYPES:Dictionary[String, TrackServer.TrackType] = {
 func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackData:
     var type_token = p.next_token()
     if not TYPES.has(type_token):
-        # river/cross/turn/table are not built yet - discard the whole node, otherwise the
+        # river/turn/table are not built yet - discard the whole node, otherwise the
         # shared parser cursor stays inside it and keeps eating tokens until the next keyword.
         p.get_tokens_until("endtrack")
         return null
@@ -65,7 +68,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
 
     var nt = ""
     # the keywords in lower case, as the original reads every token (Track.cpp:810-928)
-    if type_token == "switch":
+    if type_token in TWO_CURVE_TYPES:
         data.diverging_curve = get_curve_from_tokens(p.get_tokens(15))
         nt = p.next_token().to_lower()
     else:
@@ -94,6 +97,10 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
         data.speed_limit = float(params.get("velocity", -1.0))
         params.erase("velocity")
         data.parameters = params
+    # a crossroad is drawn otherwise than a track (Track.cpp:1519), which is not ported: it stays
+    # undrawn, as before it was read at all - its roads are RoadServer's (MaszynaRoadNetwork)
+    if data.kind == TrackServer.TRACK_CROSS:
+        data.visible = false
     _read_features(data)
     return data
 

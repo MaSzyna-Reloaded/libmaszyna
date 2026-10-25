@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DRoadVehicleRenderingServer" inherits="RoadVehicleRenderingServer" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		MaSzyna's road vehicles, drawn.
+	</brief_description>
+	<description>
+		A [RoadVehicleRenderingServer] whose cars' lamps are lit as their lights are on ([method RoadVehicleController.get_lights]), by the names of the original's lamp submodels: the head lights the front end's headlamps, the tail lights the rear end's red markers. Registered by the plugin under the core's name.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

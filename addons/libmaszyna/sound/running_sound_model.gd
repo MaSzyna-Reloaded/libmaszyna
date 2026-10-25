@@ -29,6 +29,11 @@ var _engine:RailVehicleEngine
 var _wheels:RailVehicleWheels
 var _brake:RailVehicleBrake
 var _master_controller:RailVehicleMasterController
+## A road vehicle's controller - its engine and brakes are its run's (RoadVehicleController)
+var _road:RoadVehicleController
+## The car's engine and brake squeal gains, eased as the original eases them
+var _engine_volume:float = 0.0
+var _squeal_volume:float = 0.0
 ## engine_turbo_pitch and the turbo's gain, eased toward their goals (DynObj.cpp:8275-8280)
 var _turbo_pitch:float = 0.0
 var _turbo_volume:float = 0.0
@@ -43,6 +48,23 @@ const TURBO_MIN_ENGINE_SPEED:float = 0.1
 const TURBO_PITCH_BASE:float = 0.4
 const TURBO_PITCH_SCALE:float = 0.4
 const TURBO_STOP_VOLUME:float = 0.05
+## Original engine: a car's engine as the Dumb one sounds - its amplitude factor over three times the
+## power (DynObj.cpp:6014-6021), its pitch lowered by the engine power over a thousandfold power
+## (DynObj.cpp:8262-8264), its gain eased by a quarter an update and silent below 0.05
+## (DynObj.cpp:8291, 8330)
+const CAR_ENGINE_AMPLITUDE_POWER_DIVISOR:float = 3.0
+const CAR_ENGINE_PITCH_POWER_FACTOR:float = 0.2
+const CAR_ENGINE_PITCH_POWER_DIVISOR:float = 1000.0
+const ENGINE_VOLUME_EASING:float = 0.25
+const ENGINE_STOP_VOLUME:float = 0.05
+## The combined engine sound's chunks are chosen in hundredths of the revolutions a minute (DynObj.cpp:8252-8257)
+const COMBINED_ENGINE_NORMALIZER:float = 60.0 * 0.01
+## Original engine: the brake squeal - above 2.5 km/h, started above 0.075 and stopped below 0.05,
+## faded at 2.5 of its gain a second when slower (DynObj.cpp:4719-4739)
+const SQUEAL_MIN_SPEED:float = 2.5
+const SQUEAL_START_VOLUME:float = 0.075
+const SQUEAL_STOP_VOLUME:float = 0.05
+const SQUEAL_FADE_RATE:float = 2.5
 
 
 ## The vehicle whose components the formulas read, taken once - TrainSoundSystem calls it again
@@ -58,6 +80,7 @@ func attach_vehicle(vehicle_rid:RID) -> void:
             vehicle_rid, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
     _master_controller = RailVehicleServer.vehicle_component_get(
             vehicle_rid, RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER) as RailVehicleMasterController
+    _road = _controller as RoadVehicleController
 
 
 ## Returns event name -> {"action": Action, "parameters": Dictionary, "source": definition}, only
@@ -70,12 +93,16 @@ func update(delta:float, outer_noise_audible:bool) -> Dictionary:
     var speed:float = VehicleServer.vehicle_get_speed(_vehicle_rid)
     # a standing vehicle with still wheels and fan plays nothing - every formula below gives silence
     if speed <= 0.0 and not _playing and _wheel_revolutions() <= 0.01 and _resistor_fan_rotation() <= 0.1 \
-            and not (_labels.has("turbo") and _engine and _engine.get_rpm_count() > TURBO_MIN_ENGINE_SPEED):
+            and not (_labels.has("turbo") and _engine and _engine.get_rpm_count() > TURBO_MIN_ENGINE_SPEED) \
+            and not (_labels.has("engine") and _road and _road.is_engine_running()):
         _motor_volume = 0.0
         return {}
     # the track is only read by sounds of a moving vehicle, the curve radius only above 5 km/h
     var shape:Dictionary = {}
-    if speed > 0.0 and (_labels.has("wheel_clatter") or _labels.has("curve")
+    if speed > 0.0 and _road:
+        # a road vehicle hears the track its road is laid along
+        shape = {"track_rid": RoadServer.road_get_track(RoadVehicleServer.vehicle_get_road(_vehicle_rid))}
+    elif speed > 0.0 and (_labels.has("wheel_clatter") or _labels.has("curve")
             or _labels.has("outernoise") or _labels.has("runningnoise")):
         shape = RailVehicleServer.vehicle_get_track_position(_vehicle_rid)
     if speed > 5.0 and _labels.has("curve"):
@@ -116,7 +143,46 @@ func _level(
         "outernoise": return _outer_noise(source, speed, quality_volume, outer_noise_audible)
         "runningnoise": return _running_noise(source, speed, quality_volume)
         "turbo": return _turbo(source, delta)
+        "engine": return _car_engine(source)
+        "brake": return _car_brake_squeal(source, speed, delta)
     return []
+
+
+## DynObj.cpp:8244-8291 - a car's engine as the original sounds a Dumb one: idling while started,
+## its pitch from the engine's revolutions, its gain from the engine power and revolutions. The
+## engine power is the power times how much the car accelerates (RoadVehicleController.get_throttle())
+func _car_engine(source:MmdSoundSourceDefinition) -> Array:
+    var power:float = _road.power
+    if not _road.is_engine_running() or power <= 0.0:
+        _engine_volume = 0.0
+        return []
+    var revolutions:float = _road.get_engine_revolutions()
+    var engine_power:float = power * _road.get_throttle()
+    var normalizer:float = COMBINED_ENGINE_NORMALIZER if _is_combined(source) else 1.0
+    var frequency:float = (source.frequency_offset + source.frequency_factor * revolutions * normalizer
+            - CAR_ENGINE_PITCH_POWER_FACTOR * engine_power / (1.0 + power * CAR_ENGINE_PITCH_POWER_DIVISOR))
+    var volume:float = source.amplitude_offset + source.amplitude_factor / (CAR_ENGINE_AMPLITUDE_POWER_DIVISOR * power) \
+            * (engine_power + revolutions * Units.SECONDS_PER_MINUTE)
+    _engine_volume = lerpf(_engine_volume, volume, ENGINE_VOLUME_EASING)
+    if _engine_volume < ENGINE_STOP_VOLUME:
+        return []
+    return [frequency, _engine_volume]
+
+
+## DynObj.cpp:4693-4739 - a car's brake squeal, as hard as it brakes
+## (RoadVehicleController.get_brake_force_ratio())
+func _car_brake_squeal(source:MmdSoundSourceDefinition, speed:float, delta:float) -> Array:
+    if speed > SQUEAL_MIN_SPEED:
+        var volume:float = source.amplitude_offset + lerpf(-1.0, 1.0, _road.get_brake_force_ratio()) * source.amplitude_factor
+        if volume > SQUEAL_START_VOLUME:
+            _squeal_volume = volume
+        elif volume < SQUEAL_STOP_VOLUME:
+            _squeal_volume = 0.0
+    else:
+        _squeal_volume = maxf(0.0, _squeal_volume - _squeal_volume * SQUEAL_FADE_RATE * delta)
+    if _squeal_volume < SQUEAL_STOP_VOLUME:
+        return []
+    return [speed * 0.01 if _is_combined(source) else source.frequency_offset + source.frequency_factor, _squeal_volume]
 
 
 ## DynObj.cpp:8266-8290: a diesel's turbocharger, heard from the master controller position
@@ -241,6 +307,8 @@ func _outer_noise(
     # DynObj.cpp:4412-4420 - the ratio is only non-zero for a braking, moving vehicle
     if _brake and _brake.get_unit_force() > 10.0 and speed > 0.05:
         volume *= 1.0 + 0.125 * _brake.get_force_ratio()
+    elif _road and speed > 0.05:
+        volume *= 1.0 + 0.125 * _road.get_brake_force_ratio()
     volume *= quality_volume
     if not combined:
         volume *= clampf(speed / 40.0, 0.0, 1.0)

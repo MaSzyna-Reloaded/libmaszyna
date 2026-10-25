@@ -43,8 +43,8 @@ static var firstinit_importer = preload("res://addons/libmaszyna/scenery/maszyna
 static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
-## 55: ModelData.model_provider renamed rendering_backend
-const CACHE_FORMAT_VERSION:int = 55
+## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read
+const CACHE_FORMAT_VERSION:int = 56
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -291,6 +291,8 @@ func instantiate_content(root:SceneryContentNode, compiled:CompiledScenery, trac
     )
     if SceneryServer.is_load_given_up(root):
         return
+    # the cars drive on the network of its roads, crossroads and turning places
+    root.roads_own(MaszynaRoadNetwork.build(compiled.tracks, track_rids))
     await SceneryServer.report_progress(root, TERRAIN_PROGRESS, SceneryContentNode.LoadStage.TERRAIN, "Registering terrain")
     await _build_triangle_chunks(root, scn.triangle_chunks, world_3d)
     if SceneryServer.is_load_given_up(root):

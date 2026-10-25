@@ -344,7 +344,7 @@ func _refresh_active_banks() -> void:
         # their sound state entirely instead of paying full per-frame cost (soundproofing,
         # play()/set_parameters()) for a scenery's worth of parked, unheard rolling stock.
         var distance:float = (
-                RailVehicleRenderingServer.vehicle_get_transform(runtime.vehicle).origin.distance_to(listener_position)
+                VehicleServer.vehicle_get_position(runtime.vehicle).distance_to(listener_position)
                 if _listener else 0.0)
         if distance > _culling_distance:
             if not runtime.culled:
@@ -364,7 +364,7 @@ func _refresh_active_banks() -> void:
     if _listener and not _bank_build_queue:
         var distances:Dictionary[RID, float] = {}
         for vehicle:RID in _bank_builders:
-            var distance:float = RailVehicleRenderingServer.vehicle_get_transform(vehicle).origin.distance_to(listener_position)
+            var distance:float = VehicleServer.vehicle_get_position(vehicle).distance_to(listener_position)
             if distance <= _culling_distance:
                 distances[vehicle] = distance
                 _bank_build_queue.append(vehicle)
