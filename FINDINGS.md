@@ -689,8 +689,7 @@ code belongs to the game's `FINDINGS.md`.
 * A vehicle's models are built when it comes within the draw distance and freed beyond it, never
   at load (their files are loaded at load unless lazy loading is on); what the simulation needs of the model (the pantographs) is read off the model file,
   not off its drawing. *(10-06 the Vehicles stage drew every vehicle of the scenery)*
-* Code that runs in the editor calls no autoload that is not `@tool` (`TrainSoundSystem`,
-  `CabinSystem`): the call is a script error returning null into the caller's data - a null part
+* Code that runs in the editor calls no autoload that is not `@tool` (`CabinSystem`): the call is a script error returning null into the caller's data - a null part
   of a vehicle crashed the editor on its first rebuild. *(09-30 editor crash on a game dir change)*
 * A loaded scenery runs nothing: `SimulationServer`'s clock ticks only under a `SimulationRuntime`
   the game places, and the scenario's scripts and sounds are started by the game

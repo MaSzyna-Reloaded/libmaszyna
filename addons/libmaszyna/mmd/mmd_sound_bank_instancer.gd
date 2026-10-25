@@ -7,7 +7,7 @@ const _INTERNAL_BRAKE_LABELS:Array[String] = [
 ]
 const _VEHICLE_PLAYER_VOICE_COUNT:int = 16
 const _HORN_LABELS:Array[String] = ["horn1", "horn2", "horn3"]
-## A road vehicle's engine and brake squeal follow how it runs (RunningSoundModel): it has no engine
+## A road vehicle's engine and brake squeal follow how it runs (MmdSoundFormulas): it has no engine
 ## or brakes of a rail vehicle's to trigger them by
 const _ROAD_RUNNING_LABELS:Array[String] = ["engine", "brake"]
 ## Coupler sounds, external and read from internaldata: too (DynObj.cpp:6409-6520, sound_placement::external)
@@ -36,12 +36,6 @@ const _RUNNING_PLACEMENTS:Dictionary = {
     "outernoise": &"external",
     "wheel_clatter": &"external",
 }
-## Where an outernoise bogie copy starts in its sample, as a fraction of it: an even copy in the
-## later range, an odd one in the earlier, so two neighbours never start close (DynObj.cpp:6505-6514)
-const _BOGIE_NOISE_EVEN_START_MIN:float = 0.5
-const _BOGIE_NOISE_EVEN_START_MAX:float = 0.8
-const _BOGIE_NOISE_ODD_START_MIN:float = 0.0
-const _BOGIE_NOISE_ODD_START_MAX:float = 0.3
 ## How high a door speaker stands over the rail [m] (DynObj.cpp:6636)
 const DOOR_SPEAKER_HEIGHT:float = 3.0
 const _RUNNING_RANGES:Dictionary = {
@@ -148,10 +142,10 @@ static func _build_player(
         soundproofing:Array[PackedFloat32Array], context:MmdImportContext,
         abs_mmd_path:String, cabin_only:bool, locations:Dictionary) -> SfxPlayer3D:
     var events:Array[SfxEvent] = []
-    # {definition, event_name} of every event a trigger starts
-    var regular:Array[Dictionary] = []
+    var formulas := MmdSoundFormulas.new(vehicle_rid)
     var brake_definitions:Dictionary[String, MmdSoundSourceDefinition] = {}
-    var running := RunningSoundModel.new()
+    # a player of running sounds alone has a voice pool of its own size
+    var only_running:bool = true
     for definition:MmdSoundSourceDefinition in definitions:
         if not MmdSoundCatalog.has_label(definition.label):
             context.warn_unsupported_label(definition.label, abs_mmd_path, 0)
@@ -159,15 +153,17 @@ static func _build_player(
         var entry:Dictionary = MmdSoundCatalog.get_entry(definition.label)
         if definition.label in _ROAD_RUNNING_LABELS and VehicleServer.vehicle_get_controller(vehicle_rid) is RoadVehicleController:
             _apply_brake_source_defaults(definition)
-            _build_running_events(definition, entry["event_name"], locations, events, running)
+            formulas.running_sound(definition, entry["event_name"], locations, events)
             continue
         if entry.get("controller", &"") == &"brake":
             _apply_brake_source_defaults(definition)
             brake_definitions[definition.label] = definition
+            only_running = false
             continue
         if entry.get("controller", &"") == &"running":
-            _build_running_events(definition, entry["event_name"], locations, events, running)
+            formulas.running_sound(definition, entry["event_name"], locations, events)
             continue
+        only_running = false
         # one copy at every door speaker, at its offset in place of the sound's own (DynObj.cpp:6362),
         # none without door locations; MMD offsets turned into the vehicle's -Z forward frame
         var positions:Array = [null]
@@ -177,10 +173,7 @@ static func _build_player(
         for index:int in range(positions.size()):
             var event_name:StringName = (entry["event_name"] if not positions[index] is Vector3
                     else StringName("%s_%d" % [entry["event_name"], index]))
-            # CHANGE triggers only start their event - a one-shot sample, never stopped
-            var event:SfxEvent = MmdSoundEventBuilder.build(
-                    definition, event_name, entry.get("sound_parameter", &""), false, true,
-                    not entry["trigger_mode"] == TrainSoundTrigger.TriggerMode.CHANGE)
+            var event:SfxEvent = formulas.regular_sound(definition, entry, event_name)
             if definition.label in _HORN_LABELS:
                 _apply_horn_spatial_config(event, definition)
             elif _CABIN_SPATIAL.has(definition.label) and not definition.range_defined:
@@ -190,24 +183,23 @@ static func _build_player(
             var emitter:Array[SfxEvent] = [event]
             MmdSoundEventBuilder.shape_emitter(emitter, definition, definition.start_offset)
             events.append(event)
-            regular.append({"definition": definition, "event_name": event_name})
 
     for label:String in _LOCAL_BRAKE_FALLBACKS:
         var fallback:MmdSoundSourceDefinition = brake_definitions.get(_LOCAL_BRAKE_FALLBACKS[label])
         if fallback and not brake_definitions.has(label):
             brake_definitions[label] = fallback.copy_as(label)
-    var brakes := BrakeSoundModel.new()
     for definition:MmdSoundSourceDefinition in brake_definitions.values():
-        _build_brake_sound(definition, MmdSoundCatalog.get_entry(definition.label)["event_name"], events, brakes)
+        formulas.brake_sound(definition, MmdSoundCatalog.get_entry(definition.label)["event_name"], events)
 
     var bank := SfxBank.new()
     bank.events = events
+    formulas.apply(bank)
     var player := SfxPlayer3D.new()
     player.name = player_name
     player.bank = bank
     # a running sound (or a clatter axle) crossfades at most two chunks at once
     player.max_tracks = (
-            2 * running.sources.size() if running.sources and not (regular or brake_definitions)
+            2 * events.size() if events and only_running
             else _VEHICLE_PLAYER_VOICE_COUNT)
     player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
     player.unit_size = 20.0
@@ -217,29 +209,8 @@ static func _build_player(
     # built with cabin_only false and lands on Exterior with the rest of the outside.
     player.bus = &"Cabin" if cabin_only else &"Exterior"
     parent.add_child(player, false, Node.INTERNAL_MODE_BACK)
-
-    var triggers:Array[Dictionary] = []
-    for source:Dictionary in regular:
-        var definition:MmdSoundSourceDefinition = source["definition"]
-        var entry:Dictionary = MmdSoundCatalog.get_entry(definition.label)
-        triggers.append({
-            "state_property": entry["state_property"],
-            "trigger_mode": entry["trigger_mode"],
-            "sound_event": source["event_name"],
-            "sound_parameter": entry.get("sound_parameter", &""),
-            "trigger_threshold_min": entry.get("trigger_threshold_min", 0.0),
-            "trigger_threshold_max": entry.get("trigger_threshold_max", 1.0),
-            "source": definition,
-        })
-
-    TrainSoundSystem.register_bank(player, {
-        "vehicle": vehicle_rid,
-        "cabin_only": cabin_only,
-        "triggers": triggers,
-        "brakes": brakes if brakes.sounds else null,
-        "running": running if running.sources else null,
-        "soundproofing": soundproofing,
-    })
+    MaszynaVehicleSoundServer.bank_register(
+            player.get_instance_id(), vehicle_rid, formulas.registration(cabin_only, soundproofing))
     return player
 
 
@@ -273,96 +244,6 @@ static func _apply_original_defaults(definition:MmdSoundSourceDefinition, from_i
 
 static func _is_running(definition:MmdSoundSourceDefinition) -> bool:
     return MmdSoundCatalog.get_entry(definition.label).get("controller", &"") == &"running"
-
-
-## One event per sound location: traction motors and bogie noise are repeated at every
-## `tractionmotors:`/`bogies:` offset, keeping the x/y of the sound's own offset (DynObj.cpp:5722-5738,
-## 6137-6146); a wheel clatter definition is one axle already. MMD offsets are in the original
-## vehicle frame (+Z forward), turned by 180 degrees into the vehicle's -Z forward frame.
-static func _build_running_events(
-        definition:MmdSoundSourceDefinition, event_name:StringName, locations:Dictionary,
-        events:Array[SfxEvent], running:RunningSoundModel) -> void:
-    var offsets:Array[Vector3] = [definition.offset]
-    var location_key:String = {"tractionmotor": "tractionmotors", "outernoise": "bogies"}.get(definition.label, "")
-    if location_key and locations[location_key]:
-        offsets.clear()
-        for location:float in locations[location_key]:
-            offsets.append(Vector3(definition.offset.x, definition.offset.y, -location))
-    var first_index:int = 0
-    if definition.label == "wheel_clatter":
-        first_index = running.sources.filter(func(entry:Dictionary) -> bool:
-            return (entry["source"] as MmdSoundSourceDefinition).label == "wheel_clatter").size()
-    for index:int in range(offsets.size()):
-        var event_id:StringName = event_name
-        if offsets.size() > 1 or definition.label == "wheel_clatter":
-            event_id = StringName("%s_%d" % [event_name, first_index + index])
-        var position:Vector3 = Vector3(-offsets[index].x, offsets[index].y, -offsets[index].z)
-        if definition.label == "wheel_clatter" and definition.chunks:
-            running.sources.append({
-                "event": event_id, "source": definition,
-                "chunk_events": _build_chunk_events(definition, event_id, position, events),
-            })
-            continue
-        var event:SfxEvent = MmdSoundEventBuilder.build(
-                definition, event_id, &"point", true, true, not definition.label == "wheel_clatter")
-        event.spatial_config.position = position
-        # every copy its own start, as the original sets it when it reads the MMD: bogies
-        # alternate between two ranges (DynObj.cpp:6505-6514), located motors start anywhere
-        # (DynObj.cpp:6085), anything else where the MMD's startoffset: says
-        var start_fraction:float = definition.start_offset
-        if definition.label == "outernoise":
-            start_fraction = (randf_range(_BOGIE_NOISE_ODD_START_MIN, _BOGIE_NOISE_ODD_START_MAX) if index % 2
-                    else randf_range(_BOGIE_NOISE_EVEN_START_MIN, _BOGIE_NOISE_EVEN_START_MAX))
-        elif definition.label == "tractionmotor" and location_key and locations[location_key]:
-            start_fraction = randf()
-        var emitter:Array[SfxEvent] = [event]
-        MmdSoundEventBuilder.shape_emitter(emitter, definition, start_fraction)
-        events.append(event)
-        running.sources.append({"event": event_id, "source": definition})
-
-
-## One brake sound's event, played as BrakeSoundModel decides: a loop with its bookends or its
-## chunks crossfaded on `point`, or a one-shot
-static func _build_brake_sound(
-        definition:MmdSoundSourceDefinition, event_name:StringName, events:Array[SfxEvent],
-        brakes:BrakeSoundModel) -> void:
-    var chunk_events:Array[StringName] = []
-    if definition.label in BrakeSoundModel.ONE_SHOT_LABELS and definition.chunks:
-        chunk_events = _build_chunk_events(definition, event_name, definition.offset, events)
-    else:
-        var looped:bool = not definition.label in BrakeSoundModel.ONE_SHOT_LABELS
-        var event:SfxEvent = MmdSoundEventBuilder.build(
-                definition, event_name, &"point" if looped else &"", true, true, looped)
-        var emitter:Array[SfxEvent] = [event]
-        MmdSoundEventBuilder.shape_emitter(emitter, definition, definition.start_offset)
-        events.append(event)
-    brakes.add_sound(definition, event_name, chunk_events)
-
-
-## A combined one-shot (a clatter click, a brake cylinder click) plays the chunk its value picks -
-## one single-sample event per chunk, since an automation event never finishes while any of its
-## chunks is left unplayed.
-static func _build_chunk_events(
-        definition:MmdSoundSourceDefinition, event_id:StringName, position:Vector3,
-        events:Array[SfxEvent]) -> Array[StringName]:
-    var chunk_events:Array[StringName] = []
-    var emitter:Array[SfxEvent] = []
-    for chunk:Dictionary in RunningSoundModel.sorted_chunks(definition):
-        var chunk_definition := MmdSoundSourceDefinition.new()
-        chunk_definition.label = definition.label
-        chunk_definition.sound_main = chunk["filename"]
-        chunk_definition.range = definition.range
-        chunk_definition.placement = definition.placement
-        chunk_definition.soundproofing = definition.soundproofing
-        var chunk_event_id:StringName = StringName("%s_%d" % [event_id, chunk_events.size()])
-        var event:SfxEvent = MmdSoundEventBuilder.build(chunk_definition, chunk_event_id, &"", true, true, false)
-        event.spatial_config.position = position
-        events.append(event)
-        emitter.append(event)
-        chunk_events.append(chunk_event_id)
-    # one emitter whichever chunk it clicks with
-    MmdSoundEventBuilder.shape_emitter(emitter, definition, definition.start_offset)
-    return chunk_events
 
 
 static func _apply_horn_spatial_config(event:SfxEvent, definition:MmdSoundSourceDefinition) -> void:

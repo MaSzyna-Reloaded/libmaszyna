@@ -1,9 +1,9 @@
 extends RefCounted
 class_name MmdSoundCatalog
 
-## MMD `sounds:` label -> gnd-sfx event name + TrainSoundTrigger wiring, evidence-based the same
+## MMD `sounds:` label -> gnd-sfx event name + the value its trigger follows, evidence-based the same
 ## way MmdSemanticCatalog is: state_property names are copied from demo/vehicles/sm42/sm_42.tscn's
-## already-working hand-authored TrainSoundTrigger wiring (oil_pump_active/engine_rpm) or from the
+## once hand-authored trigger wiring (oil_pump_active/engine_rpm) or from the
 ## C++ VehicleComponent state each other label's own property is confirmed to expose (fuel_pump_active -
 ## RailVehicleDieselEngine.cpp:180, battery_enabled - VehicleController.cpp:428, compressor_enabled -
 ## RailVehicleEngine.cpp:197/RailVehicleElectricEngine.cpp:169, horn_low_active/horn_high_active/whistle_active
@@ -14,11 +14,18 @@ class_name MmdSoundCatalog
 ## v1 is Tier 1 (exact parity with the proven SM42 reference: oilpump/fuelpump/horn1/horn2/horn3/
 ## engine) + Tier 2 (same shapes, additional labels with confirmed wrapper state: battery/
 ## compressor) + Tier 3 (brake-related labels - `entry["controller"] == &"brake"` marks these;
-## MmdSoundBankInstancer hands them to BrakeSoundModel instead of building a TrainSoundTrigger
-## from `state_property`/`trigger_mode` the way Tier 1/2 entries do) + running sounds (`entry["controller"] == &"running"`, see RunningSoundModel). Every
+## MmdSoundFormulas gives them the original's own formulas instead of a trigger from
+## `state_property`/`trigger_mode` the way Tier 1/2 entries do) + running sounds (`entry["controller"]
+## == &"running"`, MmdSoundFormulas too). Every `state_property` is a quantity of
+## MaszynaVehicleSoundServer, fed by it by that name. Every
 ## other label surveyed in dynamic/pkp/ (door family/announcements/...) is deliberately
 ## absent - each still needs its own wrapper-state cross-reference before it can be added, same
 ## discipline as the cabin catalog.
+
+## How a regular sound follows its value: plays while it is non-zero within the thresholds (TOGGLE),
+## plays while within them with the value as its parameter (CONTINUOUS), or plays once whenever it
+## changes (CHANGE, an event count)
+enum TriggerMode { TOGGLE, CONTINUOUS, CHANGE }
 
 static var _catalog:Dictionary = {}
 
@@ -30,93 +37,93 @@ static func _static_init() -> void:
         "oilpump": {
             "event_name": &"oil_pump",
             "state_property": "oil_pump_active",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         "fuelpump": {
             "event_name": &"fuel_pump",
             "state_property": "fuel_pump_active",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         "battery": {
             "event_name": &"battery",
             "state_property": "battery_enabled",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # Coupler attach/detach one-shots per coupling type (DynObj.cpp:6409-6520, played at
         # DynObj.cpp:4855-4905). The vehicle reports each attach and each detach once
-        # (VehicleController.coupler_attached / coupler_detached); the running counts these names
-        # address live in TrainSoundSystem, which is what owns sound state.
+        # (VehicleController.coupler_attached / coupler_detached); MaszynaVehicleSoundServer counts
+        # them as the quantities these names are.
         # A coupler adapter fitted and taken off (DynObj.cpp:6835-6852, played on sound::attachadapter/
         # removeadapter of TDynamicObject::attach/remove_coupler_adapter())
         "coupleradapterattach": {
             "event_name": &"coupler_adapter_attach",
-            "state_property": "coupler_sound/attach_adapter",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_adapter_attach",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "coupleradapterremove": {
             "event_name": &"coupler_adapter_remove",
-            "state_property": "coupler_sound/remove_adapter",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_adapter_remove",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "couplerattach": {
             "event_name": &"coupler_attach",
-            "state_property": "coupler_sound/attach_coupler",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_coupler",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "brakehoseattach": {
             "event_name": &"brakehose_attach",
-            "state_property": "coupler_sound/attach_brakehose",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_brakehose",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "mainhoseattach": {
             "event_name": &"mainhose_attach",
-            "state_property": "coupler_sound/attach_mainhose",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_mainhose",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "controlattach": {
             "event_name": &"control_attach",
-            "state_property": "coupler_sound/attach_control",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_control",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "gangwayattach": {
             "event_name": &"gangway_attach",
-            "state_property": "coupler_sound/attach_gangway",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_gangway",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "heatingattach": {
             "event_name": &"heating_attach",
-            "state_property": "coupler_sound/attach_heating",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_attach_heating",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "couplerdetach": {
             "event_name": &"coupler_detach",
-            "state_property": "coupler_sound/detach_coupler",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_coupler",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "brakehosedetach": {
             "event_name": &"brakehose_detach",
-            "state_property": "coupler_sound/detach_brakehose",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_brakehose",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "mainhosedetach": {
             "event_name": &"mainhose_detach",
-            "state_property": "coupler_sound/detach_mainhose",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_mainhose",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "controldetach": {
             "event_name": &"control_detach",
-            "state_property": "coupler_sound/detach_control",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_control",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "gangwaydetach": {
             "event_name": &"gangway_detach",
-            "state_property": "coupler_sound/detach_gangway",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_gangway",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "heatingdetach": {
             "event_name": &"heating_detach",
-            "state_property": "coupler_sound/detach_heating",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "coupler_detach_heating",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         # the departure signal loops on each door speaker while the vehicle's door warning sounds
         # (DynObj.cpp:4768-4787); range 25 m unless the MMD says (DynObj.cpp:6359) - one event at
@@ -125,46 +132,46 @@ static func _static_init() -> void:
         # 2 * EU07_SOUND_RUNNINGNOISECUTOFFRANGE (DynObj.h:574, sound.h:20)
         "derail": {
             "event_name": &"derail",
-            "state_property": "derail_sound/derailed",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "derailed",
+            "trigger_mode": TriggerMode.CHANGE,
             "range": 400.0,
         },
         "departuresignal": {
             "event_name": &"departure_signal",
             "state_property": "doors_departure_signal_sounding",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
             "range": 25.0,
             "at_door_speakers": true,
         },
         "compressor": {
             "event_name": &"compressor",
             "state_property": "compressor_enabled",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # sConverter runs while ConverterFlag is set (DynObj.cpp:4433-4450)
         "converter": {
             "event_name": &"converter",
             "state_property": "converter_enabled",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # sSmallCompressor runs while PantCompFlag is set (DynObj.cpp:4506)
         "small-compressor": {
             "event_name": &"small_compressor",
             "state_property": "current_collector_pantograph_compressor_enabled",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # A pantograph touching the wire and dropping (DynObj.cpp:3881-3934, 4007-4036),
         # reported by RailVehicleEnginePowerSource.pantograph_up / pantograph_down and counted by
-        # TrainSoundSystem like the coupler events
+        # MaszynaVehicleSoundServer like the coupler events
         "pantographup": {
             "event_name": &"pantograph_up",
-            "state_property": "pantograph_sound/up",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "pantograph_up",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         "pantographdown": {
             "event_name": &"pantograph_down",
-            "state_property": "pantograph_sound/down",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CHANGE,
+            "state_property": "pantograph_down",
+            "trigger_mode": TriggerMode.CHANGE,
         },
         # horn1/horn2/horn3 map onto RailVehicleHorns' low/high/whistle bits, in that fixed order -
         # confirmed via the original engine's Train.cpp (OnCommand_hornlowactivate/
@@ -176,17 +183,17 @@ static func _static_init() -> void:
         "horn1": {
             "event_name": &"horn1",
             "state_property": "horn_low_active",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         "horn2": {
             "event_name": &"horn2",
             "state_property": "horn_high_active",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         "horn3": {
             "event_name": &"horn3",
             "state_property": "whistle_active",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # buzzer:/buzzershp: (internaldata:, not sounds: - see MmdSoundSourceParser.
         # parse_internal_data()) drive a LOOPING sound while the alerter is actively unacknowledged
@@ -198,12 +205,12 @@ static func _static_init() -> void:
         "buzzer": {
             "event_name": &"buzzer",
             "state_property": "beeping",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         "buzzershp": {
             "event_name": &"buzzershp",
             "state_property": "cabsignal_beeping",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.TOGGLE,
+            "trigger_mode": TriggerMode.TOGGLE,
         },
         # Hasler recorder ticking (Train.cpp:8323-8335, dsbHasler): chunks sound1..soundN are picked
         # by speed in km/h (pitch fTachoVelocity * 0.01, sound.cpp:477 compute_combined_point() * 100),
@@ -212,24 +219,22 @@ static func _static_init() -> void:
         "tachoclock": {
             "event_name": &"tachoclock",
             "state_property": "tachometer_clock_speed",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CONTINUOUS,
-            "sound_parameter": &"speed",
+            "trigger_mode": TriggerMode.CONTINUOUS,
             "trigger_threshold_min": 1.0,
             "trigger_threshold_max": 10000.0,
         },
         "engine": {
             "event_name": &"engine",
             "state_property": "engine_rpm",
-            "trigger_mode": TrainSoundTrigger.TriggerMode.CONTINUOUS,
-            "sound_parameter": &"rpm",
-            # Matches sm_42.tscn's own Engine TrainSoundTrigger thresholds - a chunk-based
+            "trigger_mode": TriggerMode.CONTINUOUS,
+            # Matches sm_42.tscn's once hand-authored Engine trigger thresholds - a chunk-based
             # automation is only meaningful once the engine is actually turning, and RPM has no
             # natural upper bound worth clamping below in practice.
             "trigger_threshold_min": 10.0,
             "trigger_threshold_max": 10000.0,
         },
-        # Brake sounds - one event per label, played by BrakeSoundModel with the original's own
-        # per-frame logic (MmdSoundBankInstancer builds the events, TrainSoundSystem plays them).
+        # Brake sounds - one event per label, played by the original's own per-frame logic as the
+        # bank's formulas (MmdSoundFormulas).
         # The vehicle's (DynObj.cpp:4545-4760): shoes rsBrake, squeal rsPisk, cylinder release
         # rsUnbrake, emergency valve, wheel slip, releaser, accelerator, cylinder and EP clicks,
         # spring brake. The cab's (Train.cpp:8474-8641): local brake rsSBHiss/rsSBHissU, the
@@ -254,8 +259,8 @@ static func _static_init() -> void:
         "airsound3": {"event_name": &"brake_valve_emergency_hiss", "controller": &"brake"},
         "airsound4": {"event_name": &"brake_valve_control_chamber_hiss", "controller": &"brake"},
         "airsound5": {"event_name": &"brake_valve_timing_reservoir_hiss", "controller": &"brake"},
-        # Running sounds - gain/pitch computed each update by RunningSoundModel from the mover state
-        # and the track under the vehicle, the same formulas as the original. Positional labels get
+        # Running sounds - gain/pitch from the vehicle and the track under it by the bank's formulas
+        # (MmdSoundFormulas), the same as the original's. Positional labels get
         # one event per location, suffixed with its index.
         # Traction motors, one per `tractionmotors:` location (DynObj.cpp:5710, 7933-8010)
         "tractionmotor": {"event_name": &"traction_motor", "controller": &"running"},

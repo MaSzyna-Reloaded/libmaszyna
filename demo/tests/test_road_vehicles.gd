@@ -228,16 +228,33 @@ func test_a_car_s_engine_idles_started_and_sounds_higher_as_it_runs() -> void:
     engine.amplitude_offset = 0.85
     engine.frequency_factor = 0.07
     engine.frequency_offset = 0.7
-    var model:RunningSoundModel = RunningSoundModel.new()
-    model.sources.append({"event": &"engine", "source": engine})
-    model.attach_vehicle(car)
+    var formulas:MmdSoundFormulas = MmdSoundFormulas.new(car)
+    var events:Array[SfxEvent] = []
+    formulas.running_sound(engine, &"engine", {}, events)
+    var bank:SfxBank = SfxBank.new()
+    bank.events = events
+    formulas.apply(bank)
+    var sound:SfxPlaybackRuntime = SfxPlaybackRuntime.new()
+    sound.set_bank(bank)
+    var controller:RoadVehicleController = VehicleServer.vehicle_get_controller(car) as RoadVehicleController
+    # the car's engine as MaszynaVehicleSoundServer feeds it
+    var feed:Callable = func() -> void:
+        sound.set_parameter(MaszynaVehicleSoundServer.quantity_get_name(MaszynaVehicleSoundServer.QUANTITY_CAR_ENGINE_RUNNING),
+                1.0 if controller.is_engine_running() else 0.0)
+        sound.set_parameter(MaszynaVehicleSoundServer.quantity_get_name(MaszynaVehicleSoundServer.QUANTITY_CAR_ENGINE_REVOLUTIONS),
+                controller.get_engine_revolutions())
+        sound.set_parameter(MaszynaVehicleSoundServer.quantity_get_name(MaszynaVehicleSoundServer.QUANTITY_CAR_THROTTLE),
+                controller.get_throttle())
+        sound.update(TICK)
 
-    assert_false(model.update(TICK, true).has(&"engine"), "silent with its engine stopped")
+    feed.call()
+    assert_eq(sound.get_parameter(&"engine_active"), 0.0, "silent with its engine stopped")
     VehicleServer.vehicle_send_command(car, "engine_start")
-    var idle:Dictionary = model.update(TICK, true)
-    assert_true(idle.has(&"engine"), "a started engine idles")
-    assert_almost_eq(float(idle[&"engine"]["parameters"][&"pitch"]), engine.frequency_offset, 0.001)
+    for _tick:int in range(10):
+        feed.call()
+    assert_eq(sound.get_parameter(&"engine_active"), 1.0, "a started engine idles")
+    assert_almost_eq(sound.get_parameter(&"engine_pitch"), engine.frequency_offset, 0.001)
     VehicleServer.vehicle_send_command(car, "wanted_velocity_set", CAR_VELOCITY)
     await step(ticks(5.0))
-    var running:Dictionary = model.update(TICK, true)
-    assert_gt(float(running[&"engine"]["parameters"][&"pitch"]), engine.frequency_offset, "higher as it runs")
+    feed.call()
+    assert_gt(sound.get_parameter(&"engine_pitch"), engine.frequency_offset, "higher as it runs")

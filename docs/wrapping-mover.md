@@ -186,7 +186,7 @@ core's `VehicleServer` ([Overall architecture](../architecture.html)). What MaSz
 * The vehicle is simulated on the vendored Mover by `MaszynaMoverVehicleServer`, the implementation registered with
   `VehicleServer`; the components implement the core's `RailVehicle<X>` interfaces on it (the layers above).
 * What draws the vehicle is `MaszynaE3DRailVehicleRenderingServer`, the core's `RailVehicleRenderingServer` drawing
-  the E3D models; the cabin and the sounds (`TrainSoundSystem`, built from the MMD) read the vehicle's components,
+  the E3D models; the cabin and the sounds (`MaszynaVehicleSoundServer`, its banks built from the MMD) read the vehicle's components,
   they do not own them. The cabin is the core's `CabinSystem`; libmaszyna builds a MaSzyna vehicle's cabin from its
   MMD (`addons/libmaszyna/mmd`) and runs the original's python screens (`PythonScreenServer`).
 * A vehicle needs no node at all. A scenery loaded from MaSzyna data builds its vehicles and trainsets through the

@@ -39,6 +39,7 @@
 #include "maszyna/scenery/MaszynaTrianglesSink.hpp"
 #include "maszyna/signalling/MaszynaSignalHeadKindFactory.hpp"
 #include "maszyna/signalling/MaszynaSignallingImplementation.hpp"
+#include "maszyna/sound/MaszynaVehicleSoundServer.hpp"
 #include "maszyna/tracks/MaszynaTrackLook.hpp"
 #include "maszyna/tracks/MaszynaTrackLooks.hpp"
 #include "maszyna/tracks/MaszynaTrackRenderingBackend.hpp"
@@ -115,6 +116,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaE3DResourceFormatLoader);
         GDREGISTER_ABSTRACT_CLASS(MaszynaMoverVehicleServer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaCarDriver);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaVehicleSoundServer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaSignalHeadKindFactory);
         GDREGISTER_CLASS(MaszynaSignallingImplementation);
         GDREGISTER_CLASS(MaszynaScenarioEventServer);
@@ -237,6 +239,9 @@ namespace godot {
         // follows the vehicles' lifetime, and it reads the roads' memories
         car_driver = memnew(MaszynaCarDriver);
         Engine::get_singleton()->register_singleton("MaszynaCarDriver", car_driver);
+        // after the vehicle servers and SimulationServer, whose signals it follows
+        vehicle_sound_server = memnew(MaszynaVehicleSoundServer);
+        Engine::get_singleton()->register_singleton("MaszynaVehicleSoundServer", vehicle_sound_server);
         e3d_resource_format_loader.instantiate();
         ResourceLoader::get_singleton()->add_resource_format_loader(e3d_resource_format_loader);
         logo = ResourceLoader::get_singleton()->load(LOGO_PATH);
@@ -260,6 +265,10 @@ namespace godot {
 #endif
         ResourceLoader::get_singleton()->remove_resource_format_loader(e3d_resource_format_loader);
         e3d_resource_format_loader.unref();
+
+        Engine::get_singleton()->unregister_singleton("MaszynaVehicleSoundServer");
+        memdelete(vehicle_sound_server);
+        vehicle_sound_server = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaCarDriver");
         memdelete(car_driver);

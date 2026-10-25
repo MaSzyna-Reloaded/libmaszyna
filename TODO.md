@@ -83,9 +83,6 @@ Each stage is one PR, titled `(#184) <area> - <what>`, and leaves the game runna
 
 ### Readers still on the state dump
 
-* `TrainSoundSystem._build_brake_events()` and `MaszynaBrakeSfxEventFactory.build_events()` read
-  the config dump at build; the brake handle positions have getters
-  (`RailVehicleBrake.get_handle_position()`).
 
 ### What still reaches the vehicle's controller
 
@@ -254,15 +251,16 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
 * `pitchvariation:` (`sound.cpp:375`) is parsed, never applied.
 * `pantographup:`/`pantographdown:` play at the bank's position; the original places them at the
   pantograph that moved (`DynObj.cpp:3881-3934`, `4007-4036`). Dump the E186 bank.
-* Brake sounds (`BrakeSoundModel`): a loop due while out of earshot restarts from its opening
-  bookend (`sound.cpp:360-367`); pressure rates reset when a bank is silenced;
-  `TrainSoundSystem._process()` counts the `fmod` remainder twice for far banks. Not compared by
-  ear with the original.
+* Brake sounds (`MmdSoundFormulas`): a bank heard again after a cut takes the pressure change made
+  while it was cut as one step of its rates (`DERIVATIVE`), where the original started its rates
+  over. Not compared by ear with the original.
+* Spring brake (`MmdSoundFormulas`): the original stops the other of its two sounds as one starts
+  (`DynObj.cpp:4749-4759`); a gnd-sfx trigger cannot stop another event.
 
 ## Vehicles
 
 * **Road cars - what is not ported** (`MaszynaCarDriver`, `MaszynaRoadNetwork`,
-  `RunningSoundModel`):
+  `MmdSoundFormulas`):
   * a car standing in the scenery (velocity 0) stays on the road's centre line; the original puts
     it on the roadside by the road's width with its shoulders (`WidthTotal()`, `DynObj.cpp:2329`,
     `Track.cpp:2071-2078`), whose `tex_width` only the track drawing has

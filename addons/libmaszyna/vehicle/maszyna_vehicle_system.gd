@@ -4,7 +4,7 @@ extends Node
 ## MaSzyna vehicles, built through the servers from the core's VehicleData (a scenery's `dynamic`,
 ## a world's vehicle) - no node per vehicle. vehicle_create() gives the vehicle's handle at once;
 ## the vehicle itself - its FIZ physics, its appearance (RailVehicleRenderingServer), its cab scene
-## (CabinSystem), its sound (TrainSoundSystem) - is built in its turn, a budget a frame, and
+## (CabinSystem), its sound (MaszynaVehicleSoundServer) - is built in its turn, a budget a frame, and
 ## announced as built to VehicleServer (vehicle_set_built()). Whoever created a vehicle frees it
 ## (vehicle_free()): a scenery (MaszynaSceneryProvider), or the node of a vehicle placed by hand
 ## (MaszynaRailVehicle3D).
@@ -71,7 +71,7 @@ var _auto_rewident:MaszynaAutoRewident = null
 var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 
 
-## The editor drives no vehicle and plays no sound: CabinSystem, TrainSoundSystem and DriverServer's
+## The editor drives no vehicle and plays no sound: CabinSystem, MaszynaVehicleSoundServer and DriverServer's
 ## drivers are the game's
 func _ready() -> void:
     _reads.task_finished.connect(_on_read_finished)
@@ -129,7 +129,7 @@ func vehicle_free(vehicle:RID) -> void:
             get_tree().process_frame.disconnect(_on_process_frame)
     if not Engine.is_editor_hint():
         _auto_rewident.vehicle_unfollow(vehicle)
-        TrainSoundSystem.vehicle_set_bank_builder(vehicle, Callable())
+        MaszynaVehicleSoundServer.vehicle_set_bank_builder(vehicle, Callable())
         CabinSystem.vehicle_attach_cab_logic(vehicle, null)
     if record.sound_mount:
         record.sound_mount.queue_free()
@@ -243,7 +243,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
             return
         if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
             MaszynaCarDriver.vehicle_attach(vehicle, dynamic.velocity)
-        TrainSoundSystem.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
+        MaszynaVehicleSoundServer.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
         return
     RailVehicleServer.vehicle_attach(vehicle)
     # the cabins its MMD defines a cab for, and the scenery's driver at the controls of the front or
@@ -312,7 +312,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     CabinSystem.vehicle_set_cabin_scene(vehicle, structure.cabin_scene)
     # its sound is built only once it is within earshot - a scenery's vehicles all built at once
     # spent most of their loading on banks nobody hears
-    TrainSoundSystem.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
+    MaszynaVehicleSoundServer.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
     _auto_rewident.vehicle_follow(vehicle)
 
 
@@ -364,7 +364,7 @@ func _get_structure(dynamic:VehicleData) -> MaszynaVehicleStructure:
 
 
 ## The vehicle's sound players, under a node of their own riding on the vehicle - called by
-## TrainSoundSystem when the vehicle comes within earshot
+## MaszynaVehicleSoundServer when the vehicle comes within earshot
 func _build_sounds(vehicle:RID) -> void:
     var record:Vehicle = _vehicles[vehicle]
     var dynamic:VehicleData = record.dynamic

@@ -61,19 +61,11 @@ Not a port to C++: the cost is the cab logic instantiated per vehicle and steppe
 The plan is one instance per behaviour, stepped only for the cabs where something runs -
 `TODO_OPTIMIZE_VEHICLES_PROCESSING.md`, section 3.
 
-## 3. Train sounds - `TrainSoundSystem`
-
-`addons/libmaszyna/sound/train_sound_system.gd:300` `_process()` visits every active bank (the
-vehicles within earshot) every frame, `_on_simulation_advanced()` sweeps the banks a few times a
-second. Measured the same way: **~2.4 ms a frame** in `_process()` with 87 active banks, the sweep
-~0.15 ms a frame. About 6% of the main thread at 27 fps - with the cabs, an eighth of the frame in
-GDScript beside the AI.
-
 ## Not candidates
 
 Per-frame scripts that only act on a dirty flag, run in the editor only, or serve one object:
 `environment_node.gd`, `sky_environment.gd`, `player.gd`, `follow_view.gd`, `free_look_view.gd`,
-`train_sound_listener_3d.gd`, the cab's own nodes (`cabin_*_3d.gd`, `cabin_windscreen_wipers.gd`),
+the cab's own nodes (`cabin_*_3d.gd`, `cabin_windscreen_wipers.gd`),
 `maszyna_rail_vehicle_3d.gd`, `maszyna_rail_vehicle_physics_node.gd`,
 `maszyna_e3d_model_instance.gd`, `scenery_content_node.gd`, `track_3d.gd`, `traction_3d.gd`,
 `train_set_3d.gd`, `maszyna_vehicle_system.gd` (its frame hook builds vehicles within a budget and

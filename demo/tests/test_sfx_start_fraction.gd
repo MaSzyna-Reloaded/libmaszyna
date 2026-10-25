@@ -54,9 +54,10 @@ func _play(start_fraction:float, speed:float) -> SfxPlaybackRuntime:
     return runtime
 
 
+## The first voice slot as the runtime shows it (SfxPlaybackRuntime.get_debug_slots())
 func _start_position(runtime:SfxPlaybackRuntime) -> float:
-    var slot:SfxVoiceSlot = runtime.get_slots()[0]
-    return slot.start_position / slot.stream.get_length()
+    var slot:Dictionary = runtime.get_debug_slots()[0]
+    return float(slot["start_position"]) / (slot["stream"] as AudioStream).get_length()
 
 
 func test_automation_voice_starts_at_the_start_fraction() -> void:
@@ -82,7 +83,7 @@ func test_plain_looping_clip_starts_at_the_start_fraction() -> void:
 
 func test_plain_looping_clip_keeps_playing_past_its_length() -> void:
     var runtime:SfxPlaybackRuntime = _play_clip(_chunk(0.0))
-    var stream_length:float = runtime.get_slots()[0].stream.get_length()
+    var stream_length:float = (runtime.get_debug_slots()[0]["stream"] as AudioStream).get_length()
     var elapsed:float = 0.0
     while elapsed < 2.0 * stream_length:
         runtime.update(TICK)
@@ -115,7 +116,7 @@ func test_pitch_variation_scales_every_voice() -> void:
     event.pitch_variation = PITCH_VARIATION
     runtime.play(event, 0.0, {})
     runtime.update(TICK)
-    assert_almost_eq(runtime.get_slots()[0].pitch_scale, PITCH_VARIATION, 0.001)
+    assert_almost_eq(float(runtime.get_debug_slots()[0]["pitch_scale"]), PITCH_VARIATION, 0.001)
 
 
 ## A one-shot is a single sample too, and takes the shift (audiorenderer_extra.h)

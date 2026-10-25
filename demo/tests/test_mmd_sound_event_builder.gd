@@ -106,36 +106,22 @@ func test_chunks_produce_one_automation_with_clips_positioned_by_threshold():
     assert_almost_eq(automation.max_domain, 1000.0, 0.01)
 
 
-func test_engine_event_has_separate_physical_gain_modulation() -> void:
-    var definition:MmdSoundSourceDefinition = MmdSoundSourceDefinition.new()
-    definition.sound_main = "engine"
-    var event:SfxEvent = MmdSoundEventBuilder.build(definition, &"engine")
+func test_a_gain_modulation_takes_its_parameter_as_it_is() -> void:
+    var modulation:SfxParameterModulation = MmdSoundEventBuilder.build_modulation(
+            &"engine_gain", SfxParameterModulation.Target.GAIN)
 
-    var modulation:SfxParameterModulation = _find_modulation(event, &"engine_gain")
-    assert_not_null(modulation)
+    assert_eq(modulation.parameter_name, &"engine_gain")
     assert_eq(modulation.target, SfxParameterModulation.Target.GAIN)
-    assert_almost_eq(modulation.min_domain, 0.0, 0.001)
-    assert_almost_eq(modulation.max_domain, 2.0, 0.001)
     assert_almost_eq(modulation.curve.sample(1.25), 1.25, 0.001)
 
 
-func test_soundproofed_event_has_gain_unit_size_and_spatial_configuration() -> void:
+func test_every_event_is_placed_by_its_offset_and_range() -> void:
     var definition:MmdSoundSourceDefinition = MmdSoundSourceDefinition.new()
     definition.sound_main = "compressor"
     definition.offset = Vector3(1.0, 2.0, 3.0)
     definition.range = 160.0
-    var event:SfxEvent = MmdSoundEventBuilder.build(
-            definition, &"compressor", &"", false, true)
+    var event:SfxEvent = MmdSoundEventBuilder.build(definition, &"compressor")
 
-    var proofing_modulations:Array[SfxParameterModulation] = []
-    for modulation:SfxParameterModulation in event.parameter_modulations:
-        if modulation.parameter_name == &"soundproofing":
-            proofing_modulations.append(modulation)
-    assert_eq(proofing_modulations.size(), 2)
-    assert_true(_has_modulation_target(
-            proofing_modulations, SfxParameterModulation.Target.GAIN))
-    assert_true(_has_modulation_target(
-            proofing_modulations, SfxParameterModulation.Target.UNIT_SIZE))
     assert_eq(event.spatial_config.position, definition.offset)
     assert_almost_eq(event.spatial_config.unit_size, 10.0, 0.001)
     assert_almost_eq(event.spatial_config.max_distance, 1200.0, 0.001)
@@ -161,20 +147,6 @@ func test_bookends_and_chunks_combine_into_one_event_with_both_shapes():
     assert_eq(event.automations[0].clips.size(), 1)
     assert_eq(event.tracks.size(), 1)
     assert_eq(event.automations[0].clips[0].track, event.tracks[0])
-
-
-func _find_modulation(event:SfxEvent, parameter_name:StringName) -> SfxParameterModulation:
-    for modulation:SfxParameterModulation in event.parameter_modulations:
-        if modulation.parameter_name == parameter_name:
-            return modulation
-    return null
-
-
-func _has_modulation_target(modulations:Array[SfxParameterModulation], target:int) -> bool:
-    for modulation:SfxParameterModulation in modulations:
-        if modulation.target == target:
-            return true
-    return false
 
 
 # sound.cpp:85 - a chunk table below its Chunkrange ends at the Chunkrange (100 by default)

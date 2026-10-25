@@ -1,34 +1,6 @@
 extends MaszynaGutTest
 
 
-func test_engine_gain_uses_rpm_and_load_without_synthetic_sound_state() -> void:
-    var source:MmdSoundSourceDefinition = MmdSoundSourceDefinition.new()
-    source.amplitude_offset = 0.5
-    source.amplitude_factor = 1.5
-
-    # level = 0.75 * 0.8 + 0.25 * 0.5 = 0.725
-    assert_almost_eq(TrainSoundSystem._engine_gain(source, 0.8, 500.0, 1000.0), 1.5875, 0.001)
-
-
-
-func test_engine_gain_clamps_to_event_modulation_domain() -> void:
-    var source:MmdSoundSourceDefinition = MmdSoundSourceDefinition.new()
-    source.amplitude_offset = 0.5
-    source.amplitude_factor = 2.0
-
-    assert_almost_eq(TrainSoundSystem._engine_gain(source, 2.0, 4000.0, 1000.0), 2.0, 0.001)
-    assert_almost_eq(TrainSoundSystem._engine_gain(source, -1.0, -100.0, 1000.0), 0.5, 0.001)
-
-
-
-func test_internal_sound_is_silent_without_an_occupied_listener_vehicle() -> void:
-    var runtime:TrainSoundSystem.BankRuntime = TrainSoundSystem.BankRuntime.new()
-    var source:MmdSoundSourceDefinition = MmdSoundSourceDefinition.new()
-    source.placement = &"internal"
-
-    assert_almost_eq(TrainSoundSystem._soundproofing(runtime, source), 0.0, 0.001)
-
-
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 ## Where the camera stands to hear the vehicle at the origin, and where it cannot
@@ -36,11 +8,12 @@ const NEAR:Vector3 = Vector3(0.0, 0.0, 10.0)
 const FAR:Vector3 = Vector3(0.0, 0.0, 10000.0)
 const BOOKEND_LENGTH:float = 1.0
 const MIX_RATE:int = 8000
-## The sound system runs on the simulation's time. Simulated seconds a change takes to be heard or
-## silenced: a sweep to see where the listener is (SWEEP_INTERVAL), a bank's
-## update interval (never above FAR_UPDATE_INTERVAL) and a trigger tick (TRIGGER_INTERVAL)
-const HEARD_SECONDS:float = (TrainSoundSystem.SWEEP_INTERVAL + TrainSoundSystem.FAR_UPDATE_INTERVAL
-        + TrainSoundSystem.TRIGGER_INTERVAL)
+## MaszynaVehicleSoundServer runs on the simulation's time. Simulated seconds a change takes to be
+## heard or silenced, at most: a sweep to see where the listener is (0.25 s) and a vehicle's feed
+## interval (never above 0.5 s)
+const HEARD_SECONDS:float = 0.25 + 0.5
+## The quantity the bank's trigger follows
+const STATE_PARAMETER:StringName = &"battery_enabled"
 ## Simulated seconds within which a change is heard, or proved unheard
 const SETTLE:float = HEARD_SECONDS + TICK
 const EVENT_TIME_TOLERANCE:float = 0.25
@@ -92,36 +65,44 @@ func _attach_controller() -> void:
 
 
 ## One bank on the vehicle: an "engine" event shaped like the one MmdSoundEventBuilder builds
-## (opening bookend at 0, the loop after it) on the battery
-func _register_bank(trigger_mode:int) -> void:
+## (opening bookend at 0, the loop after it), started by the battery's state as MmdSoundFormulas
+## starts it - a gate playing while it is on (TOGGLE) or a one-shot at each change (CHANGE)
+func _register_bank(trigger_mode:MmdSoundCatalog.TriggerMode) -> void:
     var begin_clip:SfxClip = SfxClip.new()
     begin_clip.stream = _silent_stream()
     var main_clip:SfxClip = SfxClip.new()
     main_clip.stream = _silent_stream()
     main_clip.offset = BOOKEND_LENGTH
     var clips:Array[SfxClip] = [begin_clip, main_clip]
+    var trigger:SfxParameterTrigger = SfxParameterTrigger.new()
+    trigger.parameter = STATE_PARAMETER
+    if trigger_mode == MmdSoundCatalog.TriggerMode.CHANGE:
+        trigger.mode = SfxParameterTrigger.STEP
+    else:
+        trigger.mode = SfxParameterTrigger.GATE
+        trigger.on_threshold = 0.5
+        trigger.off_threshold = 0.5
+        trigger.resume_offset = BOOKEND_LENGTH
+    var triggers:Array[SfxParameterTrigger] = [trigger]
     var event:SfxEvent = SfxEvent.new()
     event.name = &"engine"
     event.clips = clips
+    event.triggers = triggers
     var events:Array[SfxEvent] = [event]
+    var state:SfxParameter = SfxParameter.new()
+    state.name = STATE_PARAMETER
+    var parameters:Array[SfxParameter] = [state]
+    var bank:SfxBank = SfxBank.new()
+    bank.parameters = parameters
+    bank.events = events
     _sound = SfxPlayer3D.new()
-    _sound.bank = SfxBank.new()
-    _sound.bank.events = events
+    _sound.bank = bank
     _vehicle.add_child(_sound)
-    var soundproofing:Array[PackedFloat32Array] = []
-    TrainSoundSystem.register_bank(_sound, {
-        "vehicle": _vehicle_rid,
-        "soundproofing": soundproofing,
-        "triggers": [{
-            "state_property": "battery_enabled",
-            "trigger_mode": trigger_mode,
-            "sound_event": &"engine",
-        }],
-    })
+    MaszynaVehicleSoundServer.bank_register(_sound.get_instance_id(), _vehicle_rid, {})
 
 
 ## The bank registered before the vehicle is a rail one and drawn (RailVehicle3D takes it then)
-func _build(trigger_mode:int) -> void:
+func _build(trigger_mode:MmdSoundCatalog.TriggerMode) -> void:
     _build_vehicle()
     _register_bank(trigger_mode)
     _attach_controller()
@@ -142,7 +123,7 @@ func _playing() -> bool:
 
 
 func test_running_sound_plays_again_when_the_camera_comes_back() -> void:
-    _build(TrainSoundSystem.TRIGGER_MODE_TOGGLE)
+    _build(MmdSoundCatalog.TriggerMode.TOGGLE)
     _camera.global_position = NEAR
     VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
     if not await wait_simulated_until(_playing, SETTLE, "the running sound"):
@@ -161,7 +142,7 @@ func test_running_sound_plays_again_when_the_camera_comes_back() -> void:
 
 
 func test_sound_switched_on_while_heard_plays_its_opening_bookend() -> void:
-    _build(TrainSoundSystem.TRIGGER_MODE_TOGGLE)
+    _build(MmdSoundCatalog.TriggerMode.TOGGLE)
     # the sweep sees the listener away, then near - nothing to observe but its time
     _camera.global_position = FAR
     await step(ticks(SETTLE))
@@ -177,7 +158,7 @@ func test_sound_switched_on_while_heard_plays_its_opening_bookend() -> void:
 
 
 func test_one_shot_due_while_the_camera_is_away_is_dropped() -> void:
-    _build(TrainSoundSystem.TRIGGER_MODE_CHANGE)
+    _build(MmdSoundCatalog.TriggerMode.CHANGE)
     # the sweep sees the listener near, then away; the change is due unheard, and the listener comes
     # back - nothing to observe but the time each takes
     _camera.global_position = NEAR
@@ -195,7 +176,7 @@ func test_one_shot_due_while_the_camera_is_away_is_dropped() -> void:
 func test_bank_registered_after_its_vehicle_has_a_controller_is_heard() -> void:
     _build_vehicle()
     _attach_controller()
-    _register_bank(TrainSoundSystem.TRIGGER_MODE_TOGGLE)
+    _register_bank(MmdSoundCatalog.TriggerMode.TOGGLE)
     _camera.global_position = NEAR
     VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
     if not await wait_simulated_until(_playing, SETTLE, "the late bank heard"):
@@ -208,7 +189,7 @@ func test_bank_is_built_once_its_vehicle_is_within_earshot() -> void:
     _build_vehicle()
     var built:Array[int] = [0]
     _camera.global_position = FAR
-    TrainSoundSystem.vehicle_set_bank_builder(_vehicle_rid, func() -> void: built[0] += 1)
+    MaszynaVehicleSoundServer.vehicle_set_bank_builder(_vehicle_rid, func() -> void: built[0] += 1)
     # proved unbuilt by the time a sweep takes
     await step(ticks(SETTLE))
     assert_eq(built[0], 0, "not built while the camera is away")
@@ -225,10 +206,30 @@ func test_bank_builder_taken_back_is_never_called() -> void:
     _build_vehicle()
     var built:Array[int] = [0]
     _camera.global_position = FAR
-    TrainSoundSystem.vehicle_set_bank_builder(_vehicle_rid, func() -> void: built[0] += 1)
-    TrainSoundSystem.vehicle_set_bank_builder(_vehicle_rid, Callable())
+    MaszynaVehicleSoundServer.vehicle_set_bank_builder(_vehicle_rid, func() -> void: built[0] += 1)
+    MaszynaVehicleSoundServer.vehicle_set_bank_builder(_vehicle_rid, Callable())
     _camera.global_position = NEAR
     # proved never called by the time a sweep takes
     await step(ticks(SETTLE))
 
     assert_eq(built[0], 0)
+
+
+## A sound inside the cab is not heard where no listener sits in the vehicle (sound.cpp:981-1008)
+func test_internal_sound_is_silent_without_an_occupied_listener_vehicle() -> void:
+    _build_vehicle()
+    _attach_controller()
+    var proofing:SfxParameter = SfxParameter.new()
+    proofing.name = &"soundproofing_cab"
+    proofing.default_value = 1.0
+    var parameters:Array[SfxParameter] = [proofing]
+    var bank:SfxBank = SfxBank.new()
+    bank.parameters = parameters
+    _sound = SfxPlayer3D.new()
+    _sound.bank = bank
+    _vehicle.add_child(_sound)
+    MaszynaVehicleSoundServer.bank_register(_sound.get_instance_id(), _vehicle_rid, {
+        "proofing": [{"parameter": &"soundproofing_cab", "placement": MaszynaVehicleSoundServer.PLACEMENT_INTERNAL}],
+    })
+
+    assert_almost_eq(_sound.get_parameter(&"soundproofing_cab"), 0.0, 0.001)
