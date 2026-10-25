@@ -450,6 +450,24 @@ operation complete before anything can observe it. *Is there an event for it?* I
 add one at the owner - a signal that means "this has landed", not "this is about to happen" -
 rather than polling for its effect.
 
+### Never defer a signal's emission
+
+A signal is emitted where its event happens, in the same call, and says what happened then:
+
+```gdscript
+# not this - the event is announced a frame after it happened, to whoever listens by then
+scenery_loaded.emit.call_deferred(first_vehicle_id)
+
+# this - emitted when the scenery stands; a listener that must not run yet is connected later,
+# or to the event it really waits for
+scenery_loaded.emit(first_vehicle_id)
+```
+
+Forbidden in every form: `signal.emit.call_deferred(...)` and `call_deferred("emit_signal", ...)`,
+in GDScript and in C++. A deferred emission is the "next frame"
+workaround of the section above in disguise: it hides that the receiver was wired too late or the
+emitter ran too early, and every listener sees the event at a moment it did not happen.
+
 ### Wiring is not per-frame work
 
 Resolving a path, finding a node, connecting a signal,

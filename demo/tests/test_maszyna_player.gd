@@ -31,14 +31,9 @@ var _player:Player
 var _track:RID
 
 
-## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (Player, initialization_ready)
-signal scenery_loaded(first_vehicle_id:String)
-
-
 ## Out of the cab before the vehicle goes - the player's cab view would go with it
 func after_each() -> void:
-    PlayerServer.player_leave_vehicle()
+    PlayerServer.player_stop()
     PlayerCameraServer.camera_set_mode(PlayerCameraServer.CAMERA_MODE_FREE)
     PlayerCameraServer.camera_set_target(RID())
     if is_instance_valid(_vehicle):
@@ -51,13 +46,6 @@ func after_each() -> void:
         _player.free()
     TrackServer.track_free(_track)
     TrackServer.topology_rebuild()
-
-
-## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (Player, initialization_ready)
-func _start_player(player:Player) -> void:
-    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
-    scenery_loaded.emit("")
 
 
 ## A bare cab: its interior is not what is tested
@@ -74,7 +62,8 @@ func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
     _vehicle = build_rail_vehicle("PlayerCabinTest", TRACK_NAME, TRACK_OFFSET)
     _player = PLAYER_SCENE.instantiate()
     add_child(_player)
-    _start_player(_player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     await wait_idle_frames(SETTLE_FRAMES)
     var vehicle:RID = _vehicle.get_rid()
     assert_true(vehicle.is_valid(), "the vehicle should have its controller")
@@ -115,7 +104,8 @@ func test_the_cab_is_shown_when_its_scene_comes_after_the_vehicle_was_taken_over
     _vehicle = build_rail_vehicle("PlayerLateCabinTest", TRACK_NAME, TRACK_OFFSET)
     _player = PLAYER_SCENE.instantiate()
     add_child(_player)
-    _start_player(_player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     await wait_idle_frames(SETTLE_FRAMES)
     var vehicle:RID = _vehicle.get_rid()
 
@@ -144,7 +134,8 @@ func test_the_vehicle_followed_is_looked_at_from_its_view() -> void:
     _far_vehicle = build_rail_vehicle("PlayerFollowFar", TRACK_NAME, FAR_OFFSET)
     _player = PLAYER_SCENE.instantiate()
     add_child(_player)
-    _start_player(_player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     await wait_idle_frames(SETTLE_FRAMES)
     _player.free_view.global_position = _vehicle.global_position + Vector3.UP * VIEW_HEIGHT
 
@@ -181,7 +172,8 @@ func test_the_vehicle_left_is_followed_from_the_cab_of_another() -> void:
     _second_vehicle = build_rail_vehicle("PlayerFollowEntered", TRACK_NAME, FAR_OFFSET)
     _player = PLAYER_SCENE.instantiate()
     add_child(_player)
-    _start_player(_player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     await wait_idle_frames(SETTLE_FRAMES)
     var left:RID = _vehicle.get_rid()
     CabinSystem.vehicle_set_cabin_scene(left, _cabin_scene())

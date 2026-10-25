@@ -101,6 +101,8 @@ func _exit_tree() -> void:
 ## (ResourceLazyLoader) - and built in its turn
 func vehicle_create(dynamic:VehicleData, scene_node_id:int) -> RID:
     var vehicle:RID = VehicleServer.vehicle_create()
+    # found by its id from now on - a scene's Player starts in it before it is built
+    VehicleServer.vehicle_set_id(vehicle, dynamic.vehicle_id)
     var record:Vehicle = Vehicle.new()
     record.dynamic = dynamic
     record.scene_node_id = scene_node_id
@@ -224,7 +226,6 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     var structure:MaszynaVehicleStructure = record.read["structure"]
     if not structure:
         return
-    VehicleServer.vehicle_set_id(vehicle, dynamic.vehicle_id)
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
     # the trainset's velocity along the vehicle's own front: a reversed one starts with it negated,
     # or it drives against its neighbours (DynObj.cpp:1989, 2019 `iDirection ? fVel : -fVel`)

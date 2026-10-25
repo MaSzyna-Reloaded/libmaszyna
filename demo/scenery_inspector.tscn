@@ -10,6 +10,7 @@
 [node name="SceneryInspector" type="Node3D" unique_id=2049876890]
 
 [node name="Player" parent="." unique_id=1819896729 instance=ExtResource("1_qu2xm")]
+auto_start = true
 
 [node name="EnvironmentNode" type="Node" parent="." unique_id=2133298923]
 script = ExtResource("1_gij37")
