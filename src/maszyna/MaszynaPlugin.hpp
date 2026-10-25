@@ -4,6 +4,7 @@
 
 namespace godot {
     class MaszynaCarDriver;
+    class MaszynaVehicleSoundServer;
     class MaszynaE3DParser;
     class MaszynaGameDirectory;
     class MaszynaE3DRailVehicleRenderingServer;
@@ -32,6 +33,7 @@ namespace godot {
             MaszynaTractionServer *traction_server = nullptr;
             MaszynaScenarioEventServer *scenario_event_server = nullptr;
             MaszynaCarDriver *car_driver = nullptr;
+            MaszynaVehicleSoundServer *vehicle_sound_server = nullptr;
             MaszynaMoverVehicleServer *mover_vehicle_server = nullptr;
             MaszynaTrackRenderingBackend *track_rendering_backend = nullptr;
             PythonScreenServer *python_screen_server = nullptr;

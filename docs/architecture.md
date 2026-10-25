@@ -40,7 +40,7 @@ libmaszyna adds at those extension points and how the port is organized.
 `addons/libmaszyna/libmaszyna.gd` registers the GDScript side:
 
 * autoloads, such as `MaszynaMaterialManager`, `MaszynaVehicleSystem`,
-  `MaszynaVehicleCatalogProvider`, `MaszynaE3DModelManager`, `TrainSoundSystem` and
+  `MaszynaVehicleCatalogProvider`, `MaszynaE3DModelManager` and
   `MaszynaSceneryChunkRenderingServer`
 * custom types: `MaszynaE3DModelInstance` and `MaszynaRailVehiclePhysicsNode`
 * the FIZ importer, the editor plugins and the `maszyna/*` project settings
@@ -84,8 +84,9 @@ The demo project selects these implementations in `project.godot`. The settings
 * **Cabs.** A vehicle's MMD file is read into its cab (`addons/libmaszyna/mmd`: `MmdCabinDefinition`,
   `MmdCabinInstancer` and the catalogue of the original controls). The cab logic is
   `MaszynaCabinLogic`, running on the core's `CabinSystem`. The cab screens run the original Python
-  scripts in `maszyna-python-host` (`PythonScreenServer`). The cab sounds are built from the MMD file
-  (`TrainSoundSystem`).
+  scripts in `maszyna-python-host` (`PythonScreenServer`). The vehicle's sounds are built from the MMD file
+  into gnd-sfx banks that carry the original's formulas (`MmdSoundBankInstancer`, `MmdSoundFormulas`),
+  fed the vehicle's quantities by `MaszynaVehicleSoundServer`.
 * **Models and materials.** `MaszynaE3DParser` reads E3D files and `MaszynaE3DRenderingServer` draws
   them. `MaszynaMaterialManager` reads `.mat` files and textures (`addons/libmaszyna/e3d`,
   `addons/libmaszyna/materials`).

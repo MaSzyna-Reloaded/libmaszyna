@@ -87,7 +87,8 @@ func test_tachoclock_builds_one_cabin_event_with_speed_chunks() -> void:
     if event:
         assert_eq(event.automations.size(), 1)
         var automation:SfxAutomation = event.automations[0]
-        assert_eq(automation.parameter_name, &"speed")
+        # the automation follows the quantity itself, fed by its name
+        assert_eq(automation.parameter_name, &"tachometer_clock_speed")
         assert_eq(automation.clips.size(), 3)
     assert_eq(MmdSoundCatalog.get_entry("tachoclock")["state_property"], "tachometer_clock_speed")
 
@@ -141,10 +142,11 @@ func test_brake_sounds_are_built_with_their_bookends_chunks_and_fallbacks() -> v
     assert_not_null(exterior.bank.get_event(&"brake_release_hiss"))
     assert_not_null(exterior.bank.get_event(&"brake_releaser"))
     assert_not_null(exterior.bank.get_event(&"emergency_brake_hiss"))
-    # a combined cylinder click is one one-shot event per chunk
-    assert_not_null(exterior.bank.get_event(&"brake_cylinder_increase_0"))
-    assert_not_null(exterior.bank.get_event(&"brake_cylinder_increase_1"))
-    assert_null(exterior.bank.get_event(&"brake_cylinder_increase"))
+    # a combined cylinder click is one one-shot event, its chunk picked as it starts
+    var click:SfxEvent = exterior.bank.get_event(&"brake_cylinder_increase")
+    assert_not_null(click)
+    assert_true(click.automations[0].latch_on_start)
+    assert_null(exterior.bank.get_event(&"brake_cylinder_increase_0"))
 
 
 ## DynObj.cpp:6359-6364, 6594-6639 - the departure signal sounds from a speaker at every door

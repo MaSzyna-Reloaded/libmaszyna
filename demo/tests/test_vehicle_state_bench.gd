@@ -39,10 +39,10 @@ const SAMPLE_FRAMES: int = 30
 
 const MICROSECONDS_PER_MILLISECOND: float = 1000.0
 
-## What one TrainSoundSystem update pulls out of a vehicle per tick: what BrakeSoundModel reads,
-## the MMD trigger properties of
-## mmd_sound_catalog.gd, and what RunningSoundModel reads. Kept as the strings the sound system
-## itself uses, because the point of the measurement is what a by-name read costs today.
+## What one update of the GDScript sound system that MaszynaVehicleSoundServer replaced pulled out of
+## a vehicle per tick: what its brake model read, the MMD trigger properties of mmd_sound_catalog.gd,
+## and what its running model read. Kept as the strings it used, because the point of the
+## measurement is what a by-name read costs.
 const SOUND_KEYS: PackedStringArray = [
     "speed", "velocity", "mass_total", "direction",
     "brake_force_ratio", "brake_emergency_valve_flow", "brake_air_pressure",
@@ -177,8 +177,8 @@ func test_bench_state_build() -> void:
     assert_true(true, "timing only - a time assertion in CI is a flake")
 
 
-## The shape of TrainSoundSystem's own read: the state once per vehicle, then every key it wants
-## out of it by name (train_sound_system.gd:203, _update_brake_sounds, _update_triggers).
+## The shape of that sound system's own read: the state once per vehicle, then every key it wanted
+## out of it by name.
 func test_bench_sound_shaped_read() -> void:
     var sink: float = 0.0
     var started: int = Time.get_ticks_usec()

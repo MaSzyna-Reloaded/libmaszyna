@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaVehicleSoundServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The sound of MaSzyna's vehicles: their gnd-sfx banks fed the vehicles' quantities.
+	</brief_description>
+	<description>
+		A vehicle's sound is built once the vehicle is within earshot of the listener ([method vehicle_set_bank_builder]); every gnd-sfx player built for it registers its bank here ([method bank_register]). The bank carries the original's formulas - its derived parameters, triggers and automations ([code]MmdSoundFormulas[/code]); this server only writes the parameters the bank declares: the vehicle's raw quantities by the names [method quantity_get_name] gives, every simulation step for a vehicle at the listener and less often farther away, the clicks of its axles at the rail joints, and the listener-dependent soundproofing whenever the listener moves between cabs. A bank beyond the culling distance, or a cab's bank heard from outside its cab, is cut (gnd-sfx's [code]SfxPlayer3D.cut[/code]).
+		What the bank cannot integrate is counted here: the traction motors' momentum, the EP brake's clicks, the vehicle's coupling, pantograph and derailment events. It also mutes the vehicle buses while the world is paused, runs the audio at the simulation's speed, and shapes the Exterior bus as the cab wall heard from inside.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bank_register">
+			<return type="void" />
+			<param index="0" name="player" type="int" />
+			<param index="1" name="vehicle" type="RID" />
+			<param index="2" name="registration" type="Dictionary" />
+			<description>
+				The gnd-sfx player of [param player] (its instance id), its bank built, sounds for [param vehicle]. [param registration]: [code]"cabin_only"[/code] (heard only from the vehicle's own cab), [code]"soundproofing"[/code] (the vehicle's profile, five rows of six), [code]"proofing"[/code] ([code]{parameter, placement, profile}[/code] per soundproofed sound, [enum Placement]), [code]"axles"[/code] (the wheel clatter's axle offsets; parameters [code]axle_clicks_&lt;index&gt;[/code]), [code]"brake_valve_events"[/code], [code]"local_brake_events"[/code], [code]"tachometer_events"[/code] (placed at the cab's controls). Every other parameter of the bank is a quantity by its name. The bank leaves as its player leaves the tree.
+			</description>
+		</method>
+		<method name="quantity_get_name" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="quantity" type="int" enum="MaszynaVehicleSoundServer.Quantity" />
+			<description>
+				The name a bank declares [param quantity] by.
+			</description>
+		</method>
+		<method name="vehicle_set_bank_builder">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="builder" type="Callable" />
+			<description>
+				The vehicle's sound is built by [param builder] once the vehicle is within the culling distance of the listener ([code]maszyna/sound/culling_distance[/code]), the nearest first, a budget a frame. An empty [Callable] takes it back: the vehicle is built anew or gone.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="PLACEMENT_INTERNAL" value="0" enum="Placement">
+			Inside the cab.
+		</constant>
+		<constant name="PLACEMENT_ENGINE" value="1" enum="Placement">
+			In the machine room.
+		</constant>
+		<constant name="PLACEMENT_EXTERNAL" value="2" enum="Placement">
+			Outside the vehicle.
+		</constant>
+		<constant name="PLACEMENT_GENERAL" value="3" enum="Placement">
+			Heard the same from anywhere: no soundproofing.
+		</constant>
+		<constant name="PLACEMENT_CUSTOM" value="4" enum="Placement">
+			The MMD's own row.
+		</constant>
+		<constant name="QUANTITY_SPEED" value="0" enum="Quantity">
+			Fed as [code]speed[/code].
+		</constant>
+		<constant name="QUANTITY_VELOCITY" value="1" enum="Quantity">
+			Fed as [code]velocity[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_CYLINDER_PRESSURE" value="2" enum="Quantity">
+			Fed as [code]brake_cylinder_pressure[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_LOCAL_PRESSURE" value="3" enum="Quantity">
+			Fed as [code]brake_local_pressure[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_PIPE_PRESSURE" value="4" enum="Quantity">
+			Fed as [code]brake_pipe_pressure[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_UNIT_FORCE" value="5" enum="Quantity">
+			Fed as [code]brake_unit_force[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_FORCE_RATIO" value="6" enum="Quantity">
+			Fed as [code]brake_force_ratio[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_EMERGENCY_VALVE_FLOW" value="7" enum="Quantity">
+			Fed as [code]brake_emergency_valve_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_MAIN_VALVE_FLOW" value="8" enum="Quantity">
+			Fed as [code]brake_main_valve_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_RELEASER_ACTIVE" value="9" enum="Quantity">
+			Fed as [code]brake_releaser_active[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_HANDLE_BRAKING_FLOW" value="10" enum="Quantity">
+			Fed as [code]brake_handle_braking_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_HANDLE_RELEASE_FLOW" value="11" enum="Quantity">
+			Fed as [code]brake_handle_release_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_HANDLE_EMERGENCY_FLOW" value="12" enum="Quantity">
+			Fed as [code]brake_handle_emergency_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_HANDLE_CONTROL_CHAMBER_FLOW" value="13" enum="Quantity">
+			Fed as [code]brake_handle_control_chamber_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_HANDLE_TIMING_RESERVOIR_FLOW" value="14" enum="Quantity">
+			Fed as [code]brake_handle_timing_reservoir_flow[/code].
+		</constant>
+		<constant name="QUANTITY_BRAKE_ACCELERATOR_COUNT" value="15" enum="Quantity">
+			Fed as [code]brake_accelerator_count[/code].
+		</constant>
+		<constant name="QUANTITY_EP_BRAKE_INCREASE_COUNT" value="16" enum="Quantity">
+			Fed as [code]ep_brake_increase_count[/code].
+		</constant>
+		<constant name="QUANTITY_EP_BRAKE_INCREASE_PITCH" value="17" enum="Quantity">
+			Fed as [code]ep_brake_increase_pitch[/code].
+		</constant>
+		<constant name="QUANTITY_EP_BRAKE_DECREASE_COUNT" value="18" enum="Quantity">
+			Fed as [code]ep_brake_decrease_count[/code].
+		</constant>
+		<constant name="QUANTITY_EP_BRAKE_DECREASE_PITCH" value="19" enum="Quantity">
+			Fed as [code]ep_brake_decrease_pitch[/code].
+		</constant>
+		<constant name="QUANTITY_SPRING_BRAKE_ACTIVE" value="20" enum="Quantity">
+			Fed as [code]spring_brake_active[/code].
+		</constant>
+		<constant name="QUANTITY_WHEELS_SLIPPING" value="21" enum="Quantity">
+			Fed as [code]wheels_slipping[/code].
+		</constant>
+		<constant name="QUANTITY_WHEELS_ROTATION" value="22" enum="Quantity">
+			Fed as [code]wheels_rotation[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_POWER" value="23" enum="Quantity">
+			Fed as [code]engine_power[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_REVOLUTIONS" value="24" enum="Quantity">
+			Fed as [code]engine_revolutions[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_RPM" value="25" enum="Quantity">
+			Fed as [code]engine_rpm[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_RPM_RATIO" value="26" enum="Quantity">
+			Fed as [code]engine_rpm_ratio[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_FILL" value="27" enum="Quantity">
+			Fed as [code]engine_fill[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_DYNAMIC_BRAKE_ACTIVE" value="28" enum="Quantity">
+			Fed as [code]engine_dynamic_brake_active[/code].
+		</constant>
+		<constant name="QUANTITY_ENGINE_RESISTOR_FAN_ROTATION" value="29" enum="Quantity">
+			Fed as [code]engine_resistor_fan_rotation[/code].
+		</constant>
+		<constant name="QUANTITY_MOTOR_MOMENTUM" value="30" enum="Quantity">
+			Fed as [code]motor_momentum[/code].
+		</constant>
+		<constant name="QUANTITY_MASTER_CONTROLLER_POSITION" value="31" enum="Quantity">
+			Fed as [code]master_controller_position[/code].
+		</constant>
+		<constant name="QUANTITY_CAR_ENGINE_RUNNING" value="32" enum="Quantity">
+			Fed as [code]car_engine_running[/code].
+		</constant>
+		<constant name="QUANTITY_CAR_ENGINE_REVOLUTIONS" value="33" enum="Quantity">
+			Fed as [code]car_engine_revolutions[/code].
+		</constant>
+		<constant name="QUANTITY_CAR_THROTTLE" value="34" enum="Quantity">
+			Fed as [code]car_throttle[/code].
+		</constant>
+		<constant name="QUANTITY_TRACK_QUALITY" value="35" enum="Quantity">
+			Fed as [code]track_quality[/code].
+		</constant>
+		<constant name="QUANTITY_TRACK_ENVIRONMENT" value="36" enum="Quantity">
+			Fed as [code]track_environment[/code].
+		</constant>
+		<constant name="QUANTITY_TRACK_SWITCH" value="37" enum="Quantity">
+			Fed as [code]track_switch[/code].
+		</constant>
+		<constant name="QUANTITY_CURVE_RADIUS" value="38" enum="Quantity">
+			Fed as [code]curve_radius[/code].
+		</constant>
+		<constant name="QUANTITY_CURVE_CANT" value="39" enum="Quantity">
+			Fed as [code]curve_cant[/code].
+		</constant>
+		<constant name="QUANTITY_OUTER_NOISE_AUDIBLE" value="40" enum="Quantity">
+			Fed as [code]outer_noise_audible[/code].
+		</constant>
+		<constant name="QUANTITY_OIL_PUMP_ACTIVE" value="41" enum="Quantity">
+			Fed as [code]oil_pump_active[/code].
+		</constant>
+		<constant name="QUANTITY_FUEL_PUMP_ACTIVE" value="42" enum="Quantity">
+			Fed as [code]fuel_pump_active[/code].
+		</constant>
+		<constant name="QUANTITY_BATTERY_ENABLED" value="43" enum="Quantity">
+			Fed as [code]battery_enabled[/code].
+		</constant>
+		<constant name="QUANTITY_COMPRESSOR_ENABLED" value="44" enum="Quantity">
+			Fed as [code]compressor_enabled[/code].
+		</constant>
+		<constant name="QUANTITY_CONVERTER_ENABLED" value="45" enum="Quantity">
+			Fed as [code]converter_enabled[/code].
+		</constant>
+		<constant name="QUANTITY_PANTOGRAPH_COMPRESSOR_ENABLED" value="46" enum="Quantity">
+			Fed as [code]current_collector_pantograph_compressor_enabled[/code].
+		</constant>
+		<constant name="QUANTITY_HORN_LOW_ACTIVE" value="47" enum="Quantity">
+			Fed as [code]horn_low_active[/code].
+		</constant>
+		<constant name="QUANTITY_HORN_HIGH_ACTIVE" value="48" enum="Quantity">
+			Fed as [code]horn_high_active[/code].
+		</constant>
+		<constant name="QUANTITY_WHISTLE_ACTIVE" value="49" enum="Quantity">
+			Fed as [code]whistle_active[/code].
+		</constant>
+		<constant name="QUANTITY_BEEPING" value="50" enum="Quantity">
+			Fed as [code]beeping[/code].
+		</constant>
+		<constant name="QUANTITY_CABSIGNAL_BEEPING" value="51" enum="Quantity">
+			Fed as [code]cabsignal_beeping[/code].
+		</constant>
+		<constant name="QUANTITY_DEPARTURE_SIGNAL_SOUNDING" value="52" enum="Quantity">
+			Fed as [code]doors_departure_signal_sounding[/code].
+		</constant>
+		<constant name="QUANTITY_TACHOMETER_CLOCK_SPEED" value="53" enum="Quantity">
+			Fed as [code]tachometer_clock_speed[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_COUPLER" value="54" enum="Quantity">
+			Fed as [code]coupler_attach_coupler[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_BRAKEHOSE" value="55" enum="Quantity">
+			Fed as [code]coupler_attach_brakehose[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_MAINHOSE" value="56" enum="Quantity">
+			Fed as [code]coupler_attach_mainhose[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_CONTROL" value="57" enum="Quantity">
+			Fed as [code]coupler_attach_control[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_GANGWAY" value="58" enum="Quantity">
+			Fed as [code]coupler_attach_gangway[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ATTACH_HEATING" value="59" enum="Quantity">
+			Fed as [code]coupler_attach_heating[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_COUPLER" value="60" enum="Quantity">
+			Fed as [code]coupler_detach_coupler[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_BRAKEHOSE" value="61" enum="Quantity">
+			Fed as [code]coupler_detach_brakehose[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_MAINHOSE" value="62" enum="Quantity">
+			Fed as [code]coupler_detach_mainhose[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_CONTROL" value="63" enum="Quantity">
+			Fed as [code]coupler_detach_control[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_GANGWAY" value="64" enum="Quantity">
+			Fed as [code]coupler_detach_gangway[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_DETACH_HEATING" value="65" enum="Quantity">
+			Fed as [code]coupler_detach_heating[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ADAPTER_ATTACH" value="66" enum="Quantity">
+			Fed as [code]coupler_adapter_attach[/code].
+		</constant>
+		<constant name="QUANTITY_COUPLER_ADAPTER_REMOVE" value="67" enum="Quantity">
+			Fed as [code]coupler_adapter_remove[/code].
+		</constant>
+		<constant name="QUANTITY_PANTOGRAPH_UP" value="68" enum="Quantity">
+			Fed as [code]pantograph_up[/code].
+		</constant>
+		<constant name="QUANTITY_PANTOGRAPH_DOWN" value="69" enum="Quantity">
+			Fed as [code]pantograph_down[/code].
+		</constant>
+		<constant name="QUANTITY_DERAILED" value="70" enum="Quantity">
+			Fed as [code]derailed[/code].
+		</constant>
+		<constant name="QUANTITY_MAX" value="71" enum="Quantity">
+			The number of quantities.
+		</constant>
+	</constants>
+</class>

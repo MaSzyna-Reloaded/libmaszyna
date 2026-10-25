@@ -23,12 +23,20 @@ const _CROSSFADE_LOG_FACTOR:float = -0.57
 ## An emitter's own pitch factor when the MMD gives no pitchvariation: (sound.cpp:374-377)
 const DEFAULT_PITCH_VARIATION_MIN:float = 0.975
 const DEFAULT_PITCH_VARIATION_MAX:float = 1.025
+## The range of a modulation's parameter, by its target: a gain, a playback pitch, a soundproofing
+## share of the unit size
+const MODULATION_DOMAINS:Dictionary[SfxParameterModulation.Target, Vector2] = {
+    SfxParameterModulation.Target.GAIN: Vector2(0.0, 100.0),
+    SfxParameterModulation.Target.PITCH: Vector2(0.1, 10.0),
+    SfxParameterModulation.Target.UNIT_SIZE: Vector2(0.0, 1.0),
+}
 
 
+## `automation_parameter` names the parameter a chunked sound's automation follows; a looping
+## event's sample loops
 static func build(
         definition:MmdSoundSourceDefinition, event_name:StringName,
-        sound_parameter:StringName = &"", parameterized:bool = false,
-        soundproofed:bool = false, loop:bool = true) -> SfxEvent:
+        automation_parameter:StringName = &"", loop:bool = true) -> SfxEvent:
     var event := SfxEvent.new()
     event.name = event_name
 
@@ -36,7 +44,7 @@ static func build(
     var has_chunks:bool = not not definition.chunks
 
     if has_chunks:
-        var built:Dictionary = _build_automation(definition, sound_parameter, loop)
+        var built:Dictionary = _build_automation(definition, automation_parameter, loop)
         event.automations = [built["automation"]]
         event.tracks = built["tracks"]
 
@@ -47,49 +55,20 @@ static func build(
         clip.stream = build_stream(definition.sound_main, loop, definition.source_file.get_base_dir())
         event.clips = [clip]
 
-    if parameterized:
-        event.parameter_modulations = [
-            _build_modulation(&"gain", SfxParameterModulation.Target.GAIN, 0.0, 100.0, 1.0),
-            _build_modulation(&"pitch", SfxParameterModulation.Target.PITCH, 0.1, 10.0, 1.0),
-            _build_modulation(&"unit_size", SfxParameterModulation.Target.UNIT_SIZE, 0.1, 8.0, 1.0),
-        ]
-
-    if event_name == &"engine":
-        event.parameter_modulations.append(
-                _build_modulation(&"engine_gain", SfxParameterModulation.Target.GAIN, 0.0, 2.0, 1.0))
-
-    if parameterized or soundproofed:
-        add_soundproofing_modulations(event)
-        event.spatial_config = _build_spatial_config(definition)
-
+    event.spatial_config = _build_spatial_config(definition)
     return event
 
 
-static func add_soundproofing_modulations(event:SfxEvent) -> void:
-    var has_gain:bool = false
-    var has_unit_size:bool = false
-    for modulation:SfxParameterModulation in event.parameter_modulations:
-        if not modulation.parameter_name == &"soundproofing":
-            continue
-        has_gain = has_gain or modulation.target == SfxParameterModulation.Target.GAIN
-        has_unit_size = has_unit_size or modulation.target == SfxParameterModulation.Target.UNIT_SIZE
-    if not has_gain:
-        event.parameter_modulations.append(
-                _build_modulation(&"soundproofing", SfxParameterModulation.Target.GAIN, 0.0, 1.0, 1.0))
-    if not has_unit_size:
-        event.parameter_modulations.append(
-                _build_modulation(&"soundproofing", SfxParameterModulation.Target.UNIT_SIZE, 0.0, 1.0, 1.0))
-
-
-static func _build_modulation(
-        parameter_name:StringName, target:int,
-        minimum:float, maximum:float, default_value:float) -> SfxParameterModulation:
+## A parameter of the bank applied to an event's gain, pitch or unit size as it is
+static func build_modulation(parameter_name:StringName, target:SfxParameterModulation.Target) -> SfxParameterModulation:
+    var minimum:float = MODULATION_DOMAINS[target].x
+    var maximum:float = MODULATION_DOMAINS[target].y
     var modulation := SfxParameterModulation.new()
     modulation.parameter_name = parameter_name
     modulation.target = target
     modulation.min_domain = minimum
     modulation.max_domain = maximum
-    modulation.default_value = default_value
+    modulation.default_value = 1.0
     var curve := Curve.new()
     curve.min_domain = minimum
     curve.max_domain = maximum
@@ -128,8 +107,8 @@ static func _build_begin_main_end_clips(definition:MmdSoundSourceDefinition) -> 
     if definition.sound_begin:
         var begin_clip := SfxClip.new()
         begin_clip.stream = build_stream(definition.sound_begin, false, definition.source_file.get_base_dir())
-        # the span is known before the stream is loaded, so an event started past it
-        # (TrainSoundSystem, a running sound heard again) does not play it
+        # the span is known before the stream is loaded, so an event started past it (a gate
+        # resumed past its opening, SfxParameterTrigger.resume_offset) does not play it
         begin_clip.length = main_offset
         begin_clip.bookend = true
         clips.append(begin_clip)

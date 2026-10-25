@@ -9,7 +9,7 @@ const FILE_NAME:String = "test_vehicle"
 ## test_vehicle with a one-position master controller - a wagon (FizTrainCntrlParser)
 const WAGON_FILE_NAME:String = "test_wagon"
 const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
-## Long enough for TrainSoundSystem's sweep to find the vehicle within earshot and build its sound
+## Long enough for MaszynaVehicleSoundServer's sweep to find the vehicle within earshot and build its sound
 const SOUND_TIMEOUT:float = 5.0
 ## Exterior and cabin - the fixture has no running sounds
 const PLAYERS_PER_VEHICLE:int = 2

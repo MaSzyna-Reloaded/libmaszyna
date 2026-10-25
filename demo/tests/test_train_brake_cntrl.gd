@@ -81,7 +81,7 @@ func test_state_reports_the_handle_flows_its_hiss_is_made_of() -> void:
             "brake_handle_braking_flow", "brake_handle_release_flow", "brake_handle_emergency_flow",
             "brake_handle_control_chamber_flow", "brake_handle_timing_reservoir_flow"]:
         assert_true(state.has(key), key)
-    # the sound's own filtering is the sound system's business (BrakeSoundModel)
+    # the sound's own filtering is the sound bank's business (MmdSoundFormulas)
     assert_false(state.has("brake_loco_pressure_fall_rate"))
     assert_true(brake.has_signal(&"accelerator_activated"))
 

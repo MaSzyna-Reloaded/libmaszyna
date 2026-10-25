@@ -1,13 +1,8 @@
-[gd_resource type="Resource" script_class="SfxEvent" format=3 uid="uid://cg7f3nd65aevu"]
+[gd_resource type="SfxEvent" format=3 uid="uid://cg7f3nd65aevu"]
 
-[ext_resource type="Script" uid="uid://bf434i6ru4ch" path="res://addons/gnd_sfx/sfx_automation.gd" id="1_5p8xl"]
-[ext_resource type="Script" uid="uid://bgxtc44e5rb0l" path="res://addons/gnd_sfx/sfx_event.gd" id="2_n0wvt"]
 [ext_resource type="Curve" uid="uid://184cdj31umgt" path="res://sounds/hasler_fade_in_curve.tres" id="3_1be0m"]
-[ext_resource type="Script" uid="uid://boicinkvs7i0h" path="res://addons/gnd_sfx/sfx_clip.gd" id="3_5x8j1"]
 [ext_resource type="Script" uid="uid://cmmb3s07th3xp" path="res://addons/libmaszyna/sound/maszyna_audio_stream.gd" id="3_n0wvt"]
 [ext_resource type="Curve" uid="uid://ct72vfwtf0ufy" path="res://sounds/hasler_fade_out_curve.tres" id="4_7gox4"]
-[ext_resource type="Script" uid="uid://dcy83smx1expw" path="res://addons/gnd_sfx/sfx_track.gd" id="7_1be0m"]
-[ext_resource type="Script" uid="uid://dd8my4sifw81e" path="res://addons/gnd_sfx/sfx_parameter_modulation.gd" id="7_7gox4"]
 
 [sub_resource type="AudioStream" id="AudioStream_n0wvt"]
 script = ExtResource("3_n0wvt")
@@ -15,15 +10,13 @@ file_path = "20786_hasler_10_km"
 loop = true
 metadata/_custom_type_script = "uid://cmmb3s07th3xp"
 
-[sub_resource type="Resource" id="Resource_1be0m"]
-script = ExtResource("3_5x8j1")
+[sub_resource type="SfxClip" id="Resource_1be0m"]
 stream = SubResource("AudioStream_n0wvt")
 offset = 1.0
 length = 15.03
 phase_offset = 0.863
 fade_in_curve = ExtResource("3_1be0m")
 fade_out_curve = ExtResource("4_7gox4")
-metadata/_custom_type_script = "uid://boicinkvs7i0h"
 
 [sub_resource type="AudioStream" id="AudioStream_0a7ww"]
 script = ExtResource("3_n0wvt")
@@ -31,15 +24,13 @@ file_path = "20786_hasler_20_km"
 loop = true
 metadata/_custom_type_script = "uid://cmmb3s07th3xp"
 
-[sub_resource type="Resource" id="Resource_qhkib"]
-script = ExtResource("3_5x8j1")
+[sub_resource type="SfxClip" id="Resource_qhkib"]
 stream = SubResource("AudioStream_0a7ww")
 offset = 15.0
 length = 35.0
 phase_offset = 0.22947845804988665
 fade_in_curve = ExtResource("3_1be0m")
 fade_out_curve = ExtResource("4_7gox4")
-metadata/_custom_type_script = "uid://boicinkvs7i0h"
 
 [sub_resource type="AudioStream" id="AudioStream_7a7ww"]
 script = ExtResource("3_n0wvt")
@@ -47,15 +38,13 @@ file_path = "20786_hasler_50_km"
 loop = true
 metadata/_custom_type_script = "uid://cmmb3s07th3xp"
 
-[sub_resource type="Resource" id="Resource_sfxe8"]
-script = ExtResource("3_5x8j1")
+[sub_resource type="SfxClip" id="Resource_sfxe8"]
 stream = SubResource("AudioStream_7a7ww")
 offset = 45.0
 length = 55.0
 phase_offset = 0.995
 fade_in_curve = ExtResource("3_1be0m")
 fade_out_curve = ExtResource("4_7gox4")
-metadata/_custom_type_script = "uid://boicinkvs7i0h"
 
 [sub_resource type="AudioStream" id="AudioStream_qhkib"]
 script = ExtResource("3_n0wvt")
@@ -63,29 +52,23 @@ file_path = "20786_hasler_100_km"
 loop = true
 metadata/_custom_type_script = "uid://cmmb3s07th3xp"
 
-[sub_resource type="Resource" id="Resource_li3hn"]
-script = ExtResource("3_5x8j1")
+[sub_resource type="SfxClip" id="Resource_li3hn"]
 stream = SubResource("AudioStream_qhkib")
 offset = 95.0
 phase_offset = 0.3485827664399092
 fade_in_curve = ExtResource("3_1be0m")
-metadata/_custom_type_script = "uid://boicinkvs7i0h"
 
-[sub_resource type="Resource" id="Resource_7gox4"]
-script = ExtResource("1_5p8xl")
+[sub_resource type="SfxAutomation" id="Resource_7gox4"]
 crossfade_mode = 1
 parameter_name = &"speed"
-clips = Array[ExtResource("3_5x8j1")]([SubResource("Resource_1be0m"), SubResource("Resource_qhkib"), SubResource("Resource_sfxe8"), SubResource("Resource_li3hn")])
+clips = Array[SfxClip]([SubResource("Resource_1be0m"), SubResource("Resource_qhkib"), SubResource("Resource_sfxe8"), SubResource("Resource_li3hn")])
 phase_locked = true
 phase_period = 0.4997392290249434
-metadata/_custom_type_script = "uid://bf434i6ru4ch"
 
-[sub_resource type="Resource" id="Resource_0a7ww"]
-script = ExtResource("7_1be0m")
+[sub_resource type="SfxTrack" id="Resource_0a7ww"]
 track_name = &"Master"
 
 [resource]
-script = ExtResource("2_n0wvt")
 master_track = SubResource("Resource_0a7ww")
 name = &"hasler"
-automations = Array[ExtResource("1_5p8xl")]([SubResource("Resource_7gox4")])
+automations = Array[SfxAutomation]([SubResource("Resource_7gox4")])

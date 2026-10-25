@@ -9,7 +9,7 @@ const EP07_MMD:String = "dynamic/pkp/303e_v1/303e-ep-tv.mmd"
 ## EP07-424 of td.scn on a cut of its line, with the EP07's own .fiz and .mmd (demo/tests/fixtures)
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const SCENERY:String = "ep07.scn"
-## The listener a vehicle's sound is built for once it is within earshot (TrainSoundSystem)
+## The listener a vehicle's sound is built for once it is within earshot (MaszynaVehicleSoundServer)
 const PLAYER_SCENE:PackedScene = preload("res://addons/libreloaded/player/player.tscn")
 
 ## How near its vehicle the node the vehicle's sound players are built under stands [m]
@@ -57,17 +57,19 @@ func test_ep07_mmd_builds_positioned_running_sound_events() -> void:
         return
     for event_name:StringName in [
             &"traction_motor_0", &"traction_motor_1", &"ventilator", &"curve", &"outer_noise_0",
-            &"outer_noise_1", &"wheel_clatter_0_0", &"wheel_clatter_1_0", &"wheel_clatter_2_0",
-            &"wheel_clatter_3_5"]:
+            &"outer_noise_1", &"wheel_clatter_0", &"wheel_clatter_1", &"wheel_clatter_2",
+            &"wheel_clatter_3"]:
         assert_not_null(running.bank.get_event(event_name), "missing running event %s" % event_name)
     # tractionmotors: -4.26 4.26 - a negative MMD offset is ahead of the centre, -Z in the vehicle
     assert_almost_eq(running.bank.get_event(&"traction_motor_0").spatial_config.position.z, -4.26, 0.001)
     assert_almost_eq(running.bank.get_event(&"traction_motor_1").spatial_config.position.z, 4.26, 0.001)
-    # wheel_clatter axles in the MMD order: -5.78 -2.75 2.74 5.78, one event per chunk
-    assert_almost_eq(running.bank.get_event(&"wheel_clatter_0_0").spatial_config.position.z, -5.78, 0.001)
-    assert_almost_eq(running.bank.get_event(&"wheel_clatter_3_0").spatial_config.position.z, 5.78, 0.001)
+    # wheel_clatter axles in the MMD order: -5.78 -2.75 2.74 5.78, one event per axle, its chunk
+    # picked as it clicks
+    assert_almost_eq(running.bank.get_event(&"wheel_clatter_0").spatial_config.position.z, -5.78, 0.001)
+    assert_almost_eq(running.bank.get_event(&"wheel_clatter_3").spatial_config.position.z, 5.78, 0.001)
+    assert_true(running.bank.get_event(&"wheel_clatter_0").automations[0].latch_on_start)
     # the clatter chunks are one-shots, the motor chunks loop
-    var clatter_clip:SfxClip = running.bank.get_event(&"wheel_clatter_0_0").clips[0]
+    var clatter_clip:SfxClip = running.bank.get_event(&"wheel_clatter_0").automations[0].clips[0]
     var motor_clip:SfxClip = running.bank.get_event(&"traction_motor_0").automations[0].clips[0]
     assert_false((clatter_clip.stream as MaszynaAudioStream).loop)
     assert_true((motor_clip.stream as MaszynaAudioStream).loop)
