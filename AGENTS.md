@@ -160,6 +160,9 @@ Code generation:
 * PROHIBITED: **never work around a missing or mistimed event** - no retry, re-request, poll,
   "next frame" flag, deferred call or second attempt. Fix the order, or give the owner an event
   that says the value has landed - see `CODE_STYLE.md`
+* PROHIBITED, ABSOLUTE: **never defer a signal's emission** - no `signal.emit.call_deferred(...)`,
+  no `call_deferred("emit_signal", ...)`. A signal is emitted where its event happens, in the same
+  call - see `CODE_STYLE.md`
 * PROHIBITED, ABSOLUTE: **a key is an input action of the project, matched exactly - never a
   keycode, never Godot's built-in `ui_*` actions, never a loose match.** Every key, button and
   shortcut the game reacts to is an action in the project's input map - `demo/project.godot`

@@ -12,8 +12,6 @@ const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 ## cab0, cab1 and cab2 of the low-poly interior
 const LOW_POLY_CABS:int = 3
 
-signal scenery_loaded(first_vehicle_id:String)
-
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
 var player:Player
@@ -26,7 +24,7 @@ func before_each() -> void:
 
 func after_each() -> void:
     # out of the cab before the vehicle goes: the player's cab view is in it
-    PlayerServer.player_leave_vehicle()
+    PlayerServer.player_stop()
     # the cab interior is freed at the end of the frame
     await wait_idle_frames(1)
     if is_instance_valid(vehicle):
@@ -55,8 +53,7 @@ func test_machine_room_without_cab_model_shows_low_poly_interior() -> void:
 
     player = PLAYER_SCENE.instantiate()
     add_child(player)
-    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
-    scenery_loaded.emit("")
+    PlayerServer.player_start(RID())
     PlayerServer.player_take_over_vehicle(vehicle.get_rid())
     await wait_idle_frames(3)
     assert_false(_low_poly_cab_visible(1), "hi-fi cab 1 hides its low-poly counterpart")

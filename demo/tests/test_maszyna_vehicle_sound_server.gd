@@ -28,21 +28,11 @@ var _sound:SfxPlayer3D
 
 ## The vehicle leaves before its physics node is freed - it disconnects from its controller then
 func after_each() -> void:
+    PlayerServer.player_stop()
     if is_instance_valid(_vehicle):
         remove_child(_vehicle)
         _vehicle.free()
     _vehicle = null
-
-
-## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (Player, initialization_ready)
-signal scenery_loaded(first_vehicle_id:String)
-
-## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (Player, initialization_ready)
-func _start_player(player:Player) -> void:
-    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
-    scenery_loaded.emit("")
 
 
 ## A vehicle at the origin, not given its controller yet, and the player whose camera is the listener
@@ -55,7 +45,8 @@ func _build_vehicle() -> void:
 
     var player:Player = PLAYER_SCENE.instantiate()
     add_child_autoqfree(player)
-    _start_player(player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     # on foot the player looks through the free view
     _camera = player.free_view
 

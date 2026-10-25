@@ -252,6 +252,8 @@ relying on one.
 5. Ask the placement question of each new field, out loud, and write the answer in the commit.
 6. `grep -rn 'vehicle_id' addons src` - an id is never a key a vehicle is held, cached or
    commanded by; only `vehicle_get_rid_by_id` turns an id into a vehicle.
+7. `grep -rn 'emit\.call_deferred\|call_deferred(.emit_signal' <changed files>` - nothing; a
+   signal is emitted where its event happens, never deferred (`CODE_STYLE.md`).
 
 **And verify against the code, never against a document.** `TODO.md`'s stage list was written when
 the first part of each stage landed and went stale; this file will too. Every count and line

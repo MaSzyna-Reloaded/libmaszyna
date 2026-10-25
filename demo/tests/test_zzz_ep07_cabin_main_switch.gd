@@ -25,16 +25,15 @@ func before_each():
     _previous_game_dir = MaszynaGameDirectory.get_game_dir()
     MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     player = load("res://addons/libreloaded/player/player.tscn").instantiate()
-    player.start_vehicle_id = "ep07-424"
     add_child(player)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
-    scenery.scenery_loaded.connect(player._on_scenery_loaded)
     add_child(scenery)
     # the scenery is announced once its vehicles are built
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
     vehicle_rid = VehicleServer.vehicle_get_rid_by_id("ep07-424")
+    PlayerServer.player_start(vehicle_rid)
     controller = VehicleServer.vehicle_get_controller(vehicle_rid)
     if controller and not await wait_until(func() -> bool: return PlayerServer.player_get_vehicle() == vehicle_rid,
             TAKE_OVER_TIMEOUT):
@@ -42,6 +41,7 @@ func before_each():
 
 
 func after_each():
+    PlayerServer.player_stop()
     player.free()
     scenery.free()
     MaszynaGameDirectory.save_game_dir(_previous_game_dir)

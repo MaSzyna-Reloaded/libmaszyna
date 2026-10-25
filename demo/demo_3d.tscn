@@ -17,7 +17,7 @@
 [ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
 [ext_resource type="PackedScene" path="res://addons/libreloaded/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
 [ext_resource type="SignallingImplementation" path="res://signalling/demo_block_implementation.tres" id="demo_block_implementation"]
-[ext_resource type="Resource" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
+[ext_resource type="SfxBank" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
 [ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
 [ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="scenery_streamer"]
 
@@ -109,7 +109,7 @@ offset_bottom = 31.0
 unique_name_in_owner = true
 title = "Diagnostics"
 
-[node name="DebugHud" parent="." node_paths=PackedStringArray("environment") unique_id=194798435 instance=ExtResource("debug_hud_scene")]
+[node name="DebugHud" parent="." unique_id=194798435 node_paths=PackedStringArray("environment") instance=ExtResource("debug_hud_scene")]
 unique_name_in_owner = true
 environment = NodePath("../EnvironmentNode")
 
@@ -134,6 +134,7 @@ shadow_enabled = true
 [node name="Player" parent="." unique_id=423486079 instance=ExtResource("13_nxmm0")]
 transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, -18.508982, 1.959, 168.0919)
 sfx_bank = ExtResource("player_sfx_bank")
+auto_start = true
 
 [node name="SceneryStreamer" type="Node" parent="." unique_id=197017765]
 script = ExtResource("scenery_streamer")
@@ -150,7 +151,7 @@ metadata/_custom_type_script = "uid://onxj3ocy4jip"
 
 [node name="31we-a_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=146660532]
 start_track_name = "diverging2"
-start_track_offset = 106.79557626267051
+start_track_offset = 106.79557626267052
 transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, 15.349757799999997)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
@@ -159,7 +160,7 @@ skin = "ED78-019A"
 
 [node name="31we-b_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=602076295]
 start_track_name = "diverging2"
-start_track_offset = 95.08864329912599
+start_track_offset = 95.088643299126
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -3.1402421999999985)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
@@ -169,7 +170,7 @@ skin = "ED78-019B"
 [node name="31we-c_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=706861861]
 start_track_name = "diverging2"
 start_track_offset = 82.48086381410256
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -19.0602422)
+transform = Transform3D(-1, 0, 1.129997989440363e-16, 0, 1, 0, -1.129997989440363e-16, 0, -1, -11.923031099999998, 0.6616861199999999, -19.0602422)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-c_zachpom"
@@ -270,800 +271,268 @@ vehicle_id = "tem2"
 [node name="Dekoracje" type="Node3D" parent="." unique_id=1893813040]
 
 [node name="Dworzec Olkusz" type="ReloadedModel3D" parent="Dekoracje" unique_id=228197153]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 0.999979, -0.00651009, 0, 0.00651009, 0.999979, 23.6762, -0.0722218, 3.12076)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/stacje/"
 model_filename = "dworzec_olkusz"
 skins = ["dworzec_olkusz_lhs"]
 
 [node name="Dworzec Sosnowiec" type="ReloadedModel3D" parent="Dekoracje" unique_id=1386451553]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-0.996005, -0.000581314, -0.0892923, 0, 0.999979, -0.00651009, 0.0892942, -0.00648409, -0.995984, 21.3481, 0.108946, 32.9385)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/stacje/"
 model_filename = "dworzec_sosnowiec_porabka"
 skins = ["dworzec_sosnowiec_porabka"]
 
 [node name="Nastawnia Sochaczew" type="ReloadedModel3D" parent="Dekoracje" unique_id=2113648551]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.995214, -0.000636179, -0.0977197, -2.73898e-10, 0.999979, -0.00651009, 0.0977218, 0.00647893, 0.995193, 49.2187, -0.199109, 49.3024)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/sochaczew/"
 model_filename = "nastawnia"
 skins = ["dworzec_sosnowiec_porabka"]
 
 [node name="Szyb Kleofas" type="ReloadedModel3D" parent="Dekoracje" unique_id=723025036]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-0.00991323, -0.00650977, -0.99993, -3.31827e-10, 0.999979, -0.00651009, 0.999951, -6.45372e-05, -0.00991302, -48.9397, -0.199109, 49.3024)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl/kopalnie"
 model_filename = "szyb_kleofas_gigant"
 skins = ["dworzec_sosnowiec_porabka"]
 
 [node name="KWK Staszic" type="ReloadedModel3D" parent="Dekoracje" unique_id=230588431]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(0.991685, 0.000837795, 0.128689, -7.01784e-10, 0.999979, -0.00651009, -0.128692, 0.00645596, 0.991664, 69.2926, -0.199109, 92.8501)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": true
-})
+}
+transform = Transform3D(0.991685, 0.000837795, 0.128689, -7.01784e-10, 0.999979, -0.00651009, -0.128692, 0.00645596, 0.991664, 69.2926, -0.199109, 92.8501)
+script = ExtResource("4_drlsl")
 data_path = "models/przemysl/kopalnie/kwk_staszic"
 model_filename = "szyb_ii"
 
 [node name="Tabliczka PKP" type="ReloadedModel3D" parent="Dekoracje" unique_id=2055300724]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-0.989323, -0.000948765, -0.145735, -8.28882e-10, 0.999979, -0.0065101, 0.145738, -0.00644059, -0.989302, 16.5195, -0.199109, -17.7848)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/otoczenie/obiekty_stacyjne"
 model_filename = "terenpkp"
 
 [node name="Parkomat" type="ReloadedModel3D" parent="Dekoracje" unique_id=969128519]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-0.997577, -0.000452873, -0.0695637, -5.57518e-10, 0.999979, -0.0065101, 0.0695652, -0.00649432, -0.997556, 18.1062, -0.0388117, -10.9422)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "parkomat_rozi_macius9551"
 
 [node name="Skrzynka" type="ReloadedModel3D" parent="Dekoracje" unique_id=204687938]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.999866, 0.000106457, 0.0163529, -4.68966e-10, 0.999979, -0.0065101, -0.0163532, 0.00650922, 0.999845, 21.1062, -0.0161638, -10.6909)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "skrzynka_tel_rozi_macius9551"
 
 [node name="Klamoty" type="ReloadedModel3D" parent="Dekoracje" unique_id=2091251360]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.999866, 0.000106457, 0.0163529, -4.68966e-10, 0.999979, -0.0065101, -0.0163532, 0.00650922, 0.999845, -26.1908, -0.0161638, -13.3744)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/kolejowe"
 model_filename = "klamoty_naprawcze"
 
 [node name="nastawnia_opuszczona" type="ReloadedModel3D" parent="Dekoracje" unique_id=1085419613]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -4.738611, 0, 120.73321)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/otoczenie/obiekty_stacyjne"
 model_filename = "nastawnia_opuszczona"
 
 [node name="chlodnia_belchatow" type="ReloadedModel3D" parent="Dekoracje" unique_id=75347577]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -184.59415, 0, 134.46771)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
 [node name="chlodnia_belchatow2" type="ReloadedModel3D" parent="Dekoracje" unique_id=1543279749]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -184.59415, 0, -29.266571)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
 [node name="chlodnia_belchatow3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2018873026]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -184.59415, 0, -281.21332)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
 
 [node name="komin_jadwiga_7,6x65" type="ReloadedModel3D" parent="Dekoracje" unique_id=1038208604]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -71.67697, -0.9466953, 138.53416)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "komin_jadwiga_7,6x65"
 
 [node name="plot_beton_10m" type="ReloadedModel3D" parent="Dekoracje" unique_id=2062558236]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.409653, -0.40674806, 206.01675)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
 [node name="plot_beton_10m2" type="ReloadedModel3D" parent="Dekoracje" unique_id=165452069]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.409653, -0.40674806, 216.01675)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
 [node name="plot_beton_10m3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2044339556]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.409653, -0.40674806, 226.01675)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
 [node name="plot_beton_10m4" type="ReloadedModel3D" parent="Dekoracje" unique_id=432120979]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.409653, -0.40674806, 236.01675)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/miejskie"
 model_filename = "plot_beton_10m"
 
 [node name="star200_star200_teal" type="ReloadedModel3D" parent="Dekoracje" unique_id=1963611550]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.5071774, 0, -0.8618416, 0, 1, 0, 0.8618416, 0, 0.5071774, -9.210876, -0.40161085, 127.85586)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/pojazdy"
 model_filename = "star200"
 skins = ["pojazdy/star200_teal"]
 
 [node name="manewrowy" type="ReloadedModel3D" parent="Dekoracje" unique_id=1289891567]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.538921, -0.46689212, 129.24854)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/posers"
 model_filename = "manewrowy"
 
 [node name="droznik_sosnowiec" type="ReloadedModel3D" parent="Dekoracje" unique_id=1873147890]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.486008, -0.50483894, 160.33926)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/przejazdy"
 model_filename = "droznik_sosnowiec"
 
 [node name="Jezewo Budynekstacyjny" type="ReloadedModel3D" parent="Dekoracje" unique_id=300012307]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(0.9999944, 0, 0.003351026, 0, 1, 0, -0.003351026, 0, 0.9999944, -12.8812, -0.6631875, 155.931)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": true
-})
+}
+transform = Transform3D(0.9999944, 0, 0.003351026, 0, 1, 0, -0.003351026, 0, 0.9999944, -12.8812, -0.6631875, 155.931)
+script = ExtResource("4_drlsl")
 data_path = "models/stacje"
 model_filename = "jezewo_budynekstacyjny"
 
 [node name="Lniano Budynekstacyjny" type="ReloadedModel3D" parent="Dekoracje" unique_id=1758613069]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.835052, -0.94846535, 187.91615)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": true
-})
+}
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.835052, -0.94846535, 187.91615)
+script = ExtResource("4_drlsl")
 data_path = "models/stacje"
 model_filename = "lniano_budynekstacyjny"
 
 [node name="Tree Small Drzewo 1024g" type="ReloadedModel3D" parent="Dekoracje" unique_id=1271935891]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.81495, -0.51280403, 177.55128)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
 [node name="Tree Small Drzewo 1024d" type="ReloadedModel3D" parent="Dekoracje" unique_id=1363659506]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42.81652, -0.51280403, 156.84164)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024d"]
 
 [node name="Tree Small Drzewo 1024c" type="ReloadedModel3D" parent="Dekoracje" unique_id=1287185876]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.875992, -0.51280403, 170.90414)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024c"]
 
 [node name="Tree Small Drzewo 1024g2" type="ReloadedModel3D" parent="Dekoracje" unique_id=114427822]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.582233, -0.51280403, 173.26945)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
 [node name="Tree Small Drzewo 512m" type="ReloadedModel3D" parent="Dekoracje" unique_id=853177906]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36.351986, -0.51280403, 198.75656)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo512m"]
 
 [node name="Tree Small Drzewo 512r" type="ReloadedModel3D" parent="Dekoracje" unique_id=1303309419]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -39.951008, -0.51280403, 182.85709)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo512r"]
 
 [node name="Tree Small Drzewo 1024q" type="ReloadedModel3D" parent="Dekoracje" unique_id=1259392883]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.059017, -0.51280403, 167.13202)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024q"]
 
 [node name="Tree Small Drzewo 1024t" type="ReloadedModel3D" parent="Dekoracje" unique_id=405853632]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.535767, -0.51280403, 168.87762)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024t"]
 
 [node name="Tree Small Drzewo 1024g3" type="ReloadedModel3D" parent="Dekoracje" unique_id=1443074217]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -42.938126, -0.51280403, 179.7218)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/"
 model_filename = "tree_small"
 skins = ["l61_plants/drzewo1024g"]
 
 [node name="Jelen Prawo Sarna A 1" type="ReloadedModel3D" parent="Dekoracje" unique_id=942001874]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.9659258, 0, -0.25881904, 0, 1, 0, 0.25881904, 0, 0.9659258, -33.498325, -0.4359014, 173.47368)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/animals"
 model_filename = "jelen_prawo"
 skins = ["animals/sarna_a_1"]
 
 [node name="Jelen Lezacy Sarna D 3" type="ReloadedModel3D" parent="Dekoracje" unique_id=1682514191]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36.315773, -0.38386, 174.99045)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models/animals"
 model_filename = "jelen_lezacy"
 skins = ["animals/sarna_d_3"]
 
 [node name="Latarniay Betdziur2" type="ReloadedModel3D" parent="Dekoracje" unique_id=1894119715]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(-0.25881904, 0, -0.9659258, 0, 1, 0, 0.9659258, 0, -0.25881904, -28.430252, 0, 148.56584)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": true,
 "zarowka": true
-})
+}
+transform = Transform3D(-0.25881904, 0, -0.9659258, 0, 1, 0, 0.9659258, 0, -0.25881904, -28.430252, 0, 148.56584)
+script = ExtResource("4_drlsl")
 data_path = "models/elektryczne"
 model_filename = "latarniay_betdziur"
 
 [node name="Latarniay Betdziur3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2046342816]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(0.25881907, 0, -0.9659258, 0, 1, 0, 0.9659258, 0, 0.25881907, -15.086971, 0, 137.01323)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": true,
 "zarowka": true
-})
+}
+transform = Transform3D(0.25881907, 0, -0.9659258, 0, 1, 0, 0.9659258, 0, 0.25881907, -15.086971, 0, 137.01323)
+script = ExtResource("4_drlsl")
 data_path = "models/elektryczne"
 model_filename = "latarniay_betdziur"
 
 [node name="Dzik_FromImportedE3D" type="ReloadedModel3D" parent="Dekoracje" unique_id=1236098597]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(0.9398298, 0, -0.34164292, 0, 1, 0, 0.34164292, 0, 0.9398298, -19.392635, -0.4596498, 143.84576)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 model = ExtResource("21_sa6xs")
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
 [node name="SBL" type="ReloadedModel3D" parent="Dekoracje" unique_id=1624308571]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-transform = Transform3D(1.0000000000000038, 0, 0, 0, 1, 0, 0, 0, 1.0000000000000038, -20.505828389161007, 0, 196.3552999344456)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
-script = ExtResource("4_drlsl")
-lights_state = Dictionary[String, bool]({
+lights_state = {
 "00": false,
 "01": false,
 "02": false
-})
+}
+transform = Transform3D(1.0000000000000038, 0, 0, 0, 1, 0, 0, 0, 1.0000000000000038, -20.505828389161007, 0, 196.3552999344456)
+script = ExtResource("4_drlsl")
 data_path = "models/sem"
 model_filename = "sbl_3_p_zcp_ks_ds_03"
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
@@ -1087,14 +556,10 @@ visible = true
 visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("23_track_normal")
-material1 = "rail_screw_used1"
-material2 = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 track_name = "common"
 curve = SubResource("TrackCurve_common")
+friction = 0.15
+width = 1.5
 
 [node name="DivergingTrack" type="VisualInstance3D" parent="TrackExample" unique_id=309524581]
 unique_name_in_owner = false
@@ -1113,14 +578,10 @@ visible = true
 visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("23_track_normal")
-material1 = "rail_screw_used1"
-material2 = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 track_name = "diverging"
 curve = SubResource("TrackCurve_diverging")
+friction = 0.15
+width = 1.5
 
 [node name="StartTrack" type="VisualInstance3D" parent="TrackExample" unique_id=604604820]
 unique_name_in_owner = false
@@ -1139,14 +600,10 @@ visible = true
 visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("23_track_normal")
-material1 = "rail_screw_used1"
-material2 = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 track_name = "start"
 curve = SubResource("TrackCurve_start")
+friction = 0.15
+width = 1.5
 
 [node name="Switch" type="VisualInstance3D" parent="TrackExample" unique_id=240651396]
 unique_name_in_owner = false
@@ -1166,14 +623,9 @@ visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("25_track_switch")
 diverging_curve = SubResource("TrackCurve_switch_diverging")
-material1 = "rail_screw_used1"
-material2 = "rail_screw_used1"
-trackbed_material = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 curve = SubResource("TrackCurve_switch_common")
+friction = 0.15
+width = 1.5
 
 [node name="Switch2" type="VisualInstance3D" parent="TrackExample" unique_id=1545905703]
 unique_name_in_owner = false
@@ -1193,14 +645,9 @@ visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("25_track_switch")
 diverging_curve = SubResource("TrackCurve_switch2_diverging")
-material1 = "rail_screw_used1"
-material2 = "rail_screw_used1"
-trackbed_material = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 curve = SubResource("TrackCurve_switch2_common")
+friction = 0.15
+width = 1.5
 
 [node name="DivergingTrack2" type="VisualInstance3D" parent="TrackExample" unique_id=1784592109]
 unique_name_in_owner = false
@@ -1219,14 +666,10 @@ visible = true
 visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("23_track_normal")
-material1 = "rail_screw_used1"
-material2 = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 track_name = "diverging2"
 curve = SubResource("TrackCurve_diverging2")
+friction = 0.15
+width = 1.5
 
 [node name="LeftSwitch" type="VisualInstance3D" parent="TrackExample" unique_id=1173733212]
 unique_name_in_owner = false
@@ -1247,14 +690,9 @@ layers = 1
 script = ExtResource("25_track_switch")
 diverging_curve = SubResource("TrackCurve_left_switch_diverging")
 active_track = 1
-material1 = "rail_screw_used1"
-material2 = "rail_screw_used1"
-trackbed_material = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 curve = SubResource("TrackCurve_left_switch_common")
+friction = 0.15
+width = 1.5
 
 [node name="LeftDivergingTrack" type="VisualInstance3D" parent="TrackExample" unique_id=1553601117]
 unique_name_in_owner = false
@@ -1273,14 +711,10 @@ visible = true
 visibility_parent = NodePath("")
 layers = 1
 script = ExtResource("23_track_normal")
-material1 = "rail_screw_used1"
-material2 = "1435mm/tpbps-new2"
-tex_length = 6.0
-tex_height = 0.2
-tex_width = 0.5
-tex_slope = 1.1
 track_name = "left_diverging_track"
 curve = SubResource("TrackCurve_left_diverging")
+friction = 0.15
+width = 1.5
 
 [node name="TractionExample" type="Node3D" parent="." unique_id=2005792960]
 transform = Transform3D(0.99787855, -0.017198822, 0.06279014, 0.0174523, 0.99984163, -0.0034906515, -0.062720165, 0.0045790784, 0.99802065, -24.347713, 0, 28.925892)
@@ -1291,7 +725,6 @@ script = ExtResource("24_6m450")
 wires = 1
 contact_line = SubResource("Resource_6m450")
 support_line = SubResource("Resource_h0ltb")
-material = 1
 power_supply_name = "pwr01"
 nominal_voltage = 3500.0
 max_current = 4500.0
@@ -1306,21 +739,7 @@ metadata/_custom_type_script = "uid://do35jm13yiccm"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.98, 0, 0)
 
 [node name="MaszynaE3DModelInstance" type="ReloadedModel3D" parent="TractionExample/Słup1" unique_id=918005584]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4779997, 5.8, 0)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models"
 model_filename = "tra/stb"
@@ -1328,21 +747,7 @@ skins = ["tra/betonrelief1"]
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
 [node name="E3DModelInstance3" type="ReloadedModel3D" parent="TractionExample/Słup1" unique_id=1691875328]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 3.6800003, 5.8, 0)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models"
 model_filename = "tra/-3d"
@@ -1353,21 +758,7 @@ metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.569, -0.447, 70)
 
 [node name="MaszynaE3DModelInstance" type="ReloadedModel3D" parent="TractionExample/Słup2" unique_id=1092672090]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4779997, 5.8, 0)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models"
 model_filename = "tra/stb"
@@ -1375,21 +766,7 @@ skins = ["tra/betonrelief1"]
 metadata/_custom_type_script = "uid://dgifxvb2e4hww"
 
 [node name="E3DModelInstance3" type="ReloadedModel3D" parent="TractionExample/Słup2" unique_id=1894686729]
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 3.6800003, 5.8, 0)
-rotation_edit_mode = 0
-rotation_order = 2
-top_level = false
-visible = true
-visibility_parent = NodePath("")
-layers = 1
 script = ExtResource("4_drlsl")
 data_path = "models"
 model_filename = "tra/-3d"

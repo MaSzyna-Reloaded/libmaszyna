@@ -4,8 +4,8 @@ extends MaszynaGutTest
 ## the vehicle runs on as it was - the line breaker and the converter stay on (report 2026-10-05:
 ## both dropped after the take-back). Only the roles in the cabin change (PlayerServer).
 ##
-## The player is in the scene before the scenery and takes the selected vehicle on
-## `scenery_loaded`, after the scenery has assigned its AI drivers. Handing the vehicle over uses
+## The player is in the scene before the scenery and starts in the selected vehicle on
+## `scenery_loaded` (PlayerServer.player_start()), after the scenery has assigned its AI drivers. Handing the vehicle over uses
 ## that driver instead of creating AI for the player (the cause of the report).
 
 ## EP07-424 of td.scn on a cut of its line, with the EP07's own .fiz and .mmd (demo/tests/fixtures)
@@ -27,19 +27,19 @@ func before_each():
     _previous_game_dir = MaszynaGameDirectory.get_game_dir()
     MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
     player = load("res://addons/libreloaded/player/player.tscn").instantiate()
-    player.start_vehicle_id = "ep07-424"
     add_child(player)
     scenery = MaszynaSceneryNode.new()
     scenery.filename = SCENERY
-    scenery.scenery_loaded.connect(player._on_scenery_loaded)
     add_child(scenery)
     # the scenery is announced once its vehicles are built and its drivers given their AI
     if not await wait_loaded(scenery.scenery_loaded, SCENERY):
         return
     vehicle_rid = VehicleServer.vehicle_get_rid_by_id("ep07-424")
+    PlayerServer.player_start(vehicle_rid)
 
 
 func after_each():
+    PlayerServer.player_stop()
     player.free()
     scenery.free()
     MaszynaGameDirectory.save_game_dir(_previous_game_dir)
