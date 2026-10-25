@@ -1,6 +1,7 @@
 #include "MaszynaVehicleCommandAction.hpp"
 #include "driver/DriverServer.hpp"
 #include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
+#include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 
 namespace godot {
@@ -52,15 +53,21 @@ namespace godot {
             }
             return;
         }
-        // the rest is an order for the driver of the vehicle that queued the event
+        // the rest is an order for the driver of the vehicle that queued the event - a car's is
+        // the cars' driver
+        const double command_value2 = read ? events->memory_get_value2(source) : value2;
+        if (MaszynaCarDriver *cars = MaszynaCarDriver::get_instance();
+            cars != nullptr && cars->vehicle_is_attached(p_activator)) {
+            cars->vehicle_handle_command(p_activator, text, command_value1, command_value2);
+            return;
+        }
         DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(drivers);
         const RID driver = drivers->vehicle_get_driver(p_activator);
         if (text.is_empty() || !driver.is_valid()) {
             return;
         }
-        drivers->driver_send_command(
-                driver, text, command_value1, read ? events->memory_get_value2(source) : value2, position);
+        drivers->driver_send_command(driver, text, command_value1, command_value2, position);
     }
 
     void MaszynaVehicleCommandAction::set_command(const String &p_command) {

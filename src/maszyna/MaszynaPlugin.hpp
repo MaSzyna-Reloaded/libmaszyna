@@ -3,10 +3,12 @@
 #include "plugins/ReloadedPlugin.hpp"
 
 namespace godot {
+    class MaszynaCarDriver;
     class MaszynaE3DParser;
     class MaszynaGameDirectory;
     class MaszynaE3DRailVehicleRenderingServer;
     class MaszynaE3DRenderingServer;
+    class MaszynaE3DRoadVehicleRenderingServer;
     class MaszynaMoverVehicleServer;
     class MaszynaTrackRenderingBackend;
     class MaszynaTractionServer;
@@ -26,8 +28,10 @@ namespace godot {
             MaszynaE3DParser *e3d_parser = nullptr;
             MaszynaE3DRenderingServer *e3d_rendering_server = nullptr;
             MaszynaE3DRailVehicleRenderingServer *rail_vehicle_rendering_server = nullptr;
+            MaszynaE3DRoadVehicleRenderingServer *road_vehicle_rendering_server = nullptr;
             MaszynaTractionServer *traction_server = nullptr;
             MaszynaScenarioEventServer *scenario_event_server = nullptr;
+            MaszynaCarDriver *car_driver = nullptr;
             MaszynaMoverVehicleServer *mover_vehicle_server = nullptr;
             MaszynaTrackRenderingBackend *track_rendering_backend = nullptr;
             PythonScreenServer *python_screen_server = nullptr;

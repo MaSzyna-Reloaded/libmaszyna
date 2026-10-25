@@ -46,6 +46,16 @@ class Vehicle:
 const MIRROR_GLASS_NAME_PARTS:Array[String] = ["zwierciad", "luster", "lustr"]
 ## Whether the mirror glass reflects the scene (PlanarMirror3D)
 const REAL_MIRRORS_SETTING:StringName = &"maszyna/rendering/real_mirrors"
+## Original engine: where a moving car keeps across its road (TDynamicObject::Init(),
+## DynObj.cpp:2310-2327) - in the middle of a road narrower than 3.5 m; else 0.75 m off the centre
+## line when its lane leaves more than 1.5 m free, in the middle of its lane when more than 0.1 m,
+## else 0.075 m off the centre line
+const NARROW_ROAD_WIDTH:float = 3.5
+const WIDE_LANE_FREE_SPACE:float = 1.5
+const CENTRE_LINE_MARGIN:float = 0.75
+const NARROW_LANE_FREE_SPACE:float = 0.1
+const LANE_MIDDLE_SHARE:float = 0.25
+const MINIMAL_CLEARANCE:float = 0.075
 
 var _cache = ResourceCache.create("rail_vehicle")
 var _vehicles:Dictionary[RID, Vehicle] = {}
@@ -66,6 +76,7 @@ var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 func _ready() -> void:
     _reads.task_finished.connect(_on_read_finished)
     RailVehicleRenderingServer.vehicle_model_built.connect(_on_vehicle_model_built)
+    RoadVehicleServer.vehicle_placed.connect(_on_road_vehicle_placed)
     ProjectSettings.settings_changed.connect(_on_project_settings_changed)
     if not Engine.is_editor_hint():
         # the low-poly cab is lit at its cabin's light level
@@ -187,7 +198,8 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
     read["structure"] = structure
     read["description"] = FizVehicleBuilder.build_description(structure.data_path, structure.file_name)
     read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(structure, dynamic.load_name)
-    if Engine.is_editor_hint():
+    # a road vehicle has no cab (FizVehicleBuilder)
+    if Engine.is_editor_hint() or read["description"] is RoadVehicleController:
         return read
     read["cab_logic"] = MaszynaCabinLogic.from_mmd(data_path, file_name, dynamic.livery, dynamic.vehicle_id)
     var game_dir:String = MaszynaGameDirectory.get_game_dir()
@@ -218,8 +230,22 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     # or it drives against its neighbours (DynObj.cpp:1989, 2019 `iDirection ? fVel : -fVel`)
     VehicleServer.vehicle_set_initial_velocity(vehicle,
             -dynamic.velocity if dynamic.direction == TrackServer.DIRECTION_REVERSED else dynamic.velocity)
-    RailVehicleServer.vehicle_attach(vehicle)
     var description:VehicleController = record.read["description"]
+    # a road vehicle (FizVehicleBuilder) is RoadVehicleServer's, drawn by RoadVehicleRenderingServer
+    # and driven by MaszynaCarDriver: no cab, cab logic, couplers or Mover
+    if description is RoadVehicleController:
+        RoadVehicleServer.vehicle_attach(vehicle)
+        VehicleServer.controller_configure(record.controller, description)
+        VehicleServer.vehicle_bind_controller(vehicle, record.controller)
+        RoadVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
+        RoadVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
+        if Engine.is_editor_hint():
+            return
+        if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
+            MaszynaCarDriver.vehicle_attach(vehicle, dynamic.velocity)
+        TrainSoundSystem.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
+        return
+    RailVehicleServer.vehicle_attach(vehicle)
     # the cabins its MMD defines a cab for, and the scenery's driver at the controls of the front or
     # the rear one - before its simulation starts, which takes the occupied cab with it
     # (DynObj.cpp:1940-1963)
@@ -290,6 +316,23 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     _auto_rewident.vehicle_follow(vehicle)
 
 
+## A moving car stands in its lane where it is put on its road (DynObj.cpp:2310-2327); the
+## original's OffsetTrackH is to the car's left (DynObj.cpp:2706-2707), the side offset to its right
+func _on_road_vehicle_placed(vehicle:RID) -> void:
+    var record:Vehicle = _vehicles.get(vehicle)
+    if not record or record.dynamic.velocity == 0.0:
+        return
+    var road_width:float = RoadServer.road_get_width(RoadVehicleServer.vehicle_get_road(vehicle))
+    var width:float = VehicleServer.vehicle_get_dimensions(vehicle).x
+    var offset_left:float = 0.0
+    if road_width >= NARROW_ROAD_WIDTH:
+        var free_space:float = 0.5 * road_width - width
+        offset_left = (-0.5 * width - CENTRE_LINE_MARGIN if free_space > WIDE_LANE_FREE_SPACE
+                else -LANE_MIDDLE_SHARE * road_width if free_space > NARROW_LANE_FREE_SPACE
+                else -0.5 * width - MINIMAL_CLEARANCE)
+    VehicleServer.vehicle_send_command(vehicle, "side_offset_set", -offset_left)
+
+
 ## The structure of a vehicle type and skin - of the vehicle itself when its MMD names (p1), the
 ## vehicle's own name (DynObj.cpp:5263) - from the cache, or read and cached; null when the data
 ## cannot be read
@@ -309,8 +352,8 @@ func _get_structure(dynamic:VehicleData) -> MaszynaVehicleStructure:
     # Only the .mmd's own mtime is checked - not every .e3d/.fiz file it transitively references -
     # matching FizVehicleBuilder._make_cache_hash()'s same simplification for FIZ `include`s.
     # The hash cannot see changes to MaszynaRailVehicle3DInstancer's own code - bump this tag
-    # whenever that code changes the cached structure. v33: MaszynaRailVehicleAppearance; v32: the cabins the MMD defines; v31: coupleradapter:; v30 pantfactors:, a pantograph needs only its slider; v29 pendulums; v28 doors and door steps; v27 rolling wheels by the axle arrangement.
-    var cache_hash:String = ("structure-v33:%s:%s" % [FileAccess.get_modified_time(abs_mmd_path), abs_mmd_path]).md5_text()
+    # whenever that code changes the cached structure. v34: RoadVehicleAppearance of a road vehicle; v33: MaszynaRailVehicleAppearance; v32: the cabins the MMD defines; v31: coupleradapter:; v30 pantfactors:, a pantograph needs only its slider; v29 pendulums; v28 doors and door steps; v27 rolling wheels by the axle arrangement.
+    var cache_hash:String = ("structure-v34:%s:%s" % [FileAccess.get_modified_time(abs_mmd_path), abs_mmd_path]).md5_text()
     var structure:MaszynaVehicleStructure = _cache.get(cache_path, cache_hash) as MaszynaVehicleStructure
     if not structure:
         structure = MaszynaRailVehicle3DInstancer.read_structure(
@@ -329,7 +372,10 @@ func _build_sounds(vehicle:RID) -> void:
     var file_name:String = dynamic.vehicle.get_file()
     record.sound_mount = Node3D.new()
     add_child(record.sound_mount)
-    RailVehicleRenderingServer.vehicle_mount_node(vehicle, record.sound_mount.get_instance_id())
+    if RoadVehicleRenderingServer.vehicle_is_attached(vehicle):
+        RoadVehicleRenderingServer.vehicle_mount_node(vehicle, record.sound_mount.get_instance_id())
+    else:
+        RailVehicleRenderingServer.vehicle_mount_node(vehicle, record.sound_mount.get_instance_id())
     var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_mmd_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_mmd_path))

@@ -7,6 +7,9 @@ const _INTERNAL_BRAKE_LABELS:Array[String] = [
 ]
 const _VEHICLE_PLAYER_VOICE_COUNT:int = 16
 const _HORN_LABELS:Array[String] = ["horn1", "horn2", "horn3"]
+## A road vehicle's engine and brake squeal follow how it runs (RunningSoundModel): it has no engine
+## or brakes of a rail vehicle's to trigger them by
+const _ROAD_RUNNING_LABELS:Array[String] = ["engine", "brake"]
 ## Coupler sounds, external and read from internaldata: too (DynObj.cpp:6409-6520, sound_placement::external)
 const _COUPLER_LABELS:Array[String] = [
     "couplerattach", "brakehoseattach", "mainhoseattach", "controlattach", "gangwayattach", "heatingattach",
@@ -95,6 +98,7 @@ static func build_into(
     _merge_ignition_and_shutdown_into_engine(exterior_definitions, internal_data)
     # outernoise: takes the vehicle's Vmax for its Chunkrange (DynObj.cpp:6389)
     var controller:VehicleController = VehicleServer.vehicle_get_controller(vehicle_rid)
+    var road:bool = controller is RoadVehicleController
     for definition:MmdSoundSourceDefinition in exterior_definitions:
         if definition.label == "outernoise" and controller:
             definition.chunk_range = int(controller.max_velocity)
@@ -122,7 +126,7 @@ static func build_into(
         _apply_original_defaults(definition, false)
         if definition.placement == &"internal":
             cabin_definitions.append(definition)
-        elif _is_running(definition):
+        elif _is_running(definition) or (road and definition.label in _ROAD_RUNNING_LABELS):
             running_exterior.append(definition)
         else:
             routed_exterior.append(definition)
@@ -153,6 +157,10 @@ static func _build_player(
             context.warn_unsupported_label(definition.label, abs_mmd_path, 0)
             continue
         var entry:Dictionary = MmdSoundCatalog.get_entry(definition.label)
+        if definition.label in _ROAD_RUNNING_LABELS and VehicleServer.vehicle_get_controller(vehicle_rid) is RoadVehicleController:
+            _apply_brake_source_defaults(definition)
+            _build_running_events(definition, entry["event_name"], locations, events, running)
+            continue
         if entry.get("controller", &"") == &"brake":
             _apply_brake_source_defaults(definition)
             brake_definitions[definition.label] = definition

@@ -43,7 +43,9 @@
 #include "maszyna/tracks/MaszynaTrackLooks.hpp"
 #include "maszyna/tracks/MaszynaTrackRenderingBackend.hpp"
 #include "maszyna/traction/MaszynaTractionServer.hpp"
+#include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "maszyna/vehicles/MaszynaE3DRailVehicleRenderingServer.hpp"
+#include "maszyna/vehicles/MaszynaE3DRoadVehicleRenderingServer.hpp"
 #include "maszyna/vehicles/MaszynaMoverBrakePressureTableItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverCompressorListItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverDieselConfiguration.hpp"
@@ -108,9 +110,11 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaE3DRenderingServer);
         GDREGISTER_CLASS(MaszynaRailVehicleAppearance);
         GDREGISTER_CLASS(MaszynaE3DRailVehicleRenderingServer);
+        GDREGISTER_CLASS(MaszynaE3DRoadVehicleRenderingServer);
         GDREGISTER_CLASS(MaszynaTractionServer);
         GDREGISTER_CLASS(MaszynaE3DResourceFormatLoader);
         GDREGISTER_ABSTRACT_CLASS(MaszynaMoverVehicleServer);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaCarDriver);
         GDREGISTER_ABSTRACT_CLASS(MaszynaSignalHeadKindFactory);
         GDREGISTER_CLASS(MaszynaSignallingImplementation);
         GDREGISTER_CLASS(MaszynaScenarioEventServer);
@@ -219,6 +223,9 @@ namespace godot {
         Engine::get_singleton()->register_singleton("RailVehicleRenderingServer", rail_vehicle_rendering_server);
         Engine::get_singleton()->register_singleton(
                 "MaszynaE3DRailVehicleRenderingServer", rail_vehicle_rendering_server);
+        // the road vehicles' renderer the same way, after RoadVehicleServer
+        road_vehicle_rendering_server = memnew(MaszynaE3DRoadVehicleRenderingServer);
+        Engine::get_singleton()->register_singleton("RoadVehicleRenderingServer", road_vehicle_rendering_server);
         // the traction network as the original computes it, under the core's name
         traction_server = memnew(MaszynaTractionServer);
         Engine::get_singleton()->register_singleton("TractionServer", traction_server);
@@ -226,6 +233,10 @@ namespace godot {
         // the constructor follows their events, clock, tracks, radio and isolated sections
         scenario_event_server = memnew(MaszynaScenarioEventServer);
         Engine::get_singleton()->register_singleton("MaszynaScenarioEventServer", scenario_event_server);
+        // after VehicleServer, RoadVehicleServer and MaszynaScenarioEventServer: the constructor
+        // follows the vehicles' lifetime, and it reads the roads' memories
+        car_driver = memnew(MaszynaCarDriver);
+        Engine::get_singleton()->register_singleton("MaszynaCarDriver", car_driver);
         e3d_resource_format_loader.instantiate();
         ResourceLoader::get_singleton()->add_resource_format_loader(e3d_resource_format_loader);
         logo = ResourceLoader::get_singleton()->load(LOGO_PATH);
@@ -250,6 +261,10 @@ namespace godot {
         ResourceLoader::get_singleton()->remove_resource_format_loader(e3d_resource_format_loader);
         e3d_resource_format_loader.unref();
 
+        Engine::get_singleton()->unregister_singleton("MaszynaCarDriver");
+        memdelete(car_driver);
+        car_driver = nullptr;
+
         Engine::get_singleton()->unregister_singleton("MaszynaScenarioEventServer");
         memdelete(scenario_event_server);
         scenario_event_server = nullptr;
@@ -257,6 +272,10 @@ namespace godot {
         Engine::get_singleton()->unregister_singleton("TractionServer");
         memdelete(traction_server);
         traction_server = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("RoadVehicleRenderingServer");
+        memdelete(road_vehicle_rendering_server);
+        road_vehicle_rendering_server = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaE3DRailVehicleRenderingServer");
         Engine::get_singleton()->unregister_singleton("RailVehicleRenderingServer");

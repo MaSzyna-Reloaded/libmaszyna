@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaCarDriver" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's driver of a car, one for every car.
+	</brief_description>
+	<description>
+		The driver a scenery seats in a car (TController of [code]is_car()[/code]), by the car's [VehicleServer] handle - no driver object per car. It drives as the original's drives a car without a timetable: it starts the engine and puts the head lights and red markers on, shunts at its shunting velocity (40 km/h) at most, slows down for and stops within its proximity of what the memories read by its roads' passive events say ([code]SetVelocity[/code]), moves off three seconds after the way clears, and sounds the horn for a scenery's [code]Warning_signal[/code]. Following the vehicle ahead, keeping the roads' limits and turning back at a road's end are [RoadVehicleServer]'s, by the car's configuration. It acts on the car by its commands only.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="vehicle_attach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="velocity" type="float" />
+			<description>
+				The car - a [RoadVehicleServer] vehicle - is driven from now on; [param velocity] is its scenery velocity [km/h], whose orders it starts with. A freed car is let go of on its own.
+			</description>
+		</method>
+		<method name="vehicle_detach">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				The car is driven no more.
+			</description>
+		</method>
+		<method name="vehicle_handle_command">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="value1" type="float" />
+			<param index="3" name="value2" type="float" />
+			<description>
+				An order of the scenery for the car's driver - what an event the car ran sends it ([MaszynaVehicleCommandAction]); a car's driver takes only [code]Warning_signal[/code]: the horns of [param value2]'s bits for [param value1] seconds.
+			</description>
+		</method>
+		<method name="vehicle_is_attached" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="vehicle" type="RID" />
+			<description>
+				Whether [param vehicle] is a car this driver drives.
+			</description>
+		</method>
+	</methods>
+</class>

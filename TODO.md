@@ -261,6 +261,28 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
 
 ## Vehicles
 
+* **Road cars - what is not ported** (`MaszynaCarDriver`, `MaszynaRoadNetwork`,
+  `RunningSoundModel`):
+  * a car standing in the scenery (velocity 0) stays on the road's centre line; the original puts
+    it on the roadside by the road's width with its shoulders (`WidthTotal()`, `DynObj.cpp:2329`,
+    `Track.cpp:2071-2078`), whose `tex_width` only the track drawing has
+    (`MaszynaTrackRenderingBackend`)
+  * a car placed by hand (`MaszynaRailVehicle3D`, `RailVehiclePhysicsNode`) is still a rail vehicle
+  * a crossroad (`cross`) is read for its roads only and stays undrawn (`Track.cpp:1519` draws it
+    otherwise than a track)
+  * a car on a crossroad's way or on a loop is on no track: the `cross` track's events do not
+    fire for it
+  * a `DieselEngine` car (13 of the 47 in `dynamic/road`) sounds its engine by the `Dumb` formula:
+    the original's diesel one (`DynObj.cpp:8275-8285`) reads the Mover's diesel model
+    (`dizel_fill`, `dizel_nmax`), which a car of RoadVehicleServer has not got
+  * a car's lamps are lit at any distance and with no battery; the original lights its red markers
+    within 400 m only (`DynObj.cpp:870`) and its lamps only with 24 V or 110 V
+    (`DynObj.cpp:1210-1247`)
+  * a world's (`WorldSceneryProvider`) cars get no road network - only MaszynaSceneryProvider
+    builds one
+  * `MaszynaRoadNetwork` makes a road of every `road` track; the tracks between two parting places
+    joined into one road wait for a road laid along several tracks (libreloaded's `TODO.md`)
+
 * **EN76 main pipe does not fill** (reports#12, l053_poludnie.scn, EN76-005a, local build): all
   four units with the main reservoir at 8.26 bar, `pipe_pressure` ~0, the hand brake released,
   the train brake handle of 005a at 0, of 005b-d at 1; the driving aid's hints contradict each
@@ -536,12 +558,6 @@ is in libreloaded's `TODO.md`.
   `command_param`, only as the guard of its key.
 * **Cab targets**: the motor car's ammeters, voltmeters and lamps (`mvControlled` in
   `update_gauges`) need `target` in `MmdSemanticCatalog`.
-* **A road car drives with the EN57 control car's traction**: `EngineType=Dumb` (most of
-  `dynamic/road/`) is not built (`fiz/fiz_train_engine_parser.gd:64-67`), the driver reads the
-  engine as `NONE` (`maszyna_ai_driver.gd:808-812`) and `MaszynaDriverTraction.create()` gives it
-  `MaszynaDriverControlCarTraction` (`maszyna_driver_traction.gd:114-115`). The original drives a
-  `Dumb` engine by its main and secondary controllers (`Driver.cpp:3570-3579, 3708-3711`). Road
-  cars as a whole: `TODO_OPTIMIZE_VEHICLES_PROCESSING.md`.
 
 ## Game data
 
