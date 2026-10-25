@@ -57,6 +57,10 @@ frame** - 309 cabs, 618 processes (`main_switch.gd`, `door_permits.gd` of every 
 advance, and the 309 cabs with display processes looked up to find the few shown. At 27 fps that is
 about 6% of the main thread.
 
+Not a port to C++: the cost is the cab logic instantiated per vehicle and stepped for every cab.
+The plan is one instance per behaviour, stepped only for the cabs where something runs -
+`TODO_OPTIMIZE_VEHICLES_PROCESSING.md`, section 3.
+
 ## 3. Train sounds - `TrainSoundSystem`
 
 `addons/libmaszyna/sound/train_sound_system.gd:300` `_process()` visits every active bank (the

@@ -536,6 +536,12 @@ is in libreloaded's `TODO.md`.
   `command_param`, only as the guard of its key.
 * **Cab targets**: the motor car's ammeters, voltmeters and lamps (`mvControlled` in
   `update_gauges`) need `target` in `MmdSemanticCatalog`.
+* **A road car drives with the EN57 control car's traction**: `EngineType=Dumb` (most of
+  `dynamic/road/`) is not built (`fiz/fiz_train_engine_parser.gd:64-67`), the driver reads the
+  engine as `NONE` (`maszyna_ai_driver.gd:808-812`) and `MaszynaDriverTraction.create()` gives it
+  `MaszynaDriverControlCarTraction` (`maszyna_driver_traction.gd:114-115`). The original drives a
+  `Dumb` engine by its main and secondary controllers (`Driver.cpp:3570-3579, 3708-3711`). Road
+  cars as a whole: `TODO_OPTIMIZE_VEHICLES_PROCESSING.md`.
 
 ## Game data
 
