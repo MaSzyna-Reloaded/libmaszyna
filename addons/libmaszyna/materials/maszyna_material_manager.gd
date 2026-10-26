@@ -31,11 +31,16 @@ const RAILWAY_LIGHTS_GLARE_EDGE_SIZE_DEFAULT: float = 0.4
 ## The least share of the screen's height a glare spans, however far the light
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scenery/railway_lights_glare_min_screen_size"
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
+## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
+const GENERATED_TEXTURE_SCHEME: String = "make:"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
 var _free_spotlight_material: ShaderMaterial = null
 var _managed_materials: Dictionary = {}
+## The PythonScreenServer screens drawing the generated textures, by their names - kept until the
+## game's data is unloaded
+var _generated_screens: Dictionary[String, RID] = {}
 ## Weak, like _managed_materials: a texture goes, from RAM and VRAM, with the last material using it
 var _dds_cache: Dictionary[String, WeakRef] = {}
 ## What preloads read on workers (material_preload()), by the material's and the texture's keys
@@ -64,6 +69,12 @@ class MaterialPreload:
 
 ## A max texture size that takes the project's maszyna/import/dds_max_texture_size
 const MAX_TEXTURE_SIZE_PROJECT_DEFAULT: int = 0
+## A self-illumination threshold no light level reaches: lit always ("selfillum: true",
+## Model3d.cpp:346)
+const SELFILLUM_ALWAYS: float = 2.0
+## How bright self-illumination is drawn, the shaders' global maszyna_selfillum_energy
+const SELFILLUM_ENERGY_SETTING: StringName = &"maszyna/rendering/selfillum_energy"
+const SELFILLUM_ENERGY_DEFAULT: float = 0.2
 
 
 class MaterialOptions:
@@ -71,6 +82,9 @@ class MaterialOptions:
     var selfillum_color: Color = Color.WHITE
     var selfillum_energy: float = 1.0
     var selfillum_enabled: bool = false
+    # the light level below which it self-illuminates (Global.fLuminance < fLight,
+    # opengl33renderer.cpp:3452) - always lit by default, as the shaders' own
+    var lights_on_threshold: float = SELFILLUM_ALWAYS
     # E3D translucent submodels are rendered in a separate alpha-blended pass.
     var force_transparent: bool = false
     # A submodel of the optimized E3D instancer, which never draws in the alpha pass: opaque
@@ -106,6 +120,8 @@ func _ready() -> void:
     _free_spotlight_material.next_pass = glare
     _apply_railway_lights_settings()
     ProjectSettings.settings_changed.connect(_apply_railway_lights_settings)
+    _apply_selfillum_energy()
+    ProjectSettings.settings_changed.connect(_apply_selfillum_energy)
     MaszynaE3DRenderingServer.material_set_resolver(get_submodel_material)
     ReloadedMaterialServer.material_set_provider(_provide_material, get_material_texture_size, _provide_texture_length)
     MaszynaE3DRenderingServer.material_set_preloader(preload_model_materials)
@@ -122,6 +138,7 @@ func _exit_tree() -> void:
     SimulationServer.season_changed.disconnect(_on_season_changed)
     SimulationServer.weather_changed.disconnect(_on_weather_changed)
     ProjectSettings.settings_changed.disconnect(_apply_railway_lights_settings)
+    ProjectSettings.settings_changed.disconnect(_apply_selfillum_energy)
     GameDataServer.cache_clear_requested.disconnect(clear_cache)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
     GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
@@ -154,6 +171,9 @@ func _on_weather_changed() -> void:
 ## anew - none of them is handed out again
 func _on_data_unload_requested() -> void:
     _managed_materials.clear()
+    for screen:RID in _generated_screens.values():
+        PythonScreenServer.screen_free(screen)
+    _generated_screens.clear()
     _preload_mutex.lock()
     _dds_cache.clear()
     _preloaded.clear()
@@ -182,6 +202,11 @@ func _apply_railway_lights_settings() -> void:
         RAILWAY_LIGHTS_GLARE_EDGE_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_EDGE_SIZE_DEFAULT)))
     glare.set_shader_parameter("glare_min_screen_size", float(ProjectSettings.get_setting(
         RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT)))
+
+
+func _apply_selfillum_energy() -> void:
+    RenderingServer.global_shader_parameter_set(&"maszyna_selfillum_energy", float(ProjectSettings.get_setting(
+        SELFILLUM_ENERGY_SETTING, SELFILLUM_ENERGY_DEFAULT)))
 
 
 func clear_cache() -> void:
@@ -368,7 +393,11 @@ func get_submodel_material(
         else Color.WHITE
     )
     options.selfillum_energy = options.selfillum_color.a  # legacy renderer
-    options.selfillum_enabled = options.selfillum_energy > 0.0 and submodel.lights_on_threshold >= 1.0  # legacy renderer logic
+    # self-illuminated below its threshold (the shaders' lights_on_threshold, opengl33renderer.cpp:3452);
+    # none at 0 or below - never darker than that outside
+    options.selfillum_enabled = options.selfillum_energy > 0.0 and submodel.lights_on_threshold > 0.0
+    if options.selfillum_enabled:
+        options.lights_on_threshold = submodel.lights_on_threshold
 
     if submodel.dynamic_material:
         if skins.size() < submodel.dynamic_material_index + 1:
@@ -397,6 +426,8 @@ func load_texture(
     normal:bool = false,
     max_texture_size:int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT,
 ) -> Texture:
+    if material_name.begins_with(GENERATED_TEXTURE_SCHEME):
+        return _load_generated_texture(material_name)
     var full_path:String = _get_texture_file(model_path, material_name)
     if not full_path:
         return UNKNOWN_TEXTURE
@@ -435,8 +466,32 @@ func get_material_texture_size(material_name:String) -> Vector2i:
     return DDSTextureLoader.get_size(full_path) if full_path else Vector2i.ZERO
 
 
+## The texture its script draws, once, with the query for its state: keys in lower case, values as
+## written (make_request(), Texture.cpp:428; dictionary_source, dictionary.cpp:18). Blank until drawn
+func _load_generated_texture(texture_name:String) -> Texture2D:
+    var screen:RID = _generated_screens.get(texture_name, RID())
+    if not screen.is_valid():
+        var request:PackedStringArray = texture_name.trim_prefix(GENERATED_TEXTURE_SCHEME).split("?", true, 1)
+        var game_dir:String = MaszynaGameDirectory.get_game_dir()
+        var script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + ".py")
+        screen = PythonScreenServer.screen_create(game_dir.path_join(script).trim_suffix(".py"), Callable())
+        _generated_screens[texture_name] = screen
+        var state:Dictionary = {}
+        # a pair without "=" is its own key and value, as the original's substr() takes it
+        for pair:String in (request[1] if request.size() > 1 else "").split("&", false):
+            var key_value:PackedStringArray = pair.split("=", true, 1)
+            state[key_value[0].to_lower()] = key_value[key_value.size() - 1]
+        PythonScreenServer.screen_request_render(screen, state)
+    return PythonScreenServer.screen_get_texture(screen)
+
+
 ## The texture's file in the game directory, empty when there is none
 func _get_texture_file(model_path:String, material_name:String) -> String:
+    # a texture's traits follow its name after a colon and are no part of the file's name:
+    # "peronowe/krawedz_zolty2:#" is krawedz_zolty2.dds (Texture.cpp:1310-1318)
+    var trait_position:int = material_name.rfind(":")
+    if trait_position >= 0:
+        material_name = material_name.left(trait_position)
     var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
     if (project_data_dir.ends_with("\\")):
         project_data_dir = project_data_dir.trim_suffix("\\")
@@ -505,6 +560,7 @@ func _material_key(
         options.selfillum_enabled,
         options.selfillum_color.to_html(true),
         options.selfillum_energy,
+        options.lights_on_threshold,
         options.cull_disabled,
         options.max_texture_size,
     ].map(str)).md5_text()

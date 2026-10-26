@@ -257,7 +257,7 @@ func test_a_rebuilt_model_is_announced() -> void:
     assert_signal_emitted_with_parameters(RailVehicleRenderingServer, "vehicle_model_built", [_vehicle.get_rid()])
 
 
-func test_the_low_poly_interior_hides_the_cab_whose_interior_is_drawn() -> void:
+func test_the_low_poly_interior_hides_the_cab_whose_interior_is_shown() -> void:
     _vehicle = build_rail_vehicle("RenderingCabs", TRACK_NAME, OFFSET, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var exterior_submodels:Dictionary = {"body": Transform3D()}
     var cab_submodels:Dictionary = {}
@@ -274,20 +274,28 @@ func test_the_low_poly_interior_hides_the_cab_whose_interior_is_drawn() -> void:
     await wait_idle_frames(SETTLE_FRAMES)
     RailVehicleServer.vehicle_add_machine_room(_vehicle.get_rid())
 
-    RailVehicleRenderingServer.vehicle_set_visible_low_poly_cabins(_vehicle.get_rid(), false)
+    RailVehicleRenderingServer.vehicle_set_shown_cabin(_vehicle.get_rid(),
+            RailVehicleServer.vehicle_get_front_cabin(_vehicle.get_rid()))
 
     assert_true((low_poly.get_node("cab0") as Node3D).visible, "the machine room stays")
-    assert_false((low_poly.get_node("cab1") as Node3D).visible, "the driver's cab, whose interior is drawn in its place, is hidden")
+    assert_false((low_poly.get_node("cab1") as Node3D).visible, "the cab shown, whose interior is drawn in its place, is hidden")
     assert_true((low_poly.get_node("cab2") as Node3D).visible, "the other cab stays")
 
-    # the hidden cab follows the driver's (Train.cpp:8516 CabChange: 1 -> 0, the machine room)
+    # whoever drives: the driver gone to the machine room (Train.cpp:8516 CabChange: 1 -> 0) leaves
+    # the cab shown hidden - the AI driving from another cab drew it over the player's (reports#62)
     RailVehicleServer.person_change_cabin(get_vehicle_driver(_vehicle.get_rid()),
             RailVehicleServer.CABIN_CHANGE_BACKWARD)
-    assert_false((low_poly.get_node("cab0") as Node3D).visible, "the cab moved to is hidden")
-    assert_true((low_poly.get_node("cab1") as Node3D).visible, "and the one left is shown again")
+    assert_false((low_poly.get_node("cab1") as Node3D).visible, "the cab shown stays hidden")
+    assert_true((low_poly.get_node("cab0") as Node3D).visible, "and the driver's is drawn")
 
-    RailVehicleRenderingServer.vehicle_set_visible_low_poly_cabins(_vehicle.get_rid(), true)
-    assert_true((low_poly.get_node("cab0") as Node3D).visible, "with no interior drawn every low-poly cab is shown")
+    # the hidden cab follows the cab shown
+    RailVehicleRenderingServer.vehicle_set_shown_cabin(_vehicle.get_rid(),
+            RailVehicleServer.vehicle_get_driver_cabin(_vehicle.get_rid()))
+    assert_false((low_poly.get_node("cab0") as Node3D).visible, "the cab shown now is hidden")
+    assert_true((low_poly.get_node("cab1") as Node3D).visible, "and the one shown before is drawn again")
+
+    RailVehicleRenderingServer.vehicle_set_shown_cabin(_vehicle.get_rid(), RID())
+    assert_true((low_poly.get_node("cab0") as Node3D).visible, "with no interior shown every low-poly cab is drawn")
 
 
 func test_coupling_shows_the_owned_submodel_and_keeps_missing_hose_geometry_off() -> void:

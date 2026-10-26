@@ -7,6 +7,16 @@
 #include <godot_cpp/variant/transform3d.hpp>
 
 namespace godot {
+    /// What a light lights
+    enum MaszynaE3DLightRole {
+        /// The world, with the scenery's light settings
+        LIGHT_ROLE_SCENERY,
+        /// Only a passenger interior and its passengers (MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER)
+        LIGHT_ROLE_INTERIOR,
+        /// The faint glow of a lit passenger interior on what is around the car, everything but the interior
+        LIGHT_ROLE_INTERIOR_GLOW,
+    };
+
     /// Light parameters derived from a model, shared by every backend that turns an E3D light into
     /// a real one (a SpotLight3D node or a RenderingServer light RID).
     struct MaszynaE3DLightParams {
@@ -24,6 +34,8 @@ namespace godot {
             /// grows with distance. In economy mode it is the radius of the ring of heads the one
             /// light replaces, so the source is as wide as the arms it stands in for.
             float size = 0.0;
+            /// A passenger interior's lights (make_interior_lights()) have settings of their own
+            MaszynaE3DLightRole role = LIGHT_ROLE_SCENERY;
     };
 
     /// One of the model's lights: the submodel pair it shows and hides
@@ -38,7 +50,7 @@ namespace godot {
     struct MaszynaE3DModelLightPlacement {
             String light_name; // the MaszynaE3DModelLight it is switched with
             MaszynaE3DLightParams params;
-            bool synthesized = false; // added by the street lamp quirk, not declared by the model
+            bool synthesized = false; // added by the street lamp or interior quirk, not declared by the model
     };
 
     /// Everything about a model's lights, found once and consumed by the backends and by
@@ -119,6 +131,23 @@ namespace godot {
             /// selects the vehicle energy/range overrides (headlamp, highbeam, end signal).
             static MaszynaE3DLightParams from_submodel(MaszynaE3DSubModel *p_submodel, const String &p_light_name);
 
+            /// The light a passenger interior is lit by, switched as the model's lights are (lights_state)
+            static constexpr const char *INTERIOR_LIGHT_NAME = "interior";
+            static constexpr const char *INTERIOR_LIGHT_ENERGY_SETTING = "maszyna/vehicles/interior_lights/energy";
+            static constexpr float DEFAULT_INTERIOR_LIGHT_ENERGY = 0.5;
+            static constexpr const char *INTERIOR_LIGHT_SHADOWS_SETTING = "maszyna/vehicles/interior_lights/shadows";
+            static constexpr bool DEFAULT_INTERIOR_LIGHT_SHADOWS = false;
+            /// The glow a lit interior throws around the car through its windows: its own energy,
+            /// how far it reaches [m] and how fast it fades (Light3D.omni_attenuation), as the
+            /// interior's light alone never leaves the interior
+            static constexpr const char *INTERIOR_GLOW_ENERGY_SETTING = "maszyna/vehicles/interior_lights/glow_energy";
+            static constexpr float DEFAULT_INTERIOR_GLOW_ENERGY = 0.1;
+            static constexpr const char *INTERIOR_GLOW_RANGE_SETTING = "maszyna/vehicles/interior_lights/glow_range";
+            static constexpr float DEFAULT_INTERIOR_GLOW_RANGE = 20.0;
+            static constexpr const char *INTERIOR_GLOW_ATTENUATION_SETTING =
+                    "maszyna/vehicles/interior_lights/glow_attenuation";
+            static constexpr float DEFAULT_INTERIOR_GLOW_ATTENUATION = 2.4;
+
             /// Street lamps (models named "latarnia*") declare no spotlight submodel at all - none
             /// of the 9 in the data set has one, and the original never lit the scene with them
             /// either (TP_FREESPOTLIGHT only draws a glare billboard, opengl33renderer.cpp:4646).
@@ -136,5 +165,14 @@ namespace godot {
 
             /// True for the models the street lamp quirk applies to
             static bool is_street_lamp(const String &p_model_filename);
+
+            /* A low-poly interior with a passenger section (TDynamicObject::init_sections(), DynObj.cpp:2448-2453,
+             * 2560-2595) has no light of its own - the original lights its walls and passengers by their
+             * self-illumination. It gets two lights under its top at a quarter and three quarters of its
+             * length (operator, 2026-10-26: two a car at most), each lighting half of it, in tungsten light
+             * (TDynamicObject::InteriorLight, DynObj.h:257). They light the interior alone; beside each
+             * one a glow at the interior's mid height, the windows', lights faintly what is around the car. */
+            static void make_interior_lights(
+                    const Ref<MaszynaE3DModel> &p_model, Vector<MaszynaE3DModelLightPlacement> &p_placements);
     };
 } // namespace godot

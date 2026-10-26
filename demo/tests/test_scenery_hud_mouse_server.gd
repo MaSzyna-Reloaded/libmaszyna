@@ -155,6 +155,34 @@ func test_a_scenery_model_fires_the_launcher_of_its_name_that_has_it_in_range() 
     MaszynaE3DRenderingServer.instance_free(far_lever)
 
 
+## A model with no name is no launcher's, though an unnamed launcher - a level crossing's
+## (pkp/przejazd1t.inc) - has it within its radius (scene.cpp:1055, #332)
+func test_an_unnamed_model_fires_no_unnamed_launcher() -> void:
+    var house:RID = _create_instance()
+    var models:Array[ModelData] = [_model_data("", MODEL_POSITION)]
+    var model_rids:Array[RID] = [house]
+    var context:MaszynaImporterContext = _parse(
+        "node -1 0 none eventlauncher 0 0 0 300 a 2.0 crossing_stop1 crossing_stop2 end "
+        + "event crossing_stop1 multiple %s none endevent " % NEVER
+        + "event crossing_stop2 multiple %s none endevent " % NEVER
+    )
+    var root:MaszynaIncludeNode = MaszynaIncludeNode.new()
+    root.autoload = false
+    add_child(root)
+    var tracks:Array[TrackData] = []
+    var track_rids:Array[RID] = []
+    var power_sources:Array[PowerSourceData] = []
+    await MaszynaEventFactory.build(
+        root, context.events, context.memcells, context.launchers, context.sounds, context.isolated_sections,
+        tracks, track_rids, models, model_rids, power_sources
+    )
+
+    SceneryHUDMouseServer.mouse_input(_motion(_camera.unproject_position(MODEL_POSITION)))
+    assert_false(SceneryHUDMouseServer.pickable_get_hovered().is_valid(), "no outline, no tooltip")
+    root.free()
+    MaszynaE3DRenderingServer.instance_free(house)
+
+
 func _model_data(model_name:String, position:Vector3) -> MaszynaModelData:
     var model_data:MaszynaModelData = MaszynaModelData.new()
     model_data.name = model_name

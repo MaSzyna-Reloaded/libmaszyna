@@ -55,18 +55,25 @@ text = "Reload game data"
 [node name="HBoxContainer3" type="HBoxContainer" parent="VBoxContainer" unique_id=1076233621]
 layout_mode = 2
 
-[node name="FXAAButton" type="CheckButton" parent="VBoxContainer/HBoxContainer3" unique_id=2048680945]
+[node name="ScreenSpaceAA" type="OptionButton" parent="VBoxContainer/HBoxContainer3" unique_id=2048680945]
 layout_mode = 2
-button_pressed = true
-script = ExtResource("2_2cs74")
+selected = 1
+item_count = 3
+popup/item_0/text = "Disabled"
+popup/item_0/id = 0
+popup/item_1/text = "FXAA"
+popup/item_1/id = 1
+popup/item_2/text = "SMAA"
+popup/item_2/id = 2
+script = ExtResource("3_hwkpe")
 section = "render"
-key = "fxaa_enabled"
-default = true
+key = "screen_space_aa"
+default = 1
 
 [node name="Label" type="Label" parent="VBoxContainer/HBoxContainer3" unique_id=752000470]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "FXAA"
+text = "Screen-space antialiasing"
 
 [node name="HBoxContainer13" type="HBoxContainer" parent="VBoxContainer" unique_id=197411382]
 layout_mode = 2

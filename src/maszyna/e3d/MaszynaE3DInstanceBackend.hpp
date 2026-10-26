@@ -51,6 +51,8 @@ namespace godot {
             /// What a client set on one named submodel (instance_set_submodel_*()) - a vehicle's
             /// running gear posed, a coupler hidden, a head display drawn with its own material
             struct SubmodelSettings {
+                    /// No threshold of the client's: the submodel's own (NEVER_LIT is -1)
+                    static constexpr float NO_THRESHOLD = -2.0F;
                     Transform3D pose; // on top of the submodel's own transform, like an animation's
                     bool posed = false;
                     bool visibility_set = false;
@@ -59,6 +61,9 @@ namespace godot {
                     /// The self-illumination energy of the submodel and everything under it, below 0
                     /// for the instance's own (instance_set_part_emission_energy())
                     float emission_energy = -1.0;
+                    /// The light level below which the submodel and everything under it self-illuminate,
+                    /// NO_THRESHOLD for their own (instance_set_part_lights_on_threshold())
+                    float lights_on_threshold = NO_THRESHOLD;
                     /// The named submodel of the built model, found once per build
                     MaszynaE3DSubModel *submodel = nullptr;
             };
@@ -135,6 +140,7 @@ namespace godot {
             /// The self-illumination energy a client set on a submodel, given to it and to every
             /// submodel under it, resolved out of submodel_settings; what the backends read
             HashMap<const MaszynaE3DSubModel *, float> submodel_emission_energies;
+            HashMap<const MaszynaE3DSubModel *, float> submodel_light_thresholds;
             /// instance_set_emission_energy(): the self-illumination energy of every emissive
             /// material of the instance, or below 0 to leave the materials' own
             float emission_energy = -1.0;
@@ -167,15 +173,17 @@ namespace godot {
             Vector<bool> rid_visible;
             Vector<Ref<Material>> materials;
 
-            // NODES backend
             /// An emissive material the instance drew its submodel with, a copy of its own
             struct EmissiveMaterial {
                     Ref<ShaderMaterial> material;
                     const MaszynaE3DSubModel *submodel = nullptr;
+                    /// Its own self-illumination threshold, given back once none is set on it
+                    float own_threshold = 0.0;
             };
             /// The instance's own copies of its emissive materials, while it drives their energy
-            /// (emission_energy or submodel_emission)
+            /// (emission_energy or submodel_emission) - both backends draw with them
             Vector<EmissiveMaterial> emissive_materials;
+            // NODES backend
             Vector<ObjectID> root_nodes;
             HashMap<String, LightNodes> light_nodes;
             HashMap<MaszynaE3DSubModel *, ObjectID> submodel_nodes;
@@ -245,6 +253,15 @@ namespace godot {
                     const Vector<MaszynaE3DSubModel *> &p_force_alpha_submodels, int p_parent_translucency,
                     int p_forced);
             static bool _requires_alpha_depth_prepass_sorting(const Ref<Material> &p_material);
+            /* The material the submodel is drawn with: while the instance drives its
+             * self-illumination (instance_set_emission_energy(), instance_set_part_emission_energy(),
+             * MaszynaE3DRenderingServer::instance_set_part_lights_on_threshold()) a copy of its own
+             * of an emissive one, rather than the one every instance shares */
+            static Ref<Material> _own_emissive_material(
+                    MaszynaE3DInstanceData &p_instance, const MaszynaE3DSubModel *p_submodel,
+                    const Ref<Material> &p_material);
+            /* What the instance sets on its self-illumination onto its own emissive materials */
+            static void _apply_emission(const MaszynaE3DInstanceData &p_instance);
             /* The box a submodel is drawn with, in its own space: the mesh's, widened to be centred
              * on the model's origin. Godot measures a visibility range to the centre of the box
              * (renderer_scene_cull.cpp:1471), the original from the model's origin, one distance

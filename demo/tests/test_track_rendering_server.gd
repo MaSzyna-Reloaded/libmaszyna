@@ -5,6 +5,8 @@ extends MaszynaGutTest
 const FIXTURES_GAME_DIR: String = "res://tests/fixtures"
 ## Frames given to the streaming to build a road cell in the camera's range
 const STREAMING_FRAMES: int = 60
+## A trackbed material of a neighbour the default bed's (maszyna_track_looks.tres) is not
+const APPROACH_TRACKBED: String = "1435mm/tpbps-approach"
 
 var created_tracks: Array[TrackNormal3D] = []
 var created_track_rids: Array[RID] = []
@@ -271,6 +273,44 @@ func test_road_without_a_side_material_has_no_sides() -> void:
 
     assert_not_null(meshes.get(MaszynaTrackRenderingBackend.SLOT_PRIMARY_RAIL))
     assert_null(meshes.get(MaszynaTrackRenderingBackend.SLOT_TRACKBED))
+
+
+## A switch has no trackbed texture of its own and borrows its neighbour's (Track.cpp:3326), which it
+## knows only from the topology: built before the topology is (the editor, until its Rebuild topology),
+## it has the default bed's trackbed - and its neighbour's once the topology is rebuilt, as in the
+## game, where demo_3d.gd rebuilds the topology before the tracks are built
+func test_a_switch_built_before_the_topology_gets_its_neighbour_s_trackbed_with_it() -> void:
+    var approach: TrackNormal3D = await _create_normal_track(
+        "trackbed_approach",
+        _curve(Vector3(0.0, 0.0, 20.0), Vector3(0.0, 0.0, 0.0))
+    )
+    var switch_node: TrackSwitch3D = await _create_switch_track(
+        "trackbed_switch",
+        _curve(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, -20.0)),
+        _curve(Vector3(0.0, 0.0, 0.0), Vector3(6.0, 0.0, -20.0), Vector3(0.0, 0.0, -16.667), Vector3(0.0, 0.0, 16.667))
+    )
+    var approach_render: RID = TrackRenderingServer.track_get_render_rid(TrackServer.track_get_rid_by_name(approach.track_name))
+    var switch_render: RID = TrackRenderingServer.track_get_render_rid(TrackServer.track_get_rid_by_name(switch_node.track_name))
+    TrackRenderingServer.track_set_description(approach_render,
+            _scn_look(TrackServer.TRACK_NORMAL, "rail_screw_used1", APPROACH_TRACKBED, 4.0, 0.0, 0.0, 0.0))
+    TrackRenderingServer.track_rebuild(approach_render)
+    TrackRenderingServer.track_set_description(switch_render,
+            _scn_look(TrackServer.TRACK_SWITCH, "rail_screw_used1", "rail_screw_used1", 4.0, 0.0, 0.0, 0.0))
+    TrackRenderingServer.track_rebuild(switch_render)
+    var approach_trackbed: RID = _trackbed_material(approach_render)
+    var default_trackbed: RID = _trackbed_material(switch_render)
+    assert_true(default_trackbed.is_valid(), "without the topology the switch has the default bed's trackbed")
+    assert_false(default_trackbed == approach_trackbed, "not yet its neighbour's")
+
+    TrackServer.topology_rebuild()
+
+    assert_eq(_trackbed_material(switch_render), approach_trackbed, "the topology rebuilt, its neighbour's")
+
+
+## The material a track's trackbed is drawn with, an invalid RID for no trackbed
+func _trackbed_material(track_render: RID) -> RID:
+    var mesh: Mesh = _backend().track_get_meshes(track_render).get(MaszynaTrackRenderingBackend.SLOT_TRACKBED)
+    return RenderingServer.mesh_surface_get_material(mesh.get_rid(), 0) if mesh else RID()
 
 
 ## A plain track makes the instances it draws - its rails and its trackbed - and no blades

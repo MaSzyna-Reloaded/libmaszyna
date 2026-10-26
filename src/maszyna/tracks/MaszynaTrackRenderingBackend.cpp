@@ -598,9 +598,27 @@ namespace godot {
         track->resolved_trackbed_material_valid = false;
     }
 
+    /* A track built whose trackbed is borrowed from its neighbours (_copy_adjacent_trackbed_material(),
+     * Track.cpp:3326) - a switch, a track declaring "none" - is built again with the neighbours it
+     * has now: one built before the topology (the editor, until its Rebuild topology) had the default
+     * bed's (_resolve_trackbed_material()) */
     void MaszynaTrackRenderingBackend::topology_rebuilt() {
+        TrackServer *track_server = TrackServer::get_instance();
+        TrackRenderingServer *track_rendering = TrackRenderingServer::get_instance();
+        ERR_FAIL_NULL(track_server);
+        ERR_FAIL_NULL(track_rendering);
+        Vector<RID> borrowing;
         for (KeyValue<RID, Track> &item: tracks) {
-            item.value.resolved_trackbed_material_valid = false;
+            Track &track = item.value;
+            track.resolved_trackbed_material_valid = false;
+            if (track.meshes[SLOT_PRIMARY_RAIL].is_valid() && !track.road_cell.is_valid() &&
+                track.material_trackbed_name.is_empty() &&
+                (track_server->track_is_switch(track.track) || track.material2_name.is_empty())) {
+                borrowing.push_back(item.key);
+            }
+        }
+        for (const RID &track_render: borrowing) {
+            track_rendering->track_rebuild(track_render);
         }
         // a road turns into the next one it is joined to
         for (KeyValue<RID, RoadCell> &item: road_cells) {
@@ -1526,10 +1544,19 @@ namespace godot {
             const Track *owner = _copy_adjacent_trackbed_material(&p_track, visited);
             String material_name;
             p_track.resolved_trackbed_material.unref();
+            TrackServer *track_server = TrackServer::get_instance();
+            ERR_FAIL_NULL_V(track_server, Ref<Material>());
             if (owner != nullptr) {
                 material_name = owner->material_trackbed_name.is_empty() ? owner->material2_name
                                                                          : owner->material_trackbed_name;
-                // the neighbour's own material, which it holds only while it is built itself
+            } else if (track_server->get_is_topology_changed() && looks.is_valid()) {
+                // the neighbours are not known yet (the editor, until its Rebuild topology): the default
+                // bed's trackbed, built again with the neighbour's once they are (topology_rebuilt())
+                const Ref<MaszynaTrackLook> look = looks->get_rail_looks().get(looks->get_default_bed(), Variant());
+                material_name = look.is_valid() ? look->get_material2() : String();
+            }
+            if (!material_name.is_empty()) {
+                // by its name: the neighbour holds its own material only while it is built itself
                 ReloadedMaterialServer *materials = ReloadedMaterialServer::get_instance();
                 ERR_FAIL_NULL_V(materials, Ref<Material>());
                 p_track.resolved_trackbed_material = materials->material_get(material_name, track_material_options);

@@ -19,7 +19,6 @@ func _enable_plugin():
     add_autoload_singleton("MaszynaE3DModelManager", "res://addons/libmaszyna/e3d/maszyna_e3d_model_manager.gd")
     add_autoload_singleton("MaszynaE3DModelTool", "res://addons/libmaszyna/e3d/maszyna_e3d_model_tool.gd")
     add_autoload_singleton("MaszynaVehicleSystem", "res://addons/libmaszyna/vehicle/maszyna_vehicle_system.gd")
-    add_autoload_singleton("MaszynaVehicleCatalogProvider", "res://addons/libmaszyna/vehicle/maszyna_vehicle_catalog_provider.gd")
     add_autoload_singleton("MaszynaVehicleProfileManager", "res://addons/libmaszyna/vehicle/maszyna_vehicle_profile_manager.gd")
     add_autoload_singleton("FIZResourceLoaderRegistrar", "res://addons/libmaszyna/fiz/fiz_resource_loader_registrar.gd")
     add_autoload_singleton("MaszynaSceneryChunkRenderingServer", "res://addons/libmaszyna/scenery/maszyna_scenery_chunk_rendering_server.gd")
@@ -59,7 +58,6 @@ func _disable_plugin():
 
     remove_autoload_singleton("FIZResourceLoaderRegistrar")
     remove_autoload_singleton("MaszynaVehicleProfileManager")
-    remove_autoload_singleton("MaszynaVehicleCatalogProvider")
     remove_autoload_singleton("MaszynaVehicleSystem")
     remove_autoload_singleton("MaszynaE3DModelTool")
     remove_autoload_singleton("MaszynaE3DModelManager")
@@ -108,9 +106,29 @@ func _enter_tree():
         PROPERTY_HINT_RANGE, "10.0,1000.0,5.0,suffix:m"
     )
     add_custom_project_setting("maszyna/scenery/lights/cast_shadows", true, TYPE_BOOL)
+    # the lights a passenger car is lit by inside (MaszynaE3DRailVehicleRenderingServer)
+    add_custom_project_setting(
+        "maszyna/vehicles/interior_lights/energy", 0.5, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,4,0.05"
+    )
+    add_custom_project_setting("maszyna/vehicles/interior_lights/shadows", false, TYPE_BOOL)
+    # the glow a lit interior throws around the car: energy, reach [m] and falloff
+    add_custom_project_setting(
+        "maszyna/vehicles/interior_lights/glow_energy", 0.1, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,2,0.01"
+    )
+    add_custom_project_setting(
+        "maszyna/vehicles/interior_lights/glow_range", 20.0, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,40,0.1"
+    )
+    add_custom_project_setting(
+        "maszyna/vehicles/interior_lights/glow_attenuation", 2.4, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,8,0.05"
+    )
     # A signal's or a lamp's free spotlight is drawn as a point of a constant size on the screen, the
     # way the original draws it, so it stays visible long after the lens is smaller than a pixel
     add_custom_project_setting("maszyna/scenery/railway_lights_visibility_improved", true, TYPE_BOOL)
+    # How bright whatever self-illuminates (a clock's dial, a lit window) is drawn: the original's is the
+    # texture's own colour on a screen that never exposes for the night, ours is exposed up with it
+    add_custom_project_setting(
+        "maszyna/rendering/selfillum_energy", 0.2, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,2,0.01"
+    )
     # A vehicle's mirror glass reflects the scene: a camera mirrored across it renders the glass at
     # its size on the screen while the mirror is in view within 30 m (PlanarMirror3D) - a scene
     # render per mirror

@@ -91,6 +91,15 @@ namespace godot {
             const HashMap<String, MaszynaE3DInstanceData::LightNodes>::ConstIterator light =
                     p_instance.light_nodes.find(light_name);
             if (light == p_instance.light_nodes.end()) {
+                // a light no model declares (a passenger interior's) has no nodes: its light object is
+                // MaszynaE3DRenderingServer's
+                bool synthesized = false;
+                for (const MaszynaE3DModelLightPlacement &placement: p_instance.model_lights.placements) {
+                    synthesized = synthesized || (placement.synthesized && placement.light_name == light_name);
+                }
+                if (synthesized) {
+                    continue;
+                }
                 const Node *target = Object::cast_to<Node>(ObjectDB::get_instance(p_instance.node_id));
                 UtilityFunctions::push_warning(
                         "[", target != nullptr ? String(target->get_name()) : String(),
@@ -132,13 +141,7 @@ namespace godot {
                 geometry->set_material_override(settings.value.material_override);
             }
         }
-        for (const MaszynaE3DInstanceData::EmissiveMaterial &emissive: p_instance.emissive_materials) {
-            const float *submodel_energy = p_instance.submodel_emission_energies.getptr(emissive.submodel);
-            const float energy = submodel_energy != nullptr ? *submodel_energy : p_instance.emission_energy;
-            if (energy >= 0.0) {
-                emissive.material->set_shader_parameter("emission_energy", energy);
-            }
-        }
+        _apply_emission(p_instance);
     }
 
     void MaszynaE3DNodesBackend::_add_submodels(
@@ -187,17 +190,9 @@ namespace godot {
                     p_instance, submodel.ptr(), p_force_alpha_submodels, p_parent_translucency,
                     MaszynaE3DInstanceTypes::TRANSLUCENCY_BLENDED);
             if (GeometryInstance3D *geometry = Object::cast_to<GeometryInstance3D>(child); geometry != nullptr) {
-                Ref<Material> material = p_material_resolver.resolve(p_instance, submodel.ptr(), translucency);
-                // the instance drives its self-illumination (instance_set_emission_energy(),
-                // instance_set_part_emission_energy()), so it draws with copies of its own
-                // rather than the materials every instance shares
-                if (const Ref<ShaderMaterial> shader_material = material;
-                    (p_instance.emission_energy >= 0.0 || p_instance.submodel_emission) && shader_material.is_valid() &&
-                    static_cast<bool>(shader_material->get_shader_parameter("emission_enabled"))) {
-                    const Ref<ShaderMaterial> own = shader_material->duplicate();
-                    p_instance.emissive_materials.push_back({own, submodel.ptr()});
-                    material = own;
-                }
+                const Ref<Material> material = _own_emissive_material(
+                        p_instance, submodel.ptr(),
+                        p_material_resolver.resolve(p_instance, submodel.ptr(), translucency));
                 if (material.is_valid()) {
                     geometry->set_material_override(material);
                 }

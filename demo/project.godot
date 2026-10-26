@@ -36,6 +36,7 @@ general/3d_panning_strength=0.55
 
 [autoload]
 
+ReloadedPlugins="*res://addons/libreloaded/plugins/reloaded_plugins.gd"
 TractionRenderingServer="*res://addons/libreloaded/traction/traction_rendering_server.gd"
 VehicleCatalogServer="*res://addons/libreloaded/vehicles/vehicle_catalog_server.gd"
 MaszynaSceneryChunkRenderingServer="*res://addons/libmaszyna/scenery/maszyna_scenery_chunk_rendering_server.gd"
@@ -47,7 +48,6 @@ MaszynaMaterialParser="*uid://7b48fl428yqa"
 MaszynaMaterialFactory="*uid://v144f3irjg7m"
 MaszynaE3DModelManager="*uid://b2v733o52i40x"
 MaszynaVehicleSystem="*res://addons/libmaszyna/vehicle/maszyna_vehicle_system.gd"
-MaszynaVehicleCatalogProvider="*res://addons/libmaszyna/vehicle/maszyna_vehicle_catalog_provider.gd"
 MaszynaVehicleProfileManager="*res://addons/libmaszyna/vehicle/maszyna_vehicle_profile_manager.gd"
 MaszynaE3DModelTool="*uid://df7a5f7f35wd1"
 AudioStreamManager="*uid://cp8sgfk334adm"
@@ -759,6 +759,10 @@ reloaded_overcast={
 reloaded_fog_range={
 "type": "float",
 "value": 25000.0
+}
+maszyna_selfillum_energy={
+"type": "float",
+"value": 0.2
 }
 reloaded_light_level={
 "type": "float",

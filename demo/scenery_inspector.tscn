@@ -5,17 +5,27 @@
 [ext_resource type="Script" uid="uid://b1awg5iad35ss" path="res://addons/libmaszyna/scenery/maszyna_scenery.gd" id="1_y7igu"]
 [ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d.gd" id="5_7xkf5"]
 [ext_resource type="Script" uid="uid://cqet31gklr3sb" path="res://addons/libreloaded/player/free_look_view.gd" id="5_qu2xm"]
+[ext_resource type="Script" uid="uid://64hu8w2fqcs2" path="res://addons/libreloaded/environment/procedural_sky_environment.gd" id="procedural_sky"]
 [ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="streamer"]
 
 [node name="SceneryInspector" type="Node3D" unique_id=2049876890]
 
 [node name="Player" parent="." unique_id=1819896729 instance=ExtResource("1_qu2xm")]
+auto_start = true
 
 [node name="EnvironmentNode" type="Node" parent="." unique_id=2133298923]
 script = ExtResource("1_gij37")
+current_time = 10.0
+day = 1
+timezone_offset = 2
+cloudiness = 0.0
 fog_enabled = false
 fog_distance = 174.0
 metadata/_custom_type_script = "uid://b0r5vydn7ve4l"
+
+[node name="Sky" type="Node" parent="." unique_id=814607434]
+script = ExtResource("procedural_sky")
+environment_node_path = NodePath("../EnvironmentNode")
 
 [node name="MaszynaSceneryNode" type="Node3D" parent="." unique_id=2088471628]
 script = ExtResource("1_y7igu")
@@ -27,7 +37,7 @@ script = ExtResource("5_qu2xm")
 enabled = false
 metadata/_custom_type_script = "uid://cqet31gklr3sb"
 
-[node name="Camera3D" type="Camera3D" parent="FreeView"]
+[node name="Camera3D" type="Camera3D" parent="FreeView" unique_id=714718541]
 fov = 45.0
 
 [node name="SceneryStreamer" type="Node" parent="." unique_id=771436232 node_paths=PackedStringArray("camera")]
@@ -47,7 +57,7 @@ skin = "33525412083-5"
 [node name="181_pl3" type="RailVehicle3D" parent="." unique_id=376480136]
 start_track_name = "tdo_n25"
 start_track_offset = 27.233
-transform = Transform3D(-1, -1.8849527115281495e-32, 5.905441620346591e-18, -1.8849527115281495e-32, 1, 0, -5.905441620346591e-18, -1.1131478195043496e-49, -1, 0.396825, 0.38, 263.344)
+transform = Transform3D(-1, 0, 5.905441620346591e-18, 0, 1, 0, -5.905441620346591e-18, 0, -1, 0.396825, 0.38, 263.344)
 script = ExtResource("5_7xkf5")
 data_path = "/dynamic/cd/181_v2"
 file_name = "181_pl3"
@@ -64,4 +74,5 @@ skin = "182_115-6'17"
 
 [node name="SimulationRuntime" type="SimulationRuntime" parent="." unique_id=600815869]
 
+[connection signal="configuration_changed" from="EnvironmentNode" to="Sky" method="apply_configuration"]
 [connection signal="fov_changed" from="FreeView" to="FreeView/Camera3D" method="set_fov"]

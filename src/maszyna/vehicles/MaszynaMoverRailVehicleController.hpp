@@ -105,6 +105,9 @@ namespace godot {
             void compartment_lights_switch_off(bool p_enabled) override;
             bool get_compartment_lights_enabled() const override;
             bool get_compartment_lights_active() const override;
+            /// How bright they shine: 1 on 110 V, half on 24 V alone, times their dimming
+            /// (TMoverParameters::LightsCheck(), Mover.cpp:2176-2192)
+            float get_compartment_lights_intensity() const;
             void cab_activation_auto() override;
             void cab_deactivation_auto() override;
             void cab_controls_reset() override;

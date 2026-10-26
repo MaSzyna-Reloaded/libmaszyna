@@ -28,21 +28,11 @@ var _sound:SfxPlayer3D
 
 ## The vehicle leaves before its physics node is freed - it disconnects from its controller then
 func after_each() -> void:
+    PlayerServer.player_stop()
     if is_instance_valid(_vehicle):
         remove_child(_vehicle)
         _vehicle.free()
     _vehicle = null
-
-
-## The scenery the player starts with is loaded, with no start vehicle: the player starts outside and
-## only now has its camera (Player, initialization_ready)
-signal scenery_loaded(first_vehicle_id:String)
-
-## The player started outside, as after a scenery with no start vehicle: its camera is made only
-## then (Player, initialization_ready)
-func _start_player(player:Player) -> void:
-    scenery_loaded.connect(player._on_scenery_loaded, CONNECT_ONE_SHOT)
-    scenery_loaded.emit("")
 
 
 ## A vehicle at the origin, not given its controller yet, and the player whose camera is the listener
@@ -55,7 +45,8 @@ func _build_vehicle() -> void:
 
     var player:Player = PLAYER_SCENE.instantiate()
     add_child_autoqfree(player)
-    _start_player(player)
+    # started outside, as after a scenery with no start vehicle: only now has the player its camera
+    PlayerServer.player_start(RID())
     # on foot the player looks through the free view
     _camera = player.free_view
 
@@ -155,6 +146,37 @@ func test_sound_switched_on_while_heard_plays_its_opening_bookend() -> void:
     assert_almost_eq(
             float(_sound.get_event_visualization_state(&"engine")["event_time"]), 0.0,
             EVENT_TIME_TOLERANCE, "starts at its opening bookend")
+
+
+func test_sound_switched_on_while_the_camera_is_away_is_heard_past_its_opening_bookend() -> void:
+    _build(MmdSoundCatalog.TriggerMode.TOGGLE)
+    _camera.global_position = FAR
+    await step(ticks(SETTLE))
+    VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
+    await step(ticks(SETTLE))
+    _camera.global_position = NEAR
+    if not await wait_simulated_until(_playing, SETTLE, "the sound heard"):
+        return
+
+    # past the bookend, by however long the sound has played since
+    assert_gt(float(_sound.get_event_visualization_state(&"engine")["event_time"]),
+            BOOKEND_LENGTH - EVENT_TIME_TOLERANCE, "switched on unheard, it is heard past its opening bookend")
+
+
+func test_sound_on_before_its_bank_is_built_is_heard_past_its_opening_bookend() -> void:
+    _build_vehicle()
+    _attach_controller()
+    _camera.global_position = NEAR
+    VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
+    await step(ticks(SETTLE))
+    # the bank of a vehicle the camera has just come to, built with the sound on already
+    _register_bank(MmdSoundCatalog.TriggerMode.TOGGLE)
+    if not await wait_simulated_until(_playing, SETTLE, "the sound heard"):
+        return
+
+    # past the bookend, by however long the sound has played since
+    assert_gt(float(_sound.get_event_visualization_state(&"engine")["event_time"]),
+            BOOKEND_LENGTH - EVENT_TIME_TOLERANCE, "on before it was heard, it is heard past its opening bookend")
 
 
 func test_one_shot_due_while_the_camera_is_away_is_dropped() -> void:

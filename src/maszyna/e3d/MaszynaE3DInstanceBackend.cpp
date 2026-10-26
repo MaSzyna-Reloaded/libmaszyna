@@ -138,6 +138,32 @@ namespace godot {
                base_material->get_transparency() == BaseMaterial3D::TRANSPARENCY_ALPHA_DEPTH_PRE_PASS;
     }
 
+    Ref<Material> MaszynaE3DInstanceBackend::_own_emissive_material(
+            MaszynaE3DInstanceData &p_instance, const MaszynaE3DSubModel *p_submodel, const Ref<Material> &p_material) {
+        const Ref<ShaderMaterial> shader_material = p_material;
+        if ((p_instance.emission_energy < 0.0 && !p_instance.submodel_emission) || shader_material.is_null() ||
+            !static_cast<bool>(shader_material->get_shader_parameter("emission_enabled"))) {
+            return p_material;
+        }
+        const Ref<ShaderMaterial> own = shader_material->duplicate();
+        p_instance.emissive_materials.push_back({own, p_submodel, own->get_shader_parameter("lights_on_threshold")});
+        return own;
+    }
+
+    void MaszynaE3DInstanceBackend::_apply_emission(const MaszynaE3DInstanceData &p_instance) {
+        for (const MaszynaE3DInstanceData::EmissiveMaterial &emissive: p_instance.emissive_materials) {
+            const float *submodel_energy = p_instance.submodel_emission_energies.getptr(emissive.submodel);
+            const float energy = submodel_energy != nullptr ? *submodel_energy : p_instance.emission_energy;
+            if (energy >= 0.0) {
+                emissive.material->set_shader_parameter("emission_energy", energy);
+            }
+            // SetSelfIllum() of the original over the submodel's own threshold
+            const float *threshold = p_instance.submodel_light_thresholds.getptr(emissive.submodel);
+            emissive.material->set_shader_parameter(
+                    "lights_on_threshold", threshold != nullptr ? *threshold : emissive.own_threshold);
+        }
+    }
+
     AABB MaszynaE3DInstanceBackend::_visibility_aabb(const AABB &p_mesh_aabb, const Transform3D &p_model_transform) {
         const Vector3 origin = p_model_transform.affine_inverse().xform(Vector3());
         const Vector3 extent = (p_mesh_aabb.position - origin).abs().max((p_mesh_aabb.get_end() - origin).abs());
