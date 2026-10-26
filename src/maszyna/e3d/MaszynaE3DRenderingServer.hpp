@@ -253,6 +253,8 @@ namespace godot {
             /// Finds the submodels the client's settings name in the built model, and what the
             /// backends read of them
             void _resolve_submodel_settings(MaszynaE3DInstanceData &p_instance);
+            static void _set_subtree_lights_on_threshold(
+                    MaszynaE3DInstanceData &p_instance, const MaszynaE3DSubModel *p_submodel, float p_threshold);
             static void _set_subtree_emission_energy(
                     MaszynaE3DInstanceData &p_instance, const MaszynaE3DSubModel *p_submodel, float p_energy);
             void _apply_client_submodels(MaszynaE3DInstanceData &p_instance);
@@ -303,6 +305,10 @@ namespace godot {
             /// low-poly interior lit by its cab light
             void
             instance_set_part_emission_energy(const RID &p_instance, const String &p_submodel, float p_energy) override;
+            /// The light level below which the submodel and everything under it self-illuminate, over
+            /// their own threshold - SetSelfIllum() (Model3d.cpp); NO_THRESHOLD gives them their own
+            void
+            instance_set_part_lights_on_threshold(const RID &p_instance, const String &p_submodel, float p_threshold);
             bool instance_has_part(const RID &p_instance, const String &p_submodel) const override;
             /// The submodel's transform in the model, through every parent, without any pose
             Transform3D instance_get_part_transform(const RID &p_instance, const String &p_submodel) const override;

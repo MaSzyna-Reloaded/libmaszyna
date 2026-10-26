@@ -132,13 +132,7 @@ namespace godot {
                 geometry->set_material_override(settings.value.material_override);
             }
         }
-        for (const MaszynaE3DInstanceData::EmissiveMaterial &emissive: p_instance.emissive_materials) {
-            const float *submodel_energy = p_instance.submodel_emission_energies.getptr(emissive.submodel);
-            const float energy = submodel_energy != nullptr ? *submodel_energy : p_instance.emission_energy;
-            if (energy >= 0.0) {
-                emissive.material->set_shader_parameter("emission_energy", energy);
-            }
-        }
+        _apply_emission(p_instance);
     }
 
     void MaszynaE3DNodesBackend::_add_submodels(
@@ -187,17 +181,9 @@ namespace godot {
                     p_instance, submodel.ptr(), p_force_alpha_submodels, p_parent_translucency,
                     MaszynaE3DInstanceTypes::TRANSLUCENCY_BLENDED);
             if (GeometryInstance3D *geometry = Object::cast_to<GeometryInstance3D>(child); geometry != nullptr) {
-                Ref<Material> material = p_material_resolver.resolve(p_instance, submodel.ptr(), translucency);
-                // the instance drives its self-illumination (instance_set_emission_energy(),
-                // instance_set_part_emission_energy()), so it draws with copies of its own
-                // rather than the materials every instance shares
-                if (const Ref<ShaderMaterial> shader_material = material;
-                    (p_instance.emission_energy >= 0.0 || p_instance.submodel_emission) && shader_material.is_valid() &&
-                    static_cast<bool>(shader_material->get_shader_parameter("emission_enabled"))) {
-                    const Ref<ShaderMaterial> own = shader_material->duplicate();
-                    p_instance.emissive_materials.push_back({own, submodel.ptr()});
-                    material = own;
-                }
+                const Ref<Material> material = _own_emissive_material(
+                        p_instance, submodel.ptr(),
+                        p_material_resolver.resolve(p_instance, submodel.ptr(), translucency));
                 if (material.is_valid()) {
                     geometry->set_material_override(material);
                 }

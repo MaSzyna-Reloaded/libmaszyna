@@ -33,6 +33,7 @@ namespace godot {
         p_instance.chains.clear();
         p_instance.rid_visible.clear();
         p_instance.materials.clear();
+        p_instance.emissive_materials.clear();
         p_instance.light_submodels.clear();
     }
 
@@ -50,6 +51,7 @@ namespace godot {
                 rs->instance_geometry_set_material_override(p_instance.rids[i], (*material)->get_rid());
             }
         }
+        _apply_emission(p_instance);
         // every RID set, whatever it was last shown as
         p_instance.rid_visible.clear();
         update_visibility(p_instance);
@@ -169,7 +171,10 @@ namespace godot {
                 submodel->get_mesh().is_valid()) {
                 const RID rid = _add_submodel(
                         p_instance, submodel.ptr(), submodel->get_mesh()->get_rid(),
-                        p_material_resolver.resolve(p_instance, submodel.ptr(), translucency), local_transform, chain);
+                        _own_emissive_material(
+                                p_instance, submodel.ptr(),
+                                p_material_resolver.resolve(p_instance, submodel.ptr(), translucency)),
+                        local_transform, chain);
                 RenderingServer::get_singleton()->instance_set_custom_aabb(
                         rid, _visibility_aabb(submodel->get_mesh()->get_aabb(), local_transform));
             }

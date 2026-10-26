@@ -64,6 +64,12 @@ class MaterialPreload:
 
 ## A max texture size that takes the project's maszyna/import/dds_max_texture_size
 const MAX_TEXTURE_SIZE_PROJECT_DEFAULT: int = 0
+## A self-illumination threshold no light level reaches: lit always ("selfillum: true",
+## Model3d.cpp:346)
+const SELFILLUM_ALWAYS: float = 2.0
+## How bright self-illumination is drawn, the shaders' global maszyna_selfillum_energy
+const SELFILLUM_ENERGY_SETTING: StringName = &"maszyna/rendering/selfillum_energy"
+const SELFILLUM_ENERGY_DEFAULT: float = 0.2
 
 
 class MaterialOptions:
@@ -71,6 +77,9 @@ class MaterialOptions:
     var selfillum_color: Color = Color.WHITE
     var selfillum_energy: float = 1.0
     var selfillum_enabled: bool = false
+    # the light level below which it self-illuminates (Global.fLuminance < fLight,
+    # opengl33renderer.cpp:3452) - always lit by default, as the shaders' own
+    var lights_on_threshold: float = SELFILLUM_ALWAYS
     # E3D translucent submodels are rendered in a separate alpha-blended pass.
     var force_transparent: bool = false
     # A submodel of the optimized E3D instancer, which never draws in the alpha pass: opaque
@@ -106,6 +115,8 @@ func _ready() -> void:
     _free_spotlight_material.next_pass = glare
     _apply_railway_lights_settings()
     ProjectSettings.settings_changed.connect(_apply_railway_lights_settings)
+    _apply_selfillum_energy()
+    ProjectSettings.settings_changed.connect(_apply_selfillum_energy)
     MaszynaE3DRenderingServer.material_set_resolver(get_submodel_material)
     ReloadedMaterialServer.material_set_provider(_provide_material, get_material_texture_size, _provide_texture_length)
     MaszynaE3DRenderingServer.material_set_preloader(preload_model_materials)
@@ -122,6 +133,7 @@ func _exit_tree() -> void:
     SimulationServer.season_changed.disconnect(_on_season_changed)
     SimulationServer.weather_changed.disconnect(_on_weather_changed)
     ProjectSettings.settings_changed.disconnect(_apply_railway_lights_settings)
+    ProjectSettings.settings_changed.disconnect(_apply_selfillum_energy)
     GameDataServer.cache_clear_requested.disconnect(clear_cache)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
     GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
@@ -182,6 +194,11 @@ func _apply_railway_lights_settings() -> void:
         RAILWAY_LIGHTS_GLARE_EDGE_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_EDGE_SIZE_DEFAULT)))
     glare.set_shader_parameter("glare_min_screen_size", float(ProjectSettings.get_setting(
         RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT)))
+
+
+func _apply_selfillum_energy() -> void:
+    RenderingServer.global_shader_parameter_set(&"maszyna_selfillum_energy", float(ProjectSettings.get_setting(
+        SELFILLUM_ENERGY_SETTING, SELFILLUM_ENERGY_DEFAULT)))
 
 
 func clear_cache() -> void:
@@ -368,7 +385,11 @@ func get_submodel_material(
         else Color.WHITE
     )
     options.selfillum_energy = options.selfillum_color.a  # legacy renderer
-    options.selfillum_enabled = options.selfillum_energy > 0.0 and submodel.lights_on_threshold >= 1.0  # legacy renderer logic
+    # self-illuminated below its threshold (the shaders' lights_on_threshold, opengl33renderer.cpp:3452);
+    # none at 0 or below - never darker than that outside
+    options.selfillum_enabled = options.selfillum_energy > 0.0 and submodel.lights_on_threshold > 0.0
+    if options.selfillum_enabled:
+        options.lights_on_threshold = submodel.lights_on_threshold
 
     if submodel.dynamic_material:
         if skins.size() < submodel.dynamic_material_index + 1:
@@ -505,6 +526,7 @@ func _material_key(
         options.selfillum_enabled,
         options.selfillum_color.to_html(true),
         options.selfillum_energy,
+        options.lights_on_threshold,
         options.cull_disabled,
         options.max_texture_size,
     ].map(str)).md5_text()

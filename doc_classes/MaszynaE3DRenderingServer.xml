@@ -125,6 +125,15 @@
 				The scenery node's [code]lights[/code] list of [param instance], by light index (light 0 is [code]"00"[/code], [code]AnimModel.cpp:303[/code]); a fraction of a mode is its own darkness threshold.
 			</description>
 		</method>
+		<method name="instance_set_part_lights_on_threshold">
+			<return type="void" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<param index="2" name="threshold" type="float" />
+			<description>
+				The light level below which the submodel and everything under it self-illuminate, over their own threshold - [code]SetSelfIllum()[/code] of the original (a manually started compartment light lights its sections and their loads at [code]2.0[/code], whatever the light outside); [code]-2.0[/code] gives them their own again. Only a NODES instance draws with it - the one drawn near the camera.
+			</description>
+		</method>
 		<method name="instance_set_smoke_intensity">
 			<return type="void" />
 			<param index="0" name="instance" type="RID" />

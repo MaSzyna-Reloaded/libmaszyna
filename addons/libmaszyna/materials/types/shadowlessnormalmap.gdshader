@@ -18,6 +18,12 @@ uniform ivec2 albedo_texture_size;
 uniform float point_size : hint_range(0.1, 128.0, 0.1);
 
 uniform bool emission_enabled = false;
+// the submodel self-illuminates while the light outside is below its threshold
+// (opengl33renderer.cpp:3452 - Global.fLuminance < fLight); 2.0 lights it always
+uniform float lights_on_threshold = 2.0;
+global uniform float reloaded_light_level;
+// how bright self-illumination is drawn, of the setting (MaszynaMaterialManager)
+global uniform float maszyna_selfillum_energy;
 uniform vec4 emission_color : source_color = vec4(1.0);
 uniform float emission_energy : hint_range(0.0, 16.0);
 
@@ -49,8 +55,8 @@ void fragment() {
 	METALLIC = 0.0;
 	ROUGHNESS = 1.0;
 
-    if(emission_enabled) {
-        EMISSION = emission_color.rgb * albedo.rgb * albedo_tex.rgb * emission_energy;
+    if(emission_enabled && reloaded_light_level < lights_on_threshold) {
+        EMISSION = emission_color.rgb * albedo.rgb * albedo_tex.rgb * emission_energy * maszyna_selfillum_energy;
     }
 
 #ifdef MASZYNA_SPECGLOSS

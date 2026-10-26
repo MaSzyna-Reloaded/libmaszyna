@@ -109,6 +109,11 @@ func _enter_tree():
     # A signal's or a lamp's free spotlight is drawn as a point of a constant size on the screen, the
     # way the original draws it, so it stays visible long after the lens is smaller than a pixel
     add_custom_project_setting("maszyna/scenery/railway_lights_visibility_improved", true, TYPE_BOOL)
+    # How bright whatever self-illuminates (a clock's dial, a lit window) is drawn: the original's is the
+    # texture's own colour on a screen that never exposes for the night, ours is exposed up with it
+    add_custom_project_setting(
+        "maszyna/rendering/selfillum_energy", 0.2, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,2,0.01"
+    )
     # A vehicle's mirror glass reflects the scene: a camera mirrored across it renders the glass at
     # its size on the screen while the mirror is in view within 30 m (PlanarMirror3D) - a scene
     # render per mirror

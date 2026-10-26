@@ -760,6 +760,10 @@ reloaded_fog_range={
 "type": "float",
 "value": 25000.0
 }
+maszyna_selfillum_energy={
+"type": "float",
+"value": 0.2
+}
 reloaded_light_level={
 "type": "float",
 "value": 1.0

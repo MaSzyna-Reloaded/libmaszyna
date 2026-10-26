@@ -36,6 +36,9 @@ namespace godot {
                 D_METHOD("instance_set_visibility_range", "instance", "begin", "end"),
                 &MaszynaE3DRenderingServer::instance_set_visibility_range);
         ClassDB::bind_method(
+                D_METHOD("instance_set_part_lights_on_threshold", "instance", "submodel", "threshold"),
+                &MaszynaE3DRenderingServer::instance_set_part_lights_on_threshold);
+        ClassDB::bind_method(
                 D_METHOD("instance_set_lights_modes", "instance", "modes"),
                 &MaszynaE3DRenderingServer::instance_set_lights_modes);
         ClassDB::bind_method(
@@ -1377,6 +1380,7 @@ namespace godot {
         p_instance.hidden_submodels.clear();
         p_instance.submodel_materials.clear();
         p_instance.submodel_emission_energies.clear();
+        p_instance.submodel_light_thresholds.clear();
         for (KeyValue<String, MaszynaE3DInstanceData::SubmodelSettings> &settings: p_instance.submodel_settings) {
             settings.value.submodel = _find_submodel(p_instance.model->get_submodels(), settings.key);
             if (settings.value.submodel == nullptr) {
@@ -1394,6 +1398,22 @@ namespace godot {
             }
             if (settings.value.emission_energy >= 0.0) {
                 _set_subtree_emission_energy(p_instance, settings.value.submodel, settings.value.emission_energy);
+            }
+            if (settings.value.lights_on_threshold > MaszynaE3DInstanceData::SubmodelSettings::NO_THRESHOLD) {
+                _set_subtree_lights_on_threshold(
+                        p_instance, settings.value.submodel, settings.value.lights_on_threshold);
+            }
+        }
+    }
+
+    void MaszynaE3DRenderingServer::_set_subtree_lights_on_threshold(
+            MaszynaE3DInstanceData &p_instance, const MaszynaE3DSubModel *p_submodel, const float p_threshold) {
+        p_instance.submodel_light_thresholds[p_submodel] = p_threshold;
+        const TypedArray<MaszynaE3DSubModel> children = p_submodel->get_submodels();
+        for (int index = 0; index < children.size(); index++) {
+            const Ref<MaszynaE3DSubModel> child = children[index];
+            if (child.is_valid()) {
+                _set_subtree_lights_on_threshold(p_instance, child.ptr(), p_threshold);
             }
         }
     }
@@ -1453,6 +1473,26 @@ namespace godot {
             _resolve_submodel_settings(*instance);
             _get_backend(*instance).update(*instance);
         }
+    }
+
+    /// The threshold is set on the instance's own copies of its emissive materials
+    void MaszynaE3DRenderingServer::instance_set_part_lights_on_threshold(
+            const RID &p_instance, const String &p_submodel, const float p_threshold) {
+        MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL(instance);
+        const bool copies_needed = instance->emission_energy < 0.0 && !instance->submodel_emission;
+        instance->submodel_emission = true;
+        instance->submodel_settings[p_submodel.to_lower()].lights_on_threshold = p_threshold;
+        if (!instance->built) {
+            return;
+        }
+        // the copies are made as it is built
+        if (copies_needed) {
+            _rebuild_if_built(*instance);
+            return;
+        }
+        _resolve_submodel_settings(*instance);
+        _get_backend(*instance).update(*instance);
     }
 
     void MaszynaE3DRenderingServer::instance_set_part_emission_energy(
