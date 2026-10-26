@@ -138,9 +138,6 @@ namespace godot {
         }
         if (RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance(); rail_vehicles != nullptr) {
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_driver_cabin_changed_signal,
-                    callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_driver_cabin_changed));
-            rail_vehicles->connect(
                     RailVehicleServer::vehicle_trainset_changed_signal,
                     callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_trainset_changed));
             rail_vehicles->connect(
@@ -441,7 +438,7 @@ namespace godot {
         _update_lights(p_vehicle, *visual, *maszyna);
     }
 
-    void MaszynaE3DRailVehicleRenderingServer::_vehicle_low_poly_cabins_changed(const RID &p_vehicle) {
+    void MaszynaE3DRailVehicleRenderingServer::_vehicle_shown_cabin_changed(const RID &p_vehicle) {
         const Visual *visual = _get_visual(p_vehicle);
         ERR_FAIL_NULL(visual);
         _update_low_poly_cabs(p_vehicle, *visual);
@@ -591,14 +588,6 @@ namespace godot {
         models->instance_set_scenario(p_maszyna.load, p_visual.placed ? p_visual.scenario : RID());
         models->instance_build(p_maszyna.load);
         _update_load(p_vehicle, p_visual, p_maszyna);
-    }
-
-    /* Another cab hidden while the low-poly cabs are not all visible */
-    void MaszynaE3DRailVehicleRenderingServer::_on_vehicle_driver_cabin_changed(
-            const RID &p_vehicle, const RID & /* p_cabin */) {
-        if (const Visual *visual = _get_visual(p_vehicle); visual != nullptr) {
-            _update_low_poly_cabs(p_vehicle, *visual);
-        }
     }
 
     void MaszynaE3DRailVehicleRenderingServer::cabin_set_light_level(const RID &p_cabin, const double p_level) {
@@ -1233,10 +1222,11 @@ namespace godot {
     }
 
     // Original engine: every low-poly cab is drawn, but in the view from inside the player's
-    // vehicle, where the "cabN" of the occupied cab is hidden - or all of them with jointcabs: -
-    // so the hi-fi cab doesn't overlap it; a cab without a hi-fi model hides none
-    // (DynObj.cpp:1389-1397). Which view that is belongs to whoever shows the cab's interior
-    // (vehicle_set_visible_low_poly_cabins()).
+    // vehicle, where the "cabN" of the player's cab is hidden - or all of them with jointcabs: -
+    // so the hi-fi cab doesn't overlap it, whoever drives; a cab without a hi-fi model hides none
+    // (DynObj.cpp:1389-1397, simulation::Train->iCabn). Which cab that is belongs to whoever shows
+    // the cab's interior (vehicle_set_shown_cabin()), not to the vehicle's driver: the AI driving
+    // from the rear cab left the player's front one drawn over its interior (reports#62).
     void
     MaszynaE3DRailVehicleRenderingServer::_update_low_poly_cabs(const RID &p_vehicle, const Visual &p_visual) const {
         ModelRenderingServer *models = ModelRenderingServer::get_instance();
@@ -1244,13 +1234,14 @@ namespace godot {
             return;
         }
         const Ref<MaszynaRailVehicleAppearance> appearance = p_visual.appearance;
-        const int hidden = low_poly_cab(driver_cabin_kind(p_vehicle));
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        const bool shown = p_visual.shown_cabin.is_valid() && rail_vehicles != nullptr;
+        const int hidden = shown ? low_poly_cab(rail_vehicles->cabin_get_kind(p_visual.shown_cabin)) : -1;
         const bool joint_cabs = appearance.is_valid() && appearance->get_joint_cabs();
         for (int cab = 0; cab < static_cast<int>(LOW_POLY_CABS.size()); ++cab) {
             const String name = LOW_POLY_CABS[cab];
             if (models->instance_has_part(p_visual.low_poly, name)) {
-                models->instance_set_part_visible(
-                        p_visual.low_poly, name, p_visual.low_poly_cabs_visible || (!joint_cabs && cab != hidden));
+                models->instance_set_part_visible(p_visual.low_poly, name, !shown || (!joint_cabs && cab != hidden));
             }
         }
     }

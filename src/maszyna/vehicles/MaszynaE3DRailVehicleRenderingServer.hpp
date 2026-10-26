@@ -137,7 +137,6 @@ namespace godot {
             void _update_coupler_adapters(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             /* Where an adapter fitted to an end is drawn (Render_coupler_adapter(), opengl33renderer.cpp:1356-1376) */
             Transform3D _coupler_adapter_transform(const RID &p_vehicle, const Visual &p_visual, int p_end) const;
-            void _on_vehicle_driver_cabin_changed(const RID &p_vehicle, const RID &p_cabin);
             void _on_vehicle_trainset_changed(const RID &p_vehicle);
             void _on_vehicle_coupler_changed(const RID &p_vehicle, int64_t p_flag);
             void _on_vehicle_coupler_adapter_changed(const RID &p_vehicle, int64_t p_end);
@@ -160,7 +159,7 @@ namespace godot {
             void _vehicle_scenario_changed(const RID &p_vehicle, const RID &p_scenario) override;
             void _vehicle_update(const RID &p_vehicle) override;
             void _vehicle_pose(const RID &p_vehicle) override;
-            void _vehicle_low_poly_cabins_changed(const RID &p_vehicle) override;
+            void _vehicle_shown_cabin_changed(const RID &p_vehicle) override;
             void _frame_processed(double p_delta) override;
 
         public:
