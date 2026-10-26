@@ -16,6 +16,14 @@ const STOP_AT:float = 300.0
 const PLACE_TOLERANCE:float = 0.5
 ## Simulated seconds long enough for the car to have stopped, and to move off again
 const STOPPING_TIME:float = 40.0
+## Where a car stands along its road [m], and how near it the camera showing it has to be - the
+## show distance and the eye height of PlayerCameraServer and some [m]
+const SHOWN_AT:float = 30.0
+const SHOW_REACH:float = 50.0
+## Frames for the follow view to come to its view of a car, and how near it ends up [m] - the
+## drive-by view stands 50 m ahead of the cab (driver_mode::DistantView(), drivermode.cpp:904-907)
+const FOLLOW_FRAMES:int = 120
+const FOLLOW_REACH:float = 80.0
 const MOVING_OFF_TIME:float = 10.0
 
 var _tracks:Array[RID] = []
@@ -101,6 +109,36 @@ func _car(road:RID, offset:float, driven:bool) -> RID:
 
 func _x(vehicle:RID) -> float:
     return RoadVehicleServer.vehicle_get_transform(vehicle).origin.x
+
+
+## A car is shown where it stands: VehicleServer knows where every vehicle is (libreloaded#7 - the
+## show camera asked RailVehicleServer and went to the world's origin)
+func test_a_car_is_shown_where_it_stands() -> void:
+    var tracks:Array[TrackData] = [_road_track(Vector3(0, 0, 0), Vector3(100, 0, 0))]
+    var car:RID = _car(RoadServer.track_get_road(_network(tracks)[0]), SHOWN_AT, false)
+
+    var stands:Transform3D = VehicleServer.vehicle_get_transform(car)
+    assert_true(stands.is_equal_approx(RoadVehicleServer.vehicle_get_transform(car)), "as the road places it")
+    assert_almost_eq(stands.origin.x, SHOWN_AT, PLACE_TOLERANCE)
+    assert_lt(PlayerCameraServer.camera_get_show_transform(car).origin.distance_to(stands.origin), SHOW_REACH,
+            "the camera beside the car")
+
+
+## A car is followed in every view: it is a trainset of its own (libreloaded#7 - the follow view
+## took a car's controller for a rail one's and stopped on a null)
+func test_a_car_is_followed_in_every_view() -> void:
+    var tracks:Array[TrackData] = [_road_track(Vector3(0, 0, 0), Vector3(100, 0, 0))]
+    var car:RID = _car(RoadServer.track_get_road(_network(tracks)[0]), SHOWN_AT, false)
+    var follow:FollowView = FollowView.new()
+    add_child_autofree(follow)
+    var stands:Vector3 = VehicleServer.vehicle_get_transform(car).origin
+
+    for view:FollowView.View in [FollowView.View.TRAINSET_FRONT, FollowView.View.TRAINSET_REAR,
+            FollowView.View.BOGIE, FollowView.View.DRIVEBY]:
+        follow.view = view
+        follow.activate(car, PlayerCameraServer.camera_get_show_transform(car))
+        await wait_idle_frames(FOLLOW_FRAMES)
+        assert_lt(follow.global_position.distance_to(stands), FOLLOW_REACH, "view %d by the car" % view)
 
 
 func test_a_road_category_fiz_is_a_road_vehicle_driven_as_a_car() -> void:
