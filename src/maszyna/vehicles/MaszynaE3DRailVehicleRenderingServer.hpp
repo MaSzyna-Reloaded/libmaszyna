@@ -72,7 +72,11 @@ namespace godot {
                     /* The door and step positions last posed, left and right */
                     double door_positions[2] = {-1.0, -1.0};
                     double door_step_positions[2] = {-1.0, -1.0};
+                    /* The low-poly interior's lights (MaszynaE3DLightFactory::make_interior_lights()) as last
+                     * switched: on or off, and how bright, -1 for not yet */
+                    float interior_light_intensity = -1.0F;
             };
+
 
             enum PneumaticLine {
                 PNEUMATIC_LINE_BRAKE,
@@ -126,6 +130,9 @@ namespace godot {
             void _build_load(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             void _update_load(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             void _update_low_poly_cabs(const RID &p_vehicle, const Visual &p_visual) const;
+            /* Lit with the compartment lights - of a vehicle with a driver in its trainset, as the original
+             * lights them only with an owner or a driver (DynObj.cpp:4238-4245) - as bright as they shine */
+            void _update_interior_lights(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna) const;
             /* The adapters fitted to the vehicle's ends, built again as its controller has them */
             void _update_coupler_adapters(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             /* Where an adapter fitted to an end is drawn (Render_coupler_adapter(), opengl33renderer.cpp:1356-1376) */

@@ -91,6 +91,15 @@ namespace godot {
             const HashMap<String, MaszynaE3DInstanceData::LightNodes>::ConstIterator light =
                     p_instance.light_nodes.find(light_name);
             if (light == p_instance.light_nodes.end()) {
+                // a light no model declares (a passenger interior's) has no nodes: its light object is
+                // MaszynaE3DRenderingServer's
+                bool synthesized = false;
+                for (const MaszynaE3DModelLightPlacement &placement: p_instance.model_lights.placements) {
+                    synthesized = synthesized || (placement.synthesized && placement.light_name == light_name);
+                }
+                if (synthesized) {
+                    continue;
+                }
                 const Node *target = Object::cast_to<Node>(ObjectDB::get_instance(p_instance.node_id));
                 UtilityFunctions::push_warning(
                         "[", target != nullptr ? String(target->get_name()) : String(),

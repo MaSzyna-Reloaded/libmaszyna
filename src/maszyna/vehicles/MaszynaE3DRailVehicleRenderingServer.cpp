@@ -1,7 +1,9 @@
 #include "MaszynaE3DRailVehicleRenderingServer.hpp"
 #include "game_data/GameDataServer.hpp"
+#include "maszyna/e3d/MaszynaE3DLightFactory.hpp"
 #include "maszyna/e3d/MaszynaE3DRenderingServer.hpp"
 #include "maszyna/e3d/MaszynaE3DSubModel.hpp"
+#include "maszyna/vehicles/MaszynaMoverRailVehicleController.hpp"
 #include "maszyna/vehicles/MaszynaRailVehicleAppearance.hpp"
 #include "rendering/ModelRenderingServer.hpp"
 #include "resources/ResourceLazyLoader.hpp"
@@ -335,6 +337,14 @@ namespace godot {
                 fading.push_back(p_vehicle);
             }
         }
+        // the passengers light nothing themselves: the interior's lights light them (#333), on its layer
+        if (visual->passengers.is_valid()) {
+            models->instance_set_emission_energy(visual->passengers, 0.0);
+            MaszynaE3DRenderingServer::get_instance()->instance_set_layer_mask(
+                    visual->passengers, MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER);
+        }
+        maszyna->interior_light_intensity = -1.0F;
+        _update_interior_lights(p_vehicle, *visual, *maszyna);
         _update_couplers(p_vehicle, *visual, *maszyna);
         _update_lights(p_vehicle, *visual, *maszyna);
     }
@@ -382,6 +392,40 @@ namespace godot {
         ERR_FAIL_NULL(maszyna);
         _update_lights(p_vehicle, *visual, *maszyna);
         _update_smoke(p_vehicle, *visual);
+        _update_interior_lights(p_vehicle, *visual, *maszyna);
+    }
+
+    void MaszynaE3DRailVehicleRenderingServer::_update_interior_lights(
+            const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna) const {
+        ModelRenderingServer *models = ModelRenderingServer::get_instance();
+        const VehicleServer *vehicle_server = VehicleServer::get_instance();
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        if (!p_visual.low_poly.is_valid() || models == nullptr || vehicle_server == nullptr ||
+            rail_vehicles == nullptr ||
+            !models->instance_has_light(p_visual.low_poly, MaszynaE3DLightFactory::INTERIOR_LIGHT_NAME)) {
+            return;
+        }
+        const Ref<MaszynaMoverRailVehicleController> controller = vehicle_server->vehicle_get_controller(p_vehicle);
+        bool driven = false;
+        if (controller.is_valid() && controller->get_compartment_lights_active()) {
+            const TypedArray<RID> trainset = rail_vehicles->vehicle_get_coupled(
+                    p_vehicle, RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLING_FLAG_COUPLER);
+            for (int64_t index = 0; index < trainset.size() && !driven; ++index) {
+                driven = RID(rail_vehicles->vehicle_get_driver_cabin(trainset[index])).is_valid();
+            }
+        }
+        const float intensity = driven ? controller->get_compartment_lights_intensity() : 0.0F;
+        if (Math::is_equal_approx(intensity, p_maszyna.interior_light_intensity)) {
+            return;
+        }
+        p_maszyna.interior_light_intensity = intensity;
+        Dictionary state;
+        state[MaszynaE3DLightFactory::INTERIOR_LIGHT_NAME] = intensity > 0.0F;
+        models->instance_set_lights_state(p_visual.low_poly, state);
+        // half bright on 24 V alone (Mover.cpp:2186-2191)
+        Dictionary dimmed;
+        dimmed[MaszynaE3DLightFactory::INTERIOR_LIGHT_NAME] = intensity < 1.0F;
+        models->instance_set_lights_dimmed(p_visual.low_poly, dimmed, intensity);
     }
 
     void MaszynaE3DRailVehicleRenderingServer::_vehicle_pose(const RID &p_vehicle) {

@@ -1,4 +1,5 @@
 #include "MaszynaE3DRenderingServer.hpp"
+#include "MaszynaE3DSubModelLookup.hpp"
 #include "MaszynaLightMode.hpp"
 #include "game_data/GameDataServer.hpp"
 #include "rendering/SmokeServer.hpp"
@@ -108,6 +109,7 @@ namespace godot {
                 D_METHOD("smoke_set_source_resolver", "smoke_source_resolver"),
                 &MaszynaE3DRenderingServer::smoke_set_source_resolver);
 
+        BIND_CONSTANT(VEHICLE_INTERIOR_LAYER);
         BIND_ENUM_CONSTANT(TRANSLUCENCY_CUTOUT);
         BIND_ENUM_CONSTANT(TRANSLUCENCY_BLENDED);
         BIND_ENUM_CONSTANT(TRANSLUCENCY_OPAQUE);
@@ -142,6 +144,11 @@ namespace godot {
             MaszynaE3DRenderingServer::SCENERY_LIGHT_TINT_SETTING,
             MaszynaE3DRenderingServer::SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING,
             MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING,
+            MaszynaE3DLightFactory::INTERIOR_LIGHT_ENERGY_SETTING,
+            MaszynaE3DLightFactory::INTERIOR_LIGHT_SHADOWS_SETTING,
+            MaszynaE3DLightFactory::INTERIOR_GLOW_ENERGY_SETTING,
+            MaszynaE3DLightFactory::INTERIOR_GLOW_RANGE_SETTING,
+            MaszynaE3DLightFactory::INTERIOR_GLOW_ATTENUATION_SETTING,
     };
     template<size_t COUNT>
     Array read_settings(const char *const (&p_names)[COUNT]) {
@@ -438,7 +445,7 @@ namespace godot {
         // and the poses kept by the old ones' pointers go
         instance->submodel_poses.clear();
         for (KeyValue<String, MaszynaE3DInstanceData::SubmodelAnimation> &animation: instance->submodel_animations) {
-            animation.value.submodel = _find_submodel(instance->model->get_submodels(), animation.key);
+            animation.value.submodel = find_submodel(instance->model->get_submodels(), animation.key);
         }
         _apply_client_submodels(*instance);
         _build_instance_lights(p_instance, *instance);
@@ -500,6 +507,12 @@ namespace godot {
         // (another scene's tab in the editor) and entering it again keeps its model, as
         // VisualInstance3D does; a NODES tree follows its node by itself
         RenderingServer *rs = RenderingServer::get_singleton();
+        for (const RID &light_rid: instance->light_objects) {
+            if (const LightObject *light = lights.getptr(light_rid);
+                light != nullptr && light->light_instance.is_valid()) {
+                rs->instance_set_scenario(light->light_instance, p_scenario);
+            }
+        }
         for (const RID &rid: instance->rids) {
             rs->instance_set_scenario(rid, p_scenario);
         }
@@ -523,6 +536,14 @@ namespace godot {
         instance->transform = p_transform;
         if (instance->built) {
             _get_backend(*instance).apply_transform(*instance);
+        }
+        // a vehicle's lights ride with it (a passenger interior's, MaszynaE3DLightFactory)
+        RenderingServer *rs = RenderingServer::get_singleton();
+        for (const RID &light_rid: instance->light_objects) {
+            if (const LightObject *light = lights.getptr(light_rid);
+                light != nullptr && light->light_instance.is_valid()) {
+                rs->instance_set_transform(light->light_instance, p_transform * light->params.transform);
+            }
         }
         _update_instance_smoke(*instance);
     }
@@ -586,7 +607,16 @@ namespace godot {
     bool MaszynaE3DRenderingServer::instance_has_light(const RID &p_instance, const String &p_light) const {
         const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL_V(instance, false);
-        return instance->model.is_valid() && instance->model->get_lights().has(p_light);
+        if (instance->model.is_valid() && instance->model->get_lights().has(p_light)) {
+            return true;
+        }
+        // or one no model declares (MaszynaE3DLightFactory: a street lamp's, a passenger interior's)
+        for (const MaszynaE3DModelLightPlacement &placement: instance->model_lights.placements) {
+            if (placement.synthesized && placement.light_name == p_light) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void MaszynaE3DRenderingServer::instance_set_lights_state(const RID &p_instance, const Dictionary &p_lights_state) {
@@ -606,6 +636,17 @@ namespace godot {
         ERR_FAIL_NULL(instance);
         instance->lights_dimmed = p_lights_dimmed.duplicate();
         instance->lights_dimmed_multiplier = p_multiplier;
+        // the real lights are dimmed as their submodels are
+        RenderingServer *rs = RenderingServer::get_singleton();
+        for (const RID &light_rid: instance->light_objects) {
+            const LightObject *light = lights.getptr(light_rid);
+            if (light != nullptr && light->light.is_valid()) {
+                const bool dimmed = instance->lights_dimmed.get(light->light_name, false);
+                rs->light_set_param(
+                        light->light, RenderingServer::LIGHT_PARAM_ENERGY,
+                        light->energy * (dimmed ? p_multiplier : 1.0F));
+            }
+        }
         _update_visibility_if_built(*instance);
     }
 
@@ -994,18 +1035,63 @@ namespace godot {
         ERR_FAIL_NULL(rs);
 
         const ProjectSettings *settings = ProjectSettings::get_singleton();
-        const float energy_scale = settings->get_setting(SCENERY_LIGHT_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_ENERGY);
-        const bool shadows = settings->get_setting(SCENERY_LIGHT_SHADOWS_SETTING, DEFAULT_SCENERY_LIGHT_SHADOWS);
+        // a passenger interior's lights have settings of their own (MaszynaE3DLightFactory::make_interior_lights())
+        float energy_scale = settings->get_setting(SCENERY_LIGHT_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_ENERGY);
+        bool shadows = settings->get_setting(SCENERY_LIGHT_SHADOWS_SETTING, DEFAULT_SCENERY_LIGHT_SHADOWS);
+        float range = light->params.range;
+        float attenuation = light->params.attenuation;
+        float shadow_blur = LIGHT_SHADOW_BLUR;
+        uint32_t cull_mask = ~0U;
+        switch (light->params.role) {
+            case LIGHT_ROLE_INTERIOR:
+                energy_scale = settings->get_setting(
+                        MaszynaE3DLightFactory::INTERIOR_LIGHT_ENERGY_SETTING,
+                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_LIGHT_ENERGY);
+                shadows = settings->get_setting(
+                        MaszynaE3DLightFactory::INTERIOR_LIGHT_SHADOWS_SETTING,
+                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_LIGHT_SHADOWS);
+                shadow_blur = INTERIOR_LIGHT_SHADOW_BLUR;
+                cull_mask = VEHICLE_INTERIOR_LAYER;
+                break;
+            case LIGHT_ROLE_INTERIOR_GLOW:
+                energy_scale = settings->get_setting(
+                        MaszynaE3DLightFactory::INTERIOR_GLOW_ENERGY_SETTING,
+                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_ENERGY);
+                shadows = false;
+                range = settings->get_setting(
+                        MaszynaE3DLightFactory::INTERIOR_GLOW_RANGE_SETTING,
+                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_RANGE);
+                attenuation = settings->get_setting(
+                        MaszynaE3DLightFactory::INTERIOR_GLOW_ATTENUATION_SETTING,
+                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_ATTENUATION);
+                cull_mask = ~VEHICLE_INTERIOR_LAYER;
+                break;
+            case LIGHT_ROLE_SCENERY:
+                break;
+        }
         const float tint = settings->get_setting(SCENERY_LIGHT_TINT_SETTING, DEFAULT_SCENERY_LIGHT_TINT);
-        const float fog_energy = settings->get_setting(
-                SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY);
+        // Neither the volumetric fog nor SDFGI takes notice of a cull mask: an interior's lights would
+        // light their grids in blocks around the car, flaring white and pulsing as the camera moves
+        const bool scenery = light->params.role == LIGHT_ROLE_SCENERY;
+        const float fog_energy = scenery ? static_cast<float>(settings->get_setting(
+                                                   SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING,
+                                                   DEFAULT_SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY))
+                                         : 0.0F;
 
         light->light = light->kind == LIGHT_KIND_OMNI ? rs->omni_light_create() : rs->spot_light_create();
         rs->light_set_color(light->light, Color(1.0, 1.0, 1.0).lerp(light->params.color, tint));
-        rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_ENERGY, light->params.energy * energy_scale);
-        rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_RANGE, light->params.range);
-        rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_ATTENUATION, light->params.attenuation);
+        light->energy = light->params.energy * energy_scale;
+        const bool dimmed = instance->lights_dimmed.get(light->light_name, false);
+        rs->light_set_param(
+                light->light, RenderingServer::LIGHT_PARAM_ENERGY,
+                light->energy * (dimmed ? instance->lights_dimmed_multiplier : 1.0F));
+        rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_RANGE, range);
+        rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_ATTENUATION, attenuation);
         rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_SIZE, light->params.size);
+        rs->light_set_cull_mask(light->light, cull_mask);
+        if (!scenery) {
+            rs->light_set_bake_mode(light->light, RenderingServer::LIGHT_BAKE_DISABLED);
+        }
         if (light->kind == LIGHT_KIND_SPOT) {
             rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_SPOT_ANGLE, light->params.spot_angle);
             rs->light_set_param(
@@ -1020,7 +1106,7 @@ namespace godot {
                     light->kind == LIGHT_KIND_OMNI ? OMNI_LIGHT_SHADOW_BIAS : SPOT_LIGHT_SHADOW_BIAS);
             rs->light_set_param(
                     light->light, RenderingServer::LIGHT_PARAM_SHADOW_NORMAL_BIAS, LIGHT_SHADOW_NORMAL_BIAS);
-            rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_SHADOW_BLUR, LIGHT_SHADOW_BLUR);
+            rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_SHADOW_BLUR, shadow_blur);
             // OmniLight3D's constructor (light_3d.cpp:663); the server starts with dual paraboloid
             if (light->kind == LIGHT_KIND_OMNI) {
                 rs->light_omni_set_shadow_mode(light->light, RenderingServer::LIGHT_OMNI_SHADOW_CUBE);
@@ -1088,16 +1174,17 @@ namespace godot {
     /// found in the model
     void
     MaszynaE3DRenderingServer::_build_instance_lights(const RID &p_instance, MaszynaE3DInstanceData &p_instance_data) {
-        // The NODES backends build SpotLight3D nodes of their own. A vehicle far enough away to
-        // have switched to OPTIMIZED is past the distance where those were faded out anyway
-        // (reloaded/vehicles/detail_distance), so only the streamed scenery gets lights
-        // here - the ones a caller asks for by hand still go through *_light_create().
-        if (p_instance_data.instancer != ModelRenderingServer::INSTANCER_OPTIMIZED ||
-            !p_instance_data.stream_rid.is_valid()) {
-            return;
-        }
-
+        // The NODES backends build SpotLight3D nodes of their own for the lights a model declares. A
+        // vehicle far enough away to have switched to OPTIMIZED is past the distance where those were
+        // faded out anyway (reloaded/vehicles/detail_distance), so only the streamed scenery gets them
+        // here - the ones a caller asks for by hand still go through *_light_create(). The lights no
+        // model declares (a street lamp's, a passenger interior's) have no node: every instance gets them.
+        const bool declared = p_instance_data.instancer == ModelRenderingServer::INSTANCER_OPTIMIZED &&
+                              p_instance_data.stream_rid.is_valid();
         for (const MaszynaE3DModelLightPlacement &placement: p_instance_data.model_lights.placements) {
+            if (!declared && !placement.synthesized) {
+                continue;
+            }
             MaszynaE3DLightParams params = placement.params;
             _apply_declared_color(p_instance_data, placement.light_name, params);
             _light_create(
@@ -1106,9 +1193,16 @@ namespace godot {
         }
         // The model now owns a light, so keep its own geometry out of every scenery shadow map.
         // Only this layer: Godot casts when (layer_mask & shadow_caster_mask) is non-zero
-        // (renderer_scene_cull.cpp:2427), so any layer kept beside it would still cast.
-        if (!p_instance_data.light_objects.is_empty() && p_instance_data.layer_mask != SCENERY_LIGHT_OWNER_LAYER) {
-            p_instance_data.layer_mask = SCENERY_LIGHT_OWNER_LAYER;
+        // (renderer_scene_cull.cpp:2427), so any layer kept beside it would still cast. A passenger
+        // interior (its lights come first, MaszynaE3DLightFactory) goes on the layer its lights light.
+        if (p_instance_data.light_objects.is_empty()) {
+            return;
+        }
+        const Vector<MaszynaE3DModelLightPlacement> &placements = p_instance_data.model_lights.placements;
+        const bool interior = !placements.is_empty() && placements[0].params.role == LIGHT_ROLE_INTERIOR;
+        const uint32_t layer_mask = interior ? VEHICLE_INTERIOR_LAYER : SCENERY_LIGHT_OWNER_LAYER;
+        if (p_instance_data.layer_mask != layer_mask) {
+            p_instance_data.layer_mask = layer_mask;
             _update_if_built(p_instance_data);
         }
     }
@@ -1300,7 +1394,7 @@ namespace godot {
             const RID &p_instance, MaszynaE3DInstanceData &p_instance_data, const String &p_submodel) {
         if (p_instance_data.built) {
             p_instance_data.submodel_animations[p_submodel].submodel =
-                    _find_submodel(p_instance_data.model->get_submodels(), p_submodel);
+                    find_submodel(p_instance_data.model->get_submodels(), p_submodel);
         }
         if (!animating_instances.has(p_instance)) {
             animating_instances.push_back(p_instance);
@@ -1310,23 +1404,6 @@ namespace godot {
             p_instance_data.animation_pass = animation_pass;
         }
         _set_animation_processing(true);
-    }
-
-    MaszynaE3DSubModel *
-    MaszynaE3DRenderingServer::_find_submodel(const TypedArray<MaszynaE3DSubModel> &p_submodels, const String &p_name) {
-        for (int i = 0; i < p_submodels.size(); i++) {
-            const Ref<MaszynaE3DSubModel> submodel = p_submodels[i];
-            if (submodel.is_null()) {
-                continue;
-            }
-            if (submodel->get_name().to_lower() == p_name) {
-                return submodel.ptr();
-            }
-            if (MaszynaE3DSubModel *found = _find_submodel(submodel->get_submodels(), p_name); found != nullptr) {
-                return found;
-            }
-        }
-        return nullptr;
     }
 
     /// TSubModel::RaAnimation() at_RotateXYZ (Model3d.cpp:1145-1152): the offset, then the angles
@@ -1382,7 +1459,7 @@ namespace godot {
         p_instance.submodel_emission_energies.clear();
         p_instance.submodel_light_thresholds.clear();
         for (KeyValue<String, MaszynaE3DInstanceData::SubmodelSettings> &settings: p_instance.submodel_settings) {
-            settings.value.submodel = _find_submodel(p_instance.model->get_submodels(), settings.key);
+            settings.value.submodel = find_submodel(p_instance.model->get_submodels(), settings.key);
             if (settings.value.submodel == nullptr) {
                 continue;
             }
@@ -1517,7 +1594,7 @@ namespace godot {
     bool MaszynaE3DRenderingServer::instance_has_part(const RID &p_instance, const String &p_submodel) const {
         const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL_V(instance, false);
-        return _find_submodel(instance->model->get_submodels(), p_submodel.to_lower()) != nullptr;
+        return find_submodel(instance->model->get_submodels(), p_submodel.to_lower()) != nullptr;
     }
 
     bool MaszynaE3DRenderingServer::_find_submodel_transform(

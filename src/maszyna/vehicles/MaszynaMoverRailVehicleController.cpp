@@ -40,6 +40,9 @@ namespace godot {
             static_cast<int>(coupling::power3x400v));
 
     void MaszynaMoverRailVehicleController::_bind_methods() {
+        ClassDB::bind_method(
+                D_METHOD("get_compartment_lights_intensity"),
+                &MaszynaMoverRailVehicleController::get_compartment_lights_intensity);
         BIND_PROPERTY_W_HINT(
                 MaszynaMoverRailVehicleController, Variant::INT, cntrl_ground_relay_start_mode, "cntrl",
                 PROPERTY_HINT_ENUM, "Disabled,Manual,Automatic,ManualWithAutoFallback,Converter,Battery,Direction");
@@ -744,6 +747,10 @@ namespace godot {
 
     bool MaszynaMoverRailVehicleController::get_compartment_lights_active() const {
         return mover != nullptr && mover->CompartmentLights.is_active;
+    }
+
+    float MaszynaMoverRailVehicleController::get_compartment_lights_intensity() const {
+        return mover != nullptr ? mover->CompartmentLights.intensity : 0.0F;
     }
 
     Vector2 MaszynaMoverRailVehicleController::get_body_offset() const {

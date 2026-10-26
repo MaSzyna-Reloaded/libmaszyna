@@ -1,6 +1,9 @@
 #include "MaszynaE3DLightFactory.hpp"
+#include "MaszynaE3DSubModelLookup.hpp"
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+
+#include <array>
 
 namespace godot {
     namespace {
@@ -202,6 +205,11 @@ namespace godot {
         collect_placements(
                 p_model->get_submodels(), Transform3D(), light_owners, String(), model_lights.placements,
                 on_transforms);
+        // a passenger interior's own lights, whatever the scenery's lights are set to
+        make_interior_lights(p_model, model_lights.placements);
+        if (!model_lights.placements.is_empty() && model_lights.placements[0].params.role == LIGHT_ROLE_INTERIOR) {
+            return model_lights;
+        }
         const int light_mode = ProjectSettings::get_singleton()->get_setting(LIGHT_MODE_SETTING, DEFAULT_LIGHT_MODE);
         if (light_mode == SCENERY_LIGHTS_OFF) {
             model_lights.placements.clear(); // the lit submodels stay, only the real lights go
@@ -285,6 +293,76 @@ namespace godot {
         params.color = p_submodel->get_diffuse_color();
         params.color.a = 1.0;
         return params;
+    }
+
+    namespace {
+        /* The passenger sections' names, by prefix, numbered from 0 or 1 (DynObj.cpp:2448-2453, 2570-2575) */
+        constexpr std::array<const char *, 4> SECTION_PREFIXES = {"corridor", "korytarz", "compartment", "przedzial"};
+        constexpr std::array<const char *, 4> SECTION_FIRST_NUMBERS = {"0", "00", "1", "01"};
+        constexpr std::array<float, 2> INTERIOR_LIGHT_SPOTS = {0.25F, 0.75F};
+        constexpr float INTERIOR_LIGHT_RANGE_SHARE = 0.5F;
+        /// How far below the interior's top the lights hang [m]
+        constexpr float INTERIOR_LIGHT_CEILING_OFFSET = 0.3F;
+        /// The radius of the source [m]: a ceiling lamp's diffuser, so the shadows inside are soft
+        constexpr float INTERIOR_LIGHT_SIZE = 0.5F;
+        constexpr Color INTERIOR_LIGHT_COLOR(0.9F, 0.9F * 216.0F / 255.0F, 0.9F * 176.0F / 255.0F);
+    } // namespace
+
+    /// The bounds of every mesh under p_submodels, in the model's space
+    static void merge_mesh_bounds(
+            const TypedArray<MaszynaE3DSubModel> &p_submodels, const Transform3D &p_parent, AABB &p_bounds,
+            bool &p_found) {
+        for (int64_t index = 0; index < p_submodels.size(); index++) {
+            const Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
+            if (submodel.is_null()) {
+                continue;
+            }
+            const Transform3D transform = p_parent * submodel->get_transform();
+            if (submodel->get_mesh().is_valid()) {
+                const AABB bounds = transform.xform(submodel->get_mesh()->get_aabb());
+                p_bounds = p_found ? p_bounds.merge(bounds) : bounds;
+                p_found = true;
+            }
+            merge_mesh_bounds(submodel->get_submodels(), transform, p_bounds, p_found);
+        }
+    }
+
+    void MaszynaE3DLightFactory::make_interior_lights(
+            const Ref<MaszynaE3DModel> &p_model, Vector<MaszynaE3DModelLightPlacement> &p_placements) {
+        bool passenger_interior = false;
+        for (const char *prefix: SECTION_PREFIXES) {
+            for (const char *number: SECTION_FIRST_NUMBERS) {
+                passenger_interior = passenger_interior ||
+                                     find_submodel(p_model->get_submodels(), String(prefix) + number) != nullptr;
+            }
+        }
+        AABB bounds;
+        bool found = false;
+        merge_mesh_bounds(p_model->get_submodels(), Transform3D(), bounds, found);
+        if (!passenger_interior || !found) {
+            return;
+        }
+        for (const float spot: INTERIOR_LIGHT_SPOTS) {
+            MaszynaE3DModelLightPlacement placement;
+            placement.light_name = INTERIOR_LIGHT_NAME;
+            placement.synthesized = true;
+            placement.params.omni = true;
+            placement.params.role = LIGHT_ROLE_INTERIOR;
+            placement.params.transform.origin =
+                    Vector3(bounds.get_center().x, bounds.get_end().y - INTERIOR_LIGHT_CEILING_OFFSET,
+                            bounds.position.z + (bounds.size.z * spot));
+            placement.params.color = INTERIOR_LIGHT_COLOR;
+            // its energy is the setting's, taken as the light is built (MaszynaE3DRenderingServer::_light_build())
+            placement.params.energy = 1.0F;
+            placement.params.range = static_cast<float>(bounds.size.z) * INTERIOR_LIGHT_RANGE_SHARE;
+            placement.params.size = INTERIOR_LIGHT_SIZE;
+            p_placements.push_back(placement);
+            // the glow, at the windows' height; its energy, range and falloff are the settings'
+            placement.params.role = LIGHT_ROLE_INTERIOR_GLOW;
+            placement.params.transform.origin.y = bounds.get_center().y;
+            placement.params.size = 0.0F;
+            p_placements.push_back(placement);
+        }
     }
 
     bool MaszynaE3DLightFactory::is_street_lamp(const String &p_model_filename) {

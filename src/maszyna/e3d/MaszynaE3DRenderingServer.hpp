@@ -64,6 +64,10 @@ namespace godot {
             /// caster mask - so the lamp still renders, is still lit, and still casts a shadow from
             /// the sun, just not into its own light.
             static constexpr uint32_t SCENERY_LIGHT_OWNER_LAYER = 1u << 19;
+            /// A passenger interior and its passengers stand on this layer alone, the only one their
+            /// lights light (LIGHT_ROLE_INTERIOR) and the one their glow leaves out
+            /// (LIGHT_ROLE_INTERIOR_GLOW), so a car's lights light no track under it
+            static constexpr uint32_t VEHICLE_INTERIOR_LAYER = 1u << 17;
             /// A light created through RenderingServer starts with the server's own parameters,
             /// not with the ones SpotLight3D/OmniLight3D set in their constructors - they have to
             /// be set, or the ground self-shadows into stripes. A node's values (spot 0.03, normal
@@ -81,6 +85,8 @@ namespace godot {
             /// depth bias is multiplied by it (light_storage.cpp:1232) - at 0 the ground has no
             /// depth bias at all and shadows itself across the whole pool
             static constexpr float LIGHT_SHADOW_BLUR = 1.0;
+            /// The shadows of an interior's seats and walls are of a diffuse ceiling light: blurred
+            static constexpr float INTERIOR_LIGHT_SHADOW_BLUR = 4.0;
             static constexpr const char *SCENERY_LIGHT_ENERGY_SETTING = "maszyna/scenery/lights/energy";
             static constexpr float DEFAULT_SCENERY_LIGHT_ENERGY = 1.0;
             /// How much of the lamp's own colour is mixed into a white light. A sodium lamp's
@@ -128,9 +134,10 @@ namespace godot {
                     bool enabled = false;
                     bool synthesized = false; // added by the street lamp quirk
                     MaszynaE3DLightParams params;
-                    RID light;          // RenderingServer light
-                    RID light_instance; // its RenderingServer instance
-                    RID stream_rid;     // SceneryStreamingServer registration, scenery lights only
+                    float energy = 0.0F; // its energy undimmed (instance_set_lights_dimmed())
+                    RID light;           // RenderingServer light
+                    RID light_instance;  // its RenderingServer instance
+                    RID stream_rid;      // SceneryStreamingServer registration, scenery lights only
                     bool streamed_in = false;
             };
 
@@ -241,9 +248,6 @@ namespace godot {
             void _update_blinking(const RID &p_instance, const MaszynaE3DInstanceData &p_instance_data);
             void _set_light_processing(bool p_processing);
             static String _light_name_for_index(int p_index);
-            /// First submodel of the name in the tree, compared in lower case (TModel3d::GetFromName())
-            static MaszynaE3DSubModel *
-            _find_submodel(const TypedArray<MaszynaE3DSubModel> &p_submodels, const String &p_name);
             /// Puts the instance on the animating list, with the animated submodel found if it is built
             void _start_submodel_animation(
                     const RID &p_instance, MaszynaE3DInstanceData &p_instance_data, const String &p_submodel);

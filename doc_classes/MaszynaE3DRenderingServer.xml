@@ -278,6 +278,9 @@
 		</signal>
 	</signals>
 	<constants>
+		<constant name="VEHICLE_INTERIOR_LAYER" value="131072">
+			The render layer a passenger interior and its passengers stand on alone. Its lights light only this layer, and the glow it throws around the car lights everything but it.
+		</constant>
 		<constant name="TRANSLUCENCY_CUTOUT" value="0" enum="Translucency">
 			The submodel is drawn as its material says: opaque, or cut out at the alpha threshold.
 		</constant>

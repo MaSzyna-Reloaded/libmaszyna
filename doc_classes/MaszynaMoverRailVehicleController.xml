@@ -8,6 +8,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_compartment_lights_intensity" qualifiers="const">
+			<return type="float" />
+			<description>
+				How bright the compartment lights shine: 1.0 on the full supply, half on the battery alone, times their dimming; 0.0 while they are off.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="train_type" type="int" setter="set_train_type" getter="get_train_type" enum="MaszynaMoverRailVehicleController.TrainType" default="0">
 			[code]Param.Type[/code]
