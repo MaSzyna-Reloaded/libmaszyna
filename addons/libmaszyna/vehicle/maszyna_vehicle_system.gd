@@ -399,6 +399,9 @@ func _on_project_settings_changed() -> void:
         return
     _real_mirrors = real_mirrors
     for vehicle:RID in _vehicles:
+        # a road vehicle has no mirrors: they come with a rail exterior (_on_vehicle_model_built())
+        if RoadVehicleRenderingServer.vehicle_is_attached(vehicle):
+            continue
         var model_root:Node = instance_from_id(MaszynaE3DRenderingServer.instance_get_attached_node(
                 RailVehicleRenderingServer.vehicle_get_model(vehicle))) as Node
         if not model_root:
