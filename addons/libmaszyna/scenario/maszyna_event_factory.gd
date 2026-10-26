@@ -587,8 +587,11 @@ static func build(
 
     # a click on a model fires the launchers of its name that have it within their radius
     # (basic_cell::on_click(), scene.cpp:33-43); a negative radius has nothing within it
-    # (EvLaunch.cpp:57-58)
+    # (EvLaunch.cpp:57-58); a model with no name fires none, whatever unnamed launcher is near
+    # (basic_region::on_click(), scene.cpp:1055 - a crossing's launcher is unnamed, #332)
     for index:int in models.size():
+        if not models[index].name:
+            continue
         for entry:Array in launchers_by_name.get(models[index].name.to_lower(), []):
             var launcher_data:MaszynaEventLauncherData = entry[0]
             if not launcher_data.position.distance_to(models[index].position) < launcher_data.radius:
