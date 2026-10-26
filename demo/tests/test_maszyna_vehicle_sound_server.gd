@@ -148,6 +148,37 @@ func test_sound_switched_on_while_heard_plays_its_opening_bookend() -> void:
             EVENT_TIME_TOLERANCE, "starts at its opening bookend")
 
 
+func test_sound_switched_on_while_the_camera_is_away_is_heard_past_its_opening_bookend() -> void:
+    _build(MmdSoundCatalog.TriggerMode.TOGGLE)
+    _camera.global_position = FAR
+    await step(ticks(SETTLE))
+    VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
+    await step(ticks(SETTLE))
+    _camera.global_position = NEAR
+    if not await wait_simulated_until(_playing, SETTLE, "the sound heard"):
+        return
+
+    # past the bookend, by however long the sound has played since
+    assert_gt(float(_sound.get_event_visualization_state(&"engine")["event_time"]),
+            BOOKEND_LENGTH - EVENT_TIME_TOLERANCE, "switched on unheard, it is heard past its opening bookend")
+
+
+func test_sound_on_before_its_bank_is_built_is_heard_past_its_opening_bookend() -> void:
+    _build_vehicle()
+    _attach_controller()
+    _camera.global_position = NEAR
+    VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
+    await step(ticks(SETTLE))
+    # the bank of a vehicle the camera has just come to, built with the sound on already
+    _register_bank(MmdSoundCatalog.TriggerMode.TOGGLE)
+    if not await wait_simulated_until(_playing, SETTLE, "the sound heard"):
+        return
+
+    # past the bookend, by however long the sound has played since
+    assert_gt(float(_sound.get_event_visualization_state(&"engine")["event_time"]),
+            BOOKEND_LENGTH - EVENT_TIME_TOLERANCE, "on before it was heard, it is heard past its opening bookend")
+
+
 func test_one_shot_due_while_the_camera_is_away_is_dropped() -> void:
     _build(MmdSoundCatalog.TriggerMode.CHANGE)
     # the sweep sees the listener near, then away; the change is due unheard, and the listener comes

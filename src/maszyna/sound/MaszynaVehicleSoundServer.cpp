@@ -369,6 +369,9 @@ namespace godot {
         bank.brake_valve_events = p_registration.get("brake_valve_events", PackedStringArray());
         bank.local_brake_events = p_registration.get("local_brake_events", PackedStringArray());
         bank.tachometer_events = p_registration.get("tachometer_events", PackedStringArray());
+        // built unheard: the first sweep that hears it lets it in, and what it finds on then resumes
+        // past its opening - as the original's sounds activated out of range (sound.cpp:364-371)
+        _set_bank_cut(bank, true);
 
         HashMap<StringName, ProofingFeed> proofing;
         const Array proofing_entries = p_registration.get("proofing", Array());

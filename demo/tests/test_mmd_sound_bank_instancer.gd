@@ -132,6 +132,12 @@ func test_brake_sounds_are_built_with_their_bookends_chunks_and_fallbacks() -> v
     assert_not_null(engage)
     assert_eq(engage.clips.size(), 3)
     assert_eq(engage.clips[2].trigger_mode, SfxClip.TriggerMode.TRIGGER_SUSTAIN)
+    # found on when heard, it resumes past its opening (sound.cpp:364-371)
+    var gates:Array = engage.triggers.filter(
+            func(trigger:SfxParameterTrigger) -> bool: return trigger.mode == SfxParameterTrigger.GATE)
+    assert_eq(gates.size(), 1)
+    if gates:
+        assert_eq(gates[0].resume_offset, engage.clips[0].length)
     # no local brake release hiss in the cab - a copy of the main valve's (Train.cpp:9082-9089)
     var release:SfxEvent = cabin.bank.get_event(&"local_brake_release_hiss")
     assert_not_null(release)

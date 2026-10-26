@@ -307,12 +307,10 @@ func regular_sound(definition:MmdSoundSourceDefinition, entry:Dictionary, event_
             _add_trigger(event, trigger)
         MmdSoundCatalog.TriggerMode.TOGGLE:
             _gate(event, _derive(StringName("%s_active" % event_name),
-                    "float(abs(%s) > 0.0 and %s >= %s and %s <= %s)" % [value, value, minimum, value, maximum], [value]),
-                    _beginning_length(definition))
+                    "float(abs(%s) > 0.0 and %s >= %s and %s <= %s)" % [value, value, minimum, value, maximum], [value]))
         MmdSoundCatalog.TriggerMode.CONTINUOUS:
             _gate(event, _derive(StringName("%s_active" % event_name),
-                    "float(%s >= %s and %s <= %s)" % [value, minimum, value, maximum], [value]),
-                    _beginning_length(definition))
+                    "float(%s >= %s and %s <= %s)" % [value, minimum, value, maximum], [value]))
     # the engine's gain from its speed and load (TDynamicObject's engine section)
     if event_name == &"engine" and _engine:
         var power:StringName = _quantity(MaszynaVehicleSoundServer.QUANTITY_ENGINE_POWER)
@@ -683,21 +681,19 @@ func _proof(event:SfxEvent, definition:MmdSoundSourceDefinition, key:StringName)
     _modulate(event, parameter, SfxParameterModulation.Target.UNIT_SIZE)
 
 
-## A gate opening the event at the parameter's 1 and closing it at 0; a loop heard again resumes past
-## its opening, `resume_offset` into it (sound.cpp:360-367)
-func _gate(event:SfxEvent, active:StringName, resume_offset:float = 0.0) -> void:
+## A gate opening the event at the parameter's 1 and closing it at 0. Whatever it finds on when it
+## is heard - again, or for the first time - resumes past its opening bookend: a sound activated out
+## of range drops its opening (sound.cpp:364-371)
+func _gate(event:SfxEvent, active:StringName) -> void:
     var trigger := SfxParameterTrigger.new()
     trigger.parameter = active
     trigger.mode = SfxParameterTrigger.GATE
     trigger.on_threshold = GATE_THRESHOLD
     trigger.off_threshold = GATE_THRESHOLD
-    trigger.resume_offset = resume_offset
+    for clip:SfxClip in event.clips:
+        if clip.bookend and not clip.trigger_mode == SfxClip.TriggerMode.TRIGGER_SUSTAIN:
+            trigger.resume_offset = clip.length
     _add_trigger(event, trigger)
-
-
-## How far into its event a sound heard again resumes: past its opening bookend
-func _beginning_length(definition:MmdSoundSourceDefinition) -> float:
-    return AudioStreamManager.get_stream_length(definition.sound_begin, definition.source_file.get_base_dir())
 
 
 ## gnd-sfx takes a resource's array only assigned, never changed in place
