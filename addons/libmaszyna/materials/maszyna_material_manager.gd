@@ -31,11 +31,16 @@ const RAILWAY_LIGHTS_GLARE_EDGE_SIZE_DEFAULT: float = 0.4
 ## The least share of the screen's height a glare spans, however far the light
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scenery/railway_lights_glare_min_screen_size"
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
+## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
+const GENERATED_TEXTURE_SCHEME: String = "make:"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
 var _free_spotlight_material: ShaderMaterial = null
 var _managed_materials: Dictionary = {}
+## The PythonScreenServer screens drawing the generated textures, by their names - kept until the
+## game's data is unloaded
+var _generated_screens: Dictionary[String, RID] = {}
 ## Weak, like _managed_materials: a texture goes, from RAM and VRAM, with the last material using it
 var _dds_cache: Dictionary[String, WeakRef] = {}
 ## What preloads read on workers (material_preload()), by the material's and the texture's keys
@@ -166,6 +171,9 @@ func _on_weather_changed() -> void:
 ## anew - none of them is handed out again
 func _on_data_unload_requested() -> void:
     _managed_materials.clear()
+    for screen:RID in _generated_screens.values():
+        PythonScreenServer.screen_free(screen)
+    _generated_screens.clear()
     _preload_mutex.lock()
     _dds_cache.clear()
     _preloaded.clear()
@@ -418,6 +426,8 @@ func load_texture(
     normal:bool = false,
     max_texture_size:int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT,
 ) -> Texture:
+    if material_name.begins_with(GENERATED_TEXTURE_SCHEME):
+        return _load_generated_texture(material_name)
     var full_path:String = _get_texture_file(model_path, material_name)
     if not full_path:
         return UNKNOWN_TEXTURE
@@ -454,6 +464,25 @@ func get_material_texture_size(material_name:String) -> Vector2i:
         texture_name = variant.get_texture_path("tex1")
     var full_path:String = _get_texture_file("", texture_name if texture_name else material_name)
     return DDSTextureLoader.get_size(full_path) if full_path else Vector2i.ZERO
+
+
+## The texture its script draws, once, with the query for its state: keys in lower case, values as
+## written (make_request(), Texture.cpp:428; dictionary_source, dictionary.cpp:18). Blank until drawn
+func _load_generated_texture(texture_name:String) -> Texture2D:
+    var screen:RID = _generated_screens.get(texture_name, RID())
+    if not screen.is_valid():
+        var request:PackedStringArray = texture_name.trim_prefix(GENERATED_TEXTURE_SCHEME).split("?", true, 1)
+        var game_dir:String = MaszynaGameDirectory.get_game_dir()
+        var script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + ".py")
+        screen = PythonScreenServer.screen_create(game_dir.path_join(script).trim_suffix(".py"), Callable())
+        _generated_screens[texture_name] = screen
+        var state:Dictionary = {}
+        # a pair without "=" is its own key and value, as the original's substr() takes it
+        for pair:String in (request[1] if request.size() > 1 else "").split("&", false):
+            var key_value:PackedStringArray = pair.split("=", true, 1)
+            state[key_value[0].to_lower()] = key_value[key_value.size() - 1]
+        PythonScreenServer.screen_request_render(screen, state)
+    return PythonScreenServer.screen_get_texture(screen)
 
 
 ## The texture's file in the game directory, empty when there is none

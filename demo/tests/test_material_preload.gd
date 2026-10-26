@@ -44,6 +44,14 @@ func test_a_texture_named_with_its_traits_is_its_file() -> void:
     assert_ne(texture, MaszynaMaterialManager.UNKNOWN_TEXTURE, "the traits are no part of the file's name")
 
 
+func test_a_texture_a_script_draws_is_its_screen_texture() -> void:
+    # a direction board on Baltyk (Texture.cpp:1294-1305): the script's screen, one for the name
+    var name:String = "make:scripts/tablica_kierunek?kierunek_lewy=Baltyk Glowny&kierunek_prawy=Alakowice"
+    var texture:Texture2D = MaszynaMaterialManager.load_texture("", name)
+    assert_ne(texture, MaszynaMaterialManager.UNKNOWN_TEXTURE, "not looked for as a file")
+    assert_same(MaszynaMaterialManager.load_texture("", name), texture, "drawn once")
+
+
 func test_a_material_without_a_preload_is_read_on_its_own() -> void:
     var files:MaszynaMaterialManager.MaterialPreload = MaszynaMaterialManager.MaterialPreload.new()
     MaszynaMaterialManager.material_preload("", MATERIAL_NAME, MaszynaMaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, files)
