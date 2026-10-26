@@ -458,6 +458,11 @@ func get_material_texture_size(material_name:String) -> Vector2i:
 
 ## The texture's file in the game directory, empty when there is none
 func _get_texture_file(model_path:String, material_name:String) -> String:
+    # a texture's traits follow its name after a colon and are no part of the file's name:
+    # "peronowe/krawedz_zolty2:#" is krawedz_zolty2.dds (Texture.cpp:1310-1318)
+    var trait_position:int = material_name.rfind(":")
+    if trait_position >= 0:
+        material_name = material_name.left(trait_position)
     var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
     if (project_data_dir.ends_with("\\")):
         project_data_dir = project_data_dir.trim_suffix("\\")

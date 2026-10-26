@@ -38,6 +38,12 @@ func test_the_main_thread_takes_what_a_held_preload_read() -> void:
     assert_eq(texture.get_size(), Vector2(files.images[0].get_size()), "made of the preloaded image")
 
 
+func test_a_texture_named_with_its_traits_is_its_file() -> void:
+    # models/terenowe/1k96w220m's skin on Baltyk, "peronowe/krawedz_zolty2:#" (Texture.cpp:1310-1318)
+    var texture:Texture2D = MaszynaMaterialManager.load_texture("", MATERIAL_NAME + ":#")
+    assert_ne(texture, MaszynaMaterialManager.UNKNOWN_TEXTURE, "the traits are no part of the file's name")
+
+
 func test_a_material_without_a_preload_is_read_on_its_own() -> void:
     var files:MaszynaMaterialManager.MaterialPreload = MaszynaMaterialManager.MaterialPreload.new()
     MaszynaMaterialManager.material_preload("", MATERIAL_NAME, MaszynaMaterialManager.MAX_TEXTURE_SIZE_PROJECT_DEFAULT, files)
