@@ -346,6 +346,8 @@ const CONTROLS:Dictionary = {
     Hint.PANTOGRAPH_AIR_SOURCE_SET_MAIN: [&"pantcompressorvalve_sw", CabinLogic.Gesture.PRESS],
     Hint.PANTOGRAPH_AIR_SOURCE_SET_AUXILIARY: [&"pantcompressorvalve_sw", CabinLogic.Gesture.PRESS],
     Hint.PANTOGRAPH_COMPRESSOR_ON: [&"pantcompressor_sw", CabinLogic.Gesture.PRESS],
+    # the compressor runs while its switch is held (Train.cpp:10114): the same key, let go
+    Hint.PANTOGRAPH_COMPRESSOR_OFF: [&"pantcompressor_sw", CabinLogic.Gesture.PRESS],
     Hint.FRONT_PANTOGRAPH_VALVE_ON: [&"pantfront_sw", CabinLogic.Gesture.PRESS],
     Hint.FRONT_PANTOGRAPH_VALVE_OFF: [&"pantfront_sw", CabinLogic.Gesture.PRESS],
     Hint.REAR_PANTOGRAPH_VALVE_ON: [&"pantrear_sw", CabinLogic.Gesture.PRESS],
@@ -527,6 +529,17 @@ const OPPOSITES:Dictionary = {
     Hint.LIGHTS_OFF: [Hint.HEADCODE_PC1, Hint.HEADCODE_PC2, Hint.HEADCODE_PC5, Hint.HEADCODE_TB1],
     Hint.RELEASER_ON: [Hint.RELEASER_OFF],
     Hint.RELEASER_OFF: [Hint.RELEASER_ON],
+}
+## The hints that raise the pantographs
+const PANTOGRAPHS_RAISING:Array[Hint] = [
+    Hint.PANTOGRAPHS_VALVE_ON, Hint.FRONT_PANTOGRAPH_VALVE_ON, Hint.REAR_PANTOGRAPH_VALVE_ON]
+## Not the original's: a hint listed ahead of the hints it must come before, which may be in the
+## list already. The pantographs' air falls short only after they were hinted up (reports#36): at
+## the end of the list a player raised them on the main reservoir, the three-way valve not turned
+const PRECEDING:Dictionary = {
+    Hint.PANTOGRAPH_AIR_SOURCE_SET_AUXILIARY: PANTOGRAPHS_RAISING,
+    Hint.PANTOGRAPH_COMPRESSOR_ON: PANTOGRAPHS_RAISING,
+    Hint.WAIT_PANTOGRAPH_PRESSURE_TOO_LOW: PANTOGRAPHS_RAISING,
 }
 ## Hints the original takes but never keeps: the lapped brake and the horn off (driverhints.cpp:874,
 ## 1005); the horn's own hint goes by itself
@@ -826,6 +839,11 @@ static func cue(situation:MaszynaDriverTraction.Situation, hint:Hint, parameter:
     for queued:Queued in hints:
         if queued.hint == hint:
             queued.parameter = parameter
+            return false
+    var preceded:Array = PRECEDING.get(hint, [])
+    for index:int in hints.size():
+        if hints[index].hint in preceded:
+            hints.insert(index, Queued.new(hint, parameter))
             return false
     hints.append(Queued.new(hint, parameter))
     return false
