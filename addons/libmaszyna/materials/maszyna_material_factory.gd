@@ -186,10 +186,90 @@ var MATERIAL_SHADER_FACTORIES: Dictionary[String, MaszynaShaderMeta] = {
     ),
 }
 
-## Shader variants by "source shader instance id:alpha blend:cull disabled:specgloss"
-var _shader_variants: Dictionary[String, Shader] = {}
-## Turns on the specgloss texture (types/specgloss.gdshaderinc) in a type shader that offers it
-const SPECGLOSS_DEFINE: String = "MASZYNA_SPECGLOSS"
+## What makes a type shader's variant: alpha-blended (MaterialOptions.force_transparent), two-sided
+## (MaterialOptions.cull_disabled), its specgloss texture bound (types/specgloss.gdshaderinc, in the
+## types that offer it as a variant)
+const VARIANT_BLEND: int = 1
+const VARIANT_CULL: int = 2
+const VARIANT_SPECGLOSS: int = 4
+## The variants of the type shaders by their base shader's path, by their VARIANT_* flags: each a
+## file of its own (the type's code in types/<type>.gdshaderinc, the render_mode and the defines the
+## variant's), so that the export's shader baker bakes them - built from the code at run time, every
+## one was compiled from its source on every cold start (#340). A combination the type's code does
+## not tell from another is that one; one it does not tell from the base is not here. An
+## alpha-blended and a specgloss variant draw specular_schlick_ggx where the type has
+## specular_disabled: a blended surface mirrors the sky (types/blended_reflection.gdshaderinc), the
+## specgloss texture scales the specular term
+const SHADER_VARIANTS: Dictionary[String, Dictionary] = {
+    "res://addons/libmaszyna/materials/types/default.gdshader": {
+        VARIANT_BLEND: preload("./types/default_blend.gdshader"),
+        VARIANT_CULL: preload("./types/default_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/default_blend_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/detail_normalmap.gdshader": {
+        VARIANT_BLEND: preload("./types/detail_normalmap_blend.gdshader"),
+        VARIANT_CULL: preload("./types/detail_normalmap_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/detail_normalmap_blend_cull.gdshader"),
+        VARIANT_SPECGLOSS: preload("./types/detail_normalmap_specgloss.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS: preload("./types/detail_normalmap_blend_specgloss.gdshader"),
+        VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/detail_normalmap_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/detail_normalmap_blend_specgloss_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/normalmap.gdshader": {
+        VARIANT_BLEND: preload("./types/normalmap_blend.gdshader"),
+        VARIANT_CULL: preload("./types/normalmap_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/normalmap_blend_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/normalmap_specgloss.gdshader": {
+        VARIANT_BLEND: preload("./types/normalmap_specgloss_blend.gdshader"),
+        VARIANT_CULL: preload("./types/normalmap_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/normalmap_specgloss_blend_cull.gdshader"),
+        VARIANT_SPECGLOSS: preload("./types/normalmap_specgloss_specgloss.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS: preload("./types/normalmap_specgloss_blend_specgloss.gdshader"),
+        VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/normalmap_specgloss_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/normalmap_specgloss_blend_specgloss_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/parallax.gdshader": {
+        VARIANT_BLEND: preload("./types/parallax_blend.gdshader"),
+        VARIANT_CULL: preload("./types/parallax_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/parallax_blend_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/parallax_specgloss.gdshader": {
+        VARIANT_BLEND: preload("./types/parallax_specgloss_blend.gdshader"),
+        VARIANT_CULL: preload("./types/parallax_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/parallax_specgloss_blend_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/rain_windscreen.gdshader": {
+        VARIANT_CULL: preload("./types/rain_windscreen_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/rain_windscreen_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/shadowlessnormalmap.gdshader": {
+        VARIANT_BLEND: preload("./types/shadowlessnormalmap_blend.gdshader"),
+        VARIANT_CULL: preload("./types/shadowlessnormalmap_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/shadowlessnormalmap_blend_cull.gdshader"),
+        VARIANT_SPECGLOSS: preload("./types/shadowlessnormalmap_specgloss.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS: preload("./types/shadowlessnormalmap_blend_specgloss.gdshader"),
+        VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/shadowlessnormalmap_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/shadowlessnormalmap_blend_specgloss_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/sunlessnormalmap.gdshader": {
+        VARIANT_BLEND: preload("./types/sunlessnormalmap_blend.gdshader"),
+        VARIANT_CULL: preload("./types/sunlessnormalmap_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/sunlessnormalmap_blend_cull.gdshader"),
+        VARIANT_SPECGLOSS: preload("./types/sunlessnormalmap_specgloss.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS: preload("./types/sunlessnormalmap_blend_specgloss.gdshader"),
+        VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/sunlessnormalmap_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_SPECGLOSS | VARIANT_CULL: preload("./types/sunlessnormalmap_blend_specgloss_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/water.gdshader": {
+        VARIANT_CULL: preload("./types/water_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/water_cull.gdshader"),
+    },
+    "res://addons/libmaszyna/materials/types/water_specgloss.gdshader": {
+        VARIANT_CULL: preload("./types/water_specgloss_cull.gdshader"),
+        VARIANT_BLEND | VARIANT_CULL: preload("./types/water_specgloss_cull.gdshader"),
+    },
+}
 ## The image formats with an alpha channel - what the original's has_alpha is (_texture_has_alpha())
 const ALPHA_FORMATS: Array[Image.Format] = [
     Image.FORMAT_DXT3, Image.FORMAT_DXT5, Image.FORMAT_LA8, Image.FORMAT_RGBA8, Image.FORMAT_RGBA4444,
@@ -286,17 +366,8 @@ func _apply(
         return
     var target_shader_material: ShaderMaterial = material as ShaderMaterial
     var source_shader_material: ShaderMaterial = shader_meta.base_material as ShaderMaterial
-    # a type shader that offers the specgloss texture as a variant (parallax_specgloss and
-    # water_specgloss read it unconditionally) gets it only when the material binds one
-    var specgloss: bool = (
-        source_shader_material.shader.code.contains(SPECGLOSS_DEFINE)
-        and not _texture_path(variant, texture_map, texture_map.specgloss) == ""
-    )
     shader_meta.apply_base(
-        target_shader_material,
-        _get_shader_variant(source_shader_material.shader, options, specgloss)
-        if options.force_transparent or options.cull_disabled or specgloss
-        else source_shader_material.shader
+        target_shader_material, _get_shader_variant(source_shader_material.shader, variant, texture_map, options)
     )
 
     shader_meta.factory.call(mmat, variant, material, texture_map, model_path, options)
@@ -327,30 +398,24 @@ func _apply(
             "blended_reflection", variant.get_parameter("reflection", default_reflection))
 
 
-func _get_shader_variant(source_shader: Shader, options: MaszynaMaterialManager.MaterialOptions, specgloss: bool) -> Shader:
-    var cache_key: String = "%d:%s:%s:%s" % [
-        source_shader.get_instance_id(), options.force_transparent, options.cull_disabled, specgloss
-    ]
-    var cached_shader: Shader = _shader_variants.get(cache_key)
-    if cached_shader:
-        return cached_shader
-
-    var code: String = source_shader.code
+## The type shader's variant the material's options and textures make (SHADER_VARIANTS): a type
+## shader that offers the specgloss texture as a variant (parallax_specgloss and water_specgloss read
+## it unconditionally) takes it only when the material binds one
+func _get_shader_variant(
+    base_shader: Shader,
+    variant: MaszynaMaterial.MaszynaMaterialVariant,
+    texture_map: TextureMap,
+    options: MaszynaMaterialManager.MaterialOptions,
+) -> Shader:
+    var variants: Dictionary = SHADER_VARIANTS.get(base_shader.resource_path, {})
+    var flags: int = 0
     if options.force_transparent:
-        code = code.replace("shader_type spatial;", "shader_type spatial;\n#define MASZYNA_ALPHA_BLEND")
-        # a blended surface mirrors the sky (types/blended_reflection.gdshaderinc), which
-        # specular_disabled would take away with the lights' highlights
-        code = code.replace("specular_disabled", "specular_schlick_ggx")
+        flags |= VARIANT_BLEND
     if options.cull_disabled:
-        code = code.replace("cull_back", "cull_disabled")
-    if specgloss:
-        # the specular term the texture scales has to exist (default, detail_normalmap disable it)
-        code = code.replace("shader_type spatial;", "shader_type spatial;\n#define %s" % SPECGLOSS_DEFINE)
-        code = code.replace("specular_disabled", "specular_schlick_ggx")
-    var variant_shader: Shader = Shader.new()
-    variant_shader.code = code
-    _shader_variants[cache_key] = variant_shader
-    return variant_shader
+        flags |= VARIANT_CULL
+    if variants.has(VARIANT_SPECGLOSS) and not _texture_path(variant, texture_map, texture_map.specgloss) == "":
+        flags |= VARIANT_SPECGLOSS
+    return variants.get(flags, base_shader)
 
 
 func _apply_default_material(

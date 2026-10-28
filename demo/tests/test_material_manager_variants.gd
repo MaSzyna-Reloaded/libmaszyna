@@ -138,6 +138,36 @@ func test_create_sets_alpha_blending_for_e3d_translucent_submodel() -> void:
     assert_true(material.shader.code.contains("#define MASZYNA_ALPHA_BLEND"))
 
 
+## A variant of a type shader is a file of its own (#340), which the export's shader baker bakes:
+## built from the type's code at run time, it was compiled from its source on every cold start
+func test_create_takes_a_variant_from_its_own_file() -> void:
+    var mmat: MaszynaMaterial = MaszynaMaterialManager.load_material("", MATERIAL_NAME)
+    var options: MaszynaMaterialManager.MaterialOptions = MaszynaMaterialManager.MaterialOptions.new()
+    options.force_transparent = true
+    options.cull_disabled = true
+    var material: ShaderMaterial = MaszynaMaterialFactory.create(
+        mmat,
+        "",
+        SimulationServer.SEASON_SUMMER,
+        SimulationServer.WEATHER_CLEAR,
+        options,
+    ) as ShaderMaterial
+
+    assert_eq(material.shader.resource_path, "res://addons/libmaszyna/materials/types/normalmap_blend_cull.gdshader")
+
+
+func test_every_variant_is_a_file_with_its_type_code() -> void:
+    for base_path: String in MaszynaMaterialFactory.SHADER_VARIANTS:
+        var include: String = base_path.get_basename() + ".gdshaderinc"
+        var variants: Dictionary = MaszynaMaterialFactory.SHADER_VARIANTS[base_path]
+        assert_true(variants.size() > 0, base_path)
+        for flags: int in variants:
+            var shader: Shader = variants[flags]
+            assert_true(shader.resource_path.begins_with("res://"), "%s %d is a file" % [base_path, flags])
+            assert_true(shader.code.contains(include), "%s includes %s" % [shader.resource_path, include])
+        assert_true((load(base_path) as Shader).code.contains(include), "%s includes its code" % base_path)
+
+
 ## A forced submodel of the optimized E3D instancer is drawn opaque, not even cut out - that
 ## instancer never uses the alpha pass (MaszynaE3DRenderingServer.TRANSLUCENCY_OPAQUE)
 func test_create_draws_a_transparent_material_opaque_for_the_optimized_instancer() -> void:
