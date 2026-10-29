@@ -9,6 +9,7 @@ extends MaszynaGutTest
 
 const SCRIPT:String = "res://tests/fixtures/python/fixture_screen"
 const ABORT_SCRIPT:String = "res://tests/fixtures/python/fixture_abort_screen"
+const COUNTER_SCRIPT:String = "res://tests/fixtures/python/fixture_counter_screen"
 ## The host starts in the game directory; the fixtures stand for one
 const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
 const HOME_SETTING:String = "maszyna/python/home"
@@ -100,6 +101,33 @@ func test_a_script_that_aborts_the_interpreter_does_not_end_the_game() -> void:
     assert_push_error("Python screens stay blank")
     server.screen_free(screen)
     server.free()
+
+
+func test_each_screen_has_an_instance_of_its_script_of_its_own() -> void:
+    # the original shares one a script (python_taskqueue::fetch_renderer()) for as long as it runs,
+    # one scenery: ksiazka_wozu.py kept the vehicle of the scenery before (#346)
+    var home:String = OS.get_environment("MASZYNA_PYTHON_HOME")
+    if not home:
+        pending("MASZYNA_PYTHON_HOME is not set")
+        return
+    ProjectSettings.set_setting(HOME_SETTING, home)
+    var counts:Dictionary[String, String] = {}
+    var first:RID = PythonScreenServer.screen_create(ProjectSettings.globalize_path(COUNTER_SCRIPT),
+            func(commands:PackedStringArray) -> void: counts["first"] = commands[0])
+    var state:Dictionary = {}
+    PythonScreenServer.screen_request_render(first, state)
+    await wait_until(func() -> bool: return counts.get("first") == "1", RENDER_TIMEOUT_SEC)
+    PythonScreenServer.screen_request_render(first, state)
+    await wait_until(func() -> bool: return counts.get("first") == "2", RENDER_TIMEOUT_SEC)
+    PythonScreenServer.screen_free(first)
+    var second:RID = PythonScreenServer.screen_create(ProjectSettings.globalize_path(COUNTER_SCRIPT),
+            func(commands:PackedStringArray) -> void: counts["second"] = commands[0])
+    PythonScreenServer.screen_request_render(second, state)
+    await wait_until(func() -> bool: return counts.has("second"), RENDER_TIMEOUT_SEC)
+
+    assert_eq(counts["first"], "2")
+    assert_eq(counts["second"], "1", "the second screen draws with an instance of its own")
+    PythonScreenServer.screen_free(second)
 
 
 ## A server of the test's own. The global name PythonScreenServer is the engine's singleton, so

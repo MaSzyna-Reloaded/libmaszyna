@@ -185,8 +185,7 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
 * **Keys with no source yet**: `off_from_dimmer` (no dimmer positions in the vendored Mover),
   `lights_compartments` (`compartmentlights_sw` not ported), `doors_no_N` (MMD `animations:`
   count, held by the model layer), lamps beyond the five carried in `lights_front`/`lights_rear`/
-  `lights_train_*`; powered cars are told by engine type where the original tests
-  eimc[eimc_p_Pmax] > 1 and fills `eimp_cN_*`/`diesel_param_N_*` in one shared count.
+  `lights_train_*`.
 * **Cab keys**: `universal10`..`29` are read, but only `universal0`..`9` have a catalog entry.
 * **AI/timetable keys**: `velocity_desired`, `velroad`, `vellimitlast`, `velsignallast`,
   `velsignalnext`, `velnext`, `actualproximitydist`, `train_atpassengerstop`, `train_length`,

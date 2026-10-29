@@ -4758,3 +4758,29 @@ lighting or the trainset.
   same probe shows the reversed wagons at -11.11 m/s and the couplers at a few kN.
 * **Rule:** a value the original gives "along the vehicle" (velocity, the Mover's V) is signed by
   the vehicle's own direction on the track; a reversed vehicle takes it negated.
+
+
+## 2026-10-29 EN57AL screen without its inverters
+
+* **Symptom:**
+  - #344: in an EN57AL (`dynamic/pkp/en57al_v1`) the cab screen stopped after the start with
+    `KeyError: 'eimp_c1_inv1_act'` (`screen_en57al.py:570`).
+* **What proved it:**
+  - A probe built ra + s + rb from the data, coupled them and printed each car's state and
+    `PythonScreenState.compose()`. All three had `engine_type` 4 (ElectricInductionMotor), only s
+    had inverters. The screen got `eimp_c1_invno` 0 (ra), the inverters under `eimp_c2_*` (s) and
+    `power_no` 3.
+  - The control cars declare the induction motor with `Pmax=0` and `PWR=0`
+    (`al_ra_r&g.fiz.inc:4, 45`). The original counts a powered car by `eimc[eimc_p_Pmax] > 1`
+    (`Train.cpp:858, 8707`); `compose()` counted it by the engine type. TODO.md had the
+    divergence listed as not ported.
+  - A scan of the game directory's 2889 Python files for `state[...]` showed the keys the
+    original hands over only for what the train has: the inverters of the powered cars, the
+    compressors (`Train.cpp:847-849`) and the timetable's stations (`mtable.cpp:660-668`).
+    The scripts read them without asking how many there are.
+* **Fix:** `compose()` counts an induction motor car as powered by the engine's `max_power`
+  above 1, for `eimp_cN_*`, `power_no` and the inverters. The neutral state has every inverter key
+  of the 8 cars (2 inverters, the most `InvNo` of the data), every compressor key of the 20 cars
+  and the 100 stations of a timetable (`MaxTTableSize`) with `TMTableLine`'s defaults.
+* **Rule:** a condition ported from the original tests the field the original tests, never a
+  stand-in that looks like it.

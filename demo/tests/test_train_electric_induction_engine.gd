@@ -216,6 +216,29 @@ func test_the_screen_state_shows_the_line_voltage_of_the_powered_car():
     assert_eq(screen["main_ready"], not driven.get_state()["main_switch_enabled"])
 
 
+func test_the_screen_state_skips_a_control_car_without_power():
+    # Train.cpp:858, 8707 count an induction motor car by eimc[eimc_p_Pmax] > 1: the control car of
+    # a unit has the engine type with Pmax=0 (en57al_v1/al_ra_r&g.fiz.inc:45), and counted by its
+    # engine type it took eimp_c1_* and left screen_en57al.py without eimp_c1_inv1_act
+    var driven: VehicleController = await _powered_up_eim("TestEimScreenMotorCar")
+    var description: VehicleController = MaszynaMoverRailVehicleController.new()
+    description.add_component(MaszynaMoverRailVehicleElectricInductionEngine.new())
+    var control_car: VehicleController = build_vehicle("TestEimScreenControlCar", description)
+    await step(2)
+    control_car.couple(driven, RailVehicleController.COUPLER_END_REAR, RailVehicleController.COUPLER_END_FRONT,
+            RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_PERMANENT
+            | RailVehicleController.COUPLING_FLAG_CONTROL)
+    await step(2)
+
+    var screen: Dictionary = PythonScreenState.compose(control_car.get_rid(), {})
+
+    assert_eq(screen["car_no"], 2)
+    assert_eq(screen["power_no"], 1, "only the motor car has power")
+    assert_eq(screen["eimp_c1_invno"], 1, "eimp_c1 is the motor car, with its one inverter")
+    assert_true(screen["eimp_c1_inv1_act"])
+    assert_gt(float(screen["eimp_c1_uhv"]), 2000.0)
+
+
 func test_main_init_time_reaches_the_config():
     engine.main_init_time = 2.5
     train.apply_configuration()
