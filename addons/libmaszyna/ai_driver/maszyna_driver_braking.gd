@@ -150,6 +150,12 @@ const CHARGED_CONTROL_RESERVOIR:float = 4.9
 ## Pressing the buffers, its own brake is released over this [bar] (Driver.cpp:8226)
 const PRESSING_BRAKE_PRESSURE:float = 0.1
 const OVERCHARGED_PIPE_PRESSURE:float = 5.2
+## The old main pipe lock (lock_old, Mover.cpp:4034-4036): an FV4a handle over an LSt or EStED
+## distributor (ss_LSt, BrakeSubsystemDecode()) feeds the pipe no more under this [bar] unless the releaser is
+## held - its handle at running fills nothing from the main reservoir
+const PIPE_LOCK_PRESSURE:float = 2.75
+const PIPE_LOCK_VALVES:Array[int] = [
+    MaszynaMoverRailVehicleBrake.BRAKE_VALVE_LST, MaszynaMoverRailVehicleBrake.BRAKE_VALVE_ESTED]
 ## The positions of MHZ_K8P and MHZ_EN57 (Driver.cpp:4072-4092)
 const K8P_FULL_POSITION:float = 10.0
 const K8P_FULL_FROM:float = 4.5
@@ -216,6 +222,8 @@ const BRAKING_FROM:float = 0.1
 var position:float = POSITION_RUNNING
 ## UniversalBrakeButtons' ub_UnlockPipe: the main pipe's lock held open
 var _unlocking_pipe:bool = false
+## The releaser hinted for the old main pipe lock, standing (_control_releaser())
+var _releasing_locked_pipe:bool = false
 ## fBrakeTime [s]
 var delay:float = 0.0
 ## fAccThreshold [m/s2]: braking starts past it
@@ -651,10 +659,34 @@ func _control_releaser(situation:MaszynaDriverTraction.Situation, acceleration:f
             or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_EZT or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_DMU \
             or not brake.cntrl_brake_handle_type in RELEASER_HANDLES:
         return
-    # nothing done standing while told to wait (Driver.cpp:8193)
+    # Differs from the original, which hints the releaser only to go: a pipe drained under the old
+    # lock stayed empty with the handle at running, a player standing at a stop signal never told
+    # why (reports#37). Hinted wherever the handle could fill it - at running or charging, in the
+    # cab that drives (IsCabMaster()), the pipe not unlocked by the universal button
+    var handle:float = brake.get_controller_position()
+    var master:RailVehicleMasterController = MaszynaDriverTraction.master_controller(vehicle)
+    if brake.cntrl_brake_handle_type == MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A \
+            and brake.valve_type in PIPE_LOCK_VALVES and brake.get_pipe_pressure() < PIPE_LOCK_PRESSURE \
+            and not _unlocking_pipe and master and master.get_cabin_controleable() \
+            and (absf(handle - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE)) <= MaszynaDriverHints.HANDLE_TOLERANCE
+                or absf(handle - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_FILLING)) <= MaszynaDriverHints.HANDLE_TOLERANCE):
+        _releasing_locked_pipe = true
+        if not brake.get_releaser_active():
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MASTER_CONTROLLER_SET_ZERO_SPEED)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RELEASER_ON)
+        return
+    # nothing done standing while told to wait (Driver.cpp:8193) - but the releaser hinted for the
+    # lock let go once the pipe is past it: held, it empties the control reservoir (hamulce.cpp:1130)
     if VehicleServer.vehicle_get_speed(vehicle) < MaszynaDriverTrainset.MOVEMENT_SPEED \
             and situation.traction.action_time < 0.0:
+        if _releasing_locked_pipe:
+            if brake.get_releaser_active():
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RELEASER_OFF)
+            else:
+                MaszynaDriverHints.withdraw(situation, MaszynaDriverHints.Hint.RELEASER_ON)
+        _releasing_locked_pipe = false
         return
+    _releasing_locked_pipe = false
     var pipe:float = brake.get_pipe_pressure()
     var actuate:bool = false
     var handle_unlocked:bool = true

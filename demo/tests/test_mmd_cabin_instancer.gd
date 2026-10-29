@@ -539,6 +539,40 @@ func test_localbrake_rotation_is_scaled_by_local_brake_position_count():
     assert_almost_eq(widget.mesh_rotation.y, -0.0125 * 10.0 * 360.0, 0.0001)
 
 
+## The original turns the train brake handle by its raw position (TGauge: fBrakeCtrlPos * scale +
+## offset, Train.cpp:8220); the knob takes the normalized one, whose 0 is the raw minimum - an
+## FV4a's (-2) cutoff was drawn where running is (maszyna-reloaded#9). ET22's cab0.mmd:
+## `brakectrl: { object01 rot 0.073 0.07 0.1 ...`, the FV4a of test_vehicle.fiz
+func test_brakectrl_rotation_matches_the_raw_handle_position():
+    const SCALE:float = 0.073
+    const OFFSET:float = 0.07
+    var descriptor := MmdInstrumentDescriptor.new()
+    descriptor.label = "brakectrl"
+    descriptor.animation_type = "rot"
+    descriptor.scale = SCALE
+    descriptor.offset = OFFSET
+    var widget:CabinKnob = autofree(CabinKnob.new())
+    var controller:VehicleController = build_vehicle(
+            "TestTrain", FizVehicleBuilder.build_description_at("res://tests/fixtures/test_vehicle.fiz"))
+    var brake:RailVehicleBrake = controller.get_rail_component(RailVehicleComponentType.COMPONENT_BRAKES)
+    var diagnostics:Array[Dictionary] = []
+
+    MmdCabinInstancer._apply_animation_shape(
+        widget, descriptor, MmdSemanticCatalog.get_entry("brakectrl"), controller.get_rid(), 1, diagnostics
+    )
+
+    var low:float = brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_MIN)
+    var high:float = brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_MAX)
+    assert_lt(low, 0.0, "an FV4a's positions start below running")
+    for position:RailVehicleBrake.HandlePosition in [
+            RailVehicleBrake.HANDLE_POSITION_CUTOFF, RailVehicleBrake.HANDLE_POSITION_DRIVE,
+            RailVehicleBrake.HANDLE_POSITION_EMERGENCY]:
+        var raw:float = brake.get_handle_position(position)
+        # the knob's own turn at a value (CabinKnob: offset + rotation * normalized value)
+        var shown:float = widget.mesh_rotation_offset.y + widget.mesh_rotation.y * (raw - low) / (high - low)
+        assert_almost_eq(shown, (raw * SCALE + OFFSET) * 360.0, 0.0001, "handle position %s as the original's" % raw)
+
+
 ## The cab logic is the vehicle's (MaszynaRailVehicle3D attaches it): a 3D cab shown and freed
 ## neither brings logic of its own nor takes the vehicle's away (FINDINGS.md, 2026-09-27 the AI
 ## stood still in the cab the player left)
