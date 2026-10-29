@@ -22,8 +22,16 @@ func test_windows_separators_are_normalized_without_changing_case() -> void:
     assert_eq(MaszynaDataPath.resolve(FIXTURES, "Mixed\\Asset.txt"), "Mixed/Asset.txt")
 
 
-func test_any_other_difference_in_case_keeps_the_spelling_from_the_data() -> void:
+func test_any_other_difference_in_case_matches_each_part_of_the_path() -> void:
     if OS.get_name() == "Windows":
         pending("Windows resolves the original spelling case-insensitively")
         return
-    assert_eq(MaszynaDataPath.resolve(FIXTURES, "mixed/ASSET.txt"), "mixed/ASSET.txt")
+    assert_eq(MaszynaDataPath.resolve(FIXTURES, "mixed/ASSET.txt"), "Mixed/Asset.txt")
+
+
+## #338: Glinojeck.scn includes glinojeck/glinojeck.ctr, the file is glinojeck/Glinojeck.ctr
+func test_a_file_is_found_whatever_its_case_in_a_directory_as_written() -> void:
+    if OS.get_name() == "Windows":
+        pending("Windows resolves the original spelling case-insensitively")
+        return
+    assert_eq(MaszynaDataPath.resolve(FIXTURES, "fallback/capital.ctr"), "fallback/Capital.ctr")

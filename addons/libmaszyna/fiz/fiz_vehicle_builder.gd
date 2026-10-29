@@ -235,6 +235,9 @@ static func build_description(data_path: String, fiz_filename: String) -> Vehicl
 
 
 static func build_description_at(fiz_path: String) -> VehicleController:
+    # a vehicle whose file is not there is told on every load, its description cached or not
+    if not FileAccess.file_exists(fiz_path):
+        MaszynaFileIndexer.missing_file_add(fiz_path, MaszynaFileIndexer.MASZYNA_FILE_FIZ)
     var cache_path: String = _make_cache_path(fiz_path)
     var cache_hash: String = _make_cache_hash(fiz_path)
     var description: VehicleController = _cache.get(cache_path, cache_hash) as VehicleController
@@ -330,6 +333,7 @@ static func _parse_file(
     var file := FileAccess.open(abs_path, FileAccess.READ)
     if not file:
         push_error("Cannot open FIZ file: " + abs_path)
+        MaszynaFileIndexer.missing_file_add(abs_path, MaszynaFileIndexer.MASZYNA_FILE_FIZ)
         context.include_depth -= 1
         return
 

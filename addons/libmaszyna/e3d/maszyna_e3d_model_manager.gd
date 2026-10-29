@@ -66,4 +66,5 @@ func load_model(data_path:String, filename: String) -> MaszynaE3DModel:
         # a vehicle or a scenery model without its model file is drawn without it; the original
         # only logs it (Model3d.cpp:1657)
         push_warning("File does not exist: %s" % path)
+        MaszynaFileIndexer.missing_file_add(path, MaszynaFileIndexer.MASZYNA_FILE_MODEL)
     return output

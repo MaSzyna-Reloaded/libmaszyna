@@ -1,5 +1,7 @@
 #include "maszyna/MaszynaDataPath.hpp"
 
+#include "maszyna/MaszynaFileIndexer.hpp"
+
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 
@@ -14,20 +16,25 @@ namespace godot {
         if (relative_path.is_empty()) {
             return relative_path;
         }
-
-        const String original_path = p_base_dir.path_join(relative_path);
-        if (FileAccess::file_exists(original_path) || DirAccess::dir_exists_absolute(original_path)) {
-            return relative_path;
+        // any other difference in case, on a filesystem that keeps it
+        if (MaszynaFileIndexer *file_indexer = MaszynaFileIndexer::get_instance(); file_indexer != nullptr) {
+            return file_indexer->path_resolve(p_base_dir, relative_path);
         }
+        String as_written = find_as_written(p_base_dir, relative_path);
+        return as_written.is_empty() ? relative_path : as_written;
+    }
 
-        // no directory is listed for any other difference in case: a lookup of a file that is not
-        // there - most of the candidates a caller tries - would list its directory every time
-        String lowercase_path = relative_path.to_lower();
+    String MaszynaDataPath::find_as_written(const String &p_base_dir, const String &p_relative_path) {
+        const String original_path = p_base_dir.path_join(p_relative_path);
+        if (FileAccess::file_exists(original_path) || DirAccess::dir_exists_absolute(original_path)) {
+            return p_relative_path;
+        }
+        String lowercase_path = p_relative_path.to_lower();
         const String lowercase_absolute_path = p_base_dir.path_join(lowercase_path);
         if (FileAccess::file_exists(lowercase_absolute_path) ||
             DirAccess::dir_exists_absolute(lowercase_absolute_path)) {
             return lowercase_path;
         }
-        return relative_path;
+        return String();
     }
 } // namespace godot

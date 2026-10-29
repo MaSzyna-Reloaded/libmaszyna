@@ -470,10 +470,12 @@ interface.
   says `PKP\SN61_V2 SN61-179 SN61_v2` and `2M62-0571-A`, the files on disk are
   `pkp/sn61_v2/sn61_v2.mmd` - or, the other way round, uppercase `2M62-0571-A.fiz` exist as
   written, and 821 names on disk carry capitals. Wrapper: `MaszynaDataPath.resolve()` keeps the
-  base directory, tries the relative path as authored, then its lowercase form
-  (`docs/findings-archive.md`, 2026-10-02, 2026-10-10). Any other difference in case is not found
-  on Linux: `przejazdy/plyty3_l.t3d` (`plyty3_L.e3d`) and `slupy_nn_400kv_*_atlas`
-  (`slupy_nn_400kV_*_atlas`) of l053 and l204.
+  base directory, tries the relative path as authored, then its lowercase form; any other
+  difference in case - `przejazdy/plyty3_l.t3d` (`plyty3_L.e3d`), `slupy_nn_400kv_*_atlas`
+  (`slupy_nn_400kV_*_atlas`) of l053 and l204, `glinojeck/glinojeck.ctr` (`Glinojeck.ctr`, #338) -
+  is found among the names of its directory, listed once a run (`MaszynaFileIndexer`; not on
+  Windows, whose filesystem finds it) (`docs/findings-archive.md`, 2026-10-02, 2026-10-10,
+  2026-10-29).
 * **`include none`.** `l204/deko/204_trawky_ter.scm:33698` and
   `linia053_wrzosy/scm_wrzosy/1-tory.scm:51026` include a file named `none`. The original opens
   it, logs "Failed to open file" (`parser.cpp:89`) and goes on with an empty include. Wrapper: the

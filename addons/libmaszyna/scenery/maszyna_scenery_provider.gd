@@ -189,6 +189,8 @@ static func clear_cache() -> void:
 ## models, 90 228 "triangles" nodes (41% of them with no range at all), 2 340 tracks and 1 163
 ## traction spans.
 func compile(root:SceneryContentNode, id:String, parameters:Dictionary) -> CompiledScenery:
+    # what this scenery's loading finds of the data, and gives up on (MaszynaFileIndexer)
+    MaszynaFileIndexer.files_clear()
     var include:MaszynaIncludeNode = root as MaszynaIncludeNode
     var filename:String = id
     var source_path:String = _get_source_path(filename)
@@ -256,6 +258,11 @@ func compile(root:SceneryContentNode, id:String, parameters:Dictionary) -> Compi
             )
             SceneryLoadMeasurement.print_process(CONVERT_TAG, "saved")
 
+    # the includes the parse gave up on - kept with the cache, so a scenery read from it tells them
+    # as well (MaszynaIncludeImporter, MaszynaImporterContext.register_dependency())
+    for dependency_path:String in compiled.dependencies:
+        if compiled.dependencies[dependency_path].get("missing", false):
+            MaszynaFileIndexer.missing_file_add(dependency_path, MaszynaFileIndexer.MASZYNA_FILE_INCLUDE)
     return compiled
 
 
@@ -444,9 +451,16 @@ static func _is_cache_valid(
     for dependency_value:Variant in compiled.dependencies.keys():
         var dependency_path:String = dependency_value
         var state:Dictionary = compiled.dependencies[dependency_path]
-        # an include that was missing is still to be missing
+        # an include that was missing is still to be missing - looked for as its reader looks, in
+        # any letter case (MaszynaDataPath.resolve()): a cache made while it was not found so is
+        # parsed again once it is
         if state.get("missing", false):
-            if FileAccess.file_exists(dependency_path):
+            var game_prefix:String = MaszynaGameDirectory.get_game_dir() + "/"
+            var on_disk:String = dependency_path
+            if dependency_path.begins_with(game_prefix):
+                on_disk = game_prefix.path_join(MaszynaDataPath.resolve(
+                    game_prefix, dependency_path.trim_prefix(game_prefix)))
+            if FileAccess.file_exists(on_disk):
                 return false
             continue
         if not FileAccess.file_exists(dependency_path):

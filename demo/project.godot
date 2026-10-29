@@ -75,7 +75,7 @@ text_editor/behavior/files/trim_trailing_whitespace_on_save=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/gnd_sfx/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/libreloaded/editor/scenery_streaming/plugin.cfg", "res://addons/libmaszyna/editor/maszyna_vehicles/plugin.cfg", "res://addons/libmaszyna/editor/e3d_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/fiz_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/nodebank/plugin.cfg", "res://addons/libmaszyna/editor/scn_toolbar/plugin.cfg", "res://addons/libreloaded/editor/scenery_toolbar/plugin.cfg", "res://addons/libreloaded/editor/tracks/plugin.cfg", "res://addons/libmaszyna/editor/user_settings_dock/plugin.cfg", "res://addons/libreloaded/plugin.cfg", "res://addons/libmaszyna/plugin.cfg")
+enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/gnd_sfx/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/libreloaded/editor/scenery_streaming/plugin.cfg", "res://addons/libmaszyna/editor/maszyna_vehicles/plugin.cfg", "res://addons/libmaszyna/editor/e3d_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/fiz_toolbar/plugin.cfg", "res://addons/libmaszyna/editor/nodebank/plugin.cfg", "res://addons/libmaszyna/editor/scenery_info/plugin.cfg", "res://addons/libmaszyna/editor/scn_toolbar/plugin.cfg", "res://addons/libreloaded/editor/scenery_toolbar/plugin.cfg", "res://addons/libreloaded/editor/tracks/plugin.cfg", "res://addons/libmaszyna/editor/user_settings_dock/plugin.cfg", "res://addons/libreloaded/plugin.cfg", "res://addons/libmaszyna/plugin.cfg")
 
 [input]
 
