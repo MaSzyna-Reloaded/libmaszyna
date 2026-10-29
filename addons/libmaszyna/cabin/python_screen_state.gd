@@ -7,7 +7,9 @@ class_name PythonScreenState
 ## A script reads its keys with state['key'] and a missing one raises KeyError, which stops the
 ## whole screen from drawing. So every key the original hands over is always present: the ones the
 ## vehicle's state has an equivalent for come from it, the rest carry the neutral value of their
-## type (see TODO.md for what is not ported yet).
+## type (see TODO.md for what is not ported yet). The keys the original hands over only for what
+## the train has - the inverters of its powered cars, its compressors, its timetable's stations -
+## are present for all there can be, as scripts read them without asking how many there are.
 
 ## Train.cpp:924 fEIMParams[9][10] - row 0 is the train, rows 1-8 the powered cars
 const EIM_CAR_COUNT:int = 8
@@ -15,6 +17,10 @@ const EIM_CAR_COUNT:int = 8
 const CAR_COUNT:int = 20
 ## Train.cpp:637 ggUniversals
 const UNIVERSAL_COUNT:int = 30
+## The most inverters a car of the data has (InvNo=2)
+const INVERTER_COUNT:int = 2
+## mtable.h:20 MaxTTableSize - the stations of a timetable
+const STATION_COUNT:int = 100
 ## Train.cpp:809-813
 const EIM_TRAIN_FIELDS:Array[String] = ["fd", "fdt", "fdb", "pd", "pdt", "pdb", "itothv", "1", "2", "3"]
 const EIM_CAR_FIELDS:Array[String] = ["fr", "frt", "frb", "pr", "prt", "prb", "im", "vm", "ihv", "uhv"]
@@ -22,6 +28,11 @@ const DIESEL_FIELDS:Array[String] = [
     "enrot", "nrot", "fill_des", "fill_real", "clutch_des", "clutch_real", "water_temp", "oil_press",
     "engine_temp", "retarder_fill"]
 const PRESSURE_FIELDS:Array[String] = ["bc", "bp", "sp", "cp", "rp", "mass", "spring"]
+## mtable.cpp:660-668 - a station of the timetable, with TMTableLine's defaults (mtable.h:28-38)
+const STATION_FIELDS:Dictionary[String, Variant] = {
+    "name": "nowhere", "fclt": "", "lctn": 0.0, "vmax": -1.0, "ah": -1, "am": -1.0, "dh": -1, "dm": -1.0,
+    "tracks": 1,
+}
 
 ## Original key -> key of the occupied vehicle's state holding the same Mover field
 ## (Train.cpp:711-805; every pair checked against the getter behind the state key)
@@ -85,6 +96,9 @@ const ENGINE_VOLTAGE_TYPES:Array[RailVehicleEngine.EngineType] = [
     RailVehicleEngine.DIESEL_ELECTRIC, RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR]
 ## Train.cpp:8699 - a compressor that turns
 const COMPRESSOR_SPEED_THRESHOLD:float = 0.00001
+## Train.cpp:858, 8707 eimc[eimc_p_Pmax] > 1 - an induction motor car with power of its own; the
+## control cars of a unit have the engine type too, with Pmax=0 (en57al_v1/al_ra_r&g.fiz.inc:45)
+const INDUCTION_POWER_THRESHOLD:float = 1.0
 ## A pantograph carrier publishes its collector (EnginePowerSource.SourceType == CurrentCollector)
 const COLLECTOR_KEY:String = "current_collector_pantograph_first_active"
 
@@ -108,7 +122,8 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     var carrier:RID = RailVehicleServer.vehicle_find_pantograph_carrier(vehicle)
     var pantograph_unit:Dictionary = VehicleServer.vehicle_dump_state(carrier) if carrier.is_valid() else controlled
 
-    result["name"] = VehicleServer.vehicle_get_id(vehicle)   # DynamicObject->asName
+    # DynamicObject->asName (Train.cpp:710) - the name as the scenery writes it, not the id in lower case
+    result["name"] = VehicleServer.vehicle_get_name(vehicle)
     for key:String in STATE_KEYS:
         if STATE_KEYS[key] in state:
             result[key] = state[STATE_KEYS[key]]
@@ -197,7 +212,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
         result["doors_r_%d" % car_number] = doors_right
         result["doorstep_l_%d" % car_number] = car_state.get("doors_left_step_position", 0.0) > 0.0
         result["doorstep_r_%d" % car_number] = car_state.get("doors_right_step_position", 0.0) > 0.0
-        result["car_name%d" % car_number] = VehicleServer.vehicle_get_id(car)
+        result["car_name%d" % car_number] = VehicleServer.vehicle_get_name(car)   # p->name(), Train.cpp:8688
         # the unit and the last letter of the vehicle's type (Train.cpp:895, 8687-8688)
         result["code_%d" % car_number] = "%d%s" % [unit_number, RailVehicleServer.vehicle_get_type_name(car).right(1)]
         result["slip_%d" % car_number] = car_state.get("slipping_wheels", false)
@@ -216,10 +231,13 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
             result["compressors_%d_work" % compressors] = car_state.get("compressor_enabled", false)
             result["compressors_%d_car_no" % compressors] = index
         var engine_type:int = car_state.get("engine_type", RailVehicleEngine.NONE)
-        # eimc[eimc_p_Pmax] > 1 - an induction motor car; the diesels by their engine type
-        if powered < EIM_CAR_COUNT and engine_type in [RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR, RailVehicleEngine.DIESEL, RailVehicleEngine.DIESEL_ELECTRIC]:
+        var induction_engine:RailVehicleElectricInductionEngine = VehicleServer.vehicle_component_get(
+                car, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleElectricInductionEngine
+        var induction:bool = induction_engine and induction_engine.max_power > INDUCTION_POWER_THRESHOLD
+        # an induction motor car with power (Train.cpp:8707); the diesels by their engine type (Train.cpp:8728)
+        if powered < EIM_CAR_COUNT and (induction or engine_type in [RailVehicleEngine.DIESEL, RailVehicleEngine.DIESEL_ELECTRIC]):
             var powered_number:int = powered + 1
-            if not engine_type == RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR:
+            if not induction:
                 result["diesel_param_%d_enrot" % powered_number] = car_state.get("engine_rpm_count", 0.0) * Units.SECONDS_PER_MINUTE   # enrot * 60
                 result["diesel_param_%d_nrot" % powered_number] = car_state.get("wheel_rotation_speed_rps", 0.0)   # nrot
                 result["diesel_param_%d_fill_real" % powered_number] = car_state.get("diesel_fill", 0.0)   # dizel_fill
@@ -253,9 +271,9 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
             result["eimp_c%d_conv" % powered_number] = car_state.get("converter_enabled", false)   # ConverterFlag
             result["eimp_c%d_heat" % powered_number] = car_state.get("heating_enabled", false)   # Heating
             powered = powered_number
-        # Train.cpp:856-870 - the inverters of each induction motor car (eimc[eimc_p_Pmax] > 1),
-        # numbered apart from the diesels
-        if induction_cars < EIM_CAR_COUNT and engine_type == RailVehicleEngine.ELECTRIC_INDUCTION_MOTOR:
+        # Train.cpp:856-870 - the inverters of each induction motor car with power, numbered apart
+        # from the diesels
+        if induction_cars < EIM_CAR_COUNT and induction:
             induction_cars += 1
             var inverters:Array = car_state.get("inverters", [])
             result["eimp_c%d_invno" % induction_cars] = inverters.size()   # InvertersNo
@@ -350,6 +368,10 @@ static func _static_init() -> void:
             state["eimp_c%d_%s" % [car, field]] = false
         for field:String in ["pf", "pr", "comp_a", "comp_w"]:
             state["eimp_u%d_%s" % [car, field]] = false
+        state["eimp_c%d_invno" % car] = 0
+        for inverter:int in range(1, INVERTER_COUNT + 1):
+            for field:String in ["act", "error", "allow"]:
+                state["eimp_c%d_inv%d_%s" % [car, inverter, field]] = false
     for car:int in range(1, CAR_COUNT + 1):
         for field:String in PRESSURE_FIELDS:
             state["eimp_pn%d_%s" % [car, field]] = 0.0
@@ -360,4 +382,11 @@ static func _static_init() -> void:
         state["doors_no_%d" % car] = 0
         state["code_%d" % car] = ""
         state["car_name%d" % car] = ""
+        # Train.cpp:847-849 - a compressor of the train, counted from 1 among the cars
+        state["compressors_%d_allow" % car] = false
+        state["compressors_%d_work" % car] = false
+        state["compressors_%d_car_no" % car] = 0
+    for station:int in range(1, STATION_COUNT + 1):
+        for field:String in STATION_FIELDS:
+            state["train_station%d_%s" % [station, field]] = STATION_FIELDS[field]
     _neutral_state = state

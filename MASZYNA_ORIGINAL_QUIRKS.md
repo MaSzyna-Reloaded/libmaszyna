@@ -605,3 +605,14 @@ interface.
   drawn. The 145 scripts together read about 250 keys of `GetTrainState()`.
 * **The scripts assume the game directory is the working directory** (`./fonts/`, `./textures/`,
   `from scripts import`), and importing a module writes a `.pyc` beside it - inside the game data.
+* **One instance of a script for as long as the program runs.** The original keeps one instance of
+  each script's class (`python_taskqueue::fetch_renderer()`, `PyInt.cpp:428-485`) and releases them
+  only when it exits (`PyInt.cpp:334-338`), so every screen of the script - the two cabs of a unit,
+  every vehicle - draws with the same one, and one run of the executable is one scenery. A script
+  that sets itself up on its first render keeps that: `ksiazka_wozu.py` takes the vehicle and draws
+  its driver in `init()` once, then reads the vehicle's name again on every render. Here the game
+  loads one scenery after another, and a shared instance kept the previous scenery's vehicle - its
+  `save()` raised `KeyError` for the next one (#346). Wrapper: one instance a screen, made on its
+  first render and released with the screen (`PythonScreenServer.screen_free()`). Each cab of a
+  unit has its own: `ksiazka_wozu.py` draws a driver in each cab; its book is one per vehicle in
+  both, the file it keeps under the vehicle's name without the letters at its end.

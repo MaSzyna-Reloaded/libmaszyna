@@ -307,13 +307,20 @@ namespace godot {
 
     void PythonScreenServer::screen_free(const RID &p_screen) {
         screens.erase(p_screen);
-        MutexLock lock(mutex);
-        for (List<Request>::Element *element = requests.front(); element != nullptr; element = element->next()) {
-            if (element->get().screen == p_screen) {
-                element->erase();
-                break;
+        {
+            MutexLock lock(mutex);
+            for (List<Request>::Element *element = requests.front(); element != nullptr; element = element->next()) {
+                if (element->get().screen == p_screen) {
+                    element->erase();
+                    break;
+                }
             }
+            if (worker.is_null() || host_failed) {
+                return; // no host holds an instance of its script
+            }
+            requests.push_back(Request{p_screen, String(), Dictionary(), true});
         }
+        semaphore->post();
     }
 
     void PythonScreenServer::_publish(
@@ -469,6 +476,10 @@ namespace godot {
                 if (!entering.is_empty()) {
                     RequestWriter message(python_host::Request::ENTER_GAME_DIR);
                     message.put_string(entering);
+                    running = message.send(pipe) && receive();
+                } else if (request.freed) {
+                    RequestWriter message(python_host::Request::FREE);
+                    message.put(static_cast<uint64_t>(request.screen.get_id()));
                     running = message.send(pipe) && receive();
                 } else {
                     RequestWriter message(python_host::Request::RENDER);

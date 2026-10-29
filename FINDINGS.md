@@ -68,6 +68,10 @@ code belongs to the game's `FINDINGS.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* A condition ported from the original tests the field the original tests, never a stand-in that
+  looks like it: the screens count a powered car by `eimc[eimc_p_Pmax] > 1`, and the engine type
+  took the control cars of every EMU too, which have it with `Pmax=0`. *(10-29 EN57AL screen
+  without its inverters)*
 * A structure ported from the original keeps its granularity on disk as well: one file per
   section of the 1 km grid, as `basic_section`, with its cells and their merged shapes inside - a
   file per merged shape was ten times the chunks. *(10-12 ten times the terrain chunks)*

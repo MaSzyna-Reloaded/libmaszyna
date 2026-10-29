@@ -16,13 +16,16 @@ namespace python_host {
         ENTER_GAME_DIR = 1,
         /// uint64 screen, string script_path, uint32 count, count x (string key, a Value)
         RENDER = 2,
+        /// uint64 screen: the screen is gone, and so is its script's instance
+        FREE = 3,
     };
 
     /// Host -> server
     enum class Reply : uint8_t {
         /// string text - a line for the game's log
         LOG = 1,
-        /// the host has started (its first reply), or the game directory has been entered
+        /// the host has started (its first reply), the game directory has been entered or a screen
+        /// freed
         DONE = 2,
         /// uint64 screen, int32 width, int32 height, uint32 size, size bytes of RGBA pixels (none
         /// when the script drew nothing), uint32 count, count x string command

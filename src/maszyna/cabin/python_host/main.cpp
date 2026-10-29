@@ -370,9 +370,11 @@ static bool file_exists(const std::string &p_path) {
 #endif
 }
 
-/// One instance of each script's class, as python_taskqueue::fetch_renderer() keeps them;
-/// a failure is kept as well, so a broken script is not re-run on every update
-static std::unordered_map<std::string, PyObject *> renderers;
+/// One instance of the script's class a screen, made on its first render and released when the
+/// screen is freed - not one a script, as python_taskqueue::fetch_renderer() keeps them
+/// (MASZYNA_ORIGINAL_QUIRKS.md); a failure is kept as well, so a broken script is not re-run on
+/// every update
+static std::unordered_map<uint64_t, PyObject *> renderers;
 static PyObject *main_module = nullptr;
 
 /// The scripts open "./fonts/..." and "./textures/..." and import "from scripts", all
@@ -428,8 +430,8 @@ static bool render(MessageReader &p_reader) {
         return false;
     }
 
-    // python_taskqueue::fetch_renderer()
-    auto cached = renderers.find(script_path);
+    // python_taskqueue::fetch_renderer(), by the screen
+    auto cached = renderers.find(screen);
     if (cached == renderers.end()) {
         PyObject *renderer = nullptr;
         if (python.run_file(main_module, script_path + ".py")) {
@@ -450,7 +452,7 @@ static bool render(MessageReader &p_reader) {
             }
             python.print_error();
         }
-        cached = renderers.emplace(script_path, renderer).first;
+        cached = renderers.emplace(screen, renderer).first;
     }
     PyObject *renderer = cached->second;
 
@@ -524,6 +526,23 @@ static bool render(MessageReader &p_reader) {
         python.Py_DecRef(output);
     }
     return sent;
+}
+
+/// Releases the instance of a freed screen's script; false when the request is malformed
+static bool free_screen(MessageReader &p_reader) {
+    const auto screen = p_reader.get<uint64_t>();
+    if (!p_reader.valid) {
+        print_to_stderr("a malformed free request");
+        return false;
+    }
+    const auto renderer = renderers.find(screen);
+    if (renderer != renderers.end()) {
+        if (renderer->second != nullptr) {
+            python.Py_DecRef(renderer->second);
+        }
+        renderers.erase(renderer);
+    }
+    return true;
 }
 
 /// The program's arguments in UTF-8, whatever the platform passes them in
@@ -677,6 +696,14 @@ int main(int p_argc, char **p_argv) {
             case Request::RENDER:
                 if (!render(reader)) {
                     return python_host::EXIT_FAILED;
+                }
+                break;
+            case Request::FREE:
+                if (!free_screen(reader)) {
+                    return python_host::EXIT_FAILED;
+                }
+                if (!send_captured_errors() || !MessageWriter().send(Reply::DONE)) {
+                    return EXIT_DONE;
                 }
                 break;
             default:

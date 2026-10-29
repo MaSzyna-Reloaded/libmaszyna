@@ -27,8 +27,10 @@ namespace godot {
     /// the runtime does can end the game: when the host ends - a fatal Python error, a crash in an
     /// extension module, a runtime that is missing - what it printed and its exit code go to the
     /// log, `python_runtime_failed` is emitted once and the screens stay blank. One worker thread
-    /// talks to the host (PythonHostProtocol.hpp), a request at a time. Screens of the same script
-    /// share one instance of its class, as in the original (python_taskqueue::fetch_renderer()).
+    /// talks to the host (PythonHostProtocol.hpp), a request at a time. Each screen has an instance
+    /// of its script's class of its own, made on its first render and released by screen_free();
+    /// the original shares one a script for as long as it runs (python_taskqueue::fetch_renderer(),
+    /// MASZYNA_ORIGINAL_QUIRKS.md).
     class PythonScreenServer : public Object {
             GDCLASS(PythonScreenServer, Object)
 
@@ -62,6 +64,8 @@ namespace godot {
                     RID screen;
                     String script_path;
                     Dictionary state;
+                    /// The screen is freed: its script's instance goes, nothing is drawn
+                    bool freed = false;
             };
 
             // main thread only
@@ -106,6 +110,7 @@ namespace godot {
             /// Queues a render with this state; a render still waiting for the same screen is
             /// replaced, not repeated (python_taskqueue::insert())
             void screen_request_render(const RID &p_screen, const Dictionary &p_state);
+            /// The screen's texture goes, and in the host the instance of its script
             void screen_free(const RID &p_screen);
     };
 } // namespace godot
