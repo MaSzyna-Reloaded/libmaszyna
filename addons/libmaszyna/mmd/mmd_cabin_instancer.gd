@@ -1258,7 +1258,11 @@ static func _add_control_sound(
 ## domain has to stay normalized even though that's not what MMD's scale assumes). Multiplying
 ## the raw-domain-derived degrees/position by (max-min) - the same range the state's own
 ## normalization divides by - converts it to the correct per-normalized-unit amount without
-## having to change the widget's value domain (and therefore without breaking its command).
+## having to change the widget's value domain (and therefore without breaking its command). The
+## normalized 0 is the raw minimum, not the raw 0 the original's value starts from (TGauge's
+## `value*scale + offset` of fBrakeCtrlPos, Train.cpp:8220), so `scale*min` joins the offset: left
+## out, an FV4a's handle (min -2) stood two positions over - cutoff drawn at running
+## (maszyna-reloaded#9).
 ##
 ## `entry["mmd_scale_multiplier"]` (default 1.0) mirrors the original engine's own
 ## TGauge::Load(..., mul) parameter (vehicle/Gauge.cpp:182, `scale *= mul`): Train.cpp calls
@@ -1270,11 +1274,12 @@ static func _apply_animation_shape(
         widget:Node, descriptor:MmdInstrumentDescriptor, entry:Dictionary, vehicle_rid:RID,
         cab_number:int, diagnostics:Array[Dictionary]) -> void:
     var range_scale:float = 1.0
+    var range_min:float = 0.0
     var range_properties:Array = entry.get("animation_range_config_properties", [])
     var config:Dictionary = CabinSystem.vehicle_config(vehicle_rid)
     # the range is the vehicle's - one without the component that has it gives none
     if range_properties.size() == 2 and config.has(range_properties[0]) and config.has(range_properties[1]):
-        var range_min:float = float(config[range_properties[0]])
+        range_min = float(config[range_properties[0]])
         var range_max:float = float(config[range_properties[1]])
         range_scale = range_max - range_min
         # the same raw range is where the knob's whole positions lie (a brake valve's BCPN rows)
@@ -1283,6 +1288,8 @@ static func _apply_animation_shape(
             widget.set("position_max", range_max)
 
     var mmd_scale:float = descriptor.scale * float(entry.get("mmd_scale_multiplier", 1.0))
+    # the shape at the normalized 0 - the raw minimum - in the units of MMD's offset
+    var offset:float = descriptor.offset + mmd_scale * range_min
 
     # rotvar/movvar turn and slide as rot/mov with a scale that runs to their end scale, multiplied
     # alike (Gauge.cpp:116-141, 182-185); wip turns as rot, and its two submodels below with it
@@ -1310,12 +1317,12 @@ static func _apply_animation_shape(
                 widget.set("mesh_rotation", rotation_vec)
                 if "mesh_rotation_offset" in widget:
                     var rotation_offset_vec:Vector3 = widget.get("mesh_rotation_offset")
-                    rotation_offset_vec.y = descriptor.offset * 360.0
+                    rotation_offset_vec.y = offset * 360.0
                     widget.set("mesh_rotation_offset", rotation_offset_vec)
-                elif not is_zero_approx(descriptor.offset):
+                elif not is_zero_approx(offset):
                     diagnostics.append(_diag(
                             "info", "MMD_ANIMATION_UNSUPPORTED",
-                            "Label '%s' has a non-zero MMD offset (%s) but its widget has no mesh_rotation_offset field - ignored" % [descriptor.label, descriptor.offset],
+                            "Label '%s' has a non-zero MMD offset (%s) but its widget has no mesh_rotation_offset field - ignored" % [descriptor.label, offset],
                             cab_number, descriptor.label, descriptor.submodel_name))
             else:
                 diagnostics.append(_diag(
@@ -1331,12 +1338,12 @@ static func _apply_animation_shape(
                 widget.set("mesh_position", position_vec)
                 if "mesh_position_offset" in widget:
                     var position_offset_vec:Vector3 = widget.get("mesh_position_offset")
-                    position_offset_vec.z = descriptor.offset
+                    position_offset_vec.z = offset
                     widget.set("mesh_position_offset", position_offset_vec)
-                elif not is_zero_approx(descriptor.offset):
+                elif not is_zero_approx(offset):
                     diagnostics.append(_diag(
                             "info", "MMD_ANIMATION_UNSUPPORTED",
-                            "Label '%s' has a non-zero MMD offset (%s) but its widget has no mesh_position_offset field - ignored" % [descriptor.label, descriptor.offset],
+                            "Label '%s' has a non-zero MMD offset (%s) but its widget has no mesh_position_offset field - ignored" % [descriptor.label, offset],
                             cab_number, descriptor.label, descriptor.submodel_name))
             else:
                 diagnostics.append(_diag(

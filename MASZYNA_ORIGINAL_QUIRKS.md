@@ -126,6 +126,14 @@ interface.
   Wrapper: `MaszynaDriverBraking.control_main_pipe()` runs on every update and cues
   `MAIN_PIPE_UNLOCK` (the button's control) also while the handle stands at running, once the main
   reservoir is full.
+* **The old pipe lock has no hint while standing.** An FV4a handle over an LSt or EStED distributor
+  feeds the pipe no more under 2.75 bar until the releaser is held (`lock_old`,
+  `Mover.cpp:4474-4477`); it is no `LockPipe` and shows nowhere. `control_releaser()` hints the
+  releaser only to go and returns standing while told to wait (`Driver.cpp:8194`), so an ET22 whose
+  pipe drained with the handle in cutoff stood at a stop signal with 7.6 bar in the main reservoir
+  and an empty pipe, the handle at running (reports#37). Wrapper:
+  `MaszynaDriverBraking._control_releaser()` cues `RELEASER_ON` wherever the lock holds with the
+  handle at running or charging in the cab that drives, and `RELEASER_OFF` once the pipe is past it.
 * **"Neutral" and "release" contradict each other on a controller carrying the train brake.**
   `mastercontrollersetzerospeed` is done at `MainCtrlPos <= UniCtrlNoPowerPos` (`driverhints.cpp:523-532`),
   where an `IntegratedBrakePN` controller laps the train brake (SA132: 2), and `trainbrakerelease`
