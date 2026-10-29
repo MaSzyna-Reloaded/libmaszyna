@@ -63,6 +63,8 @@ func get_stream(name:String, loop:bool, vehicle_dir:String) -> AudioStream:
     var full_path:String = find_sound(name, vehicle_dir)
     if not full_path:
         push_warning("[%s] file does not exist: %s" % [self, name])
+        # named as the data names it: it is looked for in three places with each extension
+        MaszynaFileIndexer.missing_file_add(name, MaszynaFileIndexer.MASZYNA_FILE_SOUND)
         return _silence
     match full_path.get_extension().to_lower():
         WAV_EXTENSION:

@@ -1,4 +1,5 @@
 #include "maszyna/MaszynaDataPath.hpp"
+#include "maszyna/MaszynaFileIndexer.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 #include "maszyna/MaszynaPlugin.hpp"
 #include "maszyna/cabin/MaszynaCabinLampIslands.hpp"
@@ -133,6 +134,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaVehicleCommandAction);
         GDREGISTER_CLASS(MaszynaEventCondition);
         GDREGISTER_ABSTRACT_CLASS(MaszynaDataPath);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaFileIndexer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaCabinLampIslands);
         GDREGISTER_CLASS(MaszynaParser);
         GDREGISTER_CLASS(MaszynaTrianglesImporter);
@@ -197,6 +199,10 @@ namespace godot {
         // change; before every server that reads the game directory
         game_directory = memnew(MaszynaGameDirectory);
         Engine::get_singleton()->register_singleton("MaszynaGameDirectory", game_directory);
+        // after the game directory, whose change it follows: the data's names in any case
+        // (MaszynaDataPath::resolve()) and what a scenery's loading found of them
+        file_indexer = memnew(MaszynaFileIndexer);
+        Engine::get_singleton()->register_singleton("MaszynaFileIndexer", file_indexer);
         e3d_parser = memnew(MaszynaE3DParser);
         Engine::get_singleton()->register_singleton("MaszynaE3DParser", e3d_parser);
         // after SceneryStreamingServer and ModelRenderingServer are registered: the constructor takes
@@ -317,6 +323,10 @@ namespace godot {
         Engine::get_singleton()->unregister_singleton("MaszynaE3DParser");
         memdelete(e3d_parser);
         e3d_parser = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("MaszynaFileIndexer");
+        memdelete(file_indexer);
+        file_indexer = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaGameDirectory");
         memdelete(game_directory);

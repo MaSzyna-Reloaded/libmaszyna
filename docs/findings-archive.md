@@ -4188,6 +4188,23 @@ lighting or the trainset.
 * **Rule:** a path lookup costs a fixed number of existence checks; it never lists a directory to
   match a name letter case aside.
 
+## 2026-10-29 Glinojeck's include given up with the listing
+
+* **Symptom:** loading Glinojeck on Linux logged `Cannot load include file:
+  .../scenery/glinojeck/glinojeck.ctr` (#338); the file on disk is `glinojeck/Glinojeck.ctr`.
+* **What proved it:** `Glinojeck.scn` writes `include glinojeck/glinojeck.ctr end`; the original
+  opens it with a plain `std::ifstream` (`parser.cpp:65`), found only by Windows' filesystem.
+  `MaszynaDataPath.resolve()` matched any case by listing the path's directories until 666ac863
+  (2026-10-10 Windows streaming listed directories); that commit cut the matching for its cost
+  and rewrote its test (`..._matches_each_part_of_the_path`) to expect the spelling from the
+  data, so every name in another case was given up on Linux and the suite stayed green.
+* **Fix:** `MaszynaFileIndexer`, made on every system but Windows: a path not found as written nor
+  in lowercase is looked up among the names of its directory - found the same way - listed once
+  and kept in memory until the game directory changes. The test is back as it was, with the
+  Glinojeck case beside it.
+* **Rule:** a cost is fixed where it is paid, never by giving up what it pays for; a red test is
+  a regression reported to the operator, never rewritten to the new result.
+
 ## 2026-10-10 An EN76 never raised its D car's pantograph
 
 * **Symptom:** in Wrzosy, IC EIE8310 (`wrzosy_eie8310.scn`), nothing happened at Wolica after

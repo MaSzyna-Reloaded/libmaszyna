@@ -1640,6 +1640,7 @@ static func _tokenize_file(abs_path:String, context:MmdImportContext, parameters
     var file:FileAccess = FileAccess.open(abs_path, FileAccess.READ)
     if not file:
         context.add_diagnostic("error", "MMD_INCLUDE_NOT_FOUND", "Cannot open MMD file: " + abs_path, abs_path)
+        MaszynaFileIndexer.missing_file_add(abs_path, MaszynaFileIndexer.MASZYNA_FILE_MMD)
         context.include_depth -= 1
         return []
     var buffer:PackedByteArray = _strip_bom(file.get_buffer(file.get_length()))

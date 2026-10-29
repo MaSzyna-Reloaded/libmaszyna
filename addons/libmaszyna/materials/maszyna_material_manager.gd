@@ -261,6 +261,8 @@ func material_preload(
     for texture_name:String in material.get_variant(season, weather).get_texture_paths():
         var full_path:String = _get_texture_file(model_path, texture_name)
         if not full_path:
+            # named as the data names it: it is looked for in four places (_get_texture_file())
+            MaszynaFileIndexer.missing_file_add(texture_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
             continue
         var texture_key:String = _get_texture_key(full_path, max_size)
         # a texture made already is not read again, nor one another preload holds
@@ -430,6 +432,7 @@ func load_texture(
         return _load_generated_texture(material_name)
     var full_path:String = _get_texture_file(model_path, material_name)
     if not full_path:
+        MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
 
     var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))

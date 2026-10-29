@@ -193,9 +193,11 @@ code belongs to the game's `FINDINGS.md`.
   `Engine:` (EN57 keeps it in the brake include). *(09-27 EN57 without a master controller)*
 * The game data is written for Windows and `cParser`: a quoted text is one token without its
   quotes. Keep a file name's authored spelling and resolve it exactly, then lowercase - never
-  lowercase the token before the first lookup, and never list a directory to match a name letter
-  case aside. *(09-28 timetable screens without their background; 10-02 uppercase 2M62 files
-  reported missing; 10-10 Windows streaming listed directories)*
+  lowercase the token before the first lookup. Any other case is found by listing the directory
+  once a run (`MaszynaFileIndexer`), never per lookup, and never on Windows. A lookup is never
+  given up to save its cost. *(09-28 timetable screens without their background; 10-02 uppercase
+  2M62 files reported missing; 10-10 Windows streaming listed directories; 10-29 Glinojeck's
+  include given up with them)*
 * A vehicle's MMD is read as an include with `(p1)` name, `(p2)` type, `(p3)` skin
   (`DynObj.cpp:5260`); a model named `none` is a missing parameter. *(10-02 SN61 drawn without
   its body)*
