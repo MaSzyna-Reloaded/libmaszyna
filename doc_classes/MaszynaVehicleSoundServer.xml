@@ -63,8 +63,8 @@
 		<constant name="QUANTITY_BRAKE_LOCAL_PRESSURE" value="3" enum="Quantity">
 			Fed as [code]brake_local_pressure[/code].
 		</constant>
-		<constant name="QUANTITY_BRAKE_PIPE_PRESSURE" value="4" enum="Quantity">
-			Fed as [code]brake_pipe_pressure[/code].
+		<constant name="QUANTITY_PIPE_PRESSURE" value="4" enum="Quantity">
+			Fed as [code]pipe_pressure[/code].
 		</constant>
 		<constant name="QUANTITY_BRAKE_UNIT_FORCE" value="5" enum="Quantity">
 			Fed as [code]brake_unit_force[/code].

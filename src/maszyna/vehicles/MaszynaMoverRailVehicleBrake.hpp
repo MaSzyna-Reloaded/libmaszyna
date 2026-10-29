@@ -103,7 +103,6 @@ namespace godot {
             bool get_alarm_chain_pulled() const override;
             double get_air_pressure() const override;
             double get_loco_pressure() const override;
-            double get_pipe_brake_pressure() const override;
             double get_pipe_pressure() const override;
             double get_feed_pipe_pressure() const override;
             double get_tank_volume() const override;

@@ -428,11 +428,6 @@ namespace godot {
         return mover != nullptr ? mover->LocBrakePress : 0.0;
     }
 
-    double MaszynaMoverRailVehicleBrake::get_pipe_brake_pressure() const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? mover->PipeBrakePress : 0.0;
-    }
-
     double MaszynaMoverRailVehicleBrake::get_pipe_pressure() const {
         const TMoverParameters *mover = get_mover();
         return mover != nullptr ? mover->PipePress : 0.0;
@@ -647,7 +642,6 @@ namespace godot {
         p_state["alarm_chain_pulled"] = get_alarm_chain_pulled();
         p_state["brake_air_pressure"] = get_air_pressure();
         p_state["brake_loco_pressure"] = get_loco_pressure();
-        p_state["brake_pipe_pressure"] = get_pipe_brake_pressure();
         p_state["pipe_pressure"] = get_pipe_pressure();
         p_state["feed_pipe_pressure"] = get_feed_pipe_pressure();
         p_state["brake_tank_volume"] = get_tank_volume();

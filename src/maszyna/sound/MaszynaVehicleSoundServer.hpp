@@ -68,7 +68,7 @@ namespace godot {
                 QUANTITY_VELOCITY,
                 QUANTITY_BRAKE_CYLINDER_PRESSURE,
                 QUANTITY_BRAKE_LOCAL_PRESSURE,
-                QUANTITY_BRAKE_PIPE_PRESSURE,
+                QUANTITY_PIPE_PRESSURE,
                 QUANTITY_BRAKE_UNIT_FORCE,
                 QUANTITY_BRAKE_FORCE_RATIO,
                 QUANTITY_BRAKE_EMERGENCY_VALVE_FLOW,
