@@ -4784,3 +4784,51 @@ lighting or the trainset.
   and the 100 stations of a timetable (`MaxTTableSize`) with `TMTableLine`'s defaults.
 * **Rule:** a condition ported from the original tests the field the original tests, never a
   stand-in that looks like it.
+
+
+## 2026-10-30 induction motors without a local brake
+
+* **Symptom:**
+  - #310, l053_poranek.scn: the AI's Vectron EU46-511 held its local brake at 1.0 from 374 s, ran
+    on through a signal at stop and into the player's EN57 at Sandomierz.
+* **What proved it:**
+  - For `EngineType=ElectricInductionMotor` the local valve takes only `LocalBrakePosAEIM`
+    (Mover.cpp:4027-4028); nothing in libmaszyna wrote it. The original writes it in the driven
+    vehicle's ED/EP blending (DynObj.cpp:3536-3553), which was not ported: the controller's
+    setpoint before it was (`MaszynaMoverDriveUnit::process()`), the split of the brake was not.
+  - The braking tests (`MaszynaBrakingTest`): the full local brake of a Dragon, a 36WEa or an
+    ED78 stopped it from 41-46 km/h in 345-368 m, no more than rolling on.
+  - A first port of the blending inside the induction engine component made them brake (57-81 m),
+    but read and wrote the brake's, the doors' and other vehicles' Mover fields from one
+    component and kept the original's crew quirk; it was dropped (#349).
+* **Fix:** none yet - the TODO in `MaszynaMoverDriveUnit::process()`: a step of its own, the
+  shares carried along the control line (MaSzyna-Reloaded/libreloaded#17, #350), no crew quirk;
+  the local brake tests of the induction motors are pending.
+* **Rule:** an induction motor vehicle's local brake lever is a request to the trainset's
+  blending, never a pressure of its own; the blending belongs to no component.
+
+
+## 2026-10-30 braking tests that braked nothing
+
+* **Symptom:**
+  - The braking tests of #310 (`MaszynaBrakingTest`): 36WEa, ED78, EN57AL and EN57AKM stopped from
+    41 km/h in 310-350 m by the train brake; ET22, SU45 and others 1.2-2 times what their data
+    gives. The same on main and with the ED/EP blending.
+  - SM40/SM41, EL101 and EU04 ran a few metres past what their data gives.
+* **What proved it:**
+  - A probe of the 36WEa's state each second at full service: the pipe fell from 4.93 to 3.38 bar,
+    the cylinders stayed at 0.00 bar in every car, `brake_control_reservoir_pressure` was 2.01 bar.
+    The start-up had released the brake and moved off while the control reservoirs were filling.
+    Waiting for them took it to 106 m, the ET22 from 236 m to 116 m.
+  - An EN57's control reservoirs settled at 4.68 and 4.64 bar with the pipe at 5.01 after 300 s.
+  - A probe of the SM40 each half second: `Fb` matched `get_force_at()` at the cylinders' pressure
+    within 0.5% down to 15 km/h, then fell from 188 kN to 67 kN at 13 km/h where the data gave
+    224 kN - over the adhesion of the rolling wheel (track friction 0.15 times (28 + v) / (14 + v),
+    `Mover.cpp:4761`, about 190 kN for 72 t). The slip code, the adhesion and the track's friction
+    (0.15 times the scenery's 1.0 and the weather's 1.0) are the original's.
+* **Fix:** the start-up test waits for every car's control reservoir to stop filling
+  (`_control_reservoirs_charged()`); the braking test caps each car's force at its adhesion, the
+  sliding one when the brake is stronger than the rolling one.
+* **Rule:** a test that brakes waits for the control reservoirs to stop filling; a stopping
+  distance is judged against the brake force capped by the wheels' adhesion.
+

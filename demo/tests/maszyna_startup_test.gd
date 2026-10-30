@@ -81,10 +81,17 @@ const RELEASED_PIPE_PRESSURE:float = 4.5
 const RELEASED_PIPE_SHARE:float = 0.9
 ## A released brake: its cylinders empty [bar]
 const RELEASED_CYLINDER_PRESSURE:float = 0.1
+## A control reservoir filling slower than this is charged [bar/s] - some settle below their pipe
+## (an EN57's at 4.68 bar with the pipe at 5.0)
+const CHARGED_RESERVOIR_RATE:float = 0.005
 ## Moved off [km/h]
 const MOVED_OFF_SPEED:float = 1.0
 ## Master controller steps the driver gives at most before it pulls
 const MAX_CONTROLLER_STEPS:int = 10
+## Ticks stepped between two frames: the vehicles, the cab's logic and the driver's reflex move on
+## the simulation's tick (simulation_advanced), a key reaches the cab when it is flushed - a frame
+## carries nothing a tick waits for, and one a tick made the run ten times longer
+const TICKS_PER_FRAME:int = 30
 
 var _previous_game_dir:String = ""
 var _scenery:MaszynaSceneryNode
@@ -95,15 +102,20 @@ var occupied:RID
 var powered:RID
 ## The car whose pantographs it raises (RailVehicleServer.vehicle_find_pantograph_carrier)
 var carrier:RID
+## Ticks stepped since the last frame (step())
+var _ticks_since_frame:int = 0
+## Each car's control reservoir on the last tick it was looked at (_control_reservoirs_charged())
+var _control_reservoirs:Dictionary[RID, float] = {}
 
 
 func after_each() -> void:
+    _control_reservoirs.clear()
     PlayerServer.player_stop()
     if _player:
         _player.free()
         _player = null
     if _scenery:
-        get_tree().process_frame.disconnect(_acknowledge_security)
+        SimulationServer.simulation_advanced.disconnect(_acknowledge_security)
         _scenery.free()
         _scenery = null
         MaszynaGameDirectory.save_game_dir(_previous_game_dir)
@@ -302,6 +314,11 @@ func run_startup(scenery:String, vehicle:String, kind:Kind, pantographs:Pantogra
                 return brake.get_pipe_pressure() > released_pipe and brake.get_air_pressure() < RELEASED_CYLINDER_PRESSURE,
                 AIR_TIMEOUT):
             return
+        # a distributor brakes by the pipe falling below its control reservoir: one still filling
+        # brakes little or not at all - the driver waits for them (CHARGED_CONTROL_RESERVOIR,
+        # maszyna_driver_braking.gd; an EStED's held 2.0 bar with the pipe at 4.9 after the start)
+        if not await _until("control reservoirs charged", _control_reservoirs_charged, AIR_TIMEOUT):
+            return
     # a gearbox takes its first gear before the throttle (Num /, the manual) - an SN61's gears are
     # its master controller's positions
     if kind == Kind.DIESEL_MECHANICAL and not _sn61():
@@ -343,7 +360,7 @@ func enter_vehicle(scenery:String, vehicle:String) -> bool:
     _scenery = MaszynaSceneryNode.new()
     _scenery.filename = scenery
     add_child(_scenery)
-    get_tree().process_frame.connect(_acknowledge_security)
+    SimulationServer.simulation_advanced.connect(_acknowledge_security)
     # the player starts in its vehicle once the scenery has loaded, as the game does -
     # its trainsets coupled by then (RailVehicleServer.trainset_place()) - a cab activated in a car not
     # coupled yet never reaches the unit's motor car (SendCtrlToNext, Mover.cpp:2663)
@@ -363,6 +380,22 @@ func enter_vehicle(scenery:String, vehicle:String) -> bool:
     return true
 
 
+## Every vehicle of the trainset whose brake is not cut off has its control reservoir charged: it
+## fills no more since the last tick
+func _control_reservoirs_charged() -> bool:
+    var charged:bool = true
+    for car:RID in RailVehicleServer.vehicle_get_coupled(
+            occupied, RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER):
+        var car_brake:RailVehicleBrake = _brake(car)
+        if not car_brake or car_brake.is_cut_off():
+            continue
+        var pressure:float = car_brake.get_control_reservoir_pressure()
+        if not car in _control_reservoirs or pressure - _control_reservoirs[car] > CHARGED_RESERVOIR_RATE * TICK:
+            charged = false
+        _control_reservoirs[car] = pressure
+    return charged
+
+
 ## The player goes to the next or the previous cab of the vehicle (the machine room lies between)
 func _change_cab(action:StringName) -> void:
     var left:RID = RailVehicleServer.vehicle_get_driver_cabin(occupied)
@@ -378,6 +411,16 @@ func _direction_forward() -> bool:
         await key_tap(&"direction_increase")
     return await _until("direction forward", func() -> bool:
             return VehicleServer.vehicle_get_controller(occupied).get_direction() == VehicleController.DIRECTION_FORWARD)
+
+
+## `count` ticks of the simulation, one after the other, a frame after every TICKS_PER_FRAME of them
+func step(count:int) -> void:
+    for _tick:int in count:
+        SimulationServer.simulation_advance(TICK)
+        _ticks_since_frame += 1
+        if _ticks_since_frame >= TICKS_PER_FRAME:
+            _ticks_since_frame = 0
+            await get_tree().process_frame
 
 
 ## Waits (simulated time) for `done`; a step that does not come about fails the test and says what
@@ -413,7 +456,7 @@ func _cars_text() -> String:
                 "oil_pump_enabled", "oil_pump_active", "oil_pump_disabled", "fuel_pump_enabled", "fuel_pump_active",
                 "fuel_pump_disabled", "engine_rpm_count",
                 "compressor_pressure", "compressor_enabled", "compressor_allowed", "feed_pipe_pressure", "main_pipe_locked", "brake_is_cut_off", "pipe_pressure",
-                "brake_air_pressure", "brake_controller_position",
+                "brake_air_pressure", "brake_control_reservoir_pressure", "brake_controller_position",
                 "brake_local_position_normalized", "spring_brake_active", "controller_main_position",
                 "controller_main_actual_position", "engine_current", "tractive_force", "speed",
                 "blinking", "vigilance_blinking", "cabsignal_blinking", "braking",
@@ -437,10 +480,10 @@ func _key_taken(action:StringName, taken:Callable) -> bool:
     return false
 
 
-## The driver's reflex, every frame: the security system blinking is acknowledged at once - left
+## The driver's reflex, every tick: the security system blinking is acknowledged at once - left
 ## alone it brakes in emergency and empties the brake pipe (the battery arms it, Mover.cpp:131);
 ## the one of the vehicle the player is in, as the key reaches only that one
-func _acknowledge_security() -> void:
+func _acknowledge_security(_seconds:float) -> void:
     var vehicle:RID = PlayerServer.player_get_vehicle()
     var security:RailVehicleSecuritySystem = _security(vehicle) if vehicle.is_valid() else null
     if not security:

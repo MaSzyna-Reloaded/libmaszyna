@@ -256,7 +256,7 @@ namespace godot {
         // Original engine: DynObj.cpp:3246-3283 - the driven vehicle turns the position of its
         // integrated controller into the power setpoint every step and passes it along the
         // trainset; without it eimic_real stays 0 and an induction motor never pulls. The
-        // train-wide ED/PN brake force split that follows it there is not ported (TODO.md).
+        // train-wide ED/PN brake force split that follows it there is not ported (the TODO below).
         const bool diesel = p_mover->EngineType == Maszyna::TEngineType::DieselEngine ||
                             p_mover->EngineType == Maszyna::TEngineType::DieselElectric;
         const bool induction = p_mover->EngineType == Maszyna::TEngineType::ElectricInductionMotor;
@@ -284,6 +284,22 @@ namespace godot {
             p_mover->eimic_real = std::min(p_mover->eimic, p_mover->eimicSpeedCtrl);
             // the trainset gets traction only; braking is the ED/PN split's business
             p_mover->SendCtrlToNext("EIMIC", std::max(0.0, p_mover->eimic_real), p_mover->CabActive);
+            // TODO: the ED/EP brake blending of an induction motor trainset (DynObj.cpp:3255-3604, #310).
+            // An induction motor's local valve takes only LocalBrakePosAEIM (Mover.cpp:4027-4028),
+            // which nothing writes yet: its local brake brakes nothing. The blending turns the
+            // driven vehicle's braking request into the force the trainset under its control line
+            // is asked for, shares the ED brake out by what each vehicle's inverters can give
+            // (AnPos) and the EP brake by its axles within eped times its mass (LocalBrakePosAEIM),
+            // with the holding brake at a stand and the ED brake's delay. It is a result of many
+            // components of many vehicles, so it belongs to no component: a step of its own,
+            // before the movement, reading the components' getters, each vehicle taking its share
+            // through its own brake and engine - carried along the control line between the
+            // vehicles (MaSzyna-Reloaded/libreloaded#17, #350), never by one vehicle writing
+            // another's Mover. Not the original's crew quirk: it drops the Traxx local brake's own
+            // pneumatic share (eim_localbrake) under an AI driver (DynObj.cpp:3287), so one lever
+            // gives other pressures under an AI and a player - here the vehicle brakes alike
+            // whoever drives, and the AI works a Traxx lever (LocalBrakeTraxx: held to apply,
+            // Mover.cpp:6734-6750) as a player does.
         }
     }
 } // namespace godot

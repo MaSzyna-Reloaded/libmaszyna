@@ -19,6 +19,13 @@ const BRAKE_LEVEL_DRIVE_FIELDS:Dictionary = {
     "command": "brake_level_set_position", "command_param": "drive",
     "controller_mode": CabinButton.ControllerMode.On, "monostable": true, "action": "brake_level_drive",
 }
+## Puts the brake handle at emergency - no MMD label, every cab has it, as the original's
+## trainbrakeemergency (Num 0, Train.cpp:2061-2075 set_train_brake(GetPos(bh_EB)))
+const BRAKE_LEVEL_EMERGENCY:StringName = &"brake_level_emergency"
+const BRAKE_LEVEL_EMERGENCY_FIELDS:Dictionary = {
+    "command": "brake_level_set_position", "command_param": "emergency",
+    "controller_mode": CabinButton.ControllerMode.On, "monostable": true, "action": "brake_level_emergency",
+}
 
 ## control_id -> the widget class of its catalog entry
 var _classes:Dictionary[StringName, Variant] = {}
@@ -67,6 +74,7 @@ static func from_definition(definition:MmdCabinDefinition) -> MaszynaCabinContro
                 MmdCabinInstancer.BUTTON_TYPES.get(descriptor.button_type, CabinButton.ButtonType.TOGGLE),
                 entry.get("target", CabinState.Target.OCCUPIED))
     controls.add_control(BRAKE_LEVEL_DRIVE, CabinButton, BRAKE_LEVEL_DRIVE_FIELDS)
+    controls.add_control(BRAKE_LEVEL_EMERGENCY, CabinButton, BRAKE_LEVEL_EMERGENCY_FIELDS)
     return controls
 
 
@@ -99,7 +107,7 @@ func wiring(control_id:StringName) -> Dictionary:
 
 
 ## The fields of the control as this cab has it (MmdSemanticCatalog.resolve_fields()); one with no
-## MMD label (brake_level_drive) keeps its own
+## MMD label (brake_level_drive, brake_level_emergency) keeps its own
 func resolved_fields(control_id:StringName, vehicle_config:Dictionary) -> Dictionary:
     if not MmdSemanticCatalog.has_label(control_id):
         return _fields.get(control_id, {})
