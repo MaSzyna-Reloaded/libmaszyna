@@ -4784,3 +4784,29 @@ lighting or the trainset.
   and the 100 stations of a timetable (`MaxTTableSize`) with `TMTableLine`'s defaults.
 * **Rule:** a condition ported from the original tests the field the original tests, never a
   stand-in that looks like it.
+
+
+## 2026-10-30 The ballast that shook
+
+* **Symptom:**
+  - #351: rails, sleepers and ballast shimmered while the camera moved and stopped the moment it
+    stood still; vehicles, catenary, platforms and the terrain stayed put. Turning off TAA,
+    volumetric fog, SDFGI, SSR and SSIL changed nothing.
+* **What proved it:**
+  - A 60-frame capture at Wolica (Wrzosy, `wrzosy_mpe62104.scn`), its shift against the last
+    frame measured by phase correlation per region: during the camera's last drift
+    (0.3 -> 0.01 px a frame) the ballast jumped by +-1.6-2.5 px back and forth while the catenary
+    and the coach beside it moved smoothly with the camera.
+  - `MaszynaTrackRenderingBackend` built every track mesh in the world's coordinates and drew it
+    with an identity instance transform; Wrzosy's tracks lie 38 km from the origin on the
+    median, 71 km at most. Godot's double build (`scene_forward_clustered.glsl`,
+    `USE_DOUBLE_PRECISION`) adds only the instance's origin to the camera's in emulated double
+    precision; the vertices stay floats, which resolve 4-8 mm there and round differently for
+    every camera position. 3 m from the camera a pixel is about 4 mm.
+  - The scenery's triangles did not shake: `MaszynaTrianglesSink` keeps them relative to their
+    cell's origin.
+* **Fix:** a track's meshes are kept relative to the start of its curve (`Track::origin`), their
+  instances placed there; a blade turns about its pivot from that origin; a road cell's mesh is
+  relative to the cell's centre.
+* **Rule:** a mesh drawn far from the world's origin keeps its vertices relative to its instance's
+  origin.

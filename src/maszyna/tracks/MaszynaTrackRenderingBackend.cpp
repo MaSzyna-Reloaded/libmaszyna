@@ -341,14 +341,14 @@ namespace godot {
             rendering->instance_set_transform(
                     track->instances[SLOT_PRIMARY_BLADE],
                     _build_blade_transform(
-                            track->primary_blade.pivot, track->primary_blade.angle_factor,
+                            track->origin, track->primary_blade.pivot, track->primary_blade.angle_factor,
                             layout.primary_blade_offset));
         }
         if (track->instances[SLOT_SECONDARY_BLADE].is_valid()) {
             rendering->instance_set_transform(
                     track->instances[SLOT_SECONDARY_BLADE],
                     _build_blade_transform(
-                            track->secondary_blade.pivot, track->secondary_blade.angle_factor,
+                            track->origin, track->secondary_blade.pivot, track->secondary_blade.angle_factor,
                             layout.secondary_blade_offset));
         }
     }
@@ -387,6 +387,7 @@ namespace godot {
         const Ref<TrackCurve> &curve1_data = geometry.curve1;
         const Ref<TrackCurve> &curve2_data = geometry.curve2;
         const double track_width = geometry.width;
+        track->origin = curve1_data->get_p1();
         const Ref<Curve3D> curve1 = _build_curve(curve1_data);
 
         if (curve1->get_baked_length() == 0.0) {
@@ -439,10 +440,10 @@ namespace godot {
                     secondary_blade, secondary_sampled_points, regular_profile, blade_profile, track_width,
                     curve2_data->get_roll1(), curve2_data->get_roll2(), track->tex_length, rail_height,
                     layout.secondary_blade_mirrored, blade_sample_count);
-            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(primary);
-            track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary);
+            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(primary, track->origin);
+            track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary, track->origin);
 
-            track->meshes[SLOT_PRIMARY_BLADE] = _build_array_mesh(primary_blade);
+            track->meshes[SLOT_PRIMARY_BLADE] = _build_array_mesh(primary_blade, track->origin);
             track->primary_blade.move_direction = -_build_planar_parallel(primary_sampled_points, 0);
             track->primary_blade.pivot = _get_switch_blade_pivot(
                     primary_sampled_points, regular_profile, track_width, curve1_data->get_roll1(),
@@ -453,7 +454,7 @@ namespace godot {
                     track->primary_blade.pivot);
             track->primary_blade.offset = layout.primary_blade_offset;
 
-            track->meshes[SLOT_SECONDARY_BLADE] = _build_array_mesh(secondary_blade);
+            track->meshes[SLOT_SECONDARY_BLADE] = _build_array_mesh(secondary_blade, track->origin);
             track->secondary_blade.move_direction = -_build_planar_parallel(secondary_sampled_points, 0);
             track->secondary_blade.pivot = _get_switch_blade_pivot(
                     secondary_sampled_points, regular_profile, track_width, curve2_data->get_roll1(),
@@ -486,7 +487,7 @@ namespace godot {
                     rails, curve1_points, right_start, right_end, track->tex_length, rail_height, 0, CURVE_END);
             _append_loft_geometry_range_points(
                     rails, curve1_points, left_start, left_end, track->tex_length, rail_height, 0, CURVE_END);
-            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(rails);
+            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(rails, track->origin);
 
             if (curve2_data.is_valid()) {
                 const Ref<Curve3D> secondary_curve = _build_curve(curve2_data);
@@ -506,7 +507,7 @@ namespace godot {
                 _append_loft_geometry_range_points(
                         secondary, secondary_points, second_left_start, second_left_end, track->tex_length, rail_height,
                         0, CURVE_END);
-                track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary);
+                track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary, track->origin);
             }
 
             if (trackbed_material.is_valid()) {
@@ -557,7 +558,7 @@ namespace godot {
                             trackbed, second_curve->get_baked_points(), second_start_section, second_end_section,
                             track->resolved_trackbed_texture_length, rail_height, 0, CURVE_END);
                 }
-                track->meshes[SLOT_TRACKBED] = _build_array_mesh(trackbed);
+                track->meshes[SLOT_TRACKBED] = _build_array_mesh(trackbed, track->origin);
             }
         }
 
@@ -1064,13 +1065,14 @@ namespace godot {
         return p_move_direction.dot(per_radian_motion);
     }
 
+    /// The blade's mesh, relative to p_origin, turned about its pivot in the world
     Transform3D MaszynaTrackRenderingBackend::_build_blade_transform(
-            const Vector3 &p_pivot, const double p_angle_factor, const double p_offset) {
+            const Vector3 &p_origin, const Vector3 &p_pivot, const double p_angle_factor, const double p_offset) {
         if (Math::is_zero_approx(p_angle_factor)) {
-            return {};
+            return {Basis(), p_origin};
         }
         const double angle = p_offset / p_angle_factor;
-        return Transform3D(Basis(UP, static_cast<real_t>(angle)), p_pivot) * Transform3D(Basis(), -p_pivot);
+        return Transform3D(Basis(UP, static_cast<real_t>(angle)), p_pivot) * Transform3D(Basis(), p_origin - p_pivot);
     }
 
     // Fixed rail parts are generated once; moving blades are separate mesh instances.
@@ -1300,10 +1302,20 @@ namespace godot {
         return {Basis(right, up, tangent).orthonormalized(), origin};
     }
 
-    Ref<ArrayMesh> MaszynaTrackRenderingBackend::_build_array_mesh(const Geometry &p_geometry) {
+    PackedVector3Array
+    MaszynaTrackRenderingBackend::_vertices_relative_to(const PackedVector3Array &p_vertices, const Vector3 &p_origin) {
+        PackedVector3Array vertices = p_vertices;
+        for (Vector3 &vertex: vertices) {
+            vertex -= p_origin;
+        }
+        return vertices;
+    }
+
+    Ref<ArrayMesh>
+    MaszynaTrackRenderingBackend::_build_array_mesh(const Geometry &p_geometry, const Vector3 &p_origin) {
         Array arrays;
         arrays.resize(Mesh::ARRAY_MAX);
-        arrays[Mesh::ARRAY_VERTEX] = p_geometry.vertices;
+        arrays[Mesh::ARRAY_VERTEX] = _vertices_relative_to(p_geometry.vertices, p_origin);
         arrays[Mesh::ARRAY_NORMAL] = p_geometry.normals;
         arrays[Mesh::ARRAY_TEX_UV] = p_geometry.uvs;
         arrays[Mesh::ARRAY_INDEX] = p_geometry.indices;
@@ -1733,7 +1745,7 @@ namespace godot {
             _append_strip_chunk(trackbed, secondary_chunk);
         }
 
-        return _build_array_mesh(trackbed);
+        return _build_array_mesh(trackbed, p_track.origin);
     }
 
     // Port of vertex lowering index selection used during switch trackbed assembly from
@@ -1807,13 +1819,13 @@ namespace godot {
         _append_road_geometry(p_track, p_geometry, p_curve, surface, sides);
         RenderingServer *rendering = RenderingServer::get_singleton();
         if (p_track.material1.is_valid() && !surface.vertices.is_empty()) {
-            p_track.meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(surface);
+            p_track.meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(surface, p_track.origin);
             _slot_draw(p_track, SLOT_PRIMARY_RAIL);
             rendering->mesh_surface_set_material(
                     p_track.meshes[SLOT_PRIMARY_RAIL]->get_rid(), 0, p_track.material1->get_rid());
         }
         if (p_track.material2.is_valid() && !sides.vertices.is_empty()) {
-            p_track.meshes[SLOT_TRACKBED] = _build_array_mesh(sides);
+            p_track.meshes[SLOT_TRACKBED] = _build_array_mesh(sides, p_track.origin);
             _slot_draw(p_track, SLOT_TRACKBED);
             rendering->mesh_surface_set_material(
                     p_track.meshes[SLOT_TRACKBED]->get_rid(), 0, p_track.material2->get_rid());
@@ -1918,6 +1930,10 @@ namespace godot {
             }
         }
         rendering->instance_set_base(instance, p_track.meshes[p_slot]->get_rid());
+        // a blade is placed as the switch sets it (track_set_switch_blade_offsets())
+        if (p_slot != SLOT_PRIMARY_BLADE && p_slot != SLOT_SECONDARY_BLADE) {
+            rendering->instance_set_transform(instance, Transform3D(Basis(), p_track.origin));
+        }
     }
 
     void MaszynaTrackRenderingBackend::_reset_track_instances(Track &p_track) {
@@ -1964,15 +1980,16 @@ namespace godot {
             TrackRenderingServer *track_rendering = TrackRenderingServer::get_instance();
             ERR_FAIL_NULL(streaming);
             ERR_FAIL_NULL(track_rendering);
+            const Vector2 centre = (Vector2(coords) + Vector2(0.5, 0.5)) * static_cast<real_t>(ROAD_CELL_SIZE);
             RoadCell cell;
             cell.scenario = p_track.scenario;
             cell.coords = coords;
+            cell.origin = Vector3(centre.x, start.y, centre.y);
             cell_rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
             road_cells.insert(cell_rid, cell);
             road_cells_by_key.insert(key, cell_rid);
-            const Vector2 centre = (Vector2(coords) + Vector2(0.5, 0.5)) * static_cast<real_t>(ROAD_CELL_SIZE);
             road_cells[cell_rid].stream_rid = streaming->stream_register(
-                    road_stream_owner, cell_rid, Vector3(centre.x, start.y, centre.y),
+                    road_stream_owner, cell_rid, cell.origin,
                     static_cast<float>(track_rendering->get_tracks_distance()));
         }
         RoadCell &cell = road_cells[cell_rid];
@@ -2096,7 +2113,7 @@ namespace godot {
             }
             Array arrays;
             arrays.resize(Mesh::ARRAY_MAX);
-            arrays[Mesh::ARRAY_VERTEX] = geometry.vertices;
+            arrays[Mesh::ARRAY_VERTEX] = _vertices_relative_to(geometry.vertices, p_cell.origin);
             arrays[Mesh::ARRAY_NORMAL] = geometry.normals;
             arrays[Mesh::ARRAY_TEX_UV] = geometry.uvs;
             arrays[Mesh::ARRAY_INDEX] = geometry.indices;
@@ -2109,6 +2126,7 @@ namespace godot {
         if (!p_cell.instance.is_valid()) {
             p_cell.instance = rendering->instance_create();
             rendering->instance_set_scenario(p_cell.instance, p_cell.scenario);
+            rendering->instance_set_transform(p_cell.instance, Transform3D(Basis(), p_cell.origin));
             // flat on the ground: a road's shadow is its shoulder's, and those shaded themselves as the
             // trackbed's slopes did (_slot_draw())
             rendering->instance_geometry_set_cast_shadows_setting(

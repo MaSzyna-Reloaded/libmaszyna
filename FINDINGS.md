@@ -339,6 +339,9 @@ code belongs to the game's `FINDINGS.md`.
   announced to nobody. *(10-05 cab change in RailVehicleServer)*
 
 ## Godot / GDExtension
+* A mesh drawn far from the world's origin keeps its vertices relative to its instance's origin:
+  the double build passes only the instance's origin in double precision, and vertices in the
+  world's coordinates shake by millimetres as the camera moves. *(10-30 the ballast that shook)*
 * Godot measures a visibility range to the centre of the instance's box, the original from the
   model's origin for every submodel: an E3D submodel's box is centred on the model's origin
   (`MaszynaE3DInstanceBackend::_visibility_aabb()`), or two LODs with meshes of their own centres
