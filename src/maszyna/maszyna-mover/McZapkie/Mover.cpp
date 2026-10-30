@@ -8938,6 +8938,7 @@ namespace Maszyna {
                                  : (Couplers[end::rear].AllowedFlag & coupling::mainhose) != 0  ? 5.1
                                                                                                 : 0.0);
                 PipePress = LowPipePress;
+                PipeBrakePress = MaxBrakePress[3] * 0.5;
                 BrakePress = MaxBrakePress[3] * 0.5;
                 LocalBrakePosA = 0.0;
                 BrakeCtrlPos = static_cast<int>(Handle->GetPos(bh_NP));
