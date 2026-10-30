@@ -55,7 +55,7 @@ namespace godot {
                 "velocity",
                 "brake_cylinder_pressure",
                 "brake_local_pressure",
-                "brake_pipe_pressure",
+                "pipe_pressure",
                 "brake_unit_force",
                 "brake_force_ratio",
                 "brake_emergency_valve_flow",
@@ -180,7 +180,7 @@ namespace godot {
         BIND_ENUM_CONSTANT(QUANTITY_VELOCITY);
         BIND_ENUM_CONSTANT(QUANTITY_BRAKE_CYLINDER_PRESSURE);
         BIND_ENUM_CONSTANT(QUANTITY_BRAKE_LOCAL_PRESSURE);
-        BIND_ENUM_CONSTANT(QUANTITY_BRAKE_PIPE_PRESSURE);
+        BIND_ENUM_CONSTANT(QUANTITY_PIPE_PRESSURE);
         BIND_ENUM_CONSTANT(QUANTITY_BRAKE_UNIT_FORCE);
         BIND_ENUM_CONSTANT(QUANTITY_BRAKE_FORCE_RATIO);
         BIND_ENUM_CONSTANT(QUANTITY_BRAKE_EMERGENCY_VALVE_FLOW);
@@ -840,7 +840,7 @@ namespace godot {
                 return brake != nullptr ? brake->get_air_pressure() : 0.0;
             case QUANTITY_BRAKE_LOCAL_PRESSURE:
                 return brake != nullptr ? brake->get_loco_pressure() : 0.0;
-            case QUANTITY_BRAKE_PIPE_PRESSURE:
+            case QUANTITY_PIPE_PRESSURE:
                 return brake != nullptr ? brake->get_pipe_pressure() : 0.0;
             case QUANTITY_BRAKE_UNIT_FORCE:
                 return brake != nullptr ? brake->get_unit_force() : 0.0;

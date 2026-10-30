@@ -1514,7 +1514,6 @@ namespace Maszyna {
             double ScndPipePress = 0.0;    /*cisnienie w przewodzie zasilajacym*/
             double BrakePress = 0.0;       /*!o cisnienie w cylindrach hamulcowych*/
             double LocBrakePress = 0.0;    /*!o cisnienie w cylindrach hamulcowych z pomocniczego*/
-            double PipeBrakePress = 0.0;   /*!o cisnienie w cylindrach hamulcowych z przewodu*/
             double PipePress = 0.0;        /*!o cisnienie w przewodzie glownym*/
             double EqvtPipePress = 0.0;    /*!o cisnienie w przewodzie glownym skladu*/
             double Volume = 0.0;           /*objetosc spr. powietrza w zbiorniku hamulca*/

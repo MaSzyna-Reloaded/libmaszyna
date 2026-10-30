@@ -168,7 +168,7 @@ func brake_sound(definition:MmdSoundSourceDefinition, key:StringName, events:Arr
         # DynObj.cpp:4620-4637 - the emergency valve, started and stopped with a hysteresis
         "emergencybrake":
             var flow:StringName = _quantity(MaszynaVehicleSoundServer.QUANTITY_BRAKE_EMERGENCY_VALVE_FLOW)
-            var pipe:StringName = _quantity(MaszynaVehicleSoundServer.QUANTITY_BRAKE_PIPE_PRESSURE)
+            var pipe:StringName = _quantity(MaszynaVehicleSoundServer.QUANTITY_PIPE_PRESSURE)
             var eased:StringName = _derive(&"emergency_brake_flow",
                     _pick("%s > 0.025" % flow,
                         _pick("previous == 0.0", flow, "lerp(previous, %s, %s)" % [flow, _easing(0.1)]),
