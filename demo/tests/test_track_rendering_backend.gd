@@ -1,13 +1,15 @@
 extends MaszynaGutTest
 
-## TrackRenderingServer draws a track by the backend its data names: a core TrackData by the default
-## one (TrackRenderingServer.BACKEND_SETTING), a .scn's MaszynaTrackData by MaSzyna's. The core's own
-## backend draws a plain track
+## TrackRenderingServer draws a track by the backend of the highest priority, the one its data names
+## on a tie (a .scn's MaszynaTrackData names MaSzyna's), or by the one the project names
+## (TrackRenderingServer.BACKEND_SETTING). The core's own backend draws a plain track
 
 const BACKEND_SETTING: String = "reloaded/tracks/backend"
 ## The rail profile MaSzyna's backend draws with (models/tory/railprofile_default.txt) comes from the
 ## fixtures, not the game directory
 const FIXTURES_GAME_DIR: String = "res://tests/fixtures"
+## BACKEND_SETTING's default (TrackRenderingServer.AUTO_BACKEND)
+const AUTO_BACKEND: StringName = &"auto"
 
 var _track_rid: RID
 var _render_rid: RID
@@ -18,9 +20,9 @@ var _previous_game_dir: String = ""
 func before_each() -> void:
     _previous_game_dir = MaszynaGameDirectory.get_game_dir()
     MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
-    # a track whose data names no backend is drawn by the core's
+    # the backend of the highest priority draws a track, the one its data names on a tie
     _previous_backend = ProjectSettings.get_setting(BACKEND_SETTING)
-    ProjectSettings.set_setting(BACKEND_SETTING, &"standard")
+    ProjectSettings.set_setting(BACKEND_SETTING, AUTO_BACKEND)
     _track_rid = TrackServer.track_create()
     var curve: TrackCurve = TrackCurve.new()
     curve.p1 = Vector3.ZERO
@@ -38,17 +40,43 @@ func after_each() -> void:
     MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
-func test_a_core_track_is_drawn_by_the_default_backend_with_a_bed_and_two_rails() -> void:
+func test_a_core_track_is_drawn_by_the_backend_the_project_names_with_a_bed_and_two_rails() -> void:
+    ProjectSettings.set_setting(BACKEND_SETTING, &"standard")
     TrackRenderingServer.track_set_description(_render_rid, TrackData.new())
     TrackRenderingServer.track_rebuild(_render_rid)
 
     var standard: StandardTrackRenderingBackend = instance_from_id(
             TrackRenderingServer.backend_get(&"standard")) as StandardTrackRenderingBackend
     var mesh: ArrayMesh = standard.track_get_mesh(_render_rid)
-    assert_not_null(mesh, "the default backend draws it")
+    assert_not_null(mesh, "the backend the project names draws it")
     assert_eq(mesh.get_surface_count(), 2, "the two rails and the bed; no formation where the track gives none")
     # the bed reaches 2 cm past either end, under the next track's (BED_JOINT_OVERLAP)
     assert_almost_eq(mesh.get_aabb().size.x, 20.0 + 2.0 * 0.02, 0.001, "along the whole curve")
+
+
+## The core's backend is unfinished (its priority under the default): MaSzyna's draws a core track
+func test_a_core_track_is_drawn_by_maszyna_backend_of_a_higher_priority() -> void:
+    TrackRenderingServer.track_set_description(_render_rid, TrackData.new())
+    TrackRenderingServer.track_rebuild(_render_rid)
+
+    var maszyna: MaszynaTrackRenderingBackend = instance_from_id(
+            TrackRenderingServer.backend_get(&"maszyna")) as MaszynaTrackRenderingBackend
+    var standard: StandardTrackRenderingBackend = instance_from_id(
+            TrackRenderingServer.backend_get(&"standard")) as StandardTrackRenderingBackend
+    assert_gt(maszyna.get_priority(), standard.get_priority())
+    assert_not_null(maszyna.track_get_meshes(_render_rid).get(MaszynaTrackRenderingBackend.SLOT_PRIMARY_RAIL),
+            "the backend of the higher priority draws it")
+
+
+## A backend the project names draws every track, a .scn's as well
+func test_the_backend_the_project_names_draws_a_scn_track() -> void:
+    ProjectSettings.set_setting(BACKEND_SETTING, &"standard")
+    TrackRenderingServer.track_set_description(_render_rid, MaszynaTrackData.new())
+    TrackRenderingServer.track_rebuild(_render_rid)
+
+    var standard: StandardTrackRenderingBackend = instance_from_id(
+            TrackRenderingServer.backend_get(&"standard")) as StandardTrackRenderingBackend
+    assert_not_null(standard.track_get_mesh(_render_rid), "the project's backend draws it")
 
 
 func test_a_scn_track_is_drawn_by_maszyna_backend() -> void:
