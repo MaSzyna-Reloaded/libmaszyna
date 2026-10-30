@@ -138,6 +138,10 @@ namespace godot {
                     /// no rails
                     RID instances[SLOT_MAX];
                     Ref<ArrayMesh> meshes[SLOT_MAX];
+                    /// Where the meshes stand, the start of the track's curve: their vertices are relative to
+                    /// it, as floats keep them, and their instances are placed there in the world's precision
+                    /// - vertices in the world's coordinates shook as the camera moved (#351)
+                    Vector3 origin;
                     Blade primary_blade;
                     Blade secondary_blade;
                     bool switch_is_right = false;
@@ -170,6 +174,8 @@ namespace godot {
             struct RoadCell {
                     RID scenario;
                     Vector2i coords;
+                    /// The cell's centre, where its mesh stands and is streamed from (Track::origin)
+                    Vector3 origin;
                     /// Track render RIDs of the roads in the cell
                     Vector<RID> tracks;
                     RID stream_rid;
@@ -242,7 +248,8 @@ namespace godot {
                     const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_blade_profile,
                     double p_width, double p_roll_start, bool p_blade_mirrored, double p_rail_height,
                     const Vector3 &p_move_direction, const Vector3 &p_pivot);
-            static Transform3D _build_blade_transform(const Vector3 &p_pivot, double p_angle_factor, double p_offset);
+            static Transform3D _build_blade_transform(
+                    const Vector3 &p_origin, const Vector3 &p_pivot, double p_angle_factor, double p_offset);
             static void _append_switch_fixed_rail_geometry(
                     Geometry &p_geometry, const PackedVector3Array &p_sampled_points,
                     const Vector<ProfilePoint> &p_regular_profile, double p_width, double p_roll_start,
@@ -265,7 +272,9 @@ namespace godot {
             static double
             _get_baked_segment_length(const PackedVector3Array &p_points, int p_start_sample, int p_end_sample);
             static Transform3D _build_curve_frame(const PackedVector3Array &p_points, int p_sample_index);
-            static Ref<ArrayMesh> _build_array_mesh(const Geometry &p_geometry);
+            static PackedVector3Array
+            _vertices_relative_to(const PackedVector3Array &p_vertices, const Vector3 &p_origin);
+            static Ref<ArrayMesh> _build_array_mesh(const Geometry &p_geometry, const Vector3 &p_origin);
             static Section _build_road_section(double p_width, double p_roll, double p_texture_length, double p_ratio);
             static void _build_road_side_sections(
                     const RoadLook &p_road, const Section &p_surface, double p_texture_length, double p_ratio,
