@@ -26,6 +26,11 @@ libmaszyna and libreloaded:
   is a public API, a signal, a base class or a registration there (`ReloadedPlugin`,
   `VehicleServer.implementation_register()`, a `ModelRenderingServer` backend); a breach is
   reported to the operator
+* REQUIRED, ABSOLUTE: **the vendored Mover (`src/maszyna/maszyna-mover/`) is never edited.** A
+  field, method or line of the original stays as the original has it; a request to remove one means
+  the wrapper's side - its getter, state key, command. A change that would touch the Mover is asked
+  about before the first edit, never reported after (#348 removed `PipeBrakePress` from it, #355
+  put it back)
 * libmaszyna knows nothing of the game (`maszyna-reloaded`): no game class, path, setting or
   input action is named in it
 * the Godot project is `demo/`, libmaszyna's test project (`demo/project.godot`, `demo/tests/`,
