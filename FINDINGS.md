@@ -68,6 +68,11 @@ code belongs to the game's `FINDINGS.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* An induction motor vehicle's local valve takes only `LocalBrakePosAEIM` (Mover.cpp:4027-4028),
+  which the driven vehicle's ED/EP blending writes for its trainset (DynObj.cpp:3255-3604); its
+  local brake lever is a request to that blending (`CheckEIMIC()`), never a pressure of its own.
+  The blending is a result of many components of many vehicles - no component's, and carried
+  along the control line. *(10-30 induction motors without a local brake)*
 * A condition ported from the original tests the field the original tests, never a stand-in that
   looks like it: the screens count a powered car by `eimc[eimc_p_Pmax] > 1`, and the engine type
   took the control cars of every EMU too, which have it with `Pmax=0`. *(10-29 EN57AL screen
@@ -561,6 +566,13 @@ code belongs to the game's `FINDINGS.md`.
   double API as the build. *(09-29 style-fix broke the build)*
 
 ## Tests
+* A test that brakes waits for the control reservoirs to stop filling first: a distributor brakes
+  by the pipe falling below it, and one still filling brakes little or nothing (36WEa: 2.0 bar with
+  the pipe at 4.9, 347 m from 41 km/h). Some settle below their pipe (EN57: 4.68 at 5.0) - wait for
+  the filling to stop, not for the pipe's pressure. *(10-30 braking tests that braked nothing)*
+* A stopping distance is judged against the brake force capped by the wheels' adhesion: a brake the
+  data gives more than adhesion locks the wheels, which slide on at the lower one (SM40 below
+  13 km/h) - the original's physics, no defect. *(10-30 braking tests that braked nothing)*
 * The demo's `user://` is `~/.local/share/Libmaszyna-Demo/` (`custom_user_dir_name` in
   `demo/project.godot`); a killed test may leave `game_dir` there pointing at the fixtures - check
   it before a run on the game's data.

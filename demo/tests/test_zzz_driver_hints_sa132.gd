@@ -91,7 +91,7 @@ func test_the_cab_signal_is_hinted_and_acknowledged() -> void:
     await _follow_hints()
     var vehicle:RID = VehicleServer.person_get_vehicle(_driver)
     var security:RailVehicleSecuritySystem = _security(vehicle)
-    get_tree().process_frame.disconnect(_acknowledge_security)
+    SimulationServer.simulation_advanced.disconnect(_acknowledge_security)
     VehicleServer.vehicle_send_command(vehicle, &"security_cabsignal_trigger")
     await step(ticks(DRIVER_UPDATE_SECONDS))
     assert_true(security.get_cabsignal_blinking(), "the cab signal flashes")
@@ -104,7 +104,7 @@ func test_the_cab_signal_is_hinted_and_acknowledged() -> void:
         if action:
             await _hold(action)
         assert_false(security.get_cabsignal_blinking(), "the hinted key acknowledges it: %s" % _story())
-    get_tree().process_frame.connect(_acknowledge_security)
+    SimulationServer.simulation_advanced.connect(_acknowledge_security)
 
 
 ## The player started it by the hints, then walks through the unit to the other car's far cab and

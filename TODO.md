@@ -211,9 +211,18 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   unmapped.
 * Shift+V/Ctrl+V (pantograph compressor) in cab 0 of the pantograph unit without
   `pantcompressor_sw` (`Train.cpp:2872`, `2915`).
-* Rest of TDynamicObject::Update's driver block (DynObj.cpp:3240-3400): the ED/PN brake force
-  split of an induction motor trainset, `EqvtPipePress = GetEPP()`, the unpowered-car copy of
-  MainCtrlPos/SpeedCtrl (DynObj.cpp:3272-3276).
+* Rest of TDynamicObject::Update's driver block (DynObj.cpp:3240-3604): `EqvtPipePress =
+  GetEPP()` (DynObj.cpp:3245) and the ED/EP blending of an induction motor trainset - not ported:
+  an induction motor's local brake brakes nothing (#310). Where and how, the TODO in
+  `MaszynaMoverDriveUnit::process()`: a step of its own, the shares carried along the control line
+  (MaSzyna-Reloaded/libreloaded#17, #350), no crew quirk. Its local brake tests are pending.
+* `SplitEDPneumaticBrake` (original `cb4b6b9a`, 2026-05-03): a lever of its own for the ED brake,
+  the local lever then brakes an induction motor vehicle by the pneumatic brake directly
+  (Mover.cpp:4512-4520 there); the vendored Mover predates it.
+* Braking tests (`MaszynaBrakingTest`, #310) leave out: the hand brake of a vehicle with an
+  individual brake (DL2, EL16 - their train test passes with a note); the time the cylinders fill
+  in is only logged (the Mover's valves are slower than UIC 540, `MASZYNA_ORIGINAL_QUIRKS.md`). Each
+  test starts its vehicle from cold - one start for the three brakes would cut the run by two thirds.
 * Wheels turn at half speed: `MaszynaMoverRailVehicleWheels` adds `rad_to_deg(V*dt/D)`, the
   original `rad_to_deg(2*V*dt/D)` (DynObj.cpp:3780-3784 at df5a8a8);
   `test_rail_vehicle_wheel_angles.gd` checks only the front/rear ratio. Waiting for the operator.
@@ -636,8 +645,6 @@ is in libreloaded's `TODO.md`.
   after the key; green alone twice right after.
 * **EN57-702ra drives without the battery and the main switch** (report): not reproduced on the
   fixture; needs the operator's scenery and a probe of the ra/s/rb start state.
-* `test_train_electric_induction_engine.gd` fails 3 tests: `_powered_up_eim()` never closes the
-  line breaker.
 * Stary Jawor's eszelon at x10 runs ~20 km/h wanting 70 (controller jumps 0-7, `Ft` 0 half the
   time); at x1 it once stood 100 m short of E4 for ~17 s while 20 wagons released. The operator's
   stop with the local brake applied in full is not reproduced.

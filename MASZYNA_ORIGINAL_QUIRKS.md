@@ -355,6 +355,22 @@ interface.
   (`FizTrainPowerSupplyParser`); a vehicle with none - a freight wagon - has no power supply
   component, which stands for the original's zero nominal voltage.
 
+* **An emergency stop fills the cylinders slower than UIC 540 gives.** At emergency the
+  distributors fill them to 95% in 5.1-6.3 s (EU07, EP07, ET22, SU45, SN61; P setting), where
+  UIC 540 gives 3-5 s (`test_zzz_braking_*.gd`, which logs the time). The delay times of the data
+  (`BDelay1-4`) are no help: the Mover keeps them as a table no valve reads (`Mover.cpp:9001-9007`).
+  Wrapper: kept, the Mover's valves as they are.
+* **A Traxx local brake brakes other under an AI than under a player.** The blending takes the
+  Traxx lever's own pneumatic share (`eim_localbrake`, integrated while the lever is held,
+  `Mover.cpp:7468-7486` there) only when a human drives (`DynObj.cpp:3287`) and zeroes it in every
+  vehicle otherwise, so one lever gives other cylinder pressures under the AI and a player.
+  Wrapper: not ported - the vehicle brakes alike whoever drives, the AI works the lever as a
+  player does (the TODO in `MaszynaMoverDriveUnit::process()`).
+* **An MHZ_EN57 handle's local brake is its train brake's EP.** `LocalBrakeRatio()` gives the EP
+  braking of the train brake handle for an MHZ_EN57, not the local lever (`Mover.cpp:998-1010`), and
+  an induction motor's local valve takes only the blending (`Mover.cpp:4027-4028`): the local lever
+  of an EN57AL or EN57AKM brakes nothing. Wrapper: kept.
+
 ## Running gear (`vehicle/DynObj.cpp`, `world/TrkFoll.cpp`)
 
 * **The curve radius is measured over the axles and divided by the pivot spacing.** `ts.R =

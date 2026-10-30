@@ -211,3 +211,33 @@ read it before reading a red step as a bug.
   frame, as a driver's reflex - a step is a frame.
 - A red step is checked against the original (mover-parity-check) before anything is changed:
   either the driving is wrong (then the lesson goes to the driving skill) or the port is.
+
+## Braking test of a vehicle
+
+Every vehicle with a start-up test has a braking test (`demo/tests/maszyna_braking_test.gd`,
+`MaszynaBrakingTest`, #310): started as its start-up test does it - which waits for the control
+reservoirs to stop filling, as a driver does (an EStED's at 2.0 bar with the pipe at 4.9 brakes
+nothing) - driven up to 40 km/h (half its top speed when lower) by the player's keys, a gearbox
+shifting at full revs, the controller to 0, and stopped by one brake:
+
+- `Brake.TRAIN` - the train brake handle at full service (`HANDLE_POSITION_FULL`), a
+  `brake_level_increase` press at a time (held, an FV4a runs on to emergency);
+- `Brake.EMERGENCY` - `brake_level_emergency` (Num 0, the original's trainbrakeemergency);
+- `Brake.LOCAL` - the local brake in full by `local_brake_increase`. A vehicle whose local brake is
+  the hand wheel or none, or an induction motor with an MHZ_EN57 handle (its local lever brakes
+  nothing in the original), passes with a note; so does a vehicle with an individual brake (DL2,
+  EL16) for the two train brake tests.
+
+From the moment its cylinders reach 95% of the most they get, it has to stand within 1.5 times the
+distance its data gives from the speed it has then: each braking vehicle's force at full pressure
+(`RailVehicleBrake.get_force_at(1.0, v)`, `BrakeForceR`) - no more than its wheels' adhesion, the
+rolling one or, when the brake is stronger, the sliding one (`Adhesive()`, Mover.cpp:4757-4763) -
+against the trainset's mass. The local brake acts on the occupied car; an induction motor's is
+pending until the ED/EP blending is ported (#350). How long the cylinders took
+is logged, not asserted (`MASZYNA_ORIGINAL_QUIRKS.md`).
+
+- **One script per vehicle**, `demo/tests/test_zzz_braking_<directory>.gd`, the start-up test's
+  arguments with the brake added, a test function per brake (`test_the_train_brake_stops_it`,
+  `test_the_emergency_brake_stops_it`, `test_the_local_brake_stops_it`).
+- A red one is checked against the original (mover-parity-check) before the criterion is touched:
+  the SM40's long stop was its wheels locking below 13 km/h, the original's physics.
