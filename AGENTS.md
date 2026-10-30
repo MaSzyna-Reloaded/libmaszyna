@@ -306,11 +306,21 @@ Commit style:
   another session's commit, never amend that one
 * Commit messages must be written in English.
 * If the change has a GitHub Issue, prefix the first line with its number in the existing `(#NUMBER) Message` format.
-* The first line must name the subject and scope of the change briefly and unambiguously. Avoid generic verbs when they
-  do not identify what the commit changes. A title may name an area followed by a short clarification, for example
-  `Wire Devices Manager - web interface`.
-* After a blank line, add 2-3 `*` bullet points as a mini changelog. State specifically what was added, changed, or
-  fixed. Do not replace concrete changes with benefits or generic claims.
+* REQUIRED: **the first line is plain imperative English naming the problem fixed or the feature
+  added**, in words a player or a stranger understands - a line of a changelog:
+  `(#351) Fix tracks shaking when the camera moves`, `(#344) Fix missing keys in the Python screen
+  state`, `Add support for scenery missing files in SceneryContentNode`. Never the technique
+  (`Track meshes - vertices relative to the track's start`), internal names of fields or classes
+  standing for the problem (`Pmax`, `eimc`), two subjects joined by a comma, or terse literary
+  phrasing (`the data a scenery missed`). Read it aloud as a changelog line before committing.
+* After a blank line, add 2-3 `*` bullet points as a mini changelog, each starting with an
+  imperative verb (`Keep ...`, `Add ...`, `Detect ...`, `Update vendor/x to <hash>`). State
+  specifically what was added, changed, or fixed. Do not replace concrete changes with benefits or
+  generic claims.
+* A pull request's title and description follow the same style as the commit's.
+* An issue's title names the problem the same way, as a plain statement of what goes wrong:
+  `Tracks shake when the camera moves` - never its cause or its fix (`Track meshes shimmer -
+  vertices in absolute world coordinates`).
 * Do not add a file list; the diff already provides it.
 * Every commit message line, including the title and bullets, must be no longer than 80 characters. Wrap at a natural
   boundary and indent bullet continuations by two spaces.
