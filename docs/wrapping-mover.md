@@ -60,8 +60,6 @@ classDiagram
         class MaszynaRailVehiclePhysicsNode
         class GenericVehicleComponentNode
     }
-    namespace Model {
-    }
     namespace Vehicle {
         class VehicleServer
         class RailVehicleServer
