@@ -269,6 +269,13 @@ static func _resolve_parts(
     for wiper_name:String in wiper_names:
         for element:String in WIPER_ELEMENT_SUFFIXES:
             wiper_arms.append(_find_submodel(names, [(wiper_name + element).to_lower()]))
+    # Quirk: a model's wipers the MMD names none of, found by their names - each one arm, turned
+    # whole (MmdManualWiperHandles)
+    if wiper_names.is_empty():
+        var submodel_names:Array[String] = []
+        submodel_names.assign(names.keys())
+        for wiper:String in MmdManualWiperHandles.find(submodel_names, MmdManualWiperHandles.WIPER_NAMES):
+            wiper_arms.append_array([wiper, "", ""])
     appearance.wiper_arms = wiper_arms
     var mirrors:PackedStringArray = []
     for mirror_name:String in mirror_names:
@@ -326,12 +333,27 @@ static func _find_pantograph_arms(
 
 ## RailVehicleWipers has to know how many wipers the model has: from cab 2 they are numbered from the
 ## other end (DynObj.cpp:4062).
+##
+## Quirk: a FIZ of no WiperList gives the wipers no switch - the original's do not move at all, even
+## those of a model that animates them, and an old cab's are moved by hand (the EU07's handles,
+## MaszynaCabinManualWipers). Such wipers are taken as driven by hand: as many as the model
+## animates (its animwiperprefix:, or its wipers found by their names - MmdManualWiperHandles), or
+## every one the cab's glass can wipe (RailVehicleWipers.MANUAL_WIPERS_MAX, the channels of its
+## wiper mask) - the driver wipes the glass by the keys even of a model of none.
 static func apply_wiper_count(vehicle:RID, appearance:MaszynaRailVehicleAppearance) -> void:
     var wipers:RailVehicleWipers = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_WIPERS) as RailVehicleWipers
-    if wipers:
-        wipers.wiper_count = appearance.wiper_arms.size() / WIPER_ELEMENT_SUFFIXES.size()
-        wipers.apply_config()
+    if not wipers:
+        return
+    var count:int = appearance.wiper_arms.size() / WIPER_ELEMENT_SUFFIXES.size()
+    if wipers.positions.is_empty():
+        # a FIZ of no WiperList has no wiper angle either: the arms turn across the handles' sweep
+        if is_zero_approx(wipers.angle):
+            wipers.angle = MmdManualWiperHandles.SWEEP_TURN * 360.0
+        wipers.manual_fit(count if count > 0 else RailVehicleWipers.MANUAL_WIPERS_MAX)
+        return
+    wipers.wiper_count = count
+    wipers.apply_config()
 
 
 static func _find_submodel(names:Dictionary[String, MaszynaE3DSubModel], candidates:Array[String]) -> String:

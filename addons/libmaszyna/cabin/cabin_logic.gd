@@ -141,7 +141,10 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
         _behaviours.append(MaszynaCabinDirectionKey.new())
     if not controls.has_control(MaszynaCabinManualBrake.CONTROL):
         _behaviours.append(MaszynaCabinManualBrake.new())
-    if not controls.has_control(MaszynaCabinWipers.CONTROL):
+    var manual_wipers:bool = config.get("wipers_drive", RailVehicleWipers.DRIVE_AUTOMATIC) == RailVehicleWipers.DRIVE_MANUAL
+    if manual_wipers:
+        _behaviours.append(MaszynaCabinManualWipers.new())
+    elif not controls.has_control(MaszynaCabinWipers.CONTROL):
         _behaviours.append(MaszynaCabinWipers.new())
     _behaviours.append(MaszynaCabinBrakeCharging.new())
     _behaviours.append(MaszynaCabinOccupiedCouplerDisconnect.new())
@@ -152,6 +155,9 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
     _unmodelled_controls = MaszynaCabinUnmodelledControls.new(controls)
     _unmodelled_controls.register(vehicle_rid, cabin)
     _behaviours.append(_unmodelled_controls)
+    # the wiper switch's keys hold the wipers driven by hand, before any control takes them
+    if manual_wipers:
+        _bind(MaszynaCabinManualWipers.CONTROL, &"knob", CabinState.Target.OCCUPIED, MaszynaCabinManualWipers.FIELDS)
     for control_id:StringName in controls.get_control_ids():
         _bind(control_id, controls.wiring(control_id).get("kind", &""), controls.target(control_id),
                 controls.resolved_fields(control_id, config))
