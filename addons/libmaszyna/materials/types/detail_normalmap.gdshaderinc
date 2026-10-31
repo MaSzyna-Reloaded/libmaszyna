@@ -109,6 +109,9 @@ void fragment() {
 #ifndef MASZYNA_SPECGLOSS
 	SPECULAR = blended_specular(texture(texture_normal, base_uv).a);
 	ROUGHNESS = BLENDED_ROUGHNESS;
+#ifdef MASZYNA_GLASS_LAYER
+	MASZYNA_GLASS_LAYER(base_uv, texture_albedo);
+#endif
 #endif
 #endif
 #ifndef MASZYNA_ALPHA_BLEND

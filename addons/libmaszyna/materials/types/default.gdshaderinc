@@ -78,6 +78,9 @@ void fragment() {
 	// the mask is the reflmap's alpha (mat_reflmap.frag:43), white without one
 	SPECULAR = blended_specular(texture(texture_metallic, base_uv).a);
 	ROUGHNESS = BLENDED_ROUGHNESS;
+#ifdef MASZYNA_GLASS_LAYER
+	MASZYNA_GLASS_LAYER(base_uv, texture_albedo);
+#endif
 #endif
 #ifndef MASZYNA_ALPHA_BLEND
 	maszyna_weather(ALBEDO, ROUGHNESS, NORMAL, NORMAL_MAP_DEPTH, INV_VIEW_MATRIX, VIEW_MATRIX, maszyna_weather_position);

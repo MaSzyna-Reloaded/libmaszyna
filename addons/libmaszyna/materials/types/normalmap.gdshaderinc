@@ -77,6 +77,9 @@ void fragment() {
 #ifdef MASZYNA_ALPHA_BLEND
 	SPECULAR = blended_specular(texture(texture_normal, base_uv).a);
 	ROUGHNESS = BLENDED_ROUGHNESS;
+#ifdef MASZYNA_GLASS_LAYER
+	MASZYNA_GLASS_LAYER(base_uv, texture_albedo);
+#endif
 #endif
 #ifndef MASZYNA_ALPHA_BLEND
 	maszyna_weather_mapped(ALBEDO, ROUGHNESS, NORMAL, NORMAL_MAP_DEPTH, NORMAL_MAP, TANGENT, BINORMAL, INV_VIEW_MATRIX, VIEW_MATRIX,
