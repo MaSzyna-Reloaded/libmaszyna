@@ -14,14 +14,6 @@
 			Type of engine driving the heating generator, when [member heating_source] is Generator. Only
 			[constant RailVehicleEngine.MAIN] is actually supported by the simulation today.
 		</member>
-		<member name="heating_generator_min_rpm" type="float" setter="set_heating_generator_min_rpm" getter="get_heating_generator_min_rpm" default="0.0">
-			[code]Clima:HGeneratorMinRPM[/code]
-			Lower end of the generator's working RPM range.
-		</member>
-		<member name="heating_generator_min_voltage" type="float" setter="set_heating_generator_min_voltage" getter="get_heating_generator_min_voltage" default="0.0">
-			[code]Clima:HGeneratorMinVoltage[/code]
-			Voltage generated at [member heating_generator_min_rpm].
-		</member>
 		<member name="heating_generator_max_rpm" type="float" setter="set_heating_generator_max_rpm" getter="get_heating_generator_max_rpm" default="0.0">
 			[code]Clima:HGeneratorMaxRPM[/code]
 			Upper end of the generator's working RPM range.
@@ -29,6 +21,14 @@
 		<member name="heating_generator_max_voltage" type="float" setter="set_heating_generator_max_voltage" getter="get_heating_generator_max_voltage" default="0.0">
 			[code]Clima:HGeneratorMaxVoltage[/code]
 			Voltage generated at [member heating_generator_max_rpm].
+		</member>
+		<member name="heating_generator_min_rpm" type="float" setter="set_heating_generator_min_rpm" getter="get_heating_generator_min_rpm" default="0.0">
+			[code]Clima:HGeneratorMinRPM[/code]
+			Lower end of the generator's working RPM range.
+		</member>
+		<member name="heating_generator_min_voltage" type="float" setter="set_heating_generator_min_voltage" getter="get_heating_generator_min_voltage" default="0.0">
+			[code]Clima:HGeneratorMinVoltage[/code]
+			Voltage generated at [member heating_generator_min_rpm].
 		</member>
 		<member name="heating_power_cable_type" type="int" setter="set_heating_power_cable_type" getter="get_heating_power_cable_type" enum="RailVehicleController.TrainPowerType" default="3">
 			[code]Clima:HPowerTrans[/code]
