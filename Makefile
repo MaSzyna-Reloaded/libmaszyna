@@ -78,12 +78,11 @@ check-staged-uids:
 install-git-hooks:
 	git config core.hooksPath scripts/git-hooks
 
-# The documentation is libreloaded's tooling run with this repository as its plugin: one site of
-# libreloaded and libmaszyna - libreloaded's guides, this docs/ under libmaszyna/, the class
-# reference of both - assembled into build-docs/ (libreloaded's make docs-site, docs-server,
-# docs-pdf). make docs refreshes doc_classes/ of both from the library built into demo/, each class's
+# The documentation is libreloaded's tooling run with this repository as its plugin: libmaszyna's
+# site - this docs/ and the class reference of libreloaded and libmaszyna - assembled into
+# build-docs/ (libreloaded's make docs-site, docs-server, docs-pdf with DOCS_SOURCE=libmaszyna). make docs refreshes doc_classes/ of both from the library built into demo/, each class's
 # XML going to the repository declaring it (libreloaded's scripts/update-doc-classes)
-DOCS_MAKE=$(LIBRELOADED_MAKE) DOCS_BUILD_DIR=$(CURDIR)/build-docs
+DOCS_MAKE=$(LIBRELOADED_MAKE) DOCS_SOURCE=libmaszyna DOCS_BUILD_DIR=$(CURDIR)/build-docs
 
 docs: links
 	$(LIBRELOADED_MAKE) docs GODOT=$(GODOT)

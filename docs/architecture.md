@@ -1,10 +1,10 @@
 ---
 layout: page
-title: "Architecture of the MaSzyna port"
+title: "Architecture of the MaSzyna Port"
 ---
 
 libmaszyna is a plugin of libreloaded. The core's architecture and its extension points are
-described in libreloaded's [Architecture](../architecture.html#plugins). This page describes what
+described in libreloaded's [Architecture](https://maszyna-reloaded.github.io/libreloaded/architecture.html#plugins). This page describes what
 libmaszyna adds at those extension points and how the port is organized.
 
 * [The plugin](#the-plugin)
