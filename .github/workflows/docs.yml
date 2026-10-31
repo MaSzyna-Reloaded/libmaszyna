@@ -1,6 +1,6 @@
 name: docs
 
-# Builds the site of libreloaded and libmaszyna (make docs-site, libreloaded's tooling), and
+# Builds libmaszyna's site (make docs-site, libreloaded's tooling), and
 # publishes it on GitHub Pages from main. A pull request only builds it, so a broken page is caught
 # before it lands. Pages must be set to "GitHub Actions" as its source for the deploy to apply.
 on:
@@ -36,8 +36,8 @@ jobs:
           git submodule update --init --depth 1 vendor/libreloaded
           git -C vendor/libreloaded submodule update --init --depth 1 godot-cpp
 
-      # libreloaded's site with this repository as its plugin (make docs-site): its guides, this docs/
-      # under libmaszyna/ and the class reference of both
+      # libmaszyna's site (make docs-site, libreloaded's tooling): this docs/ and the class reference
+      # of libreloaded and libmaszyna
       - name: Assemble the site
         run: make docs-site
 

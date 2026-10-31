@@ -179,7 +179,7 @@ Every `MaszynaMoverRailVehicle<X>` also inherits `MaszynaMoverComponent` (see th
 ## A MaSzyna vehicle on the core
 
 A vehicle is not implemented by its nodes; the node in the scene is the core's proxy, and the vehicle is held by the
-core's `VehicleServer` ([Overall architecture](../architecture.html)). What MaSzyna adds:
+core's `VehicleServer` ([Overall architecture](https://maszyna-reloaded.github.io/libreloaded/architecture.html)). What MaSzyna adds:
 
 * `MaszynaRailVehiclePhysicsNode` supplies the core's `VehiclePhysicsNode` with the vehicle's description - the
   parsed `.fiz`, a `MaszynaMoverRailVehicleController` with its `MaszynaMoverRailVehicle<X>` components.
@@ -195,7 +195,7 @@ core's `VehicleServer` ([Overall architecture](../architecture.html)). What MaSz
   `MaszynaRailVehicle3D` and the core's `TrainSet3D` are for a vehicle or a trainset placed by hand in a scene -
   proxies over the same operations.
 * It is commanded and read as every vehicle of the core is ([Commands and method
-  calls](../architecture.html#commands-and-method-calls)).
+  calls](https://maszyna-reloaded.github.io/libreloaded/architecture.html#commands-and-method-calls)).
 
 ## Mapping key elements to a new architecture
 
@@ -204,7 +204,7 @@ core's `VehicleServer` ([Overall architecture](../architecture.html)). What MaSz
 | Vehicle data container        | FIZ files                           | the vehicle's description - a `MaszynaMoverRailVehicleController` resource with its components - parsed from the `.fiz` (`FizVehicleBuilder`, `addons/libmaszyna/fiz`)
 | Vehicle data loading + init   | cParser + Mover's `LoadFIZ_*()`     | Component properties + `_apply_configuration()` of the `MaszynaMover*` implementation
 | Reading vehicle state         | Direct access to Mover's properties | Typed getters of the component; `vehicle_dump_state()` for diagnostics
-| Modyfing vehicle state        | Direct calls to Mover's methods     | `VehicleServer.vehicle_send_command()`; typed calls on a component only within the vehicle's own composition ([Commands and method calls](../architecture.html#commands-and-method-calls))
+| Modyfing vehicle state        | Direct calls to Mover's methods     | `VehicleServer.vehicle_send_command()`; typed calls on a component only within the vehicle's own composition ([Commands and method calls](https://maszyna-reloaded.github.io/libreloaded/architecture.html#commands-and-method-calls))
 | Reading runtime config values | Direct property reading or calls    | `Dictionary` with a runtime config (`vehicle_dump_config()`, `config_changed`)
 | Propagating trainset commands | Internal notification + TTrain refs | Using High-Level API commands
 
@@ -648,7 +648,7 @@ void RailVehicleDoors::_register_commands() {
 > NOTE: Method `operate_doors` is not exposed as a command, but due to this technique it is available as a typed
 > call on the component - handy in internal communication, between the components of one vehicle. Anything outside the
 > vehicle sends the command: only the command renews the state dump and is announced
-> ([Commands and method calls](../architecture.html#commands-and-method-calls)).
+> ([Commands and method calls](https://maszyna-reloaded.github.io/libreloaded/architecture.html#commands-and-method-calls)).
 
 #### Argument type conversion
 

@@ -1,12 +1,12 @@
 ---
 layout: page
-title: "Lua: MaSzyna modules"
+title: "Lua: MaSzyna Modules"
 ---
 
 This page describes what libmaszyna adds to Lua scripting for MaSzyna's sceneries. The scripting
 itself is part of the core: `ScenarioScriptServer`, the `reloaded.*` modules, how scripts work, the
 sandbox and the API reference. These are described in libreloaded's
-[Lua scenario scripts](../lua-scripting.html).
+[Lua scenario scripts](https://maszyna-reloaded.github.io/libreloaded/lua-scripting.html).
 
 * [Running a script](#running-a-script)
 * [`reloaded.memory` - memory cells](#reloadedmemory---memory-cells)

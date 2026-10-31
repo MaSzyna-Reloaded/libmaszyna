@@ -1,8 +1,19 @@
-# libmaszyna's guides on the site libreloaded assembles (its scripts/make-docs-site, make docs-site):
-# this docs/ goes under libmaszyna/ beside libreloaded's guides and the class reference, and the
-# pages below join the site's menu. The site's configuration and layouts are libreloaded's.
+# libmaszyna's site, assembled by libreloaded's scripts/make-docs-site (make docs-site, with
+# DOCS_SOURCE=libmaszyna): this docs/ on libreloaded's layouts, with the class reference of
+# libreloaded and libmaszyna in api/. libreloaded's guides are on its own site, linked from here.
+title: LibMaszyna
+
+description: >- # this means to ignore newlines until "github_username:"
+  A port of MaSzyna - Symulator Pojazdów Szynowych to Rails Reloaded: MaSzyna's vehicles,
+  sceneries, cabins and rendering as a plugin of libreloaded, built with the Godot Engine.
+
+github_username: MaSzyna-Reloaded
+
+baseurl: /libmaszyna
+theme: minima
+
 header_pages:
-  - index.md
   - architecture.md
   - wrapping-mover.md
   - lua-scripting.md
+  - api/index.md
