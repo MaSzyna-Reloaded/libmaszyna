@@ -102,7 +102,8 @@ added that way.
 libmaszyna's autoloads are added by `addons/libmaszyna/libmaszyna.gd` and listed in the project's
 `project.godot` (`demo/project.godot` here); its C++ classes and singletons are registered by
 `MaszynaPlugin` (`src/maszyna/MaszynaPlugin.cpp`), the core's in libreloaded's
-`src/register_types.cpp`. A singleton is reached by its typed `get_instance()` and the result is
+`src/register_types.cpp`; each is documented in its source's `doc_classes/<Class>.xml` (AGENTS.md,
+"Documentation"). A singleton is reached by its typed `get_instance()` and the result is
 null-checked - never by node path, never by `call("name")`.
 
 ## A breach is an alarm, not a problem to solve quietly
