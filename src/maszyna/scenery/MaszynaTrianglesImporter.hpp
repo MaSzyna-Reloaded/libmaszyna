@@ -16,6 +16,6 @@ namespace godot {
             /* Reads a "triangles" node into the sink; false when it is malformed */
             static bool import_triangles(
                     const Ref<MaszynaParser> &p_parser, const Vector3 &p_rotate, const Vector3 &p_origin,
-                    const Ref<MaszynaTrianglesSink> &p_sink, float p_range_min, float p_range_max);
+                    const Ref<MaszynaTrianglesSink> &p_sink, float p_range_min, float p_range_max, bool p_densify);
     };
 } // namespace godot
