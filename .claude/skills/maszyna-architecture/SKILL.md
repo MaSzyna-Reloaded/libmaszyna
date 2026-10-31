@@ -1,6 +1,6 @@
 ---
 name: maszyna-architecture
-description: Decide where a piece of state, behaviour or API belongs in libmaszyna's layers - and on which side of the boundary with libreloaded, the Reloaded core it is built on - and check that a change does not breach a boundary. Use before adding a class, a field, a signal, a state key or a server method; before moving logic between C++ and GDScript; when something needs a value that lives in another layer; when a node, a system and a server all look like plausible homes for the same thing; and when reviewing a diff for separation of concerns. Answers "which layer owns this", "is this the core's or MaSzyna's", "may this layer know about that one", and "is this the same mistake we already made".
+description: Decide where a piece of state, behaviour or API belongs in libmaszyna's layers - and on which side of the boundary with libreloaded, the Reloaded core it is built on - and check that a change does not breach a boundary. Use before adding a class, a field, a signal, a state key or a server method; before writing a server, a registry or a backend (a singleton, never static functions) or loading a resource as one is made; before moving logic between C++ and GDScript; when something needs a value that lives in another layer; when a node, a system and a server all look like plausible homes for the same thing; and when reviewing a diff for separation of concerns. Answers "which layer owns this", "is this the core's or MaSzyna's", "may this layer know about that one", and "is this the same mistake we already made".
 ---
 
 # MaSzyna Reloaded - layers, boundaries and how they are enforced
@@ -170,6 +170,19 @@ vehicle, as the original `basic_table::insert` does (`Names.h:27-40`). Only what
 its id alone - a scenario, an event, the console - goes through it. Its name (`vehicle_get_name()`,
 as the `.scn` writes it) is only shown to the player; nothing is found or compared by it. A registry keyed by that name elsewhere is how the second
 of two same-named vehicles lost its commands and its cab (TrainSystem, removed 2026-09-26).
+
+## Servers are singletons, and are handed what they need
+
+Two rules every layer keeps (`CODE_STYLE.md`):
+
+* **a server is a singleton, never a class of static functions.** A C++ Engine singleton or a
+  GDScript autoload its plugin adds - never a `class_name` of `static func`s and `static var`s, which
+  nothing can extend, replace or start afresh. A game of more extends a server by its subclass
+  registered under the same name, or by components set on it. A static function or variable is never
+  added to such a class; one found is a breach, reported with a proposal to make it a singleton.
+* **nothing is loaded in a constructor, and no lazy cache stands in for it.** A server or a backend
+  is handed what it draws with by whoever makes the object - `TrackRenderingServer.track_set_looks()`,
+  `VehicleRenderingServer.vehicle_set_snow_material()`, set by the world or the scenery.
 
 ## Where a new thing goes
 

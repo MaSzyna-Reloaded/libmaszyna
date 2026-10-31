@@ -6,6 +6,7 @@
 #include "vehicles/rail/RailVehicleEnginePowerSource.hpp"
 #include "vehicles/rail/RailVehicleRenderingServer.hpp"
 
+#include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
 
@@ -129,6 +130,10 @@ namespace godot {
             void _update_smoke(const RID &p_vehicle, const Visual &p_visual) const;
             void _build_load(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             void _update_load(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
+            /* The snow drawn over the cargo, as over the exterior - but for a multiple unit's, whose
+             * load is its passengers */
+            void
+            _send_load_snow(const RID &p_vehicle, const MaszynaVisual &p_maszyna, const Ref<Material> &p_overlay) const;
             void _update_low_poly_cabs(const RID &p_vehicle, const Visual &p_visual) const;
             /* Lit with the compartment lights - of a vehicle with a driver in its trainset, as the original
              * lights them only with an owner or a driver (DynObj.cpp:4238-4245) - as bright as they shine */
@@ -160,6 +165,9 @@ namespace godot {
             void _vehicle_update(const RID &p_vehicle) override;
             void _vehicle_pose(const RID &p_vehicle) override;
             void _vehicle_shown_cabin_changed(const RID &p_vehicle) override;
+            void _vehicle_snow_changed(const RID &p_vehicle, const Ref<Material> &p_overlay) override;
+            /* The wiper arms the MMD names (animwiperprefix), at rest, swept by the FIZ's wiper angle */
+            PackedVector4Array _vehicle_get_wiper_sweeps(const RID &p_vehicle) const override;
             void _frame_processed(double p_delta) override;
 
         public:

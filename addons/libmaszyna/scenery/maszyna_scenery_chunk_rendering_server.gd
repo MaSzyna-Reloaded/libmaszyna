@@ -160,7 +160,9 @@ func _stream_build(rid:RID, preloaded:PreloadedChunk) -> void:
     if not state or state.mesh_instances or not preloaded:
         return
     # an unresolved texture leaves nothing worth drawing, like a scenery model that fails to load
-    var material:Material = MaszynaMaterialManager.get_material("", state.material_name)
+    var options:MaszynaMaterialManager.MaterialOptions = MaszynaMaterialManager.MaterialOptions.new()
+    options.weather_exposed = true
+    var material:Material = MaszynaMaterialManager.get_material("", state.material_name, options)
     if not material:
         return
     state.material = material

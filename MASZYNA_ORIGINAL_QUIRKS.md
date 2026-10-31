@@ -442,6 +442,18 @@ interface.
   `RailVehicleServer.person_change_cabin()`), the
   AI keeps its cabin and the vehicle answers to it.
 
+* **Wipers of no switch are driven by hand.** A FIZ of no `WiperList:` gives the wipers no switch:
+  the original moves none of them, not even those a model animates, and an old cab's wipers are
+  moved by hand - the EU07's handles `mech_wyc_raczka01/02`, the SM42's, the SU46's `raczka_wyc` -
+  which no MMD key names. Wrapper: such wipers are driven by hand (`RailVehicleWipers.DRIVE_MANUAL`,
+  `MaszynaRailVehicle3DInstancer.apply_wiper_count()`): as many as the model animates, or four - the
+  channels of the cab glass's wiper mask - so the wiper switch's keys wipe the glass in any cab
+  (`MaszynaCabinManualWipers`). The wipers and handles no MMD key names are found by their names
+  (`MmdManualWiperHandles`): a cab model's handles get a knob each turned by the mouse, its wipers
+  (the EU07's `wycieracz01/02`) following the handle of their number; a vehicle model's wipers are
+  its wiper arms, turned whole by a quarter turn - the data gives no wiper angle. A key the data gets
+  for them later is mapped instead.
+
 ## Scenery data
 
 * **A trainset for the player is told apart only by a dash.** Every trainset of a scenario is

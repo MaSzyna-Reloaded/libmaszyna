@@ -10,7 +10,8 @@ namespace godot {
      *
      * The Mover has no wiper state at all (the original keeps it in its vehicle layer, DynObj.h
      * dWiperPos), so the wipers move here: a port of TDynamicObject::update()
-     * (DynObj.cpp:4048-4115), the switch the interface's (Train.cpp:2638-2661). */
+     * (DynObj.cpp:4048-4115), the switch the interface's (Train.cpp:2638-2661). Wipers driven by
+     * hand (RailVehicleWipers.DRIVE_MANUAL) stand where their handles do. */
     class MaszynaMoverRailVehicleWipers : public RailVehicleWipers, public MaszynaMoverComponent {
             GDCLASS(MaszynaMoverRailVehicleWipers, RailVehicleWipers);
 

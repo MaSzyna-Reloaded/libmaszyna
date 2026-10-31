@@ -588,6 +588,31 @@ namespace godot {
         models->instance_set_scenario(p_maszyna.load, p_visual.placed ? p_visual.scenario : RID());
         models->instance_build(p_maszyna.load);
         _update_load(p_vehicle, p_visual, p_maszyna);
+        // a cargo built anew carries the snow the exterior has
+        _send_load_snow(p_vehicle, p_maszyna, p_visual.snow_material);
+    }
+
+    void
+    MaszynaE3DRailVehicleRenderingServer::_vehicle_snow_changed(const RID &p_vehicle, const Ref<Material> &p_overlay) {
+        if (const MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle); maszyna != nullptr) {
+            _send_load_snow(p_vehicle, *maszyna, p_overlay);
+        }
+    }
+
+    /* An EN57's or another multiple unit's FIZ gives its people as the load: they stay clean */
+    void MaszynaE3DRailVehicleRenderingServer::_send_load_snow(
+            const RID &p_vehicle, const MaszynaVisual &p_maszyna, const Ref<Material> &p_overlay) const {
+        ModelRenderingServer *models = ModelRenderingServer::get_instance();
+        const VehicleServer *vehicle_server = VehicleServer::get_instance();
+        if (models == nullptr || vehicle_server == nullptr || !p_maszyna.load.is_valid()) {
+            return;
+        }
+        const Ref<MaszynaMoverRailVehicleController> controller = vehicle_server->vehicle_get_controller(p_vehicle);
+        if (controller.is_valid() &&
+            (controller->get_train_type() & MaszynaMoverRailVehicleController::TRAIN_TYPE_EZT) != 0) {
+            return;
+        }
+        models->instance_set_material_overlay(p_maszyna.load, p_overlay);
     }
 
     void MaszynaE3DRailVehicleRenderingServer::cabin_set_light_level(const RID &p_cabin, const double p_level) {
@@ -847,6 +872,32 @@ namespace godot {
                 _pose(p_visual, arms[index], Basis(Vector3(1.0, 0.0, 0.0), static_cast<real_t>(angles[index])));
             }
         }
+    }
+
+    PackedVector4Array MaszynaE3DRailVehicleRenderingServer::_vehicle_get_wiper_sweeps(const RID &p_vehicle) const {
+        PackedVector4Array sweeps;
+        const MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
+        const Ref<RailVehicleWipers> wipers =
+                component<RailVehicleWipers>(p_vehicle, VehicleComponentType::COMPONENT_WIPERS);
+        if (maszyna == nullptr || wipers.is_null()) {
+            return sweeps;
+        }
+        // as _pose_wipers() turns them: the arm about its own up, every other wiper mirrored
+        const double angle = Math::deg_to_rad(wipers->get_angle());
+        for (int wiper = 0; (static_cast<int64_t>(wiper) + 1) * WIPER_ELEMENTS <= maszyna->wiper_arms.size(); ++wiper) {
+            const Part &arm = maszyna->wiper_arms[wiper * WIPER_ELEMENTS];
+            const Part &blade = maszyna->wiper_arms[(wiper * WIPER_ELEMENTS) + WIPER_BLADE];
+            const Vector3 reach = blade.rest.origin - arm.rest.origin;
+            if (arm.submodel.is_empty() || blade.submodel.is_empty() || reach.is_zero_approx()) {
+                continue;
+            }
+            const Vector3 way = reach.normalized();
+            const Vector3 axis = arm.rest.basis.get_column(1).normalized();
+            sweeps.push_back(Vector4(arm.rest.origin.x, arm.rest.origin.y, arm.rest.origin.z, reach.length()));
+            sweeps.push_back(Vector4(way.x, way.y, way.z, static_cast<real_t>(wiper % 2 == 1 ? -angle : angle)));
+            sweeps.push_back(Vector4(axis.x, axis.y, axis.z, 0.0F));
+        }
+        return sweeps;
     }
 
     // TDynamicObject::UpdateWiper() (DynObj.cpp:716-731): both arms swing by the wiper angle, the

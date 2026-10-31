@@ -582,6 +582,21 @@ namespace godot {
         _update_if_built(*instance);
     }
 
+    /// A per-instance uniform of every submodel's shaders; a null is kept too, to take it off
+    void MaszynaE3DRenderingServer::instance_set_shader_parameter(
+            const RID &p_instance, const StringName &p_name, const Variant &p_value) {
+        MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL(instance);
+        instance->shader_parameters[p_name] = p_value;
+        _update_if_built(*instance);
+    }
+
+    Ref<Material> MaszynaE3DRenderingServer::instance_get_material_overlay(const RID &p_instance) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Ref<Material>());
+        return instance->material_overlay;
+    }
+
     /// Where the segment (world space) first meets the instance's meshes: `{position, distance}`
     /// (the distance from `p_from`), empty when it misses or the instance is hidden or not built
     Dictionary MaszynaE3DRenderingServer::instance_intersect_segment(

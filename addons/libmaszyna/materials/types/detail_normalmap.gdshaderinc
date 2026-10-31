@@ -2,6 +2,8 @@
 // its variants (detail_normalmap_*.gdshader, MaszynaMaterialFactory.SHADER_VARIANTS), each of them
 // with its own render_mode and defines
 
+#include "res://addons/libmaszyna/materials/types/weather.gdshaderinc"
+
 #ifdef MASZYNA_SPECGLOSS
 #include "res://addons/libmaszyna/materials/types/specgloss.gdshaderinc"
 #endif
@@ -50,6 +52,7 @@ uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
 void vertex() {
+	maszyna_weather_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 }
 
@@ -106,6 +109,13 @@ void fragment() {
 #ifndef MASZYNA_SPECGLOSS
 	SPECULAR = blended_specular(texture(texture_normal, base_uv).a);
 	ROUGHNESS = BLENDED_ROUGHNESS;
+#ifdef MASZYNA_GLASS_LAYER
+	MASZYNA_GLASS_LAYER(base_uv, texture_albedo);
 #endif
+#endif
+#endif
+#ifndef MASZYNA_ALPHA_BLEND
+	maszyna_weather_mapped(ALBEDO, ROUGHNESS, NORMAL, NORMAL_MAP_DEPTH, NORMAL_MAP, TANGENT, BINORMAL, INV_VIEW_MATRIX, VIEW_MATRIX,
+			maszyna_weather_position);
 #endif
 }

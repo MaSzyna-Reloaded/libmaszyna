@@ -218,6 +218,13 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
     return read
 
 
+## What the snow on the vehicle is drawn with: its scenery's
+## (SceneryContentNode.vehicle_snow_material), the scene node it is drawn in; none for another node
+static func _snow_material(record:Vehicle) -> ShaderMaterial:
+    var scenery:SceneryContentNode = instance_from_id(record.scene_node_id) as SceneryContentNode
+    return scenery.vehicle_snow_material if scenery else null
+
+
 ## The vehicle's own: the scenery's values first - the controller takes them when its simulation
 ## starts - then its physics, configured before it is bound, so it is configured once; then what
 ## it looks like, its cab and its sound, handed to the servers by its handle.
@@ -240,6 +247,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         VehicleServer.vehicle_bind_controller(vehicle, record.controller)
         RoadVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
         RoadVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
+        RoadVehicleRenderingServer.vehicle_set_snow_material(vehicle, _snow_material(record))
         if Engine.is_editor_hint():
             return
         if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
@@ -302,6 +310,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
 
     RailVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
     RailVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
+    RailVehicleRenderingServer.vehicle_set_snow_material(vehicle, _snow_material(record))
     MaszynaE3DRailVehicleRenderingServer.vehicle_set_load_model(vehicle, structure.data_path, record.read["load_model_filename"])
     MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, structure.appearance)
     if Engine.is_editor_hint():

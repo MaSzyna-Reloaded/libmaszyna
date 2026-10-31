@@ -14,6 +14,11 @@ const FAR_START: Vector3 = Vector3(40000.0, 0.0, 40000.0)
 const NEAR_ORIGIN: float = 5.0
 ## The far track's length [m]
 const FAR_LENGTH: float = 20.0
+## What a track is drawn with, by the backend, as a scenery's world gives it
+## (SceneryContentNode.track_looks)
+const LOOKS: Dictionary[StringName, Resource] = {
+    &"standard": preload("res://addons/libreloaded/tracks/track_look.tres"),
+    &"maszyna": preload("res://addons/libmaszyna/tracks/maszyna_track_looks.tres")}
 
 var _track_rid: RID
 var _render_rid: RID
@@ -35,6 +40,7 @@ func before_each() -> void:
     TrackServer.track_update(_track_rid, TrackServer.TRACK_NORMAL, "plain_track", TrackData.new().width)
     _render_rid = TrackRenderingServer.track_create(_track_rid)
     TrackRenderingServer.track_set_scenario(_render_rid, get_tree().root.world_3d.scenario)
+    TrackRenderingServer.track_set_looks(_render_rid, LOOKS)
 
 
 func after_each() -> void:
