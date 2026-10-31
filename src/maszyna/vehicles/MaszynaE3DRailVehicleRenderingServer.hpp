@@ -8,6 +8,8 @@
 
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
 
 #include <array>
@@ -50,8 +52,11 @@ namespace godot {
                      * its pair, slider */
                     Vector<Part> pantograph_arms[2];
                     Vector<Part> wiper_arms;
-                    /* The axis each wiper's arms turn about, in their own frames */
-                    Vector<Vector3> wiper_axes;
+                    /* MaszynaRailVehicleAppearance::get_wiper_pivots(), _axes(), _turns() -
+                     * empty for the original's arms */
+                    PackedVector3Array wiper_pivots;
+                    PackedVector3Array wiper_axes;
+                    PackedFloat64Array wiper_turns;
                     Vector<Part> mirrors;
                     /* MaszynaRailVehicleAppearance::get_doors(): DOOR_ELEMENTS a door */
                     Vector<Part> doors;

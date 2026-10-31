@@ -151,7 +151,7 @@ const CAPTIONS:Dictionary[StringName, String] = {
     &"universalbrake2_bt": "train brake",
     &"universalbrake3_bt": "train brake",
     &"wipers_sw": "wipers mode selector",
-    # the handles of wipers driven by hand (MmdManualWiperHandles), the original's none
+    # the handles of wipers driven by hand (a game's MaszynaCabControlPatch), the original's none
     &"reloaded_manualwiper1": "wiper 1 handle",
     &"reloaded_manualwiper2": "wiper 2 handle",
     &"reloaded_manualwiper3": "wiper 3 handle",

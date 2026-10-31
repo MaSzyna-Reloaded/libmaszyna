@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://je3xdmxrtuc5e"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://cnlotbhyq1uk0" path="res://addons/libmaszyna/vehicle/maszyna_cab_control_patch.gd" id="control"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("control")
+label = "reloaded_manualwiper1"
+submodel = "banan/PODLOGA_GLOWNA/mech_wyc_raczka01"
+animation_type = "rot"
+scale = 0.1722
+mouse_drag_signs = Vector2(0, -1)
+
+[sub_resource type="Resource" id="item_2"]
+script = ExtResource("control")
+label = "reloaded_manualwiper2"
+submodel = "banan/PODLOGA_GLOWNA/mech_wyc_raczka02"
+animation_type = "rot"
+scale = -0.175
+mouse_drag_signs = Vector2(0, -1)
+
+[sub_resource type="Resource" id="item_3"]
+script = ExtResource("control")
+label = "reloaded_manualwiper3"
+submodel = "banan/PODLOGA_GLOWNA/mech_wyc_raczka03"
+animation_type = "rot"
+scale = 0.1722
+mouse_drag_signs = Vector2(0, -1)
+
+[sub_resource type="Resource" id="item_4"]
+script = ExtResource("control")
+label = "reloaded_manualwiper4"
+submodel = "banan/PODLOGA_GLOWNA/mech_wyc_raczka04"
+animation_type = "rot"
+scale = -0.175
+mouse_drag_signs = Vector2(0, -1)
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/sm42_v1/6d_kabina.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4")])

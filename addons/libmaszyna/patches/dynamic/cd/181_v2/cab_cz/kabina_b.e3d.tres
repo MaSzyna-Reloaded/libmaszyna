@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://fzishhqp8y53p"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://cnlotbhyq1uk0" path="res://addons/libmaszyna/vehicle/maszyna_cab_control_patch.gd" id="control"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("control")
+label = "wipers_sw"
+submodel = "/pulpit003/wycieraczki"
+animation_type = "rot"
+scale = 0
+position_angles = PackedFloat32Array(0, 45, -45)
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/cd/181_v2/cab_cz/kabina_b.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

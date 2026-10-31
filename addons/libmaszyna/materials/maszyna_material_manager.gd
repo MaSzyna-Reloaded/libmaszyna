@@ -33,6 +33,8 @@ const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scene
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
 ## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
 const GENERATED_TEXTURE_SCHEME: String = "make:"
+## A texture of the game's own, not of the data (MaszynaMaterialPatch.textures)
+const GAME_TEXTURE_SCHEME: String = "res://"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
@@ -268,6 +270,9 @@ func material_preload(
             # named as the data names it: it is looked for in four places (_get_texture_file())
             MaszynaFileIndexer.missing_file_add(texture_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
             continue
+        # the game's own is a resource, loaded with the material
+        if full_path.begins_with(GAME_TEXTURE_SCHEME):
+            continue
         var texture_key:String = _get_texture_key(full_path, max_size)
         # a texture made already is not read again, nor one another preload holds
         _preload_mutex.lock()
@@ -443,6 +448,8 @@ func load_texture(
     if not full_path:
         MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
+    if full_path.begins_with(GAME_TEXTURE_SCHEME):
+        return load(full_path) as Texture2D
 
     var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))
     if not texture:
@@ -501,6 +508,9 @@ func _load_generated_texture(texture_name:String) -> Texture2D:
 func _get_texture_file(model_path:String, material_name:String) -> String:
     # a texture's traits follow its name after a colon and are no part of the file's name:
     # "peronowe/krawedz_zolty2:#" is krawedz_zolty2.dds (Texture.cpp:1310-1318)
+    # the game's own texture (a patch's, MaszynaMaterialPatch): no file of the data
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
+        return material_name if ResourceLoader.exists(material_name) else ""
     var trait_position:int = material_name.rfind(":")
     if trait_position >= 0:
         material_name = material_name.left(trait_position)

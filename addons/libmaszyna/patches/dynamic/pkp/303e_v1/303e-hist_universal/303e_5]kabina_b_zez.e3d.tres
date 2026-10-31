@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://ro8ave0kq0fq3"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://cnlotbhyq1uk0" path="res://addons/libmaszyna/vehicle/maszyna_cab_control_patch.gd" id="control"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("control")
+label = "reloaded_manualwiper1"
+submodel = "banan/kabina_b/mech_wyc_raczka01"
+animation_type = "rot"
+scale = -0.25
+mouse_drag_signs = Vector2(1, 0)
+
+[sub_resource type="Resource" id="item_2"]
+script = ExtResource("control")
+label = "reloaded_manualwiper2"
+submodel = "banan/kabina_b/mech_wyc_raczka02"
+animation_type = "rot"
+scale = -0.25
+mouse_drag_signs = Vector2(1, 0)
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/303e_v1/303e-hist_universal/303e_5]kabina_b_zez.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2")])

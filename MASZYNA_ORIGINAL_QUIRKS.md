@@ -449,14 +449,19 @@ interface.
   which no MMD key names. Wrapper: such wipers are driven by hand (`RailVehicleWipers.DRIVE_MANUAL`,
   `MaszynaRailVehicle3DInstancer.apply_wiper_count()`): as many as the model animates, or four - the
   channels of the cab glass's wiper mask - so the wiper switch's keys wipe the glass in any cab
-  (`MaszynaCabinManualWipers`). The wipers and handles no MMD key names are found by their names
-  (`MmdManualWiperHandles`): a cab model's handles get a knob each turned by the mouse, its wipers
-  (the EU07's `wycieracz01/02`) following the handle of their number; a vehicle model's wipers are
-  its wiper arms, turned whole by a quarter turn - the data gives no wiper angle - about their own
-  axis most along the vehicle (`MaszynaRailVehicleAppearance.wiper_arms_found`), across the glass:
-  the original's arms turn about their up, but the SM42's `wycieraczka01-04` lie along their own Z
-  with their up tilted out of the glass, and turned about it they swing into the cab. A key the
-  data gets for them later is mapped instead.
+  (`MaszynaCabinManualWipers`). What the data does not define of them a game patches by hand, per
+  file (`MaszynaVehiclePatch`, `MaszynaVehicleSystem.patch_set()`), never guessed from names: a cab
+  model's handles - and its own wipers, the EU07's `wycieracz01/02` - are controls of its patch
+  (`MaszynaCabControlPatch`, `reloaded_manualwiper<N>`), each turned by the mouse, the wiper of its
+  label following it; a vehicle model's wipers are the wiper arms of its patch
+  (`MaszynaWiperArmPatch`), each turned whole about its own point and axis by its own angle - the
+  SM42's `wycieraczka01-04` have their origin in the middle of the blade, their hub 0.376 m along
+  their Z, and turn about their X, across the glass; a FIZ's patch gives it a wiper switch
+  (`MaszynaWiperListPatch`) - the 6Dg's cab has one its data names not; a texture of no .mat gets
+  the material of its patch (`MaszynaMaterialPatch`) - the SM42's, SP42's and EN57's cab glass is
+  drawn with the rain, as a `rain_windscreen` .mat draws it, its wiper mask made from the patched
+  arms' sweep over the glass's UV (`addons/libmaszyna/patches/`). A patch is read only where the file has no definition of its
+  own (`WiperList:`, `animwiperprefix:`, the MMD's label, the .mat).
 
 ## Scenery data
 

@@ -164,7 +164,7 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
 ## description. `fiz_path` must already be a fully resolved, openable path (res://, user://, or
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
 ## `include` directives inside the file resolve relative to its own containing directory.
-static func build_into(target: VehicleController, fiz_path: String) -> void:
+static func build_into(target: VehicleController, fiz_path: String, wipers: RailVehicleWipers = null) -> void:
     var context: FizImportContext = parse_into(target, fiz_path, create_sections())
 
     # a diesel's legacy "main" compressor runs off its engine (CheckLocomotiveParameters, Mover.cpp:11738)
@@ -200,11 +200,12 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     if context.get_part("RailVehicleMasterController"):
         target.add_component(MaszynaMoverRailVehicleHorns.new())
         target.add_component(MaszynaMoverRailVehicleRadio.new())
-        # Quirk: a cab's vehicle whose FIZ has no WiperList: has wipers all the same, driven by hand
-        # (MaszynaRailVehicle3DInstancer.apply_wiper_count(), MASZYNA_ORIGINAL_QUIRKS.md) - without
-        # the component it had no wipers to wipe its glass by the keys at all
+        # Quirk: a cab's vehicle whose FIZ has no WiperList: has wipers all the same - `wipers`, the
+        # switch the game's patch of the FIZ gives it, else driven by hand (MaszynaRailVehicle3DInstancer.
+        # apply_wiper_count(), MASZYNA_ORIGINAL_QUIRKS.md); without the component it had no wipers to
+        # wipe its glass by the keys at all
         if not context.get_part("RailVehicleWipers"):
-            target.add_component(MaszynaMoverRailVehicleWipers.new())
+            target.add_component(wipers if wipers else MaszynaMoverRailVehicleWipers.new())
 
 ## Same on-disk cache used by MaszynaE3DModelManager for parsed E3D models (plugins/libmaszyna/addons/libmaszyna/e3d/
 ## maszyna_e3d_model_manager.gd) - keyed by mtime+path like that cache's own _make_cache_hash(), so an
@@ -222,29 +223,34 @@ static func _make_cache_path(fiz_path: String) -> String:
     var relative_path: String = fiz_path.trim_prefix(MaszynaGameDirectory.get_game_dir().path_join(""))
     return relative_path + ".res"
 
-static func _make_cache_hash(fiz_path: String) -> String:
-    return ("%s:%s:%s" % [
+## A change of the wipers the game's patch gives the file is a change of what it describes
+static func _make_cache_hash(fiz_path: String, wipers: RailVehicleWipers) -> String:
+    return ("%s:%s:%s:%s" % [
         FileAccess.get_modified_time(fiz_path),
         str(FIZ_PARSER_FORMAT_VERSION),
-        fiz_path
+        fiz_path,
+        var_to_str([wipers.angle, wipers.positions]) if wipers else ""
     ]).md5_text()
 
 
 ## The vehicle a .fiz describes, parsed once and cached on disk - the shape
 ## MaszynaE3DModelManager.load_model() has, and for the same reason: a scenery repeats the same file
-## across many trainset entries, and parsing it is the expensive part.
-static func build_description(data_path: String, fiz_filename: String) -> VehicleController:
+## across many trainset entries, and parsing it is the expensive part. `wipers` - the wiper switch
+## the game's patch gives a FIZ of no WiperList (MaszynaVehicleSystem.fiz_get_patched_wipers()); the
+## FIZ parser compiles as the library starts, before any script class of the patch can be resolved
+static func build_description(
+        data_path: String, fiz_filename: String, wipers: RailVehicleWipers = null) -> VehicleController:
     var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_path:String = data_path.path_join(fiz_filename + ".fiz")
-    return build_description_at(game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path)))
+    return build_description_at(game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path)), wipers)
 
 
-static func build_description_at(fiz_path: String) -> VehicleController:
+static func build_description_at(fiz_path: String, wipers: RailVehicleWipers = null) -> VehicleController:
     # a vehicle whose file is not there is told on every load, its description cached or not
     if not FileAccess.file_exists(fiz_path):
         MaszynaFileIndexer.missing_file_add(fiz_path, MaszynaFileIndexer.MASZYNA_FILE_FIZ)
     var cache_path: String = _make_cache_path(fiz_path)
-    var cache_hash: String = _make_cache_hash(fiz_path)
+    var cache_hash: String = _make_cache_hash(fiz_path, wipers)
     var description: VehicleController = _cache.get(cache_path, cache_hash) as VehicleController
     if description:
         return description
@@ -267,7 +273,7 @@ static func build_description_at(fiz_path: String) -> VehicleController:
         # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
         # its components are kept in the order the FIZ sections built them
         description = MaszynaMoverRailVehicleController.new()
-        build_into(description, fiz_path)
+        build_into(description, fiz_path, wipers)
     _cache.set(cache_path, description, cache_hash)
     return description
 

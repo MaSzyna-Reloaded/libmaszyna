@@ -16,6 +16,35 @@ uniform sampler2D raindrops_atlas : source_color, filter_linear_mipmap, repeat_e
 // sRGB like in the original ("#texture(wipermask, 2, sRGB_A)"): only decoded it is linear in the
 // angle of the arm - read raw, the wiped edge runs far away from the blade.
 uniform sampler2D wiper_mask : source_color, hint_default_black, filter_linear, repeat_enable;
+// A glass whose panes share their UV - one mask for them all, the SM42's four front panes - tells
+// each pane's wiper by where the pane is (a game's patch, MaszynaMaterialPatch): a pane's middle in
+// the mesh's own frame and its wiper's number from 1 (w; below 0 no wiper's); a vertex is its nearest
+// pane's, and only that wiper's channel of the mask wipes it. None given, every channel wipes every
+// pane, as the original's
+uniform vec4 wiper_pane_0 = vec4(0.0);
+uniform vec4 wiper_pane_1 = vec4(0.0);
+uniform vec4 wiper_pane_2 = vec4(0.0);
+uniform vec4 wiper_pane_3 = vec4(0.0);
+// the channels of the mask the fragment's pane takes: 1 for its wiper's, every one of a glass of none
+varying flat vec4 wiper_pane;
+// A glass of no mask its wipers sweep whole (a game's patch's, MaszynaMaterialPatch, its model no
+// wipers to measure), from the driver's left to his right: the way to his right in the mesh's own
+// frame, normalised, and where along it the glass begins and ends (x, y). A glass of neither is wet,
+// no wiper reaching it
+uniform bool wiper_mask_across = false;
+uniform vec3 wiper_across = vec3(1.0, 0.0, 0.0);
+uniform vec4 wiper_across_span = vec4(0.0, 1.0, 0.0, 0.0);
+// the fragment's place in the mesh's own frame, for the sweep across
+varying vec3 glass_position;
+
+// The mask at uv, of the fragment's pane: the glass's own, or the sweep across it (across, the
+// fragment's phase of it)
+vec4 wiper_mask_at(vec2 uv, vec4 pane, float across) {
+    if (wiper_mask_across) {
+        return vec4(clamp(across, 0.004, 1.0)) * pane;
+    }
+    return textureLod(wiper_mask, uv, 0.0) * pane;
+}
 
 // stands in for the "ambient" of the original, see fragment()
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap, repeat_disable;
@@ -116,13 +145,13 @@ vec4 get_drop_tex(float choice, vec2 uv, vec2 uv_dx, vec2 uv_dy) {
 
 // How much of the rain is left at the given point after the wipers; side tells the two halves of
 // a wiper's area apart, so that each regrows its own droplets.
-float get_mix_factor(vec2 co, out float side) {
+float get_mix_factor(vec2 co, vec4 pane, float across, out float side) {
     vec4 move_phase = reloaded_wiper_pos;
     vec4 is_out = vec4(lessThanEqual(move_phase, vec4(1.0)));
     move_phase = mix(vec4(2.0) - move_phase, move_phase, is_out);
 
     // asked for per cell centre and per fragment alike: no mip levels
-    vec4 mask = textureLod(wiper_mask, co, 0.0);
+    vec4 mask = wiper_mask_at(co, pane, across);
     vec4 area_mask = step(0.001, mask);
 
     vec4 mask_val = mix(1.0 - mask, mask, is_out);
@@ -170,7 +199,7 @@ float get_mix_factor(vec2 co, out float side) {
 
 // One layer of droplets (the loop of the original main()), accumulated into the out parameters.
 void add_droplets(
-        vec2 uv, vec2 uv_dx, vec2 uv_dy, float grid_size, float activation, float sun_factor,
+        vec2 uv, vec2 uv_dx, vec2 uv_dy, float grid_size, float activation, float sun_factor, vec4 pane, float across,
         inout vec3 drop_layer, inout float drop_mask_sum, inout vec2 lens_offset, inout float lens_sum) {
     const float cycle_duration = 4.0;
 
@@ -186,7 +215,7 @@ void add_droplets(
             vec2 neighbor_center = (neighbor_cell + 0.5) / grid_size;
 
             float side;
-            float mix_factor = get_mix_factor(neighbor_center, side);
+            float mix_factor = get_mix_factor(neighbor_center, pane, across, side);
 
             uint seed = hash_cell(ivec2(neighbor_cell), uint(side));
 
@@ -318,8 +347,8 @@ void add_rivulets(
 
 // How much water runs down at the given point of the ends of a wiper's sweep: the mask is the
 // phase of the sweep, so its lowest and highest values are the two ends.
-float get_sweep_end(vec2 uv) {
-    vec4 mask = textureLod(wiper_mask, uv, 0.0);
+float get_sweep_end(vec2 uv, vec4 pane, float across) {
+    vec4 mask = wiper_mask_at(uv, pane, across);
     vec4 band = smoothstep(edge_rivulet_band, 0.0, mask) + smoothstep(1.0 - edge_rivulet_band, 1.0, mask);
     // a wiper at work was at its far end a moment ago
     vec4 working = vec4(1.0) - smoothstep(vec4(edge_rivulet_fade * 0.3), vec4(edge_rivulet_fade), reloaded_wiper_since_return);
@@ -332,11 +361,11 @@ float get_sweep_end(vec2 uv) {
 // at the two ends of the sweep it piles up there as a ridge that drains away (the rivulets of
 // get_sweep_end() carry it down). bead_side is -1 at the inner side and 1 at the outer rim,
 // bead_direction the way across it on the screen.
-float get_blade_bead(vec2 uv, float grid_size, out float bead_side, out vec2 bead_direction) {
+float get_blade_bead(vec2 uv, float grid_size, vec4 pane, float across, out float bead_side, out vec2 bead_direction) {
     vec4 move_phase = reloaded_wiper_pos;
     vec4 is_out = vec4(lessThanEqual(move_phase, vec4(1.0)));
     move_phase = mix(vec4(2.0) - move_phase, move_phase, is_out);
-    vec4 mask = textureLod(wiper_mask, uv, 0.0);
+    vec4 mask = wiper_mask_at(uv, pane, across);
     // taken here, outside of any branch
     vec4 mask_dx = dFdx(mask);
     vec4 mask_dy = dFdy(mask);
@@ -379,7 +408,27 @@ float get_blade_bead(vec2 uv, float grid_size, out float bead_side, out vec2 bea
     return body * gathered;
 }
 
+void vertex() {
+    glass_position = VERTEX;
+    wiper_pane = vec4(1.0);
+    vec4 panes[4] = vec4[](wiper_pane_0, wiper_pane_1, wiper_pane_2, wiper_pane_3);
+    float nearest = -1.0;
+    for (int i = 0; i < 4; ++i) {
+        float distance_to = distance(VERTEX, panes[i].xyz);
+        if (!(panes[i].w == 0.0) && (nearest < 0.0 || distance_to < nearest)) {
+            nearest = distance_to;
+            wiper_pane = vec4(0.0);
+            if (panes[i].w > 0.0) {
+                wiper_pane[int(panes[i].w) - 1] = 1.0;
+            }
+        }
+    }
+}
+
 void fragment() {
+    // where the fragment is along the sweep across a glass of no mask
+    float across = (dot(glass_position, wiper_across) - wiper_across_span.x)
+            / max(wiper_across_span.y - wiper_across_span.x, 1e-4);
     vec4 tex_color = texture(diffuse_texture, UV);
     if (tex_color.a < 0.01) {
         discard;
@@ -401,19 +450,19 @@ void fragment() {
     vec2 uv_dx = dFdx(UV);
     vec2 uv_dy = dFdy(UV);
     add_droplets(
-            UV, uv_dx, uv_dy, grid_size, reloaded_rain_intensity, sun_factor,
+            UV, uv_dx, uv_dy, grid_size, reloaded_rain_intensity, sun_factor, wiper_pane, across,
             drop_layer, drop_mask_sum, lens_offset, lens_sum);
 
     float heavy_rain = smoothstep(heavy_rain_start, 1.0, reloaded_rain_intensity);
     if (heavy_rain > 0.0) {
         add_droplets(
-                UV, uv_dx, uv_dy, max(1.0, ceil(grid_size / large_drop_scale)), heavy_rain, sun_factor,
+                UV, uv_dx, uv_dy, max(1.0, ceil(grid_size / large_drop_scale)), heavy_rain, sun_factor, wiper_pane, across,
                 drop_layer, drop_mask_sum, lens_offset, lens_sum);
     }
 
     // Rivulets and the film of water running down the glass, wiped like the droplets
     float wiped_side;
-    float wiped = get_mix_factor(UV, wiped_side);
+    float wiped = get_mix_factor(UV, wiper_pane, across, wiped_side);
     float rivulet_columns = max(1.0, ceil(grid_size / rivulet_spacing));
     float rivulet_column_width = rivulet_width / rivulet_columns;
     add_rivulets(
@@ -422,7 +471,7 @@ void fragment() {
 
     // three times as dense at the ends of the sweep and not wiped away: the water the blade has
     // piled up there, draining
-    float sweep_end_share = get_sweep_end(UV);
+    float sweep_end_share = get_sweep_end(UV, wiper_pane, across);
     float sweep_end = sweep_end_share * smoothstep(gathered_water_start, 1.0, reloaded_rain_intensity);
     if (sweep_end > 0.0) {
         add_rivulets(
@@ -432,7 +481,7 @@ void fragment() {
 
     float bead_side;
     vec2 bead_direction;
-    float bead = get_blade_bead(UV, grid_size, bead_side, bead_direction);
+    float bead = get_blade_bead(UV, grid_size, wiper_pane, across, bead_side, bead_direction);
     // lit far rim, shaded at the blade - like the rivulets
     float bead_rim = bead * smoothstep(0.2, 0.8, bead_side);
     drop_layer += vec3(sun_factor) * bead_rim;
@@ -461,7 +510,7 @@ void fragment() {
     water_alpha = drop_alpha + water_alpha * (1.0 - drop_alpha);
 
 #ifdef RAIN_WINDSCREEN_LAYER
-    vec4 wiper_area = textureLod(wiper_mask, UV, 0.0);
+    vec4 wiper_area = wiper_mask_at(UV, wiper_pane, across);
     // the macro's call on one line: Godot's preprocessor takes no call broken over lines
     float wiped_area = max(max(wiper_area.r, wiper_area.g), max(wiper_area.b, wiper_area.a));
     RAIN_WINDSCREEN_LAYER(UV, wiped_area, sweep_end_share, sun_factor, water_color, water_alpha);

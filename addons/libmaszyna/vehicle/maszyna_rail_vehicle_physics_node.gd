@@ -33,7 +33,10 @@ var _dirty:bool = false
 ## The vehicle's controller, built from the .fiz as the node enters the tree - once, before anything
 ## can see the vehicle
 func _build_controller() -> VehicleController:
-    return FizVehicleBuilder.build_description(data_path, fiz_filename) if fiz_filename else null
+    if not fiz_filename:
+        return null
+    return FizVehicleBuilder.build_description(data_path, fiz_filename,
+            MaszynaVehicleSystem.fiz_get_patched_wipers(data_path.path_join(fiz_filename + ".fiz")))
 
 
 func _process(_delta:float) -> void:

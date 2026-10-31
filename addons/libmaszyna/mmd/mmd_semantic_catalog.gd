@@ -1323,8 +1323,8 @@ static func _static_init() -> void:
             "mesh_path_field": "mesh_path",
         },
         # reloaded_manualwiper1-4: the handle of a wiper driven by hand - not the original's, which
-        # moves no such wiper: added to a cab whose model has the handles (MmdManualWiperHandles, a
-        # quirk), each turned by the mouse across the wiper's sweep (RailVehicleWipers.DRIVE_MANUAL).
+        # moves no such wiper: added to a cab by the game's patch of its model (MaszynaCabControlPatch,
+        # a quirk), each turned by the mouse across the wiper's sweep (RailVehicleWipers.DRIVE_MANUAL).
         # The keys move every wiper at once (MaszynaCabinManualWipers)
         "reloaded_manualwiper1": {
             "widget_class": CabinKnob,

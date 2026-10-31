@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://cifruuhcv5hex"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://camae3nqv33wn" path="res://addons/libmaszyna/vehicle/maszyna_wiper_arm_patch.gd" id="arm"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("arm")
+submodel = "banan/wycieraczka1"
+pivot = Vector3(0.297, 10.337, 2.089)
+axis = Vector3(0.152, 0.979, 0.135)
+turn = -49
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/en71aks_v1/aks_ra.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

@@ -5,9 +5,11 @@ class_name MaszynaCabinManualWipers
 ## MaszynaRailVehicle3DInstancer.apply_wiper_count()): the wiper switch's keys move every wiper
 ## across the glass and back, smoothly while held, as the knob CONTROL - the glass is wiped by them
 ## even in a cab of no handle to animate. A cab whose model has the handles turns each of them by
-## the mouse as well (MmdManualWiperHandles, reloaded_manualwiper<N>), its wiper with it.
+## the mouse as well (a game's MaszynaCabControlPatch, HANDLE_LABEL_PREFIX<N>), its wiper with it.
 
 const CONTROL:StringName = &"reloaded_manualwipers"
+## The label of wiper N's handle, from 1 (MmdSemanticCatalog)
+const HANDLE_LABEL_PREFIX:String = "reloaded_manualwiper"
 ## How fast a held key moves the wipers: their sweep a simulated second
 const KEY_SPEED:float = 1.0
 ## The knob the keys hold (MaszynaCabinLogic._bind())
@@ -29,7 +31,7 @@ func register(_vehicle_rid:RID, cabin:RID) -> void:
     _cabin = cabin
     CabinSystem.register_control(cabin, CONTROL, _wipers)
     for wiper:int in RailVehicleWipers.MANUAL_WIPERS_MAX:
-        var control_id:StringName = StringName(MmdManualWiperHandles.LABEL_PREFIX + str(wiper + 1))
+        var control_id:StringName = StringName(HANDLE_LABEL_PREFIX + str(wiper + 1))
         _handles[control_id] = _handle.bind(wiper)
         CabinSystem.register_control(cabin, control_id, _handles[control_id])
 

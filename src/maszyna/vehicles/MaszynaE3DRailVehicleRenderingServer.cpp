@@ -302,26 +302,9 @@ namespace godot {
             maszyna->pantograph_arms[RailVehicleEnginePowerSource::PANTOGRAPH_SECOND] =
                     _parts(*visual, appearance->get_pantograph_rear_arms());
             maszyna->wiper_arms = _parts(*visual, appearance->get_wiper_arms());
-            // the original's arms turn about their up; ones found by their names (a quirk) about
-            // their own axis most along the vehicle - across the windscreen, their pivot's normal
-            maszyna->wiper_axes.clear();
-            for (int wiper = 0; (static_cast<int64_t>(wiper) + 1) * WIPER_ELEMENTS <= maszyna->wiper_arms.size();
-                 ++wiper) {
-                Vector3 axis(0.0, 1.0, 0.0);
-                const Basis &rest = maszyna->wiper_arms[wiper * WIPER_ELEMENTS].rest.basis;
-                if (appearance->get_wiper_arms_found()) {
-                    real_t along = -1.0;
-                    for (int column = 0; column < 3; ++column) {
-                        const real_t dot = Math::abs(rest.get_column(column).normalized().z);
-                        if (dot > along) {
-                            along = dot;
-                            axis = Vector3();
-                            axis[column] = 1.0;
-                        }
-                    }
-                }
-                maszyna->wiper_axes.push_back(axis);
-            }
+            maszyna->wiper_pivots = appearance->get_wiper_pivots();
+            maszyna->wiper_axes = appearance->get_wiper_axes();
+            maszyna->wiper_turns = appearance->get_wiper_turns();
             maszyna->mirrors = _parts(*visual, appearance->get_mirrors());
             maszyna->doors = _parts(*visual, appearance->get_doors());
             maszyna->door_steps = _parts(*visual, appearance->get_door_steps());
@@ -905,14 +888,14 @@ namespace godot {
         // as _pose_wipers() turns them: the arm about its own up, every other wiper mirrored
         const double angle = Math::deg_to_rad(wipers->get_angle());
         for (int wiper = 0; (static_cast<int64_t>(wiper) + 1) * WIPER_ELEMENTS <= maszyna->wiper_arms.size(); ++wiper) {
-            const Part &arm = maszyna->wiper_arms[wiper * WIPER_ELEMENTS];
-            const Part &blade = maszyna->wiper_arms[(wiper * WIPER_ELEMENTS) + WIPER_BLADE];
+            const Part &arm = maszyna->wiper_arms[static_cast<int64_t>(wiper) * WIPER_ELEMENTS];
+            const Part &blade = maszyna->wiper_arms[(static_cast<int64_t>(wiper) * WIPER_ELEMENTS) + WIPER_BLADE];
             const Vector3 reach = blade.rest.origin - arm.rest.origin;
             if (arm.submodel.is_empty() || blade.submodel.is_empty() || reach.is_zero_approx()) {
                 continue;
             }
             const Vector3 way = reach.normalized();
-            const Vector3 axis = arm.rest.basis.xform(maszyna->wiper_axes[wiper]).normalized();
+            const Vector3 axis = arm.rest.basis.get_column(1).normalized();
             sweeps.push_back(Vector4(arm.rest.origin.x, arm.rest.origin.y, arm.rest.origin.z, reach.length()));
             sweeps.push_back(Vector4(way.x, way.y, way.z, static_cast<real_t>(wiper % 2 == 1 ? -angle : angle)));
             sweeps.push_back(Vector4(axis.x, axis.y, axis.z, 0.0F));
@@ -942,10 +925,20 @@ namespace godot {
             double sweep = positions[wiper] > 1.0 ? positions[wiper] - 1.0 : positions[wiper];
             // smoothInterpolate() (utilities.h:324)
             sweep = sweep * sweep * (3.0 - (2.0 * sweep));
+            // a patched arm turned whole about its own point and axis by its own angle
+            if (wiper < p_maszyna.wiper_turns.size()) {
+                const Vector3 pivot = p_maszyna.wiper_pivots[wiper];
+                const Basis turn(
+                        p_maszyna.wiper_axes[wiper].normalized(),
+                        static_cast<real_t>(Math::deg_to_rad(p_maszyna.wiper_turns[wiper]) * sweep));
+                _pose(p_visual, p_maszyna.wiper_arms[static_cast<int64_t>(wiper) * WIPER_ELEMENTS],
+                      Transform3D(turn, pivot - turn.xform(pivot)));
+                continue;
+            }
             const double angle = (wiper % 2 == 1 ? -wiper_angle : wiper_angle) * sweep;
             for (int element = 0; element < WIPER_ELEMENTS; ++element) {
                 _pose(p_visual, p_maszyna.wiper_arms[(wiper * WIPER_ELEMENTS) + element],
-                      Basis(p_maszyna.wiper_axes[wiper], static_cast<real_t>(element == WIPER_BLADE ? -angle : angle)));
+                      Basis(Vector3(0.0, 1.0, 0.0), static_cast<real_t>(element == WIPER_BLADE ? -angle : angle)));
             }
         }
     }

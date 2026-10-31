@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://5tusxq1qx424u"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://cnlotbhyq1uk0" path="res://addons/libmaszyna/vehicle/maszyna_cab_control_patch.gd" id="control"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("control")
+label = "reloaded_manualwiper1"
+submodel = "/banan/wycieracz0"
+animation_type = "rot"
+scale = -0.2528
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/sp45_v1/kabina-sp45-a.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

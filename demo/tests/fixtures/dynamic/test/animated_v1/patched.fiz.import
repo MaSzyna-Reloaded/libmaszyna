@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://kis7yv4d6jfe"
+path="res://.godot/imported/patched.fiz-b00a056e3efd08744cd78c84221b0928.res"
+
+[deps]
+
+source_file="res://tests/fixtures/dynamic/test/animated_v1/patched.fiz"
+dest_files=["res://.godot/imported/patched.fiz-b00a056e3efd08744cd78c84221b0928.res"]
+
+[params]
+
