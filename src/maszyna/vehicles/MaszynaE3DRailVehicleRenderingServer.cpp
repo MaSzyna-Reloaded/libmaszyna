@@ -874,6 +874,32 @@ namespace godot {
         }
     }
 
+    PackedVector4Array MaszynaE3DRailVehicleRenderingServer::_vehicle_get_wiper_sweeps(const RID &p_vehicle) const {
+        PackedVector4Array sweeps;
+        const MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
+        const Ref<RailVehicleWipers> wipers =
+                component<RailVehicleWipers>(p_vehicle, VehicleComponentType::COMPONENT_WIPERS);
+        if (maszyna == nullptr || wipers.is_null()) {
+            return sweeps;
+        }
+        // as _pose_wipers() turns them: the arm about its own up, every other wiper mirrored
+        const double angle = Math::deg_to_rad(wipers->get_angle());
+        for (int wiper = 0; (static_cast<int64_t>(wiper) + 1) * WIPER_ELEMENTS <= maszyna->wiper_arms.size(); ++wiper) {
+            const Part &arm = maszyna->wiper_arms[wiper * WIPER_ELEMENTS];
+            const Part &blade = maszyna->wiper_arms[(wiper * WIPER_ELEMENTS) + WIPER_BLADE];
+            const Vector3 reach = blade.rest.origin - arm.rest.origin;
+            if (arm.submodel.is_empty() || blade.submodel.is_empty() || reach.is_zero_approx()) {
+                continue;
+            }
+            const Vector3 way = reach.normalized();
+            const Vector3 axis = arm.rest.basis.get_column(1).normalized();
+            sweeps.push_back(Vector4(arm.rest.origin.x, arm.rest.origin.y, arm.rest.origin.z, reach.length()));
+            sweeps.push_back(Vector4(way.x, way.y, way.z, static_cast<real_t>(wiper % 2 == 1 ? -angle : angle)));
+            sweeps.push_back(Vector4(axis.x, axis.y, axis.z, 0.0F));
+        }
+        return sweeps;
+    }
+
     // TDynamicObject::UpdateWiper() (DynObj.cpp:716-731): both arms swing by the wiper angle, the
     // blade swings back by it to stay upright; every other wiper is mirrored.
     void MaszynaE3DRailVehicleRenderingServer::_pose_wipers(

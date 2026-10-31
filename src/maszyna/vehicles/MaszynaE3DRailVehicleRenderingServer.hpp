@@ -166,6 +166,8 @@ namespace godot {
             void _vehicle_pose(const RID &p_vehicle) override;
             void _vehicle_shown_cabin_changed(const RID &p_vehicle) override;
             void _vehicle_snow_changed(const RID &p_vehicle, const Ref<Material> &p_overlay) override;
+            /* The wiper arms the MMD names (animwiperprefix), at rest, swept by the FIZ's wiper angle */
+            PackedVector4Array _vehicle_get_wiper_sweeps(const RID &p_vehicle) const override;
             void _frame_processed(double p_delta) override;
 
         public:
