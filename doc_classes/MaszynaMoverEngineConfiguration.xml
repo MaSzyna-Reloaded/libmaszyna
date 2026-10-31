@@ -9,27 +9,27 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="cntrl_eim_control_additional_zeros" type="bool" setter="set_cntrl_eim_control_additional_zeros" getter="get_cntrl_eim_control_additional_zeros">
+		<member name="cntrl_eim_control_additional_zeros" type="bool" setter="set_cntrl_eim_control_additional_zeros" getter="get_cntrl_eim_control_additional_zeros" default="false">
 			[code]Cntrl.EIMCtrlAddZeros[/code]
 		</member>
-		<member name="cntrl_eim_control_emergency" type="bool" setter="set_cntrl_eim_control_emergency" getter="get_cntrl_eim_control_emergency">
+		<member name="cntrl_eim_control_emergency" type="bool" setter="set_cntrl_eim_control_emergency" getter="get_cntrl_eim_control_emergency" default="false">
 			[code]Cntrl.EIMCtrlEmergency[/code]
 		</member>
-		<member name="cntrl_eim_control_type" type="int" setter="set_cntrl_eim_control_type" getter="get_cntrl_eim_control_type" enum="RailVehicleEngine.EimControlType">
+		<member name="cntrl_eim_control_type" type="int" setter="set_cntrl_eim_control_type" getter="get_cntrl_eim_control_type" enum="MaszynaMoverEngineConfiguration.EimControlType" default="0">
 			[code]Cntrl.EIMCtrlType[/code]
 		</member>
-		<member name="cntrl_series_shunt_on_series_position" type="bool" setter="set_cntrl_series_shunt_on_series_position" getter="get_cntrl_series_shunt_on_series_position">
-			[code]Cntrl.ScndS[/code]
-		</member>
-		<member name="cntrl_fast_series_circuit" type="bool" setter="set_cntrl_fast_series_circuit" getter="get_cntrl_fast_series_circuit">
+		<member name="cntrl_fast_series_circuit" type="bool" setter="set_cntrl_fast_series_circuit" getter="get_cntrl_fast_series_circuit" default="false">
 			[code]Cntrl.FSCircuit[/code]
 		</member>
-		<member name="motor_blowers_speed" type="float" setter="set_motor_blowers_speed" getter="get_motor_blowers_speed">
+		<member name="cntrl_series_shunt_on_series_position" type="bool" setter="set_cntrl_series_shunt_on_series_position" getter="get_cntrl_series_shunt_on_series_position" default="false">
+			[code]Cntrl.ScndS[/code]
+		</member>
+		<member name="motor_blowers_speed" type="float" setter="set_motor_blowers_speed" getter="get_motor_blowers_speed" default="0.0">
 			[code]Engine:MotorBlowersSpeed[/code]
 			Motor cooling fan speed: a positive value is a multiplier of the main engine's RPM, a negative value is a
 			fixed RPM.
 		</member>
-		<member name="motor_param_table" type="MaszynaMoverMotorParameter[]" setter="set_motor_param_table" getter="get_motor_param_table">
+		<member name="motor_param_table" type="MaszynaMoverMotorParameter[]" setter="set_motor_param_table" getter="get_motor_param_table" default="[]">
 			[code]MotorParamTable[/code]
 			FIXME: original FIZ file has multiple MotorParamTable sections depending of the engine type. Their values are parsed individually. This property should be a part of a specific train engine.
 		</member>
