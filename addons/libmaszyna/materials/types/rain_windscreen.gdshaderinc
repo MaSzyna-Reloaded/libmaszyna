@@ -66,6 +66,11 @@ global uniform vec4 reloaded_wiper_pos;
 // the two as points in time, "time - wiper_timer_*")
 global uniform vec4 reloaded_wiper_since_out;
 global uniform vec4 reloaded_wiper_since_return;
+// when each wiper's blade last passed each stretch of its sweep (a row a wiper, the sweep's phase
+// across - its mask's), against the wipers' clock (libreloaded's CabinWindscreenWipers): the rain
+// comes back on each spot from when the blade wiped it, whichever way and however it moved
+global uniform sampler2D reloaded_wiper_pass_time;
+global uniform float reloaded_wiper_clock;
 
 // Evolving Sub-Grid Turbulence for Smoke Animation, H. Schechter and R. Bridson (random.glsl)
 uint hash(uint s) {
@@ -127,10 +132,17 @@ float get_mix_factor(vec2 co, out float side) {
     cleaned *= side_v;
     side_v = mix(side_v, vec4(1.0) - side_v, is_out);
 
-    // "regeneration", raindrops gradually returning after wiper pass
+    // "regeneration", raindrops gradually returning after wiper pass: from when the blade last
+    // passed the spot (its stretch of the sweep, by its mask) - the original's times since the
+    // stroke left the park or the far end took a hand's back and forth for whole strokes
+    ivec2 pass_size = textureSize(reloaded_wiper_pass_time, 0);
+    vec4 passed_at = vec4(0.0);
+    for (int wiper = 0; wiper < 4; ++wiper) {
+        int bin = clamp(int(mask[wiper] * float(pass_size.x)), 0, pass_size.x - 1);
+        passed_at[wiper] = texelFetch(reloaded_wiper_pass_time, ivec2(bin, min(wiper, pass_size.y - 1)), 0).r;
+    }
     vec4 regen_phase = clamp(
-            (mix(reloaded_wiper_since_out, reloaded_wiper_since_return, side_v) - vec4(0.2))
-                    / vec4(reloaded_wiper_regen_time),
+            (vec4(reloaded_wiper_clock) - passed_at - vec4(0.2)) / vec4(reloaded_wiper_regen_time),
             vec4(0.0), vec4(1.0));
 
     side_v = mix(vec4(0.0), vec4(1.0) - side_v, area_mask);
