@@ -44,6 +44,10 @@ namespace godot {
             rs->instance_set_transform(p_instance.rids[i], p_instance.transform * p_instance.local_transforms[i]);
             rs->instance_set_layer_mask(p_instance.rids[i], p_instance.layer_mask);
             rs->instance_geometry_set_material_overlay(p_instance.rids[i], overlay);
+            for (const Variant &name: p_instance.shader_parameters.keys()) {
+                rs->instance_geometry_set_shader_parameter(
+                        p_instance.rids[i], name, p_instance.shader_parameters[name]);
+            }
             // the chain ends with the submodel itself (instance_set_part_material_override())
             if (const Ref<Material> *material =
                         p_instance.submodel_materials.getptr(p_instance.chains[i][p_instance.chains[i].size() - 1]);

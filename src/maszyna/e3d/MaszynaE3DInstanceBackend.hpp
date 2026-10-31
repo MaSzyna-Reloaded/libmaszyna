@@ -160,6 +160,9 @@ namespace godot {
             /// Drawn over every submodel (instance_set_material_overlay()), kept across a stream
             /// clear/build cycle
             Ref<Material> material_overlay;
+            /// Per-instance uniforms of its shaders (instance_set_shader_parameter()), kept across a
+            /// stream clear/build cycle
+            Dictionary shader_parameters;
             /// ModelRenderingServer::InstanceKind - scenery unless the client says otherwise,
             /// which is what a placement registered for streaming always is
             int instance_kind = 0;
