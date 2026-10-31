@@ -104,6 +104,10 @@ func _rebuild_generated() -> void:
     var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
             abs_mmd_path, parameters, cab_definition, _random_choices)
     _diagnostics.append_array(definition.diagnostics)
+    # Quirk: the handles of wipers driven by hand, which the MMD does not name
+    if CabinSystem.vehicle_config(get_vehicle_rid()).get("wipers_drive", RailVehicleWipers.DRIVE_AUTOMATIC) \
+            == RailVehicleWipers.DRIVE_MANUAL:
+        MmdManualWiperHandles.add_to(definition, data_path)
 
     camera_bound_min = definition.bounds_min
     camera_bound_max = definition.bounds_max

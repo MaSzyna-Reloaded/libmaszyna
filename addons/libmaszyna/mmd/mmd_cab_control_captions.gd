@@ -151,6 +151,11 @@ const CAPTIONS:Dictionary[StringName, String] = {
     &"universalbrake2_bt": "train brake",
     &"universalbrake3_bt": "train brake",
     &"wipers_sw": "wipers mode selector",
+    # the handles of wipers driven by hand (MmdManualWiperHandles), the original's none
+    &"reloaded_manualwiper1": "wiper 1 handle",
+    &"reloaded_manualwiper2": "wiper 2 handle",
+    &"reloaded_manualwiper3": "wiper 3 handle",
+    &"reloaded_manualwiper4": "wiper 4 handle",
     # not in the original's list, which leaves them without a tooltip; captioned here, with the
     # wrapper's own translations (addons/libreloaded/translations)
     &"cabactivation_sw": "cab activation",

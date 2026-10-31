@@ -22,6 +22,7 @@ namespace godot {
             PackedStringArray pantograph_front_arms;
             PackedStringArray pantograph_rear_arms;
             PackedStringArray wiper_arms;
+            bool wiper_arms_found = false;
             PackedStringArray mirrors;
             PackedStringArray doors;
             PackedStringArray door_steps;
@@ -44,6 +45,11 @@ namespace godot {
             /* Arm 1, arm 2 and blade of every wiper (DynObj.cpp:5838-5870) */
             void set_wiper_arms(const PackedStringArray &p_value);
             PackedStringArray get_wiper_arms() const;
+            /* The wiper arms were found by their names, not named by the MMD (a quirk,
+             * MmdManualWiperHandles): each turns about the axis of its own across the glass, not its
+             * up as the original's animwiperprefix arms */
+            void set_wiper_arms_found(bool p_value);
+            bool get_wiper_arms_found() const;
             /* In the original's order, odd on the left, even on the right (DynObj.cpp:5887-5910) */
             void set_mirrors(const PackedStringArray &p_value);
             PackedStringArray get_mirrors() const;

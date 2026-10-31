@@ -30,6 +30,14 @@ namespace godot {
     void MaszynaMoverRailVehicleWipers::_do_process_component(const double p_delta) {
         const RailVehicleController *controller = get_rail_vehicle_controller();
         ERR_FAIL_NULL(controller);
+        // driven by hand: each wiper stands where its handle does, the linkage moving it at once
+        if (get_drive() == DRIVE_MANUAL) {
+            for (int i = 0; i < static_cast<int>(wipers.size()); i++) {
+                wipers[i].position = manual_get_position(i);
+                wipers[i].returning = false;
+            }
+            return;
+        }
         if (get_positions().size() == 0) {
             return;
         }

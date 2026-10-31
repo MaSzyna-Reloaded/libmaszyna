@@ -1322,6 +1322,54 @@ static func _static_init() -> void:
             "config_max_property": "wipers_switch_position_max",
             "mesh_path_field": "mesh_path",
         },
+        # reloaded_manualwiper1-4: the handle of a wiper driven by hand - not the original's, which
+        # moves no such wiper: added to a cab whose model has the handles (MmdManualWiperHandles, a
+        # quirk), each turned by the mouse across the wiper's sweep (RailVehicleWipers.DRIVE_MANUAL).
+        # The keys move every wiper at once (MaszynaCabinManualWipers)
+        "reloaded_manualwiper1": {
+            "widget_class": CabinKnob,
+            "fixed_fields": {
+                "value_min": 0.0,
+                "value_max": 1.0,
+                "command": "wipers_manual_set_0",
+                "state_property": "wipers_manual_position_0",
+            },
+            "config_max_property": "",
+            "mesh_path_field": "mesh_path",
+        },
+        "reloaded_manualwiper2": {
+            "widget_class": CabinKnob,
+            "fixed_fields": {
+                "value_min": 0.0,
+                "value_max": 1.0,
+                "command": "wipers_manual_set_1",
+                "state_property": "wipers_manual_position_1",
+            },
+            "config_max_property": "",
+            "mesh_path_field": "mesh_path",
+        },
+        "reloaded_manualwiper3": {
+            "widget_class": CabinKnob,
+            "fixed_fields": {
+                "value_min": 0.0,
+                "value_max": 1.0,
+                "command": "wipers_manual_set_2",
+                "state_property": "wipers_manual_position_2",
+            },
+            "config_max_property": "",
+            "mesh_path_field": "mesh_path",
+        },
+        "reloaded_manualwiper4": {
+            "widget_class": CabinKnob,
+            "fixed_fields": {
+                "value_min": 0.0,
+                "value_max": 1.0,
+                "command": "wipers_manual_set_3",
+                "state_property": "wipers_manual_position_3",
+            },
+            "config_max_property": "",
+            "mesh_path_field": "mesh_path",
+        },
         # radiochannel_sw: real vehicles carry different physical radio hardware - some (e.g.
         # "Koliber" units) only have separate next/prev channel buttons
         # (radiochannelnext_sw:/radiochannelprev_sw: below), others (e.g. "Radmor" units) have an

@@ -31,7 +31,7 @@ const CAR_OBSTACLE_RANGE:float = 750.0
 ## is otherwise silently served from a stale pre-fix cache entry until something touches that
 ## specific vehicle's file. Confirmed the hard way: a MotorParamTable0/nmax column-mapping fix
 ## had zero effect in a running game because of exactly this.
-const FIZ_PARSER_FORMAT_VERSION := 50
+const FIZ_PARSER_FORMAT_VERSION := 51
 
 ## Ordered (longest-prefix-first where ambiguity is possible) table of recognized FIZ section
 ## headers. `parser` is a section parser instance (see fiz_train_*_parser.gd) exposing
@@ -200,6 +200,11 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     if context.get_part("RailVehicleMasterController"):
         target.add_component(MaszynaMoverRailVehicleHorns.new())
         target.add_component(MaszynaMoverRailVehicleRadio.new())
+        # Quirk: a cab's vehicle whose FIZ has no WiperList: has wipers all the same, driven by hand
+        # (MaszynaRailVehicle3DInstancer.apply_wiper_count(), MASZYNA_ORIGINAL_QUIRKS.md) - without
+        # the component it had no wipers to wipe its glass by the keys at all
+        if not context.get_part("RailVehicleWipers"):
+            target.add_component(MaszynaMoverRailVehicleWipers.new())
 
 ## Same on-disk cache used by MaszynaE3DModelManager for parsed E3D models (plugins/libmaszyna/addons/libmaszyna/e3d/
 ## maszyna_e3d_model_manager.gd) - keyed by mtime+path like that cache's own _make_cache_hash(), so an

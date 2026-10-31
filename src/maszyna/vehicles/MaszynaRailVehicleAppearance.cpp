@@ -20,6 +20,10 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("set_wiper_arms", "value"), &MaszynaRailVehicleAppearance::set_wiper_arms);
         ClassDB::bind_method(D_METHOD("get_wiper_arms"), &MaszynaRailVehicleAppearance::get_wiper_arms);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "wiper_arms"), "set_wiper_arms", "get_wiper_arms");
+        ClassDB::bind_method(
+                D_METHOD("set_wiper_arms_found", "value"), &MaszynaRailVehicleAppearance::set_wiper_arms_found);
+        ClassDB::bind_method(D_METHOD("get_wiper_arms_found"), &MaszynaRailVehicleAppearance::get_wiper_arms_found);
+        ADD_PROPERTY(PropertyInfo(Variant::BOOL, "wiper_arms_found"), "set_wiper_arms_found", "get_wiper_arms_found");
         ClassDB::bind_method(D_METHOD("set_mirrors", "value"), &MaszynaRailVehicleAppearance::set_mirrors);
         ClassDB::bind_method(D_METHOD("get_mirrors"), &MaszynaRailVehicleAppearance::get_mirrors);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "mirrors"), "set_mirrors", "get_mirrors");
@@ -87,6 +91,14 @@ namespace godot {
 
     PackedStringArray MaszynaRailVehicleAppearance::get_wiper_arms() const {
         return wiper_arms;
+    }
+
+    void MaszynaRailVehicleAppearance::set_wiper_arms_found(const bool p_value) {
+        wiper_arms_found = p_value;
+    }
+
+    bool MaszynaRailVehicleAppearance::get_wiper_arms_found() const {
+        return wiper_arms_found;
     }
 
     void MaszynaRailVehicleAppearance::set_mirrors(const PackedStringArray &p_value) {

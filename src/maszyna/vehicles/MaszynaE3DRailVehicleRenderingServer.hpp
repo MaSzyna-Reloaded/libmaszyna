@@ -50,6 +50,8 @@ namespace godot {
                      * its pair, slider */
                     Vector<Part> pantograph_arms[2];
                     Vector<Part> wiper_arms;
+                    /* The axis each wiper's arms turn about, in their own frames */
+                    Vector<Vector3> wiper_axes;
                     Vector<Part> mirrors;
                     /* MaszynaRailVehicleAppearance::get_doors(): DOOR_ELEMENTS a door */
                     Vector<Part> doors;

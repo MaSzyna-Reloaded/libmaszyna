@@ -363,7 +363,7 @@ func _get_structure(dynamic:VehicleData) -> MaszynaVehicleStructure:
     # matching FizVehicleBuilder._make_cache_hash()'s same simplification for FIZ `include`s.
     # The hash cannot see changes to MaszynaRailVehicle3DInstancer's own code - bump this tag
     # whenever that code changes the cached structure. v34: RoadVehicleAppearance of a road vehicle; v33: MaszynaRailVehicleAppearance; v32: the cabins the MMD defines; v31: coupleradapter:; v30 pantfactors:, a pantograph needs only its slider; v29 pendulums; v28 doors and door steps; v27 rolling wheels by the axle arrangement.
-    var cache_hash:String = ("structure-v34:%s:%s" % [FileAccess.get_modified_time(abs_mmd_path), abs_mmd_path]).md5_text()
+    var cache_hash:String = ("structure-v35:%s:%s" % [FileAccess.get_modified_time(abs_mmd_path), abs_mmd_path]).md5_text()
     var structure:MaszynaVehicleStructure = _cache.get(cache_path, cache_hash) as MaszynaVehicleStructure
     if not structure:
         structure = MaszynaRailVehicle3DInstancer.read_structure(
