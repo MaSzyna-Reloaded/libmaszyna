@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaFileIndexer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Finds the original's data files whatever the case of their names, and keeps what a scenery's loading found and missed.
+	</brief_description>
+	<description>
+		The original's data is made on Windows, whose filesystem ignores letter case, and names its files in any case ([code]glinojeck/glinojeck.ctr[/code] for [code]glinojeck/Glinojeck.ctr[/code]). On a filesystem that keeps the case, [method path_resolve] finds a path not found as written nor in lowercase: its directory, found the same way, is listed once and its names kept, and the name is looked up there whatever its case. A directory is listed at most once a run, until the game directory changes: a file added meanwhile is found in the next run. On Windows the filesystem finds them itself.
+		The indexer also keeps what a scenery's loading found of the data since [method files_clear]: the files found, and the files its readers gave up on ([method missing_file_add]) - a reader tries candidates (a model's two extensions, a texture's four places), and only it knows when none was there.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="files_clear">
+			<return type="void" />
+			<description>
+				Forgets the files found and given up on so far; a scenery's compilation calls it before it reads the data.
+			</description>
+		</method>
+		<method name="found_files_get_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				How many files [method path_resolve] has found since [method files_clear].
+			</description>
+		</method>
+		<method name="missing_file_add">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="type" type="int" enum="MaszynaFileIndexer.FileType" />
+			<description>
+				Records [param path] as a file a reader gave up on, as a file of [param type]; a path under the game directory is kept relative to it.
+			</description>
+		</method>
+		<method name="missing_files_get" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				The files given up on since [method files_clear]: their paths, relative to the game directory when they are under it, to their [enum FileType].
+			</description>
+		</method>
+		<method name="path_resolve">
+			<return type="String" />
+			<param index="0" name="base_dir" type="String" />
+			<param index="1" name="relative_path" type="String" />
+			<description>
+				[param relative_path] as it is on disk under [param base_dir], whatever the case of its names; as written when it is nowhere.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MASZYNA_FILE_INCLUDE" value="0" enum="FileType">
+			A file a scenery includes ([code]include[/code]).
+		</constant>
+		<constant name="MASZYNA_FILE_FIZ" value="1" enum="FileType">
+			A vehicle's physics ([code].fiz[/code]).
+		</constant>
+		<constant name="MASZYNA_FILE_MMD" value="2" enum="FileType">
+			A vehicle's cab description ([code].mmd[/code]).
+		</constant>
+		<constant name="MASZYNA_FILE_MODEL" value="3" enum="FileType">
+			A model ([code].e3d[/code] or [code].t3d[/code]).
+		</constant>
+		<constant name="MASZYNA_FILE_TEXTURE" value="4" enum="FileType">
+			A texture.
+		</constant>
+		<constant name="MASZYNA_FILE_SOUND" value="5" enum="FileType">
+			A sound.
+		</constant>
+	</constants>
+</class>

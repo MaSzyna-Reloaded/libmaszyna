@@ -17,24 +17,24 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cntrl_automatic_cab_activation" type="bool" setter="set_cntrl_automatic_cab_activation" getter="get_cntrl_automatic_cab_activation" default="true">
+			[code]Cntrl.AutomaticCabActivation[/code]
+		</member>
+		<member name="cntrl_compartment_lights_start_mode" type="int" setter="set_cntrl_compartment_lights_start_mode" getter="get_cntrl_compartment_lights_start_mode" enum="RailVehicleController.StartMode" default="2">
+			[code]Cntrl.CompartmentLightsStart[/code]
+		</member>
+		<member name="cntrl_ground_relay_start_mode" type="int" setter="set_cntrl_ground_relay_start_mode" getter="get_cntrl_ground_relay_start_mode" enum="RailVehicleController.StartMode" default="1">
+			[code]Cntrl.GroundRelayStart[/code]
+		</member>
+		<member name="cntrl_inactive_cab_flag" type="int" setter="set_cntrl_inactive_cab_flag" getter="get_cntrl_inactive_cab_flag" default="0">
+			[code]Cntrl.InactiveCabFlag[/code]
+			Bitmask of automatic actions performed on cab deactivation/activation.
+		</member>
 		<member name="train_type" type="int" setter="set_train_type" getter="get_train_type" enum="MaszynaMoverRailVehicleController.TrainType" default="0">
 			[code]Param.Type[/code]
 			Bitmask identifying a vehicle's special-cased behavior family (e.g. EZT, ET22, ET40, ET42, EP05, DMU).
 			Not every value listed on the FIZ wiki is implemented by the simulation - only the ones it knows are exposed
 			here (notably, [code]182[/code] is missing).
-		</member>
-		<member name="cntrl_ground_relay_start_mode" type="int" setter="set_cntrl_ground_relay_start_mode" getter="get_cntrl_ground_relay_start_mode" enum="RailVehicleController.StartMode" default="1">
-			[code]Cntrl.GroundRelayStart[/code]
-		</member>
-		<member name="cntrl_compartment_lights_start_mode" type="int" setter="set_cntrl_compartment_lights_start_mode" getter="get_cntrl_compartment_lights_start_mode" enum="RailVehicleController.StartMode" default="2">
-			[code]Cntrl.CompartmentLightsStart[/code]
-		</member>
-		<member name="cntrl_automatic_cab_activation" type="bool" setter="set_cntrl_automatic_cab_activation" getter="get_cntrl_automatic_cab_activation" default="true">
-			[code]Cntrl.AutomaticCabActivation[/code]
-		</member>
-		<member name="cntrl_inactive_cab_flag" type="int" setter="set_cntrl_inactive_cab_flag" getter="get_cntrl_inactive_cab_flag" default="0">
-			[code]Cntrl.InactiveCabFlag[/code]
-			Bitmask of automatic actions performed on cab deactivation/activation.
 		</member>
 	</members>
 	<constants>

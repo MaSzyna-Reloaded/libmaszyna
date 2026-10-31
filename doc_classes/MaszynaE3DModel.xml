@@ -51,7 +51,7 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="FORMAT_VERSION" value="20261012">
+		<constant name="FORMAT_VERSION" value="20261019">
 			Version of the serialized E3D model cache format.
 		</constant>
 	</constants>
