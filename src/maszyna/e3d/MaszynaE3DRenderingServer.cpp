@@ -582,6 +582,12 @@ namespace godot {
         _update_if_built(*instance);
     }
 
+    Ref<Material> MaszynaE3DRenderingServer::instance_get_material_overlay(const RID &p_instance) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Ref<Material>());
+        return instance->material_overlay;
+    }
+
     /// Where the segment (world space) first meets the instance's meshes: `{position, distance}`
     /// (the distance from `p_from`), empty when it misses or the instance is hidden or not built
     Dictionary MaszynaE3DRenderingServer::instance_intersect_segment(

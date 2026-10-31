@@ -79,12 +79,12 @@ func test_changing_simulation_speed_keeps_running_time() -> void:
     assert_almost_eq(environment_node.current_time, 9.0, 0.001)
 
 
-## The node sets the date and the precipitation; SimulationServer has the season and the weather of
-## them, and the materials follow it
+## SimulationServer has the season the weather gives it and the weather of the node's
+## precipitation, and the materials follow them
 func test_proxies_season_and_weather_to_material_manager() -> void:
     var environment_node: EnvironmentNode = _create_environment_node()
 
-    environment_node.set_date(2026, 1, 15)
+    SimulationServer.season_set(SimulationServer.SEASON_WINTER)
 
     assert_eq(MaszynaMaterialManager.season, SimulationServer.SEASON_WINTER)
 
@@ -99,27 +99,22 @@ func test_proxies_season_and_weather_to_material_manager() -> void:
     assert_eq(MaszynaMaterialManager.weather, SimulationServer.WEATHER_RAIN)
 
 
-func test_sets_season_from_manual_date_thresholds() -> void:
+## The season is the weather's (SimulationServer.season_set()), not the date's: a date set leaves
+## it as it was, a season set reaches the materials
+func test_season_is_the_weathers_not_the_dates() -> void:
     var environment_node: EnvironmentNode = _create_environment_node()
-    var cases: Array[Array] = [
-        [5, 3, 2026, SimulationServer.SEASON_WINTER],
-        [7, 3, 2026, SimulationServer.SEASON_SPRING],
-        [7, 6, 2026, SimulationServer.SEASON_SPRING],
-        [8, 6, 2026, SimulationServer.SEASON_SUMMER],
-        [9, 9, 2026, SimulationServer.SEASON_SUMMER],
-        [10, 9, 2026, SimulationServer.SEASON_AUTUMN],
-        [7, 12, 2026, SimulationServer.SEASON_AUTUMN],
-        [8, 12, 2026, SimulationServer.SEASON_WINTER],
-    ]
+    SimulationServer.season_set(SimulationServer.SEASON_SUMMER)
 
-    for case_data: Array in cases:
-        environment_node.day = case_data[0]
-        environment_node.month = case_data[1]
-        environment_node.year = case_data[2]
-        environment_node._process(0.0)
+    environment_node.set_date(2026, 1, 15)
+    environment_node._process(0.0)
 
-        assert_eq(SimulationServer.season, case_data[3])
-        assert_eq(MaszynaMaterialManager.season, case_data[3])
+    assert_eq(SimulationServer.season, SimulationServer.SEASON_SUMMER)
+    for season: SimulationServer.Season in [
+            SimulationServer.SEASON_WINTER, SimulationServer.SEASON_SPRING,
+            SimulationServer.SEASON_SUMMER, SimulationServer.SEASON_AUTUMN]:
+        SimulationServer.season_set(season)
+        assert_eq(SimulationServer.season, season)
+        assert_eq(MaszynaMaterialManager.season, season)
 
 
 ## The environment follows the simulation's clock (SimulationServer): an hour of it past midnight

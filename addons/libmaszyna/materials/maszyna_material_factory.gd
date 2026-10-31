@@ -387,6 +387,7 @@ func _apply(
     target_shader_material.set_shader_parameter("emission_color", options.selfillum_color if options.selfillum_color else Color(1.0, 1.0, 1.0, 1.0))
     target_shader_material.set_shader_parameter("emission_energy", options.selfillum_energy)
     target_shader_material.set_shader_parameter("lights_on_threshold", options.lights_on_threshold)
+    target_shader_material.set_shader_parameter("weather_exposed", options.weather_exposed)
     if options.force_transparent:
         # mat_default has no reflection unless its .mat gives one; the shaders with a normal map
         # or a reflmap reflect in full ("#param (reflection, 1, 2, 1, zero)" against "one")

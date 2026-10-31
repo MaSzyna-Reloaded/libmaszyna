@@ -7,6 +7,10 @@ const FIXTURES_GAME_DIR: String = "res://tests/fixtures"
 const STREAMING_FRAMES: int = 60
 ## A trackbed material of a neighbour the default bed's (maszyna_track_looks.tres) is not
 const APPROACH_TRACKBED: String = "1435mm/tpbps-approach"
+## What a track of features is drawn with, by the backend: the original's look of them, as a
+## scenery's world gives it (SceneryContentNode.track_looks)
+const LOOKS: Dictionary[StringName, Resource] = {
+    &"maszyna": preload("res://addons/libmaszyna/tracks/maszyna_track_looks.tres")}
 
 var created_tracks: Array[TrackNormal3D] = []
 var created_track_rids: Array[RID] = []
@@ -447,6 +451,7 @@ func _create_normal_track(
     var track: TrackNormal3D = TrackNormal3D.new()
     track.track_name = track_name
     track.curve = curve1
+    track.looks = LOOKS
     add_child(track)
     created_tracks.append(track)
     await wait_idle_frames(2)
@@ -497,6 +502,7 @@ func _create_switch_track(
     track.track_name = track_name
     track.curve = curve1
     track.diverging_curve = curve2
+    track.looks = LOOKS
     add_child(track)
     created_tracks.append(track)
     await wait_idle_frames(2)
