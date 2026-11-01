@@ -10,7 +10,7 @@ label = "wipers_sw"
 submodel = "banan/podloga/ChamferBox28"
 animation_type = "rot"
 scale = 0
-position_angles = PackedFloat32Array(0, -45, -90)
+position_angles = PackedFloat32Array(0, -45, -90, -135)
 axis = Vector3(0, 0, 1)
 pivot = Vector3(-0.4357, 9.9445, 2.0698)
 

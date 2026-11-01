@@ -193,6 +193,7 @@ func fiz_get_patched_wipers(relative_path:String) -> RailVehicleWipers:
         for position:RailVehicleWiperListItem in wiper_list.positions:
             positions.append(position.duplicate())
         wipers.positions = positions
+        wipers.wiper_count = wiper_list.wiper_count
         return wipers
     return null
 

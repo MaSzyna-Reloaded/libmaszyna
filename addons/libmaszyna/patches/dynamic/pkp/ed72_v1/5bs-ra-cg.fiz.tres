@@ -22,12 +22,19 @@ transit_time = 1
 period = 0
 return_delay = 0.5
 
-[sub_resource type="Resource" id="item_4"]
+[sub_resource type="RailVehicleWiperListItem" id="item_4"]
+wiper_mask = 3
+transit_time = 0.5
+period = 0
+return_delay = 0.5
+
+[sub_resource type="Resource" id="item_5"]
 script = ExtResource("wlist")
 angle = 90
-positions = Array[RailVehicleWiperListItem]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3")])
+positions = Array[RailVehicleWiperListItem]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4")])
+wiper_count = 2
 
 [resource]
 script = ExtResource("model")
 path = "dynamic/pkp/ed72_v1/5bs-ra-cg.fiz"
-elements = Array[ExtResource("element")]([SubResource("item_4")])
+elements = Array[ExtResource("element")]([SubResource("item_5")])

@@ -229,7 +229,7 @@ static func _make_cache_hash(fiz_path: String, wipers: RailVehicleWipers) -> Str
         FileAccess.get_modified_time(fiz_path),
         str(FIZ_PARSER_FORMAT_VERSION),
         fiz_path,
-        var_to_str([wipers.angle, wipers.positions]) if wipers else ""
+        var_to_str([wipers.angle, wipers.positions, wipers.wiper_count]) if wipers else ""
     ]).md5_text()
 
 

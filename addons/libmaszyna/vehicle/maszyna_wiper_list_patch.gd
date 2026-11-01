@@ -9,3 +9,6 @@ class_name MaszynaWiperListPatch
 @export var angle:float = 0.0
 ## The switch's positions, the first its off one
 @export var positions:Array[RailVehicleWiperListItem] = []
+## How many wipers it moves where the vehicle's model animates none - its arms part of a static mesh
+## (an ED72's): 0, as many as the model animates (MaszynaRailVehicle3DInstancer.apply_wiper_count())
+@export var wiper_count:int = 0

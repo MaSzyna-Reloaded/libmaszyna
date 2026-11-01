@@ -366,7 +366,9 @@ static func apply_wiper_count(vehicle:RID, appearance:MaszynaRailVehicleAppearan
             wipers.angle = MANUAL_WIPER_ANGLE
         wipers.manual_fit(count if count > 0 else RailVehicleWipers.MANUAL_WIPERS_MAX)
         return
-    wipers.wiper_count = count
+    # a model of no animated arms leaves the count its patch gives (MaszynaWiperListPatch.wiper_count)
+    if count > 0:
+        wipers.wiper_count = count
     wipers.apply_config()
 
 
