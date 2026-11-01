@@ -473,8 +473,9 @@ void fragment() {
                 drop_layer, drop_mask_sum, lens_offset, lens_sum);
     }
 
-    // Rivulets and the film of water running down the glass while it rains, wiped like the droplets
-    float heavy_rain = smoothstep(heavy_rain_start, 1.0, reloaded_rain_intensity);
+    // Rivulets and the film of water running down the glass, wiped like the droplets: as much as the
+    // water on it makes, running while it rains
+    float heavy_rain = heavy_water * smoothstep(0.0, drop_run_rain, reloaded_rain_intensity);
     float wiped_side;
     float wiped = get_mix_factor(UV, wiper_pane, across, wiped_side);
     float rivulet_columns = max(1.0, ceil(grid_size / rivulet_spacing));
