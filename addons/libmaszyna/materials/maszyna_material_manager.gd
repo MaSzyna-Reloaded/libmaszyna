@@ -270,8 +270,9 @@ func material_preload(
             # named as the data names it: it is looked for in four places (_get_texture_file())
             MaszynaFileIndexer.missing_file_add(texture_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
             continue
-        # the game's own is a resource, loaded with the material
-        if full_path.begins_with(GAME_TEXTURE_SCHEME):
+        # the game's own is a resource, loaded with the material - by its name: a game directory may
+        # itself lie under res:// (the tests')
+        if texture_name.begins_with(GAME_TEXTURE_SCHEME):
             continue
         var texture_key:String = _get_texture_key(full_path, max_size)
         # a texture made already is not read again, nor one another preload holds
@@ -448,7 +449,7 @@ func load_texture(
     if not full_path:
         MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
-    if full_path.begins_with(GAME_TEXTURE_SCHEME):
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
         return load(full_path) as Texture2D
 
     var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))
