@@ -19,7 +19,9 @@ uniform sampler2D raindrops_atlas : source_color, filter_linear_mipmap, repeat_e
 // one wiper per channel: the phase of its sweep at which the blade passes the texel, 0 outside of its area.
 // sRGB like in the original ("#texture(wipermask, 2, sRGB_A)"): only decoded it is linear in the
 // angle of the arm - read raw, the wiped edge runs far away from the blade.
-uniform sampler2D wiper_mask : source_color, hint_default_black, filter_linear, repeat_enable;
+// None given, it is clear: hint_default_black is opaque, its alpha (wiper 4's) the far end of a
+// sweep over the whole glass - a glass no wiper reaches was wiped whole each time wiper 4 got there.
+uniform sampler2D wiper_mask : source_color, hint_default_transparent, filter_linear, repeat_enable;
 // A glass whose panes share their UV - one mask for them all, the SM42's four front panes - tells
 // each pane's wiper by where the pane is (a game's patch, MaszynaMaterialPatch): a pane's middle in
 // the mesh's own frame and its wiper's number from 1 (w; below 0 no wiper's); a vertex is its nearest
