@@ -309,6 +309,8 @@ static func parse(
             descriptor.offset = control.offset
             descriptor.mouse_drag_signs = control.mouse_drag_signs
             descriptor.position_angles = control.position_angles
+            descriptor.position_axis = control.axis
+            descriptor.pivot = control.pivot
             descriptor.patched = true
             descriptor.source_file = patch.resource_path
             instruments.append(descriptor)
@@ -1201,10 +1203,11 @@ static func _build_widget(
         widget.mouse_drag_signs = descriptor.mouse_drag_signs
     if descriptor.patched and "turn_unscaled" in widget:
         widget.turn_unscaled = true
+        widget.turn_pivot = descriptor.pivot
     if descriptor.position_angles:
         var rotations:PackedVector3Array = []
         for angle:float in descriptor.position_angles:
-            rotations.append(Vector3(0.0, angle, 0.0))
+            rotations.append(descriptor.position_axis * angle)
         widget.position_rotations = rotations
     if widget is CabinButton:
         widget.button_type = button_type

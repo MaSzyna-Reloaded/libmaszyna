@@ -700,6 +700,8 @@ func _apply_rain_windscreen(
     for pane:int in RAIN_WINDSCREEN_PANES:
         var parameter:String = "wiper_pane_%d" % pane
         material.set_shader_parameter(parameter, variant.get_parameter_vec4(parameter))
+    # a glass inside the cab of the panes' texture, dry (a game's patch, MaszynaMaterialPatch)
+    material.set_shader_parameter("dry_pane", variant.get_parameter_vec4("dry_pane"))
     if variant.has_parameter("specular"):
         material.set_shader_parameter("specular", variant.get_parameter("specular"))
     if variant.has_parameter("glossiness"):

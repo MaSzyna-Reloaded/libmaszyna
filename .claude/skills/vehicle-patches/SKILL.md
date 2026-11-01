@@ -32,7 +32,7 @@ A patch is read only where the file has no definition of its own: a FIZ's `Wiper
 | Element | Of | Read by | Fields |
 |---|---|---|---|
 | `MaszynaWiperArmPatch` | a vehicle's model | `MaszynaRailVehicle3DInstancer` -> `MaszynaE3DRailVehicleRenderingServer` | `submodel` (path), `pivot`, `axis` (its own frame), `turn` [deg, signed] |
-| `MaszynaCabControlPatch` | a cab's model | `MmdCabinInstancer.parse()` | `label` (`wipers_sw`, `reloaded_manualwiper<N>`), `submodel` (path), `animation_type`, `scale`, `offset`, `mouse_drag_signs` |
+| `MaszynaCabControlPatch` | a cab's model | `MmdCabinInstancer.parse()` | `label` (`wipers_sw`, `reloaded_manualwiper<N>`), `submodel` (path), `animation_type`, `scale`, `offset`, `mouse_drag_signs`, `position_angles` with their `axis`, `pivot` |
 | `MaszynaWiperListPatch` | a FIZ | `FizVehicleBuilder` (through `MaszynaVehicleSystem.fiz_get_patched_wipers()`) | `angle`, `positions` (`RailVehicleWiperListItem`) |
 | `MaszynaMaterialPatch` | a missing `.mat` | `MaszynaMaterialParser` | `shader`, `textures` (data paths or the patch's `res://`), `parameters`, `vector_parameters` |
 
@@ -74,7 +74,17 @@ us before:
    sharing their UV (SM42's four front panes) need `wiper_pane_N` (the pane's middle in the mesh's
    own frame), or one wiper wipes them all. A glass of no blades to measure is swept across - its
    direction in the glass's frame, so `]` wipes from the driver's left to right.
-7. **Rain density** `raindrop_grid_size`: some 141 drops a metre (EP09's front glass: 150 a UV unit
+7. **Arms of a body's static mesh** (EU07 zez/tv, ED72): two parallel rods carry an upright blade -
+   it moves along an arc, staying upright (`para.py`); the rod turns about its end away from the
+   blade (the EU07's above, the ED72's below), across its own pane, not into the next one. The two
+   ends of a body may carry mirrored arms while their cabs share one glass texture: one mask fits
+   one end only.
+8. **A control made off its origin** (the ED72's programmer, at the cab floor's origin): its
+   `pivot` is its middle in its own frame, its `axis` the own axis the world's up is.
+9. **Glass inside the cab of the windows' texture** (the ED72's timetable cover): `dry_pane`, its
+   middle in the mesh's frame and a radius. A glass with no mask leaves `wiper_mask` clear - the
+   shader's default is transparent; an opaque black one put every unmasked pane under wiper 4.
+10. **Rain density** `raindrop_grid_size`: some 141 drops a metre (EP09's front glass: 150 a UV unit
    at 1.06 m a unit), measured along the glass's triangles' edges - not across panes that share UV.
 
 ## Proving it before a push

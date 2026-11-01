@@ -461,7 +461,11 @@ interface.
   the material of its patch (`MaszynaMaterialPatch`) - the SM42's, SP42's and EN57's cab glass is
   drawn with the rain, as a `rain_windscreen` .mat draws it, its wiper mask made from the patched
   arms' sweep over the glass's UV (`addons/libmaszyna/patches/`). A patch is read only where the file has no definition of its
-  own (`WiperList:`, `animwiperprefix:`, the MMD's label, the .mat).
+  own (`WiperList:`, `animwiperprefix:`, the MMD's label, the .mat). A patched control turns about
+  the axis and the point its patch names (`MaszynaCabControlPatch.axis`, `pivot`): the ED72's wiper
+  programmer is a knob made at its cab floor's origin, turned about its own Z. A glass texture also
+  drawn inside the cab - the ED72's `okno` on its timetable's cover - keeps that part dry
+  (`dry_pane`), and panes sharing one UV take each its own wiper's channel (`wiper_pane_N`).
 
 ## Scenery data
 

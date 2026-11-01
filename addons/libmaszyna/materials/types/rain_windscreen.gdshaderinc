@@ -33,6 +33,11 @@ uniform vec4 wiper_pane_2 = vec4(0.0);
 uniform vec4 wiper_pane_3 = vec4(0.0);
 // the channels of the mask the fragment's pane takes: 1 for its wiper's, every one of a glass of none
 varying flat vec4 wiper_pane;
+// A glass inside the cab drawn with the panes' texture (an ED72's timetable cover, its windows'
+// "okno"): its middle in the mesh's own frame and how far from it a vertex is its (w) - it takes no
+// rain. None (w 0), every pane is the weather's
+uniform vec4 dry_pane = vec4(0.0);
+varying flat float glass_dry;
 // A glass of no mask its wipers sweep whole (a game's patch's, MaszynaMaterialPatch, its model no
 // wipers to measure), from the driver's left to his right: the way to his right in the mesh's own
 // frame, normalised, and where along it the glass begins and ends (x, y). A glass of neither is wet,
@@ -425,6 +430,7 @@ float get_blade_bead(vec2 uv, float grid_size, vec4 pane, float across, out floa
 
 void vertex() {
     glass_position = VERTEX;
+    glass_dry = step(distance(VERTEX, dry_pane.xyz), dry_pane.w) * step(0.0001, dry_pane.w);
     wiper_pane = vec4(1.0);
     vec4 panes[4] = vec4[](wiper_pane_0, wiper_pane_1, wiper_pane_2, wiper_pane_3);
     float nearest = -1.0;
@@ -532,6 +538,8 @@ void fragment() {
     float wiped_area = max(max(wiper_area.r, wiper_area.g), max(wiper_area.b, wiper_area.a));
     RAIN_WINDSCREEN_LAYER(UV, wiped_area, sweep_end_share, sun_factor, water_color, water_alpha);
 #endif
+    water_color *= 1.0 - glass_dry;
+    water_alpha *= 1.0 - glass_dry;
 
     // Overlay windshield texture with alpha
     // glass over water over the view: blend_mix multiplies by ALPHA, so both are divided by it

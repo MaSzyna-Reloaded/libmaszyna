@@ -7,9 +7,9 @@
 [sub_resource type="Resource" id="item_1"]
 script = ExtResource("material")
 shader = "rain_windscreen"
-textures = Dictionary[String, String]({"raindropsatlas": "textures/fx/raindrops-atlas"})
+textures = Dictionary[String, String]({"raindropsatlas": "textures/fx/raindrops-atlas", "wipermask": "res://addons/libmaszyna/patches/dynamic/pkp/ed72_v1/okno_wipermask.png"})
 parameters = Dictionary[String, float]({"raindrop_grid_size": 127})
-vector_parameters = Dictionary[String, Vector4]({"wiper_across": Vector4(1, 0, 0, 1), "wiper_across_span": Vector4(-1.35397, 1.34171, 0, 0)})
+vector_parameters = Dictionary[String, Vector4]({"wiper_pane_0": Vector4(0.70006, 10.0061, 2.62601, 1), "wiper_pane_1": Vector4(-0.712318, 10.0061, 2.62601, 2), "wiper_pane_2": Vector4(-1.42268, 9.11391, 2.55485, -1), "wiper_pane_3": Vector4(-0.00549703, 0.0030525, 0.430486, -1), "dry_pane": Vector4(0.182152, 9.4681, 2.12399, 0.25)})
 
 [resource]
 script = ExtResource("model")

@@ -19,6 +19,11 @@ class_name MaszynaCabControlPatch
 ## The turn about its up at each whole value from 0 [deg] - a switch whose positions do not follow
 ## one turn (a ČD 181's wiper switch: 0 up, 1 left, 2 right); none, the scale's
 @export var position_angles:PackedFloat32Array = []
+## The axis of its own frame position_angles turn it about (X, Y or Z): UP, as a MMD knob turns
+@export var axis:Vector3 = Vector3.UP
+## The point of its own frame it turns about - ZERO, its origin; a submodel made where its origin
+## lies off it (an ED72's wiper programmer, at the cab floor's origin) turns about its own middle
+@export var pivot:Vector3 = Vector3.ZERO
 ## Which way a drag moves it up, per mouse axis (x: +1 right, y: +1 down) - ZERO follows its grip on
 ## screen (BaseCabinTool3D.mouse_drag_signs)
 @export var mouse_drag_signs:Vector2 = Vector2.ZERO
