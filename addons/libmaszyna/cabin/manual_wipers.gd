@@ -10,17 +10,22 @@ class_name MaszynaCabinManualWipers
 const CONTROL:StringName = &"reloaded_manualwipers"
 ## The label of wiper N's handle, from 1 (MmdSemanticCatalog)
 const HANDLE_LABEL_PREFIX:String = "reloaded_manualwiper"
+## The first wiper's handle, whose way the keys follow (MaszynaCabinControls.manual_wipers_keys_reversed)
+const FIRST_HANDLE_LABEL:String = HANDLE_LABEL_PREFIX + "1"
 ## How fast a held key moves the wipers: their sweep a simulated second
 const KEY_SPEED:float = 1.0
-## The knob the keys hold (MaszynaCabinLogic._bind())
-const FIELDS:Dictionary = {
-    "value_min": 0.0,
-    "value_max": 1.0,
-    "step": KEY_SPEED,
-    "state_property": "wipers_manual_position_0",
-    "action_increase": "wipers_switch_increase",
-    "action_decrease": "wipers_switch_decrease",
-}
+## The knob the keys hold (MaszynaCabinLogic._bind()): wipers_switch_increase (]) moves the wipers to
+## the driver's right, as the first wiper's handle is dragged - its sweep's way the other, the two
+## keys swapped (reversed)
+static func fields(reversed:bool) -> Dictionary:
+    return {
+        "value_min": 0.0,
+        "value_max": 1.0,
+        "step": KEY_SPEED,
+        "state_property": "wipers_manual_position_0",
+        "action_increase": "wipers_switch_decrease" if reversed else "wipers_switch_increase",
+        "action_decrease": "wipers_switch_increase" if reversed else "wipers_switch_decrease",
+    }
 
 var _cabin:RID
 ## The handles' controls and what each moves

@@ -157,7 +157,8 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
     _behaviours.append(_unmodelled_controls)
     # the wiper switch's keys hold the wipers driven by hand, before any control takes them
     if manual_wipers:
-        _bind(MaszynaCabinManualWipers.CONTROL, &"knob", CabinState.Target.OCCUPIED, MaszynaCabinManualWipers.FIELDS)
+        _bind(MaszynaCabinManualWipers.CONTROL, &"knob", CabinState.Target.OCCUPIED,
+                MaszynaCabinManualWipers.fields(controls.manual_wipers_keys_reversed))
     for control_id:StringName in controls.get_control_ids():
         _bind(control_id, controls.wiring(control_id).get("kind", &""), controls.target(control_id),
                 controls.resolved_fields(control_id, config))
