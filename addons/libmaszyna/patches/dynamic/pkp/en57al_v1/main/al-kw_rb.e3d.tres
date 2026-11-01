@@ -6,14 +6,14 @@
 
 [sub_resource type="Resource" id="item_1"]
 script = ExtResource("arm")
-submodel = "/banan/wycieraczka1"
+submodel = "banan/banan/wycieraczka1"
 pivot = Vector3(0, 0, 0)
 axis = Vector3(0.556, 0.814, 0.17)
 turn = 78
 
 [sub_resource type="Resource" id="item_2"]
 script = ExtResource("arm")
-submodel = "/banan/wycieraczka2"
+submodel = "banan/banan/wycieraczka2"
 pivot = Vector3(0, 0, 0)
 axis = Vector3(0.607, 0.788, 0.104)
 turn = 78

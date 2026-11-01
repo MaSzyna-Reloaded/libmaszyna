@@ -7,7 +7,7 @@
 [sub_resource type="Resource" id="item_1"]
 script = ExtResource("control")
 label = "wipers_sw"
-submodel = "/pulpit003/wycieraczki"
+submodel = "banan/pulpit003/wycieraczki"
 animation_type = "rot"
 scale = 0
 position_angles = PackedFloat32Array(0, 45, -45)

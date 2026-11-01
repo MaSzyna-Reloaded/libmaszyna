@@ -37,9 +37,10 @@ A patch is read only where the file has no definition of its own: a FIZ's `Wiper
 | `MaszynaWiperValvesPatch` | a FIZ | `FizVehicleBuilder` (through `MaszynaVehicleSystem.fiz_get_patched_wipers()`) | `slowest_sweep_time`, `fastest_sweep_time` [s], `sensitivity` - each vehicle's own, none in the code |
 | `MaszynaMaterialPatch` | a missing `.mat` | `MaszynaMaterialParser` | `shader`, `textures` (data paths or the patch's `res://`), `parameters`, `vector_parameters` |
 
-* A submodel is named by its path in the model's tree. A submodel of no name is an empty segment:
-  a model whose root has no name gives `/banan/wycieraczka1`, not `banan/wycieraczka1` - the
-  measurement missed it 65 times once, and the game then found none of those arms and handles.
+* A submodel is named by its exact path in the model's tree, as the game builds it: a transform of
+  no name is `banan` (`MaszynaE3DModelBuilder::_create_submodel()`), so a model whose root has no
+  name gives `banan/banan/wycieraczka1`, never `/banan/wycieraczka1` - the game found none of 121
+  arms and controls named so. Prove every path in the real models before pushing.
 * The FIZ parser compiles as the library starts, before any script class of the patch can be
   resolved: it takes a `RailVehicleWipers` (C++), never a patch class - a patch class there broke
   the whole FIZ loader in the game's export.

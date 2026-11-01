@@ -6,28 +6,28 @@
 
 [sub_resource type="Resource" id="item_1"]
 script = ExtResource("arm")
-submodel = "/baza/ostoja/wycieraczka01"
+submodel = "banan/baza/ostoja/wycieraczka01"
 pivot = Vector3(-0.007, -0.001, 0.375)
 axis = Vector3(1, 0, 0)
 turn = 62
 
 [sub_resource type="Resource" id="item_2"]
 script = ExtResource("arm")
-submodel = "/baza/ostoja/wycieraczka02"
+submodel = "banan/baza/ostoja/wycieraczka02"
 pivot = Vector3(-0.007, 0.001, 0.375)
 axis = Vector3(1, 0, 0)
 turn = -63
 
 [sub_resource type="Resource" id="item_3"]
 script = ExtResource("arm")
-submodel = "/baza/ostoja/wycieraczka03"
+submodel = "banan/baza/ostoja/wycieraczka03"
 pivot = Vector3(-0.007, -0.001, 0.375)
 axis = Vector3(1, 0, 0)
 turn = 62
 
 [sub_resource type="Resource" id="item_4"]
 script = ExtResource("arm")
-submodel = "/baza/ostoja/wycieraczka04"
+submodel = "banan/baza/ostoja/wycieraczka04"
 pivot = Vector3(-0.007, 0.001, 0.375)
 axis = Vector3(1, 0, 0)
 turn = -63

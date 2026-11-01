@@ -117,6 +117,15 @@ func test_a_cab_control_of_a_path_takes_the_submodel_of_its_exact_case() -> void
     model.free()
 
 
+func test_the_game_patch_names_no_submodel_by_an_empty_segment() -> void:
+    var game_patch:MaszynaVehiclePatch = load("res://addons/libmaszyna/patches/maszyna_vehicle_patch.tres")
+    for model:MaszynaVehicleModelPatch in game_patch.models:
+        for element:MaszynaVehicleModelElementPatch in model.elements:
+            var submodel:Variant = element.get("submodel")
+            if submodel:
+                assert_false(("/" + str(submodel)).contains("//"), "%s: %s" % [model.path, submodel])
+
+
 func test_a_fiz_gets_the_valve_speeds_of_its_patch() -> void:
     var wipers:MaszynaMoverRailVehicleWipers = MaszynaVehicleSystem.fiz_get_patched_wipers(VALVE_FIZ_PATH)
     assert_not_null(wipers)
