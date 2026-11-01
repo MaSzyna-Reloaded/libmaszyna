@@ -318,6 +318,7 @@ namespace godot {
         p_spotlight->set_param(Light3D::PARAM_RANGE, params.range);
         p_spotlight->set_param(Light3D::PARAM_ATTENUATION, params.attenuation);
         p_spotlight->set_param(Light3D::PARAM_SPOT_ATTENUATION, params.spot_attenuation);
+        p_spotlight->set_param(Light3D::PARAM_SPECULAR, MaszynaE3DLightFactory::LIGHT_SPECULAR);
     }
 
     void MaszynaE3DNodesBackend::_set_node_visible(const ObjectID &p_node_id, const bool p_visible) {

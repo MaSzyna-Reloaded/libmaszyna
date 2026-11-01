@@ -1103,6 +1103,8 @@ namespace godot {
         rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_RANGE, range);
         rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_ATTENUATION, attenuation);
         rs->light_set_param(light->light, RenderingServer::LIGHT_PARAM_SIZE, light->params.size);
+        rs->light_set_param(
+                light->light, RenderingServer::LIGHT_PARAM_SPECULAR, MaszynaE3DLightFactory::LIGHT_SPECULAR);
         rs->light_set_cull_mask(light->light, cull_mask);
         if (!scenery) {
             rs->light_set_bake_mode(light->light, RenderingServer::LIGHT_BAKE_DISABLED);
