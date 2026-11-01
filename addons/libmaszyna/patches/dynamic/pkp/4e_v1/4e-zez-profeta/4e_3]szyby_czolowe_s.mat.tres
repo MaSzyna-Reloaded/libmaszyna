@@ -9,7 +9,6 @@ script = ExtResource("material")
 shader = "rain_windscreen"
 textures = Dictionary[String, String]({"raindropsatlas": "textures/fx/raindrops-atlas"})
 parameters = Dictionary[String, float]({"raindrop_grid_size": 124})
-vector_parameters = Dictionary[String, Vector4]({"wiper_across": Vector4(0.546119, 0, 0, 1), "wiper_across_span": Vector4(-0.715776, -0.16457, 0, 0)})
 
 [resource]
 script = ExtResource("model")
