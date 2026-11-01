@@ -1,9 +1,21 @@
 #include "MaszynaMoverRailVehicleWipers.hpp"
 #include "maszyna/vehicles/MaszynaMoverBackend.hpp"
 #include <algorithm>
+#include <godot_cpp/core/math.hpp>
 
 namespace godot {
-    void MaszynaMoverRailVehicleWipers::_bind_methods() {}
+    namespace {
+        /* A wiper's air motor (not the original's): the main reservoir's pressure it stands below
+         * and goes in full from [bar] */
+        constexpr double VALVE_AIR_PRESSURE_MIN = 1.5;
+        constexpr double VALVE_AIR_PRESSURE_FULL = 3.5;
+    } // namespace
+
+    void MaszynaMoverRailVehicleWipers::_bind_methods() {
+        BIND_PROPERTY(MaszynaMoverRailVehicleWipers, Variant::FLOAT, valve_slowest_sweep_time);
+        BIND_PROPERTY(MaszynaMoverRailVehicleWipers, Variant::FLOAT, valve_fastest_sweep_time);
+        BIND_PROPERTY(MaszynaMoverRailVehicleWipers, Variant::FLOAT, valve_sensitivity);
+    }
 
     void MaszynaMoverRailVehicleWipers::_apply_configuration() {
         size_t count = static_cast<size_t>(std::max(0, get_wiper_count()));
@@ -30,11 +42,34 @@ namespace godot {
     void MaszynaMoverRailVehicleWipers::_do_process_component(const double p_delta) {
         const RailVehicleController *controller = get_rail_vehicle_controller();
         ERR_FAIL_NULL(controller);
-        // driven by hand: each wiper stands where its handle does, the linkage moving it at once
+        // driven by hand: each wiper stands where its handle does, the linkage moving it at once;
+        // with its valve open and the air there, its motor takes it there and back
         if (get_drive() == DRIVE_MANUAL) {
+            const TMoverParameters *air_mover = get_mover();
+            const double air = air_mover != nullptr
+                                       ? Math::clamp(
+                                                 (air_mover->Compressor - VALVE_AIR_PRESSURE_MIN) /
+                                                         (VALVE_AIR_PRESSURE_FULL - VALVE_AIR_PRESSURE_MIN),
+                                                 0.0, 1.0)
+                                       : 0.0;
             for (int i = 0; i < static_cast<int>(wipers.size()); i++) {
-                wipers[i].position = manual_get_position(i);
-                wipers[i].returning = false;
+                Wiper &wiper = wipers[i];
+                const double opening = valve_get_opening(i);
+                const double share = 1.0 - Math::pow(1.0 - opening, valve_sensitivity);
+                const double step =
+                        opening > 0.0 ? air * p_delta / valve_slowest_sweep_time *
+                                                Math::pow(valve_slowest_sweep_time / valve_fastest_sweep_time, share)
+                                      : 0.0;
+                if (step > 0.0) {
+                    double position = manual_get_position(i) + (wiper.valve_returning ? -step : step);
+                    if (position >= 1.0 || position <= 0.0) {
+                        wiper.valve_returning = position >= 1.0;
+                        position = Math::clamp(position, 0.0, 1.0);
+                    }
+                    valve_move_wiper(position, i);
+                }
+                wiper.position = manual_get_position(i);
+                wiper.returning = false;
             }
             return;
         }

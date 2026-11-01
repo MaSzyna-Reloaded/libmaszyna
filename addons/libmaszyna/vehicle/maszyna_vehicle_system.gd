@@ -179,23 +179,29 @@ func model_get_patch(relative_path:String) -> MaszynaVehicleModelPatch:
     return _patches.get(_patch_key(relative_path))
 
 
-## The wiper switch the game's patch gives a FIZ of no WiperList (MaszynaWiperListPatch), by its path
-## in the game's directory - a new one each time, for FizVehicleBuilder to give a vehicle; null of a
-## FIZ of none
+## The wipers the game's patch gives a FIZ of no WiperList - their switch (MaszynaWiperListPatch), how
+## they go by their valves (MaszynaWiperValvesPatch) - by its path in the game's directory: a new one
+## each time, for FizVehicleBuilder to give a vehicle; null of a FIZ of none
 func fiz_get_patched_wipers(relative_path:String) -> RailVehicleWipers:
     var patch:MaszynaVehicleModelPatch = model_get_patch(relative_path)
     if not patch:
         return null
+    var wipers:MaszynaMoverRailVehicleWipers = null
     for wiper_list:MaszynaWiperListPatch in patch.elements_of(MaszynaWiperListPatch):
-        var wipers := MaszynaMoverRailVehicleWipers.new()
+        wipers = MaszynaMoverRailVehicleWipers.new()
         wipers.angle = wiper_list.angle
         var positions:Array[RailVehicleWiperListItem] = []
         for position:RailVehicleWiperListItem in wiper_list.positions:
             positions.append(position.duplicate())
         wipers.positions = positions
         wipers.wiper_count = wiper_list.wiper_count
-        return wipers
-    return null
+    for valves:MaszynaWiperValvesPatch in patch.elements_of(MaszynaWiperValvesPatch):
+        if not wipers:
+            wipers = MaszynaMoverRailVehicleWipers.new()
+        wipers.valve_slowest_sweep_time = valves.slowest_sweep_time
+        wipers.valve_fastest_sweep_time = valves.fastest_sweep_time
+        wipers.valve_sensitivity = valves.sensitivity
+    return wipers
 
 
 ## A file told apart by its path lowercase, a model's of no extension: its .e3d is its .t3d compiled

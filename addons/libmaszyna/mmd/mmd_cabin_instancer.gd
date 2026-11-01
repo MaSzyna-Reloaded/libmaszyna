@@ -1120,7 +1120,8 @@ static func _index_submodel_paths(submodels:Array, index:Dictionary, path_prefix
 ## fires correctly, but only after realizing the exact-case assumption was wrong).
 ##
 ## Each node is indexed by its path in the model's tree as well (submodel_key()), for a game's patch
-## that names a submodel by its path (MaszynaCabControlPatch): `prefix` - its parent's path and "/"
+## that names a submodel by its path (MaszynaCabControlPatch), in its exact case - an EU07's cab has
+## an Object12, a valve, and an object12, a plate, side by side: `prefix` - its parent's path and "/"
 static func _index_submodels(node:Node, index:Dictionary, prefix:String = "") -> void:
     for child:Node in node.get_children(true):
         var child_name:String = child.name.to_lower()
@@ -1128,20 +1129,20 @@ static func _index_submodels(node:Node, index:Dictionary, prefix:String = "") ->
             index[child_name] = []
         index[child_name].append(child)
         # a submodel of no name has a name of Godot's own, and none in a path
-        var child_path:String = prefix + ("" if child_name.begins_with(GENERATED_NAME_PREFIX) else child_name)
+        var child_path:String = prefix + ("" if child_name.begins_with(GENERATED_NAME_PREFIX) else String(child.name))
         index[SUBMODEL_PATH_KEY_PREFIX + child_path] = [child]
         _index_submodels(child, index, child_path + "/")
 
 
 ## The key submodel_index (_index_submodels()) has a descriptor's submodel under: its name as the
-## original finds it (TSubModel::GetFromName(), case-insensitive), or its path in the model's tree
-## when a game's patch names it by one ("banan/PODLOGA_GLOWNA/mech_wyc_raczka01")
+## original finds it (TSubModel::GetFromName(), case-insensitive), or its exact path in the model's
+## tree when a game's patch names it by one ("banan/PODLOGA_GLOWNA/mech_wyc_raczka01")
 static func submodel_key(submodel:String) -> String:
     if not submodel.contains("/"):
         return submodel.validate_node_name().to_lower()
     var segments:PackedStringArray = []
     for segment:String in submodel.split("/"):
-        segments.append(segment.validate_node_name().to_lower())
+        segments.append(segment.validate_node_name())
     return SUBMODEL_PATH_KEY_PREFIX + "/".join(segments)
 
 
@@ -1207,7 +1208,8 @@ static func _build_widget(
     if descriptor.position_angles:
         var rotations:PackedVector3Array = []
         for angle:float in descriptor.position_angles:
-            rotations.append(descriptor.position_axis * angle)
+            rotations.append(Vector3(0.0, angle, 0.0))
+        widget.turn_axis = descriptor.position_axis
         widget.position_rotations = rotations
     if widget is CabinButton:
         widget.button_type = button_type

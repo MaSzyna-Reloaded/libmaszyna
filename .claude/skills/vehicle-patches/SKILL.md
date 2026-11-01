@@ -32,8 +32,9 @@ A patch is read only where the file has no definition of its own: a FIZ's `Wiper
 | Element | Of | Read by | Fields |
 |---|---|---|---|
 | `MaszynaWiperArmPatch` | a vehicle's model | `MaszynaRailVehicle3DInstancer` -> `MaszynaE3DRailVehicleRenderingServer` | `submodel` (path), `pivot`, `axis` (its own frame), `turn` [deg, signed] |
-| `MaszynaCabControlPatch` | a cab's model | `MmdCabinInstancer.parse()` | `label` (`wipers_sw`, `reloaded_manualwiper<N>`), `submodel` (path), `animation_type`, `scale`, `offset`, `mouse_drag_signs`, `position_angles` with their `axis`, `pivot` |
+| `MaszynaCabControlPatch` | a cab's model | `MmdCabinInstancer.parse()` | `label` (`wipers_sw`, `reloaded_manualwiper<N>`, `reloaded_wipervalve<N>`), `submodel` (path), `animation_type`, `scale`, `offset`, `mouse_drag_signs`, `position_angles` with their `axis`, `pivot` |
 | `MaszynaWiperListPatch` | a FIZ | `FizVehicleBuilder` (through `MaszynaVehicleSystem.fiz_get_patched_wipers()`) | `angle`, `positions` (`RailVehicleWiperListItem`) |
+| `MaszynaWiperValvesPatch` | a FIZ | `FizVehicleBuilder` (through `MaszynaVehicleSystem.fiz_get_patched_wipers()`) | `slowest_sweep_time`, `fastest_sweep_time` [s], `sensitivity` - each vehicle's own, none in the code |
 | `MaszynaMaterialPatch` | a missing `.mat` | `MaszynaMaterialParser` | `shader`, `textures` (data paths or the patch's `res://`), `parameters`, `vector_parameters` |
 
 * A submodel is named by its path in the model's tree. A submodel of no name is an empty segment:
@@ -55,8 +56,10 @@ us before:
 2. **The cab and the body share one frame** in the composed transforms (verified: SM42 handles on
    the arms' hubs within 0.2 m, EN57 hubs right under the glass). Compose every submodel's matrix
    from the root.
-3. **What kind of wipers the real vehicle has** is the operator's call, never inferred: manual
-   handles (SM42, EU07), an automatic switch (6Dg: 0-3, 181: 0 north, 1 left, 2 right), and
+3. **What kind of wipers the real vehicle has** is the operator's call, never inferred: air motors
+   with a valve each and a hand crank (SM42, EU07: `reloaded_wipervalve<N>` beside
+   `reloaded_manualwiper<N>`), an automatic switch (6Dg: 0-3, 181: 0 north, 1 left, 2 right, ED72's
+   programmer 0-3), and
    sometimes rotary switches in the model that are something else (EU07 `sw-wycieraczka-*`).
 4. **Arms**: a separate submodel (SM42 `wycieraczka01-04`, EN57AL, EN57AKL, SP42) - its pivot is
    its hub (the thickest end along its length; the SM42's origin is mid-blade, the hub 0.376 m along

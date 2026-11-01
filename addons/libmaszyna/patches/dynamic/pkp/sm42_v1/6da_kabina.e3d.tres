@@ -10,7 +10,7 @@ label = "reloaded_manualwiper1"
 submodel = "banan/podloga_glowna/mech_wyc_raczka01"
 animation_type = "rot"
 scale = 0.1722
-mouse_drag_signs = Vector2(0, -1)
+mouse_drag_signs = Vector2(1, 0)
 
 [sub_resource type="Resource" id="item_2"]
 script = ExtResource("control")
@@ -18,7 +18,7 @@ label = "reloaded_manualwiper2"
 submodel = "banan/podloga_glowna/mech_wyc_raczka02"
 animation_type = "rot"
 scale = -0.175
-mouse_drag_signs = Vector2(0, -1)
+mouse_drag_signs = Vector2(-1, 0)
 
 [sub_resource type="Resource" id="item_3"]
 script = ExtResource("control")
@@ -26,7 +26,7 @@ label = "reloaded_manualwiper3"
 submodel = "banan/podloga_glowna/mech_wyc_raczka03"
 animation_type = "rot"
 scale = 0.1722
-mouse_drag_signs = Vector2(0, -1)
+mouse_drag_signs = Vector2(1, 0)
 
 [sub_resource type="Resource" id="item_4"]
 script = ExtResource("control")
@@ -34,9 +34,53 @@ label = "reloaded_manualwiper4"
 submodel = "banan/podloga_glowna/mech_wyc_raczka04"
 animation_type = "rot"
 scale = -0.175
-mouse_drag_signs = Vector2(0, -1)
+mouse_drag_signs = Vector2(-1, 0)
+
+[sub_resource type="Resource" id="item_5"]
+script = ExtResource("control")
+label = "reloaded_wipervalve4"
+submodel = "banan/podloga_glowna/zawor_raczka05"
+animation_type = "rot"
+scale = 0
+mouse_drag_signs = Vector2(-1, 1)
+position_angles = PackedFloat32Array(0, -90)
+axis = Vector3(0.8888, 0.0024, -0.4584)
+pivot = Vector3(-0.0143, 0.0005, 0.0091)
+
+[sub_resource type="Resource" id="item_6"]
+script = ExtResource("control")
+label = "reloaded_wipervalve3"
+submodel = "banan/podloga_glowna/zawor_raczka04"
+animation_type = "rot"
+scale = 0
+mouse_drag_signs = Vector2(1, 1)
+position_angles = PackedFloat32Array(0, -90)
+axis = Vector3(0.889, 0.0075, -0.4578)
+pivot = Vector3(-0.0143, 0.0004, 0.0092)
+
+[sub_resource type="Resource" id="item_7"]
+script = ExtResource("control")
+label = "reloaded_wipervalve2"
+submodel = "banan/podloga_glowna/zawor_raczka03"
+animation_type = "rot"
+scale = 0
+mouse_drag_signs = Vector2(-1, 1)
+position_angles = PackedFloat32Array(0, -90)
+axis = Vector3(0.8888, 0.0024, -0.4583)
+pivot = Vector3(-0.0143, 0.0005, 0.0091)
+
+[sub_resource type="Resource" id="item_8"]
+script = ExtResource("control")
+label = "reloaded_wipervalve1"
+submodel = "banan/podloga_glowna/zawor_raczka02"
+animation_type = "rot"
+scale = 0
+mouse_drag_signs = Vector2(1, 1)
+position_angles = PackedFloat32Array(0, -90)
+axis = Vector3(0.889, 0.0075, -0.4578)
+pivot = Vector3(-0.0143, 0.0004, 0.0092)
 
 [resource]
 script = ExtResource("model")
 path = "dynamic/pkp/sm42_v1/6da_kabina.e3d"
-elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4")])
+elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4"), SubResource("item_5"), SubResource("item_6"), SubResource("item_7"), SubResource("item_8")])

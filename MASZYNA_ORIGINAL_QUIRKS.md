@@ -465,7 +465,14 @@ interface.
   the axis and the point its patch names (`MaszynaCabControlPatch.axis`, `pivot`): the ED72's wiper
   programmer is a knob made at its cab floor's origin, turned about its own Z. A glass texture also
   drawn inside the cab - the ED72's `okno` on its timetable's cover - keeps that part dry
-  (`dry_pane`), and panes sharing one UV take each its own wiper's channel (`wiper_pane_N`).
+  (`dry_pane`), and panes sharing one UV take each its own wiper's channel (`wiper_pane_N`). The
+  air motors of such wipers, which the data has no word of either: an SM42's, an EU07's, an EP08's or
+  an ET41's wiper goes by itself with its own valve open (`reloaded_wipervalve<N>`, a control of the
+  patch on `zawor_raczka02-05`, `Object12/26`, `wycieraczki_sterowanie01/02`,
+  `wycieraczka_mechu/_pomocnik`), the air of the main reservoir moving it and its handle with it -
+  each vehicle's speeds its FIZ's patch (`MaszynaWiperValvesPatch`) - an SM42's valve very sensitive,
+  full open the wiper "going as if to fall off", an EU07's far calmer; the keys open them all.
+  Wipers driven by hand keep their numbers from either cab (`CabinWindscreenWipers`).
 
 ## Scenery data
 

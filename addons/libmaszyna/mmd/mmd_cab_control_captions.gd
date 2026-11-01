@@ -156,6 +156,11 @@ const CAPTIONS:Dictionary[StringName, String] = {
     &"reloaded_manualwiper2": "wiper 2 handle",
     &"reloaded_manualwiper3": "wiper 3 handle",
     &"reloaded_manualwiper4": "wiper 4 handle",
+    # the valves of wipers' air motors (a game's MaszynaCabControlPatch), the original's none
+    &"reloaded_wipervalve1": "wiper 1 valve",
+    &"reloaded_wipervalve2": "wiper 2 valve",
+    &"reloaded_wipervalve3": "wiper 3 valve",
+    &"reloaded_wipervalve4": "wiper 4 valve",
     # not in the original's list, which leaves them without a tooltip; captioned here, with the
     # wrapper's own translations (addons/libreloaded/translations)
     &"cabactivation_sw": "cab activation",

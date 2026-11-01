@@ -10,6 +10,7 @@ const FILE_NAME:String = "patched"
 ## The fixture's model, of its vehicle and of its cab
 const MODEL_PATH:String = "dynamic/test/animated_v1/animated.t3d"
 const FIZ_PATH:String = "dynamic/test/animated_v1/patched.fiz"
+const VALVE_FIZ_PATH:String = "dynamic/test/valves.fiz"
 const CAB:int = 1
 
 var _previous_game_dir:String = ""
@@ -61,8 +62,16 @@ func _patch() -> MaszynaVehiclePatch:
     wiper_list.positions = [off, interval]
     fiz.elements = [wiper_list]
 
+    var valve_fiz := MaszynaVehicleModelPatch.new()
+    valve_fiz.path = VALVE_FIZ_PATH
+    var valves := MaszynaWiperValvesPatch.new()
+    valves.slowest_sweep_time = 2.0
+    valves.fastest_sweep_time = 0.5
+    valves.sensitivity = 1.5
+    valve_fiz.elements = [valves]
+
     var patch := MaszynaVehiclePatch.new()
-    patch.models = [model, fiz]
+    patch.models = [model, fiz, valve_fiz]
     return patch
 
 
@@ -88,6 +97,33 @@ func test_the_cab_gets_the_controls_its_mmd_lacks() -> void:
             "the MMD's converter switch kept, the handle added")
     var handle:MmdInstrumentDescriptor = definition.instruments[1]
     assert_eq([handle.animation_type, handle.scale, handle.mouse_drag_signs], ["rot", 0.175, Vector2(0.0, -1.0)])
+
+
+func test_a_cab_control_of_a_path_takes_the_submodel_of_its_exact_case() -> void:
+    var model := Node3D.new()
+    var cab := Node3D.new()
+    cab.name = "kabina_b"
+    model.add_child(cab)
+    var valve := Node3D.new()
+    valve.name = "Object12"
+    cab.add_child(valve)
+    var plate := Node3D.new()
+    plate.name = "object12"
+    cab.add_child(plate)
+    var index:Dictionary = {}
+    MmdCabinInstancer._index_submodels(model, index)
+    assert_eq(index[MmdCabinInstancer.submodel_key("kabina_b/Object12")][0], valve)
+    assert_eq(index[MmdCabinInstancer.submodel_key("kabina_b/object12")][0], plate)
+    model.free()
+
+
+func test_a_fiz_gets_the_valve_speeds_of_its_patch() -> void:
+    var wipers:MaszynaMoverRailVehicleWipers = MaszynaVehicleSystem.fiz_get_patched_wipers(VALVE_FIZ_PATH)
+    assert_not_null(wipers)
+    assert_eq(wipers.valve_slowest_sweep_time, 2.0)
+    assert_eq(wipers.valve_fastest_sweep_time, 0.5)
+    assert_eq(wipers.valve_sensitivity, 1.5)
+    assert_true(wipers.positions.is_empty(), "no switch: its wipers stay driven by hand")
 
 
 func test_a_fiz_of_no_wiper_list_gets_the_switch_of_its_patch() -> void:
