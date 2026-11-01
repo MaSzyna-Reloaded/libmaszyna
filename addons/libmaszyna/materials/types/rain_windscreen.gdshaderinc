@@ -62,9 +62,7 @@ uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap, re
 
 uniform float raindrop_grid_size = 1.0;
 uniform float specular : hint_range(0.0, 1.0, 0.01) = 0.5;
-// glass is smooth: the sun off it a small bright spot - at 0.2 it spread into a white disc over the
-// whole of a wet pane
-uniform float roughness : hint_range(0.0, 1.0) = 0.05;
+uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 
 // A droplet takes a few pixels of the screen and a 512 px quadrant of the atlas: the mip level
 // picked for it averages the rim away and its alpha falls below the 0.3 of sharp_alpha.
