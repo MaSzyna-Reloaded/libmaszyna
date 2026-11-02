@@ -280,10 +280,12 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   * `MaszynaRoadNetwork` makes a road of every `road` track; the tracks between two parting places
     joined into one road wait for a road laid along several tracks (libreloaded's `TODO.md`)
 
-* **EN76 main pipe does not fill** (reports#12, l053_poludnie.scn, EN76-005a, local build): all
-  four units with the main reservoir at 8.26 bar, `pipe_pressure` ~0, the hand brake released,
-  the train brake handle of 005a at 0, of 005b-d at 1; the driving aid's hints contradict each
-  other (screenshot in the report). Diagnose from `snapshot.json` against the original's EN76 FIZ.
+* **EN76 main pipe empties itself at the start** (reports#12, l053_poludnie.scn, EN76-005a): a unit
+  given 0.1 km/h starts with the pipe at 5 bar, its inactive cab (`InactiveCabFlag=3`,
+  `AutomaticCabActivation=No`) vents it within seconds and the lock (`LPOn=3`) keeps it empty until
+  `universalbrake1_bt` is held; `MAIN_PIPE_UNLOCK` hints that (`test_zzz_driver_hints_en76.gd`). The
+  original's code reads the same, not confirmed by a run: check on its exe that the pipe empties
+  there too, before the report is closed.
 * **Wagons with full cylinders show no brake force** (reports#13, l053_poludnie.scn,
   ES64F4-846 + 20 wagons, build 20261007-1333): all wagons `brake_air_pressure` ~3.95 bar with
   `brake_force` 0.0 while the train creeps on at 0.05-0.1 km/h; the loco itself 365 kN (hand brake
