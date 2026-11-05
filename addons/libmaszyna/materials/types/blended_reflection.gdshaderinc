@@ -2,6 +2,12 @@
 // it mirrors the sky as the original's does - the environment's reflection weighted by the Fresnel
 // term and the material's reflectivity (light_common.glsl, apply_lights(): env_reflection) - and
 // takes no highlight from the lights: in a pane as smooth as glass the sun's burns out the screen.
+//
+// A game of more lays a layer of its own over such a pane - over what the type has drawn of it
+// (ALBEDO, ALPHA, ROUGHNESS, SPECULAR), last in its fragment(): its shader defines
+// MASZYNA_GLASS_LAYER(uv, albedo_texture) before it includes the type's code - the surface's UV and
+// the texture whose alpha tells the glass from the rest - and is drawn in place of the type's
+// blended variants (MaszynaMaterialFactory.shader_set_override())
 
 // the material's "reflection:", which the normal map's alpha scales (mat_normalmap.frag:49)
 uniform float blended_reflection = 0.0;

@@ -33,6 +33,8 @@ const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scene
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
 ## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
 const GENERATED_TEXTURE_SCHEME: String = "make:"
+## A texture of the game's own, not of the data (MaszynaMaterialPatch.textures)
+const GAME_TEXTURE_SCHEME: String = "res://"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
@@ -98,6 +100,9 @@ class MaterialOptions:
     # the largest texture size loaded, larger DDS drop their top mipmaps - the cab has its own
     # limit in the original (Train.cpp:660)
     var max_texture_size: int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT
+    # the environment's snow, wet and standing water lie on it (types/weather.gdshaderinc): the
+    # scenery's - its terrain, tracks and models - never a vehicle's, whose cab would fill with it
+    var weather_exposed: bool = false
 
 
 @export var season := SimulationServer.SEASON_SUMMER:
@@ -148,6 +153,7 @@ func _exit_tree() -> void:
 func _provide_material(material_name: String, options: Dictionary) -> Material:
     var material_options: MaterialOptions = MaterialOptions.new()
     material_options.cull_disabled = bool(options.get("cull_disabled", false))
+    material_options.weather_exposed = true
     return get_material("", material_name, material_options)
 
 
@@ -263,6 +269,10 @@ func material_preload(
         if not full_path:
             # named as the data names it: it is looked for in four places (_get_texture_file())
             MaszynaFileIndexer.missing_file_add(texture_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
+            continue
+        # the game's own is a resource, loaded with the material - by its name: a game directory may
+        # itself lie under res:// (the tests')
+        if texture_name.begins_with(GAME_TEXTURE_SCHEME):
             continue
         var texture_key:String = _get_texture_key(full_path, max_size)
         # a texture made already is not read again, nor one another preload holds
@@ -381,8 +391,13 @@ func get_submodel_material(
     if submodel.submodel_type == MaszynaE3DSubModel.SUBMODEL_FREE_SPOTLIGHT:
         return _free_spotlight_material
 
-    var unprefixed_model_path: String = "/".join(data_path.split("/").slice(1))
+    var path_segments: PackedStringArray = data_path.split("/")
+    var unprefixed_model_path: String = "/".join(path_segments.slice(1))
     var options: MaterialOptions = MaterialOptions.new()
+    # a vehicle's model is the game directory's dynamic/, its cab's too; the scenery's lie under the
+    # weather. A vehicle's data path leads with a "/" (read_structure()): its first segment is empty
+    var root_dir: String = path_segments[1] if path_segments.size() > 1 and path_segments[0] == "" else path_segments[0]
+    options.weather_exposed = not root_dir.to_lower() == MaszynaVehiclesBank.DYNAMIC_DIR
 
     # TODO: handle more material options here (selfillum, etc)
     options.force_transparent = translucency == MaszynaE3DRenderingServer.TRANSLUCENCY_BLENDED
@@ -434,6 +449,8 @@ func load_texture(
     if not full_path:
         MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
+        return load(full_path) as Texture2D
 
     var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))
     if not texture:
@@ -492,6 +509,9 @@ func _load_generated_texture(texture_name:String) -> Texture2D:
 func _get_texture_file(model_path:String, material_name:String) -> String:
     # a texture's traits follow its name after a colon and are no part of the file's name:
     # "peronowe/krawedz_zolty2:#" is krawedz_zolty2.dds (Texture.cpp:1310-1318)
+    # the game's own texture (a patch's, MaszynaMaterialPatch): no file of the data
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
+        return material_name if ResourceLoader.exists(material_name) else ""
     var trait_position:int = material_name.rfind(":")
     if trait_position >= 0:
         material_name = material_name.left(trait_position)
@@ -566,6 +586,7 @@ func _material_key(
         options.lights_on_threshold,
         options.cull_disabled,
         options.max_texture_size,
+        options.weather_exposed,
     ].map(str)).md5_text()
     return model_path.path_join("%s_%s" % [material_path, options_hash])
 

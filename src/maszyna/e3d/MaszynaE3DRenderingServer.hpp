@@ -353,6 +353,9 @@ namespace godot {
             void instance_set_layer_mask(const RID &p_instance, uint32_t p_mask);
             void instance_set_visibility_range(const RID &p_instance, float p_begin, float p_end);
             void instance_set_material_overlay(const RID &p_instance, const Ref<Material> &p_material) override;
+            Ref<Material> instance_get_material_overlay(const RID &p_instance) const override;
+            void instance_set_shader_parameter(
+                    const RID &p_instance, const StringName &p_name, const Variant &p_value) override;
             Dictionary instance_intersect_segment(
                     const RID &p_instance, const Vector3 &p_from, const Vector3 &p_to) const override;
             bool instance_has_light(const RID &p_instance, const String &p_light) const override;

@@ -108,6 +108,11 @@ namespace godot {
             /// elektryczne/lampa_parkowa01 at 117 degrees - those become omni lights.
             static constexpr float MAX_SPOT_ANGLE = 89.9;
 
+            /// A lamp's real light is not reflected: at the source size lights have (LIGHT_SIZE_SETTING)
+            /// its specular on the ground's film of water (roughness 0.02) stays pure white down to
+            /// a hundredth of it. The lens's reflection in the water is the screen's (SSR).
+            static constexpr float LIGHT_SPECULAR = 0.0;
+
             static constexpr float DEFAULT_LIGHT_ENERGY = 0.8;
             static constexpr float DEFAULT_HIGHBEAM_LIGHT_ENERGY = 2.0;
             static constexpr float DEFAULT_HEAD_LIGHT_ENERGY = 1.0;

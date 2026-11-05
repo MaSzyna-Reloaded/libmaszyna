@@ -64,6 +64,23 @@ func parse(model_path:String, material_file:String) -> MaszynaMaterial:
         _update_material(mat, data)
     else:
         mat.default.set_texture_path("diffuse", material_file)
+        # Quirk: a material of no .mat the game's patch defines, at the first place the .mat is looked
+        # for (MaszynaMaterialPatch)
+        for relative_path:String in possible_paths:
+            var patch:MaszynaVehicleModelPatch = MaszynaVehicleSystem.model_get_patch(relative_path)
+            if not patch:
+                continue
+            for definition:MaszynaMaterialPatch in patch.elements_of(MaszynaMaterialPatch):
+                var data:Dictionary = {"shader": definition.shader}
+                for parameter:String in definition.parameters:
+                    data["param_" + parameter] = definition.parameters[parameter]
+                _update_material(mat, data)
+                for parameter:String in definition.vector_parameters:
+                    mat.default.set_parameter_vec4(parameter, definition.vector_parameters[parameter])
+                # as they are: a .mat's texture path is cut at its traits' ":", a game's res:// too
+                for slot:String in definition.textures:
+                    mat.default.set_texture_path(slot, definition.textures[slot])
+            break
 
     mat.transparent = mat.default.require_transparency
     for variant:MaszynaMaterial.MaszynaMaterialVariant in mat.variants.values():

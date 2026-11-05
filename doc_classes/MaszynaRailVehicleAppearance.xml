@@ -45,5 +45,14 @@
 		<member name="wiper_arms" type="PackedStringArray" setter="set_wiper_arms" getter="get_wiper_arms" default="PackedStringArray()">
 			Arm 1, arm 2 and blade of every wiper.
 		</member>
+		<member name="wiper_axes" type="PackedVector3Array" setter="set_wiper_axes" getter="get_wiper_axes" default="PackedVector3Array()">
+			The axis each patched wiper arm turns about, in its own frame - see [member wiper_pivots].
+		</member>
+		<member name="wiper_pivots" type="PackedVector3Array" setter="set_wiper_pivots" getter="get_wiper_pivots" default="PackedVector3Array()">
+			The wiper arms a game's patch gives a model whose MMD names none, each turned whole: the point it turns about, in its own frame. Empty for the original's arms, which turn about their origin and up by the wipers' angle, every other one mirrored.
+		</member>
+		<member name="wiper_turns" type="PackedFloat64Array" setter="set_wiper_turns" getter="get_wiper_turns" default="PackedFloat64Array()">
+			How far each patched wiper arm turns across its sweep [deg], signed - see [member wiper_pivots].
+		</member>
 	</members>
 </class>

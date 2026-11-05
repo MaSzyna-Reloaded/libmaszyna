@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://y1ltwnggzbbcm"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://asgi23f714pwi" path="res://addons/libmaszyna/vehicle/maszyna_wiper_valves_patch.gd" id="valves"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("valves")
+slowest_sweep_time = 2
+fastest_sweep_time = 0.5
+sensitivity = 1
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/303e_v1/303e-409.fiz"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

@@ -339,6 +339,11 @@ code belongs to the game's `FINDINGS.md`.
   announced to nobody. *(10-05 cab change in RailVehicleServer)*
 
 ## Godot / GDExtension
+* An `instance uniform` takes a slot of the global instance-uniform buffer for every instance drawn
+  with the shader, set or not: one in a shader the scenery's materials share overflows it (tens of
+  thousands of instances) and takes the renderer down. Declare it only in a shader the few
+  instances that set it use; hundreds of objects get a material each (an overlay) instead. *(10-27
+  vehicle_snow in every scenery material)*
 * A mesh drawn far from the world's origin keeps its vertices relative to its instance's origin:
   the double build passes only the instance's origin in double precision, and vertices in the
   world's coordinates shake by millimetres as the camera moves. *(10-30 the ballast that shook)*

@@ -4759,6 +4759,25 @@ lighting or the trainset.
 * **Rule:** a value the original gives "along the vehicle" (velocity, the Mover's V) is signed by
   the vehicle's own direction on the track; a reversed vehicle takes it negated.
 
+## 2026-10-27 vehicle_snow in every scenery material
+* **Symptom:**
+  - After the vehicles' snow (17985bff) the game flooded the log with "Too many instances using
+    shader instance variables. Increase buffer size in Project Settings."
+    (`material_storage.cpp:2031`) and "instance_buffer_pos.has(p_instance)", then crashed - a
+    segfault, the NVIDIA driver going down with it.
+* **What proved it:**
+  - `instance uniform float vehicle_snow` was declared in `types/weather.gdshaderinc`, which every
+    scenery material type includes. Godot allocates the instance's slots for every instance whose
+    material declares an instance uniform (`global_shader_parameters_instance_allocate()`), set or
+    not; the default buffer is 65536 slots, and a scenery draws tens of thousands of E3D submodel
+    instances.
+* **Fix:** first a variant of the vehicles' materials alone declared the uniform (6fc93a2e); a
+  scenery's hundreds of parked vehicles could still fill the buffer, so the uniform went: a
+  vehicle's snow is a material overlay of its own (libreloaded's `vehicle_snow_overlay.gdshader`,
+  `VehicleRenderingServer`), laid only over the vehicles drawn in detail with snow on them.
+* **Rule:** an `instance uniform` belongs only in a shader that the few instances setting it use -
+  never in a shader or include the scenery's materials share; a value of each of hundreds of
+  objects is a material of their own, which takes no slot.
 
 ## 2026-10-29 EN57AL screen without its inverters
 

@@ -30,6 +30,9 @@ var _targets:Dictionary[StringName, CabinState.Target] = {}
 ## The kind of the cab's instrument light, by its lamp's label - the last one the MMD names, as
 ## each sets InstrumentLightType (Train.cpp:11755-11779)
 var instrument_light_type:MaszynaCabinCabLights.InstrumentLightType = MaszynaCabinCabLights.InstrumentLightType.STANDARD
+## The wipers driven by hand go the way their keys point (MaszynaCabinManualWipers) - the first
+## wiper's handle (a game's patch) dragged to the right turns it back towards its parked position
+var manual_wipers_keys_reversed:bool = false
 ## The instrument light kinds by their lamp labels (Train.cpp:11755-11779)
 const INSTRUMENT_LIGHT_LABELS:Dictionary[String, MaszynaCabinCabLights.InstrumentLightType] = {
     "i-instrumentlight": MaszynaCabinCabLights.InstrumentLightType.STANDARD,
@@ -52,6 +55,8 @@ static func from_definition(definition:MmdCabinDefinition) -> MaszynaCabinContro
     for descriptor:MmdInstrumentDescriptor in definition.instruments:
         if INSTRUMENT_LIGHT_LABELS.has(descriptor.label):
             controls.instrument_light_type = INSTRUMENT_LIGHT_LABELS[descriptor.label]
+        if descriptor.label == MaszynaCabinManualWipers.FIRST_HANDLE_LABEL:
+            controls.manual_wipers_keys_reversed = descriptor.mouse_drag_signs.x < 0.0
         if not MmdSemanticCatalog.has_label(descriptor.label):
             continue
         var entry:Dictionary = MmdSemanticCatalog.get_entry(descriptor.label)
