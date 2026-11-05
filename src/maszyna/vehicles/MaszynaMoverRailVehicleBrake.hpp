@@ -149,7 +149,7 @@ namespace godot {
                     {BrakeMethod::BRAKE_METHOD_P10_BGU, 1},  {BrakeMethod::BRAKE_METHOD_P10_BG, 2},
                     {BrakeMethod::BRAKE_METHOD_D1, 9},       {BrakeMethod::BRAKE_METHOD_D2, 10},
                     {BrakeMethod::BRAKE_METHOD_FR513, 11},   {BrakeMethod::BRAKE_METHOD_COSID, 12},
-                    {BrakeMethod::BRAKE_METHOD_P10Y_BG, 14}, {BrakeMethod::BRAKE_METHOD_P10Y_BGU, 16},
+                    {BrakeMethod::BRAKE_METHOD_P10Y_BG, 15}, {BrakeMethod::BRAKE_METHOD_P10Y_BGU, 16},
                     {BrakeMethod::BRAKE_METHOD_FR510, 17},   {BrakeMethod::BRAKE_METHOD_D1MG, 137},
                     {BrakeMethod::BRAKE_METHOD_NONE, 0},
             };

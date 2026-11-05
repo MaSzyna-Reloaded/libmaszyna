@@ -15,19 +15,28 @@ const _STOPS: Array = [" ", "\t", "\n", "\r", ";"]
 ## Pulls every `Key=Value` token out of `p` (until eof) into a String->String dictionary. Keys
 ## are kept case-sensitive, matching the original `extract_value`'s exact-substring lookup. A key
 ## given twice keeps its first value, as `extract_value`'s `find()` does (utilities.h:170) - the
-## data relies on it (BR285's `Engine:` says `Vadd=5.5 ... Vadd=0.0`).
+## data relies on it (BR285's `Engine:` says `Vadd=5.5 ... Vadd=0.0`). A value written after spaces
+## (`BCM= 6.5`) is the next token, as `extract_value` skips the spaces after the `=`
+## (utilities.h:151); that token is still read as a key of its own.
 static func read_key_values(p: MaszynaParser) -> Dictionary:
-    var result: Dictionary = {}
+    var tokens: Array[String] = []
     while not p.eof_reached():
         var token: String = p.next_token(_STOPS)
-        if not token:
-            continue
+        if token:
+            tokens.append(token)
+    var result: Dictionary = {}
+    for i: int in tokens.size():
+        var token: String = tokens[i]
         var eq: int = token.find("=")
         if eq <= 0:
             continue
         var key: String = token.substr(0, eq)
-        if not result.has(key):
-            result[key] = token.substr(eq + 1)
+        if result.has(key):
+            continue
+        var value: String = token.substr(eq + 1)
+        if not value and i + 1 < tokens.size():
+            value = tokens[i + 1]
+        result[key] = value
     return result
 
 
