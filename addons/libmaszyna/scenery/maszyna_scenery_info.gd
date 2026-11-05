@@ -27,6 +27,13 @@ const SENTENCE_MARKS:PackedStringArray = [",", "...", "!", "?"]
 ## original's Starter does not offer the player (a convention of the data, MASZYNA_ORIGINAL_QUIRKS.md)
 const NOT_OFFERED_MARK:String = "-"
 ## The driver types a vehicle's `dynamic` names; any other is nobody
+## The importer of a `dynamic`, whose reading of its couplingdata the list takes
+const DynamicImporter = preload("res://addons/libmaszyna/scenery/maszyna_node_dynamic_importer.gd")
+## The tokens of a trainset's `dynamic` line: node <range_max> <range_min> <name> dynamic <datafolder>
+## <skinfile> <mmdfile> <offset> <drivertype> <couplingdata> ... (simulationstateserializer.cpp:960-988)
+const OFFSET_TOKEN:int = 8
+const DRIVER_TOKEN:int = 9
+const COUPLING_TOKEN:int = 10
 const DRIVER_TYPES:Dictionary[String, VehicleData.DriverType] = {
     "headdriver": VehicleData.DriverType.DRIVER_HEAD,
     "reardriver": VehicleData.DriverType.DRIVER_REAR,
@@ -194,7 +201,7 @@ static func read(filename:String) -> MaszynaSceneryInfo:
                     mission_lines.clear()
                 trainset = null
             "node":
-                if trainset and tokens.size() > 9 and tokens[4].to_lower() == "dynamic":
+                if trainset and tokens.size() > COUPLING_TOKEN and tokens[4].to_lower() == "dynamic":
                     var vehicle := MaszynaVehicleData.new()
                     vehicle.vehicle_id = tokens[3].to_lower()
                     vehicle.name = tokens[3]
@@ -203,12 +210,18 @@ static func read(filename:String) -> MaszynaSceneryInfo:
                     # files are found by MaszynaDataPath.resolve() whatever the letter case
                     vehicle.skin = tokens[6]
                     vehicle.file_name = tokens[7]
-                    if is_equal_approx(float(tokens[8]), -1.0):
-                        vehicle.direction = TrackServer.DIRECTION_REVERSED
                     # DynObj.cpp:1812-1825, as maszyna_node_dynamic_importer.gd reads it
-                    vehicle.driver_type = DRIVER_TYPES.get(tokens[9].to_lower(), VehicleData.DriverType.DRIVER_NOBODY)
-                    vehicle.trainset_index = trainset.vehicles.size()
-                    trainset.vehicles.append(vehicle)
+                    vehicle.driver_type = DRIVER_TYPES.get(
+                            tokens[DRIVER_TOKEN].to_lower(), VehicleData.DriverType.DRIVER_NOBODY)
+                    var member:TrainsetMemberData = TrainsetMemberData.new()
+                    member.vehicle = vehicle
+                    var offset:float = float(tokens[OFFSET_TOKEN])
+                    var reversed:bool = is_equal_approx(offset, -1.0)
+                    if reversed:
+                        member.direction = TrackServer.DIRECTION_REVERSED
+                    member.coupling_mode = DynamicImporter.coupling_mode_of(tokens[COUPLING_TOKEN], offset, reversed)
+                    member.trainset_index = trainset.members.size()
+                    trainset.members.append(member)
     info.description = "\n".join(description_lines)
     return info
 

@@ -1196,14 +1196,14 @@ func _update_connect(situation:MaszynaDriverTraction.Situation) -> void:
         # the coupling end's neighbour as the vehicle keeps it (Neighbours[], Driver.cpp:7002): near,
         # between the couplers less their adapters, not between the primary axles (DynObj.cpp:7577)
         if neighbour and neighbour.distance < MaszynaDriverRoute.OBSTACLE_COUPLER_RANGE:
-            neighbour.distance = RailVehicleServer.vehicle_get_coupler_distance(
+            neighbour.distance = RailVehicleServer.coupler_get_distance(
                     state.coupling_vehicle, neighbour.vehicle_rid) \
-                    - RailVehicleServer.vehicle_get_coupler_adapter_length(state.coupling_vehicle, state.coupling_end) \
-                    - RailVehicleServer.vehicle_get_coupler_adapter_length(neighbour.vehicle_rid, neighbour.end)
+                    - RailVehicleServer.coupler_get_adapter_length(state.coupling_vehicle, state.coupling_end) \
+                    - RailVehicleServer.coupler_get_adapter_length(neighbour.vehicle_rid, neighbour.end)
         var compatible:bool = true
         if neighbour and neighbour.distance < ADAPTER_DISTANCE \
-                and not RailVehicleServer.vehicle_is_coupler_automatic(state.coupling_vehicle, state.coupling_end) \
-                and RailVehicleServer.vehicle_is_coupler_automatic(neighbour.vehicle_rid, neighbour.end):
+                and not RailVehicleServer.coupler_is_automatic(state.coupling_vehicle, state.coupling_end) \
+                and RailVehicleServer.coupler_is_automatic(neighbour.vehicle_rid, neighbour.end):
             compatible = false
             MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COUPLING_ADAPTER_ATTACH, state.coupling_end, func() -> void:
                 MaszynaDriverHints.send(state.coupling_vehicle, "coupler_adapter_attach", state.coupling_end))
@@ -1279,7 +1279,7 @@ func _update_disconnect(situation:MaszynaDriverTraction.Situation) -> void:
                     # an adapter the front vehicle's end was fitted with comes off (couplingadapterremove,
                     # Driver.cpp:7068-7070; driverhints.cpp:1226-1232)
                     var front:RID = state.trainset.vehicles[0]
-                    if RailVehicleServer.vehicle_get_coupler_adapter_model(front, end):
+                    if RailVehicleServer.coupler_get_adapter_model(front, end):
                         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COUPLING_ADAPTER_REMOVE, end, func() -> void:
                             MaszynaDriverHints.send(front, "coupler_adapter_remove", end))
         if not state.pressing:
@@ -1501,7 +1501,7 @@ func _take_shunt(driver:RID, state:AIDriverState, loose:bool, vehicles:float, co
     if not state.engine_active:
         _order_next(state, Order.PREPARE_ENGINE)
     if not coupler == 0.0:
-        state.coupler = floori(absf(coupler)) as RailVehicleController.CouplingFlags
+        state.coupler = MaszynaMoverCoupling.flags_from_mover(floori(absf(coupler)))
         _order_next(state, Order.CONNECT)
         if vehicles >= 0.0:
             # after coupling, pull away the vehicles counted: turn first, they are behind
@@ -1571,7 +1571,7 @@ static func _is_coupled_as_asked(vehicle:RID, end:RailVehicleController.CouplerE
     if asked == RailVehicleController.COUPLING_FLAG_NONE:
         return true
     var joinable:RailVehicleController.CouplingFlags = (asked
-            & RailVehicleServer.vehicle_get_coupler_joinable_flags(vehicle, end)) as RailVehicleController.CouplingFlags
+            & RailVehicleServer.coupler_get_joinable_flags(vehicle, end)) as RailVehicleController.CouplingFlags
     return not joinable == RailVehicleController.COUPLING_FLAG_NONE and _is_coupled_by(vehicle, end, joinable)
 
 

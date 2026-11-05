@@ -68,9 +68,9 @@ namespace godot {
             double get_right_step_position() const override;
             bool get_right_step_operating() const override;
             void permit_step(bool p_state) override;
-            void permit_doors(bool p_state, Side p_side) override;
-            void operate_doors(bool p_state, Side p_side) override;
-            void operate_doors_locally(bool p_state, Side p_side) override;
+            void permit_doors(bool p_state, RailVehicleController::Side p_side) override;
+            void operate_doors(bool p_state, RailVehicleController::Side p_side) override;
+            void operate_doors_locally(bool p_state, RailVehicleController::Side p_side) override;
             void door_lock(bool p_state) override;
             void door_remote_control(bool p_state) override;
             void signal_departure(bool p_state) override;

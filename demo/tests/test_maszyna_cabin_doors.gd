@@ -190,13 +190,13 @@ func test_the_door_lamps_follow_the_open_doors_on_the_cab_side() -> void:
     await step(STEP_FRAMES)
     assert_true(bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoors.DOORS_OPEN_LAMP)), "a door is open")
     assert_true(bool(CabinSystem.vehicle_state_value(
-            vehicle_rid, MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleDoors.SIDE_LEFT])), "on the rear cab's left")
+            vehicle_rid, MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleController.SIDE_LEFT])), "on the rear cab's left")
     assert_false(bool(CabinSystem.vehicle_state_value(
-            vehicle_rid, MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleDoors.SIDE_RIGHT])))
+            vehicle_rid, MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleController.SIDE_RIGHT])))
     assert_true(bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoors.PERMITS_LAMP)), "permits given")
 
 
-func _permit_lamp(side:RailVehicleDoors.Side) -> bool:
+func _permit_lamp(side:RailVehicleController.Side) -> bool:
     return bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoorPermits.LAMP_KEYS[side]))
 
 
@@ -214,8 +214,8 @@ func test_a_permit_lamp_is_lit_through_by_a_steady_light() -> void:
     var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(vehicle_rid, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     doors.permit_light_blinking = RailVehicleDoors.PERMIT_LIGHT_CONTINUOUS
     SimulationServer.time_of_day = ODD_SECOND
-    assert_true(_permit_lamp(RailVehicleDoors.SIDE_LEFT), "permitted: lit on an odd second too")
-    assert_false(_permit_lamp(RailVehicleDoors.SIDE_RIGHT), "not permitted: dark")
+    assert_true(_permit_lamp(RailVehicleController.SIDE_LEFT), "permitted: lit on an odd second too")
+    assert_false(_permit_lamp(RailVehicleController.SIDE_RIGHT), "not permitted: dark")
 
 
 func test_a_blinking_permit_lamp_is_dark_on_the_odd_seconds_while_the_doors_are_closed() -> void:
@@ -223,9 +223,9 @@ func test_a_blinking_permit_lamp_is_dark_on_the_odd_seconds_while_the_doors_are_
     var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(vehicle_rid, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     doors.permit_light_blinking = RailVehicleDoors.PERMIT_LIGHT_FLASHING_ALWAYS
     SimulationServer.time_of_day = EVEN_SECOND
-    assert_true(_permit_lamp(RailVehicleDoors.SIDE_LEFT), "an even second: lit")
+    assert_true(_permit_lamp(RailVehicleController.SIDE_LEFT), "an even second: lit")
     SimulationServer.time_of_day = ODD_SECOND
-    assert_false(_permit_lamp(RailVehicleDoors.SIDE_LEFT), "an odd second: dark")
+    assert_false(_permit_lamp(RailVehicleController.SIDE_LEFT), "an odd second: dark")
 
 
 func test_the_rear_cab_permit_lamps_show_the_other_side_of_the_vehicle() -> void:
@@ -234,5 +234,5 @@ func test_the_rear_cab_permit_lamps_show_the_other_side_of_the_vehicle() -> void
     _permits_behaviour(rear_cabin)
     var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(vehicle_rid, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     doors.permit_light_blinking = RailVehicleDoors.PERMIT_LIGHT_CONTINUOUS
-    assert_true(_permit_lamp(RailVehicleDoors.SIDE_RIGHT), "the vehicle's left is the rear cab's right")
-    assert_false(_permit_lamp(RailVehicleDoors.SIDE_LEFT))
+    assert_true(_permit_lamp(RailVehicleController.SIDE_RIGHT), "the vehicle's left is the rear cab's right")
+    assert_false(_permit_lamp(RailVehicleController.SIDE_LEFT))

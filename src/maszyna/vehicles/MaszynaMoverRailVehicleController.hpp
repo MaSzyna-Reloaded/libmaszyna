@@ -49,7 +49,6 @@ namespace godot {
             void initialize_mover_state();
             static int cab_occupied(RailVehicleCabinKind::Kind p_kind);
             void _integrate(double p_delta, Integration p_integration);
-            CouplerEnd _resolve_coupler_end(const Variant &p_where) const;
             /* The coupled vehicle as this end's neighbour; false when the end is not coupled */
             bool _neighbour_from_coupler(CouplerEnd p_end);
             void _consume_coupler_events();
@@ -154,13 +153,17 @@ namespace godot {
             void uncouple(CouplerEnd p_end) override;
             bool is_coupled(CouplerEnd p_end) const override;
             bool is_coupled_by(CouplerEnd p_end, BitField<CouplingFlags> p_flags) const override;
-            void coupler_connect(const Variant &p_where) override;
-            void coupler_disconnect(const Variant &p_where) override;
-            bool coupler_adapter_attach(const Variant &p_where) override;
+            bool is_coupling_owner(CouplerEnd p_end) const override;
+            void coupler_connect(CouplerEnd p_end) override;
+            void coupler_disconnect(CouplerEnd p_end) override;
+            bool coupler_adapter_attach(CouplerEnd p_end) override;
             bool coupler_adapter_fit(CouplerEnd p_end) override;
             bool is_coupler_automatic(CouplerEnd p_end) const override;
             BitField<CouplingFlags> get_coupler_joinable_flags(CouplerEnd p_end) const override;
-            bool coupler_adapter_remove(const Variant &p_where) override;
+            /* The core's coupling flags as the Mover's coupling:: bits - a FIZ's, a .scn's or a
+             * scenario's number is the Mover's bits - and back; a bit the core has no flag for is
+             * left out */
+            bool coupler_adapter_remove(CouplerEnd p_end) override;
             double get_coupler_adapter_fitted_length(CouplerEnd p_end) const override;
             double get_coupler_adapter_fitted_height(CouplerEnd p_end) const override;
             Ref<RailVehicleController> get_coupled_controller(CouplerEnd p_end) const override;

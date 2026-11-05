@@ -27,11 +27,6 @@ namespace godot {
 
         public:
             void apply_vehicle_config() override;
-            bool is_coupled(RailVehicleController::CouplerEnd p_end) const override;
-            bool is_brake_hose_connected(RailVehicleController::CouplerEnd p_end) const override;
-            bool is_main_hose_connected(RailVehicleController::CouplerEnd p_end) const override;
-            bool is_coupling_owner(RailVehicleController::CouplerEnd p_end) const override;
-            RailVehicleController::CouplerEnd get_connected_end(RailVehicleController::CouplerEnd p_end) const override;
             double get_coupler_max_force(RailVehicleController::CouplerEnd p_end) const override;
 
         private:

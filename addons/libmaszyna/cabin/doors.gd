@@ -27,29 +27,29 @@ const CONTROLS:Array[StringName] = [
     LEFT_TOGGLE, RIGHT_TOGGLE, LEFT_OPEN, RIGHT_OPEN, LEFT_CLOSE, RIGHT_CLOSE, ALL_OPEN, ALL_CLOSE,
     REMOTE_MODE, LOCK, DEPARTURE_SIGNAL,
 ]
-const TOGGLES:Dictionary[RailVehicleDoors.Side, StringName] = {
-    RailVehicleDoors.SIDE_LEFT: LEFT_TOGGLE,
-    RailVehicleDoors.SIDE_RIGHT: RIGHT_TOGGLE,
+const TOGGLES:Dictionary[RailVehicleController.Side, StringName] = {
+    RailVehicleController.SIDE_LEFT: LEFT_TOGGLE,
+    RailVehicleController.SIDE_RIGHT: RIGHT_TOGGLE,
 }
-const OPEN_BUTTONS:Dictionary[RailVehicleDoors.Side, StringName] = {
-    RailVehicleDoors.SIDE_LEFT: LEFT_OPEN,
-    RailVehicleDoors.SIDE_RIGHT: RIGHT_OPEN,
+const OPEN_BUTTONS:Dictionary[RailVehicleController.Side, StringName] = {
+    RailVehicleController.SIDE_LEFT: LEFT_OPEN,
+    RailVehicleController.SIDE_RIGHT: RIGHT_OPEN,
 }
-const CLOSE_BUTTONS:Dictionary[RailVehicleDoors.Side, StringName] = {
-    RailVehicleDoors.SIDE_LEFT: LEFT_CLOSE,
-    RailVehicleDoors.SIDE_RIGHT: RIGHT_CLOSE,
+const CLOSE_BUTTONS:Dictionary[RailVehicleController.Side, StringName] = {
+    RailVehicleController.SIDE_LEFT: LEFT_CLOSE,
+    RailVehicleController.SIDE_RIGHT: RIGHT_CLOSE,
 }
-const COMMANDS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "doors_left",
-    RailVehicleDoors.SIDE_RIGHT: "doors_right",
+const COMMANDS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "doors_left",
+    RailVehicleController.SIDE_RIGHT: "doors_right",
 }
 ## A toggle shows its side open above half way (GetDesiredValue() > 0.5, Train.cpp:7127)
 const OPEN_THRESHOLD:float = 0.5
 ## The cab's door lamps (autolights and lights, Train.cpp:11642-11684, 11753-11756)
 const DOORS_OPEN_LAMP:String = "doors_lamp"
-const SIDE_OPEN_LAMPS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "doors_left_lamp",
-    RailVehicleDoors.SIDE_RIGHT: "doors_right_lamp",
+const SIDE_OPEN_LAMPS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "doors_left_lamp",
+    RailVehicleController.SIDE_RIGHT: "doors_right_lamp",
 }
 const PERMITS_LAMP:String = "door_permits_lamp"
 
@@ -66,12 +66,12 @@ func _init(present:Dictionary[StringName, bool], all_close_type:CabinButton.Butt
     _present = present
     _all_close_type = all_close_type
     _handlers = {
-        LEFT_TOGGLE: _toggle.bind(RailVehicleDoors.SIDE_LEFT),
-        RIGHT_TOGGLE: _toggle.bind(RailVehicleDoors.SIDE_RIGHT),
-        LEFT_OPEN: _open.bind(RailVehicleDoors.SIDE_LEFT),
-        RIGHT_OPEN: _open.bind(RailVehicleDoors.SIDE_RIGHT),
-        LEFT_CLOSE: _close.bind(RailVehicleDoors.SIDE_LEFT),
-        RIGHT_CLOSE: _close.bind(RailVehicleDoors.SIDE_RIGHT),
+        LEFT_TOGGLE: _toggle.bind(RailVehicleController.SIDE_LEFT),
+        RIGHT_TOGGLE: _toggle.bind(RailVehicleController.SIDE_RIGHT),
+        LEFT_OPEN: _open.bind(RailVehicleController.SIDE_LEFT),
+        RIGHT_OPEN: _open.bind(RailVehicleController.SIDE_RIGHT),
+        LEFT_CLOSE: _close.bind(RailVehicleController.SIDE_LEFT),
+        RIGHT_CLOSE: _close.bind(RailVehicleController.SIDE_RIGHT),
         ALL_OPEN: _open_all,
         ALL_CLOSE: _close_all,
         REMOTE_MODE: _remote_mode,
@@ -90,14 +90,14 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
     for control_id:StringName in _handlers:
         CabinSystem.register_control(cabin, control_id, _handlers[control_id])
     CabinSystem.state_computed_value_register(vehicle_rid, DOORS_OPEN_LAMP, _doors_open)
-    for side:RailVehicleDoors.Side in SIDE_OPEN_LAMPS:
+    for side:RailVehicleController.Side in SIDE_OPEN_LAMPS:
         CabinSystem.state_computed_value_register(vehicle_rid, SIDE_OPEN_LAMPS[side], _side_open.bind(side))
     CabinSystem.state_computed_value_register(vehicle_rid, PERMITS_LAMP, _permits)
 
 
 func unregister() -> void:
     CabinSystem.state_computed_value_unregister(_vehicle_rid, PERMITS_LAMP)
-    for side:RailVehicleDoors.Side in SIDE_OPEN_LAMPS:
+    for side:RailVehicleController.Side in SIDE_OPEN_LAMPS:
         CabinSystem.state_computed_value_unregister(_vehicle_rid, SIDE_OPEN_LAMPS[side])
     CabinSystem.state_computed_value_unregister(_vehicle_rid, DOORS_OPEN_LAMP)
     for control_id:StringName in _handlers:
@@ -105,7 +105,7 @@ func unregister() -> void:
 
 
 # Train.cpp:7121-7194, 7420-7493
-func _toggle(state:CabinState, action:StringName, value:Variant, cab_side:RailVehicleDoors.Side) -> Variant:
+func _toggle(state:CabinState, action:StringName, value:Variant, cab_side:RailVehicleController.Side) -> Variant:
     if action == &"toggle":
         _toggle(state, &"hold", value, cab_side)
         return _toggle(state, &"release", value, cab_side)
@@ -133,7 +133,7 @@ func _toggle(state:CabinState, action:StringName, value:Variant, cab_side:RailVe
 
 
 # Train.cpp:7320-7360, 7495-7536
-func _open(state:CabinState, action:StringName, _value:Variant, cab_side:RailVehicleDoors.Side) -> Variant:
+func _open(state:CabinState, action:StringName, _value:Variant, cab_side:RailVehicleController.Side) -> Variant:
     var doors:RailVehicleDoors = state.vehicle_component(VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     if not doors or not _driver_controlled(doors.open_method):
         return null
@@ -152,7 +152,7 @@ func _open(state:CabinState, action:StringName, _value:Variant, cab_side:RailVeh
 
 # Train.cpp:7362-7418, 7538-7593 - with the automatic departure signal the doors close only when
 # the button is let go, the signal sounding while it is held
-func _close(state:CabinState, action:StringName, _value:Variant, cab_side:RailVehicleDoors.Side) -> Variant:
+func _close(state:CabinState, action:StringName, _value:Variant, cab_side:RailVehicleController.Side) -> Variant:
     var doors:RailVehicleDoors = state.vehicle_component(VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     if not doors or not _driver_controlled(doors.close_method):
         return null
@@ -190,8 +190,8 @@ func _open_all(state:CabinState, action:StringName, _value:Variant) -> Variant:
     if not action in [&"hold", &"toggle"]:
         return null
     state.set_value(ALL_OPEN, 1.0)
-    state.send_vehicle_command(COMMANDS[RailVehicleDoors.SIDE_RIGHT], true)
-    return state.send_vehicle_command(COMMANDS[RailVehicleDoors.SIDE_LEFT], true)
+    state.send_vehicle_command(COMMANDS[RailVehicleController.SIDE_RIGHT], true)
+    return state.send_vehicle_command(COMMANDS[RailVehicleController.SIDE_LEFT], true)
 
 
 # Train.cpp:7630-7685 - a delayed button closes on its release
@@ -206,8 +206,8 @@ func _close_all(state:CabinState, action:StringName, _value:Variant) -> Variant:
     if doors.close_auto_close_warning:
         state.send_vehicle_command("doors_departure_signal", not released)
     if delayed == released:
-        state.send_vehicle_command(COMMANDS[RailVehicleDoors.SIDE_RIGHT], false)
-        state.send_vehicle_command(COMMANDS[RailVehicleDoors.SIDE_LEFT], false)
+        state.send_vehicle_command(COMMANDS[RailVehicleController.SIDE_RIGHT], false)
+        state.send_vehicle_command(COMMANDS[RailVehicleController.SIDE_LEFT], false)
     if not released:
         state.set_value(LEFT_TOGGLE, 0.0)
         state.set_value(RIGHT_TOGGLE, 0.0)
@@ -257,7 +257,7 @@ func _departure_signal(state:CabinState, action:StringName, value:Variant) -> Va
 
 
 ## The side of the vehicle a side of the cab works: the other one from the rear cab (cab_to_end())
-func _vehicle_side(cab_side:RailVehicleDoors.Side) -> RailVehicleDoors.Side:
+func _vehicle_side(cab_side:RailVehicleController.Side) -> RailVehicleController.Side:
     if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR:
         return MaszynaCabinDoorPermits.other_side(cab_side)
     return cab_side
@@ -265,19 +265,19 @@ func _vehicle_side(cab_side:RailVehicleDoors.Side) -> RailVehicleDoors.Side:
 
 ## m_doors (Train.cpp:8509): a doorway of the trainset not closed, either side
 func _doors_open() -> bool:
-    return RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleDoors.SIDE_LEFT) \
-            or RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleDoors.SIDE_RIGHT)
+    return RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleController.SIDE_LEFT) \
+            or RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleController.SIDE_RIGHT)
 
 
 ## btLampkaDoorLeft/Right (Train.cpp:9167-9168): a doorway of the trainset not closed on the cab's side
-func _side_open(cab_side:RailVehicleDoors.Side) -> bool:
+func _side_open(cab_side:RailVehicleController.Side) -> bool:
     return RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, _vehicle_side(cab_side))
 
 
 ## m_doorpermits (Train.cpp:8510): a door permit of the trainset given, either side
 func _permits() -> bool:
-    return RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleDoors.SIDE_LEFT) \
-            or RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleDoors.SIDE_RIGHT)
+    return RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleController.SIDE_LEFT) \
+            or RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleController.SIDE_RIGHT)
 
 
 ## Doors worked from the cab (control_t::driver or mixed, Train.cpp:7323)

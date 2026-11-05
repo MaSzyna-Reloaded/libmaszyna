@@ -61,6 +61,8 @@ Code generation:
 * Keep code clean and do minimal code changes
 * Follow DRY and KISS principles
 * use english comments (if needed)
+* C++: **a header declares, its `.cpp` defines** - no function body in a `.hpp`, but a template
+  and the `MAKE_*` accessors - see `CODE_STYLE.md`
 * a vehicle is held by its `VehicleServer` RID and commanded with
   `VehicleServer.vehicle_send_command(vehicle_rid, ...)`; `RailVehicleServer` knows the same RID
   for what is rail (track, couplers, rail component kinds). Its id (`vehicle_id`, the scenery

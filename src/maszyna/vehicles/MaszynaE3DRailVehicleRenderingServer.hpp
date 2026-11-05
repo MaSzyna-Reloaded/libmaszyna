@@ -136,7 +136,8 @@ namespace godot {
             /* The adapters fitted to the vehicle's ends, built again as its controller has them */
             void _update_coupler_adapters(const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna);
             /* Where an adapter fitted to an end is drawn (Render_coupler_adapter(), opengl33renderer.cpp:1356-1376) */
-            Transform3D _coupler_adapter_transform(const RID &p_vehicle, const Visual &p_visual, int p_end) const;
+            Transform3D _coupler_adapter_transform(
+                    const RID &p_vehicle, const Visual &p_visual, RailVehicleController::CouplerEnd p_end) const;
             void _on_vehicle_trainset_changed(const RID &p_vehicle);
             void _on_vehicle_coupler_changed(const RID &p_vehicle, int64_t p_flag);
             void _on_vehicle_coupler_adapter_changed(const RID &p_vehicle, int64_t p_end);

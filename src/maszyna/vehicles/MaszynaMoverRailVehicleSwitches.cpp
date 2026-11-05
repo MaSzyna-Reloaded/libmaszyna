@@ -1,5 +1,6 @@
 #include "MaszynaMoverRailVehicleSwitches.hpp"
 #include "maszyna/vehicles/MaszynaMoverBackend.hpp"
+#include "maszyna/vehicles/MaszynaMoverCoupling.hpp"
 #include "vehicles/rail/RailVehicleSwitches.hpp"
 
 namespace godot {
@@ -38,7 +39,7 @@ namespace godot {
     int MaszynaMoverRailVehicleSwitches::get_pantograph_preset_position(
             const RailVehicleController::CouplerEnd p_end) const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? mover->PantsPreset.second[p_end] : 0;
+        return mover != nullptr ? mover->PantsPreset.second[MaszynaMoverCoupling::end_to_mover(p_end)] : 0;
     }
 
     // Train.cpp:3522 - a preset is its digit
@@ -46,24 +47,26 @@ namespace godot {
     MaszynaMoverRailVehicleSwitches::get_pantograph_preset(const RailVehicleController::CouplerEnd p_end) const {
         const TMoverParameters *mover = get_mover();
         // a selection past the presets reconfigured since is none
-        if (mover == nullptr || mover->PantsPreset.second[p_end] >= static_cast<int>(mover->PantsPreset.first.size())) {
+        if (mover == nullptr || mover->PantsPreset.second[MaszynaMoverCoupling::end_to_mover(p_end)] >=
+                                        static_cast<int>(mover->PantsPreset.first.size())) {
             return PANTOGRAPH_PRESET_NONE;
         }
-        return static_cast<PantographPreset>(mover->PantsPreset.first[mover->PantsPreset.second[p_end]] - '0');
+        return static_cast<PantographPreset>(
+                mover->PantsPreset.first[mover->PantsPreset.second[MaszynaMoverCoupling::end_to_mover(p_end)]] - '0');
     }
 
     // Train.cpp:3532 change_pantograph_selection - within the presets
     void MaszynaMoverRailVehicleSwitches::next_pantograph_preset(const RailVehicleController::CouplerEnd p_end) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        int &selection = mover->PantsPreset.second[p_end];
+        int &selection = mover->PantsPreset.second[MaszynaMoverCoupling::end_to_mover(p_end)];
         selection = std::clamp(selection + 1, 0, std::max(static_cast<int>(mover->PantsPreset.first.size()) - 1, 0));
     }
 
     void MaszynaMoverRailVehicleSwitches::previous_pantograph_preset(const RailVehicleController::CouplerEnd p_end) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        int &selection = mover->PantsPreset.second[p_end];
+        int &selection = mover->PantsPreset.second[MaszynaMoverCoupling::end_to_mover(p_end)];
         selection = std::clamp(selection - 1, 0, std::max(static_cast<int>(mover->PantsPreset.first.size()) - 1, 0));
     }
 

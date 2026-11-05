@@ -1,5 +1,6 @@
 #include "MaszynaMoverRailVehicleBuffCoupl.hpp"
 #include "maszyna/vehicles/MaszynaMoverBackend.hpp"
+#include "maszyna/vehicles/MaszynaMoverCoupling.hpp"
 #include "utils/Units.hpp"
 #include "vehicles/rail/RailVehicleBuffCoupl.hpp"
 #include "vehicles/rail/RailVehicleEngine.hpp"
@@ -26,40 +27,10 @@ namespace godot {
         BIND_PROPERTY(MaszynaMoverRailVehicleBuffCoupl, Variant::FLOAT, damping_beta);
     }
 
-    /* The coupling flags of one end, read straight from the backend - this class is the only one
-     * that may (Mover.h: TCoupling, coupling::). */
-    bool MaszynaMoverRailVehicleBuffCoupl::is_coupled(const RailVehicleController::CouplerEnd p_end) const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr && (mover->Couplers[p_end].CouplingFlag & coupling::coupler) != 0;
-    }
-
-    bool
-    MaszynaMoverRailVehicleBuffCoupl::is_brake_hose_connected(const RailVehicleController::CouplerEnd p_end) const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr && (mover->Couplers[p_end].CouplingFlag & coupling::brakehose) != 0;
-    }
-
-    bool MaszynaMoverRailVehicleBuffCoupl::is_main_hose_connected(const RailVehicleController::CouplerEnd p_end) const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr && (mover->Couplers[p_end].CouplingFlag & coupling::mainhose) != 0;
-    }
-
-    bool MaszynaMoverRailVehicleBuffCoupl::is_coupling_owner(const RailVehicleController::CouplerEnd p_end) const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr && mover->Couplers[p_end].Render;
-    }
-
-    RailVehicleController::CouplerEnd
-    MaszynaMoverRailVehicleBuffCoupl::get_connected_end(const RailVehicleController::CouplerEnd p_end) const {
-        const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? static_cast<RailVehicleController::CouplerEnd>(mover->Couplers[p_end].ConnectedNr)
-                                : RailVehicleController::COUPLER_END_FRONT;
-    }
-
     double
     MaszynaMoverRailVehicleBuffCoupl::get_coupler_max_force(const RailVehicleController::CouplerEnd p_end) const {
         const TMoverParameters *mover = get_mover();
-        return mover != nullptr ? mover->Couplers[p_end].FmaxC : 0.0;
+        return mover != nullptr ? mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].FmaxC : 0.0;
     }
 
 
@@ -92,12 +63,12 @@ namespace godot {
         coupler->DmaxB = get_buffer_max_compression_tolerance();
         coupler->FmaxB = get_buffer_max_tension_tolerance();
         coupler->beta = get_damping_beta();
-        coupler->AutomaticCouplingFlag = get_automatic_flag();
+        coupler->AutomaticCouplingFlag = MaszynaMoverCoupling::flags_to_mover(get_automatic_flag());
         // the FIZ's negative AllowedFlag is made a permanent one by its parser (fiz_train_buff_coupl_parser.gd)
-        coupler->AllowedFlag = get_allowed_flag();
+        coupler->AllowedFlag = MaszynaMoverCoupling::flags_to_mover(get_allowed_flag());
 
-        coupler->PowerCoupling = get_power_coupling();
-        coupler->PowerFlag = get_power_flag();
+        coupler->PowerCoupling = MaszynaMoverCoupling::flags_to_mover(get_power_coupling());
+        coupler->PowerFlag = MaszynaMoverCoupling::flags_to_mover(get_power_flag());
         coupler->control_type = get_control_type().ascii().get_data();
 
         if (coupler->CouplerType != TCouplerType::NoCoupler && coupler->CouplerType != TCouplerType::Bare &&

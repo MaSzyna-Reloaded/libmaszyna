@@ -14,6 +14,16 @@ const REPEATED_IDS_SCENERY:String = "trainsets_repeated_ids.scn"
 ## A trainset "moving" of `head`, `reversed` (stood the other way round) and `tail`, starting at
 ## 40 km/h
 const MOVING_REVERSED_SCENERY:String = "trainset_moving_reversed.scn"
+## A trainset of one vehicle, its coupling 0
+const SINGLE_SCENERY:String = "trainset_single.scn"
+## An entry of the arrangement standing for a vehicle added to the trainset
+const ADDED:int = -1
+## couplingdata 3 of the fixtures: the coupler and the brake hose
+const DECLARED:RailVehicleController.CouplingMode = RailVehicleController.COUPLING_MODE_BRAKE
+## couplingdata 0 of REPEATED_IDS_SCENERY's last wagon
+const UNCOUPLED:RailVehicleController.CouplingMode = RailVehicleController.COUPLING_MODE_NONE
+## What the scenery selector gives a vehicle the player adds, and what the player chooses here
+const FULL:RailVehicleController.CouplingMode = RailVehicleController.COUPLING_MODE_FULL
 ## How long the moving trainset is let run [s] - about 20 m at its 40 km/h
 const MOVING_SECONDS:float = 2.0
 ## How much less than its start-up velocity would take it the trainset may run [m]
@@ -94,8 +104,8 @@ func test_a_vehicle_is_found_by_its_id_and_shown_by_its_name() -> void:
 
 func test_a_skin_chosen_for_the_load_is_that_vehicles_alone() -> void:
     _scenery.trainset_override.assign([
-        _arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "chosen"),
-        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none"),
+        _arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "chosen", DECLARED),
+        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none", DECLARED),
     ])
     await _scenery.load()
 
@@ -108,9 +118,9 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
     # second goes first, first becomes another vehicle and keeps its driver, a vehicle is added
     # at the end, and lone - another trainset's - stays as declared
     _scenery.trainset_override.assign([
-        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none"),
-        _arranged("first", 0, "dynamic/test/animated_v1", "animated", "none"),
-        _arranged("", -1, "dynamic/test/synthetic_v1", "synthetic", "none"),
+        _arranged("second", 1, "dynamic/test/synthetic_v1", "synthetic", "none", DECLARED),
+        _arranged("first", 0, "dynamic/test/animated_v1", "animated", "none", DECLARED),
+        _arranged("", ADDED, "dynamic/test/synthetic_v1", "synthetic", "none", FULL),
     ])
     # and the second is turned round
     _scenery.trainset_override[0].direction = TrackServer.DIRECTION_REVERSED
@@ -120,8 +130,10 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
     vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
     assert_eq(_ids(vehicles), ["second", "first", "second_2"], "in the arranged order, the added one named")
     assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[1]).file_name, "animated")
-    assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[0]).direction,
-            TrackServer.DIRECTION_REVERSED, "the turned vehicle stands the other way round")
+    # "along" runs one way for a vehicle standing with its track, the other way against it
+    var turned:float = float(RailVehicleServer.vehicle_get_track_position(vehicles[0])["along"])
+    var kept:float = float(RailVehicleServer.vehicle_get_track_position(vehicles[1])["along"])
+    assert_lt(signf(turned) * signf(kept), 0.0, "the turned vehicle stands the other way round")
     assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[1]).driver_type,
             MaszynaVehicleData.DriverType.DRIVER_HEAD, "the changed vehicle keeps its driver")
     assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicles[2]).driver_type,
@@ -134,7 +146,7 @@ func test_an_arranged_trainset_changes_adds_removes_and_moves_its_vehicles() -> 
 
 
 func test_a_vehicle_left_out_of_the_arranged_trainset_is_not_built() -> void:
-    _scenery.trainset_override.assign([_arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "none")])
+    _scenery.trainset_override.assign([_arranged("first", 0, "dynamic/test/synthetic_v1", "synthetic", "none", DECLARED)])
     await _scenery.load()
 
     assert_eq(_ids(_scenery.get_vehicles()), ["first", "lone"])
@@ -157,9 +169,12 @@ func test_an_arranged_trainset_with_repeated_ids_is_coupled_through() -> void:
 
 func test_a_moved_wagon_of_a_repeated_id_keeps_its_own_load() -> void:
     _scenery.filename = REPEATED_IDS_SCENERY
-    # the last wagon goes behind the loco
+    # the last wagon goes behind the loco, coupled to the next as the player chooses - its own mode
+    # couples it to nothing
     var places:Array[int] = [0, 3, 1, 2]
-    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    var arranged:Array[TrainsetMemberData] = _arranged_repeated_ids(places)
+    arranged[1].coupling_mode = FULL
+    _scenery.trainset_override.assign(arranged)
     await _scenery.load()
 
     var vehicles:Array[RID] = []
@@ -187,6 +202,103 @@ func test_a_reversed_vehicle_of_a_moving_trainset_runs_with_it() -> void:
                 COUPLED_DRIFT_TOLERANCE, "%s runs as far as the head" % VehicleServer.vehicle_get_id(vehicles[index]))
 
 
+## MaSzyna-Reloaded/libmaszyna#305: the declared last wagon couples to nothing (couplingdata 0); a
+## vehicle added before it couples to it
+func test_a_vehicle_added_before_the_uncoupled_last_wagon_couples_it() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 1, 2, ADDED, 3]
+    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 5, "the whole trainset coupled")
+
+
+## A moved vehicle keeps its coupling mode: the uncoupled last wagon moved into the middle couples to
+## the next as the player chooses
+func test_the_last_wagon_moved_into_the_middle_couples_as_chosen() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 3, 1, 2]
+    var arranged:Array[TrainsetMemberData] = _arranged_repeated_ids(places)
+    assert_eq(arranged[1].coupling_mode, UNCOUPLED, "moved with its own mode")
+    arranged[1].coupling_mode = FULL
+    _scenery.trainset_override.assign(arranged)
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 4, "the whole trainset coupled")
+
+
+func test_the_last_wagon_moved_into_the_middle_keeps_it_uncoupled() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 3, 1, 2]
+    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 2, "the loco and the moved wagon, which couples to nothing behind")
+
+
+func test_a_wagon_turned_round_in_the_middle_couples_it() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 1, 2, 3]
+    var arranged:Array[TrainsetMemberData] = _arranged_repeated_ids(places)
+    arranged[2].direction = TrackServer.DIRECTION_REVERSED
+    _scenery.trainset_override.assign(arranged)
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 4, "the whole trainset coupled")
+
+
+func test_a_vehicle_added_behind_the_last_wagon_couples_as_chosen() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [0, 1, 2, 3, ADDED]
+    var arranged:Array[TrainsetMemberData] = _arranged_repeated_ids(places)
+    arranged[3].coupling_mode = FULL
+    _scenery.trainset_override.assign(arranged)
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 5, "the whole trainset coupled")
+
+
+## A member couples by its mode of what both couplers allow: the loco to its wagon by the .scn's
+## couplingdata 3 (the coupler and the brake hose), the added vehicle fully - by all synthetic.fiz's
+## AllowedFlag 63 gives (the coupler, the brake hose, the control line, the high voltage, the
+## gangway, the main hose)
+func test_each_member_couples_by_its_mode_of_what_the_couplers_allow() -> void:
+    _scenery.filename = REPEATED_IDS_SCENERY
+    var places:Array[int] = [ADDED, 0, 1, 2, 3]
+    _scenery.trainset_override.assign(_arranged_repeated_ids(places))
+    await _scenery.load()
+
+    var vehicles:Array[RID] = []
+    vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
+    var added:RailVehicleController = VehicleServer.vehicle_get_controller(vehicles[0])
+    var loco:RailVehicleController = VehicleServer.vehicle_get_controller(vehicles[1])
+    var allowed:RailVehicleController.CouplingFlags = (RailVehicleController.COUPLING_FLAG_COUPLER
+            | RailVehicleController.COUPLING_FLAG_BRAKEHOSE | RailVehicleController.COUPLING_FLAG_CONTROL
+            | RailVehicleController.COUPLING_FLAG_HIGHVOLTAGE | RailVehicleController.COUPLING_FLAG_GANGWAY
+            | RailVehicleController.COUPLING_FLAG_MAINHOSE) as RailVehicleController.CouplingFlags
+    assert_eq(RailVehicleServer.coupler_get_joinable_flags(vehicles[0], RailVehicleController.COUPLER_END_REAR),
+            allowed, "what both couplers allow")
+    assert_true(added.is_coupled_by(RailVehicleController.COUPLER_END_REAR, allowed),
+            "the added vehicle couples to the loco by all of it")
+    var declared:RailVehicleController.CouplingFlags = (RailVehicleController.COUPLING_FLAG_COUPLER
+            | RailVehicleController.COUPLING_FLAG_BRAKEHOSE) as RailVehicleController.CouplingFlags
+    assert_true(loco.is_coupled_by(RailVehicleController.COUPLER_END_REAR, declared),
+            "the loco and its wagon as the .scn couples them")
+    assert_false(loco.is_coupled_by(RailVehicleController.COUPLER_END_REAR, RailVehicleController.COUPLING_FLAG_CONTROL),
+            "and by nothing the .scn does not ask for")
+
+
+func test_a_vehicle_added_to_a_trainset_of_one_couples_to_it() -> void:
+    _scenery.filename = SINGLE_SCENERY
+    _scenery.trainset_override.assign([
+        _arranged("loco", 0, "dynamic/test/synthetic_v1", "synthetic", "none", FULL),
+        _arranged("", ADDED, "dynamic/test/synthetic_v1", "synthetic", "none", FULL),
+    ])
+    await _scenery.load()
+
+    assert_eq(_coupled_through(), 2, "the two coupled")
+
+
 func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
     await _scenery.load()
     var vehicles:Array[RID] = _scenery.get_vehicles().duplicate()
@@ -201,17 +313,29 @@ func test_unloading_frees_the_vehicles_and_the_trainsets() -> void:
     assert_false(VehicleServer.vehicle_get_rid_by_id("first").is_valid())
 
 
+## How many vehicles the first trainset's front one is coupled through to, itself among them
+func _coupled_through() -> int:
+    var vehicles:Array[RID] = []
+    vehicles.assign(RailVehicleServer.trainset_get_vehicles(_scenery.get_trainsets()[0]))
+    return RailVehicleServer.vehicle_get_coupled(
+            vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER).size()
+
+
 func _loads(vehicles:Array[RID]) -> Array:
     return vehicles.map(func(vehicle:RID) -> String:
         return MaszynaVehicleSystem.vehicle_get_dynamic(vehicle).load_name)
 
 
-## The trainset of REPEATED_IDS_SCENERY as the selector sends it, its vehicles at `places`
-func _arranged_repeated_ids(places:Array[int]) -> Array[VehicleData]:
-    var arranged:Array[VehicleData] = []
+## The trainset of REPEATED_IDS_SCENERY as the selector sends it, its vehicles at `places`: each
+## declared one with its own coupling mode, an added one coupled fully
+func _arranged_repeated_ids(places:Array[int]) -> Array[TrainsetMemberData]:
+    const LAST_WAGON:int = 3
+    var arranged:Array[TrainsetMemberData] = []
     for place:int in places:
+        var mode:RailVehicleController.CouplingMode = (
+                FULL if place == ADDED else UNCOUPLED if place == LAST_WAGON else DECLARED)
         arranged.append(_arranged("loco" if place == 0 else "wagon", place, "dynamic/test/synthetic_v1",
-                "synthetic", "none"))
+                "synthetic", "none", mode))
     return arranged
 
 
@@ -220,13 +344,16 @@ func _ids(vehicles:Array[RID]) -> Array:
 
 
 ## An entry of the player's trainset as the scenery selector arranges it: a declared vehicle at
-## its place in the declared trainset, -1 for one added
+## its place in the declared trainset, -1 for one added, coupled to the next by coupling_mode
 func _arranged(vehicle_name:String, trainset_index:int, data_path:String, file_name:String,
-        skin:String) -> MaszynaVehicleData:
+        skin:String, coupling_mode:RailVehicleController.CouplingMode) -> TrainsetMemberData:
     var dynamic:MaszynaVehicleData = MaszynaVehicleData.new()
     dynamic.vehicle_id = vehicle_name
-    dynamic.trainset_index = trainset_index
     dynamic.data_path = data_path
     dynamic.file_name = file_name
     dynamic.skin = skin
-    return dynamic
+    var member:TrainsetMemberData = TrainsetMemberData.new()
+    member.vehicle = dynamic
+    member.trainset_index = trainset_index
+    member.coupling_mode = coupling_mode
+    return member

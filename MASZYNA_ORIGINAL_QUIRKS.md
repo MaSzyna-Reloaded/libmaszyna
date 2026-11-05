@@ -562,6 +562,29 @@ interface.
 * **Of 1 344 `airsound*` declarations in the whole datapack, exactly one sets `placement:`.** The
   rest fall back to `general`, which the interior/exterior attenuation model short-circuits to a
   constant - so the loudest brake sound in the game is outside that model entirely.
+* **A trainset's coupling is the Mover's raw bits.** A `dynamic`'s `couplingdata` in a
+  `trainset` is a number - the Mover's `coupling::` mask (`MOVER.h:162`), a negative one
+  permanent (`simulationstateserializer.cpp:921-934`) - and `Attach()` couples by it as written,
+  whatever the two couplers allow. The data writes a few combinations over and over; in the
+  trainsets of the installed sceneries (203 files, 31 025 vehicles):
+
+  | `couplingdata`, as flags | vehicles | wrapper |
+  |---|---|---|
+  | none | 1 877 | `COUPLING_MODE_NONE` |
+  | some, but no `COUPLING_FLAG_COUPLER` | 1 (`-10`, SM03-268ad, `wrzosy_tme332130_2_dekoracje.scm`) | `COUPLING_MODE_NONE`, reported |
+  | with `COUPLING_FLAG_PERMANENT`, or negative | 1 342 | `COUPLING_MODE_PERMANENT` |
+  | `COUPLING_FLAG_COUPLER` alone | 150 | `COUPLING_MODE_COUPLER` |
+  | `COUPLING_FLAG_COUPLER \| COUPLING_FLAG_BRAKEHOSE` | 22 766 | `COUPLING_MODE_BRAKE` |
+  | `COUPLING_FLAG_COUPLER` with anything else | 4 889 | `COUPLING_MODE_FULL` |
+  | bits the core has no flag for | 0 | left out, reported |
+
+  Wrapper: `maszyna_node_dynamic_importer.gd` maps the mask
+  (`MaszynaMoverRailVehicleController.coupling_flags_from_mover()`) onto a
+  `RailVehicleController.CouplingMode` of the trainset's member (`TrainsetMemberData`), and
+  `RailVehicleServer.trainset_place()` couples each pair by what its mode takes of what both
+  couplers allow (`RailVehicleController.coupling_mode_get_flags()`). A pair the player arranges
+  anew in the scenery selector couples by `COUPLING_MODE_FULL`
+  (`TrainsetData.get_arranged_members()`, MaSzyna-Reloaded/libmaszyna#305).
 
 ## Scenery shapes (`scene/scene.cpp`, `scene/scenenode.cpp`)
 

@@ -1503,7 +1503,7 @@ static func _static_init() -> void:
         # btLampkaDoorLeft: on the cab's left (Train.cpp:9167)
         "i-door_left": {
             "widget_class": CabinIndicator3D,
-            "fixed_fields": { "state_property": MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleDoors.SIDE_LEFT] },
+            "fixed_fields": { "state_property": MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleController.SIDE_LEFT] },
             "config_max_property": "",
             "mesh_path_field": "",
             "position_at_submodel": true,
@@ -1511,7 +1511,7 @@ static func _static_init() -> void:
         # btLampkaDoorRight (Train.cpp:9168)
         "i-door_right": {
             "widget_class": CabinIndicator3D,
-            "fixed_fields": { "state_property": MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleDoors.SIDE_RIGHT] },
+            "fixed_fields": { "state_property": MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleController.SIDE_RIGHT] },
             "config_max_property": "",
             "mesh_path_field": "",
             "position_at_submodel": true,
@@ -1519,7 +1519,7 @@ static func _static_init() -> void:
         # m_doorspermitleft (autolights, Train.cpp:11754)
         "i-doorpermit_left": {
             "widget_class": CabinIndicator3D,
-            "fixed_fields": { "state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleDoors.SIDE_LEFT] },
+            "fixed_fields": { "state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleController.SIDE_LEFT] },
             "config_max_property": "",
             "mesh_path_field": "",
             "position_at_submodel": true,
@@ -1527,7 +1527,7 @@ static func _static_init() -> void:
         # m_doorspermitright (Train.cpp:11755)
         "i-doorpermit_right": {
             "widget_class": CabinIndicator3D,
-            "fixed_fields": { "state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleDoors.SIDE_RIGHT] },
+            "fixed_fields": { "state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleController.SIDE_RIGHT] },
             "config_max_property": "",
             "mesh_path_field": "",
             "position_at_submodel": true,
@@ -2244,7 +2244,7 @@ static func _static_init() -> void:
                 "action": "doors_left_permit",
             },
             # lit as the original lights it (stategauges, Train.cpp:12015; MaszynaCabinDoorPermits)
-            "state_light": {"state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleDoors.SIDE_LEFT]},
+            "state_light": {"state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleController.SIDE_LEFT]},
             "config_max_property": "",
             "mesh_path_field": "mesh_path",
         },
@@ -2256,7 +2256,7 @@ static func _static_init() -> void:
                 "monostable": false,
                 "action": "doors_right_permit",
             },
-            "state_light": {"state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleDoors.SIDE_RIGHT]},
+            "state_light": {"state_property": MaszynaCabinDoorPermits.LAMP_KEYS[RailVehicleController.SIDE_RIGHT]},
             "config_max_property": "",
             "mesh_path_field": "mesh_path",
         },

@@ -1,5 +1,6 @@
 #include "MaszynaMoverDriveUnit.hpp"
 #include "maszyna/vehicles/MaszynaMoverBackend.hpp"
+#include "maszyna/vehicles/MaszynaMoverCoupling.hpp"
 #include "maszyna/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "utils/Units.hpp"
 #include "vehicles/base/VehicleController.hpp"
@@ -210,32 +211,31 @@ namespace godot {
 
     bool MaszynaMoverDriveUnit::get_motor_blowers_enabled(const RailVehicleController::CouplerEnd p_end) const {
         TMoverParameters *p_mover = owner.get_mover();
-        return p_mover != nullptr && p_mover->MotorBlowers[p_end].is_enabled;
+        return p_mover != nullptr && p_mover->MotorBlowers[MaszynaMoverCoupling::end_to_mover(p_end)].is_enabled;
     }
 
     bool MaszynaMoverDriveUnit::get_motor_blowers_disabled(const RailVehicleController::CouplerEnd p_end) const {
         TMoverParameters *p_mover = owner.get_mover();
-        return p_mover != nullptr && p_mover->MotorBlowers[p_end].is_disabled;
+        return p_mover != nullptr && p_mover->MotorBlowers[MaszynaMoverCoupling::end_to_mover(p_end)].is_disabled;
     }
 
     bool MaszynaMoverDriveUnit::get_motor_blowers_active(const RailVehicleController::CouplerEnd p_end) const {
         TMoverParameters *p_mover = owner.get_mover();
-        return p_mover != nullptr && p_mover->MotorBlowers[p_end].is_active;
+        return p_mover != nullptr && p_mover->MotorBlowers[MaszynaMoverCoupling::end_to_mover(p_end)].is_active;
     }
 
-    // the coupler's end is the Mover's end (end::front 0, end::rear 1)
     void
     MaszynaMoverDriveUnit::motor_blowers(const bool p_enabled, const RailVehicleController::CouplerEnd p_end) const {
         TMoverParameters *p_mover = owner.get_mover();
         ASSERT_MOVER(p_mover);
-        p_mover->MotorBlowersSwitch(p_enabled, static_cast<Maszyna::end>(p_end));
+        p_mover->MotorBlowersSwitch(p_enabled, static_cast<Maszyna::end>(MaszynaMoverCoupling::end_to_mover(p_end)));
     }
 
     void MaszynaMoverDriveUnit::motor_blowers_switch_off(
             const bool p_enabled, const RailVehicleController::CouplerEnd p_end) const {
         TMoverParameters *p_mover = owner.get_mover();
         ASSERT_MOVER(p_mover);
-        p_mover->MotorBlowersSwitchOff(p_enabled, static_cast<Maszyna::end>(p_end));
+        p_mover->MotorBlowersSwitchOff(p_enabled, static_cast<Maszyna::end>(MaszynaMoverCoupling::end_to_mover(p_end)));
     }
 
     bool MaszynaMoverDriveUnit::motor_overload_relay_threshold(const bool p_high) const {

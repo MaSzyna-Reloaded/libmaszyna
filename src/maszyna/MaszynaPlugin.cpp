@@ -17,6 +17,7 @@
 #include "maszyna/scenario/MaszynaEventCondition.hpp"
 #include "maszyna/scenario/MaszynaFrictionAction.hpp"
 #include "maszyna/scenario/MaszynaLightsAction.hpp"
+#include "maszyna/vehicles/MaszynaMoverCoupling.hpp"
 #include "rendering/ModelRenderingServer.hpp"
 #include "rendering/TrackRenderingServer.hpp"
 #ifdef LIBRELOADED_LUA
@@ -134,6 +135,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaVehicleCommandAction);
         GDREGISTER_CLASS(MaszynaEventCondition);
         GDREGISTER_ABSTRACT_CLASS(MaszynaDataPath);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaMoverCoupling);
         GDREGISTER_ABSTRACT_CLASS(MaszynaFileIndexer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaCabinLampIslands);
         GDREGISTER_CLASS(MaszynaParser);
