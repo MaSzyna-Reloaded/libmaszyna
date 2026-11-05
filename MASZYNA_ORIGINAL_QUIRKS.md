@@ -126,6 +126,11 @@ interface.
   Wrapper: `MaszynaDriverBraking.control_main_pipe()` runs on every update and cues
   `MAIN_PIPE_UNLOCK` (the button's control) also while the handle stands at running, once the main
   reservoir is full.
+* **A locked pipe leaves the brake hints standing.** The list goes on asking to apply the independent
+  brake and to change the braking force beside a pipe at 0 bar, where neither does anything until
+  the pipe is charged (EN76-005a, reports#12: its inactive cab, `InactiveCabFlag=3`, vents the pipe
+  in the seconds before the player's start). Wrapper: `MaszynaDriverBraking._waits_for_pipe()` -
+  a player sees only `MAIN_PIPE_UNLOCK` of the brakes until the pipe unlocks.
 * **The old pipe lock has no hint while standing.** An FV4a handle over an LSt or EStED distributor
   feeds the pipe no more under 2.75 bar until the releaser is held (`lock_old`,
   `Mover.cpp:4474-4477`); it is no `LockPipe` and shows nowhere. `control_releaser()` hints the

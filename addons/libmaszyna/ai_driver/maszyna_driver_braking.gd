@@ -440,6 +440,8 @@ func control(situation:MaszynaDriverTraction.Situation, elapsed:float) -> void:
     # braking force (MASZYNA_ORIGINAL_QUIRKS.md) - the player's handle is the level on every decision
     if not DriverServer.vehicle_is_control_active(situation.vehicle):
         take_handle_position(situation.vehicle)
+    if _waits_for_pipe(situation):
+        return
     # the train brake is never left locked (Driver.cpp:7950-7952)
     if position == POSITION_LAP:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.TRAIN_BRAKE_RELEASE, 0.0, release_train_brake)
@@ -1023,6 +1025,8 @@ func _is_standalone(situation:MaszynaDriverTraction.Situation) -> bool:
 ## Nor without a local brake at all - the original lets that through (only ManualBrake is refused)
 ## and hints a brake an EN57's motor car does not have, a hint never done after
 func apply_independent_brake_only(situation:MaszynaDriverTraction.Situation) -> void:
+    if _waits_for_pipe(situation):
+        return
     var vehicle:RID = situation.vehicle
     var brake:MaszynaMoverRailVehicleBrake = _brake(vehicle)
     if brake == null or brake.cntrl_local_brake_type in [RailVehicleBrake.LOCAL_BRAKE_TYPE_MANUAL,
@@ -1098,6 +1102,20 @@ func _brake_delay(vehicle:RID, past_g:int, at_g:int) -> float:
 
 
 ## The Mover's brake, whose model (its delay setting, its operation mode) the driver reads
+## Differs from the original: a player told to hold the main pipe's unlock button is told nothing
+## else about the brakes - the train is braked by the empty pipe whatever the handle does, and hints
+## to apply and to release beside a pipe at 0 bar contradicted each other (reports#12,
+## MASZYNA_ORIGINAL_QUIRKS.md). Only then: a handle not at running is still hinted there, or
+## control_main_pipe() never asks for the button
+static func _waits_for_pipe(situation:MaszynaDriverTraction.Situation) -> bool:
+    var brake:MaszynaMoverRailVehicleBrake = _brake(situation.vehicle)
+    return brake != null and brake.get_main_pipe_locked() \
+            and not DriverServer.vehicle_is_control_active(situation.vehicle) \
+            and absf(brake.get_controller_position() - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE)) \
+                    <= MaszynaDriverHints.HANDLE_TOLERANCE \
+            and MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.WAIT_PRESSURE_TOO_LOW, 0.0)
+
+
 static func _brake(vehicle:RID) -> MaszynaMoverRailVehicleBrake:
     return RailVehicleServer.vehicle_component_get(
             vehicle, RailVehicleComponentType.COMPONENT_BRAKES) as MaszynaMoverRailVehicleBrake

@@ -1,0 +1,12 @@
+// EN76-005a (l053_poludnie.scn) standing at the start of the fixtures' start-up line
+// (scripts/cut-vehicle-fixture), given 0.1 km/h as in the scenery (reports#12)
+time 10:30 06:30 19:00 endtime
+
+include startup_line.inc end
+
+trainset none ep07_n4 0.0 0.1
+node -1 0 EN76-005a dynamic pkp\elf_v1 EN76-005_A 22WE-A 0 headdriver 255 0 enddynamic
+node -1 0 EN76-005b dynamic pkp\elf_v1 EN76-005_B 22WE-B 0 nobody 255 0 enddynamic
+node -1 0 EN76-005c dynamic pkp\elf_v1 EN76-005_C 22WE-C 0 nobody 255 0 enddynamic
+node -1 0 EN76-005d dynamic pkp\elf_v1 EN76-005_D 22WE-D 0 nobody 0 0 enddynamic
+endtrainset
