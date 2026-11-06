@@ -340,6 +340,11 @@ interface.
   and the NaN then stays in `V`, `Vel`, the brakes and the wheels for good. Wrapper:
   `FizLineUtil.read_key_values()` keeps a key's first value too; it used to keep the last, and
   that was the BR285's NaN speed (`docs/findings-archive.md`, 2026-09-30).
+* **A FIZ value may stand after spaces.** `extract_value()` takes the value from the first
+  character that is not a space after `Key=` (`find_first_not_of(' ', ...)`, `utilities.h`), so
+  `BCM= 6.5` reads 6.5, as if the space were not there. Wrapper: `FizLineUtil.read_key_values()`
+  takes the next token as the value of a key with nothing after its `=`; it used to give the key
+  an empty value, read as 0 (reports#13).
 * **A FIZ declares no cab, no horns and no radio.** The horns a vehicle has are implied only by its
   MMD's buttons and sounds (`horn_bt:`/`hornlow_bt:`/`hornhigh_bt:`/`whistle_bt:`, `horn1:`-`horn3:`;
   `Train.cpp` `OnCommand_horn*activate`, `DynObj.cpp` `WarningSignal`), the radio is the cab's

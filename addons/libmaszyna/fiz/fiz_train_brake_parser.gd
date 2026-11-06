@@ -28,7 +28,8 @@ const _VALVE_MAP := {
 
 const _METHOD_MAP := {
     "p10-bg": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_P10_BG, "p10-bgu": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_P10_BGU,
-    "fr513": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_FR513, "cosid": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_COSID,
+    "fr513": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_FR513, "fr510": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_FR510,
+    "cosid": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_COSID,
     "p10ybg": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_P10Y_BG, "p10ybgu": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_P10Y_BGU,
     "disk1": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_D1, "disk1+mg": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_D1MG,
     "disk2": MaszynaMoverRailVehicleBrake.BRAKE_METHOD_D2,
@@ -65,14 +66,18 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
         _compressor_rows = []
         return
 
-    var node := MaszynaMoverRailVehicleBrake.new()
+    # every Brake: line is read into the same brake, a key absent from it leaving the value of an
+    # earlier line, as LoadFIZ() calls LoadFIZ_Brake() for each of them (Mover.cpp)
+    var node: RailVehicleBrake = context.get_part("RailVehicleBrake") as RailVehicleBrake
+    if node == null:
+        node = MaszynaMoverRailVehicleBrake.new()
+        context.add_part("RailVehicleBrake", node)
     _parse_brake(kv, node)
     # Mover.cpp:10528 - by default a diesel's releaser works only at the controller's zero; the
     # engine is the one parsed before this line, as in the original
     node.releaser_enabled_only_at_no_power_pos = FizLineUtil.get_bool(kv, "ReleaserPowerPosLock") \
             if kv.has("ReleaserPowerPosLock") \
             else context.engine_type in [RailVehicleEngine.DIESEL, RailVehicleEngine.DIESEL_ELECTRIC]
-    context.add_part("RailVehicleBrake", node)
 
 
 func _parse_brake(kv: Dictionary, node: RailVehicleBrake) -> void:
@@ -92,11 +97,14 @@ func _parse_brake(kv: Dictionary, node: RailVehicleBrake) -> void:
         node.brake_force_traction = FizLineUtil.get_float(kv, "TBF")
 
     if kv.has("MaxBP"):
-        var max_cylinder_pressure: float = FizLineUtil.get_float(kv, "MaxBP")
-        node.max_cylinder_pressure = max_cylinder_pressure
+        node.max_cylinder_pressure = FizLineUtil.get_float(kv, "MaxBP")
+    # the cylinders' keys are read while MaxBP, of this line or an earlier one, is set
+    # (LoadFIZ_Brake(), `if( MaxBrakePress[ 3 ] > 0.0 )`)
+    if node.max_cylinder_pressure > 0.0:
         if kv.has("BCN"):
             node.cylinder_count = FizLineUtil.get_int(kv, "BCN")
-        node.max_aux_pressure = FizLineUtil.get_float(kv, "MaxLBP", max_cylinder_pressure)
+        if kv.has("MaxLBP") or is_zero_approx(node.max_aux_pressure):
+            node.max_aux_pressure = FizLineUtil.get_float(kv, "MaxLBP", node.max_cylinder_pressure)
         if kv.has("TareMaxBP"):
             node.max_tare_pressure = FizLineUtil.get_float(kv, "TareMaxBP")
         if kv.has("MedMaxBP"):
@@ -182,7 +190,9 @@ func _parse_brake(kv: Dictionary, node: RailVehicleBrake) -> void:
     if kv.has("RV"):
         node.rapid_switching_speed = FizLineUtil.get_float(kv, "RV")
 
-    node.valve_parameters = FizLineUtil.get_string(kv, "BrakeValve")
+    # BrakeValve absent leaves the valve of an earlier line (LoadFIZ_Brake(), default "")
+    if kv.has("BrakeValve"):
+        node.valve_parameters = FizLineUtil.get_string(kv, "BrakeValve")
     var valve_str: String = node.valve_parameters.to_lower()
     if valve_str:
         if _VALVE_MAP.has(valve_str):
