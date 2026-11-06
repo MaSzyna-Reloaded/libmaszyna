@@ -27,6 +27,7 @@
 		<member name="railprofile" type="String" setter="set_railprofile" getter="get_railprofile" default="&quot;default&quot;">
 			The rail profile the rails are drawn with ([code]models/tory/railprofile_&lt;name&gt;.txt[/code]).
 		</member>
+		<member name="rendering_backend" type="StringName" setter="set_rendering_backend" getter="get_rendering_backend" overrides="TrackData" default="&amp;&quot;maszyna&quot;" />
 		<member name="tex_height" type="float" setter="set_tex_height" getter="get_tex_height" default="0.0">
 			The trackbed's height under the rails, a road's shoulder drop; below 0 a road's curb [m].
 		</member>

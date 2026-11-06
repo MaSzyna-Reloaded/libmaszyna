@@ -218,6 +218,12 @@ Custom nodes and Godot Editor:
 
 Documentation:
 
+* REQUIRED: **every C++ class, method, property, signal and constant the library registers is
+  documented in its `doc_classes/<Class>.xml`, in the commit that adds or changes it** - `make docs`
+  brings the XML up to what the build registers (`scripts/update-doc-classes`) and keeps what is
+  written there; each empty `<brief_description>` and `<description>` it leaves is written before
+  committing, as libreloaded's `CODE_STYLE.md`, "Class reference", says. A member marked `overrides=` keeps its
+  base's description
 * GDSCRIPT documentation belongs in code comments
 * do not update `doc_classes` XML for GDSCRIPT changes
 
