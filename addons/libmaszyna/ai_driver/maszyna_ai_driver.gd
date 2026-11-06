@@ -1037,48 +1037,59 @@ func _prepare_engine(situation:MaszynaDriverTraction.Situation) -> bool:
     # the pantographs' air, and both up (Driver.cpp:2782-2811)
 
     MaszynaDriverPantographs.prepare(situation, MaszynaDriverBraking.is_emu(vehicle))
-    _prepare_direction(situation)
-    # the main circuit, the converter and the air are the engine's the controls drive - an EMU's
-    # motor car (mvControlling, Driver.cpp:2827-2878)
-    if converter_overload:
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COMPRESSOR_OFF)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CONVERTER_OFF)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.PRIMARY_CONVERTER_OVERLOAD_RESET)
-    if not mains:
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MASTER_CONTROLLER_SET_ZERO_SPEED)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MAIN_CIRCUIT_GROUND_RESET)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.TRACTION_MOTOR_OVERLOAD_RESET)
-        # a diesel with a gearbox starts at its idle position, or it stalls (Driver.cpp:2840-2843)
-        var engine:RailVehicleEngine = VehicleServer.vehicle_component_get(
-                vehicle, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleEngine
-        if engine and engine.get_type() == RailVehicleEngine.DIESEL:
-            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MASTER_CONTROLLER_SET_IDLE)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.LINE_BREAKER_CLOSE)
-    else:
-        if not converter_overload:
-            # a converter only where there is one; the compressor once it is on (Driver.cpp:2851-2857)
-            if state.trainset.converter_present \
-                    and MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CONVERTER_ON):
-                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COMPRESSOR_ON)
-            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.WAIT_PRESSURE_TOO_LOW)
-            # the traction motors' blowers that run at all (Driver.cpp:2860-2866)
-            var configuration:MaszynaMoverEngineConfiguration = MaszynaDriverTraction.engine_configuration(
-                    VehicleServer.vehicle_component_get(vehicle, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleEngine)
-            if configuration and not configuration.motor_blowers_speed == 0.0:
-                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.FRONT_MOTOR_BLOWERS_ON)
-                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_MOTOR_BLOWERS_ON)
-        # the driver's level taken from the handle, then the handle off running released - the
-        # original's inner condition ends in a stray `;`, so the control pressure does not matter
-        # (Driver.cpp:2867-2884)
-        situation.braking.take_handle_position(vehicle)
-        var brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
-                vehicle, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
-        if brake and not brake.get_controller_position() == brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE):
-            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.TRAIN_BRAKE_RELEASE, 0.0,
-                    situation.braking.release_train_brake)
-        var spring_brake:RailVehicleSpringBrake = RailVehicleServer.vehicle_component_get(
-                vehicle, RailVehicleComponentType.COMPONENT_SPRING_BRAKE) as RailVehicleSpringBrake
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.SPRING_BRAKE_ON if spring_brake and spring_brake.get_active() else MaszynaDriverHints.Hint.SPRING_BRAKE_OFF)
+    # ispoweravailable (Driver.cpp:2818-2825): a vehicle on pantographs is prepared only while the
+    # line's voltage, its own or over the trainset's line, is over its line breaker's lowest - left
+    # without it (a dead wire, a pantograph off the wire), the driver cued the line breaker and
+    # worked its control on every update, a breaker that cannot close
+    var power_source:RailVehicleEnginePowerSource = RailVehicleServer.vehicle_component_get(
+            controlling, RailVehicleComponentType.COMPONENT_ENGINE_POWER_SOURCE) as RailVehicleEnginePowerSource
+    var power_available:bool = power_source == null \
+            or not power_source.source_type == RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR \
+            or maxf(power_source.get_collector_trainset_high_voltage(), power_source.get_collector_voltage()) \
+                > power_source.get_collector_min_main_switch_voltage()
+    if power_available:
+        _prepare_direction(situation)
+        # the main circuit, the converter and the air are the engine's the controls drive - an EMU's
+        # motor car (mvControlling, Driver.cpp:2827-2878)
+        if converter_overload:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COMPRESSOR_OFF)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CONVERTER_OFF)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.PRIMARY_CONVERTER_OVERLOAD_RESET)
+        if not mains:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MASTER_CONTROLLER_SET_ZERO_SPEED)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MAIN_CIRCUIT_GROUND_RESET)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.TRACTION_MOTOR_OVERLOAD_RESET)
+            # a diesel with a gearbox starts at its idle position, or it stalls (Driver.cpp:2840-2843)
+            var engine:RailVehicleEngine = VehicleServer.vehicle_component_get(
+                    vehicle, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleEngine
+            if engine and engine.get_type() == RailVehicleEngine.DIESEL:
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MASTER_CONTROLLER_SET_IDLE)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.LINE_BREAKER_CLOSE)
+        else:
+            if not converter_overload:
+                # a converter only where there is one; the compressor once it is on (Driver.cpp:2851-2857)
+                if state.trainset.converter_present \
+                        and MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CONVERTER_ON):
+                    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.COMPRESSOR_ON)
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.WAIT_PRESSURE_TOO_LOW)
+                # the traction motors' blowers that run at all (Driver.cpp:2860-2866)
+                var configuration:MaszynaMoverEngineConfiguration = MaszynaDriverTraction.engine_configuration(
+                        VehicleServer.vehicle_component_get(vehicle, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleEngine)
+                if configuration and not configuration.motor_blowers_speed == 0.0:
+                    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.FRONT_MOTOR_BLOWERS_ON)
+                    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_MOTOR_BLOWERS_ON)
+            # the driver's level taken from the handle, then the handle off running released - the
+            # original's inner condition ends in a stray `;`, so the control pressure does not matter
+            # (Driver.cpp:2867-2884)
+            situation.braking.take_handle_position(vehicle)
+            var brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
+                    vehicle, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
+            if brake and not brake.get_controller_position() == brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE):
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.TRAIN_BRAKE_RELEASE, 0.0,
+                        situation.braking.release_train_brake)
+            var spring_brake:RailVehicleSpringBrake = RailVehicleServer.vehicle_component_get(
+                    vehicle, RailVehicleComponentType.COMPONENT_SPRING_BRAKE) as RailVehicleSpringBrake
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.SPRING_BRAKE_ON if spring_brake and spring_brake.get_active() else MaszynaDriverHints.Hint.SPRING_BRAKE_OFF)
     var missing:int = 0
     if converter_overload:
         missing |= EngineCheck.CONVERTER_OVERLOAD
@@ -1095,7 +1106,7 @@ func _prepare_engine(situation:MaszynaDriverTraction.Situation) -> bool:
             and brake.get_compressor_pressure() <= MIN_MAIN_RESERVOIR_PRESSURE:
         missing |= EngineCheck.AIR
     state.engine_missing = missing
-    state.engine_active = missing == 0
+    state.engine_active = power_available and missing == 0
     return state.engine_active
 
 
