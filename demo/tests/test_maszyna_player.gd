@@ -48,15 +48,6 @@ func after_each() -> void:
     TrackServer.topology_rebuild()
 
 
-## A bare cab: its interior is not what is tested
-static func _cabin_scene() -> PackedScene:
-    var cabin:Cabin3D = Cabin3D.new()
-    var packed:PackedScene = PackedScene.new()
-    packed.pack(cabin)
-    cabin.free()
-    return packed
-
-
 func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
     _track = build_track(TRACK_NAME, TRACK_LENGTH)
     _vehicle = build_rail_vehicle("PlayerCabinTest", TRACK_NAME, TRACK_OFFSET)
@@ -67,7 +58,7 @@ func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
     await wait_idle_frames(SETTLE_FRAMES)
     var vehicle:RID = _vehicle.get_rid()
     assert_true(vehicle.is_valid(), "the vehicle should have its controller")
-    CabinSystem.vehicle_set_cabin_scene(vehicle, _cabin_scene())
+    CabinSystem.vehicle_set_cabin_scene(vehicle, build_cabin_scene())
 
     PlayerServer.player_take_over_vehicle(vehicle)
     assert_eq(PlayerCameraServer.camera_get_mode(), PlayerCameraServer.CAMERA_MODE_CABIN)
@@ -112,7 +103,7 @@ func test_the_cab_is_shown_when_its_scene_comes_after_the_vehicle_was_taken_over
     PlayerServer.player_take_over_vehicle(vehicle)
     assert_null(CabinSystem.vehicle_get_cabin(vehicle), "no cab scene yet, no cab shown")
 
-    CabinSystem.vehicle_set_cabin_scene(vehicle, _cabin_scene())
+    CabinSystem.vehicle_set_cabin_scene(vehicle, build_cabin_scene())
 
     var cabin:Cabin3D = CabinSystem.vehicle_get_cabin(vehicle)
     assert_not_null(cabin, "the cab scene come, the cab interior is shown")
@@ -176,8 +167,8 @@ func test_the_vehicle_left_is_followed_from_the_cab_of_another() -> void:
     PlayerServer.player_start(RID())
     await wait_idle_frames(SETTLE_FRAMES)
     var left:RID = _vehicle.get_rid()
-    CabinSystem.vehicle_set_cabin_scene(left, _cabin_scene())
-    CabinSystem.vehicle_set_cabin_scene(_second_vehicle.get_rid(), _cabin_scene())
+    CabinSystem.vehicle_set_cabin_scene(left, build_cabin_scene())
+    CabinSystem.vehicle_set_cabin_scene(_second_vehicle.get_rid(), build_cabin_scene())
     PlayerServer.player_take_over_vehicle(left)
     PlayerServer.player_enter_vehicle(_second_vehicle.get_rid())
 
