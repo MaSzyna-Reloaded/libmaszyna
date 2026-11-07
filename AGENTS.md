@@ -311,6 +311,16 @@ Commit style:
   and a run of pushed commits of one subject is squashed into one before anything else is pushed
   on top. Before every commit: `git log -1` - when HEAD is the same subject, amend it; when HEAD is
   another session's commit, never amend that one
+* REQUIRED, ABSOLUTE: **one root cause is one issue and one commit, however many places it shows
+  in.** Findings of an audit or a search are grouped by their cause before anything is filed: the
+  places of one cause are listed in one issue (an existing one is extended, its body edited) and
+  fixed in one commit - never an issue or a commit per place, per file or per section. A separate
+  issue and commit is only for a different cause. Issues are public and every one notifies the
+  watchers: #370-#375 were opened beside #366 for the same lower-case quirk of the original and
+  closed as its duplicates (2026-11-07)
+* REQUIRED: **no issue, comment or edit is posted on GitHub before the operator has read its text
+  and said yes** - the grouping of the findings, the titles and the bodies are shown as a draft
+  first; GitHub posts as the operator
 * Commit messages must be written in English.
 * If the change has a GitHub Issue, prefix the first line with its number in the existing `(#NUMBER) Message` format.
 * REQUIRED: **the first line is plain imperative English naming the problem fixed or the feature
