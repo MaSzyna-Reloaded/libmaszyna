@@ -11,6 +11,10 @@ class_name MaszynaCabinMainSwitch
 ## control is main_on_bt, or main_sw in its "on" position - a two-state main_sw (no `type:`) stays
 ## there, an impulse one (dynamic/pkp/e186_v2) springs back on release. The vehicle-level
 ## "main_switch" command itself still acts immediately (AI, console, tests).
+##
+## The line breaker lamp (i-mainbreaker) lights while the breaker is closed or ready to close, so
+## an electric series motor vehicle shows it while main_on_bt is still held (TTrain::Update,
+## btLampkaWylSzybki: m_linebreakerstate == 2 || mvControlled->Mains).
 
 ## The line breaker is the driven vehicle's (OnCommand_linebreaker*: mvControlled->MainSwitch())
 const TARGET:CabinState.Target = CabinState.Target.CONTROLLED
@@ -21,6 +25,8 @@ const TOGGLE_SWITCH:StringName = &"main_sw"
 ## control, pressed and let go whatever switches the cab has
 const KEY:StringName = &"main_switch_key"
 const KEY_ACTION:StringName = &"main_switch_toggle"
+## The line breaker lamp's state key (i-mainbreaker -> btLampkaWylSzybki)
+const LAMP:String = "indicators_mainbreaker_active"
 
 ## m_linebreakerstate: 0 = open, 1 = closed, 2 = ready to close
 const OPEN:int = 0
@@ -39,6 +45,7 @@ var _toggle_button_type:CabinButton.ButtonType
 var _has_on_button:bool
 var _has_off_button:bool
 var _has_toggle_switch:bool
+var _vehicle_rid:RID
 var _cabin:RID
 
 
@@ -54,16 +61,19 @@ func control_ids() -> Array[StringName]:
     return [ON_BUTTON, OFF_BUTTON, TOGGLE_SWITCH, KEY]
 
 
-func register(_vehicle_rid:RID, cabin:RID) -> void:
+func register(vehicle_rid:RID, cabin:RID) -> void:
+    _vehicle_rid = vehicle_rid
     _cabin = cabin
     CabinSystem.register_control(cabin, ON_BUTTON, _on_button)
     CabinSystem.register_control(cabin, OFF_BUTTON, _off_button)
     CabinSystem.register_control(cabin, TOGGLE_SWITCH, _toggle_switch)
     CabinSystem.register_control(cabin, KEY, _key)
     CabinSystem.register_process(cabin, _process)
+    CabinSystem.state_computed_value_register(vehicle_rid, LAMP, _lamp)
 
 
 func unregister() -> void:
+    CabinSystem.state_computed_value_unregister(_vehicle_rid, LAMP)
     CabinSystem.unregister_control(_cabin, ON_BUTTON, _on_button)
     CabinSystem.unregister_control(_cabin, OFF_BUTTON, _off_button)
     CabinSystem.unregister_control(_cabin, TOGGLE_SWITCH, _toggle_switch)
@@ -139,6 +149,15 @@ func _key(state:CabinState, action:StringName, value:Variant) -> Variant:
         return null
     _off_button(state, &"release", null)
     return _on_button(state, &"release", null)
+
+
+# btLampkaWylSzybki - lit while the breaker is closed or ready to close (TTrain::Update)
+func _lamp() -> bool:
+    var state:CabinState = CabinSystem.get_cabin_state(_cabin)
+    if state.data.get("linebreaker_state", OPEN) == READY:
+        return true
+    var engine:RailVehicleEngine = state.vehicle_component(VehicleComponentType.COMPONENT_ENGINE, TARGET) as RailVehicleEngine
+    return engine and engine.get_main_switch_enabled()
 
 
 func _two_state() -> bool:
