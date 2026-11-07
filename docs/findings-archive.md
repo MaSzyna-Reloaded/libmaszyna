@@ -4832,3 +4832,22 @@ lighting or the trainset.
   their own case.
 * **Rule:** a token matched against a fixed vocabulary is lowered where it is matched; a name or a
   text keeps its case.
+
+
+## 2026-11-07 The lamps a freed model forgot
+
+* **Symptom:**
+  - #376: a test reading `MaszynaE3DModelManager.load_model(path, name).get_lights()` got an empty
+    dictionary, while the same model kept in a variable had its light.
+* **What proved it:**
+  - Holding the model in a variable made the light appear; chaining the call left nothing. The
+    model was freed at the end of the chained expression, and `~MaszynaE3DModel()` called
+    `clear()`: `lights.clear()`, `submodels.clear()`, `smoke_sources.clear()`, and through every
+    submodel its `submodels.clear()` and `mesh.unref()`.
+  - A Godot `Dictionary` and `Array` share their data with every copy (`get_lights()` returns the
+    member by value), so `clear()` emptied the copy the caller held as well. No submodel refers
+    back to its parent - there was no reference cycle for the clearing to break.
+* **Fix:** the destructors and `clear()` of `MaszynaE3DModel` and `MaszynaE3DSubModel` are gone; the
+  members release their references by themselves.
+* **Rule:** a destructor never clears a `Dictionary` or an `Array` member - it empties every copy
+  handed out; without a reference cycle there is nothing to clear.

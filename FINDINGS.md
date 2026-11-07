@@ -363,6 +363,9 @@ code belongs to the game's `FINDINGS.md`.
   RID. *(09-30 "Edit FIZ" aborted the editor)*
 * A `RefCounted` crosses a binding as `Ref<>`: a raw `T*` returned to GDScript takes a reference
   away and frees it. *(09-30 a raw pointer returned to GDScript freed the vehicle)*
+* A destructor never clears a `Dictionary` or an `Array` member: they share their data with every
+  copy a getter handed out, so the holders' copies empty too; without a reference cycle the
+  members release by themselves. *(11-07 the lamps a freed model forgot)*
 * A `Resource`'s setter stores data; joining, registering and connecting happen where the object
   becomes live - loading a resource calls every setter. Its server handle is `_get_rid()`, never a
   `get_rid()` of its own. *(09-30 a stored vehicle description came up half a vehicle)*

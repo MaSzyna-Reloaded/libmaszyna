@@ -11,9 +11,6 @@
 namespace godot {
     class MaszynaE3DSubModel : public Resource {
             GDCLASS(MaszynaE3DSubModel, Resource)
-        public:
-            ~MaszynaE3DSubModel() override;
-
         protected:
             static void _bind_methods();
 
@@ -136,7 +133,6 @@ namespace godot {
             MAKE_GS_NR(float, light_energy);
 
             void add_child(const Ref<MaszynaE3DSubModel> &p_sub_model);
-            void clear();
     };
 } // namespace godot
 

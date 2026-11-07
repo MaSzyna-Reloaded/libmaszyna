@@ -165,3 +165,13 @@ func test_a_light_named_with_capitals_is_one_light_in_lower_case() -> void:
     assert_eq(String(light.get_on_submodel_path()), "HeadLamp21_on")
     assert_eq(String(light.get_xon_submodel_path()), "headlamp21_xon")
     assert_eq(String(light.get_off_submodel_path()), "HeadLamp21_off")
+
+
+## What a model hands out stays with whoever holds it once the model is freed: a Dictionary or an
+## Array shares its data with every copy, so a model emptying its own emptied the holders' too
+func test_what_a_model_hands_out_outlives_the_model() -> void:
+    var lights:Dictionary = MaszynaE3DModelManager.load_model(DATA_PATH, "lamps").get_lights()
+    var grass:MaszynaE3DSubModel = MaszynaE3DModelManager.load_model(DATA_PATH, "indexed").get_node(NodePath("Grass"))
+
+    assert_eq(lights.keys(), ["headlamp21"], "the lights of a freed model")
+    assert_not_null(grass.mesh, "the mesh of a freed model's submodel")
