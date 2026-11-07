@@ -121,14 +121,15 @@ func test_an_include_inside_a_trainset_keeps_its_place_in_it() -> void:
     assert_eq(trainset.track_name, "main_track")
     assert_eq(trainset.name, "express")
     assert_eq(trainset.timetable, "express", "its driver's timetable is named after it")
-    assert_eq(trainset.vehicles.map(func(dynamic:MaszynaVehicleData) -> String: return dynamic.vehicle_id),
+    assert_eq(trainset.members.map(func(member:TrainsetMemberData) -> String: return member.vehicle.vehicle_id),
             ["first", "middle", "last"])
-    assert_almost_eq(trainset.vehicles[1].gap, 0.25, 0.001, "the included vehicle keeps its gap")
-    assert_eq(trainset.vehicles[1].coupling, 7, "and its coupling")
+    assert_almost_eq(trainset.members[1].gap, 0.25, 0.001, "the included vehicle keeps its gap")
+    # couplingdata 7: the coupler, the brake hose and the control line
+    assert_eq(trainset.members[1].coupling_mode, RailVehicleController.COUPLING_MODE_FULL, "and its coupling")
     var lone:TrainsetData = context.trainsets[1]
     assert_eq(lone.track_name, "side_track")
     assert_eq(lone.timetable, "", "a dynamic outside a trainset has no timetable")
-    assert_eq(lone.vehicles.size(), 1)
+    assert_eq(lone.members.size(), 1)
 
 
 func _describe(models:Array[ModelData]) -> Array:

@@ -227,10 +227,6 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     if not structure:
         return
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
-    # the trainset's velocity along the vehicle's own front: a reversed one starts with it negated,
-    # or it drives against its neighbours (DynObj.cpp:1989, 2019 `iDirection ? fVel : -fVel`)
-    VehicleServer.vehicle_set_initial_velocity(vehicle,
-            -dynamic.velocity if dynamic.direction == TrackServer.DIRECTION_REVERSED else dynamic.velocity)
     var description:VehicleController = record.read["description"]
     # a road vehicle (FizVehicleBuilder) is RoadVehicleServer's, drawn by RoadVehicleRenderingServer
     # and driven by MaszynaCarDriver: no cab, cab logic, couplers or Mover
@@ -243,7 +239,8 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         if Engine.is_editor_hint():
             return
         if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
-            MaszynaCarDriver.vehicle_attach(vehicle, dynamic.velocity)
+            # the trainset's velocity, whichever way the car stands
+            MaszynaCarDriver.vehicle_attach(vehicle, absf(VehicleServer.vehicle_get_initial_velocity(vehicle)))
         MaszynaVehicleSoundServer.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
         return
     RailVehicleServer.vehicle_attach(vehicle)
@@ -321,7 +318,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
 ## original's OffsetTrackH is to the car's left (DynObj.cpp:2706-2707), the side offset to its right
 func _on_road_vehicle_placed(vehicle:RID) -> void:
     var record:Vehicle = _vehicles.get(vehicle)
-    if not record or record.dynamic.velocity == 0.0:
+    if not record or VehicleServer.vehicle_get_initial_velocity(vehicle) == 0.0:
         return
     var road_width:float = RoadServer.road_get_width(RoadVehicleServer.vehicle_get_road(vehicle))
     var width:float = VehicleServer.vehicle_get_dimensions(vehicle).x

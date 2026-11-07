@@ -83,6 +83,8 @@ var trainset:TrainsetData = null
 var _rotates = []
 var _origins = []
 var _active_files:Dictionary = {}
+## The files being parsed in this context, the innermost last (begin_file(), end_file())
+var _files:Array[String] = []
 ## join_duplicated_events where this file begins, and what the file's `config` changes it to
 var _joined_at_start:bool = false
 var _join_changes:Array[JoinChange] = []
@@ -113,11 +115,18 @@ func begin_file(path:String) -> bool:
         cacheable = false
         return false
     _active_files[path] = true
+    _files.append(path)
     return true
 
 
 func end_file(path:String) -> void:
     _active_files.erase(path)
+    _files.erase(path)
+
+
+## The file being parsed now - what a warning about its content names; empty outside a parse
+func get_current_file() -> String:
+    return _files.back() if _files else ""
 
 ## The scenery's terrain from here on is the region file's: `terrain <file>.sbt` in the scenery
 ## (state_serializer::deserialize_terrain(), simulationstateserializer.cpp:786), or the scenario's

@@ -205,16 +205,16 @@ namespace godot {
         const auto &left_door = p_mover->Doors.instances[side::left];
         const auto &right_door = p_mover->Doors.instances[side::right];
         if (left_door.is_open && !left_open) {
-            emit_signal(doors_opened_signal, SIDE_LEFT);
+            emit_signal(doors_opened_signal, RailVehicleController::SIDE_LEFT);
         }
         if (left_door.is_closed && !left_closed) {
-            emit_signal(doors_closed_signal, SIDE_LEFT);
+            emit_signal(doors_closed_signal, RailVehicleController::SIDE_LEFT);
         }
         if (right_door.is_open && !right_open) {
-            emit_signal(doors_opened_signal, SIDE_RIGHT);
+            emit_signal(doors_opened_signal, RailVehicleController::SIDE_RIGHT);
         }
         if (right_door.is_closed && !right_closed) {
-            emit_signal(doors_closed_signal, SIDE_RIGHT);
+            emit_signal(doors_closed_signal, RailVehicleController::SIDE_RIGHT);
         }
         left_open = left_door.is_open;
         left_closed = left_door.is_closed;
@@ -282,22 +282,24 @@ namespace godot {
         mover->PermitDoorStep(p_state);
     }
 
-    void MaszynaMoverRailVehicleDoors::operate_doors_locally(const bool p_state, const Side p_side) {
+    void
+    MaszynaMoverRailVehicleDoors::operate_doors_locally(const bool p_state, const RailVehicleController::Side p_side) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        mover->OperateDoors(p_side == Side::SIDE_LEFT ? side::left : side::right, p_state, range_t::local);
+        mover->OperateDoors(
+                p_side == RailVehicleController::SIDE_LEFT ? side::left : side::right, p_state, range_t::local);
     }
 
-    void MaszynaMoverRailVehicleDoors::permit_doors(const bool p_state, const Side p_side) {
+    void MaszynaMoverRailVehicleDoors::permit_doors(const bool p_state, const RailVehicleController::Side p_side) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        mover->PermitDoors(p_side == Side::SIDE_LEFT ? side::left : side::right, p_state);
+        mover->PermitDoors(p_side == RailVehicleController::SIDE_LEFT ? side::left : side::right, p_state);
     }
 
-    void MaszynaMoverRailVehicleDoors::operate_doors(const bool p_state, const Side p_side) {
+    void MaszynaMoverRailVehicleDoors::operate_doors(const bool p_state, const RailVehicleController::Side p_side) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);
-        mover->OperateDoors(p_side == Side::SIDE_LEFT ? side::left : side::right, p_state);
+        mover->OperateDoors(p_side == RailVehicleController::SIDE_LEFT ? side::left : side::right, p_state);
     }
 
     void MaszynaMoverRailVehicleDoors::door_lock(const bool p_state) {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMoverCoupling" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The core's coupling flags as the Mover's [code]coupling::[/code] bits, and back.
+	</brief_description>
+	<description>
+		The one mapping between [enum RailVehicleController.CouplingFlags] and the Mover's [code]coupling::[/code] bits ([code]MOVER.h:162-176[/code]), and between [enum RailVehicleController.CouplerEnd] and its [code]end::[/code]. MaSzyna's data writes its coupling numbers in the same bits - a FIZ's coupler masks, a [code].scn[/code]'s [code]couplingdata[/code], a scenario's [code]Shunt[/code] - so its readers take the flags from here too.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="flags_from_mover" qualifiers="static">
+			<return type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<param index="0" name="mover_flags" type="int" />
+			<description>
+				The core's flags of the Mover's bits; a bit that stands for no flag is left out ([method has_unknown_bits]).
+			</description>
+		</method>
+		<method name="flags_to_mover" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="flags" type="int" enum="RailVehicleController.CouplingFlags" is_bitfield="true" />
+			<description>
+				The Mover's bits of the core's flags.
+			</description>
+		</method>
+		<method name="has_unknown_bits" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="mover_flags" type="int" />
+			<description>
+				Whether [param mover_flags] has a bit that stands for no coupling flag.
+			</description>
+		</method>
+	</methods>
+</class>

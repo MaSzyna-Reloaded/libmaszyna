@@ -38,21 +38,26 @@ func _trainset_context(offset:float) -> MaszynaImporterContext:
 func _import(context:MaszynaImporterContext, text:String) -> MaszynaVehicleData:
     var parser := MaszynaParser.new()
     parser.initialize(text.to_utf8_buffer(), [])
-    return importer.import(parser, context)
+    return importer.import(parser, context, "Test")
+
+
+## The trainset member the last imported vehicle is - how it stands in its trainset
+func _member(context:MaszynaImporterContext) -> TrainsetMemberData:
+    return context.trainsets.back().members.back()
 
 
 func test_offset_minus_one_sentinel_imports_as_reversed() -> void:
     var context:MaszynaImporterContext = _trainset_context(20.0)
-    var dynamic:MaszynaVehicleData = _import(context, "fixtures skin short -1.0 headdriver 99 0 enddynamic")
-    assert_eq(dynamic.direction, TrackServer.DIRECTION_REVERSED)
-    assert_eq(dynamic.gap, 0.0, "a reversed vehicle stands right behind")
+    _import(context, "fixtures skin short -1.0 headdriver 99 0 enddynamic")
+    assert_eq(_member(context).direction, TrackServer.DIRECTION_REVERSED)
+    assert_eq(_member(context).gap, 0.0, "a reversed vehicle stands right behind")
 
 
 func test_normal_offset_imports_as_normal_direction() -> void:
     var context:MaszynaImporterContext = _trainset_context(20.0)
-    var dynamic:MaszynaVehicleData = _import(context, "fixtures skin short 2.5 headdriver 99 0 enddynamic")
-    assert_eq(dynamic.direction, TrackServer.DIRECTION_NORMAL)
-    assert_eq(dynamic.gap, 2.5, "its offset is its gap in the trainset")
+    _import(context, "fixtures skin short 2.5 headdriver 99 0 enddynamic")
+    assert_eq(_member(context).direction, TrackServer.DIRECTION_NORMAL)
+    assert_eq(_member(context).gap, 2.5, "its offset is its gap in the trainset")
 
 
 func test_the_trainset_places_its_vehicles_not_the_vehicles_themselves() -> void:
@@ -64,8 +69,12 @@ func test_the_trainset_places_its_vehicles_not_the_vehicles_themselves() -> void
     var trainset:TrainsetData = context.trainsets[0]
     assert_eq(trainset.track_name, "start")
     assert_almost_eq(trainset.offset, 20.0, 0.001, "the trainset's front is the offset of trainset:")
-    assert_eq(trainset.vehicles, [first, second] as Array[VehicleData])
-    assert_eq([first.coupling, second.coupling], [3, 3], "the couplingdata of every vehicle")
+    assert_eq(trainset.members.map(func(member:TrainsetMemberData) -> VehicleData: return member.vehicle),
+            [first, second])
+    # couplingdata 3: the coupler and the brake hose
+    assert_eq(trainset.members.map(func(member:TrainsetMemberData) -> int: return member.coupling_mode),
+            [RailVehicleController.COUPLING_MODE_BRAKE, RailVehicleController.COUPLING_MODE_BRAKE],
+            "the couplingdata of every vehicle")
 
 
 ## Its front at -offset: a trainset from an offset of 0, the vehicle's offset its gap - what
@@ -79,9 +88,10 @@ func test_a_vehicle_outside_a_trainset_is_a_trainset_of_its_own() -> void:
     assert_eq(trainset.track_name, "start")
     assert_eq(trainset.offset, 0.0)
     assert_eq(trainset.timetable, "", "no timetable: nothing is sent to its driver")
-    assert_eq(trainset.vehicles, [dynamic] as Array[VehicleData])
-    assert_almost_eq(dynamic.gap, -20.0, 0.001)
-    assert_almost_eq(dynamic.velocity, 12.5, 0.001, "its own velocity")
+    assert_eq(trainset.members.size(), 1)
+    assert_eq(trainset.members[0].vehicle, dynamic)
+    assert_almost_eq(trainset.members[0].gap, -20.0, 0.001)
+    assert_almost_eq(trainset.velocity, 12.5, 0.001, "its own velocity is its trainset's")
 
 
 func test_vehicle_file_and_skin_keep_the_spelling_from_the_scenery() -> void:
@@ -137,3 +147,70 @@ func test_the_track_named_with_capitals_is_read_in_lower_case() -> void:
     var lone := MaszynaImporterContext.new()
     _import(lone, "fixtures skin short Tor_B 0 headdriver 0 0 enddynamic")
     assert_eq(lone.trainsets[0].track_name, "tor_b", "a lone vehicle's track")
+
+
+## A couplingdata of the flags, as a .scn writes it: the Mover's coupling:: bits
+func _couplingdata(flags:int) -> String:
+    return str(MaszynaMoverCoupling.flags_to_mover(flags))
+
+
+func _imported_mode(couplingdata:String, offset:String = "0") -> RailVehicleController.CouplingMode:
+    var context:MaszynaImporterContext = _trainset_context(20.0)
+    _import(context, "fixtures skin short %s nobody %s 0 enddynamic" % [offset, couplingdata])
+    return _member(context).coupling_mode
+
+
+## MASZYNA_ORIGINAL_QUIRKS.md, "A trainset's coupling is the Mover's raw bits": the mask of a
+## couplingdata becomes one of the few ways a trainset couples
+func test_a_couplingdata_becomes_its_coupling_mode() -> void:
+    var coupler:int = RailVehicleController.COUPLING_FLAG_COUPLER
+    var brake:int = coupler | RailVehicleController.COUPLING_FLAG_BRAKEHOSE
+    var passenger:int = (brake | RailVehicleController.COUPLING_FLAG_GANGWAY
+            | RailVehicleController.COUPLING_FLAG_MAINHOSE | RailVehicleController.COUPLING_FLAG_HEATING)
+    var unit:int = passenger | RailVehicleController.COUPLING_FLAG_PERMANENT
+    assert_eq(_imported_mode("0"), RailVehicleController.COUPLING_MODE_NONE, "no flags")
+    assert_eq(_imported_mode(_couplingdata(coupler)), RailVehicleController.COUPLING_MODE_COUPLER,
+            "the coupler alone")
+    assert_eq(_imported_mode(_couplingdata(brake)), RailVehicleController.COUPLING_MODE_BRAKE,
+            "the coupler and the brake hose")
+    assert_eq(_imported_mode(_couplingdata(passenger)), RailVehicleController.COUPLING_MODE_FULL,
+            "the coupler with anything else")
+    assert_eq(_imported_mode(_couplingdata(unit)), RailVehicleController.COUPLING_MODE_PERMANENT,
+            "with the permanent flag")
+    assert_eq(_imported_mode("-" + _couplingdata(passenger)), RailVehicleController.COUPLING_MODE_PERMANENT,
+            "a negative one")
+
+
+func test_a_couplingdata_without_the_coupler_couples_nothing() -> void:
+    var hoses:int = RailVehicleController.COUPLING_FLAG_BRAKEHOSE | RailVehicleController.COUPLING_FLAG_HIGHVOLTAGE
+    assert_eq(_imported_mode("-" + _couplingdata(hoses)), RailVehicleController.COUPLING_MODE_NONE,
+            "SM03-268ad's -10: hoses with no coupler to hold them")
+
+
+func test_bits_with_no_coupling_flag_are_left_out() -> void:
+    # a bit beyond the last of the original's enum coupling (power3x400v, MOVER.h:174)
+    const UNKNOWN_BIT:int = 1 << 12
+    var brake:int = RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_BRAKEHOSE
+    var couplingdata:String = str(int(_couplingdata(brake)) | UNKNOWN_BIT)
+    assert_eq(_imported_mode(couplingdata), RailVehicleController.COUPLING_MODE_BRAKE)
+
+
+func test_a_vehicle_too_far_behind_is_not_coupled() -> void:
+    var brake:int = RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_BRAKEHOSE
+    assert_eq(_imported_mode(_couplingdata(brake), "1.0"), RailVehicleController.COUPLING_MODE_NONE,
+            "more than 0.5 m behind (simulationstateserializer.cpp:1028)")
+
+
+## Every coupling flag of the core has one bit of the Mover's, and no bit two flags
+func test_every_coupling_flag_has_its_own_mover_bit() -> void:
+    var seen:int = 0
+    for flag_name:String in ClassDB.class_get_enum_constants("RailVehicleController", "CouplingFlags"):
+        var flag:int = ClassDB.class_get_integer_constant("RailVehicleController", flag_name)
+        if not flag:
+            continue
+        var bit:int = MaszynaMoverCoupling.flags_to_mover(flag)
+        assert_gt(bit, 0, "%s is a Mover bit" % flag_name)
+        assert_eq(bit & (bit - 1), 0, "%s is one bit" % flag_name)
+        assert_eq(seen & bit, 0, "%s is no other flag's bit" % flag_name)
+        seen |= bit
+        assert_eq(MaszynaMoverCoupling.flags_from_mover(bit), flag, "%s read back" % flag_name)

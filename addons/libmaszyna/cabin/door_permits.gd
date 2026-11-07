@@ -14,24 +14,24 @@ const LEFT_SWITCH:StringName = &"doorleftpermit_sw"
 const RIGHT_SWITCH:StringName = &"doorrightpermit_sw"
 ## A permit timer that does not run (Train.cpp:7241)
 const TIMER_STOPPED:float = -1.0
-const PERMIT_COMMANDS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "doors_left_permit",
-    RailVehicleDoors.SIDE_RIGHT: "doors_right_permit",
+const PERMIT_COMMANDS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "doors_left_permit",
+    RailVehicleController.SIDE_RIGHT: "doors_right_permit",
 }
-const OPEN_COMMANDS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "doors_left",
-    RailVehicleDoors.SIDE_RIGHT: "doors_right",
+const OPEN_COMMANDS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "doors_left",
+    RailVehicleController.SIDE_RIGHT: "doors_right",
 }
 ## The cab's state the switches' lamps are lit by (m_doorspermitleft/right, Train.cpp:8514-8520)
-const LAMP_KEYS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "door_permit_lamp_left",
-    RailVehicleDoors.SIDE_RIGHT: "door_permit_lamp_right",
+const LAMP_KEYS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "door_permit_lamp_left",
+    RailVehicleController.SIDE_RIGHT: "door_permit_lamp_right",
 }
 ## A permit lamp is lit on the even seconds when it blinks (wSecond % 2 < 1, Train.cpp:8515)
 ## state.data keys of m_doorpermittimers, by the side of the vehicle
-const TIMERS:Dictionary[RailVehicleDoors.Side, String] = {
-    RailVehicleDoors.SIDE_LEFT: "door_permit_timer_left",
-    RailVehicleDoors.SIDE_RIGHT: "door_permit_timer_right",
+const TIMERS:Dictionary[RailVehicleController.Side, String] = {
+    RailVehicleController.SIDE_LEFT: "door_permit_timer_left",
+    RailVehicleController.SIDE_RIGHT: "door_permit_timer_right",
 }
 
 var _left_button_type:CabinButton.ButtonType
@@ -55,12 +55,12 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
     CabinSystem.register_control(cabin, LEFT_SWITCH, _left_switch)
     CabinSystem.register_control(cabin, RIGHT_SWITCH, _right_switch)
     CabinSystem.register_process(cabin, _process)
-    for side:RailVehicleDoors.Side in LAMP_KEYS:
+    for side:RailVehicleController.Side in LAMP_KEYS:
         CabinSystem.state_computed_value_register(vehicle_rid, LAMP_KEYS[side], _lamp.bind(side))
 
 
 func unregister() -> void:
-    for side:RailVehicleDoors.Side in LAMP_KEYS:
+    for side:RailVehicleController.Side in LAMP_KEYS:
         CabinSystem.state_computed_value_unregister(_vehicle_rid, LAMP_KEYS[side])
     CabinSystem.unregister_control(_cabin, LEFT_SWITCH, _left_switch)
     CabinSystem.unregister_control(_cabin, RIGHT_SWITCH, _right_switch)
@@ -69,19 +69,19 @@ func unregister() -> void:
 
 # Train.cpp:7208 - cab_to_end(): the rear cab is cab 2
 func _left_switch(state:CabinState, action:StringName, value:Variant) -> Variant:
-    var side:RailVehicleDoors.Side = (RailVehicleDoors.SIDE_RIGHT
-            if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR else RailVehicleDoors.SIDE_LEFT)
+    var side:RailVehicleController.Side = (RailVehicleController.SIDE_RIGHT
+            if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR else RailVehicleController.SIDE_LEFT)
     return _permit(state, LEFT_SWITCH, _left_button_type, side, action, value)
 
 
 func _right_switch(state:CabinState, action:StringName, value:Variant) -> Variant:
-    var side:RailVehicleDoors.Side = (RailVehicleDoors.SIDE_LEFT
-            if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR else RailVehicleDoors.SIDE_RIGHT)
+    var side:RailVehicleController.Side = (RailVehicleController.SIDE_LEFT
+            if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR else RailVehicleController.SIDE_RIGHT)
     return _permit(state, RIGHT_SWITCH, _right_button_type, side, action, value)
 
 
 func _permit(state:CabinState, control:StringName, button_type:CabinButton.ButtonType,
-        side:RailVehicleDoors.Side, action:StringName, value:Variant) -> Variant:
+        side:RailVehicleController.Side, action:StringName, value:Variant) -> Variant:
     # Train.cpp:7203 - the presets permit the doors
     if int(state.vehicle_state_value("doors_permit_preset_count", 0)) > 0:
         return null
@@ -104,7 +104,7 @@ func _permit(state:CabinState, control:StringName, button_type:CabinButton.Butto
 
 # Train.cpp:8475-8487 - a push switch held long enough opens the doors of its side
 func _process(state:CabinState, delta:float) -> void:
-    for side:RailVehicleDoors.Side in TIMERS:
+    for side:RailVehicleController.Side in TIMERS:
         var timer:float = state.data.get(TIMERS[side], TIMER_STOPPED)
         if timer < 0.0:
             continue
@@ -119,13 +119,13 @@ func _process(state:CabinState, delta:float) -> void:
 ## door, as DoorsPermitLightBlinking says (IsAnyDoorOpen/IsAnyDoorOnlyOpen of the train, Driver.cpp:
 ## 6004-6016). The cab's left is the vehicle's left from cab 1, its right from the rear cab
 ## (cab_to_end()); a vehicle of the train standing the other way round has its sides swapped.
-func _lamp(lamp:RailVehicleDoors.Side) -> bool:
+func _lamp(lamp:RailVehicleController.Side) -> bool:
     var doors:RailVehicleDoors = CabinSystem.vehicle_component(_vehicle_rid, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     if not doors:
         return false
-    var side:RailVehicleDoors.Side = (other_side(lamp)
+    var side:RailVehicleController.Side = (other_side(lamp)
             if RailVehicleServer.cabin_get_kind(_cabin) == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR else lamp)
-    if not (doors.get_left_open_permit() if side == RailVehicleDoors.SIDE_LEFT else doors.get_right_open_permit()):
+    if not (doors.get_left_open_permit() if side == RailVehicleController.SIDE_LEFT else doors.get_right_open_permit()):
         return false
     var blinking:RailVehicleDoors.PermitLight = doors.permit_light_blinking
     var second:int = int(SimulationServer.time_of_day * Units.SECONDS_PER_HOUR) % Units.SECONDS_PER_MINUTE
@@ -137,5 +137,5 @@ func _lamp(lamp:RailVehicleDoors.Side) -> bool:
                     and RailVehicleServer.trainset_get_door_open(_vehicle_rid, side))
 
 
-static func other_side(side:RailVehicleDoors.Side) -> RailVehicleDoors.Side:
-    return RailVehicleDoors.SIDE_RIGHT if side == RailVehicleDoors.SIDE_LEFT else RailVehicleDoors.SIDE_LEFT
+static func other_side(side:RailVehicleController.Side) -> RailVehicleController.Side:
+    return RailVehicleController.SIDE_RIGHT if side == RailVehicleController.SIDE_LEFT else RailVehicleController.SIDE_LEFT

@@ -3,6 +3,7 @@
 #include "MaszynaMoverVehicleServer.hpp"
 #include "maszyna/maszyna-mover/utilities.h"
 #include "maszyna/vehicles/MaszynaMoverBackend.hpp"
+#include "maszyna/vehicles/MaszynaMoverCoupling.hpp"
 #include "vehicles/base/VehicleServer.hpp"
 #include <algorithm>
 #include <cmath>
@@ -11,34 +12,6 @@
 #include <tuple>
 
 namespace godot {
-    // the wrapper's coupling vocabulary is the original's, value for value - the Mover takes it as is
-    static_assert(static_cast<int>(RailVehicleController::COUPLER_END_FRONT) == static_cast<int>(end::front));
-    static_assert(static_cast<int>(RailVehicleController::COUPLER_END_REAR) == static_cast<int>(end::rear));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_COUPLER) == static_cast<int>(coupling::coupler));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_BRAKEHOSE) == static_cast<int>(coupling::brakehose));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_CONTROL) == static_cast<int>(coupling::control));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_HIGHVOLTAGE) ==
-            static_cast<int>(coupling::highvoltage));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_GANGWAY) == static_cast<int>(coupling::gangway));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_MAINHOSE) == static_cast<int>(coupling::mainhose));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_HEATING) == static_cast<int>(coupling::heating));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_PERMANENT) == static_cast<int>(coupling::permanent));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_POWER_24V) == static_cast<int>(coupling::power24v));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_POWER_110V) == static_cast<int>(coupling::power110v));
-    static_assert(
-            static_cast<int>(RailVehicleController::COUPLING_FLAG_POWER_3X400V) ==
-            static_cast<int>(coupling::power3x400v));
-
     void MaszynaMoverRailVehicleController::_bind_methods() {
         ClassDB::bind_method(
                 D_METHOD("get_compartment_lights_intensity"),
@@ -113,15 +86,18 @@ namespace godot {
     }
 
     RailVehicleController::CouplerEnd MaszynaMoverRailVehicleController::get_coupled_end(const CouplerEnd p_end) const {
-        ERR_FAIL_COND_V(mover == nullptr || mover->Couplers[p_end].Connected == nullptr, COUPLER_END_FRONT);
-        return static_cast<CouplerEnd>(mover->Couplers[p_end].ConnectedNr);
+        ERR_FAIL_COND_V(
+                mover == nullptr || mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Connected == nullptr,
+                COUPLER_END_FRONT);
+        return MaszynaMoverCoupling::end_from_mover(
+                mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].ConnectedNr);
     }
 
     Ref<RailVehicleController> MaszynaMoverRailVehicleController::get_coupled_controller(const CouplerEnd p_end) const {
         if (mover == nullptr) {
             return Ref<RailVehicleController>();
         }
-        return _controller_of(mover->Couplers[p_end].Connected);
+        return _controller_of(mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Connected);
     }
 
     void MaszynaMoverRailVehicleController::initialize_mover_state() {
@@ -261,11 +237,11 @@ namespace godot {
     // Original engine: TDynamicObject::update_neighbours() (DynObj.cpp:7544) - a physical connection
     // with another vehicle locks down the collision source on this end
     bool MaszynaMoverRailVehicleController::_neighbour_from_coupler(const CouplerEnd p_end) {
-        const TCoupling &coupler = mover->Couplers[p_end];
+        const TCoupling &coupler = mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)];
         if (coupler.Connected == nullptr) {
             return false;
         }
-        neighbour_data &neighbour = mover->Neighbours[p_end];
+        neighbour_data &neighbour = mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)];
         neighbour.vehicle = coupler.Connected;
         neighbour.vehicle_end = coupler.ConnectedNr;
         neighbour.distance = static_cast<float>(
@@ -290,16 +266,16 @@ namespace godot {
         if (mover == nullptr || _neighbour_from_coupler(p_end)) {
             return;
         }
-        neighbour_data &neighbour = mover->Neighbours[p_end];
+        neighbour_data &neighbour = mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)];
         neighbour = neighbour_data();
         if (other == nullptr || other->mover == nullptr) {
             return;
         }
         TMoverParameters *other_mover = other->mover;
-        const TCoupling &coupler = mover->Couplers[p_end];
-        const TCoupling &other_coupler = other_mover->Couplers[p_other_end];
+        const TCoupling &coupler = mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)];
+        const TCoupling &other_coupler = other_mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_other_end)];
         neighbour.vehicle = other_mover;
-        neighbour.vehicle_end = p_other_end;
+        neighbour.vehicle_end = MaszynaMoverCoupling::end_to_mover(p_other_end);
         // taken as found, between the axles - the original's subtraction of the half lengths is
         // commented out (find_vehicle(), DynObj.cpp:7752-7765); near enough, the couplers measure it
         neighbour.distance = static_cast<float>(p_track_distance);
@@ -318,7 +294,7 @@ namespace godot {
         if (mover == nullptr || _neighbour_from_coupler(p_end)) {
             return;
         }
-        mover->Neighbours[p_end] = neighbour_data();
+        mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)] = neighbour_data();
     }
 
     double MaszynaMoverRailVehicleController::get_coupler_distance(const Ref<RailVehicleController> &p_other) const {
@@ -385,23 +361,26 @@ namespace godot {
             UtilityFunctions::push_error("Cannot couple vehicles without initialized movers.");
             return;
         }
-        int coupling_type = static_cast<int>(p_coupling);
+        int coupling_type = MaszynaMoverCoupling::flags_to_mover(p_coupling);
         // a coupler allowing only permanent coupling keeps it permanent (simulationstateserializer.cpp:990)
-        if (coupling_type != coupling::faux && (mover->Couplers[p_end].AllowedFlag & coupling::permanent) != 0) {
+        if (coupling_type != coupling::faux &&
+            (mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].AllowedFlag & coupling::permanent) != 0) {
             coupling_type |= coupling::permanent;
         }
-        mover->Attach(p_end, p_other_end, other->mover, coupling_type, true, false);
+        mover->Attach(
+                MaszynaMoverCoupling::end_to_mover(p_end), MaszynaMoverCoupling::end_to_mover(p_other_end),
+                other->mover, coupling_type, true, false);
         // the original re-inspects the trainset on a coupling change (CheckVehicles(), Driver.cpp:2622)
         emit_signal(trainset_changed_signal);
         other->emit_signal(trainset_changed_signal);
     }
 
     void MaszynaMoverRailVehicleController::uncouple(const CouplerEnd p_end) {
-        if (mover == nullptr || mover->Couplers[p_end].Connected == nullptr) {
+        if (mover == nullptr || mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Connected == nullptr) {
             return;
         }
         const Ref<RailVehicleController> neighbour = get_coupled_controller(p_end);
-        const bool detached = mover->Dettach(p_end);
+        const bool detached = mover->Dettach(MaszynaMoverCoupling::end_to_mover(p_end));
         _consume_coupler_events();
         // Dettach() clears Connected on both ends before its event is consumed. Announce the other
         // end here, while its controller is still known (Mover.cpp:616-646).
@@ -417,9 +396,9 @@ namespace godot {
         if (mover == nullptr) {
             return false;
         }
-        const neighbour_data &neighbour = mover->Neighbours[p_end];
-        const Ref<RailVehicleController> other =
-                _controller_of(p_with_room ? neighbour.vehicle : mover->Couplers[p_end].Connected);
+        const neighbour_data &neighbour = mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)];
+        const Ref<RailVehicleController> other = _controller_of(
+                p_with_room ? neighbour.vehicle : mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Connected);
         if (other.is_null() || (p_with_room && neighbour.distance > COUPLER_ADAPTER_REACH)) {
             return false;
         }
@@ -427,7 +406,7 @@ namespace godot {
         if (p_with_room && neighbour.distance - length < COUPLER_ADAPTER_ROOM) {
             return false;
         }
-        TCoupling &coupler = mover->Couplers[p_end];
+        TCoupling &coupler = mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)];
         coupler.adapter_type = TCouplerType::Automatic;
         coupler.adapter_length = length;
         coupler.adapter_height = other->get_coupler_adapter_height();
@@ -437,26 +416,27 @@ namespace godot {
     }
 
     bool MaszynaMoverRailVehicleController::is_coupler_automatic(const CouplerEnd p_end) const {
-        return mover != nullptr && mover->Couplers[p_end].type() == TCouplerType::Automatic;
+        return mover != nullptr &&
+               mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].type() == TCouplerType::Automatic;
     }
 
     BitField<RailVehicleController::CouplingFlags>
     MaszynaMoverRailVehicleController::get_coupler_joinable_flags(const CouplerEnd p_end) const {
-        if (mover == nullptr || mover->Neighbours[p_end].vehicle == nullptr) {
+        if (mover == nullptr || mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)].vehicle == nullptr) {
             return COUPLING_FLAG_NONE;
         }
-        const neighbour_data &neighbour = mover->Neighbours[p_end];
-        const TCoupling &coupler = mover->Couplers[p_end];
+        const neighbour_data &neighbour = mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)];
+        const TCoupling &coupler = mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)];
         const TCoupling &other_coupler = neighbour.vehicle->Couplers[neighbour.vehicle_end];
-        int64_t joinable = coupler.AllowedFlag & other_coupler.AllowedFlag;
+        int joinable = coupler.AllowedFlag & other_coupler.AllowedFlag;
         if (coupler.control_type != other_coupler.control_type) {
-            joinable &= ~static_cast<int64_t>(coupling::control);
+            joinable &= ~coupling::control;
         }
-        return joinable;
+        return MaszynaMoverCoupling::flags_from_mover(joinable);
     }
 
-    bool MaszynaMoverRailVehicleController::coupler_adapter_attach(const Variant &p_where) {
-        return mover != nullptr && _fit_coupler_adapter(_resolve_coupler_end(p_where), true);
+    bool MaszynaMoverRailVehicleController::coupler_adapter_attach(const CouplerEnd p_end) {
+        return mover != nullptr && _fit_coupler_adapter(p_end, true);
     }
 
     bool MaszynaMoverRailVehicleController::coupler_adapter_fit(const CouplerEnd p_end) {
@@ -464,74 +444,61 @@ namespace godot {
     }
 
     // TDynamicObject::remove_coupler_adapter() (DynObj.cpp:1791-1810)
-    bool MaszynaMoverRailVehicleController::coupler_adapter_remove(const Variant &p_where) {
+    bool MaszynaMoverRailVehicleController::coupler_adapter_remove(const CouplerEnd p_end) {
         if (mover == nullptr) {
             return false;
         }
-        const CouplerEnd end = _resolve_coupler_end(p_where);
-        TCoupling &coupler = mover->Couplers[end];
+        TCoupling &coupler = mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)];
         if (coupler.adapter_type == TCouplerType::NoCoupler) {
             return false;
         }
         if (coupler.Connected != nullptr) {
-            uncouple(end);
+            uncouple(p_end);
         }
         coupler.adapter_type = TCouplerType::NoCoupler;
         coupler.adapter_length = 0.0;
         coupler.adapter_height = 0.0;
-        _set_coupler_adapter_fitted_model(end, String());
-        emit_signal(coupler_adapter_removed_signal, end);
+        _set_coupler_adapter_fitted_model(p_end, String());
+        emit_signal(coupler_adapter_removed_signal, p_end);
         return true;
     }
 
     double MaszynaMoverRailVehicleController::get_coupler_adapter_fitted_length(const CouplerEnd p_end) const {
-        return mover != nullptr ? mover->Couplers[p_end].adapter_length : 0.0;
+        return mover != nullptr ? mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].adapter_length : 0.0;
     }
 
     double MaszynaMoverRailVehicleController::get_coupler_adapter_fitted_height(const CouplerEnd p_end) const {
-        return mover != nullptr ? mover->Couplers[p_end].adapter_height : 0.0;
+        return mover != nullptr ? mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].adapter_height : 0.0;
     }
 
     bool MaszynaMoverRailVehicleController::is_coupled(const CouplerEnd p_end) const {
-        return mover != nullptr && mover->Couplers[p_end].Connected != nullptr;
+        return mover != nullptr && mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Connected != nullptr;
+    }
+
+    bool MaszynaMoverRailVehicleController::is_coupling_owner(const CouplerEnd p_end) const {
+        return mover != nullptr && mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].Render;
     }
 
     bool MaszynaMoverRailVehicleController::is_coupled_by(
             const CouplerEnd p_end, const BitField<CouplingFlags> p_flags) const {
-        return mover != nullptr && TestFlag(mover->Couplers[p_end].CouplingFlag, static_cast<int>(p_flags));
-    }
-
-    // p_where is a coupler end (0 front, 1 rear) or a world position - then the vehicle end nearest to
-    // it is used, like the walk mode commands of the original (ABuScanNearestObject, Train.cpp:6213)
-    RailVehicleController::CouplerEnd
-    MaszynaMoverRailVehicleController::_resolve_coupler_end(const Variant &p_where) const {
-        if (p_where.get_type() != Variant::VECTOR3) {
-            return static_cast<CouplerEnd>(CLAMP(static_cast<int>(p_where), COUPLER_END_FRONT, COUPLER_END_REAR));
-        }
-        const Transform3D transform = get_world_transform();
-        // vehicles face -Z; the front coupler (end 0) is half the length ahead of the center
-        const Vector3 front =
-                transform.origin - transform.basis.get_column(2).normalized() * static_cast<real_t>(0.5 * mover->Dim.L);
-        const Vector3 rear =
-                transform.origin + transform.basis.get_column(2).normalized() * static_cast<real_t>(0.5 * mover->Dim.L);
-        const Vector3 position = p_where;
-        return position.distance_squared_to(front) <= position.distance_squared_to(rear) ? COUPLER_END_FRONT
-                                                                                         : COUPLER_END_REAR;
+        return mover != nullptr && TestFlag(
+                                           mover->Couplers[MaszynaMoverCoupling::end_to_mover(p_end)].CouplingFlag,
+                                           MaszynaMoverCoupling::flags_to_mover(p_flags));
     }
 
     // Original engine: TDynamicObject::couple() (DynObj.cpp:1509) - one more coupling type per call,
     // with the vehicle detected at that end
-    void MaszynaMoverRailVehicleController::coupler_connect(const Variant &p_where) {
+    void MaszynaMoverRailVehicleController::coupler_connect(const CouplerEnd p_end) {
         if (mover == nullptr) {
             return;
         }
-        const CouplerEnd side = _resolve_coupler_end(p_where);
+        const int side = MaszynaMoverCoupling::end_to_mover(p_end);
         const neighbour_data &neighbour = mover->Neighbours[side];
         if (neighbour.vehicle == nullptr) {
             return;
         }
         const TCoupling &coupler = mover->Couplers[side];
-        const int64_t joinable = get_coupler_joinable_flags(side);
+        const int joinable = MaszynaMoverCoupling::flags_to_mover(get_coupler_joinable_flags(p_end));
 
         if (coupler.CouplingFlag == coupling::faux && (joinable & coupling::coupler) == coupling::coupler &&
             mover->Attach(side, neighbour.vehicle_end, neighbour.vehicle, coupling::coupler)) {
@@ -549,15 +516,15 @@ namespace godot {
     }
 
     // Original engine: TDynamicObject::uncouple() (DynObj.cpp:1614)
-    void MaszynaMoverRailVehicleController::coupler_disconnect(const Variant &p_where) {
+    void MaszynaMoverRailVehicleController::coupler_disconnect(const CouplerEnd p_end) {
         if (mover == nullptr) {
             return;
         }
-        const CouplerEnd side = _resolve_coupler_end(p_where);
+        const int side = MaszynaMoverCoupling::end_to_mover(p_end);
         if (mover->DettachStatus(side) >= 0 || (mover->Couplers[side].CouplingFlag & coupling::permanent) != 0) {
             return;
         }
-        uncouple(side);
+        uncouple(p_end);
     }
 
     void MaszynaMoverRailVehicleController::update_state() {

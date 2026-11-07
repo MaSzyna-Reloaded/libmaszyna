@@ -737,6 +737,30 @@ the logic into a separate class) instead of reaching into internals.
 
 ## C++ notes
 
+### A header declares, its `.cpp` defines
+
+Every function body - a member's, a static one's, a free function's - lives in the `.cpp` of its
+header; the `.hpp` holds declarations only. A body in a header is compiled into every file that
+includes it, puts implementation where a reader looks for the interface, and lets one change
+rebuild everything that includes it. Constant tables a class needs are defined in its `.cpp` too
+(a `static const` member, or an anonymous namespace there).
+
+```cpp
+// not this - MaszynaMoverCoupling.hpp, the mapping written in the header
+static int flags_to_mover(BitField<CouplingFlags> p_flags) {
+    int mover_flags = coupling::faux;
+    ...
+}
+
+// this - the header declares
+static int flags_to_mover(BitField<CouplingFlags> p_flags);
+// and MaszynaMoverCoupling.cpp defines
+int MaszynaMoverCoupling::flags_to_mover(const BitField<CouplingFlags> p_flags) { ... }
+```
+
+The only bodies a header may hold are what C++ requires there - a template - and the accessors
+the `MAKE_*` macros generate.
+
 ### Singletons C++
 
 * Never inherit from RefCounted (use plain `Object` as a base)

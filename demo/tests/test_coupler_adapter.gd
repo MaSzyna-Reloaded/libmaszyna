@@ -35,14 +35,14 @@ func test_the_mmd_adapter_is_read_as_the_data_writes_it() -> void:
 
 func test_a_screw_end_takes_the_automatic_ones_adapter_and_gives_it_back() -> void:
     var front:RailVehicleController.CouplerEnd = RailVehicleController.COUPLER_END_FRONT
-    assert_false(RailVehicleServer.vehicle_is_coupler_automatic(screw.get_rid(), front))
+    assert_false(RailVehicleServer.coupler_is_automatic(screw.get_rid(), front))
     (screw as RailVehicleController).couple(automatic, front, front, RailVehicleController.COUPLING_FLAG_COUPLER)
     assert_true((screw as RailVehicleController).coupler_adapter_fit(front))
-    assert_true(RailVehicleServer.vehicle_is_coupler_automatic(screw.get_rid(), front), "it couples as an automatic one")
-    assert_eq(RailVehicleServer.vehicle_get_coupler_adapter_model(screw.get_rid(), front),
+    assert_true(RailVehicleServer.coupler_is_automatic(screw.get_rid(), front), "it couples as an automatic one")
+    assert_eq(RailVehicleServer.coupler_get_adapter_model(screw.get_rid(), front),
             ORIGINAL_ADAPTER_MODEL, "the original's own: the automatic one's MMD has none")
-    assert_almost_eq(RailVehicleServer.vehicle_get_coupler_adapter_length(screw.get_rid(), front),
+    assert_almost_eq(RailVehicleServer.coupler_get_adapter_length(screw.get_rid(), front),
             ORIGINAL_ADAPTER_LENGTH, TOLERANCE)
     assert_true((screw as RailVehicleController).coupler_adapter_remove(front))
-    assert_eq(RailVehicleServer.vehicle_get_coupler_adapter_model(screw.get_rid(), front), "")
+    assert_eq(RailVehicleServer.coupler_get_adapter_model(screw.get_rid(), front), "")
     assert_false((screw as RailVehicleController).is_coupled(front), "uncoupled to take it off")
