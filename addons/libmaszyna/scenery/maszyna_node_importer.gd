@@ -86,7 +86,7 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
                 context.tracks.append(track)
 
         "dynamic":
-            var dynamic:MaszynaVehicleData = dynamic_importer.import(p, context)
+            var dynamic:MaszynaVehicleData = dynamic_importer.import(p, context, written_name)
             dynamic.vehicle_id = name
             dynamic.name = written_name
 

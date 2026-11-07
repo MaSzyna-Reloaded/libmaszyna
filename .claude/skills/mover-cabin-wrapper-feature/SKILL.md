@@ -38,6 +38,8 @@ in any layer before.
      `src/maszyna/vehicles/MaszynaMoverRailVehicleController.cpp`, ...): the `override` takes the Mover with
      `get_mover()` (from `MaszynaMoverComponent`, `src/maszyna/vehicles/MaszynaMoverComponent.hpp`) and calls the vendored
      method directly (`mover->IncLocalBrakeLevel(1)`, `MaszynaMoverRailVehicleBrake.cpp:91`).
+   - The `.hpp` of either declares, the `.cpp` defines: no function body in a header, the
+     Mover's tables included (`CODE_STYLE.md`, "A header declares, its `.cpp` defines").
    - Keep the existing step-size convention: one command invocation is one notch/step, like
      `main_controller_increase(step=1)`, not a new continuous-time API. The original's
      key-hold behavior is a UI-layer concern (repeat-fire).

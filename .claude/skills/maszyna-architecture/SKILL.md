@@ -254,6 +254,8 @@ relying on one.
    commanded by; only `vehicle_get_rid_by_id` turns an id into a vehicle.
 7. `grep -rn 'emit\.call_deferred\|call_deferred(.emit_signal' <changed files>` - nothing; a
    signal is emitted where its event happens, never deferred (`CODE_STYLE.md`).
+8. Read every `.hpp` the diff touches: declarations only - a function body goes to its `.cpp`
+   (a template and the `MAKE_*` accessors excepted, `CODE_STYLE.md`).
 
 **And verify against the code, never against a document.** `TODO.md`'s stage list was written when
 the first part of each stage landed and went stale; this file will too. Every count and line

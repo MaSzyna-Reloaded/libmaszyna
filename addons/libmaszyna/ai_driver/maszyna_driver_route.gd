@@ -534,7 +534,7 @@ func update(
         obstacle_speed = VehicleServer.vehicle_get_speed(obstacle.vehicle_rid)
         # at short distances the range is measured between the couplers (Driver.cpp:6672-6675)
         if obstacle.distance < OBSTACLE_COUPLER_RANGE:
-            obstacle.distance = RailVehicleServer.vehicle_get_coupler_distance(
+            obstacle.distance = RailVehicleServer.coupler_get_distance(
                     trainset.vehicles[0], obstacle.vehicle_rid)
 
 

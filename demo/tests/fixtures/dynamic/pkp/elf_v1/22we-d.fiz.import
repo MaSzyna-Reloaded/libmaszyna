@@ -3,12 +3,11 @@
 importer="libmaszyna.fiz"
 type="Resource"
 uid="uid://fk6eesayxufw"
-path="res://.godot/imported/22we-d.fiz-233a603d53fc60c62ef1f88edbecf234.res"
+valid=false
 
 [deps]
 
 source_file="res://tests/fixtures/dynamic/pkp/elf_v1/22we-d.fiz"
-dest_files=["res://.godot/imported/22we-d.fiz-233a603d53fc60c62ef1f88edbecf234.res"]
 
 [params]
 

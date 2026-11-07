@@ -119,6 +119,12 @@ namespace godot {
                                  : Ref<RailVehicleBuffCoupl>();
     }
 
+    static Ref<RailVehicleController> rail_controller(const RID &p_vehicle) {
+        const VehicleServer *server = VehicleServer::get_instance();
+        return server != nullptr ? Ref<RailVehicleController>(server->vehicle_get_controller(p_vehicle))
+                                 : Ref<RailVehicleController>();
+    }
+
     template<typename T>
     static Ref<T> component(const RID &p_vehicle, const VehicleComponentType::Type p_type) {
         const VehicleServer *server = VehicleServer::get_instance();
@@ -353,7 +359,8 @@ namespace godot {
         ERR_FAIL_NULL(maszyna);
         if (ModelRenderingServer *models = ModelRenderingServer::get_instance();
             models != nullptr && visual->own_models) {
-            for (int end = 0; end < 2; ++end) {
+            for (const RailVehicleController::CouplerEnd end:
+                 {RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLER_END_REAR}) {
                 if (maszyna->coupler_adapters[end].is_valid()) {
                     models->instance_set_transform(
                             maszyna->coupler_adapters[end], _coupler_adapter_transform(p_vehicle, *visual, end));
@@ -517,11 +524,9 @@ namespace godot {
         ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
         ERR_FAIL_NULL(models);
         ERR_FAIL_NULL(lazy_loader);
-        for (int end = 0; end < 2; ++end) {
-            const String model_name = server != nullptr
-                                              ? server->vehicle_get_coupler_adapter_model(
-                                                        p_vehicle, static_cast<RailVehicleController::CouplerEnd>(end))
-                                              : String();
+        for (const RailVehicleController::CouplerEnd end:
+             {RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLER_END_REAR}) {
+            const String model_name = server != nullptr ? server->coupler_get_adapter_model(p_vehicle, end) : String();
             if (model_name == p_maszyna.coupler_adapter_models[end]) {
                 continue;
             }
@@ -608,22 +613,21 @@ namespace godot {
     }
 
     Transform3D MaszynaE3DRailVehicleRenderingServer::_coupler_adapter_transform(
-            const RID &p_vehicle, const Visual &p_visual, const int p_end) const {
+            const RID &p_vehicle, const Visual &p_visual, const RailVehicleController::CouplerEnd p_end) const {
         const RailVehicleServer *server = RailVehicleServer::get_instance();
         const VehicleServer *vehicle_server = VehicleServer::get_instance();
         if (server == nullptr || vehicle_server == nullptr) {
             return p_visual.transform * p_visual.model_transform;
         }
-        const auto end = static_cast<RailVehicleController::CouplerEnd>(p_end);
-        const double sign = end == RailVehicleController::COUPLER_END_FRONT ? 1.0 : -1.0;
+        const double sign = p_end == RailVehicleController::COUPLER_END_FRONT ? 1.0 : -1.0;
         // in the model's own frame: at the coupler's height, the adapter's length beyond the end,
         // the rear one turned about
         const double length = vehicle_server->vehicle_get_dimensions(p_vehicle).z;
         const Transform3D placement(
-                end == RailVehicleController::COUPLER_END_FRONT ? Basis() : Basis(Vector3(0.0, 1.0, 0.0), Math::PI),
-                Vector3(0.0, static_cast<real_t>(server->vehicle_get_coupler_adapter_height(p_vehicle, end)),
+                p_end == RailVehicleController::COUPLER_END_FRONT ? Basis() : Basis(Vector3(0.0, 1.0, 0.0), Math::PI),
+                Vector3(0.0, static_cast<real_t>(server->coupler_get_adapter_height(p_vehicle, p_end)),
                         static_cast<real_t>(
-                                (server->vehicle_get_coupler_adapter_length(p_vehicle, end) + (length * 0.5)) * sign)));
+                                (server->coupler_get_adapter_length(p_vehicle, p_end) + (length * 0.5)) * sign)));
         return p_visual.transform * p_visual.model_transform * placement;
     }
 
@@ -633,7 +637,8 @@ namespace godot {
         if (models == nullptr || !p_visual.own_models) {
             return;
         }
-        for (int end = 0; end < 2; ++end) {
+        for (const RailVehicleController::CouplerEnd end:
+             {RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLER_END_REAR}) {
             if (p_maszyna.coupler_adapters[end].is_valid()) {
                 models->instance_free(p_maszyna.coupler_adapters[end]);
                 p_maszyna.coupler_adapters[end] = RID();
@@ -1019,9 +1024,9 @@ namespace godot {
     MaszynaE3DRailVehicleRenderingServer::CouplerVariant MaszynaE3DRailVehicleRenderingServer::_pneumatic_variant(
             const RID &p_vehicle, const MaszynaVisual &p_maszyna, const RailVehicleController::CouplerEnd p_end,
             const MaszynaE3DRailVehicleRenderingServer::PneumaticLine p_line) const {
-        const Ref<RailVehicleBuffCoupl> coupler = couplers(p_vehicle);
         RailVehicleServer *server = RailVehicleServer::get_instance();
-        if (coupler.is_null() || server == nullptr) {
+        const Ref<RailVehicleController> controller = rail_controller(p_vehicle);
+        if (controller.is_null() || server == nullptr) {
             return COUPLER_VARIANT_OFF;
         }
         const PneumaticLayout own = _pneumatic_layout(p_maszyna, p_end, p_line);
@@ -1033,7 +1038,7 @@ namespace godot {
         if (const int64_t own_index = coupled.find(p_vehicle); own_index > 0) {
             if (const MaszynaVisual *neighbour = maszyna_vehicles.getptr(coupled[own_index - 1]);
                 neighbour != nullptr) {
-                other = _pneumatic_layout(*neighbour, coupler->get_connected_end(p_end), p_line);
+                other = _pneumatic_layout(*neighbour, controller->get_coupled_end(p_end), p_line);
             }
         }
         if (own == other) {
@@ -1043,7 +1048,7 @@ namespace godot {
                 case PNEUMATIC_LAYOUT_RIGHT:
                     return COUPLER_VARIANT_RIGHT_XON;
                 case PNEUMATIC_LAYOUT_BOTH:
-                    return coupler->is_coupling_owner(p_end) ? COUPLER_VARIANT_ON : COUPLER_VARIANT_RIGHT_ON;
+                    return controller->is_coupling_owner(p_end) ? COUPLER_VARIANT_ON : COUPLER_VARIANT_RIGHT_ON;
                 default:
                     return COUPLER_VARIANT_OFF;
             }
@@ -1074,8 +1079,8 @@ namespace godot {
     // Original engine: coupler and hose submodel visibility (DynObj.cpp:758-925, bnewAirCouplers branch)
     void MaszynaE3DRailVehicleRenderingServer::_update_couplers(
             const RID &p_vehicle, const Visual &p_visual, MaszynaVisual &p_maszyna) {
-        const Ref<RailVehicleBuffCoupl> coupler = couplers(p_vehicle);
-        if (p_maszyna.coupler_submodels.is_empty() || coupler.is_null()) {
+        const Ref<RailVehicleController> controller = rail_controller(p_vehicle);
+        if (p_maszyna.coupler_submodels.is_empty() || couplers(p_vehicle).is_null() || controller.is_null()) {
             return;
         }
         CouplerVariant variants[2][COUPLER_PART_COUNT];
@@ -1083,17 +1088,17 @@ namespace godot {
         for (const RailVehicleController::CouplerEnd end:
              {RailVehicleController::COUPLER_END_FRONT, RailVehicleController::COUPLER_END_REAR}) {
             // _on for the vehicle that draws the coupler, _xon (or _off without it) for the other
-            if (!coupler->is_coupled(end)) {
+            if (!controller->is_coupled_by(end, RailVehicleController::COUPLING_FLAG_COUPLER)) {
                 variants[end][0] = COUPLER_VARIANT_OFF;
-            } else if (coupler->is_coupling_owner(end)) {
+            } else if (controller->is_coupling_owner(end)) {
                 variants[end][0] = COUPLER_VARIANT_ON;
             } else {
                 variants[end][0] = COUPLER_VARIANT_XON;
             }
-            variants[end][1] = coupler->is_brake_hose_connected(end)
+            variants[end][1] = controller->is_coupled_by(end, RailVehicleController::COUPLING_FLAG_BRAKEHOSE)
                                        ? _pneumatic_variant(p_vehicle, p_maszyna, end, PNEUMATIC_LINE_BRAKE)
                                        : COUPLER_VARIANT_OFF;
-            variants[end][2] = coupler->is_main_hose_connected(end)
+            variants[end][2] = controller->is_coupled_by(end, RailVehicleController::COUPLING_FLAG_MAINHOSE)
                                        ? _pneumatic_variant(p_vehicle, p_maszyna, end, PNEUMATIC_LINE_MAIN)
                                        : COUPLER_VARIANT_OFF;
             for (const CouplerVariant variant: variants[end]) {

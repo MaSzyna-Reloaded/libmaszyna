@@ -112,7 +112,7 @@ func _joined_as_asked() -> bool:
 
 
 func _asked_joinable() -> RailVehicleController.CouplingFlags:
-    return (SHUNT_COUPLINGS & RailVehicleServer.vehicle_get_coupler_joinable_flags(_driven, _coupling_end)) \
+    return (SHUNT_COUPLINGS & RailVehicleServer.coupler_get_joinable_flags(_driven, _coupling_end)) \
             as RailVehicleController.CouplingFlags
 
 

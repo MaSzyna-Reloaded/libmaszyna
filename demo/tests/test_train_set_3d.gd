@@ -13,7 +13,7 @@ const LONG_LENGTH:float = 16.0
 const GAP:float = 2.0
 const TOLERANCE:float = 0.01
 ## couplingdata 3: coupler and brake hose
-const COUPLING:int = RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_BRAKEHOSE
+const COUPLING:RailVehicleController.CouplingMode = RailVehicleController.COUPLING_MODE_BRAKE
 const SETTLE_FRAMES:int = 3
 
 var _track:RID
@@ -35,8 +35,12 @@ func after_each() -> void:
     TrackServer.topology_rebuild()
 
 
-## A vehicle of the trainset, as long as asked, standing the way asked
-func _add_vehicle(vehicle_name:String, length:float, direction:TrackServer.Direction) -> RailVehicle3D:
+## A vehicle of the trainset, as long as asked, standing the way asked, gap behind the one before and
+## coupled to the next by coupling
+func _add_vehicle(
+        vehicle_name:String, length:float, direction:TrackServer.Direction, gap:float,
+        coupling:RailVehicleController.CouplingMode
+) -> RailVehicle3D:
     var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
     model.mass = RAIL_VEHICLE_MASS
@@ -49,6 +53,8 @@ func _add_vehicle(vehicle_name:String, length:float, direction:TrackServer.Direc
     var vehicle:RailVehicle3D = RailVehicle3D.new()
     vehicle.name = vehicle_name
     vehicle.start_direction = direction
+    vehicle.trainset_gap = gap
+    vehicle.trainset_coupling_mode = coupling
     vehicle.controller_path = NodePath("../../%s" % physics_node.name)
     _trainset.add_child(vehicle)
     return vehicle
@@ -58,15 +64,11 @@ func _build_trainset() -> Array[RailVehicle3D]:
     _trainset = TrainSet3D.new()
     _trainset.start_track_name = TRACK_NAME
     _trainset.start_track_offset = FRONT
-    var gaps:Array[float] = [0.0, GAP, 0.0]
-    _trainset.vehicle_gaps = gaps
-    var couplings:Array[int] = [COUPLING, COUPLING]
-    _trainset.couplings = couplings
     add_child(_trainset)
     var vehicles:Array[RailVehicle3D] = [
-        _add_vehicle("First", SHORT_LENGTH, TrackServer.DIRECTION_NORMAL),
-        _add_vehicle("Second", LONG_LENGTH, TrackServer.DIRECTION_NORMAL),
-        _add_vehicle("Third", SHORT_LENGTH, TrackServer.DIRECTION_REVERSED),
+        _add_vehicle("First", SHORT_LENGTH, TrackServer.DIRECTION_NORMAL, 0.0, COUPLING),
+        _add_vehicle("Second", LONG_LENGTH, TrackServer.DIRECTION_NORMAL, GAP, COUPLING),
+        _add_vehicle("Third", SHORT_LENGTH, TrackServer.DIRECTION_REVERSED, 0.0, RailVehicleController.COUPLING_MODE_NONE),
     ]
     return vehicles
 
@@ -105,7 +107,10 @@ func test_reordered_the_vehicles_stand_anew() -> void:
     _trainset.move_child(vehicles[1], 0)
     await wait_idle_frames(SETTLE_FRAMES)
 
-    assert_almost_eq(_offset(vehicles[1]), FRONT - LONG_LENGTH * 0.5, TOLERANCE, "the long one at the front now")
+    # a vehicle's gap goes with it (RailVehicle3D.trainset_gap, as a .scn writes the offset with its
+    # dynamic): the long one keeps its own in front, the operator's choice of 2026-11-05
+    assert_almost_eq(_offset(vehicles[1]), FRONT - GAP - LONG_LENGTH * 0.5, TOLERANCE,
+            "the long one at the front now, its gap with it")
     # the pairs of the old order let go: coupled again pair by pair they would close into a ring
     var coupled:Array[RID] = RailVehicleServer.vehicle_get_coupled(
             vehicles[1].get_rid(), RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER)

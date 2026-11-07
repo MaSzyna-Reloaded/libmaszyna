@@ -264,7 +264,7 @@ code belongs to the game's `FINDINGS.md`.
 
 * What finds a vehicle ahead measures along the track between primary axles; whatever acts near it
   (the driver closing up, coupling) measures between the couplers, as the original does below
-  100 m (`vehicle_get_coupler_distance()`, Driver.cpp:6672, DynObj.cpp:7577). *(10-12 the SN61
+  100 m (`coupler_get_distance()`, Driver.cpp:6672, DynObj.cpp:7577). *(10-12 the SN61
   that stopped against the other and never coupled)*
 
 ## State, ownership, events

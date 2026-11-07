@@ -124,7 +124,7 @@ func set_vehicle_instance(vehicle:RID) -> void:
     data_path = dynamic.vehicle.get_base_dir()
     file_name = dynamic.vehicle.get_file()
     skin = dynamic.livery
-    initial_velocity = dynamic.velocity
+    initial_velocity = VehicleServer.vehicle_get_initial_velocity(vehicle)
     driver_type = dynamic.driver_type
     load_name = dynamic.load_name
     load_amount = dynamic.load_amount
@@ -157,11 +157,11 @@ func _create_vehicle() -> void:
     dynamic.data_path = data_path
     dynamic.file_name = file_name
     dynamic.skin = skin
-    dynamic.velocity = initial_velocity
     dynamic.driver_type = driver_type
     dynamic.load_name = load_name
     dynamic.load_amount = load_amount
     _vehicle = VehicleCatalogServer.vehicle_create(dynamic, get_instance_id())
+    VehicleServer.vehicle_set_initial_velocity(_vehicle, initial_velocity)
 
 
 ## Built, the vehicle is this node's: the node rides on it and places it on its start track

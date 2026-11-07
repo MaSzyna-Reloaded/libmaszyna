@@ -156,7 +156,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.56
 script = ExtResource("9_ss847")
 start_track_name = "diverging2"
 start_track_offset = 126.44
-couplings = Array[int]([255, 255, 255])
 velocity = 20.0
 metadata/_custom_type_script = "uid://onxj3ocy4jip"
 
@@ -167,6 +166,7 @@ transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.27795456071960
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-a_zachpom"
+trainset_coupling_mode = 4
 skin = "ED78-019A"
 
 [node name="31we-b_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=602076295]
@@ -176,6 +176,7 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.661686119999
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-b_zachpom"
+trainset_coupling_mode = 4
 skin = "ED78-019B"
 
 [node name="31we-c_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=706861861]
@@ -185,6 +186,7 @@ transform = Transform3D(-1, 0, 1.129997989440363e-16, 0, 1, 0, -1.12999798944036
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-c_zachpom"
+trainset_coupling_mode = 4
 skin = "ED78-019C"
 
 [node name="31we-d_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1002100989]

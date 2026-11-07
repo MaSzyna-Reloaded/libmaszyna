@@ -45,17 +45,24 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
     if kv.has("beta"):
         node.damping_beta = FizLineUtil.get_float(kv, "beta")
 
+    # the FIZ's masks are the Mover's coupling:: bits; a negative AllowedFlag allows a permanent
+    # coupling (LoadFIZ_BuffCoupl, Mover.cpp:10619)
     if kv.has("AllowedFlag"):
         var allowed: int = FizLineUtil.get_int(kv, "AllowedFlag")
+        var allowed_flags: RailVehicleController.CouplingFlags = (
+                MaszynaMoverCoupling.flags_from_mover(absi(allowed)))
         if allowed < 0:
-            allowed = -allowed | RailVehicleController.COUPLING_FLAG_PERMANENT
-        node.allowed_flag = allowed
+            allowed_flags = (allowed_flags | RailVehicleController.COUPLING_FLAG_PERMANENT) as RailVehicleController.CouplingFlags
+        node.allowed_flag = allowed_flags
     if kv.has("AutomaticFlag"):
-        node.automatic_flag = FizLineUtil.get_int(kv, "AutomaticFlag")
+        node.automatic_flag = MaszynaMoverCoupling.flags_from_mover(
+                FizLineUtil.get_int(kv, "AutomaticFlag"))
     if kv.has("PowerCoupling"):
-        node.power_coupling = FizLineUtil.get_int(kv, "PowerCoupling")
+        node.power_coupling = MaszynaMoverCoupling.flags_from_mover(
+                FizLineUtil.get_int(kv, "PowerCoupling"))
     if kv.has("PowerFlag"):
-        node.power_flag = FizLineUtil.get_int(kv, "PowerFlag")
+        node.power_flag = MaszynaMoverCoupling.flags_from_mover(
+                FizLineUtil.get_int(kv, "PowerFlag"))
     if kv.has("ControlType"):
         node.control_type = FizLineUtil.get_string(kv, "ControlType")
 

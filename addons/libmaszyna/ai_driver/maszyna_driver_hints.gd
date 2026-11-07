@@ -1235,10 +1235,10 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
             return security == null or not security.get_cabsignal_blinking()
         Hint.COUPLING_ADAPTER_ATTACH:
             var coupling:RID = situation.state.coupling_vehicle
-            return not coupling.is_valid() or RailVehicleServer.vehicle_is_coupler_automatic(
+            return not coupling.is_valid() or RailVehicleServer.coupler_is_automatic(
                     coupling, int(parameter) as RailVehicleController.CouplerEnd)
         Hint.COUPLING_ADAPTER_REMOVE:
-            return not situation.trainset.vehicles or not RailVehicleServer.vehicle_get_coupler_adapter_model(
+            return not situation.trainset.vehicles or not RailVehicleServer.coupler_get_adapter_model(
                     situation.trainset.vehicles[0], int(parameter) as RailVehicleController.CouplerEnd)
         Hint.TRACTIVE_FORCE_DECREASE:
             return absf(_tractive_force(controlling)) <= parameter
