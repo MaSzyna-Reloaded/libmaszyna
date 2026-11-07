@@ -116,3 +116,22 @@ func test_a_keyword_with_capitals_is_its_slot() -> void:
     var track:MaszynaTrackData = _import(TWO_EVENTS_SOURCE.replace("event2 krzyzowa_p2", "Event2 krzyzowa_p2"))[0]
 
     assert_eq(track.events.get("event2", PackedStringArray()).size(), 2, "both events in event2")
+
+
+## The type in lower case, as the original reads it (Track.cpp:395-438): "Normal" is a normal track
+func test_a_type_with_capitals_is_its_type() -> void:
+    var track:MaszynaTrackData = _import(NONE_TRACKBED_SOURCE.replace("normal 6.092", "Normal 6.092"))[0]
+
+    assert_not_null(track, "the track is kept")
+    assert_eq(track.kind, TrackServer.TRACK_NORMAL)
+
+
+## The closing word whatever its case, as the original reads it lower-cased
+## (simulationstateserializer.cpp:1121-1129): "EndTrack" closes the node
+func test_a_closing_word_with_capitals_closes_the_track() -> void:
+    var skipped:Array = _import(RIVER_SOURCE.replace("endtrack", "EndTrack"))
+    var kept:Array = _import(NONE_TRACKBED_SOURCE.replace("endtrack", "EndTrack"))
+
+    assert_eq((skipped[1] as MaszynaParser).next_token(), "MARKER", "a skipped track ends at EndTrack")
+    assert_eq((kept[0] as MaszynaTrackData).speed_limit, 80.0, "a kept track keeps its properties")
+    assert_eq((kept[1] as MaszynaParser).next_token(), "MARKER", "a kept track ends at EndTrack")

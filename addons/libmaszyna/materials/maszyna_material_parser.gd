@@ -38,7 +38,8 @@ func parse(model_path:String, material_file:String) -> MaszynaMaterial:
             var token:String = p.next_token(STOP_VALUE)
 
             if token.ends_with(":"):
-                key = token.split(":")[0]
+                # in lower case, as the original reads the keys (material.cpp:296)
+                key = token.split(":")[0].to_lower()
             else:
                 match token:
                     "}":

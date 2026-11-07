@@ -54,6 +54,13 @@ func test_load_minimum_offsets() -> void:
     assert_almost_eq(float(load.minimum_load_offsets[0]), -1.5, 0.001)
 
 
+# LoadFIZ_Load (Mover.cpp:10318) - the accepted loads in lower case, as the station looks for them
+func test_load_accepted_names_in_lower_case() -> void:
+    var load:RailVehicleLoad = _parse(FizTrainLoadParser,
+            "MaxLoad=54 LoadQ=pieces LoadAccepted=Passengers,Pantstate", "Load:", "RailVehicleLoad")
+    assert_eq(load.accepted_loads, ["passengers", "pantstate"])
+
+
 func test_relay_reset_buttons() -> void:
     var switches:RailVehicleSwitches = _parse(FizTrainSwitchesParser, "RelayResetButton1=3 RelayResetButton2=4",
             "Switches:", "RailVehicleSwitches")

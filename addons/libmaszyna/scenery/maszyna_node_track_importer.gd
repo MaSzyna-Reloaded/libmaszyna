@@ -37,7 +37,8 @@ const TWO_CURVE_TYPES:Array[String] = ["switch", "cross"]
 ## (each with its own @tool script and _process()) is real, avoidable overhead that only actually
 ## benefits hand-authored scenes edited directly in demo_3d.tscn-style scenes.
 func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackData:
-    var type_token = p.next_token()
+    # the type in lower case, as the original reads it (Track.cpp:395-438)
+    var type_token:String = p.next_token().to_lower()
     if not TYPES.has(type_token):
         # river/turn/table are not built yet - discard the whole node, otherwise the
         # shared parser cursor stays inside it and keeps eating tokens until the next keyword.
@@ -79,7 +80,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
         var key: String = nt
         while key != "endtrack":
             var value: String = p.next_token()
-            if value == "endtrack":
+            if value.to_lower() == "endtrack":
                 break
 
             if key == "railprofile":

@@ -78,7 +78,7 @@
 			<param index="0" name="token" type="String" />
 			<param index="1" name="stops" type="Array" default="[]" />
 			<description>
-				Reads tokens until a specified token is encountered.
+				Reads tokens until a specified token is encountered, whatever its case; the tokens keep their case.
 			</description>
 		</method>
 		<method name="initialize">
@@ -145,7 +145,7 @@
 			<param index="0" name="token" type="String" />
 			<param index="1" name="callback" type="Callable" />
 			<description>
-				Registers a custom handler for a specific token.
+				Registers a custom handler for a specific token, called for it whatever its case.
 			</description>
 		</method>
 		<method name="set_cancelled" qualifiers="static">

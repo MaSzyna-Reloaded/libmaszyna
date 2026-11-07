@@ -152,3 +152,16 @@ func test_a_translucent_skin_is_told_apart_from_a_translucent_texture() -> void:
     assert_false(glass.material_transparent, "which is not flag 0x20")
     assert_false(opaque.skin_translucent, "opacity 1 is the opaque phase")
 
+
+
+## A light is named in lower case whatever its submodels' case: the original finds them whatever it
+## is (TButton::Init(), Button.cpp:32-33), and HeadLamp21_on with headlamp21_xon is one light
+func test_a_light_named_with_capitals_is_one_light_in_lower_case() -> void:
+    var model:MaszynaE3DModel = MaszynaE3DModelManager.load_model(DATA_PATH, "lamps")
+    var lights:Dictionary = model.get_lights()
+
+    assert_eq(lights.keys(), ["headlamp21"], "one light, in lower case")
+    var light:MaszynaE3DModelLightDefinition = lights.get("headlamp21")
+    assert_eq(String(light.get_on_submodel_path()), "HeadLamp21_on")
+    assert_eq(String(light.get_xon_submodel_path()), "headlamp21_xon")
+    assert_eq(String(light.get_off_submodel_path()), "HeadLamp21_off")

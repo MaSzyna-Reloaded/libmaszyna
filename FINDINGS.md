@@ -68,6 +68,10 @@ code belongs to the game's `FINDINGS.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* The original's parser lowers every token unless told not to (`cParser::getToken(ToLower =
+  true)`, parser.h:40), ours keeps the case: a token matched against a fixed vocabulary - a
+  keyword, a closing word, a type, a key, a load name - is lowered where it is matched, a name or
+  a text keeps its case. *(11-07 passengers who never boarded)*
 * A condition ported from the original tests the field the original tests, never a stand-in that
   looks like it: the screens count a powered car by `eimc[eimc_p_Pmax] > 1`, and the engine type
   took the control cars of every EMU too, which have it with `Pmax=0`. *(10-29 EN57AL screen

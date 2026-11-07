@@ -25,5 +25,5 @@ func import(p:MaszynaParser, context:MaszynaImporterContext) -> PowerSourceData:
     elif token == "section":
         data.is_section = true
     while token and not token == "end":
-        token = p.next_token()
+        token = p.next_token().to_lower()
     return data

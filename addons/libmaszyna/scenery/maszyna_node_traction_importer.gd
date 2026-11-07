@@ -42,7 +42,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTractio
     var nt = p.next_token().to_lower()
     if nt == "parallel":
         data.parallel = p.next_token().to_lower() # Traction.cpp:147-148
-        nt = p.next_token()
+        nt = p.next_token().to_lower()
     if not nt == "endtraction":
         push_error("Invalid node::traction")
     return data

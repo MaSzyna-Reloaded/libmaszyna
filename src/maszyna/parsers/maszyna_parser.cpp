@@ -125,12 +125,14 @@ namespace godot {
         return cursor >= length;
     }
 
+    // keywords whatever their case, as the original reads them lower-cased
+    // (simulationstateserializer.cpp:125-128)
     void MaszynaParser::register_handler(const String &p_token, const Callable &p_callback) {
-        handlers[p_token] = p_callback;
+        handlers[p_token.to_lower()] = p_callback;
     }
 
     void MaszynaParser::unregister_handler(const String &p_token) {
-        handlers.erase(p_token);
+        handlers.erase(p_token.to_lower());
     }
 
     bool MaszynaParser::as_bool(const String &p_token) {
@@ -283,7 +285,9 @@ namespace godot {
         while (!eof_reached()) {
             if (String upcoming_token = next_token(p_stops); !upcoming_token.is_empty()) {
                 tokens.append(upcoming_token);
-                if (upcoming_token == p_token) {
+                // the closing word whatever its case, as the original reads it lower-cased
+                // (simulationstateserializer.cpp:1121-1129)
+                if (upcoming_token.nocasecmp_to(p_token) == 0) {
                     break;
                 }
             }
@@ -311,8 +315,8 @@ namespace godot {
         const int end = cursor + p_bytes;
         interrupted = false;
         while (!eof_reached() && cursor < end && !interrupted && !cancelled) {
-            if (String token = next_token(); handlers.has(token)) {
-                if (Callable callback = handlers[token]; callback.is_valid()) {
+            if (const String keyword = next_token().to_lower(); handlers.has(keyword)) {
+                if (Callable callback = handlers[keyword]; callback.is_valid()) {
                     Variant parsed_v = callback.call(this);
                     if (parsed_v.get_type() == Variant::ARRAY) {
                         Array parsed = parsed_v;

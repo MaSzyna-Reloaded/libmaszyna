@@ -4810,3 +4810,25 @@ lighting or the trainset.
   relative to the cell's centre.
 * **Rule:** a mesh drawn far from the world's origin keeps its vertices relative to its instance's
   origin.
+
+
+## 2026-11-07 Passengers who never boarded
+
+* **Symptom:**
+  - reports#71, #366: an ED78 arriving late had its dispatch over in seconds or at once, with no
+    hint to permit or open the doors; at 480 s every car of the train was still empty.
+* **What proved it:**
+  - `MaszynaStation.update_load()` passed every car over: `accepted_loads` held `Passengers`, as
+    the FIZ writes it (`LoadAccepted=Passengers`), and the station looks for `passengers`. The
+    original lowers each name (`LoadFIZ_Load()`, Mover.cpp:10318). With no car exchanging,
+    `StationServer.dispatch_start()` skipped the exchange step and its door hints.
+  - The original's `cParser::getToken()` lowers every token unless the call passes `false`
+    (parser.h:40); `MaszynaParser.next_token()` never does. An audit of the port against it found
+    the same trap in the scenery's keywords and closing words, a track's type, a dynamic's driver
+    and load type, a model's light names and the `.mat` keys. About 187 `LoadAccepted` entries of
+    a full data set name `Passengers`, 21 `passengers`.
+* **Fix:** each value matched against a fixed vocabulary is lowered where it is matched, and
+  `MaszynaParser` matches its handlers and `get_tokens_until()` whatever the case; the tokens keep
+  their own case.
+* **Rule:** a token matched against a fixed vocabulary is lowered where it is matched; a name or a
+  text keeps its case.

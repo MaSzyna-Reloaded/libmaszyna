@@ -24,8 +24,9 @@ func parse(p: MaszynaParser, context: FizImportContext, _prefix: String = "") ->
     if kv.has("LoadAccepted"):
         var loads: PackedStringArray = FizLineUtil.get_string(kv, "LoadAccepted").split(",")
         var accepted: Array[String] = []
+        # in lower case, as the station looks for them (Mover.cpp:10318)
         for load: String in loads:
-            accepted.append(load.strip_edges())
+            accepted.append(load.strip_edges().to_lower())
         node.accepted_loads = accepted
     if kv.has("LoadSpeed"):
         node.load_speed = FizLineUtil.get_float(kv, "LoadSpeed")

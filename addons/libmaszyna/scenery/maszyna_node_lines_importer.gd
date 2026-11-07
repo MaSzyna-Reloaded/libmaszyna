@@ -19,7 +19,7 @@ func import(p:MaszynaParser, context:MaszynaImporterContext, type:String, range_
     var basis:Basis = Basis.from_euler(context.rotate)
     var read:PackedVector3Array = []
     var token:String = p.next_token()
-    while token and not token == END_TOKEN:
+    while token and not token.to_lower() == END_TOKEN:
         read.append(basis * Vector3(float(token), float(p.next_token()), float(p.next_token())) + context.origin)
         token = p.next_token()
 
