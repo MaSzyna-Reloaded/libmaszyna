@@ -141,3 +141,32 @@ func test_a_shared_horn_lever_takes_both_horn_keys() -> void:
     logic.input(_action(&"horn_high", true))
     assert_eq(CabinSystem.get_control(cabin, &"horn_bt"), -1, "high tone")
     logic.input(_action(&"horn_high", false))
+
+
+## Below the no-power position the joint controller's handle applies the local brake
+## (Train.cpp:1138) and shows it in its negative range (Train.cpp:7699-7714). The brake's commands
+## are not the handle's own, which its widget follows: the cab is told where the handle stands -
+## the 36WEa's handle stood still on "-" while its brake worked (MaSzyna-Reloaded/reports#17)
+func test_the_joint_controller_shows_the_local_brake_it_applies() -> void:
+    logic.unregister()
+    var cab_controls:MaszynaCabinControls = MaszynaCabinControls.new()
+    var entry:Dictionary = MmdSemanticCatalog.get_entry("jointctrl")
+    cab_controls.add_control(&"jointctrl", entry["widget_class"], entry["fixed_fields"],
+            CabinButton.ButtonType.TOGGLE, entry.get("target", CabinState.Target.OCCUPIED))
+    logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return cab_controls)
+    logic.register(train.get_rid(), cabin)
+    await step(2)
+    var master:RailVehicleMasterController = RailVehicleServer.vehicle_component_get(
+            train.get_rid(), RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER) as RailVehicleMasterController
+
+    logic.input(_action(&"main_controller_decrease", true))
+    logic.input(_action(&"main_controller_decrease", false))
+    await step(1)
+    assert_lt(master.get_joint_position(), 0, "\"-\" at the no-power position applies the local brake")
+    assert_eq(CabinSystem.get_control(cabin, &"jointctrl"), master.get_joint_position(), "and the handle shows it")
+
+    logic.input(_action(&"main_controller_increase", true))
+    logic.input(_action(&"main_controller_increase", false))
+    await step(1)
+    assert_eq(master.get_joint_position(), 0, "\"+\" releases it")
+    assert_eq(CabinSystem.get_control(cabin, &"jointctrl"), 0, "and the handle goes back")

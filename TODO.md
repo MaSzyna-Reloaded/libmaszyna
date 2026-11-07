@@ -233,6 +233,10 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   them in.
 * A tile's placeholder guesses its width (the game's `TileGrid.PLACEHOLDER_STRETCH`): FIZ `Dim=` is
   parsed nowhere for `MaszynaSceneryInfo.Vehicle`.
+* **The joint controller's handle shows the local brake only as its own keys move it**
+  (`MaszynaCabinJointController`, MaSzyna-Reloaded/reports#17): a local brake moved by a command
+  sent to the vehicle past the cab (the console, a script) leaves the handle where it was until its
+  next step; the original's ggJointCtrl reads `LocalBrakePosA` every frame (Train.cpp:7699-7714).
 
 ## Sounds
 
