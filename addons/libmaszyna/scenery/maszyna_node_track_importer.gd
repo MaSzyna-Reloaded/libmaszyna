@@ -57,7 +57,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
     var environment:MaszynaTrackData.MaszynaEnvironmentType = _parse_environment(p.next_token())
     data.meta[MaszynaTrackData.META_ENVIRONMENT] = environment
     data.structure = STRUCTURES.get(environment, TrackData.STRUCTURE_NONE)
-    data.visible = p.as_bool(p.next_token())
+    data.visible = MaszynaParser.as_bool(p.next_token())
     if data.visible:
         data.material1 = _parse_material(p.next_token())
         data.tex_length = float(p.next_token())

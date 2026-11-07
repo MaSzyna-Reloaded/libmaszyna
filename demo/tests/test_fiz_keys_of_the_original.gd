@@ -61,6 +61,18 @@ func test_load_accepted_names_in_lower_case() -> void:
     assert_eq(load.accepted_loads, ["passengers", "pantstate"])
 
 
+# a FIZ flag as MaszynaParser.as_bool() reads it - the values meaning true in any case, the rest false
+func test_flag_values_meaning_true() -> void:
+    var kv:Dictionary = {}
+    for value:String in ["yes", "Yes", "TRUE", "on", "1", "y", "T"]:
+        kv["Flag"] = value
+        assert_true(FizLineUtil.get_bool(kv, "Flag"), value)
+    for value:String in ["no", "false", "off", "0", "n", "2"]:
+        kv["Flag"] = value
+        assert_false(FizLineUtil.get_bool(kv, "Flag"), value)
+    assert_true(FizLineUtil.get_bool({}, "Flag", true), "an absent key takes its default")
+
+
 func test_relay_reset_buttons() -> void:
     var switches:RailVehicleSwitches = _parse(FizTrainSwitchesParser, "RelayResetButton1=3 RelayResetButton2=4",
             "Switches:", "RailVehicleSwitches")

@@ -533,7 +533,7 @@ static func parse_joint_cabs(abs_mmd_path:String, parameters:Dictionary) -> bool
     var index:int = _find_label_index(tokens, "jointcabs:")
     if index == -1 or index + 1 >= tokens.size():
         return false
-    return tokens[index + 1].to_lower() in ["true", "yes", "1"]
+    return MaszynaParser.as_bool(tokens[index + 1])
 
 
 ## The cabNdefinition: of a kind of cabin (CAB_DEFINITIONS); -1 for a kind the MMD has none for

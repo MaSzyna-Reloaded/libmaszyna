@@ -8,8 +8,6 @@ extends RefCounted
 ## (MaszynaImporterContext.join_duplicated_events).
 
 const KEY_JOIN_DUPLICATED_EVENTS:String = "joinduplicatedevents"
-## What the original's parser reads as true (cParser::operator>>(bool &), parser.cpp:148)
-const TRUE_TOKENS:Array[String] = ["true", "yes", "1"]
 
 
 func import(p: MaszynaParser, context: MaszynaImporterContext) -> Array:
@@ -19,7 +17,7 @@ func import(p: MaszynaParser, context: MaszynaImporterContext) -> Array:
     for index:int in range(tokens.size() - 1):
         var key:String = String(tokens[index]).to_lower()
         if key == KEY_JOIN_DUPLICATED_EVENTS:
-            context.set_join_duplicated_events(String(tokens[index + 1]).to_lower() in TRUE_TOKENS)
+            context.set_join_duplicated_events(MaszynaParser.as_bool(String(tokens[index + 1])))
         elif key in MaszynaConfigNode.KEYS:
             node.values[key] = String(tokens[index + 1])
     if not node.values:
