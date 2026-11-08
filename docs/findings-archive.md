@@ -4810,3 +4810,44 @@ lighting or the trainset.
   relative to the cell's centre.
 * **Rule:** a mesh drawn far from the world's origin keeps its vertices relative to its instance's
   origin.
+
+
+## 2026-11-07 Passengers who never boarded
+
+* **Symptom:**
+  - reports#71, #366: an ED78 arriving late had its dispatch over in seconds or at once, with no
+    hint to permit or open the doors; at 480 s every car of the train was still empty.
+* **What proved it:**
+  - `MaszynaStation.update_load()` passed every car over: `accepted_loads` held `Passengers`, as
+    the FIZ writes it (`LoadAccepted=Passengers`), and the station looks for `passengers`. The
+    original lowers each name (`LoadFIZ_Load()`, Mover.cpp:10318). With no car exchanging,
+    `StationServer.dispatch_start()` skipped the exchange step and its door hints.
+  - The original's `cParser::getToken()` lowers every token unless the call passes `false`
+    (parser.h:40); `MaszynaParser.next_token()` never does. An audit of the port against it found
+    the same trap in the scenery's keywords and closing words, a track's type, a dynamic's driver
+    and load type, a model's light names and the `.mat` keys. About 187 `LoadAccepted` entries of
+    a full data set name `Passengers`, 21 `passengers`.
+* **Fix:** each value matched against a fixed vocabulary is lowered where it is matched, and
+  `MaszynaParser` matches its handlers and `get_tokens_until()` whatever the case; the tokens keep
+  their own case.
+* **Rule:** a token matched against a fixed vocabulary is lowered where it is matched; a name or a
+  text keeps its case.
+
+
+## 2026-11-07 The lamps a freed model forgot
+
+* **Symptom:**
+  - #376: a test reading `MaszynaE3DModelManager.load_model(path, name).get_lights()` got an empty
+    dictionary, while the same model kept in a variable had its light.
+* **What proved it:**
+  - Holding the model in a variable made the light appear; chaining the call left nothing. The
+    model was freed at the end of the chained expression, and `~MaszynaE3DModel()` called
+    `clear()`: `lights.clear()`, `submodels.clear()`, `smoke_sources.clear()`, and through every
+    submodel its `submodels.clear()` and `mesh.unref()`.
+  - A Godot `Dictionary` and `Array` share their data with every copy (`get_lights()` returns the
+    member by value), so `clear()` emptied the copy the caller held as well. No submodel refers
+    back to its parent - there was no reference cycle for the clearing to break.
+* **Fix:** the destructors and `clear()` of `MaszynaE3DModel` and `MaszynaE3DSubModel` are gone; the
+  members release their references by themselves.
+* **Rule:** a destructor never clears a `Dictionary` or an `Array` member - it empties every copy
+  handed out; without a reference cycle there is nothing to clear.

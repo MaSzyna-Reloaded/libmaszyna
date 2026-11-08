@@ -390,7 +390,10 @@ namespace godot {
                 continue;
             }
 
-            String light_name = base_name;
+            // in lower case: the original finds a light's submodels whatever their case
+            // (TButton::Init(), Button.cpp:32-33; GetFromName(), Model3d.cpp:1095-1105), and the
+            // vehicles ask for their lights in lower case
+            const String &light_name = base_name_lower;
 
             // "<name>_on" and "<name>_xon" are the same light, lit and dimmed (TButton::Init(),
             // Button.cpp:32-40); the first of each in tree order is bound, as in the original

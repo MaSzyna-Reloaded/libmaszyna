@@ -51,8 +51,7 @@ func create_node() -> RailVehicleDieselElectricEngine:
 ## applied by FizTrainEngineCommon via FizTrainEngineParser).
 func apply_engine_fields(kv: Dictionary, node: RailVehicleDieselElectricEngine) -> void:
     if kv.has("Flat"):
-        # Original quirk: compares to the literal string "1", not the normal Yes/No convention.
-        node.generator_voltage_flat = FizLineUtil.get_string(kv, "Flat") == "1"
+        node.generator_voltage_flat = FizLineUtil.get_bool(kv, "Flat")
     if kv.has("Vhyp"):
         node.hyperbolic_speed = FizLineUtil.get_float(kv, "Vhyp") / 3.6
     if kv.has("Vadd"):
@@ -62,8 +61,7 @@ func apply_engine_fields(kv: Dictionary, node: RailVehicleDieselElectricEngine) 
     if kv.has("RelayType"):
         node.shunt_relay_type = FizLineUtil.get_int(kv, "RelayType")
     if kv.has("ShuntMode"):
-        # Same literal-"1" quirk as Flat.
-        node.shunt_mode_allowed = FizLineUtil.get_string(kv, "ShuntMode") == "1"
+        node.shunt_mode_allowed = FizLineUtil.get_bool(kv, "ShuntMode")
     if kv.has("HeatingRPM"):
         node.heating_rpm = FizLineUtil.get_float(kv, "HeatingRPM")
     node.diesel_configuration.mechanical_inertia = FizLineUtil.get_float(kv, "AIM", DEFAULT_INERTIA)

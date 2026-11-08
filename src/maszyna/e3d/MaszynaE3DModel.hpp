@@ -17,9 +17,8 @@ namespace godot {
             TypedArray<MaszynaE3DSubModel> submodels;
 
         public:
-            static constexpr int FORMAT_VERSION = 20261019; // must be incremented when public API of MaszynaE3DModel or
+            static constexpr int FORMAT_VERSION = 20261107; // must be incremented when public API of MaszynaE3DModel or
                                                             // MaszynaE3DSubModel is changing
-            ~MaszynaE3DModel() override;
 
             TypedDictionary<String, MaszynaE3DModelLightDefinition> get_lights() const;
             void set_lights(const TypedDictionary<String, MaszynaE3DModelLightDefinition> &p_lights);
@@ -30,7 +29,6 @@ namespace godot {
             TypedArray<MaszynaE3DSubModel> get_submodels() const;
             void set_submodels(const TypedArray<MaszynaE3DSubModel> &p_submodels);
 
-            void clear();
             void add_child(const Ref<MaszynaE3DSubModel> &p_sub_model);
             void register_light(const String &p_name, const Ref<MaszynaE3DModelLightDefinition> &p_entry);
             void register_smoke_source(const Ref<MaszynaE3DModelSmokeSourceDefinition> &p_entry);

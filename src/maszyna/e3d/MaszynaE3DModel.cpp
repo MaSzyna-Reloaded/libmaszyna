@@ -2,22 +2,6 @@
 #include "macros.hpp"
 
 namespace godot {
-    MaszynaE3DModel::~MaszynaE3DModel() {
-        clear();
-    }
-
-    void MaszynaE3DModel::clear() {
-        for (int i = 0; i < submodels.size(); i++) {
-            Ref<MaszynaE3DSubModel> sm = submodels.get(i);
-            if (sm.is_valid()) {
-                sm->clear();
-            }
-        }
-        submodels.clear();
-        lights.clear();
-        smoke_sources.clear();
-    }
-
     void MaszynaE3DModel::_bind_methods() {
         BIND_CONSTANT(FORMAT_VERSION);
         BIND_PROPERTY_W_HINT_RES_ARRAY(

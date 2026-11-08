@@ -16,6 +16,9 @@ namespace godot {
                 0x010D, 0x00E9, 0x0119, 0x00EB, 0x011B, 0x00ED, 0x00EE, 0x010F, 0x0111, 0x0144, 0x0148, 0x00F3, 0x00F4,
                 0x0151, 0x00F6, 0x00F7, 0x0159, 0x016F, 0x00FA, 0x0171, 0x00FC, 0x00FD, 0x0163, 0x02D9,
         };
+        /// The values of the data that mean true, in lower case; any other means false. `vis` is a
+        /// track's and a traction's visibility (Track.cpp, Traction.cpp)
+        constexpr const char *TRUE_VALUES[] = {"yes", "true", "on", "1", "y", "t", "vis"};
     } // namespace
 
     std::atomic<bool> MaszynaParser::cancelled{false};
@@ -31,8 +34,8 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("eof_reached"), &MaszynaParser::eof_reached);
         ClassDB::bind_method(D_METHOD("register_handler", "token", "callback"), &MaszynaParser::register_handler);
         ClassDB::bind_method(D_METHOD("unregister_handler", "token"), &MaszynaParser::unregister_handler);
-        ClassDB::bind_method(D_METHOD("as_bool", "token"), &MaszynaParser::as_bool);
-        ClassDB::bind_method(D_METHOD("as_vector3", "tokens"), &MaszynaParser::as_vector3);
+        ClassDB::bind_static_method("MaszynaParser", D_METHOD("as_bool", "token"), &MaszynaParser::as_bool);
+        ClassDB::bind_static_method("MaszynaParser", D_METHOD("as_vector3", "tokens"), &MaszynaParser::as_vector3);
         ClassDB::bind_method(D_METHOD("get_tokens", "num", "stops"), &MaszynaParser::get_tokens, DEFVAL(Array()));
         ClassDB::bind_method(D_METHOD("next_token", "stops"), &MaszynaParser::next_token, DEFVAL(Array()));
         ClassDB::bind_method(D_METHOD("next_vector3", "stops"), &MaszynaParser::next_vector3, DEFVAL(Array()));
@@ -125,17 +128,24 @@ namespace godot {
         return cursor >= length;
     }
 
+    // keywords whatever their case, as the original reads them lower-cased
+    // (simulationstateserializer.cpp:125-128)
     void MaszynaParser::register_handler(const String &p_token, const Callable &p_callback) {
-        handlers[p_token] = p_callback;
+        handlers[p_token.to_lower()] = p_callback;
     }
 
     void MaszynaParser::unregister_handler(const String &p_token) {
-        handlers.erase(p_token);
+        handlers.erase(p_token.to_lower());
     }
 
     bool MaszynaParser::as_bool(const String &p_token) {
         const String lower = p_token.to_lower();
-        return lower == "yes" || lower == "on" || lower == "1" || lower == "true" || lower == "vis";
+        for (const char *value: TRUE_VALUES) {
+            if (lower == value) {
+                return true;
+            }
+        }
+        return false;
     }
 
     Vector3 MaszynaParser::as_vector3(const Array &p_tokens) {
@@ -283,7 +293,9 @@ namespace godot {
         while (!eof_reached()) {
             if (String upcoming_token = next_token(p_stops); !upcoming_token.is_empty()) {
                 tokens.append(upcoming_token);
-                if (upcoming_token == p_token) {
+                // the closing word whatever its case, as the original reads it lower-cased
+                // (simulationstateserializer.cpp:1121-1129)
+                if (upcoming_token.nocasecmp_to(p_token) == 0) {
                     break;
                 }
             }
@@ -311,8 +323,8 @@ namespace godot {
         const int end = cursor + p_bytes;
         interrupted = false;
         while (!eof_reached() && cursor < end && !interrupted && !cancelled) {
-            if (String token = next_token(); handlers.has(token)) {
-                if (Callable callback = handlers[token]; callback.is_valid()) {
+            if (const String keyword = next_token().to_lower(); handlers.has(keyword)) {
+                if (Callable callback = handlers[keyword]; callback.is_valid()) {
                     Variant parsed_v = callback.call(this);
                     if (parsed_v.get_type() == Variant::ARRAY) {
                         Array parsed = parsed_v;

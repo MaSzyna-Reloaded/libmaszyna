@@ -34,14 +34,16 @@ func import(p:MaszynaParser, context: MaszynaImporterContext, vehicle_name:Strin
         trainset.track_name = p.next_token().to_lower()
         context.trainsets.append(trainset)
     var offset:float = float(p.next_token())
-    var driver_type:String = p.next_token()
+    # in lower case, as the original reads it (simulationstateserializer.cpp:998)
+    var driver_type:String = p.next_token().to_lower()
     var coupling_data:String = p.next_token() if context.trainset else LONE_COUPLING
     # outside a trainset the vehicle's own velocity is its trainset's
     if not context.trainset:
         trainset.velocity = float(p.next_token())
     var load_count:int = int(p.next_token())
-    # a load with no type named is not a load (simulationstateserializer.cpp:1031)
-    var load_type:String = p.next_token() if load_count != 0 else ""
+    # in lower case, as the original reads it (simulationstateserializer.cpp:1027-1030); a load
+    # with no type named is not a load (simulationstateserializer.cpp:1031)
+    var load_type:String = p.next_token().to_lower() if load_count != 0 else ""
     if load_type == "enddynamic":
         load_count = 0
         load_type = ""
@@ -75,7 +77,7 @@ func import(p:MaszynaParser, context: MaszynaImporterContext, vehicle_name:Strin
                 % [context.get_current_file(), vehicle_name, coupling_data, _flag_names(coupling_flags)])
     trainset.members.append(member)
 
-    var next_token:String = p.next_token()
+    var next_token:String = p.next_token().to_lower()
     if not next_token == "enddynamic":
         # optional trailing destination parameter, not used yet
         p.get_tokens_until("enddynamic")

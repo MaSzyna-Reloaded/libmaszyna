@@ -18,6 +18,17 @@ parallel Przeslo_2
 endtraction
 """
 
+## A span with no support wires - their offset is still given (Traction.cpp:139-141)
+const SOURCE_NO_WIRES:String = """
+pwr01 3500 4500 0.01 cu 3.0 1
+10.1077 5.845 -72.2173
+2.1656 5.845 -11.8011
+10.1077 7.545 -72.2173
+2.1656 7.545 -11.8011
+0.4 4.0 0 0 vis
+endtraction
+"""
+
 
 func test_the_names_with_capitals_are_read_in_lower_case() -> void:
     var parser:MaszynaParser = MaszynaParser.new()
@@ -26,3 +37,13 @@ func test_the_names_with_capitals_are_read_in_lower_case() -> void:
 
     assert_eq(traction.power_supply_name, "pwr01", "the power source")
     assert_eq(traction.parallel, "przeslo_2", "the parallel span")
+
+
+func test_a_span_without_support_wires_reads_their_offset() -> void:
+    var parser:MaszynaParser = MaszynaParser.new()
+    parser.initialize(SOURCE_NO_WIRES.to_utf8_buffer())
+    var traction:MaszynaTractionData = TractionImporter.new().import(parser, MaszynaImporterContext.new())
+
+    assert_eq(traction.wires, TractionRenderingServer.Wires.CONTACT, "no support wires")
+    assert_true(traction.visible, "vis after the offset")
+    assert_push_error_count(0, "the span is closed by endtraction")

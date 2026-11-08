@@ -68,6 +68,10 @@ code belongs to the game's `FINDINGS.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* The original's parser lowers every token unless told not to (`cParser::getToken(ToLower =
+  true)`, parser.h:40), ours keeps the case: a token matched against a fixed vocabulary - a
+  keyword, a closing word, a type, a key, a load name - is lowered where it is matched, a name or
+  a text keeps its case. *(11-07 passengers who never boarded)*
 * A condition ported from the original tests the field the original tests, never a stand-in that
   looks like it: the screens count a powered car by `eimc[eimc_p_Pmax] > 1`, and the engine type
   took the control cars of every EMU too, which have it with `Pmax=0`. *(10-29 EN57AL screen
@@ -359,6 +363,9 @@ code belongs to the game's `FINDINGS.md`.
   RID. *(09-30 "Edit FIZ" aborted the editor)*
 * A `RefCounted` crosses a binding as `Ref<>`: a raw `T*` returned to GDScript takes a reference
   away and frees it. *(09-30 a raw pointer returned to GDScript freed the vehicle)*
+* A destructor never clears a `Dictionary` or an `Array` member: they share their data with every
+  copy a getter handed out, so the holders' copies empty too; without a reference cycle the
+  members release by themselves. *(11-07 the lamps a freed model forgot)*
 * A `Resource`'s setter stores data; joining, registering and connecting happen where the object
   becomes live - loading a resource calls every setter. Its server handle is `_get_rid()`, never a
   `get_rid()` of its own. *(09-30 a stored vehicle description came up half a vehicle)*

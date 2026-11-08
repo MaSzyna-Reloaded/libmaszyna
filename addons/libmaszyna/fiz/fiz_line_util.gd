@@ -62,10 +62,9 @@ static func get_int(kv: Dictionary, key: String, default_value: int = 0) -> int:
     return v.to_int()
 
 
-## FIZ boolean convention: literal `Yes`/`No` tokens (case-insensitive). Anything else -
-## including an absent key - is false.
+## The key's value as MaszynaParser.as_bool() reads it; `default_value` for an absent key
 static func get_bool(kv: Dictionary, key: String, default_value: bool = false) -> bool:
     var v: String = kv.get(key, "")
     if not v:
         return default_value
-    return v.to_lower() == "yes"
+    return MaszynaParser.as_bool(v)

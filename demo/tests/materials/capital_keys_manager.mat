@@ -1,0 +1,6 @@
+Shader: Default_1
+Texture_Diffuse: default_diffuse
+Opacity: 0.5
+Winter: {
+    Texture_Diffuse: winter_diffuse
+}

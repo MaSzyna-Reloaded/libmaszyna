@@ -9,14 +9,14 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="as_bool">
+		<method name="as_bool" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="token" type="String" />
 			<description>
-				Converts a token to a boolean value.
+				Whether a value of the data means true, whatever its case: [code]yes[/code], [code]true[/code], [code]on[/code], [code]1[/code], [code]y[/code], [code]t[/code], or [code]vis[/code] (a track's and a traction's visibility). Any other value means false.
 			</description>
 		</method>
-		<method name="as_vector3">
+		<method name="as_vector3" qualifiers="static">
 			<return type="Vector3" />
 			<param index="0" name="tokens" type="Array" />
 			<description>
@@ -78,7 +78,7 @@
 			<param index="0" name="token" type="String" />
 			<param index="1" name="stops" type="Array" default="[]" />
 			<description>
-				Reads tokens until a specified token is encountered.
+				Reads tokens until a specified token is encountered, whatever its case; the tokens keep their case.
 			</description>
 		</method>
 		<method name="initialize">
@@ -145,7 +145,7 @@
 			<param index="0" name="token" type="String" />
 			<param index="1" name="callback" type="Callable" />
 			<description>
-				Registers a custom handler for a specific token.
+				Registers a custom handler for a specific token, called for it whatever its case.
 			</description>
 		</method>
 		<method name="set_cancelled" qualifiers="static">

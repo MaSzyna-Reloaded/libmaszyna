@@ -35,14 +35,14 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTractio
     data.support_p2 = Vector3(support_points[3], support_points[4], support_points[5])
     data.min_height = float(p.next_token())
     data.segment_length = float(p.next_token())
+    # the wires and their offset, whatever the wires (Traction.cpp:139-141)
     data.wires = WIRES_INT_TO_ENUM[int(p.next_token())]
-    if not data.wires == TractionRenderingServer.Wires.CONTACT:
-        data.wire_offset = float(p.next_token())
-    data.visible = p.as_bool(p.next_token())
+    data.wire_offset = float(p.next_token())
+    data.visible = MaszynaParser.as_bool(p.next_token())
     var nt = p.next_token().to_lower()
     if nt == "parallel":
         data.parallel = p.next_token().to_lower() # Traction.cpp:147-148
-        nt = p.next_token()
+        nt = p.next_token().to_lower()
     if not nt == "endtraction":
         push_error("Invalid node::traction")
     return data

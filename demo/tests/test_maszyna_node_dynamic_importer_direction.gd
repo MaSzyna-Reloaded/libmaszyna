@@ -117,6 +117,16 @@ func test_driver_type_selects_driver_cabin() -> void:
     assert_eq(nobody.driver_type, MaszynaVehicleData.DriverType.DRIVER_NOBODY)
 
 
+## The driver type in lower case, as the original reads it (simulationstateserializer.cpp:998)
+func test_a_driver_type_with_capitals_is_its_driver() -> void:
+    var context:MaszynaImporterContext = _trainset_context(20.0)
+    var head:MaszynaVehicleData = _import(context, "fixtures skin short 0 HeadDriver 3 0 enddynamic")
+    var rear:MaszynaVehicleData = _import(context, "fixtures skin short 0 RearDriver 3 0 enddynamic")
+
+    assert_eq(head.driver_type, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    assert_eq(rear.driver_type, MaszynaVehicleData.DriverType.DRIVER_REAR)
+
+
 ## What the scenery loaded the vehicle with. The count comes first and the cargo's name only
 ## follows it when the count is not zero; a count with no name behind it is not a load at all
 ## (simulationstateserializer.cpp:1031), which is how a `dynamic` ending right there reads.
@@ -133,6 +143,15 @@ func test_the_load_a_dynamic_declares_reaches_the_vehicle() -> void:
     assert_almost_eq(empty.load_amount, 0.0, 0.001)
     assert_eq(unnamed.load_name, "", "a count with no cargo named behind it is not a load")
     assert_almost_eq(unnamed.load_amount, 0.0, 0.001)
+
+
+## The load type in lower case, as the original reads it (simulationstateserializer.cpp:1027-1030),
+## the vehicle's accepted loads are in lower case too: "Passengers" are passengers
+func test_a_load_type_with_capitals_is_read_in_lower_case() -> void:
+    var context:MaszynaImporterContext = _trainset_context(20.0)
+    var loaded:MaszynaVehicleData = _import(context, "fixtures skin short 0 nobody 3 24 Passengers enddynamic")
+
+    assert_eq(loaded.load_name, "passengers")
 
 
 ## The track a trainset and a lone vehicle stand on is named in lower case, as the track itself is

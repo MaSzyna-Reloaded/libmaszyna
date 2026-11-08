@@ -142,7 +142,7 @@ func _parse_rlist_row(p: MaszynaParser) -> void:
     item.resistance = float(tokens[1])
     item.branch_count = int(tokens[2])
     item.motors_per_branch = int(tokens[3])
-    item.auto_switch = String(tokens[4]) == "1" or String(tokens[4]).to_lower() == "yes"
+    item.auto_switch = MaszynaParser.as_bool(String(tokens[4]))
     if tokens.size() >= 6:
         item.shunt_index = int(tokens[5])
     _relay_rows.append(item)

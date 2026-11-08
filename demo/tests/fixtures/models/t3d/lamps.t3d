@@ -1,0 +1,85 @@
+// a head lamp named with capitals, lit, dimmed and off, like dynamic/pkp/en57_v1/6bbii.e3d
+//---------------------------------------------------------------------------------
+Parent: none
+Type: Mesh
+Name: HeadLamp21_on
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 10 10 10
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 0
+Map: none
+MaxDistance: 300
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 0 1
+
+NumIndices: 3
+0 1 2
+
+NumVerts: 3
+0 0 0  0 -1 0  0 1  1 0 0 1
+1 0 0  0 -1 0  1 1  1 0 0 1
+0 0 2  0 -1 0  0 0  1 0 0 1
+//---------------------------------------------------------------------------------
+Parent: none
+Type: Mesh
+Name: headlamp21_xon
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 10 10 10
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 0
+Map: none
+MaxDistance: 300
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 0 1
+
+NumIndices: 3
+0 1 2
+
+NumVerts: 3
+0 0 0  0 -1 0  0 1  1 0 0 1
+1 0 0  0 -1 0  1 1  1 0 0 1
+0 0 2  0 -1 0  0 0  1 0 0 1
+//---------------------------------------------------------------------------------
+Parent: none
+Type: Mesh
+Name: HeadLamp21_off
+Anim: false
+Ambient: 255 255 255
+Diffuse: 255 255 255
+Specular: 10 10 10
+SelfIllum: false
+Wire: false
+WireSize: 1
+Opacity: 0
+Map: none
+MaxDistance: 300
+MinDistance: 0
+Transform:
+	1 0 0 0
+	0 1 0 0
+	0 0 1 0
+	0 0 0 1
+
+NumIndices: 3
+0 1 2
+
+NumVerts: 3
+0 0 0  0 -1 0  0 1  1 0 0 1
+1 0 0  0 -1 0  1 1  1 0 0 1
+0 0 2  0 -1 0  0 0  1 0 0 1

@@ -362,3 +362,15 @@ func test_rain_windscreen_shader_binds_textures_and_grid_size() -> void:
     assert_not_null(material.get_shader_parameter("raindrops_atlas"))
     assert_not_null(material.get_shader_parameter("wiper_mask"))
     assert_almost_eq(float(material.get_shader_parameter("raindrop_grid_size")), 150.0, 0.00001)
+
+
+## The keys in lower case, as the original reads them (material.cpp:296): "Shader:", "Texture_Diffuse:",
+## "Opacity:" and a "Winter:" block are the material's
+func test_keys_with_capitals_are_read_in_lower_case() -> void:
+    var mmat: MaszynaMaterial = MaszynaMaterialManager.load_material("", "capital_keys_manager")
+
+    assert_eq(mmat.default.shader, "default_1")
+    assert_eq(mmat.default.get_texture_path("diffuse"), "default_diffuse")
+    assert_almost_eq(mmat.opacity, 0.5, 0.00001)
+    assert_true(mmat.variants.has(MaszynaMaterial.SEASON_WINTER_KEY), "the winter block")
+    assert_eq(mmat.variants[MaszynaMaterial.SEASON_WINTER_KEY].get_texture_path("diffuse"), "winter_diffuse")

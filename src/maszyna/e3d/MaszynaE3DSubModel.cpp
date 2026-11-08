@@ -1,21 +1,6 @@
 #include "MaszynaE3DSubModel.hpp"
 
 namespace godot {
-    MaszynaE3DSubModel::~MaszynaE3DSubModel() {
-        clear();
-    }
-
-    void MaszynaE3DSubModel::clear() {
-        for (int i = 0; i < submodels.size(); i++) {
-            Ref<MaszynaE3DSubModel> sm = submodels.get(i);
-            if (sm.is_valid()) {
-                sm->clear();
-            }
-        }
-        submodels.clear();
-        mesh.unref();
-    }
-
     void MaszynaE3DSubModel::_bind_methods() {
         // Enums
         BIND_ENUM_CONSTANT(SUBMODEL_GL_POINTS)

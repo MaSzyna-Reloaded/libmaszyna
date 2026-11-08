@@ -55,8 +55,10 @@ namespace godot {
             void register_handler(const String &p_token, const Callable &p_callback);
             void unregister_handler(const String &p_token);
             void set_parameters(const Dictionary &p_parameters);
-            bool as_bool(const String &p_token);
-            Vector3 as_vector3(const Array &p_tokens);
+            /// Whether a value of the data means true (TRUE_VALUES), whatever its case
+            static bool as_bool(const String &p_token);
+            /// The first three tokens as a Vector3, a zero one for fewer
+            static Vector3 as_vector3(const Array &p_tokens);
             Array get_tokens(int p_num, const Array &p_stops = Array());
             String next_token(const Array &p_stops = Array());
             Vector3 next_vector3(const Array &p_stops = Array());

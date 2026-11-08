@@ -54,6 +54,25 @@ func test_load_minimum_offsets() -> void:
     assert_almost_eq(float(load.minimum_load_offsets[0]), -1.5, 0.001)
 
 
+# LoadFIZ_Load (Mover.cpp:10318) - the accepted loads in lower case, as the station looks for them
+func test_load_accepted_names_in_lower_case() -> void:
+    var load:RailVehicleLoad = _parse(FizTrainLoadParser,
+            "MaxLoad=54 LoadQ=pieces LoadAccepted=Passengers,Pantstate", "Load:", "RailVehicleLoad")
+    assert_eq(load.accepted_loads, ["passengers", "pantstate"])
+
+
+# a FIZ flag as MaszynaParser.as_bool() reads it - the values meaning true in any case, the rest false
+func test_flag_values_meaning_true() -> void:
+    var kv:Dictionary = {}
+    for value:String in ["yes", "Yes", "TRUE", "on", "1", "y", "T"]:
+        kv["Flag"] = value
+        assert_true(FizLineUtil.get_bool(kv, "Flag"), value)
+    for value:String in ["no", "false", "off", "0", "n", "2"]:
+        kv["Flag"] = value
+        assert_false(FizLineUtil.get_bool(kv, "Flag"), value)
+    assert_true(FizLineUtil.get_bool({}, "Flag", true), "an absent key takes its default")
+
+
 func test_relay_reset_buttons() -> void:
     var switches:RailVehicleSwitches = _parse(FizTrainSwitchesParser, "RelayResetButton1=3 RelayResetButton2=4",
             "Switches:", "RailVehicleSwitches")
