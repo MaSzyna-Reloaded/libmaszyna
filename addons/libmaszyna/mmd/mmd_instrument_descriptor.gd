@@ -24,6 +24,18 @@ var leading_numbers:PackedInt32Array = []
 var button_type:String = ""
 var source_file:String = ""
 var line:int = 0
+## Which way a drag moves the control up, per mouse axis - not the MMD's: a game's patch's
+## (MaszynaCabControlPatch.mouse_drag_signs); ZERO follows its grip on screen
+var mouse_drag_signs:Vector2 = Vector2.ZERO
+## The turn at each whole value [deg] - not the MMD's: a game's patch's
+## (MaszynaCabControlPatch.position_angles); none, the scale's
+var position_angles:PackedFloat32Array = []
+## The axis of its own frame position_angles turn about, and the point it turns about - not the
+## MMD's: a game's patch's (MaszynaCabControlPatch.axis, pivot)
+var position_axis:Vector3 = Vector3.UP
+var pivot:Vector3 = Vector3.ZERO
+## A game's patch's control: it turns about its own axes as its parent sees them (CabinKnob.turn_unscaled)
+var patched:bool = false
 
 ## Extension-less, normalized filenames from the instrument's `{ ... }` block sound fields
 ## ("" when absent). A bracketed random-choice list (`soundinc: [ a.wav b.wav ]`) resolves to one

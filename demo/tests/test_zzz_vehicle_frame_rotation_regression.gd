@@ -18,6 +18,7 @@ const FORWARD_MIN_DOT:float = 0.99
 ## How far the player walks and turns away from the seat before sitting back down [m], [rad]
 const WALK_AWAY:Vector3 = Vector3(0.3, 0.0, 0.5)
 const TURN_AWAY:float = 1.0
+const CAB_LEAN:float = 0.1
 
 var _previous_game_dir:String
 var vehicle:RailVehicle3D
@@ -109,6 +110,22 @@ func test_cabin_camera_sits_in_exterior_cab_and_looks_forward() -> void:
         camera_forward.dot(vehicle_forward) > FORWARD_MIN_DOT,
         "driver camera should look along the vehicle's forward, got %s vs %s" % [camera_forward, vehicle_forward],
     )
+
+
+## A cab leaning on a canted curve leans the driver with it, the head upright in the cab: turned about
+## the world's vertical, the head stayed leaning twice as much as the cab, until sat down again
+func test_sitting_down_in_a_leaning_cab_leaves_the_head_upright_in_it() -> void:
+    if not await _spawn_vehicle():
+        return
+    player = PLAYER_SCENE.instantiate()
+    add_child(player)
+    PlayerServer.player_take_over_vehicle(vehicle.get_rid())
+    await wait_idle_frames(3)
+    var camera:FreeLookView = player.cabin_view
+    var cabin:Cabin3D = camera.get_parent() as Cabin3D
+    cabin.rotate_object_local(Vector3.BACK, CAB_LEAN)
+    player.sit_down()
+    assert_almost_eq(camera.basis.x.y, 0.0, 0.001, "the head's right should be level in the cab")
 
 
 ## drivermode.cpp:541 CabView() - Ctrl and the right button sit the driver back down, after walking

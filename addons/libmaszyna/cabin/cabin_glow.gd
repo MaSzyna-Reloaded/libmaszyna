@@ -16,6 +16,12 @@ var _lit: bool = false
 var _enabled: bool = true
 
 
+func _init() -> void:
+    # a lamp set inside a device only lights what is around it: reflected, it stood on the windscreen
+    # as a disc as wide as the desk
+    light_specular = 0.0
+
+
 func _enter_tree() -> void:
     ProjectSettings.settings_changed.connect(_on_project_settings_changed)
     _on_project_settings_changed()

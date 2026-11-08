@@ -4,7 +4,7 @@
 		The vehicles' FIZ files as their descriptions, each read once.
 	</brief_description>
 	<description>
-		A [code].fiz[/code] read into its vehicle's description - a [VehicleController] with its components, which a vehicle is built of a copy of - and kept on disk: a scenery repeats the same file across many trainset entries, and parsing it is the expensive part. An entry is read again when its file changes (its modification time - an included file's is not seen) or the reader's format does. The reader is the FIZ parser, handed in by the plugin's runtime ([method set_description_reader]).
+		A [code].fiz[/code] read into its vehicle's description - a [VehicleController] with its components, which a vehicle is built of a copy of - and kept on disk: a scenery repeats the same file across many trainset entries, and parsing it is the expensive part. An entry is read again when its file changes (its modification time - an included file's is not seen), the reader's format does or the wipers the game's patch gives the file do. The reader is the FIZ parser, handed in by the plugin's runtime ([method set_description_reader]).
 	</description>
 	<tutorials>
 	</tutorials>
@@ -13,15 +13,17 @@
 			<return type="VehicleController" />
 			<param index="0" name="data_path" type="String" />
 			<param index="1" name="fiz_filename" type="String" />
+			<param index="2" name="wipers" type="RailVehicleWipers" default="null" />
 			<description>
-				Returns the vehicle the [code].fiz[/code] of [param data_path]/[param fiz_filename] in the game's data describes.
+				Returns the vehicle the [code].fiz[/code] of [param data_path]/[param fiz_filename] in the game's data describes. [param wipers] - the wipers the game's patch gives a [code].fiz[/code] of no [code]WiperList:[/code], none without a patch.
 			</description>
 		</method>
 		<method name="load_description_at">
 			<return type="VehicleController" />
 			<param index="0" name="fiz_path" type="String" />
+			<param index="1" name="wipers" type="RailVehicleWipers" default="null" />
 			<description>
-				Returns the vehicle the [code].fiz[/code] at [param fiz_path] describes; null without a reader.
+				Returns the vehicle the [code].fiz[/code] at [param fiz_path] describes, with [param wipers] as [method load_description]; null without a reader.
 			</description>
 		</method>
 		<method name="set_description_reader">
@@ -29,7 +31,7 @@
 			<param index="0" name="reader" type="Callable" />
 			<param index="1" name="format_version" type="int" />
 			<description>
-				Sets what reads a [code].fiz[/code] into its description - [code](fiz_path: String) -&gt; VehicleController[/code] - and [param format_version], the version of what it builds, raised whenever the parser changes it.
+				Sets what reads a [code].fiz[/code] into its description - [code](fiz_path: String, wipers: RailVehicleWipers) -&gt; VehicleController[/code] - and [param format_version], the version of what it builds, raised whenever the parser changes it.
 			</description>
 		</method>
 	</methods>
