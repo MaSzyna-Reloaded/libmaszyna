@@ -163,7 +163,7 @@ func update(vehicle:RID, driver_direction:int, diesel_driven:bool) -> void:
             vehicle, RailVehicleComponentType.COMPONENT_BUFFERS) as RailVehicleBuffCoupl
     var behind:RailVehicleController.CouplerEnd = RailVehicleController.opposite_end(ahead)
     coupler_strength = couplers.get_coupler_max_force(behind) if couplers else 0.0
-    var driving:Vector3 = -RailVehicleServer.vehicle_get_transform(vehicle).basis.z * direction
+    var driving:Vector3 = -VehicleServer.vehicle_get_transform(vehicle).basis.z * direction
     var driven_brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
             vehicle, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
     ready = true
@@ -194,7 +194,7 @@ func update(vehicle:RID, driver_direction:int, diesel_driven:bool) -> void:
         velocity_max = MaszynaDriverSpeed.min_speed(velocity_max, controller.max_velocity)
         # the vehicle's front along the way the driver drives: its slope and its acceleration count
         # with that sign
-        var front:Vector3 = -RailVehicleServer.vehicle_get_transform(other).basis.z
+        var front:Vector3 = -VehicleServer.vehicle_get_transform(other).basis.z
         var along:float = signf(front.dot(driving))
         directions.append(-1 if along < 0.0 else 1)
         if other == vehicles[0]:

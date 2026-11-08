@@ -955,7 +955,7 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
                     or power_supply.get_power24_available() == (hint == Hint.BATTERY_ON)
         Hint.CAB_ACTIVATION:
             var master:RailVehicleMasterController = MaszynaDriverTraction.master_controller(vehicle)
-            return master == null or master.get_cabin_controleable()
+            return master == null or master.is_cabin_master()
         Hint.CAB_DEACTIVATION, Hint.CAB_DEACTIVATION_OTHER_END:
             return _active_cab(vehicle) == 0
         Hint.RADIO_ON, Hint.RADIO_OFF:

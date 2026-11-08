@@ -25,7 +25,7 @@ func _drive(fiz_path:String) -> RID:
     await wait_idle_frames(2)
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls)
-    logic.register(vehicle_rid, RailVehicleServer.vehicle_get_front_cabin(vehicle_rid))
+    logic.register(vehicle_rid, RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
     VehicleServer.vehicle_send_command(vehicle_rid, "battery", true)
     VehicleServer.vehicle_send_command(vehicle_rid, "cab_activation", true)
     await wait_idle_frames(2)

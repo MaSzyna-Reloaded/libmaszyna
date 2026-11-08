@@ -393,7 +393,8 @@ namespace godot {
     // the one coupled at it for the scenery, the nearest one within reach otherwise - hands its
     // adapter; with room asked for, some has to be left; the end then couples as an automatic one
     bool MaszynaMoverRailVehicleController::_fit_coupler_adapter(const CouplerEnd p_end, const bool p_with_room) {
-        if (mover == nullptr) {
+        // an automatic coupler, its own or an adapter's, takes no adapter (DynObj.cpp:1813)
+        if (mover == nullptr || is_coupler_automatic(p_end)) {
             return false;
         }
         const neighbour_data &neighbour = mover->Neighbours[MaszynaMoverCoupling::end_to_mover(p_end)];
@@ -452,8 +453,10 @@ namespace godot {
         if (coupler.adapter_type == TCouplerType::NoCoupler) {
             return false;
         }
+        // uncoupled where it may be, as by the player (TDynamicObject::uncouple(), DynObj.cpp:1855);
+        // the adapter comes off either way
         if (coupler.Connected != nullptr) {
-            uncouple(p_end);
+            coupler_disconnect(p_end);
         }
         coupler.adapter_type = TCouplerType::NoCoupler;
         coupler.adapter_length = 0.0;
@@ -531,7 +534,18 @@ namespace godot {
         if (mover != nullptr) {
             _consume_coupler_events();
             _consume_events();
+            _consume_cabin_events();
         }
+    }
+
+    void MaszynaMoverRailVehicleController::_consume_cabin_events() {
+        const bool cab_master = mover->IsCabMaster();
+        if (mover->CabActive == announced_cab_active && cab_master == announced_cab_master) {
+            return;
+        }
+        announced_cab_active = mover->CabActive;
+        announced_cab_master = cab_master;
+        emit_signal(active_cabin_changed_signal);
     }
 
     // Original engine: TDynamicObject's special events (DynObj.cpp:5207-5214) - the flag is

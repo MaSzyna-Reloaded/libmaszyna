@@ -126,9 +126,9 @@ func _on_sm_42_vehicle_changed():
         panel.title = component.get_class()
         %DebugPanels.add_child(panel)
         _panels[component] = panel
-    RailVehicleServer.vehicle_add_front_cabin(_vehicle)
-    RailVehicleServer.vehicle_add_rear_cabin(_vehicle)
+    RailVehicleServer.vehicle_add_cabin(_vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    RailVehicleServer.vehicle_add_cabin(_vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     _driver = PersonServer.person_create()
-    RailVehicleServer.person_enter_front_cabin(_driver, _vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(_vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), _driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     %MoverSwitches.vehicle = _vehicle
     print("Mover initialized. Train config: ", VehicleServer.vehicle_dump_config(_vehicle))

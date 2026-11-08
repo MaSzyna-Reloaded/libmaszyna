@@ -39,7 +39,7 @@ const UNLOCK_BUTTON:StringName = &"universalbrake1_bt"
 const STATE_SHOWN:Array[String] = [
     "battery_enabled", "cabin", "direction", "main_switch_enabled", "converter_enabled",
     "brake_controller_position", "brake_air_pressure", "pipe_pressure", "brake_control_pressure",
-    "main_pipe_locked", "cabin_controleable", "compressor_pressure",
+    "main_pipe_locked", "cabin_master", "compressor_pressure",
 ]
 
 var _driver:RID

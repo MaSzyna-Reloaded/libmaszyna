@@ -61,8 +61,9 @@ interface.
   (`Mover.cpp:12040-12042`), so a passenger train behind it (Galicja, Os33733 behind the SU42) is
   taken for a goods train once the order becomes Obey_train: it keeps further from obstacles and
   leaves every stop without waiting for the departure time (`Driver.cpp:1297`). Wrapper: the type
-  comes from the cars (libreloaded's `RailVehicleServer.trainset_determine_type()`, by their
-  `BrakeDelays` as `AutoRewident()` counts them), determined where `AutoRewident()` runs.
+  comes from the wagons (libreloaded's `RailVehicleServer.trainset_get_type()`, by their
+  `BrakeDelays` as `AutoRewident()` counts them - `MaszynaTrainsetClassifier`), recomputed by the
+  server whenever the trainset's vehicles change.
 * **A series motor's power is "taken off" when it is not.** `DecMainCtrl(2)` of an electric series
   motor returns true whatever it did (`Mover.cpp:2616-2622`), so `ZeroSpeed()`'s loop ends only
   on the next position check. Wrapper: true only when the controller moved - a controller the

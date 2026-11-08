@@ -14,7 +14,7 @@ func before_each():
     # the active cab is the master controller's - a vehicle with a cab has one
     train.add_component(MaszynaMoverRailVehicleMasterController.new())
     # the cab0definition: of the vehicle - the machine room lies between its two cabs
-    RailVehicleServer.vehicle_add_machine_room(train.get_rid())
+    RailVehicleServer.vehicle_add_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE)
     driver = get_vehicle_driver(train.get_rid())
 
 
@@ -30,7 +30,7 @@ func test_unmanned_vehicle_starts_in_cab_one_with_inactive_cab():
     train.send_command("cab_activation", true)
     train.update_state()
     assert_eq(train.get_state()["cabin"], 1)
-    assert_true(train.get_state()["cabin_controleable"])
+    assert_true(train.get_state()["cabin_master"])
 
     train.send_command("cab_activation", false)
     train.update_state()
@@ -44,14 +44,14 @@ func test_cab_change_backward_goes_through_machine_room():
     assert_eq(_driver_cabin_kind(train.get_rid()), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE)
     assert_eq(train.get_state()["cabin"], 0)
     assert_signal_emitted_with_parameters(RailVehicleServer, "vehicle_driver_cabin_changed",
-            [train.get_rid(), RailVehicleServer.vehicle_get_machine_room(train.get_rid())])
+            [train.get_rid(), RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE)])
 
     RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD)
     train.update_state()
     assert_eq(_driver_cabin_kind(train.get_rid()), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     assert_eq(train.get_state()["cabin"], -1)
     assert_signal_emitted_with_parameters(RailVehicleServer, "vehicle_driver_cabin_changed",
-            [train.get_rid(), RailVehicleServer.vehicle_get_rear_cabin(train.get_rid())])
+            [train.get_rid(), RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)])
 
 
 func test_cab_change_stops_at_vehicle_end():

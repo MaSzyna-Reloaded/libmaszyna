@@ -76,8 +76,8 @@ func test_the_trainset_stands_its_vehicles_in_order_and_couples_them() -> void:
             vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER))
     assert_eq(coupled.size(), 2, "the two are coupled")
     assert_almost_eq(
-            RailVehicleServer.vehicle_get_transform(vehicles[0]).origin.distance_to(
-                    RailVehicleServer.vehicle_get_transform(vehicles[1]).origin),
+            VehicleServer.vehicle_get_transform(vehicles[0]).origin.distance_to(
+                    VehicleServer.vehicle_get_transform(vehicles[1]).origin),
             VehicleServer.vehicle_get_dimensions(vehicles[0]).z, PLACEMENT_TOLERANCE,
             "the second stands right behind the first")
 

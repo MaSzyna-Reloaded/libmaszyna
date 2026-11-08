@@ -118,7 +118,7 @@ func test_brake_lines_add_up() -> void:
 
 ## The brake of the Sgs wagon as the scenery places it, with `load_amount` of the report's cargo -
 ## the load is the node's, taken before the controller starts, as the scenery's (the vehicle
-## system's vehicle_set_load() before vehicle_bind_controller())
+## system's load_set() before vehicle_bind_controller())
 func _sgs_wagon_brake(vehicle_id:String, load_amount:float) -> RailVehicleBrake:
     var node:RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
     node.controller = MaszynaFizManager.load_description_at(SGS_WAGON_PATH)

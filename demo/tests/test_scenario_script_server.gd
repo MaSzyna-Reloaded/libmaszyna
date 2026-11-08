@@ -316,7 +316,7 @@ func test_the_cabs_are_reached_through_the_implementation() -> void:
     )
     assert_true(ScenarioScriptServer.context_apply_source(_context, &"cabin", source))
 
-    var rear_cabin:RID = RailVehicleServer.vehicle_get_rear_cabin(controller.get_rid())
+    var rear_cabin:RID = RailVehicleServer.vehicle_get_cabin(controller.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     assert_eq(cabin.acts, [[rear_cabin, &"main_switch", &"toggle", null]])
 
 

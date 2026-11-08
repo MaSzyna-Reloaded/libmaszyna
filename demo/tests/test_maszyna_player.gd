@@ -62,16 +62,18 @@ func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
 
     PlayerServer.player_take_over_vehicle(vehicle)
     assert_eq(PlayerCameraServer.camera_get_mode(), PlayerCameraServer.CAMERA_MODE_CABIN)
-    assert_not_null(CabinSystem.vehicle_get_cabin(vehicle), "taken over, the cab interior is shown")
-    assert_eq(_player.cabin_view.get_parent(), CabinSystem.vehicle_get_cabin(vehicle), "the cab view sits in it")
+    var cabin:Cabin3D = _player.cabin_view.get_parent() as Cabin3D
+    assert_not_null(cabin, "taken over, the cab interior is shown, the cab view in it")
+    assert_eq(cabin.get_cabin(), VehicleServer.person_get_cabin(PlayerServer.player_get_person()),
+            "the cab the player sits in")
     assert_eq(get_viewport().get_camera_3d(), _player.camera, "the player's one camera is current")
     assert_eq(_player.camera.get_parent(), _player.cabin_view, "looking from the cab")
-    assert_true(CabinSystem.vehicle_get_cabin(vehicle).visible, "and is drawn in the view from the cab")
+    assert_true(cabin.visible, "and is drawn in the view from the cab")
 
-    var cabin:Cabin3D = CabinSystem.vehicle_get_cabin(vehicle)
     PlayerCameraServer.camera_toggle_cabin()
     assert_eq(_player.camera.get_parent(), _player.free_view, "F4 steps out to the free view")
-    assert_eq(CabinSystem.vehicle_get_cabin(vehicle), cabin, "outside, the cab stands with its controls")
+    assert_true(cabin.is_inside_tree() and not cabin.is_queued_for_deletion(),
+            "outside, the cab stands with its controls")
     assert_false(cabin.visible, "but is not drawn - the vehicle's low-poly interior is (DynObj.cpp:1389-1397)")
     assert_eq(PlayerServer.player_get_vehicle(), vehicle, "outside, the player still drives the vehicle")
 
@@ -81,7 +83,7 @@ func test_the_cab_interior_stands_while_the_vehicle_is_driven() -> void:
     assert_true(cabin.visible, "and the cab is drawn again")
 
     PlayerServer.player_leave_vehicle()
-    assert_null(CabinSystem.vehicle_get_cabin(vehicle), "let go, the player steps out of the cab")
+    assert_true(cabin.is_queued_for_deletion(), "let go, the player steps out of the cab")
     assert_eq(_player.camera.get_parent(), _player.free_view)
     # the cabs hidden are freed at the end of the frame
     await wait_idle_frames(1)
@@ -101,14 +103,13 @@ func test_the_cab_is_shown_when_its_scene_comes_after_the_vehicle_was_taken_over
     var vehicle:RID = _vehicle.get_rid()
 
     PlayerServer.player_take_over_vehicle(vehicle)
-    assert_null(CabinSystem.vehicle_get_cabin(vehicle), "no cab scene yet, no cab shown")
+    assert_false(_player.cabin_view.get_parent() is Cabin3D, "no cab scene yet, no cab shown")
 
     CabinSystem.vehicle_set_cabin_scene(vehicle, build_cabin_scene())
 
-    var cabin:Cabin3D = CabinSystem.vehicle_get_cabin(vehicle)
-    assert_not_null(cabin, "the cab scene come, the cab interior is shown")
+    var cabin:Cabin3D = _player.cabin_view.get_parent() as Cabin3D
+    assert_not_null(cabin, "the cab scene come, the cab interior is shown and the player looks from it")
     assert_eq(PlayerCameraServer.camera_get_mode(), PlayerCameraServer.CAMERA_MODE_CABIN)
-    assert_eq(_player.cabin_view.get_parent(), cabin, "and the player looks from it")
     assert_eq(_player.camera.get_parent(), _player.cabin_view)
     PlayerServer.player_leave_vehicle()
     # the cabs hidden are freed at the end of the frame

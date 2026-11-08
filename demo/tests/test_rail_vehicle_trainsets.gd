@@ -77,7 +77,7 @@ func test_coupled_two_trainsets_become_one_the_other_ending() -> void:
     var split:RID = RailVehicleServer.vehicle_get_trainset(wagons[0])
     watch_signals(RailVehicleServer)
 
-    RailVehicleServer.vehicle_couple(loco, RailVehicleController.COUPLER_END_REAR, wagons[0],
+    RailVehicleServer.coupler_attach(loco, RailVehicleController.COUPLER_END_REAR, wagons[0],
             RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER)
 
     assert_eq(_vehicles(trainset).size(), 4, "the loco's trainset takes the wagons back")

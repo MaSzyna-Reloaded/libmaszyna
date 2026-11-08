@@ -33,9 +33,9 @@ func _build_cab(kind:RailVehicleCabinKind.Kind, with_selector:bool, with_lever:b
         controls.add_control(MaszynaCabinPantographPresets.SELECTOR, CabinSwitch, {})
     if with_lever:
         controls.add_control(MaszynaCabinPantographPresets.VALVES_LEVER, CabinSwitch, {})
-    cabin = (RailVehicleServer.vehicle_get_rear_cabin(train.get_rid())
+    cabin = (RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
             if kind == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR
-            else RailVehicleServer.vehicle_get_front_cabin(train.get_rid()))
+            else RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
     logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls)
     logic.register(train.get_rid(), cabin)
     await wait_idle_frames(2)

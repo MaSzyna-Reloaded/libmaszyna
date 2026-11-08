@@ -6,15 +6,24 @@ extends MaszynaGutTest
 ## that is not there (maszyna-reloaded#4, reports#16).
 
 const MOTOR_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
+## The track the vehicle stands on, and where [m]: off the tracks a vehicle is in no trainset, whose
+## type the driver reads
+const TRACK_NAME:String = "IndependentBrakeHintTrack"
+const TRACK_LENGTH:float = 1000.0
+const TRACK_OFFSET:float = 500.0
+var _track:RID
 var _vehicle:RID
 
 
 func before_each() -> void:
     var description:VehicleController = MaszynaFizManager.load_description_at(MOTOR_CAR_PATH)
+    _track = build_track(TRACK_NAME, TRACK_LENGTH)
     _vehicle = build_vehicle("IndependentBrakeHintTest", description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
+    RailVehicleServer.vehicle_set_track(_vehicle, _track, TRACK_OFFSET, TrackServer.DIRECTION_NORMAL)
 
 
 func after_each() -> void:
+    TrackServer.track_free(_track)
     PlayerServer.player_leave_vehicle()
 
 

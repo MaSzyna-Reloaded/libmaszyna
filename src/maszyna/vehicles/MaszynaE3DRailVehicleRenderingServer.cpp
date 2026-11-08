@@ -130,19 +130,19 @@ namespace godot {
         }
         if (RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance(); rail_vehicles != nullptr) {
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_trainset_changed_signal,
-                    callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_trainset_changed));
+                    RailVehicleServer::trainset_vehicles_changed_signal,
+                    callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_trainset_vehicles_changed));
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_coupler_attached_signal,
+                    RailVehicleServer::coupler_attached_signal,
                     callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_changed));
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_coupler_detached_signal,
+                    RailVehicleServer::coupler_detached_signal,
                     callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_changed));
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_coupler_adapter_attached_signal,
+                    RailVehicleServer::coupler_adapter_attached_signal,
                     callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_adapter_changed));
             rail_vehicles->connect(
-                    RailVehicleServer::vehicle_coupler_adapter_removed_signal,
+                    RailVehicleServer::coupler_adapter_removed_signal,
                     callable_mp(this, &MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_adapter_changed));
         }
         if (GameDataServer *game_data = GameDataServer::get_instance(); game_data != nullptr) {
@@ -1094,7 +1094,8 @@ namespace godot {
 
     /* A coupling changed at either end: the couplers are drawn again, and the neighbours', whose
      * hoses match this vehicle's (SetPneumatic(), DynObj.cpp:430) */
-    void MaszynaE3DRailVehicleRenderingServer::_on_vehicle_trainset_changed(const RID &p_vehicle) {
+    void
+    MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_changed(const RID &p_vehicle, const int64_t /*p_flag*/) {
         if (MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle); maszyna != nullptr) {
             _update_couplers(p_vehicle, *_get_visual(p_vehicle), *maszyna);
         }
@@ -1117,8 +1118,15 @@ namespace godot {
         }
     }
 
-    void MaszynaE3DRailVehicleRenderingServer::_on_vehicle_coupler_changed(const RID &p_vehicle, const int64_t p_flag) {
-        _on_vehicle_trainset_changed(p_vehicle);
+    /* The vehicles of a trainset coupled or uncoupled: the couplers of each are drawn again */
+    void MaszynaE3DRailVehicleRenderingServer::_on_trainset_vehicles_changed(const RID &p_trainset) {
+        const RailVehicleServer *server = RailVehicleServer::get_instance();
+        ERR_FAIL_NULL(server);
+        for (const Variant &vehicle: server->trainset_get_vehicles(p_trainset)) {
+            if (MaszynaVisual *maszyna = maszyna_vehicles.getptr(vehicle); maszyna != nullptr) {
+                _update_couplers(vehicle, *_get_visual(vehicle), *maszyna);
+            }
+        }
     }
 
     /* The new adapter's model is loaded on a worker, and fitted once it is (_apply_preloaded()) */

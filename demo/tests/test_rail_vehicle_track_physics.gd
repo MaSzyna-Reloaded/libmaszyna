@@ -74,7 +74,7 @@ func after_each() -> void:
 func test_a_car_running_off_an_open_track_end_derails() -> void:
     _tracks.append(build_track("short", SHORT_TRACK))
     var vehicle:RID = await _rolling_car("short", 0.5 * SHORT_TRACK)
-    var standing_height:float = RailVehicleServer.vehicle_get_transform(vehicle).origin.y
+    var standing_height:float = VehicleServer.vehicle_get_transform(vehicle).origin.y
     assert_true(await wait_simulated_until(func() -> bool: return _derailed.size() > 0, DERAIL_TIMEOUT,
             "derailed at the track end"), "the car runs off the end of its track and derails")
     if not is_passing():
@@ -87,7 +87,7 @@ func test_a_car_running_off_an_open_track_end_derails() -> void:
     # the Mover moves the body off its track on its next step, and the body follows as it moves
     # (ComputeMovement(), Mover.cpp:1287-1293; TDynamicObject::Move(), DynObj.cpp:2706-2709)
     await step(ticks(SETTLE_SECONDS))
-    assert_almost_eq(RailVehicleServer.vehicle_get_transform(vehicle).origin.y, standing_height - DERAILED_DROP,
+    assert_almost_eq(VehicleServer.vehicle_get_transform(vehicle).origin.y, standing_height - DERAILED_DROP,
             POSITION_TOLERANCE, "the derailed body sits below its track")
 
 

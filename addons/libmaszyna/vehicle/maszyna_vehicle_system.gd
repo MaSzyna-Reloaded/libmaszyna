@@ -255,28 +255,19 @@ func _build(vehicle:RID, record:Vehicle) -> void:
             and rail_description.get_rail_component(RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER):
         cabin_kinds.append(driver_kind)
     for kind:RailVehicleCabinKind.Kind in cabin_kinds:
-        match kind:
-            RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT:
-                RailVehicleServer.vehicle_add_front_cabin(vehicle)
-            RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR:
-                RailVehicleServer.vehicle_add_rear_cabin(vehicle)
-            RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE:
-                RailVehicleServer.vehicle_add_machine_room(vehicle)
+        RailVehicleServer.vehicle_add_cabin(vehicle, kind)
     if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
         # the driver goes by its vehicle's name, as the original's (OwnerName(), Driver.cpp:5968-5971)
         record.driver = PersonServer.person_create(dynamic.vehicle_id)
-        var seated:Error = (
-                RailVehicleServer.person_enter_front_cabin(
-                        record.driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
-                if dynamic.driver_type == VehicleData.DRIVER_HEAD
-                else RailVehicleServer.person_enter_rear_cabin(
-                        record.driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER))
+        var seated:Error = VehicleServer.cabin_person_enter(
+                RailVehicleServer.vehicle_get_cabin(vehicle, driver_kind), record.driver,
+                VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
         if not seated == OK:
             push_warning("MaszynaVehicleSystem: %s has a driver but no cab to seat it in (%s)" % [
                     dynamic.vehicle_id, error_string(seated)])
     # the original's TypeName is the CHK/MMD name (DynObj.cpp:2019)
     RailVehicleServer.vehicle_set_type_name(vehicle, mmd_data.file_name)
-    RailVehicleServer.vehicle_set_load(vehicle, dynamic.load_name, dynamic.load_amount)
+    RailVehicleServer.load_set(vehicle, dynamic.load_name, dynamic.load_amount)
     VehicleServer.controller_configure(record.controller, description)
     VehicleServer.vehicle_bind_controller(vehicle, record.controller)
     # the pantographs' geometry the FIZ does not give, measured from the model's data with the

@@ -291,7 +291,8 @@ func update(
             signal_velocity_last = NO_LIMIT
     _scheduled_stop_visible = false
     # IsCargoTrain (Driver.cpp:2303): keeps further from a stop, leaves a passenger stop at once
-    var trainset_type:RailVehicleServer.TrainsetType = RailVehicleServer.trainset_get_type(vehicle)
+    var trainset_type:RailVehicleServer.TrainsetType = RailVehicleServer.trainset_get_type(
+            RailVehicleServer.vehicle_get_trainset(vehicle))
     var cargo:bool = trainset_type == RailVehicleServer.TRAINSET_TYPE_CARGO
     # moveLate: late on leaving the last station (UpdateDelayFlag(), Driver.cpp:5683-5692)
     _determine_distances(vehicle, order, speed, trainset, shunt_velocity, velocity_desired, coupling, cargo,

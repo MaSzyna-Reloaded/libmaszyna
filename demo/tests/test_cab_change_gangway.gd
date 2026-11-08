@@ -28,44 +28,44 @@ func after_each() -> void:
 
 
 func _couple(second_end:RailVehicleController.CouplerEnd, coupling:int) -> void:
-    RailVehicleServer.vehicle_couple(first, RailVehicleController.COUPLER_END_REAR, second, second_end, coupling)
+    RailVehicleServer.coupler_attach(first, RailVehicleController.COUPLER_END_REAR, second, second_end, coupling)
 
 
 func test_past_the_rear_cab_the_driver_goes_into_the_cab_of_the_next_vehicle_facing_it() -> void:
     _couple(RailVehicleController.COUPLER_END_FRONT, GANGWAY)
 
     assert_eq(RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD), OK)
-    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_rear_cabin(first), "its own rear cab first")
+    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_cabin(first, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), "its own rear cab first")
     assert_eq(RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD), OK)
 
-    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_front_cabin(second))
+    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_cabin(second, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
     assert_false(RailVehicleServer.vehicle_get_driver_cabin(first).is_valid(), "the vehicle left has no driver")
-    assert_eq(RailVehicleServer.vehicle_get_driver_cabin(second), RailVehicleServer.vehicle_get_front_cabin(second))
+    assert_eq(RailVehicleServer.vehicle_get_driver_cabin(second), RailVehicleServer.vehicle_get_cabin(second, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
 
 
 func test_a_neighbour_standing_the_other_way_round_is_entered_by_its_rear_cab() -> void:
     _couple(RailVehicleController.COUPLER_END_REAR, GANGWAY)
-    RailVehicleServer.person_move_to_rear_cabin(driver)
+    VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(VehicleServer.person_get_vehicle(driver), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver)
 
     assert_eq(RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD), OK)
 
-    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_rear_cabin(second))
+    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_cabin(second, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR))
 
 
 func test_without_a_gangway_the_end_of_the_vehicle_stops_the_change() -> void:
     _couple(RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_COUPLER)
-    RailVehicleServer.person_move_to_rear_cabin(driver)
+    VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(VehicleServer.person_get_vehicle(driver), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver)
 
     assert_eq(RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD), ERR_UNAVAILABLE)
 
-    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_rear_cabin(first))
+    assert_eq(VehicleServer.person_get_cabin(driver), RailVehicleServer.vehicle_get_cabin(first, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR))
 
 
 func test_whoever_drove_the_vehicle_entered_rides_along() -> void:
     _couple(RailVehicleController.COUPLER_END_FRONT, GANGWAY)
     var other:RID = PersonServer.person_create()
-    RailVehicleServer.person_enter_rear_cabin(other, second, DRIVER)
-    RailVehicleServer.person_move_to_rear_cabin(driver)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(second, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), other, DRIVER)
+    VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(VehicleServer.person_get_vehicle(driver), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver)
 
     RailVehicleServer.person_change_cabin(driver, RailVehicleServer.CABIN_CHANGE_BACKWARD)
 
@@ -78,11 +78,11 @@ func test_the_player_goes_along_into_the_next_vehicle_with_its_driver() -> void:
     _couple(RailVehicleController.COUPLER_END_FRONT, GANGWAY)
     attach_driver_implementation(driver, DriverImplementation.new())
     var other:RID = PersonServer.person_create()
-    RailVehicleServer.person_enter_rear_cabin(other, second, DRIVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(second, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), other, DRIVER)
     attach_driver_implementation(other, DriverImplementation.new())
     PlayerServer.player_take_over_vehicle(first)
     var player:RID = PlayerServer.player_get_person()
-    RailVehicleServer.person_move_to_rear_cabin(player)
+    VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(VehicleServer.person_get_vehicle(player), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), player)
     watch_signals(PlayerServer)
 
     RailVehicleServer.person_change_cabin(player, RailVehicleServer.CABIN_CHANGE_BACKWARD)

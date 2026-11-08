@@ -44,17 +44,17 @@ func build_vehicle_node(vehicle_id:String = "TestTrain", description:VehicleCont
     # a rail vehicle, stepped by RailVehicleServer whether or not a RailVehicle3D places it
     add_child_autofree(physics_node)
     var vehicle_rid:RID = physics_node.get_vehicle_rid()
-    RailVehicleServer.vehicle_add_front_cabin(vehicle_rid)
-    RailVehicleServer.vehicle_add_rear_cabin(vehicle_rid)
+    RailVehicleServer.vehicle_add_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    RailVehicleServer.vehicle_add_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     if driver == MaszynaVehicleData.DriverType.DRIVER_NOBODY:
         return physics_node
     var person:RID = PersonServer.person_create()
     # persons outlive vehicles: one left behind would sit in the next test's world
     physics_node.tree_exited.connect(PersonServer.person_free.bind(person))
     if driver == MaszynaVehicleData.DriverType.DRIVER_HEAD:
-        RailVehicleServer.person_enter_front_cabin(person, vehicle_rid, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
+        VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), person, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     else:
-        RailVehicleServer.person_enter_rear_cabin(person, vehicle_rid, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
+        VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), person, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     return physics_node
 
 

@@ -254,6 +254,17 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
 
 ## Vehicles
 
+* **A vehicle's power thresholds are copied in six places** (DRY - the original's `Power > 1` and
+  `Power < 1`): libreloaded's `RailVehicleServer::POWERED_MIN` and
+  `RailVehicleTrainsetClassifier::WAGON_POWER_MAX`, `MaszynaTrainsetClassifier` (`WAGON_POWER_MAX`),
+  `maszyna_driver_braking.gd` and `maszyna_driver_lights.gd` (`POWERED`), `maszyna_auto_rewident.gd`
+  (`LOCOMOTIVE_POWER`, compared with `>=` in the wagon count and with `>` in the brake setting).
+  Each reads `VehicleController.power` (the FIZ's `PWR`), configuration that belongs to no
+  component; a `vehicle_is_powered()` shortcut is not the answer (only for a vehicle's current
+  state, operator 2026-11-11), and whether "has an engine component" equals `PWR > 1` is unchecked.
+  The wagon count is done twice as well (`MaszynaTrainsetClassifier::classify()` and
+  `maszyna_auto_rewident.gd`): `AutoRewident()` (`Driver.cpp:2146-2175`) is split between them.
+  Needs a design.
 * **Road cars - what is not ported** (`MaszynaCarDriver`, `MaszynaRoadNetwork`,
   `MmdSoundFormulas`):
   * a car standing in the scenery (velocity 0) stays on the road's centre line; the original puts
@@ -534,15 +545,6 @@ is in libreloaded's `TODO.md`.
 
 ## Drivers (#297)
 
-* **High-level vehicle operations through the servers, executed by components**
-  (`maszyna-architecture`, "Servers forward to components", 2026-10-09): libreloaded's
-  `RailVehicleServer` couples (`vehicle_couple()`, `uncouple`, `is_coupled_by`,
-  `is_coupler_automatic`, adapters, `coupler_get_joinable_flags()`) through
-  `RailVehicleController`/`MaszynaMoverRailVehicleController`; the coupling logic moves to the
-  server, executed by the `RailVehicleBuffCoupl` component (`MaszynaMoverRailVehicleBuffCoupl` on
-  the Mover), the per-end `AllowedFlag` (`BuffCoupl1/2`) and `control_type` with it. The same for
-  walking through the cabins, managing trainsets and moving a vehicle. The AI then couples by a
-  server operation instead of the `coupler_connect` command. Plan with the operator first.
 * **Commands a vehicle does not have are sent and fail**: `fuse_reset` from the cab key (N, every
   cab, `mmd_semantic_catalog.gd:221`) and `security_cabsignal_trigger` from an SHP event
   (`MaszynaVehicleCommandAction.cpp:40`) on an SN61 - no electric engine, no security system;

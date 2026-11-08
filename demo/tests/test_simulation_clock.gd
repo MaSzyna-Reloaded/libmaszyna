@@ -65,7 +65,7 @@ func after_each() -> void:
 
 
 func _travelled() -> float:
-    return RailVehicleServer.vehicle_get_transform(_vehicle).origin.x
+    return VehicleServer.vehicle_get_transform(_vehicle).origin.x
 
 
 ## A stalled frame counts MAX_FRAME_DELTA of real time and no more - the rest is not owed - times

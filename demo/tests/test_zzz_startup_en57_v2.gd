@@ -71,8 +71,8 @@ func test_the_controller_works_once_the_reverser_is_set_after_a_walk() -> void:
 func _walk_to_cab(action:StringName, vehicle_name:String, rear:bool) -> void:
     for _change:int in MAX_CAB_CHANGES:
         var vehicle:RID = PlayerServer.player_get_vehicle()
-        var wanted:RID = RailVehicleServer.vehicle_get_rear_cabin(vehicle) if rear \
-                else RailVehicleServer.vehicle_get_front_cabin(vehicle)
+        var wanted:RID = RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR) if rear \
+                else RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
         if VehicleServer.vehicle_get_id(vehicle) == vehicle_name and RailVehicleServer.vehicle_get_driver_cabin(vehicle) == wanted:
             return
         await key_tap(action)

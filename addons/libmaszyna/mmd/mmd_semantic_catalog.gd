@@ -1208,7 +1208,7 @@ static func _static_init() -> void:
         },
         # Train.cpp:10130 "cabactivation_sw:" (ggCabActivationButton) - OnCommand_cabactivationenable/
         # disable (Train.cpp:2430-2472), default key Ctrl+J (cabactivationtoggle); the switch shows
-        # IsCabMaster() (Train.cpp:8020), exposed as cabin_controleable.
+        # IsCabMaster() (Train.cpp:8020), exposed as cabin_master.
         "cabactivation_sw": {
             "widget_class": CabinButton,
             # its original handler branches on the kind of switch (ggCabActivationButton.type(), Train.cpp:3100)
@@ -1218,7 +1218,7 @@ static func _static_init() -> void:
             "fixed_fields": {
                 "monostable": false,
                 "command": "cab_activation",
-                "state_property": "cabin_controleable",
+                "state_property": "cabin_master",
                 "action": "cab_activation_toggle",
             },
             "config_max_property": "",

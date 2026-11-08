@@ -108,7 +108,7 @@ func _car(road:RID, offset:float, driven:bool) -> RID:
 
 
 func _x(vehicle:RID) -> float:
-    return RoadVehicleServer.vehicle_get_transform(vehicle).origin.x
+    return VehicleServer.vehicle_get_transform(vehicle).origin.x
 
 
 ## A car is shown where it stands: VehicleServer knows where every vehicle is (libreloaded#7 - the
@@ -118,7 +118,7 @@ func test_a_car_is_shown_where_it_stands() -> void:
     var car:RID = _car(RoadServer.track_get_road(_network(tracks)[0]), SHOWN_AT, false)
 
     var stands:Transform3D = VehicleServer.vehicle_get_transform(car)
-    assert_true(stands.is_equal_approx(RoadVehicleServer.vehicle_get_transform(car)), "as the road places it")
+    assert_true(stands.is_equal_approx(VehicleServer.vehicle_get_transform(car)), "as the road places it")
     assert_almost_eq(stands.origin.x, SHOWN_AT, PLACE_TOLERANCE)
     assert_lt(PlayerCameraServer.camera_get_show_transform(car).origin.distance_to(stands.origin), SHOW_REACH,
             "the camera beside the car")

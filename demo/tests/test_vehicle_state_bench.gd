@@ -147,7 +147,7 @@ func test_bench_fixture_is_sound() -> void:
     assert_eq(missing.size(), 0, "the sound-shaped read hits real keys, missing: %s" % [missing])
 
     for vehicle_rid: RID in _vehicles:
-        var origin: Vector3 = RailVehicleServer.vehicle_get_transform(vehicle_rid).origin
+        var origin: Vector3 = VehicleServer.vehicle_get_transform(vehicle_rid).origin
         assert_false(is_nan(origin.x), "a vehicle without a track is never culled - see the header")
     print("[bench] %d vehicles, %d state keys each" % [VEHICLE_COUNT, published.size()])
 
