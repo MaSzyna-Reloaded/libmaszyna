@@ -6,7 +6,8 @@ class_name MaszynaVehicleCatalogProvider
 ## runtime plugin (libmaszyna_runtime.gd) as
 ## MaszynaVehicleData.VEHICLE_PROVIDER: the vehicles of the game's dynamic/ as the launcher of the
 ## original gathers them (MaszynaVehiclesBank), a livery for each of a vehicle's skins, its side view
-## (MaszynaVehicleProfileManager), and a vehicle built by MaszynaVehicleSystem. A vehicle is named by
+## (MaszynaVehicleProfileManager), its exterior to look at (MaszynaRailVehicle3DInstancer), and a
+## vehicle built by MaszynaVehicleSystem. A vehicle is named by
 ## its data path and file name (VehicleData.vehicle, "dynamic/pkp/4e_v1/4e-0001").
 ##
 ## A vehicle's kind is its index's category code (MaszynaVehiclesBank) - operator, 2026-10-19: a
@@ -51,8 +52,9 @@ const CARRIAGE_CATEGORIES:Dictionary[String, VehicleInfo.VehicleCategory] = {
 }
 
 
-## The index's vehicles by name (VehicleInfo.vehicle), read as the provider starts and as the game's
-## data is read again - one read takes a tenth of a second of a game directory's 1375 vehicles
+## The index's vehicles by name (VehicleInfo.vehicle), read as the provider starts, as the game's
+## data is read again and as the game directory changes - one read takes a tenth of a second of a
+## game directory's 1375 vehicles
 var _vehicles:Dictionary[String, MaszynaVehiclesBank.Vehicle] = {}
 
 
@@ -60,10 +62,12 @@ var _vehicles:Dictionary[String, MaszynaVehiclesBank.Vehicle] = {}
 func _enter_tree() -> void:
     read_vehicles()
     GameDataServer.data_reload_requested.connect(read_vehicles)
+    MaszynaGameDirectory.game_dir_changed.connect(read_vehicles)
 
 
 func _exit_tree() -> void:
     GameDataServer.data_reload_requested.disconnect(read_vehicles)
+    MaszynaGameDirectory.game_dir_changed.disconnect(read_vehicles)
 
 
 ## The index read from the game directory again; people and animals are left out
@@ -132,6 +136,13 @@ func vehicle_get_appearance(vehicle:VehicleData) -> VehicleAppearance:
     var structure:MaszynaVehicleStructure = MaszynaRailVehicle3DInstancer.read_structure(
             vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), vehicle.livery, vehicle.vehicle_id)
     return structure.appearance if structure else null
+
+
+## The vehicle's exterior, its attachments with it, in its skin (VehicleData.livery)
+## (MaszynaRailVehicle3DInstancer.build_exterior())
+func vehicle_create_preview(vehicle:VehicleData) -> Node3D:
+    return MaszynaRailVehicle3DInstancer.build_exterior(
+            vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), vehicle.livery, vehicle.vehicle_id)
 
 
 func vehicle_create(vehicle:VehicleData, scene_node_id:int) -> RID:

@@ -387,6 +387,7 @@ func _apply(
     target_shader_material.set_shader_parameter("emission_color", options.selfillum_color if options.selfillum_color else Color(1.0, 1.0, 1.0, 1.0))
     target_shader_material.set_shader_parameter("emission_energy", options.selfillum_energy)
     target_shader_material.set_shader_parameter("lights_on_threshold", options.lights_on_threshold)
+    target_shader_material.set_shader_parameter("weather_exposed", options.weather_exposed)
     if options.force_transparent:
         # mat_default has no reflection unless its .mat gives one; the shaders with a normal map
         # or a reflmap reflect in full ("#param (reflection, 1, 2, 1, zero)" against "one")
@@ -396,6 +397,20 @@ func _apply(
         var default_reflection: float = 1.0 if masked else 0.0
         target_shader_material.set_shader_parameter(
             "blended_reflection", variant.get_parameter("reflection", default_reflection))
+
+
+## The shaders a game of more draws a type's materials with in place of the type's own
+## (shader_set_override()): by the type shader's path, by the VARIANT_* flags
+var _shader_overrides: Dictionary[String, Dictionary] = {}
+
+
+## A type's shaders replaced by a game of more, before any material of the type is made: the type
+## shader's path (types/<type>.gdshader, as SHADER_VARIANTS has it) and its replacements by the
+## VARIANT_* flags - 0 the base, which stands for a combination not given. A replacement is the
+## type's own .gdshaderinc included, with what the type lets a defined macro add
+## (types/rain_windscreen.gdshaderinc's RAIN_WINDSCREEN_LAYER)
+func shader_set_override(type_shader_path: String, shaders: Dictionary[int, Shader]) -> void:
+    _shader_overrides[type_shader_path] = shaders
 
 
 ## The type shader's variant the material's options and textures make (SHADER_VARIANTS): a type
@@ -415,6 +430,9 @@ func _get_shader_variant(
         flags |= VARIANT_CULL
     if variants.has(VARIANT_SPECGLOSS) and not _texture_path(variant, texture_map, texture_map.specgloss) == "":
         flags |= VARIANT_SPECGLOSS
+    var overrides: Dictionary = _shader_overrides.get(base_shader.resource_path, {})
+    if not overrides.is_empty():
+        return overrides.get(flags, overrides.get(0, base_shader))
     return variants.get(flags, base_shader)
 
 

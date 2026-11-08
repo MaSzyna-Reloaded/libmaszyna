@@ -177,8 +177,6 @@ namespace godot {
                     "roads", Callable(), callable_mp(this, &MaszynaTrackRenderingBackend::_road_cell_build),
                     callable_mp(this, &MaszynaTrackRenderingBackend::_road_cell_clear));
         }
-        looks = ResourceLoader::get_singleton()->load(LOOKS_PATH);
-        ERR_FAIL_COND_MSG(looks.is_null(), "MaszynaTrackRenderingBackend: no track looks at " + String(LOOKS_PATH));
     }
 
     MaszynaTrackRenderingBackend::~MaszynaTrackRenderingBackend() {
@@ -253,7 +251,7 @@ namespace godot {
     }
 
     /// What the track is drawn with: a .scn's track (MaszynaTrackData) with its own textures and
-    /// section, any other with those its features map to (looks)
+    /// section, any other with those its features map to (its looks, track_set_look())
     void MaszynaTrackRenderingBackend::track_set_description(
             const RID &p_track_render, const Ref<TrackData> &p_description) {
         Track *track = tracks.getptr(p_track_render);
@@ -272,7 +270,11 @@ namespace godot {
             track->railprofile = scn_track->get_railprofile();
             return;
         }
-        ERR_FAIL_COND(looks.is_null());
+        // none given: bare surfaces
+        const Ref<MaszynaTrackLooks> &looks = track->looks;
+        if (looks.is_null()) {
+            return;
+        }
         const bool road = p_description->get_kind() == TrackServer::TRACK_ROAD;
         const Ref<MaszynaTrackLook> look =
                 road ? looks->get_road_looks().get(
@@ -307,6 +309,12 @@ namespace godot {
         if (RoadCell *cell = road_cells.getptr(track->road_cell); cell != nullptr) {
             _queue_road_cell_rebuild(*cell);
         }
+    }
+
+    void MaszynaTrackRenderingBackend::track_set_look(const RID &p_track_render, const Ref<Resource> &p_look) {
+        Track *track = tracks.getptr(p_track_render);
+        ERR_FAIL_NULL(track);
+        track->looks = p_look;
     }
 
     void MaszynaTrackRenderingBackend::track_set_scenario(const RID &p_track_render, const RID &p_scenario) {
@@ -1561,10 +1569,11 @@ namespace godot {
             if (owner != nullptr) {
                 material_name = owner->material_trackbed_name.is_empty() ? owner->material2_name
                                                                          : owner->material_trackbed_name;
-            } else if (track_server->get_is_topology_changed() && looks.is_valid()) {
+            } else if (track_server->get_is_topology_changed() && p_track.looks.is_valid()) {
                 // the neighbours are not known yet (the editor, until its Rebuild topology): the default
                 // bed's trackbed, built again with the neighbour's once they are (topology_rebuilt())
-                const Ref<MaszynaTrackLook> look = looks->get_rail_looks().get(looks->get_default_bed(), Variant());
+                const Ref<MaszynaTrackLook> look =
+                        p_track.looks->get_rail_looks().get(p_track.looks->get_default_bed(), Variant());
                 material_name = look.is_valid() ? look->get_material2() : String();
             }
             if (!material_name.is_empty()) {

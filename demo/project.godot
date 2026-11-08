@@ -768,6 +768,66 @@ reloaded_light_level={
 "type": "float",
 "value": 1.0
 }
+reloaded_snow_cover={
+"type": "float",
+"value": 0.0
+}
+reloaded_snow_depth={
+"type": "float",
+"value": 0.0
+}
+reloaded_weather_ground={
+"type": "sampler3D",
+"value": ""
+}
+reloaded_weather_probe_origin={
+"type": "vec3",
+"value": Vector3(0, 0, 0)
+}
+reloaded_weather_probe_size={
+"type": "vec3",
+"value": Vector3(1, 1, 1)
+}
+reloaded_weather_probes_enabled={
+"type": "float",
+"value": 0.0
+}
+reloaded_weather_wet_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_snow_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_puddles_exist={
+"type": "bool",
+"value": false
+}
+reloaded_weather_rain_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_surfaces_active={
+"type": "bool",
+"value": false
+}
+reloaded_snow_wetness={
+"type": "float",
+"value": 0.0
+}
+reloaded_wetness={
+"type": "float",
+"value": 0.0
+}
+reloaded_air_temperature={
+"type": "float",
+"value": 10.0
+}
+reloaded_rain={
+"type": "float",
+"value": 0.0
+}
 reloaded_rain_intensity={
 "type": "float",
 "value": 0.0

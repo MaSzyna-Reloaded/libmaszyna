@@ -242,6 +242,9 @@ func _enter_tree():
         "maszyna/import/dds_max_texture_size", 1024, TYPE_INT,
         PROPERTY_HINT_ENUM, "512:512,1024:1024,2048:2048,4096:4096,8192:8192"
     )
+    # Not the original's: a scenery's big flat faces facing up split into sides of some 2 m, for the
+    # snow to lie on in drifts (MaszynaTrianglesImporter) - a game drawing them turns it on
+    add_custom_project_setting(MaszynaSceneryProvider.DENSIFY_SETTING, false, TYPE_BOOL)
     # the original's own limit for the cab, iMaxCabTextureSize (Globals.h:165)
     add_custom_project_setting(
         "maszyna/import/dds_max_cab_texture_size", 4096, TYPE_INT,

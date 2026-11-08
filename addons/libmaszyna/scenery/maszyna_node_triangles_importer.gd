@@ -4,5 +4,6 @@ extends RefCounted
 ## The triangles go to the context's sink as they are read (MaszynaTrianglesSink)
 func import(p: MaszynaParser, context: MaszynaImporterContext, range_min: float, range_max: float) -> void:
     MaszynaTrianglesImporter.import_triangles(
-        p, context.rotate, context.origin, context.triangles_sink, range_min, range_max
+        p, context.rotate, context.origin, context.triangles_sink, range_min, range_max,
+        ProjectSettings.get_setting(MaszynaSceneryProvider.DENSIFY_SETTING, false)
     )
