@@ -68,7 +68,7 @@ func test_a_disabled_component_neither_ticks_nor_publishes() -> void:
 
 
 ## A freed component node takes its component out of the vehicle: left in, it was still ticked
-## and read, and called back into the freed node (REQUIRED_CLEANING RC-123).
+## and read, and called back into the freed node.
 func test_a_freed_component_node_leaves_the_vehicle() -> void:
     var controller: VehicleController = VehicleServer.vehicle_get_controller(_vehicle.get_vehicle_rid())
     var count: int = controller.get_components().size()

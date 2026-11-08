@@ -19,7 +19,7 @@ func before_each():
     # a cabin with no controls at all
     var controls: MaszynaCabinControls = MaszynaCabinControls.new()
     logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls)
-    cabin = RailVehicleServer.vehicle_get_front_cabin(train.get_rid())
+    cabin = RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
     logic.register(train.get_rid(), cabin)
     await wait_idle_frames(2)
 

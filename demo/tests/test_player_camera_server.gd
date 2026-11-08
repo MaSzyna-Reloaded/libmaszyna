@@ -92,7 +92,7 @@ func test_taking_over_the_vehicle_driven_goes_back_into_its_cab() -> void:
     await wait_idle_frames(SETTLE_FRAMES)
     # the vehicle's driver rides in its rear cabin
     var driver:RID = PersonServer.person_create()
-    RailVehicleServer.person_enter_rear_cabin(driver, _vehicle.get_rid(), VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(_vehicle.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
     attach_driver_implementation(driver, IdleDriver.new())
     PlayerServer.player_take_over_vehicle(_vehicle.get_rid())
     PlayerCameraServer.camera_toggle_cabin()
@@ -117,7 +117,7 @@ func test_taking_over_the_vehicle_driven_goes_back_into_its_cab() -> void:
 func test_q_takes_the_controls_back_and_the_view_stays_outside() -> void:
     await wait_idle_frames(SETTLE_FRAMES)
     var driver:RID = PersonServer.person_create()
-    RailVehicleServer.person_enter_rear_cabin(driver, _vehicle.get_rid(), VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(_vehicle.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_OBSERVER)
     attach_driver_implementation(driver, IdleDriver.new())
     PlayerServer.player_take_over_vehicle(_vehicle.get_rid())
     PlayerServer.player_hand_over_vehicle()

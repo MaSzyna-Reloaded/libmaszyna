@@ -50,7 +50,7 @@ var _signs:Dictionary[RID, Sign] = {}
 
 func _init() -> void:
     RailVehicleRenderingServer.vehicle_model_built.connect(_on_vehicle_model_built)
-    RailVehicleServer.vehicle_trainset_changed.connect(_on_vehicle_trainset_changed)
+    RailVehicleServer.trainset_vehicles_changed.connect(_on_trainset_vehicles_changed)
     StationServer.run_created.connect(_on_run_created)
     StationServer.run_freed.connect(_on_run_freed)
 
@@ -186,9 +186,11 @@ func _on_power_changed(is_powered:bool, vehicle:RID) -> void:
         _show(sign)
 
 
-func _on_vehicle_trainset_changed(vehicle:RID) -> void:
-    if _signs.has(vehicle):
-        _set_train(_signs[vehicle])
+## Its vehicles are others now, a trainset just made included: each of them looks for its train again
+func _on_trainset_vehicles_changed(trainset:RID) -> void:
+    for vehicle:RID in RailVehicleServer.trainset_get_vehicles(trainset):
+        if _signs.has(vehicle):
+            _set_train(_signs[vehicle])
 
 
 func _on_run_created(run:RID) -> void:

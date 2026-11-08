@@ -10,7 +10,29 @@ const DRIVER_UPDATE:float = MaszynaAIDriver.PREPARE_TIME + TICK
 const WATER_HEATER_MAX_TEMPERATURE:float = 60.0
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 const SHUNT_SPEED:float = 40.0
+## The track every driver's vehicle stands on, and where [m]: off the tracks a vehicle is in no
+## trainset, whose type the driver reads (RailVehicleServer.trainset_get_type())
+const TRACK_NAME:String = "AIDriverTrack"
+const TRACK_LENGTH:float = 5000.0
+const TRACK_OFFSET:float = 2500.0
 
+var _track:RID
+
+
+
+func before_each() -> void:
+    _track = build_track(TRACK_NAME, TRACK_LENGTH)
+
+
+func after_each() -> void:
+    TrackServer.track_free(_track)
+
+
+## A vehicle of `description` with a driver at its front cab, standing on the track
+func _build_on_track(vehicle_id:String, description:VehicleController) -> VehicleController:
+    var train:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    RailVehicleServer.vehicle_set_track(train.get_rid(), _track, TRACK_OFFSET, TrackServer.DIRECTION_NORMAL)
+    return train
 
 func test_a_driver_state_comes_from_its_implementation() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
@@ -103,7 +125,7 @@ func test_a_putvalues_order_reaches_the_activators_driver() -> void:
 
 func test_the_engine_is_prepared_and_released_through_the_cab() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverCabTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverCabTest", SM42)
     var vehicle:RID = train.get_rid()
     # a cab with no controls of its own: every catalog control is there unmodelled
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
@@ -117,7 +139,7 @@ func test_the_engine_is_prepared_and_released_through_the_cab() -> void:
             "the battery switched on by the driver"):
         return
     assert_true(train.get_state()["battery_enabled"], "the battery is switched on")
-    assert_eq(CabinSystem.get_control(RailVehicleServer.vehicle_get_front_cabin(vehicle), &"battery_sw"), true, "by its switch in the cab")
+    assert_eq(CabinSystem.get_control(RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), &"battery_sw"), true, "by its switch in the cab")
 
     DriverServer.driver_send_command(driver, "Prepare_engine", 0.0, 0.0)
     if not await wait_simulated_until(func() -> bool: return not train.get_state()["battery_enabled"], DRIVER_UPDATE,
@@ -131,7 +153,7 @@ func test_the_engine_is_prepared_and_released_through_the_cab() -> void:
 ## FINDINGS.md 2026-09-29: EP07-329's line breaker tripped at a switch and the driver, taking the
 ## engine for ready still, rolled on without power - the consist's state is what takes it away
 func test_the_trainset_shows_a_powered_vehicles_line_breaker_open() -> void:
-    var train:VehicleController = build_vehicle("AIDriverBreakerTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverBreakerTest", SM42)
     var trainset:MaszynaDriverTrainset = MaszynaDriverTrainset.new()
 
     trainset.update(train.get_rid(), 1, true)
@@ -142,7 +164,7 @@ func test_the_trainset_shows_a_powered_vehicles_line_breaker_open() -> void:
 
 func test_a_driver_not_in_control_touches_nothing() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverControlTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverControlTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -173,7 +195,7 @@ func test_a_driver_not_in_control_touches_nothing() -> void:
 
 func test_a_player_gets_the_next_hint_once_one_is_done() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverHintTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverHintTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -220,7 +242,7 @@ func test_a_player_gets_the_next_hint_once_one_is_done() -> void:
 ## 2026-10-06, "Switch on fuel pump" hanging for good
 func test_a_pump_not_switched_by_hand_is_never_hinted() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverPumpHintTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverPumpHintTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -249,7 +271,7 @@ func test_a_pump_not_switched_by_hand_is_never_hinted() -> void:
 ## always heated - the player is hinted to start the water pump first, and nothing is touched
 func test_a_diesel_with_a_water_heater_is_hinted_its_water_pump() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverHeatingHintTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverHeatingHintTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -276,7 +298,7 @@ func test_a_diesel_with_a_water_heater_is_hinted_its_water_pump() -> void:
 
 func test_a_driver_created_for_a_vehicle_a_player_drives_touches_nothing() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverLateDriverTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverLateDriverTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -303,7 +325,7 @@ func test_a_driver_created_for_a_vehicle_a_player_drives_touches_nothing() -> vo
 
 func test_the_driver_reads_its_trainset() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverTrainsetTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverTrainsetTest", SM42)
     var vehicle:RID = train.get_rid()
     var driver:RID = get_vehicle_driver(vehicle)
     attach_driver_implementation(driver, ai)
@@ -332,7 +354,7 @@ func test_a_new_driver_is_told_to_drive_the_way_it_faces() -> void:
 
 func test_taking_control_back_takes_the_way_of_the_cab_left() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverTakeoverTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverTakeoverTest", SM42)
     var vehicle:RID = train.get_rid()
     # a cab with no controls of its own: every catalog control is there unmodelled
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
@@ -363,7 +385,7 @@ func test_taking_control_back_takes_the_way_of_the_cab_left() -> void:
 ## (DirectionChange(), Train.cpp:2670-2842)
 func test_a_players_reverser_turns_the_driver() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverReverserTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverReverserTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -395,7 +417,7 @@ func test_a_players_reverser_turns_the_driver() -> void:
 ## it read the active cab before the new one was switched on (TTrain::CabChange(), Train.cpp:10335)
 func test_a_players_cab_change_turns_the_driver_the_way_of_the_new_cab() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
-    var train:VehicleController = build_vehicle("AIDriverCabChangeTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var train:VehicleController = _build_on_track("AIDriverCabChangeTest", SM42)
     var vehicle:RID = train.get_rid()
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     CabinSystem.vehicle_attach_cab_logic(
@@ -418,7 +440,7 @@ func test_a_players_cab_change_turns_the_driver_the_way_of_the_new_cab() -> void
 
 
 func test_a_turn_forgets_the_stop_of_a_signal_passed() -> void:
-    var vehicle:RID = build_vehicle("RouteTurnTest", SM42, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
+    var vehicle:RID = _build_on_track("RouteTurnTest", SM42).get_rid()
     var trainset:MaszynaDriverTrainset = MaszynaDriverTrainset.new()
     var route:MaszynaDriverRoute = MaszynaDriverRoute.new()
     var timetable:MaszynaDriverTimetable = MaszynaDriverTimetable.new()
@@ -438,7 +460,7 @@ func test_a_turn_forgets_the_stop_of_a_signal_passed() -> void:
 
 ## The person build_vehicle() seats at the controls of a vehicle of its own, driven by the implementation
 func _create_driver(implementation:DriverImplementation) -> RID:
-    var driver:RID = get_vehicle_driver(build_vehicle("AIDriverTest", null, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid())
+    var driver:RID = get_vehicle_driver(_build_on_track("AIDriverTest", null).get_rid())
     attach_driver_implementation(driver, implementation)
     return driver
 

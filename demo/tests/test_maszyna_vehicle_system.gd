@@ -86,7 +86,7 @@ func test_a_driver_of_an_end_without_a_cab_definition_is_seated_in_a_locomotive(
     var cabin:RID = RailVehicleServer.vehicle_get_driver_cabin(vehicle)
     assert_true(cabin.is_valid(), "the driver sits in a cabin")
     assert_eq(RailVehicleServer.cabin_get_kind(cabin), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR, "of the rear end")
-    assert_false(RailVehicleServer.vehicle_get_front_cabin(vehicle).is_valid(), "no other cabin is made up")
+    assert_false(RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT).is_valid(), "no other cabin is made up")
     assert_not_null(CabinSystem.vehicle_get_cab_logic(vehicle), "and drives through the cab logic")
 
 

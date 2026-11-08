@@ -115,7 +115,7 @@ func test_a_train_ignores_shunting_signals_at_stop_passed_or_ahead() -> void:
     var line:RID = _track(Vector3.ZERO, Vector3(LINE_LENGTH, 0.0, 0.0), null, LINE_VELOCITY, "line")
     TrackServer.topology_rebuild()
     var vehicle:RID = await _place("line", LINE_LENGTH / 2.0)
-    var middle:Vector3 = RailVehicleServer.vehicle_get_transform(vehicle).origin
+    var middle:Vector3 = VehicleServer.vehicle_get_transform(vehicle).origin
     # one Tm at the vehicle's middle, behind its front whichever way it drives, one on either side
     # further on: one of them ahead
     for offset:float in [0.0, -SHUNT_SIGNAL_DISTANCE, SHUNT_SIGNAL_DISTANCE]:
@@ -149,7 +149,7 @@ func test_a_signal_passed_at_proceed_does_not_hold_the_train_when_it_closes() ->
     var action:MaszynaVehicleCommandAction = MaszynaVehicleCommandAction.new()
     action.command = "SetVelocity"
     action.value1 = RESTRICTED_VELOCITY
-    action.position = RailVehicleServer.vehicle_get_transform(vehicle).origin
+    action.position = VehicleServer.vehicle_get_transform(vehicle).origin
     var event:RID = ScenarioEventServer.event_create()
     ScenarioEventServer.system_add_event(_event_system, event)
     _events.append(event)
@@ -175,7 +175,7 @@ func test_a_shunting_signal_reached_at_stop_lets_go_when_it_opens() -> void:
     var vehicle:RID = await _place("line", LINE_LENGTH / 2.0)
     # the Tm at the vehicle's middle: behind its front, whichever way it drives
     var action:MaszynaVehicleCommandAction = _signal(line, "ShuntVelocity",
-            RailVehicleServer.vehicle_get_transform(vehicle).origin)
+            VehicleServer.vehicle_get_transform(vehicle).origin)
     var trainset:MaszynaDriverTrainset = _trainset(vehicle, 1)
     var route:MaszynaDriverRoute = MaszynaDriverRoute.new()
     _update(route, vehicle, trainset, 0.0)
@@ -196,7 +196,7 @@ func test_a_signal_at_stop_far_behind_holds_a_player_no_more() -> void:
     var line:RID = _track(Vector3.ZERO, Vector3(LINE_LENGTH, 0.0, 0.0), null, LINE_VELOCITY, "line")
     TrackServer.topology_rebuild()
     var vehicle:RID = await _place("line", LINE_LENGTH / 2.0)
-    var middle:Vector3 = RailVehicleServer.vehicle_get_transform(vehicle).origin
+    var middle:Vector3 = VehicleServer.vehicle_get_transform(vehicle).origin
     # one on either side, beyond a player's distance: one of them behind
     for offset:float in [-FAR_BEHIND_DISTANCE, FAR_BEHIND_DISTANCE]:
         _signal(line, "SetVelocity", middle + Vector3(offset, 0.0, 0.0))

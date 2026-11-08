@@ -1,7 +1,6 @@
 extends MaszynaGutTest
 
-## Contracts a vehicle's components keep with whoever reads or commands them
-## (REQUIRED_CLEANING_BEFORE_MERGE_TO_UPSTREAM.md RC-006, RC-010, RC-014, RC-019).
+## Contracts a vehicle's components keep with whoever reads or commands them.
 
 const MAIN_POSITIONS:int = 4
 const BATTERY_VOLTAGE:float = 110.0

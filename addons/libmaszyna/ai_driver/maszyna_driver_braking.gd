@@ -64,15 +64,6 @@ const BRAKE_REACTION:float = 1.0
 const MULTIPLE_UNIT_REACTION:float = 0.25
 const PASSENGER_REACTION_PER_METRE:float = 0.004
 const GOODS_REACTION_PER_METRE:float = 0.005
-## The train is a passenger one with fewer goods wagons than this and than its others; a goods
-## one under these lengths [m] and masses [kg] braked P, then GP, else G; GP puts this many
-## wagons behind the engine on G (Driver.cpp:2166-2231)
-const PASSENGER_GOODS_LIMIT:int = 4
-const GOODS_P_LENGTH:float = 300.0
-const GOODS_P_MASS:float = 600000.0
-const GOODS_GP_LENGTH:float = 500.0
-const GOODS_GP_MASS:float = 1300000.0
-const GP_WAGONS_ON_G:int = 5
 ## IsHeavyCargoTrain (Driver.cpp:2304): past this a0 of the first step and mass per vehicle [kg]
 const HEAVY_CARGO_A0:float = 0.4
 const HEAVY_CARGO_MASS:float = 50000.0
@@ -267,10 +258,9 @@ func read_trainset(vehicle:RID, order:int, trainset:MaszynaDriverTrainset, in_co
     var checked:int = hash([trainset.vehicles, train, shunt])
     if not checked == _checked:
         _checked = checked
-        # what the trainset carries, judged where the original judges its train (AutoRewident(),
-        # Driver.cpp:2302-2304); the brake settings below follow it
-        RailVehicleServer.trainset_determine_type(vehicle)
-        var passenger:bool = _set_brake_delays(vehicle, trainset, in_control)
+        # the brake settings the train needs, where the original sets them (AutoRewident(),
+        # Driver.cpp:2302-2304); what it carries is the trainset's type, RailVehicleServer's
+        var passenger:bool = MaszynaAutoRewident.set_brake_delays(vehicle, trainset.vehicles, in_control)
         _a0.fill(0.0)
         _a1.fill(0.0)
         if shunt:
@@ -280,7 +270,8 @@ func read_trainset(vehicle:RID, order:int, trainset:MaszynaDriverTrainset, in_co
             acceleration_threshold = _nominal_threshold
         if train and trainset.mass > 0.0 and velocity_max > 0.0:
             _build_table(trainset, velocity_max)
-            heavy_cargo = RailVehicleServer.trainset_get_type(vehicle) == RailVehicleServer.TRAINSET_TYPE_CARGO \
+            heavy_cargo = RailVehicleServer.trainset_get_type(RailVehicleServer.vehicle_get_trainset(vehicle)) \
+                    == RailVehicleServer.TRAINSET_TYPE_CARGO \
                     and _a0[1] > HEAVY_CARGO_A0 and trainset.vehicles.size() - trainset.controlled_engines > 0 \
                     and trainset.mass / trainset.vehicles.size() > HEAVY_CARGO_MASS
             var last:int = TABLE_SIZE
@@ -366,68 +357,6 @@ func _build_table(trainset:MaszynaDriverTrainset, velocity_max:float) -> void:
         _a0[index + 1] /= trainset.mass
         _a0[index + 1] += TABLE_ROLLING * step * (1 + 2 * index)
         _a1[index + 1] /= TABLE_FULL_STEPS * trainset.mass
-
-
-## CheckVehicles() 1.-3. (Driver.cpp:2154-2237): the brake setting the train needs, from its
-## wagons - a passenger train P or R, a goods train P, GP or G by its length and mass - put on
-## every vehicle by the crew (`auto_rewident`, the rewident's own lever); the driver's vehicle only
-## while the driver drives it. A passenger train (ustaw > 16) by the trainset's type
-## (RailVehicleServer.trainset_get_type()); a mixed one by the original's count of its wagons.
-func _set_brake_delays(vehicle:RID, trainset:MaszynaDriverTrainset, in_control:bool) -> bool:
-    var fast:int = 0
-    var goods:int = 0
-    var passengers:int = 0
-    for other:RID in trainset.vehicles:
-        if VehicleServer.vehicle_get_controller(other).power >= 1.0:
-            continue
-        var other_brake:MaszynaMoverRailVehicleBrake = _brake(other)
-        var delays:int = other_brake.cntrl_brake_delays if other_brake else 0
-        if delays & RailVehicleBrake.BRAKE_DELAY_R:
-            fast += 1
-        elif delays & RailVehicleBrake.BRAKE_DELAY_G:
-            goods += 1
-        else:
-            passengers += 1
-    var type:RailVehicleServer.TrainsetType = RailVehicleServer.trainset_get_type(vehicle)
-    var passenger:bool = not type == RailVehicleServer.TRAINSET_TYPE_CARGO
-    if type == RailVehicleServer.TRAINSET_TYPE_MIXED:
-        passenger = goods < mini(PASSENGER_GOODS_LIMIT, fast + passengers)
-    var setting:int = RailVehicleBrake.BRAKE_DELAY_R
-    if fast + goods + passengers > 0:
-        if passenger:
-            setting = RailVehicleBrake.BRAKE_DELAY_P if goods and fast < goods + passengers else RailVehicleBrake.BRAKE_DELAY_R
-        elif trainset.length < GOODS_P_LENGTH and trainset.mass < GOODS_P_MASS:
-            setting = RailVehicleBrake.BRAKE_DELAY_P
-        elif trainset.length < GOODS_GP_LENGTH and trainset.mass < GOODS_GP_MASS:
-            # GP, in the original's own numbering the R of a goods train
-            setting = RailVehicleBrake.BRAKE_DELAY_R
-        else:
-            setting = RailVehicleBrake.BRAKE_DELAY_G
-    var behind_engine:int = 0
-    for other:RID in trainset.vehicles:
-        # the driver's own vehicle only while it drives it, and only a vehicle with a brake to set
-        var other_brake:MaszynaMoverRailVehicleBrake = _brake(other)
-        if other == vehicle and not in_control or not other_brake:
-            continue
-        var powered:bool = VehicleServer.vehicle_get_controller(other).power > POWERED
-        var delays:int = other_brake.cntrl_brake_delays
-        var own:int
-        if passenger:
-            own = RailVehicleBrake.BRAKE_DELAY_R if setting == RailVehicleBrake.BRAKE_DELAY_R and delays & RailVehicleBrake.BRAKE_DELAY_R \
-                    else RailVehicleBrake.BRAKE_DELAY_P
-        elif setting == RailVehicleBrake.BRAKE_DELAY_P:
-            own = RailVehicleBrake.BRAKE_DELAY_G if powered else RailVehicleBrake.BRAKE_DELAY_P
-        elif setting == RailVehicleBrake.BRAKE_DELAY_G:
-            own = RailVehicleBrake.BRAKE_DELAY_G if delays & RailVehicleBrake.BRAKE_DELAY_G else RailVehicleBrake.BRAKE_DELAY_P
-        else:
-            if powered:
-                behind_engine = 0
-                own = RailVehicleBrake.BRAKE_DELAY_G
-            else:
-                behind_engine += 1
-                own = RailVehicleBrake.BRAKE_DELAY_G if behind_engine <= GP_WAGONS_ON_G else RailVehicleBrake.BRAKE_DELAY_P
-        MaszynaDriverHints.send(other, "auto_rewident", own)
-    return passenger
 
 
 ## One decision of the driver about the brakes, `elapsed` [s] after the last one
@@ -615,7 +544,7 @@ func control_main_pipe(situation:MaszynaDriverTraction.Situation) -> void:
     var master:RailVehicleMasterController = MaszynaDriverTraction.master_controller(situation.vehicle)
     if not brake.get_main_pipe_locked():
         _unlocking_pipe = false
-    elif master and master.get_cabin_controleable() and (situation.speed.acceleration_desired > PIPE_UNLOCK_ACCELERATION or absf(brake.get_controller_position()
+    elif master and master.is_cabin_master() and (situation.speed.acceleration_desired > PIPE_UNLOCK_ACCELERATION or absf(brake.get_controller_position()
                 - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE)) <= MaszynaDriverHints.HANDLE_TOLERANCE) \
             and MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.WAIT_PRESSURE_TOO_LOW, 0.0):
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.MAIN_PIPE_UNLOCK, 0.0, unlock_main_pipe)
@@ -669,7 +598,7 @@ func _control_releaser(situation:MaszynaDriverTraction.Situation, acceleration:f
     var master:RailVehicleMasterController = MaszynaDriverTraction.master_controller(vehicle)
     if brake.cntrl_brake_handle_type == MaszynaMoverRailVehicleBrake.BRAKE_HANDLE_TYPE_FV4A \
             and brake.valve_type in PIPE_LOCK_VALVES and brake.get_pipe_pressure() < PIPE_LOCK_PRESSURE \
-            and not _unlocking_pipe and master and master.get_cabin_controleable() \
+            and not _unlocking_pipe and master and master.is_cabin_master() \
             and (absf(handle - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_DRIVE)) <= MaszynaDriverHints.HANDLE_TOLERANCE
                 or absf(handle - brake.get_handle_position(RailVehicleBrake.HANDLE_POSITION_FILLING)) <= MaszynaDriverHints.HANDLE_TOLERANCE):
         _releasing_locked_pipe = true
@@ -773,8 +702,10 @@ func _increase(situation:MaszynaDriverTraction.Situation, brake_factor:float = 1
                 if excess > table_a1:
                     if position < BRAKING_FROM:
                         # BrakingInitialLevel (Driver.cpp:2306-2309)
-                        moved = _add_position(CARGO_INITIAL_LEVEL if RailVehicleServer.trainset_get_type(vehicle) \
-                                == RailVehicleServer.TRAINSET_TYPE_CARGO else BRAKING_INITIAL_LEVEL)
+                        moved = _add_position(CARGO_INITIAL_LEVEL
+                                if RailVehicleServer.trainset_get_type(RailVehicleServer.vehicle_get_trainset(vehicle))
+                                        == RailVehicleServer.TRAINSET_TYPE_CARGO
+                                else BRAKING_INITIAL_LEVEL)
                         # stronger braking to overcome SA134's engine (Driver.cpp:3137-3144)
                         var route:MaszynaDriverRoute = situation.route
                         if _dmu and situation.speed.velocity_next == 0.0 and route.brake_distance < DMU_STOP_DISTANCE:

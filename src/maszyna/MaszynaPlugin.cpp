@@ -89,10 +89,12 @@
 #include "maszyna/vehicles/MaszynaMoverWWListItem.hpp"
 #include "maszyna/vehicles/MaszynaPantographGeometryReader.hpp"
 #include "maszyna/vehicles/MaszynaRailVehicleAppearance.hpp"
+#include "maszyna/vehicles/MaszynaTrainsetClassifier.hpp"
 #include "maszyna/vehicles/MaszynaVehicleMmdManager.hpp"
 #include "plugins/ReloadedPluginServer.hpp"
 #include "vehicles/base/VehiclePhysicsNode.hpp"
 #include "vehicles/base/VehicleServer.hpp"
+#include "vehicles/rail/RailVehicleServer.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -192,6 +194,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaMoverRailVehicleEnginePowerSource);
         GDREGISTER_CLASS(MaszynaMoverRailVehicleWipers);
         GDREGISTER_CLASS(MaszynaMoverRailVehicleSwitches);
+        GDREGISTER_CLASS(MaszynaTrainsetClassifier);
         // the vehicles are simulated on the vendored Mover
         VehiclePhysicsNode::set_controller_implementation(MaszynaMoverRailVehicleController::get_class_static());
         // the data is written for Windows' case-insensitive filesystem
@@ -240,6 +243,9 @@ namespace godot {
         Engine::get_singleton()->register_singleton("MaszynaMoverVehicleServer", mover_vehicle_server);
         VehicleServer::get_instance()->implementation_register(
                 MaszynaMoverVehicleServer::IMPLEMENTATION_NAME, mover_vehicle_server->get_instance_id());
+        // a train's kind as the original works it out, which MaSzyna's timetables are written for
+        RailVehicleServer::get_instance()->trainset_set_classifier(
+                Ref<MaszynaTrainsetClassifier>(memnew(MaszynaTrainsetClassifier)));
         python_screen_server = memnew(PythonScreenServer);
         Engine::get_singleton()->register_singleton("PythonScreenServer", python_screen_server);
         // after the vehicle servers and MaszynaE3DRenderingServer: the constructor follows their

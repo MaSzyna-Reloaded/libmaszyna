@@ -308,10 +308,6 @@ Before every commit:
   - the file Godot writes next to it on the first run. `git status --short` shows no `??` `.uid`
   beside a staged file; the pre-commit hook (`make install-git-hooks` once per clone,
   `scripts/check-staged-uids`) refuses the commit otherwise
-* REQUIRED: **the staged diff is checked against `REQUIRED_CLEANING_BEFORE_MERGE_TO_UPSTREAM.md`**
-  - an item the commit resolves is ticked in the index and its entry deleted in the same commit;
-  an item whose code the commit touches gets its line numbers corrected; the commit adds no new
-  instance of an open item's pattern
 
 Commit style:
 

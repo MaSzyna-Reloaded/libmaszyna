@@ -49,7 +49,7 @@ func test_start_track_name_initializes_and_clamps_offset() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    _assert_vector_eq(controller.get_world_position(), _rail_position(10.0, 0.0), "controller should be placed at track end")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(10.0, 0.0), "controller should be placed at track end")
     _assert_vector_eq(vehicle.global_position, _rail_position(10.0, 0.0), "vehicle should be placed at track end")
 
 
@@ -108,7 +108,7 @@ func test_bogies_follow_track_tangents() -> void:
     # The vehicle publishes the axle angle; the node's only job is to put it on the wheel, around
     # its local X, like the original's UpdateAxle() (DynObj.cpp:489). Driving the vehicle is what
     # makes the angle non-trivial - the state is read-only, so it cannot be injected.
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 1.5)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -1.5)
     await step(2)
     var published_angle:float = wheels.get_angle_powered_deg()
     assert_almost_eq(
@@ -125,7 +125,7 @@ func test_start_track_name_retries_after_tracks_changed_when_track_is_added_late
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    _assert_vector_eq(controller.get_world_position(), Vector3.ZERO, "controller should stay at origin before the named track exists")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), Vector3.ZERO, "controller should stay at origin before the named track exists")
     _assert_vector_eq(vehicle.global_position, Vector3.ZERO, "vehicle should stay at origin before the named track exists")
 
     _register_track(
@@ -137,7 +137,7 @@ func test_start_track_name_retries_after_tracks_changed_when_track_is_added_late
     TrackServer.topology_rebuild()
     await step(2)
 
-    _assert_vector_eq(controller.get_world_position(), _rail_position(4.0, 0.0), "controller should move after the missing track appears")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(4.0, 0.0), "controller should move after the missing track appears")
     _assert_vector_eq(vehicle.global_position, _rail_position(4.0, 0.0), "vehicle should move after the missing track appears")
 
 
@@ -153,12 +153,12 @@ func test_move_on_track_moves_forward_and_backward_on_current_track() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 3.0)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(5.0, 0.0), "positive movement should update controller position")
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -3.0)
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(5.0, 0.0), "positive movement should update controller position")
     _assert_vector_eq(vehicle.global_position, _rail_position(5.0, 0.0), "positive movement should update position")
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), -4.0)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(1.0, 0.0), "negative movement should update controller position")
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), 4.0)
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(1.0, 0.0), "negative movement should update controller position")
     _assert_vector_eq(vehicle.global_position, _rail_position(1.0, 0.0), "negative movement should update position")
 
 
@@ -175,12 +175,12 @@ func test_move_on_track_crosses_connected_tracks_and_clamps_at_dead_end() -> voi
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(13.0, 0.0), "movement should continue on next track")
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -5.0)
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(13.0, 0.0), "movement should continue on next track")
     _assert_vector_eq(vehicle.global_position, _rail_position(13.0, 0.0), "position should continue on next track")
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 20.0)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(20.0, 0.0), "movement should clamp at graph end")
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -20.0)
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(20.0, 0.0), "movement should clamp at graph end")
     _assert_vector_eq(vehicle.global_position, _rail_position(20.0, 0.0), "dead-end clamp should place vehicle at endpoint")
 
 
@@ -233,7 +233,7 @@ func test_move_on_track_updates_direction_when_entering_track_end() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -5.0)
 
     _assert_vector_eq(_vehicle_forward(vehicle), Vector3.LEFT, "vehicle should follow reversed track orientation")
     _assert_vector_eq(vehicle.global_position, _rail_position(13.0, 0.0), "vehicle should continue through reversed track")
@@ -259,9 +259,9 @@ func test_move_on_track_uses_switch_common_route() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 15.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -15.0)
 
-    _assert_vector_eq(controller.get_world_position(), _rail_position(13.0, 0.0), "common switch route should continue on main track")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(13.0, 0.0), "common switch route should continue on main track")
     _assert_vector_eq(vehicle.global_position, _rail_position(13.0, 0.0), "common switch route should use curve1")
 
 
@@ -285,9 +285,9 @@ func test_move_on_track_uses_switch_diverging_route() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 19.1421)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -19.1421)
 
-    _assert_vector_eq(controller.get_world_position(), _rail_position(12.1213, 12.1213), "diverging route should continue after switch curve length")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(12.1213, 12.1213), "diverging route should continue after switch curve length")
     _assert_vector_eq(vehicle.global_position, _rail_position(12.1213, 12.1213), "diverging route should use curve2")
 
 
@@ -312,11 +312,11 @@ func test_move_on_track_forces_switch_diverging_when_entering_from_diverging_bra
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), move_distance)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -move_distance)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
     _assert_vector_eq(
-        controller.get_world_position(),
+        VehicleServer.vehicle_get_position(controller.get_rid()),
         _track_position(
             switch_rid,
             TrackServer.track_get_length(switch_rid, TrackServer.TRACK_DIVERGING) - distance_on_switch
@@ -343,7 +343,7 @@ func test_move_on_track_does_not_force_switch_before_entering_from_diverging_tra
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.1)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.1)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
@@ -369,7 +369,7 @@ func test_move_on_track_does_not_force_switch_when_approaching_diverging_endpoin
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.05)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.05)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
@@ -392,11 +392,11 @@ func test_move_on_track_forces_switch_common_when_entering_from_straight_branch(
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -5.0)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
-        controller.get_world_position(),
+        VehicleServer.vehicle_get_position(controller.get_rid()),
         _track_position(switch_rid, TrackServer.track_get_length(switch_rid) - 3.0),
         "straight branch entry should force common switch route"
     )
@@ -420,14 +420,14 @@ func test_switch_change_does_not_move_vehicle_already_on_switch() -> void:
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
-    var position_before_switch_change: Vector3 = controller.get_world_position()
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -5.0)
+    var position_before_switch_change: Vector3 = VehicleServer.vehicle_get_position(controller.get_rid())
 
     TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
-        controller.get_world_position(),
+        VehicleServer.vehicle_get_position(controller.get_rid()),
         position_before_switch_change,
         "vehicle already on switch should stay on its current branch after switch state change"
     )
@@ -456,14 +456,14 @@ func test_switch_change_then_reverse_keeps_vehicle_on_occupied_diverging_branch(
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 5.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -5.0)
 
     TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), -1.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), 1.0)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
     _assert_vector_eq(
-        controller.get_world_position(),
+        VehicleServer.vehicle_get_position(controller.get_rid()),
         _switch_track_position(switch_rid, 2.0, TrackServer.TRACK_DIVERGING),
         "reversing after a switch change should keep the vehicle on the occupied diverging branch"
     )
@@ -502,11 +502,11 @@ func test_reversing_from_diverging_track_forces_switch_at_blade_boundary() -> vo
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.01)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.01)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_COMMON)
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.02)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.02)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
 
@@ -523,7 +523,7 @@ func test_move_on_track_forces_demo3d_second_switch_when_entering_from_diverging
     var vehicle: RailVehicle3D = fixture["vehicle"]
     var controller: VehicleController = fixture["controller"]
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 2.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -2.0)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(second_switch_rid)), TrackServer.TRACK_DIVERGING)
 
@@ -547,20 +547,20 @@ func test_move_on_track_continues_after_entering_demo3d_second_switch() -> void:
         12.0 + TrackServer.track_get_length(first_switch_rid, TrackServer.TRACK_DIVERGING) + second_switch_offset
     )
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), distance_to_second_switch)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -distance_to_second_switch)
 
     var second_switch_position: Vector3 = _track_position(second_switch_rid, second_switch_offset)
     _assert_vector_eq(
-        controller.get_world_position(),
+        VehicleServer.vehicle_get_position(controller.get_rid()),
         second_switch_position,
         "controller should enter the second demo3d switch"
     )
 
-    var position_before_followup_move: Vector3 = controller.get_world_position()
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 10.0)
+    var position_before_followup_move: Vector3 = VehicleServer.vehicle_get_position(controller.get_rid())
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -10.0)
 
     assert_true(
-        controller.get_world_position().distance_to(position_before_followup_move) > 1.0,
+        VehicleServer.vehicle_get_position(controller.get_rid()).distance_to(position_before_followup_move) > 1.0,
         "controller should keep moving after entering the second demo3d switch"
     )
 
@@ -614,7 +614,7 @@ func test_start_track_properties_reapply_vehicle_track() -> void:
 
     vehicle.start_track_offset = 6.0
     await step(2)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(6.0, 0.0), "offset change should reapply placement")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(6.0, 0.0), "offset change should reapply placement")
 
     vehicle.set("start_direction", TrackServer.DIRECTION_REVERSED)
     await step(2)
@@ -622,7 +622,7 @@ func test_start_track_properties_reapply_vehicle_track() -> void:
 
     vehicle.start_track_name = "next"
     await step(2)
-    _assert_vector_eq(controller.get_world_position(), _rail_position(16.0, 0.0), "track name change should reapply placement on the new track")
+    _assert_vector_eq(VehicleServer.vehicle_get_position(controller.get_rid()), _rail_position(16.0, 0.0), "track name change should reapply placement on the new track")
 
 
 func _create_vehicle(
@@ -761,7 +761,7 @@ func _track_position(track_rid: RID, offset: float) -> Vector3:
         offset,
         TrackServer.DIRECTION_NORMAL
     )
-    var transform: Transform3D = RailVehicleServer.vehicle_get_transform(vehicle_rid)
+    var transform: Transform3D = VehicleServer.vehicle_get_transform(vehicle_rid)
     VehicleServer.vehicle_free(vehicle_rid)
     return transform.origin
 

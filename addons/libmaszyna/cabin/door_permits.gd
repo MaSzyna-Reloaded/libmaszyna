@@ -131,10 +131,27 @@ func _lamp(lamp:RailVehicleController.Side) -> bool:
     var second:int = int(SimulationServer.time_of_day * Units.SECONDS_PER_HOUR) % Units.SECONDS_PER_MINUTE
     if second % 2 < 1 or blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ON_PERMISSION_WITH_STEP:
         return true
-    return (blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ON_PERMISSION
-                    and RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, side)) \
+    var trainset:RID = RailVehicleServer.vehicle_get_trainset(_vehicle_rid)
+    # off the tracks a vehicle is in no trainset, with no door of one open
+    if not trainset.is_valid():
+        return false
+    var along:RailVehicleController.Side = trainset_side(_vehicle_rid, side)
+    return (blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ON_PERMISSION and doorway_open(trainset, along)) \
             or (blinking < RailVehicleDoors.PERMIT_LIGHT_FLASHING_ALWAYS
-                    and RailVehicleServer.trainset_get_door_open(_vehicle_rid, side))
+                    and RailVehicleServer.trainset_has_door_open(trainset, along))
+
+
+## IsAnyDoorOpen (Driver.cpp:6097): a door or a step of the trainset not closed on the side - the
+## side looking towards its head
+static func doorway_open(trainset:RID, side:RailVehicleController.Side) -> bool:
+    return RailVehicleServer.trainset_has_door_open(trainset, side) \
+            or RailVehicleServer.trainset_has_step_extended(trainset, side)
+
+
+## A side of the vehicle as its trainset's: the other one of a vehicle standing the other way round
+## in it
+static func trainset_side(vehicle:RID, side:RailVehicleController.Side) -> RailVehicleController.Side:
+    return other_side(side) if RailVehicleServer.vehicle_is_reversed_in_trainset(vehicle) else side
 
 
 static func other_side(side:RailVehicleController.Side) -> RailVehicleController.Side:

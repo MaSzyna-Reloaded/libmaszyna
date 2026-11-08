@@ -165,12 +165,12 @@ func test_each_pantograph_is_measured_where_its_lower_arm_stands() -> void:
     _build_electric_vehicle()
 
     assert_almost_eq(
-            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0),
+            RailVehicleServer.pantograph_get_position(vehicle.get_rid(), 0),
             Vector3(0.0, LOWER_HEIGHT, FRONT_ALONG),
             Vector3(TOLERANCE, TOLERANCE, TOLERANCE),
             "the front pantograph's position is where its lower arm stands on the vehicle")
     assert_almost_eq(
-            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 1),
+            RailVehicleServer.pantograph_get_position(vehicle.get_rid(), 1),
             Vector3(0.0, LOWER_HEIGHT, REAR_ALONG),
             Vector3(TOLERANCE, TOLERANCE, TOLERANCE),
             "the rear pantograph's position is where its lower arm stands on the vehicle")
@@ -179,8 +179,8 @@ func test_each_pantograph_is_measured_where_its_lower_arm_stands() -> void:
 func test_the_two_pantographs_do_not_share_one_sampling_point() -> void:
     _build_electric_vehicle()
 
-    var front:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0)
-    var rear:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 1)
+    var front:Vector3 = RailVehicleServer.pantograph_get_position(vehicle.get_rid(), 0)
+    var rear:Vector3 = RailVehicleServer.pantograph_get_position(vehicle.get_rid(), 1)
     assert_almost_eq(
             rear.z - front.z, REAR_ALONG - FRONT_ALONG, TOLERANCE,
             "the two pantographs are as far apart along the vehicle as the model puts them")
@@ -358,14 +358,14 @@ func test_a_pantograph_losing_its_wire_announces_the_loss() -> void:
     var losses:Array = []
     var record:Callable = func(lost:RID, pantograph:int, cause:RailVehicleServer.PantographContactLoss) -> void:
         losses.append([lost, pantograph, cause])
-    RailVehicleServer.vehicle_pantograph_contact_lost.connect(record)
+    RailVehicleServer.pantograph_contact_lost.connect(record)
 
     TractionServer.wire_free(_wires[0])
     _wires.clear()
     TractionServer.network_build()
     VehicleServer.stepping_advance(STEP)
 
-    RailVehicleServer.vehicle_pantograph_contact_lost.disconnect(record)
+    RailVehicleServer.pantograph_contact_lost.disconnect(record)
     assert_eq(losses, [[controller.get_rid(), 0, RailVehicleServer.PANTOGRAPH_CONTACT_LOSS_NO_WIRE]],
             "the loss of the wire under the front pantograph, once")
 

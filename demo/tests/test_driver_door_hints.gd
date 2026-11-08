@@ -7,12 +7,20 @@ extends MaszynaGutTest
 ## presets, the doors closed from the cab (CloseCtrl=DriverCtrl).
 
 const CONTROL_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
+## The track the vehicle stands on, and where [m]: off the tracks a vehicle is in no trainset, whose
+## type the driver reads
+const TRACK_NAME:String = "DoorHintsTrack"
+const TRACK_LENGTH:float = 1000.0
+const TRACK_OFFSET:float = 500.0
+var _track:RID
 var _vehicle:RID
 
 
 func before_each() -> void:
     var description:VehicleController = MaszynaFizManager.load_description_at(CONTROL_CAR_PATH)
+    _track = build_track(TRACK_NAME, TRACK_LENGTH)
     _vehicle = build_vehicle("DoorHintsTest", description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD).get_rid()
+    RailVehicleServer.vehicle_set_track(_vehicle, _track, TRACK_OFFSET, TrackServer.DIRECTION_NORMAL)
     # the unit's converter feeds the trailer's low voltage (BatteryStart=Disabled); alone, its own
     # battery does
     var power_supply:RailVehiclePowerSupply = RailVehicleServer.vehicle_component_get(
@@ -36,6 +44,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+    TrackServer.track_free(_track)
     StationServer.dispatch_cancel(_vehicle)
     PlayerServer.player_leave_vehicle()
 

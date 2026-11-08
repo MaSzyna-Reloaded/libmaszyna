@@ -71,7 +71,7 @@ func test_a_pantograph_of_a_vehicle_not_drawn_stands_where_the_factors_put_it() 
 
 
 func _assert_stands_where_the_factors_put_it() -> void:
-    var position:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0)
+    var position:Vector3 = RailVehicleServer.pantograph_get_position(vehicle.get_rid(), 0)
     var lower_rest:float = deg_to_rad(LOWER_REST_ANGLE_DEGREES)
     var upper_rest:float = acos((LOWER_LENGTH * cos(lower_rest) + HORIZONTAL) / UPPER_LENGTH)
     var raised:float = LOWER_LENGTH * sin(lower_rest) + UPPER_LENGTH * sin(upper_rest) + SLIDER_HEIGHT

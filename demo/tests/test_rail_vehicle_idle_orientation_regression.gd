@@ -64,7 +64,7 @@ func test_normal_direction_vehicle_orientation_does_not_flip_once_it_moves() -> 
 
     # A real driver boarding and moving off - even a tiny nudge is enough to trigger the
     # bogie-refined transform recompute that the coarse "parked" transform above never touched.
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.5)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.5)
 
     assert_true(
         forward_while_parked.distance_to(_vehicle_forward(vehicle)) < 0.1,
@@ -88,7 +88,7 @@ func test_reversed_direction_vehicle_orientation_does_not_flip_once_it_moves() -
                 forward_while_parked],
     )
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.5)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.5)
 
     assert_true(
         forward_while_parked.distance_to(_vehicle_forward(vehicle)) < 0.1,

@@ -52,7 +52,7 @@ func _decide() -> void:
     situation.state = state
     situation.traction = state.traction
     situation.vehicle = vehicle
-    situation.cabin = RailVehicleServer.vehicle_get_front_cabin(vehicle)
+    situation.cabin = RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
     situation.controlling = vehicle
     situation.order = Order.SHUNT
     situation.speed = speed

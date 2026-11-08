@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTrainsetClassifier" inherits="RailVehicleTrainsetClassifier" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's kind of a train, which MaSzyna's timetables are written for.
+	</brief_description>
+	<description>
+		The rule [RailVehicleServer] works a trainset's type out by in MaSzyna ([code]TController::AutoRewident()[/code], [code]Driver.cpp:2146-2175[/code]): of the wagons (a vehicle of power below 1) - those with the R brake delay, those with G and without R, and the rest - a passenger train while the goods wagons are fewer than both 4 and the others, else a goods train; none without a wagon. It is the C++ override of [method RailVehicleTrainsetClassifier.classify], called through that method - the class declares no method of its own. The plugin hands it to the server as it starts ([method RailVehicleServer.trainset_set_classifier]).
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

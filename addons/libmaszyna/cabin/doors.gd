@@ -263,21 +263,33 @@ func _vehicle_side(cab_side:RailVehicleController.Side) -> RailVehicleController
     return cab_side
 
 
-## m_doors (Train.cpp:8509): a doorway of the trainset not closed, either side
+## m_doors (Train.cpp:8509): a door or a step of the trainset not closed, either side
 func _doors_open() -> bool:
-    return RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleController.SIDE_LEFT) \
-            or RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, RailVehicleController.SIDE_RIGHT)
+    var trainset:RID = RailVehicleServer.vehicle_get_trainset(_vehicle_rid)
+    # off the tracks a vehicle is in no trainset, with no door of one open
+    if not trainset.is_valid():
+        return false
+    return MaszynaCabinDoorPermits.doorway_open(trainset, RailVehicleController.SIDE_LEFT) \
+            or MaszynaCabinDoorPermits.doorway_open(trainset, RailVehicleController.SIDE_RIGHT)
 
 
-## btLampkaDoorLeft/Right (Train.cpp:9167-9168): a doorway of the trainset not closed on the cab's side
+## btLampkaDoorLeft/Right (Train.cpp:9167-9168): a door or a step of the trainset not closed on the
+## cab's side
 func _side_open(cab_side:RailVehicleController.Side) -> bool:
-    return RailVehicleServer.trainset_get_doorway_open(_vehicle_rid, _vehicle_side(cab_side))
+    var trainset:RID = RailVehicleServer.vehicle_get_trainset(_vehicle_rid)
+    if not trainset.is_valid():
+        return false
+    return MaszynaCabinDoorPermits.doorway_open(trainset,
+            MaszynaCabinDoorPermits.trainset_side(_vehicle_rid, _vehicle_side(cab_side)))
 
 
 ## m_doorpermits (Train.cpp:8510): a door permit of the trainset given, either side
 func _permits() -> bool:
-    return RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleController.SIDE_LEFT) \
-            or RailVehicleServer.trainset_get_door_permit(_vehicle_rid, RailVehicleController.SIDE_RIGHT)
+    var trainset:RID = RailVehicleServer.vehicle_get_trainset(_vehicle_rid)
+    if not trainset.is_valid():
+        return false
+    return RailVehicleServer.trainset_has_door_permit(trainset, RailVehicleController.SIDE_LEFT) \
+            or RailVehicleServer.trainset_has_door_permit(trainset, RailVehicleController.SIDE_RIGHT)
 
 
 ## Doors worked from the cab (control_t::driver or mixed, Train.cpp:7323)

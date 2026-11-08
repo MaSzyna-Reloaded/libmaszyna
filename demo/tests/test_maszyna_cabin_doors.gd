@@ -13,15 +13,22 @@ const ODD_SECOND:float = 1.0 / 3600.0
 ## And one on which it is lit
 const EVEN_SECOND:float = 2.0 / 3600.0
 const STEP_FRAMES:int = 3
+## The track the vehicle stands on, and where on it [m]: on no track it is in no trainset, whose doors
+## the lamps show
+const TRACK_NAME:String = "CabinDoorsTrack"
+const TRACK_LENGTH:float = 100.0
+const TRACK_OFFSET:float = 50.0
 
 var vehicle_rid:RID
 var front_cabin:RID
 var rear_cabin:RID
 var behaviours:Array[RefCounted] = []
 var _clock:float
+var _track:RID
 
 
 func before_each() -> void:
+    _track = build_track(TRACK_NAME, TRACK_LENGTH)
     await _build("TestCabinDoors", true)
 
 
@@ -30,6 +37,7 @@ func after_each() -> void:
         behaviour.unregister()
     behaviours.clear()
     SimulationServer.time_of_day = _clock
+    TrackServer.track_free(_track)
 
 
 func _build(vehicle_id:String, auto_warning:bool) -> void:
@@ -39,8 +47,9 @@ func _build(vehicle_id:String, auto_warning:bool) -> void:
     doors.close_auto_close_warning = auto_warning
     var train:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()
-    front_cabin = RailVehicleServer.vehicle_get_front_cabin(vehicle_rid)
-    rear_cabin = RailVehicleServer.vehicle_get_rear_cabin(vehicle_rid)
+    RailVehicleServer.vehicle_set_track(vehicle_rid, _track, TRACK_OFFSET, TrackServer.DIRECTION_NORMAL)
+    front_cabin = RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    rear_cabin = RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     await step(2)
     VehicleServer.vehicle_send_command(vehicle_rid, "battery", true)
     VehicleServer.vehicle_send_command(vehicle_rid, "cab_activation", true)
@@ -194,6 +203,26 @@ func test_the_door_lamps_follow_the_open_doors_on_the_cab_side() -> void:
     assert_false(bool(CabinSystem.vehicle_state_value(
             vehicle_rid, MaszynaCabinDoors.SIDE_OPEN_LAMPS[RailVehicleController.SIDE_RIGHT])))
     assert_true(bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoors.PERMITS_LAMP)), "permits given")
+
+
+func test_off_the_tracks_the_door_lamps_stay_dark() -> void:
+    var train:VehicleController = build_vehicle("TestCabinDoorsOffTrack",
+            MaszynaFizManager.load_description_at(MOTOR_CAR_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    vehicle_rid = train.get_rid()
+    var cabin:RID = RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    await step(2)
+    VehicleServer.vehicle_send_command(vehicle_rid, "battery", true)
+    VehicleServer.vehicle_send_command(vehicle_rid, "cab_activation", true)
+    VehicleServer.vehicle_send_command(vehicle_rid, "doors_left_permit", true)
+    await step(2)
+    var controls:Array[StringName] = [MaszynaCabinDoors.LEFT_TOGGLE]
+    _doors_behaviour(cabin, controls)
+    await _click(cabin, MaszynaCabinDoors.LEFT_TOGGLE)
+    await step(STEP_FRAMES)
+    assert_eq(RailVehicleServer.vehicle_get_trainset(vehicle_rid), RID(), "off the tracks, in no trainset")
+    assert_false(bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoors.DOORS_OPEN_LAMP)),
+            "no door of a trainset is open")
+    assert_false(bool(CabinSystem.vehicle_state_value(vehicle_rid, MaszynaCabinDoors.PERMITS_LAMP)), "nor permitted")
 
 
 func _permit_lamp(side:RailVehicleController.Side) -> bool:

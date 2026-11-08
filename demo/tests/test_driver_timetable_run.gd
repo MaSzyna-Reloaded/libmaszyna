@@ -220,7 +220,7 @@ func test_the_terminus_ends_the_timetable() -> void:
 ## step, the time `hours`
 func _run_to(position:float, hours:float) -> void:
     while _position < position:
-        RailVehicleServer.trainset_move(_vehicle, STEP * _trainset.direction)
+        RailVehicleServer.vehicle_move(_vehicle, STEP * _trainset.direction)
         _position += STEP
         _update(hours, RUNNING_SPEED)
 

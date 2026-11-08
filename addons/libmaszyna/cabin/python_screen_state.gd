@@ -136,7 +136,7 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
     for key:String in CONTROLLED_STATE_KEYS:
         if CONTROLLED_STATE_KEYS[key] in controlled:
             result[key] = controlled[CONTROLLED_STATE_KEYS[key]]
-    result["master"] = state.get("cabin_controleable", false)
+    result["master"] = state.get("cabin_master", false)
     var driver_cabin:RID = RailVehicleServer.vehicle_get_driver_cabin(vehicle)
     var cabin_kind:RailVehicleCabinKind.Kind = RailVehicleServer.cabin_get_kind(driver_cabin)
     # Train.cpp:8684 - CabOccupied: 1 the front cab, -1 the rear one, 0 the machine room or nobody driving

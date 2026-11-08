@@ -69,7 +69,7 @@ func _on_vehicle_command_received(_vehicle_rid:RID, _command:String, _p1:Variant
 
 ## A cab interior built anew reads the handle's position itself; the cab's value is brought to it,
 ## as a command given while it was hidden came to nobody
-func _on_vehicle_cabin_built(vehicle_rid:RID) -> void:
+func _on_vehicle_cabin_built(vehicle_rid:RID, _interior:Cabin3D) -> void:
     if vehicle_rid == _vehicle_rid:
         CabinSystem.get_cabin_state(_cabin).set_value(CONTROL, _joint_position())
 

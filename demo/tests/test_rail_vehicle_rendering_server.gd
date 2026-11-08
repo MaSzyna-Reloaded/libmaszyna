@@ -85,12 +85,12 @@ func test_the_node_stands_where_the_vehicle_is_placed() -> void:
 
     var rid:RID = _vehicle.get_rid()
     assert_true(RailVehicleRenderingServer.vehicle_get_transform(rid).is_equal_approx(
-            RailVehicleServer.vehicle_get_transform(rid)), "the vehicle is drawn where it is placed")
-    assert_true(_vehicle.global_transform.is_equal_approx(RailVehicleServer.vehicle_get_transform(rid)),
+            VehicleServer.vehicle_get_transform(rid)), "the vehicle is drawn where it is placed")
+    assert_true(_vehicle.global_transform.is_equal_approx(VehicleServer.vehicle_get_transform(rid)),
             "the node of a vehicle assembled by hand rides on it")
 
-    RailVehicleServer.vehicle_move(rid, MOVE_DISTANCE)
-    assert_true(_vehicle.global_transform.is_equal_approx(RailVehicleServer.vehicle_get_transform(rid)),
+    RailVehicleServer.vehicle_move(rid, -MOVE_DISTANCE)
+    assert_true(_vehicle.global_transform.is_equal_approx(VehicleServer.vehicle_get_transform(rid)),
             "and follows it at once when it moves")
 
 
@@ -102,16 +102,16 @@ func test_a_mounted_node_rides_on_the_vehicle() -> void:
     var mount:Node3D = add_child_autofree(Node3D.new())
 
     RailVehicleRenderingServer.vehicle_mount_node(rid, mount.get_instance_id())
-    assert_true(mount.global_transform.is_equal_approx(RailVehicleServer.vehicle_get_transform(rid)),
+    assert_true(mount.global_transform.is_equal_approx(VehicleServer.vehicle_get_transform(rid)),
             "it is put where the vehicle stands")
 
-    RailVehicleServer.vehicle_move(rid, MOVE_DISTANCE)
-    assert_true(mount.global_transform.is_equal_approx(RailVehicleServer.vehicle_get_transform(rid)),
+    RailVehicleServer.vehicle_move(rid, -MOVE_DISTANCE)
+    assert_true(mount.global_transform.is_equal_approx(VehicleServer.vehicle_get_transform(rid)),
             "and follows the vehicle when it moves")
 
     RailVehicleRenderingServer.vehicle_unmount_node(rid, mount.get_instance_id())
     var left_at:Transform3D = mount.global_transform
-    RailVehicleServer.vehicle_move(rid, MOVE_DISTANCE)
+    RailVehicleServer.vehicle_move(rid, -MOVE_DISTANCE)
     assert_true(mount.global_transform.is_equal_approx(left_at), "unmounted, it stays where it was")
 
 
@@ -272,10 +272,10 @@ func test_the_low_poly_interior_hides_the_cab_whose_interior_is_shown() -> void:
     _vehicle.model_instance_path = NodePath("Model")
     _vehicle.low_poly_cabin_path = NodePath("LowPoly")
     await wait_idle_frames(SETTLE_FRAMES)
-    RailVehicleServer.vehicle_add_machine_room(_vehicle.get_rid())
+    RailVehicleServer.vehicle_add_cabin(_vehicle.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_MACHINE)
 
     RailVehicleRenderingServer.vehicle_set_shown_cabin(_vehicle.get_rid(),
-            RailVehicleServer.vehicle_get_front_cabin(_vehicle.get_rid()))
+            RailVehicleServer.vehicle_get_cabin(_vehicle.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
 
     assert_true((low_poly.get_node("cab0") as Node3D).visible, "the machine room stays")
     assert_false((low_poly.get_node("cab1") as Node3D).visible, "the cab shown, whose interior is drawn in its place, is hidden")
@@ -315,7 +315,7 @@ func test_coupling_shows_the_owned_submodel_and_keeps_missing_hose_geometry_off(
     assert_false(second_on.visible)
     assert_true(second_off.visible)
 
-    RailVehicleServer.vehicle_couple(
+    RailVehicleServer.coupler_attach(
             _vehicle.get_rid(), RailVehicleController.COUPLER_END_REAR,
             _other_vehicle.get_rid(), RailVehicleController.COUPLER_END_FRONT,
             COUPLING_WITH_BRAKE_HOSE)
@@ -336,7 +336,7 @@ func test_coupling_shows_the_owned_submodel_and_keeps_missing_hose_geometry_off(
     assert_false(second_hose_on.visible, "uncoupling should hide the other vehicle's connected hose")
     assert_true(second_hose_off.visible)
 
-    RailVehicleServer.vehicle_couple(
+    RailVehicleServer.coupler_attach(
             _vehicle.get_rid(), RailVehicleController.COUPLER_END_REAR,
             _other_vehicle.get_rid(), RailVehicleController.COUPLER_END_FRONT,
             COUPLING_WITH_BRAKE_HOSE)

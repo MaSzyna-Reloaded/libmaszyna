@@ -787,7 +787,7 @@ func _update(driver:RID) -> void:
             StationServer.dispatch_get_step(vehicle), state.velocity,
             state.shunt_velocity, state.timetable.velocity,
             directional_speed, state.trainset, state.route, EASY_REACTION_TIME, state.braking,
-            RailVehicleServer.trainset_get_type(vehicle))
+            RailVehicleServer.trainset_get_type(RailVehicleServer.vehicle_get_trainset(vehicle)))
     state.reaction_time = state.speed.reaction_time
     # check_route_behind() (Driver.cpp:8238-8266, at the end of the speed's pick, Driver.cpp:7298):
     # the way ahead closed, a shunting driver turns back to a signal behind that lets it go - a
@@ -827,10 +827,10 @@ func _update(driver:RID) -> void:
     if master and master.get_cabin() == 0 and powered:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CAB_ACTIVATION)
     elif master and not controller.cntrl_automatic_cab_activation and (master.get_cabin() == -_cabin_direction(driver)
-            or not master.get_cabin_controleable() or not powered):
+            or not master.is_cabin_master() or not powered):
         # the deactivation done where it can be: the cab with the control, else the player is sent
         # back to it (CabDeactivisation() takes only IsCabMaster(), Mover.cpp:2684)
-        var here:bool = master.get_cabin_controleable() or not powered
+        var here:bool = master.is_cabin_master() or not powered
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CAB_DEACTIVATION
                 if here else MaszynaDriverHints.Hint.CAB_DEACTIVATION_OTHER_END)
         # the independent brake left applied there let off on the same way back - it brakes its car
@@ -1165,10 +1165,9 @@ func _activation(state:AIDriverState) -> void:
     # (Driver.cpp:2067-2068, 2120) - the cab switched off by the vehicle, not through the cab
     if not _cabin_direction(driver) == state.direction:
         VehicleServer.vehicle_send_command(vehicle, "cab_activation", false)
-        if state.direction > 0:
-            RailVehicleServer.person_move_to_front_cabin(driver)
-        else:
-            RailVehicleServer.person_move_to_rear_cabin(driver)
+        VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(vehicle,
+                RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT if state.direction > 0
+                else RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), driver)
     situation = _read_situation(state)
     MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.CAB_ACTIVATION)
     MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DIRECTION_FORWARD)
@@ -1547,7 +1546,7 @@ func _take_shunt(driver:RID, state:AIDriverState, loose:bool, vehicles:float, co
 ## Forwards (+1) or back (-1) along the vehicle, towards where the order came from - or away, for a
 ## negative value (Driver.cpp:4707-4715)
 func _direction_towards(driver:RID, position:Vector3, value:float) -> int:
-    var transform:Transform3D = RailVehicleServer.vehicle_get_transform(VehicleServer.person_get_vehicle(driver))
+    var transform:Transform3D = VehicleServer.vehicle_get_transform(VehicleServer.person_get_vehicle(driver))
     var towards:Vector3 = position - transform.origin
     var front:Vector3 = -transform.basis.z
     return 1 if (towards.x * front.x + towards.z * front.z) * value > 0.0 else -1
@@ -1653,7 +1652,8 @@ func _check_vehicles(state:AIDriverState) -> void:
             VehicleServer.vehicle_get_controller(vehicle) as RailVehicleController).train_type
     var unit:bool = MaszynaDriverBraking.is_emu(vehicle) or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_DMU
     var passenger_train:bool = not unit \
-            and RailVehicleServer.trainset_get_type(vehicle) == RailVehicleServer.TRAINSET_TYPE_PASSENGER \
+            and RailVehicleServer.trainset_get_type(RailVehicleServer.vehicle_get_trainset(vehicle)) \
+                    == RailVehicleServer.TRAINSET_TYPE_PASSENGER \
             and trainset.vehicles.size() > trainset.controlled_engines
     var heating_line:bool = not trainset.controlled_engines == 1 or (trainset.vehicles and RailVehicleServer.vehicle_get_coupled(
             trainset.vehicles[0], RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_HEATING) \

@@ -22,11 +22,11 @@ func test_the_drivers_are_listed_and_their_vehicles_announced() -> void:
     watch_signals(VehicleServer)
     var driver:RID = PersonServer.person_create()
 
-    RailVehicleServer.person_enter_front_cabin(driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     attach_driver_implementation(driver, UpdateCounter.new())
     assert_has(DriverServer.driver_get_rids(), driver)
     assert_signal_emitted_with_parameters(VehicleServer, "cabin_person_entered",
-            [RailVehicleServer.vehicle_get_front_cabin(vehicle), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER])
+            [RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER])
     PersonServer.person_free(driver)
     assert_signal_emitted_with_parameters(DriverServer, "driver_freed", [driver])
     assert_does_not_have(DriverServer.driver_get_rids(), driver)
@@ -34,12 +34,12 @@ func test_the_drivers_are_listed_and_their_vehicles_announced() -> void:
 
 func test_a_vehicle_is_driven_by_its_driver_or_a_player() -> void:
     var vehicle:RID = build_vehicle("DrivenTest").get_rid()
-    var front:RID = RailVehicleServer.vehicle_get_front_cabin(vehicle)
+    var front:RID = RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
     watch_signals(RailVehicleServer)
     var driver:RID = PersonServer.person_create()
 
     assert_false(VehicleServer.vehicle_has_person_role(vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER), "nobody drives it yet")
-    RailVehicleServer.person_enter_front_cabin(driver, vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
+    VehicleServer.cabin_person_enter(RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT), driver, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER)
     attach_driver_implementation(driver, UpdateCounter.new())
     assert_true(VehicleServer.vehicle_has_person_role(vehicle, VehiclePersonRole.VEHICLE_PERSON_ROLE_DRIVER))
     assert_signal_emitted_with_parameters(RailVehicleServer, "vehicle_driver_cabin_changed", [vehicle, front])

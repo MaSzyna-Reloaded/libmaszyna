@@ -687,7 +687,7 @@ code belongs to the game's `FINDINGS.md`.
   W4 through every include level (`ip/pkp/w4n.inc <name>`). *(09-30 Krzyżowa 2 timetable never
   moved)*
 * The Mover's `DistCounter` (`total_distance`) grows only in its own movement, not with
-  `vehicle_move()`/`trainset_move()`; a way driven that a test must see is measured along the
+  `vehicle_move()`; a way driven that a test must see is measured along the
   driver's route table. *(09-30 station shown never caught up in a test)*
 * Whatever reads the game directory and keeps the result - a memo, a material, a built vehicle -
   follows `GameDataServer.data_unload_requested`/`data_reload_requested` itself; a disk cache key

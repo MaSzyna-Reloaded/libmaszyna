@@ -308,16 +308,16 @@ namespace godot {
         RailVehicleServer *rail = RailVehicleServer::get_instance();
         ERR_FAIL_NULL(rail);
         rail->connect(
-                RailVehicleServer::vehicle_coupler_attached_signal,
+                RailVehicleServer::coupler_attached_signal,
                 callable_mp(this, &MaszynaVehicleSoundServer::_on_coupler_attached));
         rail->connect(
-                RailVehicleServer::vehicle_coupler_detached_signal,
+                RailVehicleServer::coupler_detached_signal,
                 callable_mp(this, &MaszynaVehicleSoundServer::_on_coupler_detached));
         rail->connect(
-                RailVehicleServer::vehicle_coupler_adapter_attached_signal,
+                RailVehicleServer::coupler_adapter_attached_signal,
                 callable_mp(this, &MaszynaVehicleSoundServer::_on_coupler_adapter_attached));
         rail->connect(
-                RailVehicleServer::vehicle_coupler_adapter_removed_signal,
+                RailVehicleServer::coupler_adapter_removed_signal,
                 callable_mp(this, &MaszynaVehicleSoundServer::_on_coupler_adapter_removed));
         rail->connect(
                 RailVehicleServer::vehicle_derailed_signal,

@@ -7,4 +7,4 @@ extends Node3D
 
 
 func _ready() -> void:
-    _cabin.set_cabin(RailVehicleServer.vehicle_get_front_cabin(_vehicle.get_vehicle_rid()))
+    _cabin.set_cabin(RailVehicleServer.vehicle_get_cabin(_vehicle.get_vehicle_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))

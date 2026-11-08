@@ -30,13 +30,13 @@ func test_train_position_changed_signal_emits_after_crossing_one_meter() -> void
     watch_signals(train)
     watch_signals(VehicleServer)
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.5)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.5)
     assert_signal_not_emitted(train, "position_changed", "Should not emit for a 0.5m move")
     assert_signal_not_emitted(VehicleServer, "vehicle_moved", "VehicleServer should not relay yet")
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.6)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.6)
     assert_signal_emitted(train, "position_changed", "Should emit after crossing 1m total movement")
-    assert_signal_emitted_with_parameters(VehicleServer, "vehicle_moved", [train.get_rid(), train.get_world_position()])
+    assert_signal_emitted_with_parameters(VehicleServer, "vehicle_moved", [train.get_rid(), VehicleServer.vehicle_get_position(train.get_rid())])
 
 
 func test_train_position_changed_signal_rearms_after_last_emission() -> void:
@@ -46,10 +46,10 @@ func test_train_position_changed_signal_rearms_after_last_emission() -> void:
 
     watch_signals(train)
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.9)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.9)
     assert_signal_not_emitted(train, "position_changed", "Should not emit before another full meter of movement")
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 0.2)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -0.2)
     assert_signal_emitted(train, "position_changed", "Should emit after another 1m from the last emitted position")
 
 
@@ -61,7 +61,7 @@ func test_vehicle_server_stops_relaying_a_detached_controller() -> void:
     watch_signals(VehicleServer)
     VehicleServer.vehicle_bind_controller(train.get_rid(), RID())
 
-    RailVehicleServer.vehicle_move(vehicle.get_rid(), 2.0)
+    RailVehicleServer.vehicle_move(vehicle.get_rid(), -2.0)
     assert_signal_not_emitted(VehicleServer, "vehicle_moved", "Should not relay a controller that left its handle")
 
 

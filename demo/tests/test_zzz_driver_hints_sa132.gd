@@ -33,7 +33,7 @@ const STATE_SHOWN:Array[String] = [
     "battery_enabled", "power24_available", "cabin", "direction", "controller_main_position",
     "controller_second_position", "main_switch_enabled", "engine_rpm_count", "tractive_force", "speed",
     "brake_controller_position", "brake_local_position_normalized", "brake_air_pressure",
-    "pipe_pressure", "brake_control_pressure", "main_pipe_locked", "cabin_controleable", "compressor_pressure", "doors_left_open_permit",
+    "pipe_pressure", "brake_control_pressure", "main_pipe_locked", "cabin_master", "compressor_pressure", "doors_left_open_permit",
     "doors_right_open_permit", "doors_permit_preset", "eimic_real",
 ]
 
@@ -137,7 +137,7 @@ func test_the_hints_end_in_the_other_cars_cab() -> void:
                 and _cab_kind() == RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
         await step(ticks(DRIVER_UPDATE_SECONDS))
     assert_lt(await _follow_hints(), MAX_STEPS, "the hints end in the other car: %s" % _story())
-    assert_true(_master(other).get_cabin_controleable(), "the player's cab drives: %s" % _story())
+    assert_true(_master(other).is_cabin_master(), "the player's cab drives: %s" % _story())
     if not is_passing():
         return
     # moving off as a player does: the independent brake let off, the controller up to its end

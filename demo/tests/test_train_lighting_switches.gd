@@ -19,7 +19,7 @@ func before_each():
 ## docs/findings-archive.md 2026-10-06: a switch in the SU46's rear cab, switched off, lit the front
 ## end's lamps - the end was taken from the active cab
 func test_the_rear_cab_lights_its_own_end_switched_off():
-    RailVehicleServer.person_move_to_rear_cabin(get_vehicle_driver(train.get_rid()))
+    VehicleServer.cabin_person_move(RailVehicleServer.vehicle_get_cabin(VehicleServer.person_get_vehicle(get_vehicle_driver(train.get_rid())), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR), get_vehicle_driver(train.get_rid()))
     assert_eq(int(train.get_state()["cabin"]), 0, "no cab switched on")
 
     train.send_command("light_switch", "right", true)

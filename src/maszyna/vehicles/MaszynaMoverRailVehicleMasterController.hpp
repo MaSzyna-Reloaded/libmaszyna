@@ -60,7 +60,7 @@ namespace godot {
             bool get_main_delayed() const;
             int get_main_no_power_position() const override;
             int get_cabin() const override;
-            bool get_cabin_controleable() const override;
+            bool is_cabin_master() const override;
             /* Hasler speed recorder (Train.cpp:8580-8611) */
             double get_tachometer_speed() const override;
             double get_tachometer_speed_jump() const override;

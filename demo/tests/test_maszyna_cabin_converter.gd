@@ -22,7 +22,7 @@ func _drive(fiz_path:String) -> void:
     await wait_idle_frames(2)
     var config:Dictionary = CabinSystem.vehicle_config(vehicle_rid)
     converter = MaszynaCabinConverter.new(bool(config.get("converter_switch_impulse", false)), false)
-    cabin = RailVehicleServer.vehicle_get_front_cabin(vehicle_rid)
+    cabin = RailVehicleServer.vehicle_get_cabin(vehicle_rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
     converter.register(vehicle_rid, cabin)
     VehicleServer.vehicle_command_received.connect(_on_command)
 

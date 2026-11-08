@@ -155,8 +155,9 @@ func set_start_vehicle(vehicles:Array[RID]) -> void:
     var vehicle:RID = vehicles[0]
     # CabinSystem is not a tool script: in the editor only RailVehicleServer knows the cabins
     for candidate:RID in vehicles:
-        if (RailVehicleServer.vehicle_get_front_cabin(candidate).is_valid()
-                or RailVehicleServer.vehicle_get_rear_cabin(candidate).is_valid()):
+        if (RailVehicleServer.vehicle_get_cabin(candidate, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT).is_valid()
+                or RailVehicleServer.vehicle_get_cabin(
+                        candidate, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR).is_valid()):
             vehicle = candidate
             break
     var vehicle_id:String = VehicleServer.vehicle_get_id(vehicle)

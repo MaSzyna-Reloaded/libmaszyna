@@ -22,8 +22,8 @@ func before_each():
     await step(2)
     train.send_command("battery", true)
     await step(2)
-    cabin = RailVehicleServer.vehicle_get_front_cabin(train.get_rid())
-    other_cabin = RailVehicleServer.vehicle_get_rear_cabin(train.get_rid())
+    cabin = RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    other_cabin = RailVehicleServer.vehicle_get_cabin(train.get_rid(), RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
     lights = MaszynaCabinCabLights.new(MaszynaCabinCabLights.InstrumentLightType.STANDARD)
     lights.register(train.get_rid(), cabin)
 

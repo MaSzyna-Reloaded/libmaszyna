@@ -54,6 +54,12 @@ namespace godot {
             void _consume_coupler_events();
             /* The Mover's event flag consumed: a derailment announced (derailed_signal) */
             void _consume_events();
+            /* The cab switched on and the one in command as last announced (active_cabin_changed):
+             * a cab activation reaches the vehicles of a unit through its control line
+             * (SendCtrlToNext("CabActivisation"), Mover.cpp:12425), not by a command of theirs */
+            int announced_cab_active = 0;
+            bool announced_cab_master = false;
+            void _consume_cabin_events();
             /* The reverser sent to the joined vehicles after a cab activation (cab_activation()) */
             void _send_direction() const;
             static int _track_category(TrackServer::TrackTypeGroup p_group);

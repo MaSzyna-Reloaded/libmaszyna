@@ -14,12 +14,6 @@ class_name MaszynaAutoRewident
 ## speed start braked with a full manual brake (CheckLocomotiveParameters, Mover.cpp:8946), so
 ## without this the wagons of such a trainset never get released.
 
-## bdelay_* brake delay flags (hamulce.h:49-51)
-const BDELAY_G:int = 1
-const BDELAY_P:int = 2
-const BDELAY_R:int = 4
-## AutoRewident's "passenger train" marker added to the chosen setting
-const PASSENGER_TRAIN:int = 16
 ## Main reservoir pipe pressure PrepareEngine() waits for (Driver.cpp, isready)
 const READY_FEED_PIPE_PRESSURE:float = 4.5
 ## AutoRewident()'s limits of a train's length [m] and mass [kg], and the vehicles next to the
@@ -29,14 +23,18 @@ const SHORT_TRAIN_MASS:float = 600000.0
 const MEDIUM_TRAIN_LENGTH:float = 500.0
 const MEDIUM_TRAIN_MASS:float = 1300000.0
 const VEHICLES_ON_G_NEXT_TO_LOCOMOTIVE:int = 5
-const MIXED_TRAIN_FREIGHT_LIMIT:int = 4
+## Above this power a vehicle is a locomotive, below it a wagon (Power, Driver.cpp:2156)
+const LOCOMOTIVE_POWER:float = 1.0
+## The original's setting of a train's brakes (ustaw, Driver.cpp:2166-2186): a passenger train on
+## R or P, a goods train on P, GP or G
+enum Setting { PASSENGER_R, PASSENGER_P, GOODS_P, GOODS_GP, GOODS_G }
 
 ## In the original this is not polled at all: AutoRewident() runs inside CheckVehicles()
 ## (Driver.cpp:2528) for the driving orders, and CheckVehicles() itself is called on events - an
 ## order change, PrepareEngine() completing (Driver.cpp:2142), a direction change, a coupling
 ## change (Driver.cpp:2622).
 ##
-## The only event here is RailVehicleServer's vehicle_trainset_changed. What is left to watch is
+## The only event here is RailVehicleServer's trainset_vehicles_changed. What is left to watch is
 ## the engine becoming ready, a threshold the original's AI watches in its own update too - one
 ## timer for every vehicle still waiting for it, stopped as soon as none is.
 const CHECK_INTERVAL:float = 0.5
@@ -57,17 +55,17 @@ func _ready() -> void:
 ## NOTIFICATION_PREDELETE, after the autoloads have left) uncouples its vehicles, and their
 ## neighbours report a trainset change (MaszynaMoverRailVehicleController::release())
 func _enter_tree() -> void:
-    RailVehicleServer.vehicle_trainset_changed.connect(_on_vehicle_trainset_changed)
+    RailVehicleServer.trainset_vehicles_changed.connect(_on_trainset_vehicles_changed)
 
 
 func _exit_tree() -> void:
-    RailVehicleServer.vehicle_trainset_changed.disconnect(_on_vehicle_trainset_changed)
+    RailVehicleServer.trainset_vehicles_changed.disconnect(_on_trainset_vehicles_changed)
 
 
 ## The vehicle's trainset is inspected once its engine is ready, and after every trainset change
 func vehicle_follow(vehicle:RID) -> void:
     _vehicles[vehicle] = true
-    _on_vehicle_trainset_changed(vehicle)
+    _watch(vehicle)
 
 
 func vehicle_unfollow(vehicle:RID) -> void:
@@ -77,10 +75,16 @@ func vehicle_unfollow(vehicle:RID) -> void:
         _timer.stop()
 
 
-## A vehicle joined or left the trainset (VehicleController::couple()/uncouple()), the case the
-## original handles with CheckVehicles() (Driver.cpp:2622) - inspect it again once the engine of
-## the new trainset reports ready.
-func _on_vehicle_trainset_changed(vehicle:RID) -> void:
+## Vehicles joined or left a trainset (coupled, uncoupled), the case the original handles with
+## CheckVehicles() (Driver.cpp:2622) - each followed vehicle of it inspects it again once its engine
+## reports ready.
+func _on_trainset_vehicles_changed(trainset:RID) -> void:
+    for vehicle:RID in RailVehicleServer.trainset_get_vehicles(trainset):
+        _watch(vehicle)
+
+
+## The followed vehicle's trainset inspected once its engine reports ready
+func _watch(vehicle:RID) -> void:
     if not _vehicles.has(vehicle) or _waiting.has(vehicle):
         return
     _waiting.append(vehicle)
@@ -100,7 +104,7 @@ func _check_waiting() -> void:
         # PrepareEngine() completes once the engine reports ready
         if not _is_engine_ready(vehicle):
             continue
-        _rewident(vehicle, _get_trainset(vehicle))
+        set_brake_delays(vehicle, _get_trainset(vehicle), false)
         # from here the trainset can only change by coupling, and that arrives as a signal
         _waiting.erase(vehicle)
     if not _waiting:
@@ -144,67 +148,76 @@ func _get_trainset(vehicle:RID) -> Array[RID]:
     return trainset
 
 
-## TController::AutoRewident() (Driver.cpp:2147-2246). The driver's own vehicle is left alone, as the
-## original does with a human controlled vehicle.
-func _rewident(vehicle:RID, trainset:Array[RID]) -> void:
-    var express:int = 0
-    var freight:int = 0
-    var passenger:int = 0
+## TController::AutoRewident() (Driver.cpp:2146-2246): the brake setting the train needs - a passenger
+## train P or R, a goods train P, GP or G by its length and mass - put on every vehicle of `trainset`,
+## from the head of the train in the driving direction, by the crew (`auto_rewident`, the rewident's
+## own lever); the driver's own vehicle only while the driver drives it (AIControllFlag), as the
+## original leaves a human controlled one alone. A passenger or a goods train by the trainset's type
+## (RailVehicleServer.trainset_get_type()). True for a passenger train.
+static func set_brake_delays(vehicle:RID, trainset:Array[RID], in_control:bool) -> bool:
+    var fast:int = 0
+    var goods:int = 0
+    var passengers:int = 0
     var length:float = 0.0
     var mass:float = 0.0
     for member:RID in trainset:
-        var member_controller:VehicleController = VehicleServer.vehicle_get_controller(member)
-        length += member_controller.dimensions_length
-        mass += member_controller.get_mass_total()
-        if member_controller.power < 1.0:
-            var member_brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
-                    member, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
-            var delays:int = member_brake.cntrl_brake_delays if member_brake else 0
-            if delays & BDELAY_R:
-                express += 1
-            elif delays & BDELAY_G:
-                freight += 1
-            else:
-                passenger += 1
-
-    var setting:int
-    if express + freight + passenger == 0:
-        setting = PASSENGER_TRAIN + BDELAY_R # light engine
-    elif freight < mini(MIXED_TRAIN_FREIGHT_LIMIT, express + passenger):
-        setting = PASSENGER_TRAIN + (BDELAY_P if freight and express < freight + passenger else BDELAY_R)
+        var controller:VehicleController = VehicleServer.vehicle_get_controller(member)
+        length += controller.dimensions_length
+        mass += controller.get_mass_total()
+        if controller.power >= LOCOMOTIVE_POWER:
+            continue
+        if _takes_delay(member, RailVehicleBrake.BRAKE_DELAY_R):
+            fast += 1
+        elif _takes_delay(member, RailVehicleBrake.BRAKE_DELAY_G):
+            goods += 1
+        else:
+            passengers += 1
+    var passenger:bool = not RailVehicleServer.trainset_get_type(RailVehicleServer.vehicle_get_trainset(vehicle)) \
+            == RailVehicleServer.TRAINSET_TYPE_CARGO
+    # the original's ustaw (Driver.cpp:2166-2186): a light engine is a passenger train on R
+    var setting:Setting
+    if not fast + goods + passengers or passenger and not (goods and fast < goods + passengers):
+        setting = Setting.PASSENGER_R
+    elif passenger:
+        setting = Setting.PASSENGER_P
     elif length < SHORT_TRAIN_LENGTH and mass < SHORT_TRAIN_MASS:
-        setting = BDELAY_P
+        setting = Setting.GOODS_P
     elif length < MEDIUM_TRAIN_LENGTH and mass < MEDIUM_TRAIN_MASS:
-        setting = BDELAY_R
+        setting = Setting.GOODS_GP
     else:
-        setting = BDELAY_G
-
+        setting = Setting.GOODS_G
     var near_locomotive:int = 0
     for member:RID in trainset:
-        var member_brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
-                member, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
-        var is_locomotive:bool = VehicleServer.vehicle_get_controller(member).power > 1.0
-        var delays:int = member_brake.cntrl_brake_delays if member_brake else 0
-        var brake_delay:int = BDELAY_P
+        # the driver's own vehicle only while it drives it, and only a vehicle with a brake to set
+        if member == vehicle and not in_control or not RailVehicleServer.vehicle_component_get(
+                member, RailVehicleComponentType.COMPONENT_BRAKES):
+            continue
+        var locomotive:bool = VehicleServer.vehicle_get_controller(member).power > LOCOMOTIVE_POWER
+        var brake_delay:int = RailVehicleBrake.BRAKE_DELAY_P
         match setting:
-            BDELAY_P:
-                # freight P - locomotive on G, the rest on P
-                brake_delay = BDELAY_G if is_locomotive else BDELAY_P
-            BDELAY_G:
-                # freight G - everything on G, P without it
-                brake_delay = BDELAY_G if delays & BDELAY_G else BDELAY_P
-            BDELAY_R:
-                # freight GP - locomotive and the vehicles next to it on G, the rest on P
-                if is_locomotive:
-                    brake_delay = BDELAY_G
-                    near_locomotive = 0
-                else:
-                    near_locomotive += 1
-                    brake_delay = BDELAY_G if near_locomotive <= VEHICLES_ON_G_NEXT_TO_LOCOMOTIVE else BDELAY_P
-            PASSENGER_TRAIN + BDELAY_R:
-                # passenger R - R, P without it
-                brake_delay = BDELAY_R if delays & BDELAY_R else BDELAY_P
-            PASSENGER_TRAIN + BDELAY_P:
-                brake_delay = BDELAY_P
-        if not member == vehicle:
-            VehicleServer.vehicle_send_command(member, "auto_rewident", brake_delay)
+            Setting.PASSENGER_R:
+                # R, P without it
+                if _takes_delay(member, RailVehicleBrake.BRAKE_DELAY_R):
+                    brake_delay = RailVehicleBrake.BRAKE_DELAY_R
+            Setting.GOODS_P:
+                # the locomotive on G, the rest on P
+                if locomotive:
+                    brake_delay = RailVehicleBrake.BRAKE_DELAY_G
+            Setting.GOODS_GP:
+                # the locomotive and the vehicles next to it on G, the rest on P
+                near_locomotive = 0 if locomotive else near_locomotive + 1
+                if near_locomotive <= VEHICLES_ON_G_NEXT_TO_LOCOMOTIVE:
+                    brake_delay = RailVehicleBrake.BRAKE_DELAY_G
+            Setting.GOODS_G:
+                # everything on G, P without it
+                if _takes_delay(member, RailVehicleBrake.BRAKE_DELAY_G):
+                    brake_delay = RailVehicleBrake.BRAKE_DELAY_G
+        VehicleServer.vehicle_send_command(member, "auto_rewident", brake_delay)
+    return setting == Setting.PASSENGER_R or setting == Setting.PASSENGER_P
+
+
+## Whether the vehicle's brake can be set to `delay` (BrakeDelays); never without a brake
+static func _takes_delay(vehicle:RID, delay:int) -> bool:
+    var brake:RailVehicleBrake = RailVehicleServer.vehicle_component_get(
+            vehicle, RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake
+    return brake and brake.cntrl_brake_delays & delay

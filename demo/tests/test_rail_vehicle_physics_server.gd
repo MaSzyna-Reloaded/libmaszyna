@@ -1,7 +1,7 @@
 extends MaszynaGutTest
 
 
-## trainset_move(): the ends and the coupling of a coupler alone (coupling::coupler, MOVER.h:161)
+## vehicle_move(): the ends and the coupling of a coupler alone (coupling::coupler, MOVER.h:161)
 const MOVE_DISTANCE: float = 10.0
 ## A vehicle with buffers and couplers that collide
 const FIXTURE_PATH: String = "res://tests/fixtures/test_vehicle.fiz"
@@ -57,7 +57,7 @@ func test_vehicle_set_track_initializes_normal_track_state() -> void:
     )
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(10.0, TrackServer.rail_height, 0.0)
     )
 
@@ -69,10 +69,10 @@ func test_vehicle_set_track_follows_connected_tracks_for_initial_offsets() -> vo
     var vehicle_rid:RID = _create_vehicle()
     for direction:TrackServer.Direction in [TrackServer.DIRECTION_NORMAL, TrackServer.DIRECTION_REVERSED]:
         RailVehicleServer.vehicle_set_track(vehicle_rid, created_tracks[2], -15.0, direction)
-        _assert_vector_eq(RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        _assert_vector_eq(VehicleServer.vehicle_get_transform(vehicle_rid).origin,
             Vector3(5.0, TrackServer.rail_height, 0.0))
         RailVehicleServer.vehicle_set_track(vehicle_rid, created_tracks[0], 25.0, direction)
-        _assert_vector_eq(RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        _assert_vector_eq(VehicleServer.vehicle_get_transform(vehicle_rid).origin,
             Vector3(25.0, TrackServer.rail_height, 0.0))
 
 
@@ -93,7 +93,7 @@ func test_vehicle_set_track_initializes_switch_state_from_active_branch() -> voi
     )
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(2.1213, TrackServer.rail_height, 2.1213),
         "switch initialization should sample the active diverging branch"
     )
@@ -114,7 +114,7 @@ func test_vehicle_get_transform_applies_common_and_diverging_orientation() -> vo
         4.0,
         TrackServer.DIRECTION_NORMAL
     )
-    var common_forward: Vector3 = -RailVehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
+    var common_forward: Vector3 = -VehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
 
     TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_DIVERGING)
     RailVehicleServer.vehicle_set_track(
@@ -123,7 +123,7 @@ func test_vehicle_get_transform_applies_common_and_diverging_orientation() -> vo
         4.0,
         TrackServer.DIRECTION_NORMAL
     )
-    var diverging_forward: Vector3 = -RailVehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
+    var diverging_forward: Vector3 = -VehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
 
     _assert_vector_eq(common_forward, Vector3.RIGHT, "common branch should face along curve1")
     assert_true(diverging_forward.distance_to(Vector3.RIGHT) > 0.1, "diverging branch should not reuse curve1 orientation")
@@ -149,10 +149,10 @@ func test_vehicle_move_crosses_connected_tracks() -> void:
         8.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 5.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -5.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(13.0, TrackServer.rail_height, 0.0)
     )
 
@@ -182,10 +182,10 @@ func test_vehicle_move_stops_at_ambiguous_shared_node() -> void:
         8.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 5.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -5.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(10.0, TrackServer.rail_height, 0.0)
     )
 
@@ -216,7 +216,7 @@ func test_process_movement_advances_bound_controller_vehicle() -> void:
     RailVehicleServer.vehicle_process_movement(vehicle_rid, 1.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(3.0, TrackServer.rail_height, 0.0)
     )
 
@@ -238,12 +238,12 @@ func test_process_movement_moves_vehicle_toward_its_own_front() -> void:
         4.0,
         TrackServer.DIRECTION_NORMAL
     )
-    var forward: Vector3 = -RailVehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
+    var forward: Vector3 = -VehicleServer.vehicle_get_transform(vehicle_rid).basis.z.normalized()
 
     RailVehicleServer.vehicle_process_movement(vehicle_rid, 1.0)
 
     var moved_by: Vector3 = (
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin
         - Vector3(4.0, TrackServer.rail_height, 0.0)
     )
     assert_true(
@@ -252,7 +252,7 @@ func test_process_movement_moves_vehicle_toward_its_own_front() -> void:
     )
 
 
-func test_trainset_move_moves_every_vehicle_the_same_way() -> void:
+func test_vehicle_move_moves_every_coupled_vehicle_the_same_way() -> void:
     _register_track(_curve(Vector3(0.0, 0.0, 0.0), Vector3(100.0, 0.0, 0.0)), null, TrackServer.TRACK_NORMAL)
     TrackServer.topology_rebuild()
     var first: VehicleController = _create_controller()
@@ -262,15 +262,15 @@ func test_trainset_move_moves_every_vehicle_the_same_way() -> void:
     RailVehicleServer.vehicle_set_track(second.get_rid(), created_tracks[0], 60.0, TrackServer.DIRECTION_REVERSED)
     first.couple(second, RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLER_END_FRONT,
             RailVehicleController.COUPLING_FLAG_COUPLER)
-    var forward: Vector3 = -RailVehicleServer.vehicle_get_transform(first.get_rid()).basis.z.normalized()
-    var first_start: Vector3 = RailVehicleServer.vehicle_get_transform(first.get_rid()).origin
-    var second_start: Vector3 = RailVehicleServer.vehicle_get_transform(second.get_rid()).origin
+    var forward: Vector3 = -VehicleServer.vehicle_get_transform(first.get_rid()).basis.z.normalized()
+    var first_start: Vector3 = VehicleServer.vehicle_get_transform(first.get_rid()).origin
+    var second_start: Vector3 = VehicleServer.vehicle_get_transform(second.get_rid()).origin
 
-    RailVehicleServer.trainset_move(first.get_rid(), MOVE_DISTANCE)
+    RailVehicleServer.vehicle_move(first.get_rid(), MOVE_DISTANCE)
 
-    _assert_vector_eq(RailVehicleServer.vehicle_get_transform(first.get_rid()).origin,
+    _assert_vector_eq(VehicleServer.vehicle_get_transform(first.get_rid()).origin,
             first_start + forward * MOVE_DISTANCE, "the vehicle moved")
-    _assert_vector_eq(RailVehicleServer.vehicle_get_transform(second.get_rid()).origin,
+    _assert_vector_eq(VehicleServer.vehicle_get_transform(second.get_rid()).origin,
             second_start + forward * MOVE_DISTANCE, "the reversed vehicle moved with it")
 
 
@@ -292,7 +292,7 @@ func test_process_movement_without_bound_controller_is_noop() -> void:
     RailVehicleServer.vehicle_process_movement(vehicle_rid, 1.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(3.0, TrackServer.rail_height, 0.0)
     )
 
@@ -323,7 +323,7 @@ func test_process_movement_with_invalid_controller_reference_is_noop() -> void:
     RailVehicleServer.vehicle_process_movement(vehicle_rid, 1.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(3.0, TrackServer.rail_height, 0.0)
     )
 
@@ -346,15 +346,16 @@ func test_removed_track_makes_transform_and_movement_noop() -> void:
         TrackServer.DIRECTION_REVERSED
     )
 
+    var placed: Transform3D = VehicleServer.vehicle_get_transform(vehicle_rid)
     TrackServer.track_free(track_rid)
 
-    RailVehicleServer.vehicle_move(vehicle_rid, 5.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -5.0)
     RailVehicleServer.vehicle_process_movement(vehicle_rid, 1.0)
 
     assert_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid),
-        Transform3D.IDENTITY,
-        "removed track should make transform queries safe and inert"
+        VehicleServer.vehicle_get_transform(vehicle_rid),
+        placed,
+        "removed track: the vehicle stays where it was last placed, and moves no more"
     )
 
 
@@ -379,13 +380,13 @@ func test_vehicle_reverse_on_switch_keeps_occupied_branch_after_switch_change() 
         8.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 5.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -5.0)
     TrackServer.switch_set_active_track(TrackServer.track_get_switch(switch_rid), TrackServer.TRACK_COMMON)
 
-    RailVehicleServer.vehicle_move(vehicle_rid, -1.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, 1.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         Vector3(1.4142, TrackServer.rail_height, 1.4142),
         "reverse movement should keep sampling the occupied diverging branch"
     )
@@ -413,11 +414,11 @@ func test_vehicle_move_forces_switch_diverging_when_entering_from_diverging_bran
         12.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 5.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -5.0)
 
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         _track_position(
             switch_rid,
             TrackServer.track_get_length(switch_rid, TrackServer.TRACK_DIVERGING) - distance_on_switch
@@ -452,14 +453,14 @@ func test_vehicle_move_large_offset_forces_switch_when_entering_from_diverging_b
         12.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 25.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -25.0)
 
     var expected_next_offset: float = 25.0 \
         - (TrackServer.track_get_length(start_rid) - 12.0) \
         - TrackServer.track_get_length(switch_rid, TrackServer.TRACK_DIVERGING)
     assert_eq(TrackServer.switch_get_active_track(TrackServer.track_get_switch(switch_rid)), TrackServer.TRACK_DIVERGING)
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         _track_position(next_rid, expected_next_offset),
         "large diverging-side entry should force diverging without incremental simulation"
     )
@@ -486,10 +487,10 @@ func test_vehicle_move_from_common_point_uses_active_switch_branch() -> void:
         8.0,
         TrackServer.DIRECTION_REVERSED
     )
-    RailVehicleServer.vehicle_move(vehicle_rid, 15.0)
+    RailVehicleServer.vehicle_move(vehicle_rid, -15.0)
 
     _assert_vector_eq(
-        RailVehicleServer.vehicle_get_transform(vehicle_rid).origin,
+        VehicleServer.vehicle_get_transform(vehicle_rid).origin,
         _track_position(switch_rid, 13.0),
         "common-point entry should follow the active diverging branch"
     )
@@ -505,17 +506,17 @@ func test_a_parked_vehicle_is_pushed_by_one_rolling_onto_it() -> void:
     var parked: VehicleController = _create_fiz_vehicle(0.0)
     RailVehicleServer.vehicle_set_track(rolling.get_rid(), created_tracks[0], 100.0, TrackServer.DIRECTION_NORMAL)
     # parked ahead of the rolling one's front, whichever way along the track that is
-    var forward: Vector3 = -RailVehicleServer.vehicle_get_transform(rolling.get_rid()).basis.z.normalized()
+    var forward: Vector3 = -VehicleServer.vehicle_get_transform(rolling.get_rid()).basis.z.normalized()
     RailVehicleServer.vehicle_set_track(parked.get_rid(), created_tracks[0],
             100.0 + signf(forward.x) * COLLISION_GAP, TrackServer.DIRECTION_NORMAL)
-    var parked_start: Vector3 = RailVehicleServer.vehicle_get_transform(parked.get_rid()).origin
+    var parked_start: Vector3 = VehicleServer.vehicle_get_transform(parked.get_rid()).origin
 
     var simulated: float = 0.0
     while simulated < COLLISION_TIME:
         SimulationServer.simulation_advance(COLLISION_FRAME)
         simulated += COLLISION_FRAME
 
-    var pushed_by: Vector3 = RailVehicleServer.vehicle_get_transform(parked.get_rid()).origin - parked_start
+    var pushed_by: Vector3 = VehicleServer.vehicle_get_transform(parked.get_rid()).origin - parked_start
     assert_gt(pushed_by.dot(forward), 0.0, "the parked vehicle is pushed the way the other one rolled")
 
 
@@ -541,7 +542,7 @@ func test_an_axle_counts_on_every_track_it_crosses() -> void:
 
     # each axle crosses the short track within one move, onto the last track
     for move: int in SHORT_TRACK_MOVES:
-        RailVehicleServer.vehicle_move(vehicle, SHORT_TRACK_MOVE)
+        RailVehicleServer.vehicle_move(vehicle, -SHORT_TRACK_MOVE)
 
     for listened: Signal in listeners:
         listened.disconnect(listeners[listened])
@@ -566,11 +567,11 @@ func test_an_axle_occupies_a_section_before_its_vehicle_is_on_the_track() -> voi
     assert_true(TrackServer.isolated_is_occupied(section), "the rear axle stands in the section")
     assert_eq(TrackServer.track_get_vehicles(first), [vehicle] as Array[RID], "listed by its primary, front axle")
     assert_false(TrackServer.track_is_occupied(second), "not listed on the rear axle's track")
-    var front: Vector3 = RailVehicleServer.vehicle_get_bogie_transform(vehicle, RailVehicleWheels.BOGIE_FRONT).origin
-    var rear: Vector3 = RailVehicleServer.vehicle_get_bogie_transform(vehicle, RailVehicleWheels.BOGIE_REAR).origin
+    var front: Vector3 = RailVehicleServer.bogie_get_transform(vehicle, RailVehicleWheels.BOGIE_FRONT).origin
+    var rear: Vector3 = RailVehicleServer.bogie_get_transform(vehicle, RailVehicleWheels.BOGIE_REAR).origin
     _assert_vector_eq(front, Vector3(47.0 - 0.5 * AXLE_DISTANCE, TrackServer.rail_height, 0.0), "the front axle")
     _assert_vector_eq(rear, Vector3(47.0 + 0.5 * AXLE_DISTANCE, TrackServer.rail_height, 0.0), "the rear axle")
-    _assert_vector_eq(RailVehicleServer.vehicle_get_transform(vehicle).origin, (front + rear) * 0.5,
+    _assert_vector_eq(VehicleServer.vehicle_get_transform(vehicle).origin, (front + rear) * 0.5,
             "the body midway between the axles")
     RailVehicleServer.vehicle_detach(vehicle)
     assert_false(TrackServer.isolated_is_occupied(section), "a removed vehicle leaves the section")
@@ -591,7 +592,7 @@ func test_the_leading_axle_forces_a_switch_before_the_centre_reaches_it() -> voi
     # the centre 6 m along the start track, the leading (rear) axle 11 m along it
     RailVehicleServer.vehicle_set_track(vehicle, start_rid, 6.0, TrackServer.DIRECTION_REVERSED)
 
-    RailVehicleServer.vehicle_move(vehicle, 4.0)
+    RailVehicleServer.vehicle_move(vehicle, -4.0)
 
     assert_lt(10.0, TrackServer.track_get_length(start_rid, TrackServer.TRACK_COMMON), "the centre is still before it")
     assert_eq(TrackServer.switch_get_active_track(switch), TrackServer.TRACK_DIVERGING,
@@ -699,7 +700,7 @@ func _track_position(track_rid: RID, offset: float) -> Vector3:
         offset,
         TrackServer.DIRECTION_NORMAL
     )
-    var transform: Transform3D = RailVehicleServer.vehicle_get_transform(vehicle_rid)
+    var transform: Transform3D = VehicleServer.vehicle_get_transform(vehicle_rid)
     VehicleServer.vehicle_free(vehicle_rid)
     return transform.origin
 

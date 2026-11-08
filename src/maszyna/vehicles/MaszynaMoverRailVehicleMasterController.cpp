@@ -96,7 +96,7 @@ namespace godot {
         return mover != nullptr ? mover->CabActive : 0;
     }
 
-    bool MaszynaMoverRailVehicleMasterController::get_cabin_controleable() const {
+    bool MaszynaMoverRailVehicleMasterController::is_cabin_master() const {
         TMoverParameters *mover = get_mover();
         return mover != nullptr ? mover->IsCabMaster() : false;
     }
