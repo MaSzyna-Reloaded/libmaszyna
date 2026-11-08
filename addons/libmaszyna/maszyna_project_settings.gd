@@ -126,3 +126,8 @@ static func register() -> void:
         MmdCabinInstancer.DDS_MAX_CAB_TEXTURE_SIZE_SETTING, MmdCabinInstancer.DDS_MAX_CAB_TEXTURE_SIZE_DEFAULT,
         TYPE_INT, PROPERTY_HINT_ENUM, TEXTURE_SIZE_HINT
     )
+    # Not the original's: a scenery's big flat faces facing up split into sides of some 2 m, for the
+    # snow to lie on in drifts (MaszynaTrianglesImporter) - a game drawing them turns it on
+    ReloadedProjectSetting.add(
+        MaszynaSceneryProvider.DENSIFY_SETTING, MaszynaSceneryProvider.DENSIFY_DEFAULT, TYPE_BOOL
+    )
