@@ -55,6 +55,7 @@ func test_nodes_instancer_maps_light_on_prefix_family() -> void:
     assert_false(light_on_node.visible, "On node should start hidden when light is disabled")
     assert_true(light_off_node.visible, "Off node should start visible when light is disabled")
     assert_false(spotlight_node.visible, "Spotlight should start hidden when light is disabled")
+    assert_eq(spotlight_node.light_specular, 0.0, "A lamp's real light is not reflected")
 
     target_node.lights_state = {"00": true}
 

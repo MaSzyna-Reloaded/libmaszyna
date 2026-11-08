@@ -2,6 +2,8 @@
 // (parallax_*.gdshader, MaszynaMaterialFactory.SHADER_VARIANTS), each of them with its own
 // render_mode and defines
 
+#include "res://addons/libmaszyna/materials/types/weather.gdshaderinc"
+
 uniform sampler2D diffuse_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_texture : filter_linear_mipmap_anisotropic, repeat_enable;
 // detail_parallax: a tiled detail normal map added to the normal map (mat_detail_parallax.frag)
@@ -42,6 +44,7 @@ varying float v_dist;
 
 void vertex() {
 	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
+	maszyna_weather_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
     v_tangent_view = normalize(MODELVIEW_NORMAL_MATRIX * TANGENT);
     v_normal_view = normalize(MODELVIEW_NORMAL_MATRIX * NORMAL);
     v_binormal_view = normalize(MODELVIEW_NORMAL_MATRIX * -BINORMAL);
@@ -175,4 +178,8 @@ void fragment() {
         NORMAL_MAP_DEPTH = 1.0;
 
     }
+#ifndef MASZYNA_ALPHA_BLEND
+	maszyna_weather_mapped(ALBEDO, ROUGHNESS, NORMAL, NORMAL_MAP_DEPTH, NORMAL_MAP, TANGENT, BINORMAL, INV_VIEW_MATRIX, VIEW_MATRIX,
+			maszyna_weather_position);
+#endif
 }

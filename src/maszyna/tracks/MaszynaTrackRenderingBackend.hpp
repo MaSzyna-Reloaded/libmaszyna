@@ -24,8 +24,8 @@ namespace godot {
      * (<game dir>/models/tory/railprofile_<name>.txt), a switch's blades moving with its offsets, a
      * trackbed of a section, a road of its surface and shoulders, each of its textures. A .scn's
      * track (MaszynaTrackData) is drawn with its own textures; any other with the textures its
-     * features map to (LOOKS_PATH). A streamed road is drawn with the roads around it, in a cell of
-     * ROAD_CELL_SIZE streamed by itself. Registered with TrackRenderingServer as NAME. */
+     * features map to (its MaszynaTrackLooks, track_set_look()). A streamed road is drawn with the roads around it, in
+     * a cell of ROAD_CELL_SIZE streamed by itself. Registered with TrackRenderingServer as NAME. */
     class MaszynaTrackRenderingBackend : public TrackRenderingBackend {
             GDCLASS(MaszynaTrackRenderingBackend, TrackRenderingBackend)
 
@@ -42,8 +42,6 @@ namespace godot {
 
             /// Its name with TrackRenderingServer, the one MaszynaTrackData names
             static constexpr const char *NAME = MaszynaTrackData::RENDERING_BACKEND;
-            /// What a TrackData's features are drawn with: textures and sections by bed and by surface
-            static constexpr const char *LOOKS_PATH = "res://addons/libmaszyna/tracks/maszyna_track_looks.tres";
             /// Side of a road cell [m]: one cell is built in one go by the streaming, so it holds about as
             /// many roads as one frame's build budget fits (a town's ~100 segments)
             static constexpr double ROAD_CELL_SIZE = 125.0;
@@ -150,6 +148,9 @@ namespace godot {
                     double tex_width = 0.0;
                     double tex_slope = 0.0;
                     String railprofile = MaszynaTrackData::DEFAULT_RAILPROFILE;
+                    /// What a TrackData's features are drawn with - textures and sections by bed and by
+                    /// surface - given by its owner (track_set_look()); a .scn's track has its own
+                    Ref<MaszynaTrackLooks> looks;
                     String material1_name;
                     String material2_name;
                     String material_trackbed_name;
@@ -210,7 +211,6 @@ namespace godot {
             HashMap<String, double> material_texture_ratios;
             /// Tracks draw both faces - an open rail profile with its front faces culled casts almost nothing
             Dictionary track_material_options;
-            Ref<MaszynaTrackLooks> looks;
             /// A number of a rail profile's line
             Ref<RegEx> rail_profile_number;
 
@@ -340,6 +340,8 @@ namespace godot {
             void track_set_description(const RID &p_track_render, const Ref<TrackData> &p_description) override;
             void track_set_visible(const RID &p_track_render, bool p_visible) override;
             void track_set_scenario(const RID &p_track_render, const RID &p_scenario) override;
+            /// A MaszynaTrackLooks: what a track that is not a .scn's is drawn with
+            void track_set_look(const RID &p_track_render, const Ref<Resource> &p_look) override;
             void track_set_switch_blade_offsets(const RID &p_track_render, double p_offset1, double p_offset2) override;
             /// A road is streamed in the cell holding it, a track by TrackRenderingServer
             bool track_stream(const RID &p_track_render) override;

@@ -1,6 +1,13 @@
 // The code of the rain_windscreen material type, for its shader (rain_windscreen.gdshader) and its
 // variants (rain_windscreen_*.gdshader, MaszynaMaterialFactory.SHADER_VARIANTS), each of them with
 // its own render_mode and defines
+//
+// A game of more lays a layer of its own over the glass's water: its shader defines
+// RAIN_WINDSCREEN_LAYER(uv, wiper_area, sweep_end, view_light, water_color, water_alpha) before it
+// includes this - the glass's 0-1 UV, the wipers' area there (above 0 where a wiper sweeps), how
+// much of the water a blade gathers at the sweep's ends lies there (0-1), how bright what is seen
+// through the glass is (0-1), and the water so far, premultiplied, to lay its own over - and is
+// drawn in place of the type's (MaszynaMaterialFactory.shader_set_override())
 
 uniform sampler2D diffuse_texture : source_color, filter_linear_mipmap, repeat_enable;
 // 2x2 atlas of droplet sprites
@@ -403,7 +410,8 @@ void fragment() {
 
     // three times as dense at the ends of the sweep and not wiped away: the water the blade has
     // piled up there, draining
-    float sweep_end = get_sweep_end(UV) * smoothstep(gathered_water_start, 1.0, reloaded_rain_intensity);
+    float sweep_end_share = get_sweep_end(UV);
+    float sweep_end = sweep_end_share * smoothstep(gathered_water_start, 1.0, reloaded_rain_intensity);
     if (sweep_end > 0.0) {
         add_rivulets(
                 UV, rivulet_columns * 3.0, rivulet_column_width, clamp(sweep_end * 2.0, 0.0, 1.0), sun_factor,
@@ -439,6 +447,13 @@ void fragment() {
     water_alpha = lens_alpha + water_alpha * (1.0 - lens_alpha);
     water_color = drop_layer * drop_alpha + water_color * (1.0 - drop_alpha);
     water_alpha = drop_alpha + water_alpha * (1.0 - drop_alpha);
+
+#ifdef RAIN_WINDSCREEN_LAYER
+    vec4 wiper_area = textureLod(wiper_mask, UV, 0.0);
+    // the macro's call on one line: Godot's preprocessor takes no call broken over lines
+    float wiped_area = max(max(wiper_area.r, wiper_area.g), max(wiper_area.b, wiper_area.a));
+    RAIN_WINDSCREEN_LAYER(UV, wiped_area, sweep_end_share, sun_factor, water_color, water_alpha);
+#endif
 
     // Overlay windshield texture with alpha
     // glass over water over the view: blend_mix multiplies by ALPHA, so both are divided by it

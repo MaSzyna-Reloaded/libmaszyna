@@ -44,8 +44,13 @@ static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
 ## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read; 57: the scenery's
-## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points())
-const CACHE_FORMAT_VERSION:int = 58
+## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points());
+## 59: the flat faces facing up densified (MaszynaTrianglesImporter)
+const CACHE_FORMAT_VERSION:int = 59
+## Whether a scenery's big flat faces facing up are split for the snow's drifts
+## (MaszynaTrianglesImporter): a scenery compiled each way is cached apart
+const DENSIFY_SETTING:String = "maszyna/import/densify_flat_faces"
+const DENSIFY_DEFAULT:bool = false
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -493,7 +498,8 @@ static func _get_parameters_hash(parameters:Dictionary) -> String:
 
 static func _get_cache_path(source_path:String, parameters_hash:String) -> String:
     return (
-        "%s:%s:%s" % [CACHE_FORMAT_VERSION, source_path, parameters_hash]
+        "%s:%s:%s:%s" % [CACHE_FORMAT_VERSION, ProjectSettings.get_setting(DENSIFY_SETTING), source_path,
+                parameters_hash]
     ).md5_text() + ".res"
 
 
