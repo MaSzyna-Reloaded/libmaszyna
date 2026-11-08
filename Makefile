@@ -58,10 +58,10 @@ test: links
 		$(if $(TEST),-gtest=res://tests/$(TEST).gd,-gdir=res://tests)
 
 style-check:
-	$(MAKE) -C $(LIBRELOADED) style-check "LIBRELOADED_PLUGINS=$(CURDIR)" $(if $(STYLE_FILE),STYLE_FILE=$(abspath $(STYLE_FILE)))
+	$(LIBRELOADED_MAKE) style-check $(if $(STYLE_FILE),STYLE_FILE=$(abspath $(STYLE_FILE)))
 
 style-fix:
-	$(MAKE) -C $(LIBRELOADED) style-fix "LIBRELOADED_PLUGINS=$(CURDIR)" $(if $(STYLE_FILE),STYLE_FILE=$(abspath $(STYLE_FILE)))
+	$(LIBRELOADED_MAKE) style-fix $(if $(STYLE_FILE),STYLE_FILE=$(abspath $(STYLE_FILE)))
 
 # The compilation database of libreloaded's clang-tidy build (this plugin's sources included),
 # linked here as build-clang-tidy for clangd (.clangd) and the editors
