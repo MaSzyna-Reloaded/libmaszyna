@@ -296,6 +296,30 @@ static func parse(
     definition.driver_sitpos = cab_data[cab_number]["driver_sitpos"]
     definition.driver_angle = cab_data[cab_number]["driver_angle"]
     definition.model_relpath = cab_data[cab_number]["model_relpath"]
+    # Quirk: the controls of the cab's model its MMD lacks, from the game's patch of the model - one
+    # of a label the MMD has is left out
+    var patch:MaszynaVehicleModelPatch = MaszynaVehicleSystem.model_get_patch(abs_mmd_path.trim_prefix(
+            MaszynaGameDirectory.get_game_dir().path_join("")).get_base_dir().path_join(definition.model_relpath))
+    if patch:
+        var labels:Dictionary[String, bool] = {}
+        for descriptor:MmdInstrumentDescriptor in instruments:
+            labels[descriptor.label] = true
+        for control:MaszynaCabControlPatch in patch.elements_of(MaszynaCabControlPatch):
+            if labels.has(control.label):
+                continue
+            var descriptor := MmdInstrumentDescriptor.new()
+            descriptor.label = control.label
+            descriptor.submodel_name = control.submodel
+            descriptor.animation_type = control.animation_type
+            descriptor.scale = control.scale
+            descriptor.offset = control.offset
+            descriptor.mouse_drag_signs = control.mouse_drag_signs
+            descriptor.position_angles = control.position_angles
+            descriptor.position_axis = control.axis
+            descriptor.pivot = control.pivot
+            descriptor.patched = true
+            descriptor.source_file = patch.resource_path
+            instruments.append(descriptor)
     definition.instruments = instruments
     # Train.cpp:10729-10740 - the screen's own interval, bounded by the global one, or the
     # vehicle's pyscreenupdatetime: when it has none; below -1 it is taken as it is, unbounded,
@@ -1167,19 +1191,42 @@ static func _index_submodel_paths(submodels:Array, index:Dictionary, path_prefix
 ## while 301d.mmd declares them "PrzGlKnob06"/"PrzGlKnob05" - a case-sensitive lookup silently
 ## fails to bind these, leaving those gauges dead with no diagnostic (not matches still
 ## fires correctly, but only after realizing the exact-case assumption was wrong).
-static func _index_submodels(node:Node, index:Dictionary) -> void:
+##
+## Each node is indexed by its path in the model's tree as well (submodel_key()), for a game's patch
+## that names a submodel by its path (MaszynaCabControlPatch), in its exact case - an EU07's cab has
+## an Object12, a valve, and an object12, a plate, side by side: `prefix` - its parent's path and "/"
+static func _index_submodels(node:Node, index:Dictionary, prefix:String = "") -> void:
     for child:Node in node.get_children(true):
         var child_name:String = child.name.to_lower()
         if not index.has(child_name):
             index[child_name] = []
         index[child_name].append(child)
-        _index_submodels(child, index)
+        # a submodel of no name has a name of Godot's own, and none in a path
+        var child_path:String = prefix + ("" if child_name.begins_with(GENERATED_NAME_PREFIX) else String(child.name))
+        index[SUBMODEL_PATH_KEY_PREFIX + child_path] = [child]
+        _index_submodels(child, index, child_path + "/")
+
+
+## The key submodel_index (_index_submodels()) has a descriptor's submodel under: its name as the
+## original finds it (TSubModel::GetFromName(), case-insensitive), or its exact path in the model's
+## tree when a game's patch names it by one ("banan/PODLOGA_GLOWNA/mech_wyc_raczka01")
+static func submodel_key(submodel:String) -> String:
+    if not submodel.contains("/"):
+        return submodel.validate_node_name().to_lower()
+    var segments:PackedStringArray = []
+    for segment:String in submodel.split("/"):
+        segments.append(segment.validate_node_name())
+    return SUBMODEL_PATH_KEY_PREFIX + "/".join(segments)
 
 
 ## MMD `type:` -> the control's gauge type, as TGauge::Load reads it (Gauge.cpp:243); no `type:`
 ## is a toggle (Gauge.h:89)
 ## An instrument's submodel of "none": a control with no model of its own
 const NO_SUBMODEL:String = "none"
+## submodel_index's keys of the submodels by their paths (submodel_key()), and the start of the name
+## Godot gives a node of none (a submodel of no name)
+const SUBMODEL_PATH_KEY_PREFIX:String = "path:"
+const GENERATED_NAME_PREFIX:String = "@"
 
 const BUTTON_TYPES:Dictionary[String, CabinButton.ButtonType] = {
     "push": CabinButton.ButtonType.PUSH,
@@ -1226,6 +1273,17 @@ static func _build_widget(
                 names[roundi(float(config[config_key]))] = position_names_config[config_key]
         widget.set("position_names", names)
 
+    if not descriptor.mouse_drag_signs == Vector2.ZERO:
+        widget.mouse_drag_signs = descriptor.mouse_drag_signs
+    if descriptor.patched and "turn_unscaled" in widget:
+        widget.turn_unscaled = true
+        widget.turn_pivot = descriptor.pivot
+    if descriptor.position_angles:
+        var rotations:PackedVector3Array = []
+        for angle:float in descriptor.position_angles:
+            rotations.append(Vector3(0.0, angle, 0.0))
+        widget.turn_axis = descriptor.position_axis
+        widget.position_rotations = rotations
     if widget is CabinButton:
         widget.button_type = button_type
     # a gauge of a car of the train reads the value its numbers name (MaszynaCabinTrainsetPressures)
@@ -1455,9 +1513,9 @@ static func _wire_mesh_path(
         return
     # TGauge::Load (Gauge.cpp:186-197): the submodel by its name, else by its name with "_off" - the
     # first one GetFromName meets. Submodel nodes carry Godot-validated names ("a.swmasz1" -> "a_swmasz1").
-    var matches:Array = submodel_index.get(descriptor.submodel_name.validate_node_name().to_lower(), [])
+    var matches:Array = submodel_index.get(submodel_key(descriptor.submodel_name), [])
     if not matches:
-        matches = submodel_index.get((descriptor.submodel_name + OFF_SUFFIX).validate_node_name().to_lower(), [])
+        matches = submodel_index.get(submodel_key(descriptor.submodel_name + OFF_SUFFIX), [])
     if matches:
         widget.set(mesh_path_field, widget.get_path_to(matches[0]))
     else:

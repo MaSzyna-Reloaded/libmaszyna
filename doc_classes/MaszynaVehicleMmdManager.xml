@@ -4,7 +4,7 @@
 		The vehicles' MMD data, each type's read once.
 	</brief_description>
 	<description>
-		What a vehicle type's [code].mmd[/code] says it is built from, in a skin - and of the vehicle itself when its MMD names [code](p1)[/code], the vehicle's own name - kept on disk: a scenery repeats the same type across its trainsets. An entry is read again when its [code].mmd[/code] or [code].fiz[/code] changes (their own modification times; the FIZ's for the pantographs measured from the model, the ones it declares and does not give the geometry of) or the reader's format does. The reader is handed in by the plugin's runtime ([method set_mmd_data_reader]).
+		What a vehicle type's [code].mmd[/code] says it is built from, in a skin - and of the vehicle itself when its MMD names [code](p1)[/code], the vehicle's own name - kept on disk: a scenery repeats the same type across its trainsets. An entry is read again when its [code].mmd[/code] or [code].fiz[/code] changes (their own modification times; the FIZ's for the pantographs measured from the model, the ones it declares and does not give the geometry of) the reader's format does or the game's patch of the vehicles' files does ([method set_patch_digest]). The reader is handed in by the plugin's runtime ([method set_mmd_data_reader]).
 	</description>
 	<tutorials>
 	</tutorials>
@@ -32,6 +32,13 @@
 			<param index="1" name="format_version" type="int" />
 			<description>
 				Sets what reads a vehicle's MMD data - [code](data_path, file_name, livery, vehicle_id: String) -&gt; Resource[/code] - and [param format_version], the version of what it puts into it, raised whenever it changes.
+			</description>
+		</method>
+		<method name="set_patch_digest">
+			<return type="void" />
+			<param index="0" name="patch_digest" type="String" />
+			<description>
+				Sets what tells the game's patch of the vehicles' files the reader reads them with from another ([code]MaszynaVehicleSystem.patch_set()[/code]): data read with another patch is read again.
 			</description>
 		</method>
 	</methods>

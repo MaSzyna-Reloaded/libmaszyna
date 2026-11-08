@@ -112,6 +112,10 @@ var transparent: bool = false
 ## Physical size of the texture in metres, -1 where the .mat declares none (material.h:32)
 var size:Vector2 = Vector2(-1.0, -1.0)
 
+## The submodels drawn with it that are dry, inside the cab, in lower case - a game's patch's
+## (MaszynaMaterialPatch.dry_submodels), the texture its windows' too
+var dry_submodels: PackedStringArray = []
+
 var default: MaszynaMaterialVariant = MaszynaMaterialVariant.new()
 var variants: Dictionary[String, MaszynaMaterialVariant] = {}
 

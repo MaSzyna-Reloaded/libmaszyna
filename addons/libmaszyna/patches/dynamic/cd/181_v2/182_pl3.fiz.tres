@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://5osst4x43r45n"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://cnimr0n6orwdi" path="res://addons/libmaszyna/vehicle/maszyna_wiper_list_patch.gd" id="wlist"]
+
+[sub_resource type="RailVehicleWiperListItem" id="item_1"]
+wiper_mask = 0
+transit_time = 1
+period = 0
+return_delay = 0.5
+
+[sub_resource type="RailVehicleWiperListItem" id="item_2"]
+wiper_mask = 3
+transit_time = 1
+period = 5
+return_delay = 0.5
+
+[sub_resource type="RailVehicleWiperListItem" id="item_3"]
+wiper_mask = 3
+transit_time = 1
+period = 0
+return_delay = 0.5
+
+[sub_resource type="Resource" id="item_4"]
+script = ExtResource("wlist")
+angle = 90
+positions = Array[RailVehicleWiperListItem]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3")])
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/cd/181_v2/182_pl3.fiz"
+elements = Array[ExtResource("element")]([SubResource("item_4")])

@@ -31,7 +31,7 @@ const CAR_OBSTACLE_RANGE:float = 750.0
 ## is otherwise silently served from a stale pre-fix cache entry until something touches that
 ## specific vehicle's file. Confirmed the hard way: a MotorParamTable0/nmax column-mapping fix
 ## had zero effect in a running game because of exactly this.
-const FIZ_PARSER_FORMAT_VERSION := 51
+const FIZ_PARSER_FORMAT_VERSION := 52
 
 ## Ordered (longest-prefix-first where ambiguity is possible) table of recognized FIZ section
 ## headers. `parser` is a section parser instance (see fiz_train_*_parser.gd) exposing
@@ -164,7 +164,7 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
 ## description. `fiz_path` must already be a fully resolved, openable path (res://, user://, or
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
 ## `include` directives inside the file resolve relative to its own containing directory.
-static func build_into(target: VehicleController, fiz_path: String) -> void:
+static func build_into(target: VehicleController, fiz_path: String, wipers: RailVehicleWipers = null) -> void:
     var context: FizImportContext = parse_into(target, fiz_path, create_sections())
 
     # a diesel's legacy "main" compressor runs off its engine (CheckLocomotiveParameters, Mover.cpp:11738)
@@ -203,10 +203,18 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     if context.get_part("RailVehicleMasterController"):
         target.add_component(MaszynaMoverRailVehicleHorns.new())
         target.add_component(MaszynaMoverRailVehicleRadio.new())
+        # Quirk: a cab's vehicle whose FIZ has no WiperList: has wipers all the same - `wipers`, the
+        # switch the game's patch of the FIZ gives it, else driven by hand (MaszynaRailVehicle3DInstancer.
+        # apply_wiper_count(), MASZYNA_ORIGINAL_QUIRKS.md); without the component it had no wipers to
+        # wipe its glass by the keys at all
+        if not context.get_part("RailVehicleWipers"):
+            target.add_component(wipers if wipers else MaszynaMoverRailVehicleWipers.new())
 
 ## The vehicle the .fiz at fiz_path describes, parsed - not cached: MaszynaFizManager keeps the
-## descriptions
-static func create_description(fiz_path: String) -> VehicleController:
+## descriptions. `wipers` - the wiper switch the game's patch gives a FIZ of no WiperList
+## (MaszynaVehicleSystem.fiz_get_patched_wipers()); the FIZ parser compiles as the library starts,
+## before any script class of the patch can be resolved
+static func create_description(fiz_path: String, wipers: RailVehicleWipers = null) -> VehicleController:
     var description: VehicleController = null
     # what the file describes is its Param. Category= (LoadFIZ_Param, Mover.cpp:10256), a train
     # without one (CategoryFlag = 1, MOVER.h:1565): a road vehicle (is_car(), CategoryFlag & 2,
@@ -226,7 +234,7 @@ static func create_description(fiz_path: String) -> VehicleController:
         # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
         # its components are kept in the order the FIZ sections built them
         description = MaszynaMoverRailVehicleController.new()
-        build_into(description, fiz_path)
+        build_into(description, fiz_path, wipers)
     return description
 
 

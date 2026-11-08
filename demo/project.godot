@@ -841,6 +841,14 @@ reloaded_wiper_pos={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+reloaded_wiper_pass_time={
+"type": "sampler2D",
+"value": ""
+}
+reloaded_wiper_clock={
+"type": "float",
+"value": 0.0
+}
 reloaded_wiper_since_out={
 "type": "vec4",
 "value": Vector4(1000, 1000, 1000, 1000)

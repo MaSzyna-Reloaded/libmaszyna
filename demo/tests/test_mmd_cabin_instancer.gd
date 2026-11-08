@@ -439,6 +439,7 @@ func test_build_instrument_light_glows_at_each_backlight_piece():
         var glow:OmniLight3D = generated_root.get_child(i + 1)
         assert_almost_eq(glow.global_position, on_node.position + centres[i], Vector3.ONE * 0.0001)
         assert_eq(glow.visible, indicator.enabled)
+        assert_eq(glow.light_specular, 0.0, "a lamp inside a device is not reflected on the windscreen")
     assert_eq(diagnostics.size(), 0)
 
 

@@ -474,6 +474,38 @@ interface.
   `RailVehicleServer.person_change_cabin()`), the
   AI keeps its cabin and the vehicle answers to it.
 
+* **Wipers of no switch are driven by hand.** A FIZ of no `WiperList:` gives the vehicle no wipers
+  at all - the cab's vehicle gets them anyway (`FizVehicleBuilder.build_into()`) - and no switch:
+  the original moves none of them, not even those a model animates, and an old cab's wipers are
+  moved by hand - the EU07's handles `mech_wyc_raczka01/02`, the SM42's, the SU46's `raczka_wyc` -
+  which no MMD key names. Wrapper: such wipers are driven by hand (`RailVehicleWipers.DRIVE_MANUAL`,
+  `MaszynaRailVehicle3DInstancer.apply_wiper_count()`): as many as the model animates, or four - the
+  channels of the cab glass's wiper mask - so the wiper switch's keys wipe the glass in any cab
+  (`MaszynaCabinManualWipers`). What the data does not define of them a game patches by hand, per
+  file (`MaszynaVehiclePatch`, `MaszynaVehicleSystem.patch_set()`), never guessed from names: a cab
+  model's handles - and its own wipers, the EU07's `wycieracz01/02` - are controls of its patch
+  (`MaszynaCabControlPatch`, `reloaded_manualwiper<N>`), each turned by the mouse, the wiper of its
+  label following it; a vehicle model's wipers are the wiper arms of its patch
+  (`MaszynaWiperArmPatch`), each turned whole about its own point and axis by its own angle - the
+  SM42's `wycieraczka01-04` have their origin in the middle of the blade, their hub 0.376 m along
+  their Z, and turn about their X, across the glass; a FIZ's patch gives it a wiper switch
+  (`MaszynaWiperListPatch`) - the 6Dg's cab has one its data names not; a texture of no .mat gets
+  the material of its patch (`MaszynaMaterialPatch`) - the SM42's, SP42's and EN57's cab glass is
+  drawn with the rain, as a `rain_windscreen` .mat draws it, its wiper mask made from the patched
+  arms' sweep over the glass's UV (`addons/libmaszyna/patches/`). A patch is read only where the file has no definition of its
+  own (`WiperList:`, `animwiperprefix:`, the MMD's label, the .mat). A patched control turns about
+  the axis and the point its patch names (`MaszynaCabControlPatch.axis`, `pivot`): the ED72's wiper
+  programmer is a knob made at its cab floor's origin, turned about its own Z. A glass texture also
+  drawn inside the cab - the ED72's `okno` on its timetable's cover - keeps that part dry
+  (`dry_pane`), and panes sharing one UV take each its own wiper's channel (`wiper_pane_N`). The
+  air motors of such wipers, which the data has no word of either: an SM42's, an EU07's, an EP08's or
+  an ET41's wiper goes by itself with its own valve open (`reloaded_wipervalve<N>`, a control of the
+  patch on `zawor_raczka02-05`, `Object12/26`, `wycieraczki_sterowanie01/02`,
+  `wycieraczka_mechu/_pomocnik`), the air of the main reservoir moving it and its handle with it -
+  each vehicle's speeds its FIZ's patch (`MaszynaWiperValvesPatch`) - an SM42's valve very sensitive,
+  full open the wiper "going as if to fall off", an EU07's far calmer; the keys open them all.
+  Wipers driven by hand keep their numbers from either cab (`CabinWindscreenWipers`).
+
 ## Scenery data
 
 * **A trainset for the player is told apart only by a dash.** Every trainset of a scenario is
