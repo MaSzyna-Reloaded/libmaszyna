@@ -666,6 +666,10 @@ func _apply_water(
         material.set_shader_parameter("specgloss_texture", specgloss_texture)
 
 
+## The wipers a rain_windscreen glass tells apart, one a channel of its wiper mask
+const RAIN_WINDSCREEN_PANES:int = 4
+
+
 ## mat_rain_windscreen.frag: cab glass with raindrops wiped by the wipermask. Rain and wiper state
 ## come in as global shader uniforms.
 func _apply_rain_windscreen(
@@ -685,7 +689,19 @@ func _apply_rain_windscreen(
         var texture_path: String = _texture_path(variant, texture_map, textures[parameter])
         if texture_path:
             material.set_shader_parameter(parameter, MaszynaMaterialManager.load_texture(model_path, texture_path, false, options.max_texture_size))
+    # a glass of no mask its wipers sweep whole, from the driver's left to his right (a patch's)
+    material.set_shader_parameter("wiper_mask_across", variant.has_parameter_vec4("wiper_across"))
     material.set_shader_parameter("raindrop_grid_size", variant.get_parameter("raindrop_grid_size", 1.0))
+    # the panes of a glass sharing their UV, each its wiper's (a game's patch, MaszynaMaterialPatch)
+    if variant.has_parameter_vec4("wiper_across"):
+        var across:Vector4 = variant.get_parameter_vec4("wiper_across")
+        material.set_shader_parameter("wiper_across", Vector3(across.x, across.y, across.z))
+        material.set_shader_parameter("wiper_across_span", variant.get_parameter_vec4("wiper_across_span"))
+    for pane:int in RAIN_WINDSCREEN_PANES:
+        var parameter:String = "wiper_pane_%d" % pane
+        material.set_shader_parameter(parameter, variant.get_parameter_vec4(parameter))
+    # a glass inside the cab of the panes' texture, dry (a game's patch, MaszynaMaterialPatch)
+    material.set_shader_parameter("dry_pane", variant.get_parameter_vec4("dry_pane"))
     if variant.has_parameter("specular"):
         material.set_shader_parameter("specular", variant.get_parameter("specular"))
     if variant.has_parameter("glossiness"):

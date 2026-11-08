@@ -8,6 +8,8 @@
 
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
+#include <godot_cpp/variant/packed_float64_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 #include <godot_cpp/variant/typed_dictionary.hpp>
 
 #include <array>
@@ -50,6 +52,11 @@ namespace godot {
                      * its pair, slider */
                     Vector<Part> pantograph_arms[2];
                     Vector<Part> wiper_arms;
+                    /* MaszynaRailVehicleAppearance::get_wiper_pivots(), _axes(), _turns() -
+                     * empty for the original's arms */
+                    PackedVector3Array wiper_pivots;
+                    PackedVector3Array wiper_axes;
+                    PackedFloat64Array wiper_turns;
                     Vector<Part> mirrors;
                     /* MaszynaRailVehicleAppearance::get_doors(): DOOR_ELEMENTS a door */
                     Vector<Part> doors;
@@ -167,6 +174,8 @@ namespace godot {
             void _vehicle_pose(const RID &p_vehicle) override;
             void _vehicle_shown_cabin_changed(const RID &p_vehicle) override;
             void _vehicle_snow_changed(const RID &p_vehicle, const Ref<Material> &p_overlay) override;
+            /* The wiper arms the MMD names (animwiperprefix), at rest, swept by the FIZ's wiper angle */
+            PackedVector4Array _vehicle_get_wiper_sweeps(const RID &p_vehicle) const override;
             void _frame_processed(double p_delta) override;
 
         public:

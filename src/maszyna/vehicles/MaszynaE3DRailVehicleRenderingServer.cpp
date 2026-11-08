@@ -308,6 +308,9 @@ namespace godot {
             maszyna->pantograph_arms[RailVehicleEnginePowerSource::PANTOGRAPH_SECOND] =
                     _parts(*visual, appearance->get_pantograph_rear_arms());
             maszyna->wiper_arms = _parts(*visual, appearance->get_wiper_arms());
+            maszyna->wiper_pivots = appearance->get_wiper_pivots();
+            maszyna->wiper_axes = appearance->get_wiper_axes();
+            maszyna->wiper_turns = appearance->get_wiper_turns();
             maszyna->mirrors = _parts(*visual, appearance->get_mirrors());
             maszyna->doors = _parts(*visual, appearance->get_doors());
             maszyna->door_steps = _parts(*visual, appearance->get_door_steps());
@@ -879,6 +882,32 @@ namespace godot {
         }
     }
 
+    PackedVector4Array MaszynaE3DRailVehicleRenderingServer::_vehicle_get_wiper_sweeps(const RID &p_vehicle) const {
+        PackedVector4Array sweeps;
+        const MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
+        const Ref<RailVehicleWipers> wipers =
+                component<RailVehicleWipers>(p_vehicle, VehicleComponentType::COMPONENT_WIPERS);
+        if (maszyna == nullptr || wipers.is_null()) {
+            return sweeps;
+        }
+        // as _pose_wipers() turns them: the arm about its own up, every other wiper mirrored
+        const double angle = Math::deg_to_rad(wipers->get_angle());
+        for (int wiper = 0; (static_cast<int64_t>(wiper) + 1) * WIPER_ELEMENTS <= maszyna->wiper_arms.size(); ++wiper) {
+            const Part &arm = maszyna->wiper_arms[static_cast<int64_t>(wiper) * WIPER_ELEMENTS];
+            const Part &blade = maszyna->wiper_arms[(static_cast<int64_t>(wiper) * WIPER_ELEMENTS) + WIPER_BLADE];
+            const Vector3 reach = blade.rest.origin - arm.rest.origin;
+            if (arm.submodel.is_empty() || blade.submodel.is_empty() || reach.is_zero_approx()) {
+                continue;
+            }
+            const Vector3 way = reach.normalized();
+            const Vector3 axis = arm.rest.basis.get_column(1).normalized();
+            sweeps.push_back(Vector4(arm.rest.origin.x, arm.rest.origin.y, arm.rest.origin.z, reach.length()));
+            sweeps.push_back(Vector4(way.x, way.y, way.z, static_cast<real_t>(wiper % 2 == 1 ? -angle : angle)));
+            sweeps.push_back(Vector4(axis.x, axis.y, axis.z, 0.0F));
+        }
+        return sweeps;
+    }
+
     // TDynamicObject::UpdateWiper() (DynObj.cpp:716-731): both arms swing by the wiper angle, the
     // blade swings back by it to stay upright; every other wiper is mirrored.
     void MaszynaE3DRailVehicleRenderingServer::_pose_wipers(
@@ -901,6 +930,16 @@ namespace godot {
             double sweep = positions[wiper] > 1.0 ? positions[wiper] - 1.0 : positions[wiper];
             // smoothInterpolate() (utilities.h:324)
             sweep = sweep * sweep * (3.0 - (2.0 * sweep));
+            // a patched arm turned whole about its own point and axis by its own angle
+            if (wiper < p_maszyna.wiper_turns.size()) {
+                const Vector3 pivot = p_maszyna.wiper_pivots[wiper];
+                const Basis turn(
+                        p_maszyna.wiper_axes[wiper].normalized(),
+                        static_cast<real_t>(Math::deg_to_rad(p_maszyna.wiper_turns[wiper]) * sweep));
+                _pose(p_visual, p_maszyna.wiper_arms[static_cast<int64_t>(wiper) * WIPER_ELEMENTS],
+                      Transform3D(turn, pivot - turn.xform(pivot)));
+                continue;
+            }
             const double angle = (wiper % 2 == 1 ? -wiper_angle : wiper_angle) * sweep;
             for (int element = 0; element < WIPER_ELEMENTS; ++element) {
                 _pose(p_visual, p_maszyna.wiper_arms[(wiper * WIPER_ELEMENTS) + element],
