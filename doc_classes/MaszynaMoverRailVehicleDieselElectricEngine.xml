@@ -29,6 +29,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="additional_speed" type="float" setter="set_additional_speed" getter="get_additional_speed" default="1.0">
+			[code]Engine:Vadd[/code]
+		</member>
 		<member name="diesel_configuration" type="MaszynaMoverDieselConfiguration" setter="set_diesel_configuration" getter="get_diesel_configuration">
 			What the Mover's model of the diesel engine is configured with.
 		</member>
@@ -41,9 +44,6 @@
 		</member>
 		<member name="hyperbolic_speed" type="float" setter="set_hyperbolic_speed" getter="get_hyperbolic_speed" default="1.0">
 			[code]Engine:Vhyp[/code]
-		</member>
-		<member name="additional_speed" type="float" setter="set_additional_speed" getter="get_additional_speed" default="1.0">
-			[code]Engine:Vadd[/code]
 		</member>
 		<member name="power_correction_ratio" type="float" setter="set_power_correction_ratio" getter="get_power_correction_ratio" default="1.0">
 			[code]Engine:Cr[/code]

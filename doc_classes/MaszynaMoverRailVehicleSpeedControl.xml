@@ -9,55 +9,55 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="initial_power" type="float" setter="set_initial_power" getter="get_initial_power" default="1.0">
-			[code]SpeedControl:InitPwr[/code]
-			Initial power percentage (0..1) applied before [member full_power_velocity] is reached.
+		<member name="brake_intervention_max_velocity" type="float" setter="set_brake_intervention_max_velocity" getter="get_brake_intervention_max_velocity" default="30.0">
+			[code]SpeedControl:BrakeIntMaxVel[/code]
+			Maximum velocity, in km/h, at which the cruise control may use pneumatic braking.
 		</member>
 		<member name="full_power_velocity" type="float" setter="set_full_power_velocity" getter="get_full_power_velocity" default="-1.0">
 			[code]SpeedControl:MaxPwrVel[/code]
 			Velocity at which the initial power ramp ends and full power engages, in km/h.
 		</member>
-		<member name="start_velocity" type="float" setter="set_start_velocity" getter="get_start_velocity" default="-1.0">
-			[code]SpeedControl:StartVel[/code]
-			Velocity, in km/h, up to which the vehicle must confirm it has actually started moving (main controller
-			at its last position).
-		</member>
-		<member name="offset" type="float" setter="set_offset" getter="get_offset" default="-0.5">
-			[code]SpeedControl:Offset[/code]
-			Target velocity control error offset, in km/h.
-		</member>
-		<member name="proportional_gain_positive" type="float" setter="set_proportional_gain_positive" getter="get_proportional_gain_positive" default="0.5">
-			[code]SpeedControl:kPpos[/code]
-			Drive power proportional gain for a 1 km/h deficit in velocity.
-		</member>
-		<member name="proportional_gain_negative" type="float" setter="set_proportional_gain_negative" getter="get_proportional_gain_negative" default="0.5">
-			[code]SpeedControl:kPneg[/code]
-			Braking power proportional gain for a 1 km/h excess in velocity.
-		</member>
-		<member name="integral_gain_positive" type="float" setter="set_integral_gain_positive" getter="get_integral_gain_positive" default="0.0">
-			[code]SpeedControl:kIpos[/code]
-			Integral gain applied to a 1 km/h deficit in velocity, in km/h/s.
+		<member name="initial_power" type="float" setter="set_initial_power" getter="get_initial_power" default="1.0">
+			[code]SpeedControl:InitPwr[/code]
+			Initial power percentage (0..1) applied before [member full_power_velocity] is reached.
 		</member>
 		<member name="integral_gain_negative" type="float" setter="set_integral_gain_negative" getter="get_integral_gain_negative" default="0.0">
 			[code]SpeedControl:kIneg[/code]
 			Integral gain applied to a 1 km/h excess in velocity, in km/h/s. Not currently used by the simulation -
 			[member integral_gain_positive] is used instead, regardless of sign.
 		</member>
-		<member name="brake_intervention_max_velocity" type="float" setter="set_brake_intervention_max_velocity" getter="get_brake_intervention_max_velocity" default="30.0">
-			[code]SpeedControl:BrakeIntMaxVel[/code]
-			Maximum velocity, in km/h, at which the cruise control may use pneumatic braking.
+		<member name="integral_gain_positive" type="float" setter="set_integral_gain_positive" getter="get_integral_gain_positive" default="0.0">
+			[code]SpeedControl:kIpos[/code]
+			Integral gain applied to a 1 km/h deficit in velocity, in km/h/s.
 		</member>
-		<member name="power_up_speed" type="float" setter="set_power_up_speed" getter="get_power_up_speed" default="1000.0">
-			[code]SpeedControl:PowerUpSpeed[/code]
-			Rate at which requested power increases, in 100%/s.
+		<member name="offset" type="float" setter="set_offset" getter="get_offset" default="-0.5">
+			[code]SpeedControl:Offset[/code]
+			Target velocity control error offset, in km/h.
+		</member>
+		<member name="override_manual_power" type="bool" setter="set_override_manual_power" getter="get_override_manual_power" default="true">
+			[code]SpeedControl:OverrideManual[/code]
+			Whether the cruise control overrides manual power settings.
 		</member>
 		<member name="power_down_speed" type="float" setter="set_power_down_speed" getter="get_power_down_speed" default="1000.0">
 			[code]SpeedControl:PowerDownSpeed[/code]
 			Rate at which requested power decreases, in 100%/s.
 		</member>
-		<member name="override_manual_power" type="bool" setter="set_override_manual_power" getter="get_override_manual_power" default="true">
-			[code]SpeedControl:OverrideManual[/code]
-			Whether the cruise control overrides manual power settings.
+		<member name="power_up_speed" type="float" setter="set_power_up_speed" getter="get_power_up_speed" default="1000.0">
+			[code]SpeedControl:PowerUpSpeed[/code]
+			Rate at which requested power increases, in 100%/s.
+		</member>
+		<member name="proportional_gain_negative" type="float" setter="set_proportional_gain_negative" getter="get_proportional_gain_negative" default="0.5">
+			[code]SpeedControl:kPneg[/code]
+			Braking power proportional gain for a 1 km/h excess in velocity.
+		</member>
+		<member name="proportional_gain_positive" type="float" setter="set_proportional_gain_positive" getter="get_proportional_gain_positive" default="0.5">
+			[code]SpeedControl:kPpos[/code]
+			Drive power proportional gain for a 1 km/h deficit in velocity.
+		</member>
+		<member name="start_velocity" type="float" setter="set_start_velocity" getter="get_start_velocity" default="-1.0">
+			[code]SpeedControl:StartVel[/code]
+			Velocity, in km/h, up to which the vehicle must confirm it has actually started moving (main controller
+			at its last position).
 		</member>
 	</members>
 </class>
