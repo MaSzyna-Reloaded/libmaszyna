@@ -8,6 +8,8 @@ extends MaszynaGutTest
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 ## Frames a knob's key is held for
 const KNOB_HOLD_FRAMES:int = 10
+## The local brake's positions, the joint controller's range below zero (LocalBrakePosNo, hamulce.h:45)
+const LOCAL_BRAKE_POSITIONS:int = 10
 
 var train:VehicleController
 var logic:MaszynaCabinLogic
@@ -141,3 +143,43 @@ func test_a_shared_horn_lever_takes_both_horn_keys() -> void:
     logic.input(_action(&"horn_high", true))
     assert_eq(CabinSystem.get_control(cabin, &"horn_bt"), -1, "high tone")
     logic.input(_action(&"horn_high", false))
+
+
+## The joint controller's handle stands where the controllers are, whoever moved them
+## (Train.cpp:7699-7714): below the no-power position its keys apply the local brake
+## (Train.cpp:1138), shown in its negative range - the 36WEa's handle stood still on "-" while its
+## brake worked (MaSzyna-Reloaded/reports#17) - and so is a local brake set past the cab
+func test_the_joint_controller_shows_the_local_brake() -> void:
+    logic.unregister()
+    var cab_controls:MaszynaCabinControls = MaszynaCabinControls.new()
+    var entry:Dictionary = MmdSemanticCatalog.get_entry("jointctrl")
+    cab_controls.add_control(&"jointctrl", entry["widget_class"], entry["fixed_fields"],
+            CabinButton.ButtonType.TOGGLE, entry.get("target", CabinState.Target.OCCUPIED))
+    logic = MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return cab_controls)
+    logic.register(train.get_rid(), cabin)
+    # the handle shows what the cab shows, while its interior is
+    CabinSystem.vehicle_set_cabin_scene(train.get_rid(), build_cabin_scene())
+    CabinSystem.cabin_show(cabin, self)
+    await step(2)
+    var master:RailVehicleMasterController = RailVehicleServer.vehicle_component_get(
+            train.get_rid(), RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER) as RailVehicleMasterController
+
+    logic.input(_action(&"main_controller_decrease", true))
+    logic.input(_action(&"main_controller_decrease", false))
+    await step(1)
+    assert_lt(master.get_joint_position(), 0, "\"-\" at the no-power position applies the local brake")
+    assert_eq(CabinSystem.get_control(cabin, &"jointctrl"), master.get_joint_position(), "and the handle shows it")
+
+    logic.input(_action(&"main_controller_increase", true))
+    logic.input(_action(&"main_controller_increase", false))
+    await step(1)
+    assert_eq(master.get_joint_position(), 0, "\"+\" releases it")
+    assert_eq(CabinSystem.get_control(cabin, &"jointctrl"), 0, "and the handle goes back")
+
+    VehicleServer.vehicle_send_command(train.get_rid(), "local_brake_set", 1.0)
+    await step(1)
+    assert_eq(master.get_joint_position(), -LOCAL_BRAKE_POSITIONS, "a local brake set past the cab")
+    assert_eq(CabinSystem.get_control(cabin, &"jointctrl"), -LOCAL_BRAKE_POSITIONS, "moves the handle as well")
+    CabinSystem.vehicle_hide_cabin(train.get_rid())
+    # the cab hidden is freed at the end of the frame
+    await wait_idle_frames(1)

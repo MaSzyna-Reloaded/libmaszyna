@@ -58,6 +58,16 @@ func build_vehicle_node(vehicle_id:String = "TestTrain", description:VehicleCont
     return physics_node
 
 
+## A cab interior with nothing in it, for a vehicle whose cab a test shows
+## (CabinSystem.vehicle_set_cabin_scene())
+static func build_cabin_scene() -> PackedScene:
+    var interior:Cabin3D = Cabin3D.new()
+    var packed:PackedScene = PackedScene.new()
+    packed.pack(interior)
+    interior.free()
+    return packed
+
+
 ## What the original's AI keeps of the driver (MaszynaAIDriver.get_internal_state()); empty for a
 ## driver another implementation thinks for
 func get_driver_internal_state(driver:RID) -> Dictionary:
