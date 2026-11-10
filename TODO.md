@@ -175,7 +175,6 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
 
 * **Windows runtime tested under wine only** - `maszyna-python-host.64.exe` with Steam MaSzyna's
   `python27.dll` and `python64/` starts and renders a PIL screen; not yet on a player's Windows.
-  libreloaded's `make python-runtime` builds only the Linux one.
 * **`maszyna-python-host` in an export** (`[dependencies]` of libreloaded's
   `libreloaded.gdextension`, LS-009): not yet seen in an exported game; on Linux its executable bit
   must survive the export.
@@ -196,8 +195,6 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   `simulation::commandMap` names onto vehicle commands (PyInt.cpp:138-194).
 * **Touch input** (`touches`, `screen_touch_list`, Train.cpp:10713) is always empty.
 * `pyrylandia` is referenced by an MMD and exists nowhere under `dynamic/`.
-* **Another game directory keeps the interpreter** and the runtime it was loaded from until a
-  restart.
 
 ### Other
 

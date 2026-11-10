@@ -1,6 +1,7 @@
 .PHONY: libreloaded-local libreloaded-submodule links compile-debug compile-release compile-profiling compile-release-linux \
 	compile-windows-release compile-android-release import test style-check style-fix clang-tidy-database \
-	check-staged-uids install-git-hooks docs docs-site docs-install docs-server docs-pdf
+	check-staged-uids install-git-hooks docs docs-site docs-install docs-server docs-pdf \
+	python-runtime-linux python-runtime-windows
 .DEFAULT_GOAL = compile-debug
 
 # libmaszyna - MaSzyna's vehicles, sceneries and drawing - is a plugin of Rails Reloaded built into libreloaded's library. libreloaded is the
@@ -69,6 +70,30 @@ clang-tidy-database:
 	$(MAKE) -C $(LIBRELOADED) build-clang-tidy/compile_commands.json \
 		build-clang-tidy/godot-cpp/gen/include/godot_cpp/classes/node.hpp "LIBRELOADED_PLUGINS=$(CURDIR)"
 	ln -sfn "$(LIBRELOADED)/build-clang-tidy" build-clang-tidy
+
+# The CPython runtimes the cab Python screens run on (PythonScreenServer), 2.7 and 3.14, each a
+# directory the server finds beside the game's executable (or, as a fallback, in the game dir) -
+# the game ships them: build-python-runtime/<linux|windows>/python2.7 and python3.14. Linux's are
+# built in libreloaded's Linux SDK container, like the release; Windows' are python.org's builds
+PYTHON_RUNTIME_BUILD_DIR:=$(CURDIR)/build-python-runtime
+PYTHON_RUNTIMES:=2.7 3.14
+PYTHON_RUNTIME_LINUX:=$(foreach version,$(PYTHON_RUNTIMES),$(PYTHON_RUNTIME_BUILD_DIR)/linux/python$(version))
+PYTHON_RUNTIME_WINDOWS:=$(foreach version,$(PYTHON_RUNTIMES),$(PYTHON_RUNTIME_BUILD_DIR)/windows/python$(version))
+
+python-runtime-linux: $(PYTHON_RUNTIME_LINUX)
+
+python-runtime-windows: $(PYTHON_RUNTIME_WINDOWS)
+
+# The runtime $(1) built into $(2); LINUX_HOST=1 builds it on the host, as a game's release library
+# then (its make): no Docker, a runtime for this machine only
+PYTHON_RUNTIME_LINUX_BUILD=$(CURDIR)/scripts/build-python-runtime $(1) $(2) $(PYTHON_RUNTIME_BUILD_DIR)/work
+
+$(PYTHON_RUNTIME_BUILD_DIR)/linux/python%: scripts/build-python-runtime | links
+	$(if $(LINUX_HOST),$(call PYTHON_RUNTIME_LINUX_BUILD,$*,$@),$(LIBRELOADED_MAKE) linux-sdk-run \
+	    "LINUX_SDK_COMMAND=$(call PYTHON_RUNTIME_LINUX_BUILD,$*,$@)")
+
+$(PYTHON_RUNTIME_BUILD_DIR)/windows/python%: scripts/fetch-python-runtime-windows
+	scripts/fetch-python-runtime-windows $* $@ $(PYTHON_RUNTIME_BUILD_DIR)/work
 
 # A staged script or shader goes in with its .uid (scripts/check-staged-uids)
 check-staged-uids:

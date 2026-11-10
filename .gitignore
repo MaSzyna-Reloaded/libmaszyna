@@ -18,3 +18,5 @@
 /build-clang-tidy
 # the assembled documentation (make docs-site, docs-pdf)
 /build-docs/
+# the CPython runtimes of the cab Python screens (make python-runtime-linux, python-runtime-windows)
+/build-python-runtime/

@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 
-/// The pipe protocol between PythonScreenServer and maszyna-python-host, the process CPython 2.7
-/// runs in so that nothing the runtime does - a fatal error, a crash in an extension module - can
+/// The pipe protocol between PythonScreenServer and maszyna-python-host, the process CPython (2.7 or
+/// 3.x, one host each) runs in so that nothing the runtime does - a fatal error, a crash in an extension module - can
 /// end the game. The server writes requests to the host's stdin and reads replies from its stdout;
 /// the host's stderr is read only once the host has ended, for what it printed on its way out.
 ///
@@ -10,26 +10,29 @@
 /// Both ends run on one machine, so numbers are in its own byte order: integers fixed-size, a
 /// double as itself, a string as its size (uint32) and its UTF-8 bytes.
 namespace python_host {
-    /// Server -> host. Every request is answered by DONE or FRAME, LOG lines may come before it.
+    /// Server -> host. Every request is answered by DONE, FRAME or CHECKED, LOG lines may come before
+    /// it.
     enum class Request : uint8_t {
-        /// string game_dir: the scripts are now this directory's
-        ENTER_GAME_DIR = 1,
         /// uint64 screen, string script_path, uint32 count, count x (string key, a Value)
         RENDER = 2,
         /// uint64 screen: the screen is gone, and so is its script's instance
         FREE = 3,
+        /// string script_path: does the script compile, with the modules of the game directory it
+        /// imports, and load
+        CHECK = 4,
     };
 
     /// Host -> server
     enum class Reply : uint8_t {
         /// string text - a line for the game's log
         LOG = 1,
-        /// the host has started (its first reply), the game directory has been entered or a screen
-        /// freed
+        /// the host has started in its game directory (its first reply) or a screen has been freed
         DONE = 2,
         /// uint64 screen, int32 width, int32 height, uint32 size, size bytes of RGBA pixels (none
         /// when the script drew nothing), uint32 count, count x string command
         FRAME = 3,
+        /// uint8 1 when the script of a CHECK compiles and loads, 0 when it does not
+        CHECKED = 4,
     };
 
     /// A value of the state: its type (uint8), then the value

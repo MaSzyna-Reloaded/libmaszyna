@@ -191,9 +191,9 @@ walk a pantograph selector their FIZ never defines). The wrapper has a component
 FIZ has its section, and it does not invent one: no component pushed into vehicles without the
 section (pantograph switches into wagons), no default fallback in the cab, no static "default"
 method. When the diagnosis shows such a vehicle, the outcome is a correction of the original's
-FIZ (report it to the operator and list it in `TODO.md`), and the behaviour stays inert until
-then. 2026-10-04: all three of those workarounds were written for `PantographPresets=` and thrown
-away.
+FIZ (report it to the operator, and list it in `TODO.md` only on their order), and the behaviour
+stays inert until then. 2026-10-04: all three of those workarounds were written for
+`PantographPresets=` and thrown away.
 
 **A value with named cases is always an enum - ABSOLUTE.** Whatever the original keeps as a digit,
 a char, a bit or a string standing for a case (`PantographPresets=0|1|3|2`, a switch type, a start
