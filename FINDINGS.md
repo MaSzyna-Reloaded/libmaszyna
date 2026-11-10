@@ -509,9 +509,11 @@ code belongs to the game's `FINDINGS.md`.
   ("vulkan"); `DisplayServer.get_name() == "headless"` tells it, and with it no resource is made off
   the main thread (`ResourceLazyLoader.get_loads_off_main_thread()`). *(10-12 vehicles read off the
   main thread)*
-* A mesh that is saved, picked or read is an `MaszynaE3DMesh` with its arrays in memory, never an
-  `ArrayMesh`: saving or reading an `ArrayMesh` reads its buffers back from the GPU, a stall of
-  every frame in flight, on the main thread. *(10-12 E3D models saved on the main thread)*
+* An `ArrayMesh` keeps its arrays only in the GPU: saving or reading it reads its buffers back, a
+  stall of every frame in flight, on the main thread. A model's geometry is saved from the parse's
+  arrays (`MaszynaE3DModelGeometry`) and let go once its meshes are made; a copy kept beside every
+  mesh (the former `MaszynaE3DMesh`) held every drawn model twice, in RAM and in VRAM. *(10-12 E3D
+  models saved on the main thread; 11-10 L053's vehicles in reach held 687 MB of arrays)*
 * A resource is saved only through `ResourceCache.resource_save()` and a scene packed only through
   `ResourceCache.scene_pack()`: both look up Godot's property defaults, a cache it fills without a
   lock, and two at once corrupt the heap. *(10-12 the crash at exit after a scenery parse)*
@@ -533,7 +535,7 @@ code belongs to the game's `FINDINGS.md`.
   made an empty chunk, cached and failing as a mesh when streamed (`array_len == 0`). *(10-02 an
   empty terrain chunk)*
 * What a streamed piece loads is held by its build and let go by its clear
-  (`ResourceLazyLoader`, with `reloaded/resources/lazy_loading`; off - the default - it is loaded
+  (`ResourceLazyLoader`, with `reloaded/resources/lazy_loading`, the default; off, it is loaded
   at registration and kept); a memo that never evicts grows with the session, and a cache file
   holds data, never a mesh. *(10-01 a scenery's whole terrain kept in memory)*
 * An object is never taken back from its `ObjectID` on another thread than the one that may drop
@@ -560,7 +562,7 @@ code belongs to the game's `FINDINGS.md`.
 * A game or editor still running the old library writes cache entries under a version the new
   scripts bumped - rebuild with Godot closed, or bump the version again. *(09-28 ED72 cache)*
 * A path handed to `FileAccess` is absolute, or it is silently `res://`. *(09-23 game dir ".")*
-* Code whose output is cached on disk bumps its cache tag (`structure-vN`, `CACHE_VERSION`,
+* Code whose output is cached on disk bumps its cache tag (`MMD_DATA_FORMAT_VERSION`, `CACHE_VERSION`,
   `FIZ_PARSER_FORMAT_VERSION`) in the same commit, and every `ResourceCache` is wired into "Clear
   cache". *(09-20 low-poly interior; 09-20 E186 main tank)*
 * Never delete a code span with a regex whose optional prefix can match across lines, and verify
@@ -703,8 +705,9 @@ code belongs to the game's `FINDINGS.md`.
   length is read off its Ogg pages, never by loading the file. *(10-02 the Vehicles stage spent
   its time on sound banks nobody heard)*
 * A vehicle's models are built when it comes within the draw distance and freed beyond it, never
-  at load (their files are loaded at load unless lazy loading is on); what the simulation needs of the model (the pantographs) is read off the model file,
-  not off its drawing. *(10-06 the Vehicles stage drew every vehicle of the scenery)*
+  at load, and their files are loaded only for that build; what the simulation needs of the model
+  (the pantographs) is read from the model's data alone while the vehicle's data is read, and kept
+  as the vehicle's configuration. *(10-06 the Vehicles stage drew every vehicle of the scenery)*
 * Code that runs in the editor calls no autoload that is not `@tool` (`CabinSystem`): the call is a script error returning null into the caller's data - a null part
   of a vehicle crashed the editor on its first rebuild. *(09-30 editor crash on a game dir change)*
 * A loaded scenery runs nothing: `SimulationServer`'s clock ticks only under a `SimulationRuntime`

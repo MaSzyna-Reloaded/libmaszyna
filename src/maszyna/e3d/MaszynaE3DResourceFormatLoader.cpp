@@ -1,6 +1,5 @@
+#include "maszyna/e3d/MaszynaE3DModelReader.hpp"
 #include "maszyna/e3d/MaszynaE3DResourceFormatLoader.hpp"
-#include "maszyna/e3d/e3d_parser.hpp"
-#include "maszyna/e3d/t3d_parser.hpp"
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -29,22 +28,7 @@ namespace godot {
     Variant MaszynaE3DResourceFormatLoader::_load(
             const String &p_path, const String &p_original_path, bool p_use_sub_threads, int32_t p_cache_mode) const {
 
-        Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::ModeFlags::READ);
-        if (!file.is_valid()) {
-            UtilityFunctions::push_error("Failed to open model file: " + p_path);
-            return Variant();
-        }
-
-        if (p_path.get_extension().to_lower() == "t3d") {
-            MaszynaT3DParser *parser = memnew(MaszynaT3DParser);
-            Variant result = parser->parse(file);
-            memdelete(parser);
-            return result;
-        }
-        MaszynaE3DParser *parser = memnew(MaszynaE3DParser);
-        Variant result = parser->parse(file);
-        memdelete(parser);
-        return result;
+        return MaszynaE3DModelReader::read_model(p_path);
     }
 
 } // namespace godot

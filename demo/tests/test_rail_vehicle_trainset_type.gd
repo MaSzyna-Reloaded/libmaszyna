@@ -13,13 +13,13 @@ var engine:RailVehicleController
 
 
 func before_each() -> void:
-    engine = build_vehicle("TestTypeEngine", FizVehicleBuilder.build_description_at(ENGINE_PATH)) as RailVehicleController
+    engine = build_vehicle("TestTypeEngine", MaszynaFizManager.load_description_at(ENGINE_PATH)) as RailVehicleController
     await wait_idle_frames(2)
 
 
 ## A car behind `previous`, its brake able to take `delays` (RailVehicleBrake.BrakeDelaySetting)
 func _add_car(vehicle_id:String, previous:RailVehicleController, delays:int) -> RailVehicleController:
-    var car:RailVehicleController = build_vehicle(vehicle_id, FizVehicleBuilder.build_description_at(CAR_PATH)) \
+    var car:RailVehicleController = build_vehicle(vehicle_id, MaszynaFizManager.load_description_at(CAR_PATH)) \
             as RailVehicleController
     await wait_idle_frames(2)
     (car.get_rail_component(RailVehicleComponentType.COMPONENT_BRAKES) as RailVehicleBrake).cntrl_brake_delays = delays

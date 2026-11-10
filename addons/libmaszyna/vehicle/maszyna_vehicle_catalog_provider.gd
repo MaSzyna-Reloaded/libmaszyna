@@ -114,7 +114,7 @@ func vehicle_get_side_view_coupling_width(vehicle:VehicleData) -> float:
             vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file())
 
 
-## The vehicle's .fiz built into the core's controller (FizVehicleBuilder.build_description()); null
+## The vehicle's .fiz built into the core's controller (MaszynaFizManager.load_description()); null
 ## for a vehicle of no .fiz - an index may list one (dynamic/road/jelcz's "315", its .fiz is 315dumb),
 ## which the original cannot drive either
 func vehicle_get_description(vehicle:VehicleData) -> VehicleController:
@@ -123,15 +123,16 @@ func vehicle_get_description(vehicle:VehicleData) -> VehicleController:
     if not FileAccess.file_exists(game_dir.path_join(MaszynaDataPath.resolve(
             game_dir, data_path.path_join(vehicle.vehicle.get_file() + ".fiz")))):
         return null
-    return FizVehicleBuilder.build_description(data_path, vehicle.vehicle.get_file())
+    return MaszynaFizManager.load_description(data_path, vehicle.vehicle.get_file())
 
 
 ## The vehicle's .mmd read in its skin (VehicleData.livery): its appearance
-## (MaszynaRailVehicle3DInstancer.read_structure())
+## (MaszynaVehicleMmdManager.load_mmd_data())
 func vehicle_get_appearance(vehicle:VehicleData) -> VehicleAppearance:
-    var structure:MaszynaVehicleStructure = MaszynaRailVehicle3DInstancer.read_structure(
-            vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), vehicle.livery, vehicle.vehicle_id)
-    return structure.appearance if structure else null
+    var mmd_data:MaszynaVehicleMmdData = MaszynaVehicleMmdManager.load_mmd_data(
+            vehicle.vehicle.get_base_dir(), vehicle.vehicle.get_file(), vehicle.livery, vehicle.vehicle_id
+    ) as MaszynaVehicleMmdData
+    return mmd_data.appearance if mmd_data else null
 
 
 func vehicle_create(vehicle:VehicleData, scene_node_id:int) -> RID:

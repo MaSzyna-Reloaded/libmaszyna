@@ -96,7 +96,8 @@ namespace godot {
         return result;
     }
 
-    std::vector<MaszynaE3DParser::SubModelData> MaszynaE3DParser::_parse_file(const Ref<FileAccess> &p_file) const {
+    std::vector<MaszynaE3DParser::SubModelData>
+    MaszynaE3DParser::_parse_file(const Ref<FileAccess> &p_file, const bool p_geometry, VertexChunk &r_vertices) const {
         ChunkHeader chunk_header = _read_chunk_header(p_file);
         std::vector<SubModelData> submodels;
         if (chunk_header.id != "E3D0") {
@@ -133,6 +134,10 @@ namespace godot {
                 }
             } else if (chunk.id == "IDX1") {
                 const uint64_t pos = p_file->get_position();
+                if (!p_geometry) {
+                    p_file->seek(pos + chunk.data_len);
+                    continue;
+                }
                 for (SubModelData &submodel: submodels) {
                     if (submodel.index_count <= 0) {
                         continue;
@@ -149,6 +154,10 @@ namespace godot {
                 p_file->seek(pos + chunk.data_len);
             } else if (chunk.id == "IDX2") {
                 const uint64_t pos = p_file->get_position();
+                if (!p_geometry) {
+                    p_file->seek(pos + chunk.data_len);
+                    continue;
+                }
                 for (SubModelData &submodel: submodels) {
                     p_file->seek(pos + (static_cast<uint64_t>(submodel.first_index_idx) * 2));
                     PackedInt32Array indices;
@@ -162,6 +171,10 @@ namespace godot {
                 p_file->seek(pos + chunk.data_len);
             } else if (chunk.id == "IDX4") {
                 const uint64_t pos = p_file->get_position();
+                if (!p_geometry) {
+                    p_file->seek(pos + chunk.data_len);
+                    continue;
+                }
                 for (SubModelData &submodel: submodels) {
                     p_file->seek(pos + (static_cast<uint64_t>(submodel.first_index_idx) * 4));
                     PackedInt32Array indices;
@@ -178,6 +191,11 @@ namespace godot {
                 const bool has_tangents = chunk.id == "VNT2";
                 const uint64_t vertex_size = has_tangents ? VNT2_VERTEX_SIZE : VNT0_VERTEX_SIZE;
                 const uint64_t pos = p_file->get_position();
+                r_vertices = VertexChunk{pos, vertex_size};
+                if (!p_geometry) {
+                    p_file->seek(pos + chunk.data_len);
+                    continue;
+                }
                 for (SubModelData &submodel: submodels) {
                     p_file->seek(pos + (static_cast<uint64_t>(submodel.first_vertex_idx) * vertex_size));
 
@@ -221,10 +239,7 @@ namespace godot {
                     UtilityFunctions::push_warning("Skipping unsupported chunk: " + chunk.id);
                 }
 
-                if (chunk.data_len > 0) {
-                    // ReSharper disable once CppExpressionWithoutSideEffects
-                    p_file->get_buffer(chunk.data_len);
-                }
+                p_file->seek(p_file->get_position() + chunk.data_len);
             }
         }
 
@@ -269,7 +284,43 @@ namespace godot {
     }
 
     Ref<MaszynaE3DModel> MaszynaE3DParser::parse(const Ref<FileAccess> &p_file) const {
-        std::vector<SubModelData> submodels = _parse_file(p_file);
-        return MaszynaE3DModelBuilder::build(submodels);
+        VertexChunk vertices;
+        std::vector<SubModelData> submodels = _parse_file(p_file, true, vertices);
+        Ref<MaszynaE3DModel> model = MaszynaE3DModelBuilder::build(submodels);
+        model->apply_geometry(MaszynaE3DModelBuilder::build_geometry(submodels));
+        return model;
+    }
+
+    Ref<MaszynaE3DModel> MaszynaE3DParser::parse_description(const Ref<FileAccess> &p_file) const {
+        VertexChunk vertices;
+        return MaszynaE3DModelBuilder::build(_parse_file(p_file, false, vertices));
+    }
+
+    Ref<MaszynaE3DModelGeometry> MaszynaE3DParser::parse_geometry(const Ref<FileAccess> &p_file) const {
+        VertexChunk vertices;
+        std::vector<SubModelData> submodels = _parse_file(p_file, true, vertices);
+        return MaszynaE3DModelBuilder::build_geometry(submodels);
+    }
+
+    PackedVector3Array
+    MaszynaE3DParser::parse_submodel_positions(const Ref<FileAccess> &p_file, const int p_index) const {
+        VertexChunk vertices;
+        const std::vector<SubModelData> submodels = _parse_file(p_file, false, vertices);
+        PackedVector3Array positions;
+        if (p_index < 0 || static_cast<size_t>(p_index) >= submodels.size() || vertices.vertex_size == 0) {
+            return positions;
+        }
+        const SubModelData &submodel = submodels[p_index];
+        // a vertex begins with its position: three floats (Model3d.cpp:1984)
+        for (int vertex = 0; vertex < submodel.vertex_count; ++vertex) {
+            p_file->seek(
+                    vertices.position +
+                    ((static_cast<uint64_t>(submodel.first_vertex_idx) + vertex) * vertices.vertex_size));
+            const float x = p_file->get_float();
+            const float y = p_file->get_float();
+            const float z = p_file->get_float();
+            positions.push_back(Vector3(x, y, z));
+        }
+        return positions;
     }
 } // namespace godot

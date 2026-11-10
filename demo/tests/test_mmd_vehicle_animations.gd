@@ -32,7 +32,7 @@ func _parameters(file_name:String) -> Dictionary:
 
 
 func _appearance(file_name:String) -> MaszynaRailVehicleAppearance:
-    return MaszynaRailVehicle3DInstancer.read_structure(DATA_PATH, file_name, "", "animated").appearance
+    return MaszynaRailVehicle3DInstancer.read_mmd_data(DATA_PATH, file_name, "", "animated").appearance
 
 
 func test_pantograph_elements_are_named_by_the_prefixes_the_mmd_declares() -> void:
@@ -46,9 +46,9 @@ func test_pantograph_elements_are_named_by_the_prefixes_the_mmd_declares() -> vo
 
 func test_the_model_moves_the_submodels_the_mmd_names() -> void:
     var appearance:MaszynaRailVehicleAppearance = _appearance("animated")
-    assert_eq(appearance.pantograph_front_arms, FRONT_PANTOGRAPH, "the front pantograph by its own prefixes")
-    assert_eq(appearance.pantograph_rear_arms, PackedStringArray(),
-            "the model's second pantograph is not one the MMD declares")
+    var pantographs:Array[PackedStringArray] = [FRONT_PANTOGRAPH]
+    assert_eq(appearance.pantograph_arms, pantographs,
+            "the front pantograph by its own prefixes; the model's second is not one the MMD declares")
     assert_eq(appearance.powered_wheels, PackedStringArray(["wheel1", "wheel2"]), "the wheels by animwheelprefix:")
     assert_eq(appearance.wiper_arms.size(), 12, "four wipers declared, three elements each")
     assert_eq(appearance.wiper_arms[0], "wiper1_p1")
@@ -58,7 +58,7 @@ func test_the_model_moves_the_submodels_the_mmd_names() -> void:
 func test_counts_end_at_the_first_negative_number() -> void:
     var appearance:MaszynaRailVehicleAppearance = _appearance("animated_short")
     assert_eq(appearance.powered_wheels, PackedStringArray(["wheel1", "wheel2"]), "the wheels before the end mark")
-    assert_eq(appearance.pantograph_front_arms, PackedStringArray(), "no pantograph after it")
+    assert_eq(appearance.pantograph_arms.size(), 0, "no pantograph after it")
     assert_eq(appearance.wiper_arms, PackedStringArray(), "no wiper after it")
 
 

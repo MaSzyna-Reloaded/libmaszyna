@@ -34,7 +34,7 @@ func after_each() -> void:
 
 func _build(vehicle_id:String, auto_warning:bool) -> void:
     _clock = SimulationServer.time_of_day
-    var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
+    var description:VehicleController = MaszynaFizManager.load_description_at(MOTOR_CAR_PATH)
     var doors:RailVehicleDoors = description.get_component(VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     doors.close_auto_close_warning = auto_warning
     var train:VehicleController = build_vehicle(vehicle_id, description, 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)

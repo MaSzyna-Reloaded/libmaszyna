@@ -26,12 +26,12 @@ const CAR_OBSTACLE_RANGE:float = 750.0
 
 ## Bump whenever a fiz_train_*_parser.gd file's parsing/field-mapping LOGIC changes (not just
 ## FIZ data) - mirrors MaszynaE3DModel.FORMAT_VERSION (plugins/libmaszyna/addons/libmaszyna/e3d/maszyna_e3d_model_manager.gd), the
-## same on-disk-cache-invalidation pattern for the same reason: _make_cache_hash() below is keyed
+## same on-disk-cache-invalidation pattern for the same reason: MaszynaFizManager's cache is keyed
 ## on the source .fiz file's own mtime, so a parser bugfix with no change to the .fiz data itself
 ## is otherwise silently served from a stale pre-fix cache entry until something touches that
 ## specific vehicle's file. Confirmed the hard way: a MotorParamTable0/nmax column-mapping fix
 ## had zero effect in a running game because of exactly this.
-const FIZ_PARSER_FORMAT_VERSION := 50
+const FIZ_PARSER_FORMAT_VERSION := 51
 
 ## Ordered (longest-prefix-first where ambiguity is possible) table of recognized FIZ section
 ## headers. `parser` is a section parser instance (see fiz_train_*_parser.gd) exposing
@@ -160,7 +160,7 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
 ## Cntrl. general subset/...) are applied to `target` and every section's VehicleComponent is
 ## attached to it with add_component(). `target` is expected to carry no components yet - a
 ## second run would attach a second component of the same type - which is why its one caller,
-## build_description_at(), hands it a controller it has just created, which becomes the
+## create_description(), hands it a controller it has just created, which becomes the
 ## description. `fiz_path` must already be a fully resolved, openable path (res://, user://, or
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
 ## `include` directives inside the file resolve relative to its own containing directory.
@@ -192,6 +192,9 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     var engine_power_source: RailVehicleEnginePowerSource = FizTrainPowerParser.create_node(context)
     if engine_power_source:
         target.add_component(engine_power_source)
+    var pantographs: RailVehiclePantographs = FizTrainPowerParser.create_pantographs(engine_power_source)
+    if pantographs:
+        target.add_component(pantographs)
 
     # The horns and the train radio have no FIZ section to trigger on: the horns are implied by the
     # MMD's horn buttons and sounds (RailVehicleHorns.hpp), the radio is the cab's (TTrain's channel
@@ -201,49 +204,10 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
         target.add_component(MaszynaMoverRailVehicleHorns.new())
         target.add_component(MaszynaMoverRailVehicleRadio.new())
 
-## Same on-disk cache used by MaszynaE3DModelManager for parsed E3D models (plugins/libmaszyna/addons/libmaszyna/e3d/
-## maszyna_e3d_model_manager.gd) - keyed by mtime+path like that cache's own _make_cache_hash(), so an
-## edited .fiz (or an `include`d one - mtime isn't recursive, but editing a shared .fiz.inc
-## while iterating is rare enough not to warrant walking every include) invalidates the entry.
-## Stored as the vehicle's description (a MaszynaMoverRailVehicleController with its components, a
-## RoadVehicleController for a road vehicle) - the parse result, which is the expensive part; a
-## vehicle is built from a copy of it (VehiclePhysicsNode).
-static var _cache = ResourceCache.create("fiz")
-
-static func clear_cache() -> void:
-    _cache.clear()
-
-static func _make_cache_path(fiz_path: String) -> String:
-    var relative_path: String = fiz_path.trim_prefix(MaszynaGameDirectory.get_game_dir().path_join(""))
-    return relative_path + ".res"
-
-static func _make_cache_hash(fiz_path: String) -> String:
-    return ("%s:%s:%s" % [
-        FileAccess.get_modified_time(fiz_path),
-        str(FIZ_PARSER_FORMAT_VERSION),
-        fiz_path
-    ]).md5_text()
-
-
-## The vehicle a .fiz describes, parsed once and cached on disk - the shape
-## MaszynaE3DModelManager.load_model() has, and for the same reason: a scenery repeats the same file
-## across many trainset entries, and parsing it is the expensive part.
-static func build_description(data_path: String, fiz_filename: String) -> VehicleController:
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = data_path.path_join(fiz_filename + ".fiz")
-    return build_description_at(game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path)))
-
-
-static func build_description_at(fiz_path: String) -> VehicleController:
-    # a vehicle whose file is not there is told on every load, its description cached or not
-    if not FileAccess.file_exists(fiz_path):
-        MaszynaFileIndexer.missing_file_add(fiz_path, MaszynaFileIndexer.MASZYNA_FILE_FIZ)
-    var cache_path: String = _make_cache_path(fiz_path)
-    var cache_hash: String = _make_cache_hash(fiz_path)
-    var description: VehicleController = _cache.get(cache_path, cache_hash) as VehicleController
-    if description:
-        return description
-
+## The vehicle the .fiz at fiz_path describes, parsed - not cached: MaszynaFizManager keeps the
+## descriptions
+static func create_description(fiz_path: String) -> VehicleController:
+    var description: VehicleController = null
     # what the file describes is its Param. Category= (LoadFIZ_Param, Mover.cpp:10256), a train
     # without one (CategoryFlag = 1, MOVER.h:1565): a road vehicle (is_car(), CategoryFlag & 2,
     # Driver.h:256-257) is a RoadVehicleController, of what it is and its size, driven as the
@@ -263,7 +227,6 @@ static func build_description_at(fiz_path: String) -> VehicleController:
         # its components are kept in the order the FIZ sections built them
         description = MaszynaMoverRailVehicleController.new()
         build_into(description, fiz_path)
-    _cache.set(cache_path, description, cache_hash)
     return description
 
 

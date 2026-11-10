@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DModelReader" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Reads a model file apart as its description and its geometry.
+	</brief_description>
+	<description>
+		A model file ([code].e3d[/code], [code].t3d[/code]) read by its extension's parser. What a vehicle's data needs of its model - the submodels its MMD names - is its description alone ([method read_description]), with nothing of it in the GPU; only a model drawn gets its geometry ([method read_geometry], [method MaszynaE3DModel.apply_geometry]). A pure helper; the models are kept by [code]MaszynaE3DModelManager[/code].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="read_description" qualifiers="static">
+			<return type="MaszynaE3DModel" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the description of the model file at [param path] - its submodels, their names, transforms and skins, its lights - without its geometry: no mesh, nothing in the GPU. Of an [code].e3d[/code] the vertex and index chunks are skipped unread. Null when it cannot be read.
+			</description>
+		</method>
+		<method name="read_geometry" qualifiers="static">
+			<return type="MaszynaE3DModelGeometry" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the geometry of the model file at [param path], to be applied to its description; null when it cannot be read.
+			</description>
+		</method>
+		<method name="read_model" qualifiers="static">
+			<return type="MaszynaE3DModel" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Returns the model to draw of the file at [param path]: its description with its geometry applied - its meshes in the GPU; null when it cannot be read.
+			</description>
+		</method>
+		<method name="read_submodel_positions" qualifiers="static">
+			<return type="PackedVector3Array" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="index" type="int" />
+			<description>
+				Returns the vertices of the submodel of geometry index [param index] in the model file at [param path], in the submodel's own frame; of an [code].e3d[/code] only they are read of the vertex chunk.
+			</description>
+		</method>
+	</methods>
+</class>

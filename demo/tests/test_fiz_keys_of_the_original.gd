@@ -82,7 +82,7 @@ func test_relay_reset_buttons() -> void:
 
 # LoadFIZ_TurboPos (Mover.cpp:10714) - the diesel engine's turbocharger position (SP42: TurboPos=5)
 func test_turbo_position_reaches_the_diesel_engine() -> void:
-    var description:VehicleController = FizVehicleBuilder.build_description_at(
+    var description:VehicleController = MaszynaFizManager.load_description_at(
             "res://tests/fixtures/dynamic/pkp/sp42_v1/101d.fiz")
     var engine:RailVehicleDieselEngine = null
     for component:VehicleComponent in description.get_components():

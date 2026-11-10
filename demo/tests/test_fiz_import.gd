@@ -11,7 +11,7 @@ var controller: VehicleController
 func before_each():
     vehicle = RailVehiclePhysicsNode.new()
     add_child(vehicle)
-    vehicle.set_controller(FizVehicleBuilder.build_description_at(FIXTURE_PATH))
+    vehicle.set_controller(MaszynaFizManager.load_description_at(FIXTURE_PATH))
     controller = VehicleServer.vehicle_get_controller(vehicle.get_vehicle_rid())
     await wait_idle_frames(2)
 
@@ -19,7 +19,7 @@ func before_each():
 ## The description is data: the vehicle is built from a copy of it, and the description itself is
 ## never a vehicle - no component joined to it, no command registered on it.
 func test_the_description_is_not_a_vehicle() -> void:
-    var description: VehicleController = FizVehicleBuilder.build_description_at(FIXTURE_PATH)
+    var description: VehicleController = MaszynaFizManager.load_description_at(FIXTURE_PATH)
     assert_true(description.components.size() > 0, "it carries its components")
     for component: VehicleComponent in description.components:
         assert_null(component.get_controller(), "%s joined no vehicle" % component.get_class())
@@ -61,7 +61,7 @@ func test_cntrl_general_subset():
 ## The battery's voltage is Light: LMaxVoltage (LoadFIZ_Light, Mover.cpp:11035) - without it the
 ## low voltage never comes and nothing of the vehicle starts
 func test_the_battery_voltage_comes_from_light() -> void:
-    var description: VehicleController = FizVehicleBuilder.build_description_at(
+    var description: VehicleController = MaszynaFizManager.load_description_at(
             "res://tests/fixtures/dynamic/pkp/303e_v1/303e-ep.fiz")
     var power_supply: RailVehiclePowerSupply = description.get_rail_component(
             RailVehicleComponentType.COMPONENT_POWER_SUPPLY)
@@ -88,7 +88,7 @@ func test_a_vehicle_with_a_cab_has_its_components() -> void:
 func test_a_wagon_has_no_cab_and_no_engine() -> void:
     var wagon := RailVehiclePhysicsNode.new()
     add_child_autofree(wagon)
-    wagon.set_controller(FizVehicleBuilder.build_description_at("res://tests/fixtures/test_wagon.fiz"))
+    wagon.set_controller(MaszynaFizManager.load_description_at("res://tests/fixtures/test_wagon.fiz"))
     var wagon_controller: VehicleController = VehicleServer.vehicle_get_controller(wagon.get_vehicle_rid())
     await wait_idle_frames(2)
     assert_null(wagon_controller.get_rail_component(RailVehicleComponentType.COMPONENT_MASTER_CONTROLLER))
@@ -191,7 +191,7 @@ func test_lights_list():
 func test_two_coupler_sections_reach_both_ends() -> void:
     var two_couplers := RailVehiclePhysicsNode.new()
     add_child_autofree(two_couplers)
-    two_couplers.set_controller(FizVehicleBuilder.build_description_at("res://tests/fixtures/test_vehicle_two_couplers.fiz"))
+    two_couplers.set_controller(MaszynaFizManager.load_description_at("res://tests/fixtures/test_vehicle_two_couplers.fiz"))
     await wait_idle_frames(2)
 
     var couplers:Array = VehicleServer.vehicle_get_controller(two_couplers.get_vehicle_rid()).find_rail_components(RailVehicleComponentType.COMPONENT_BUFFERS)
@@ -208,7 +208,7 @@ func test_two_coupler_sections_reach_both_ends() -> void:
 func test_bare_coupler_sized_by_the_engine_after_it() -> void:
     var bare := RailVehiclePhysicsNode.new()
     add_child_autofree(bare)
-    bare.set_controller(FizVehicleBuilder.build_description_at("res://tests/fixtures/test_vehicle_bare_coupler.fiz"))
+    bare.set_controller(MaszynaFizManager.load_description_at("res://tests/fixtures/test_vehicle_bare_coupler.fiz"))
     await wait_idle_frames(2)
     var built: VehicleController = VehicleServer.vehicle_get_controller(bare.get_vehicle_rid())
 
@@ -228,7 +228,7 @@ func test_bare_coupler_sized_by_the_engine_after_it() -> void:
 ## SA132's automatic gearbox, gear 0 the one it starts from and shifts out of by itself - dropped, every gear
 ## had a ratio of 0 and the engine drove nothing (FINDINGS.md)
 func test_a_diesel_gearbox_of_motor_param_table0() -> void:
-    var description: VehicleController = FizVehicleBuilder.build_description_at(
+    var description: VehicleController = MaszynaFizManager.load_description_at(
             "res://tests/fixtures/dynamic/pkp/21xm_v1/218ma_a_p4.fiz")
     var engine: RailVehicleDieselEngine = null
     for component: VehicleComponent in description.components:

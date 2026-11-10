@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaFizManager" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The vehicles' FIZ files as their descriptions, each read once.
+	</brief_description>
+	<description>
+		A [code].fiz[/code] read into its vehicle's description - a [VehicleController] with its components, which a vehicle is built of a copy of - and kept on disk: a scenery repeats the same file across many trainset entries, and parsing it is the expensive part. An entry is read again when its file changes (its modification time - an included file's is not seen) or the reader's format does. The reader is the FIZ parser, handed in by the plugin's runtime ([method set_description_reader]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="load_description">
+			<return type="VehicleController" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="fiz_filename" type="String" />
+			<description>
+				Returns the vehicle the [code].fiz[/code] of [param data_path]/[param fiz_filename] in the game's data describes.
+			</description>
+		</method>
+		<method name="load_description_at">
+			<return type="VehicleController" />
+			<param index="0" name="fiz_path" type="String" />
+			<description>
+				Returns the vehicle the [code].fiz[/code] at [param fiz_path] describes; null without a reader.
+			</description>
+		</method>
+		<method name="set_description_reader">
+			<return type="void" />
+			<param index="0" name="reader" type="Callable" />
+			<param index="1" name="format_version" type="int" />
+			<description>
+				Sets what reads a [code].fiz[/code] into its description - [code](fiz_path: String) -&gt; VehicleController[/code] - and [param format_version], the version of what it builds, raised whenever the parser changes it.
+			</description>
+		</method>
+	</methods>
+</class>

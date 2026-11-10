@@ -121,7 +121,7 @@ func test_brake_lines_add_up() -> void:
 ## system's vehicle_set_load() before vehicle_bind_controller())
 func _sgs_wagon_brake(vehicle_id:String, load_amount:float) -> RailVehicleBrake:
     var node:RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
-    node.controller = FizVehicleBuilder.build_description_at(SGS_WAGON_PATH)
+    node.controller = MaszynaFizManager.load_description_at(SGS_WAGON_PATH)
     node.vehicle_id = vehicle_id
     if load_amount > 0.0:
         node.load_name = SGS_WAGON_LOAD_NAME

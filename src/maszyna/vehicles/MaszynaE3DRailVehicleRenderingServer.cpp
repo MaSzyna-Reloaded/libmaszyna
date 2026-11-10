@@ -4,6 +4,7 @@
 #include "maszyna/e3d/MaszynaE3DRenderingServer.hpp"
 #include "maszyna/e3d/MaszynaE3DSubModel.hpp"
 #include "maszyna/vehicles/MaszynaMoverRailVehicleController.hpp"
+#include "maszyna/vehicles/MaszynaPantographGeometryReader.hpp"
 #include "maszyna/vehicles/MaszynaRailVehicleAppearance.hpp"
 #include "rendering/ModelRenderingServer.hpp"
 #include "resources/ResourceLazyLoader.hpp"
@@ -17,6 +18,7 @@
 #include "vehicles/rail/RailVehicleEngine.hpp"
 #include "vehicles/rail/RailVehicleLighting.hpp"
 #include "vehicles/rail/RailVehicleLoad.hpp"
+#include "vehicles/rail/RailVehiclePantographs.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
 #include "vehicles/rail/RailVehicleWipers.hpp"
 
@@ -65,31 +67,8 @@ namespace godot {
         /* Wiper elements: arm 1, arm 2, blade (DynObj.cpp:5838-5870) */
         constexpr int WIPER_ELEMENTS = 3;
         constexpr int WIPER_BLADE = 2;
-        /* Pantograph elements: lower arm, its pair, upper arm, its pair, slider (DynObj.cpp:5414) */
-        constexpr int PANTOGRAPH_ELEMENTS = 5;
-        constexpr int PANTOGRAPH_LOWER_ARM = 0;
-        constexpr int PANTOGRAPH_UPPER_ARM = 2;
-        constexpr int PANTOGRAPH_SLIDER = 4;
         /* Where a coupler adapter's model is looked for (TModelsManager::GetModel()) */
         constexpr const char *COUPLER_ADAPTER_MODELS = "models";
-        /* TAnimPant's dimensions of a pantograph type: lower and upper arm, the slider's horizontal
-         * offset and its height over its pivot - AKP_4E, and the DSAx, EC160_200 and WBL85 alike
-         * (DynObj.cpp:90-160) */
-        struct PantographDimensions {
-                double lower_length;
-                double upper_length;
-                double horizontal;
-                double slider_height;
-        };
-        constexpr PantographDimensions PANTOGRAPH_AKP_4E{1.22, 1.755, 0.535, 0.07};
-        constexpr PantographDimensions PANTOGRAPH_DSA{1.98374, 2.14199, 0.142, 0.09353};
-        /* common_pantograph_settings(): the lower arm's angle lowered (DynObj.cpp:74) */
-        constexpr double PANTOGRAPH_LOWER_REST_ANGLE_DEGREES = 2.8547285515689267247882521833308;
-        /* The slider's scale the model's own height is trusted at (DynObj.cpp:5459) */
-        constexpr double PANTOGRAPH_SLIDER_SCALE_TOLERANCE = 0.001;
-        /* pantfactors: - two places along, then two slider heights (DynObj.cpp:5580-5588) */
-        constexpr int PANTOGRAPH_FACTOR_COUNT = 4;
-        constexpr int PANTOGRAPH_FACTOR_HEIGHTS = 2;
         constexpr std::array<const char *, 2> PNEUMATIC_SUBMODELS = {"cpneumatic", "pneumatic"};
     } // namespace
 
@@ -123,6 +102,13 @@ namespace godot {
         const VehicleServer *server = VehicleServer::get_instance();
         return server != nullptr ? Ref<RailVehicleController>(server->vehicle_get_controller(p_vehicle))
                                  : Ref<RailVehicleController>();
+    }
+
+    static Ref<RailVehiclePantographs> pantographs(const RID &p_vehicle) {
+        const RailVehicleServer *server = RailVehicleServer::get_instance();
+        return server != nullptr ? Ref<RailVehiclePantographs>(server->vehicle_component_get(
+                                           p_vehicle, RailVehicleComponentType::COMPONENT_PANTOGRAPHS))
+                                 : Ref<RailVehiclePantographs>();
     }
 
     template<typename T>
@@ -205,8 +191,7 @@ namespace godot {
         fading.erase(p_vehicle);
     }
 
-    /* Models of its own: the adapters' files are registered with the appearance's; a model handed
-     * over is its owner's, built already - its pantographs are read off it at once */
+    /* Models of its own: the adapters' files are registered with the appearance's */
     void MaszynaE3DRailVehicleRenderingServer::_vehicle_appearance_changed(const RID &p_vehicle) {
         const Visual *visual = _get_visual(p_vehicle);
         MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
@@ -214,9 +199,7 @@ namespace godot {
         ERR_FAIL_NULL(maszyna);
         if (visual->appearance.is_valid() && !visual->appearance->get_model_filename().is_empty()) {
             _register_coupler_adapters(p_vehicle, *maszyna);
-            return;
         }
-        _publish_pantographs(p_vehicle, *visual);
     }
 
     void MaszynaE3DRailVehicleRenderingServer::_vehicle_add_preload_requests(
@@ -239,14 +222,12 @@ namespace godot {
         }
     }
 
-    /* What depends on the model file alone - the pantographs' geometry, and the cargo and the
-     * adapters of a vehicle built already */
+    /* The cargo and the adapters of a vehicle built already */
     void MaszynaE3DRailVehicleRenderingServer::_vehicle_preloaded(const RID &p_vehicle) {
         const Visual *visual = _get_visual(p_vehicle);
         MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
         ERR_FAIL_NULL(visual);
         ERR_FAIL_NULL(maszyna);
-        _publish_pantographs(p_vehicle, *visual);
         if (visual->own_models && visual->model.is_valid()) {
             _update_coupler_adapters(p_vehicle, *visual, *maszyna);
             _build_load(p_vehicle, *visual, *maszyna);
@@ -303,10 +284,11 @@ namespace godot {
             return;
         }
         if (const Ref<MaszynaRailVehicleAppearance> appearance = visual->appearance; appearance.is_valid()) {
-            maszyna->pantograph_arms[RailVehicleEnginePowerSource::PANTOGRAPH_FIRST] =
-                    _parts(*visual, appearance->get_pantograph_front_arms());
-            maszyna->pantograph_arms[RailVehicleEnginePowerSource::PANTOGRAPH_SECOND] =
-                    _parts(*visual, appearance->get_pantograph_rear_arms());
+            const TypedArray<PackedStringArray> pantograph_arms = appearance->get_pantograph_arms();
+            maszyna->pantograph_arms.clear();
+            for (int64_t pantograph = 0; pantograph < pantograph_arms.size(); ++pantograph) {
+                maszyna->pantograph_arms.push_back(_parts(*visual, pantograph_arms[pantograph]));
+            }
             maszyna->wiper_arms = _parts(*visual, appearance->get_wiper_arms());
             maszyna->mirrors = _parts(*visual, appearance->get_mirrors());
             maszyna->doors = _parts(*visual, appearance->get_doors());
@@ -488,13 +470,12 @@ namespace godot {
         }
     }
 
-    /* The cargo is configuration of the vehicle, and so are the pantographs' type and factors */
+    /* The cargo is configuration of the vehicle */
     void MaszynaE3DRailVehicleRenderingServer::_on_vehicle_config_changed(const RID &p_vehicle) {
         const Visual *visual = _get_visual(p_vehicle);
         MaszynaVisual *maszyna = maszyna_vehicles.getptr(p_vehicle);
         if (visual != nullptr && maszyna != nullptr) {
             _update_load(p_vehicle, *visual, *maszyna);
-            _publish_pantographs(p_vehicle, *visual);
         }
     }
 
@@ -659,196 +640,23 @@ namespace godot {
         }
     }
 
-    /* The pantograph as the model builds it, handed to RailVehicleServer, which raises it -
-     * TAnimPant's lengths and angles (DynObj.cpp:5508-5549). Where it sits on the vehicle is read
-     * the same way the original reads it off the submodel's matrix (TAnimPant::vPos): without it
-     * both pantographs of a vehicle sampled the wire at the vehicle's origin. Read off the model
-     * file, not off its drawing - a vehicle far from the camera has none - and only for a vehicle
-     * with a power source, whose pantographs RailVehicleServer raises (vehicle_collect_current()):
-     * an EMU's car without an engine carries its unit's (FizTrainPowerParser). */
-    void
-    MaszynaE3DRailVehicleRenderingServer::_publish_pantographs(const RID &p_vehicle, const Visual &p_visual) const {
-        ModelRenderingServer *models = ModelRenderingServer::get_instance();
-        const RailVehicleServer *server = RailVehicleServer::get_instance();
-        const Ref<RailVehicleEnginePowerSource> source =
-                server != nullptr ? Ref<RailVehicleEnginePowerSource>(server->vehicle_component_get(
-                                            p_vehicle, RailVehicleComponentType::COMPONENT_ENGINE_POWER_SOURCE))
-                                  : Ref<RailVehicleEnginePowerSource>();
-        const Ref<RailVehicleAppearance> &appearance = p_visual.appearance;
-        ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance();
-        if (models == nullptr || lazy_loader == nullptr || appearance.is_null() || source.is_null()) {
-            return;
-        }
-        // the model this server builds from the appearance, or the one handed over
-        Ref<MaszynaE3DModel> model;
-        if (const RID *resource = p_visual.model_resources.getptr(appearance->get_model_filename());
-            resource != nullptr) {
-            model = _get_model(p_visual, *resource);
-        }
-        if (model.is_null() && p_visual.model.is_valid()) {
-            model = MaszynaE3DRenderingServer::get_instance()->instance_get_model(p_visual.model);
-        }
-        if (model.is_null()) {
-            return;
-        }
-        _publish_pantograph_geometry(p_vehicle, p_visual, model, RailVehicleEnginePowerSource::PANTOGRAPH_FIRST);
-        _publish_pantograph_geometry(p_vehicle, p_visual, model, RailVehicleEnginePowerSource::PANTOGRAPH_SECOND);
-    }
-
-    /* The submodel of the model by its lowered name, and where it rests in the model's frame - the
-     * chain of its parents' transforms; null when the model has none of that name */
-    static Ref<MaszynaE3DSubModel> find_submodel(
-            const TypedArray<MaszynaE3DSubModel> &p_submodels, const String &p_name, const Transform3D &p_parent,
-            Transform3D &p_r_transform) {
-        for (int index = 0; index < p_submodels.size(); ++index) {
-            Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
-            if (submodel.is_null()) {
-                continue;
-            }
-            const Transform3D transform = p_parent * submodel->get_transform();
-            if (submodel->get_name().to_lower() == p_name) {
-                p_r_transform = transform;
-                return submodel;
-            }
-            if (Ref<MaszynaE3DSubModel> found =
-                        find_submodel(submodel->get_submodels(), p_name, transform, p_r_transform);
-                found.is_valid()) {
-                return found;
-            }
-        }
-        return {};
-    }
-
-    /* The pantograph as TAnimPant builds it (DynObj.cpp:5404-5480, 5577-5633): the arms' dimensions of
-     * the type the FIZ names (PantType=, DynObj.cpp:90-194), or - QUIRK, as long as the FIZ files do
-     * not name their type - measured from the model: the lower arm's place, the arms' lengths and
-     * rest angles from the lower arm to the upper one and the slider, the slider's height over its
-     * pivot and its place along the vehicle. A slider the model cannot be measured by takes its
-     * place and height from the MMD's pantfactors:, and with it a pantograph with no lower arm stands
-     * on top of the vehicle's box. Without a slider nothing is animated. */
-    void MaszynaE3DRailVehicleRenderingServer::_publish_pantograph_geometry(
-            const RID &p_vehicle, const Visual &p_visual, const Ref<MaszynaE3DModel> &p_model,
-            const RailVehicleEnginePowerSource::PantographSelector p_pantograph) const {
-        RailVehicleServer *server = RailVehicleServer::get_instance();
-        const VehicleServer *vehicle_server = VehicleServer::get_instance();
-        const Ref<MaszynaRailVehicleAppearance> appearance = p_visual.appearance;
-        if (server == nullptr || vehicle_server == nullptr || appearance.is_null()) {
-            return;
-        }
-        const PackedStringArray names = p_pantograph == RailVehicleEnginePowerSource::PANTOGRAPH_FIRST
-                                                ? appearance->get_pantograph_front_arms()
-                                                : appearance->get_pantograph_rear_arms();
-        if (names.size() != PANTOGRAPH_ELEMENTS) {
-            return;
-        }
-        // each arm where it rests in the vehicle's own frame, and the slider's own submodel
-        const Transform3D model_transform = appearance->get_model_transform();
-        Part arms[PANTOGRAPH_ELEMENTS];
-        Ref<MaszynaE3DSubModel> slider_model;
-        for (int element = 0; element < PANTOGRAPH_ELEMENTS; ++element) {
-            Transform3D rest;
-            const String name = names[element].to_lower();
-            const Ref<MaszynaE3DSubModel> submodel =
-                    name.is_empty() ? Ref<MaszynaE3DSubModel>()
-                                    : find_submodel(p_model->get_submodels(), name, Transform3D(), rest);
-            if (submodel.is_valid()) {
-                arms[element] = Part{name, model_transform * rest};
-            }
-            if (element == PANTOGRAPH_SLIDER) {
-                slider_model = submodel;
-            }
-        }
-        if (slider_model.is_null()) {
-            return;
-        }
-        const Ref<RailVehicleEnginePowerSource> source =
-                server->vehicle_component_get(p_vehicle, RailVehicleComponentType::COMPONENT_ENGINE_POWER_SOURCE);
-        const RailVehicleEnginePowerSource::PantographType type =
-                source.is_valid() ? source->get_current_collector_pantograph_type()
-                                  : RailVehicleEnginePowerSource::PANTOGRAPH_TYPE_NONE;
-        const PantographDimensions &dimensions =
-                type == RailVehicleEnginePowerSource::PANTOGRAPH_TYPE_NONE ||
-                                type == RailVehicleEnginePowerSource::PANTOGRAPH_TYPE_AKP_4E
-                        ? PANTOGRAPH_AKP_4E
-                        : PANTOGRAPH_DSA;
-        double lower_length = dimensions.lower_length;
-        double upper_length = dimensions.upper_length;
-        double horizontal = dimensions.horizontal;
-        double slider_height = dimensions.slider_height;
-        double lower_rest_angle = Math::deg_to_rad(PANTOGRAPH_LOWER_REST_ANGLE_DEGREES);
-        double upper_rest_angle =
-                Math::acos(((lower_length * Math::cos(lower_rest_angle)) + horizontal) / upper_length);
-        const bool measured = type == RailVehicleEnginePowerSource::PANTOGRAPH_TYPE_NONE;
-        const Part &lower = arms[PANTOGRAPH_LOWER_ARM];
-        const Part &upper = arms[PANTOGRAPH_UPPER_ARM];
-        const Part &slider = arms[PANTOGRAPH_SLIDER];
-        Vector3 position;
-        if (lower.submodel.is_empty()) {
-            slider_height = 0.0;
-        } else {
-            position.x = lower.rest.origin.x;
-            position.y = lower.rest.origin.y;
-            if (measured && !upper.submodel.is_empty()) {
-                const Vector3 lower_to_upper = lower.rest.basis.inverse().xform(upper.rest.origin - lower.rest.origin);
-                const Vector3 upper_to_slider =
-                        upper.rest.basis.inverse().xform(slider.rest.origin - upper.rest.origin);
-                lower_length = Vector2(lower_to_upper.y, lower_to_upper.z).length();
-                upper_length = Vector2(upper_to_slider.y, upper_to_slider.z).length();
-                horizontal = Math::abs(upper_to_slider.y) - Math::abs(lower_to_upper.y);
-                lower_rest_angle = Math::atan2(Math::abs(lower_to_upper.z), Math::abs(lower_to_upper.y));
-                upper_rest_angle = Math::atan2(Math::abs(upper_to_slider.z), Math::abs(upper_to_slider.y));
-                // the slider's own top over its pivot and its place along, while its scale holds
-                // (DynObj.cpp:5455-5475); a slider with no mesh has no top over it
-                if (Math::abs(slider.rest.basis.determinant() - 1.0) < PANTOGRAPH_SLIDER_SCALE_TOLERANCE) {
-                    slider_height = slider_model->get_mesh().is_valid()
-                                            ? slider.rest.xform(slider_model->get_mesh()->get_aabb()).get_end().y -
-                                                      slider.rest.origin.y
-                                            : 0.0;
-                    position.z = slider.rest.origin.z;
-                } else {
-                    slider_height = 0.0;
-                }
-            }
-        }
-        const PackedFloat64Array factors = appearance->get_pantograph_factors();
-        if (factors.size() == PANTOGRAPH_FACTOR_COUNT) {
-            const int index = p_pantograph == RailVehicleEnginePowerSource::PANTOGRAPH_FIRST ? 0 : 1;
-            if (slider_height == 0.0) {
-                // the MMD's place along is the model's own, the vehicle frame turns it (DynObj.cpp:5605-5614)
-                position.z = model_transform.basis.xform(Vector3(0.0, 0.0, static_cast<real_t>(factors[index]))).z;
-                slider_height = factors[PANTOGRAPH_FACTOR_HEIGHTS + index];
-            }
-            if (position.y == 0.0) {
-                const double raised = (lower_length * Math::sin(lower_rest_angle)) +
-                                      (upper_length * Math::sin(upper_rest_angle)) + slider_height;
-                position.y = static_cast<real_t>(
-                        vehicle_server->vehicle_get_dimensions(p_vehicle).y - slider_height - raised);
-            }
-        }
-        server->vehicle_set_pantograph_geometry(
-                p_vehicle, p_pantograph, position, lower_length, upper_length, horizontal, lower_rest_angle,
-                upper_rest_angle, slider_height);
-    }
-
-    /* The arms drawn as far as RailVehicleServer has raised them: lower arm, its pair, upper arm,
-     * its pair, slider */
+    /* The arms drawn as far as the vehicle's pantographs are raised (RailVehiclePantographs), each
+     * of the model's by the pantograph of its index: lower arm, its pair, upper arm, its pair,
+     * slider. One the vehicle has not got stays lowered. */
     void MaszynaE3DRailVehicleRenderingServer::_pose_pantographs(
             const RID &p_vehicle, Visual &p_visual, const MaszynaVisual &p_maszyna) {
-        const RailVehicleServer *server = RailVehicleServer::get_instance();
-        if (server == nullptr) {
-            return;
-        }
-        for (const RailVehicleEnginePowerSource::PantographSelector pantograph:
-             {RailVehicleEnginePowerSource::PANTOGRAPH_FIRST, RailVehicleEnginePowerSource::PANTOGRAPH_SECOND}) {
+        const Ref<RailVehiclePantographs> raised = pantographs(p_vehicle);
+        const int count = raised.is_valid() ? raised->get_pantograph_count() : 0;
+        for (int pantograph = 0; pantograph < p_maszyna.pantograph_arms.size() && pantograph < count; ++pantograph) {
             const Vector<Part> &arms = p_maszyna.pantograph_arms[pantograph];
-            if (arms.size() != PANTOGRAPH_ELEMENTS) {
+            if (arms.size() != MaszynaPantographGeometryReader::ELEMENTS) {
                 continue;
             }
-            const Vector2 raise = server->vehicle_get_pantograph_raise(p_vehicle, pantograph);
-            const double lower = raise.x;
-            const double upper = raise.y;
-            const double angles[PANTOGRAPH_ELEMENTS] = {-lower, lower, lower + upper, -(lower + upper), -upper};
-            for (int index = 0; index < PANTOGRAPH_ELEMENTS; ++index) {
+            const double lower = raised->get_pantograph_lower_raise(pantograph);
+            const double upper = raised->get_pantograph_upper_raise(pantograph);
+            const double angles[MaszynaPantographGeometryReader::ELEMENTS] = {
+                    -lower, lower, lower + upper, -(lower + upper), -upper};
+            for (int index = 0; index < MaszynaPantographGeometryReader::ELEMENTS; ++index) {
                 _pose(p_visual, arms[index], Basis(Vector3(1.0, 0.0, 0.0), static_cast<real_t>(angles[index])));
             }
         }

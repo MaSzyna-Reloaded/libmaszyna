@@ -1,5 +1,6 @@
 #pragma once
 #include "maszyna/e3d/MaszynaE3DModel.hpp"
+#include "maszyna/e3d/MaszynaE3DModelGeometry.hpp"
 #include "maszyna/e3d/MaszynaE3DSubModel.hpp"
 
 #include <array>
@@ -55,9 +56,13 @@ namespace godot {
 
             /// A transform from the 16 floats of a float4x4, in the order E3D and T3D store them
             static Transform3D make_matrix(const std::array<float, 16> &p_m);
-            /// Links the submodels by `first_child_idx`/`next_idx` and registers lights and smoke
-            /// sources; the meshes are made from the data, so it is consumed
-            static Ref<MaszynaE3DModel> build(std::vector<SubModelData> &p_submodels);
+            /// The model's description: links the submodels by `first_child_idx`/`next_idx` and
+            /// registers lights and smoke sources. No mesh is made - a submodel of triangles gets the
+            /// index of its surface in the geometry (build_geometry()), which is the submodel's own
+            static Ref<MaszynaE3DModel> build(const std::vector<SubModelData> &p_submodels);
+            /// The model's geometry, every submodel's surface by its index: the triangles turned
+            /// clockwise, the normals made where the data has none; the data is consumed
+            static Ref<MaszynaE3DModelGeometry> build_geometry(std::vector<SubModelData> &p_submodels);
 
         private:
             static constexpr std::array<std::string_view, 19> NON_LIGHTS_TO_EXCLUDE = {
@@ -86,7 +91,7 @@ namespace godot {
 
             static PackedVector3Array
             _calculate_normals(const PackedVector3Array &p_vertices, const PackedInt32Array &p_indices);
-            static Ref<MaszynaE3DSubModel> _create_submodel(SubModelData &p_submodel);
+            static Ref<MaszynaE3DSubModel> _create_submodel(const SubModelData &p_submodel, int p_index);
             static void _register_lights(
                     const Ref<MaszynaE3DModel> &p_model, const std::vector<Ref<MaszynaE3DSubModel>> &p_submodels,
                     const std::vector<int> &p_parent_indices);

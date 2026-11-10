@@ -4,7 +4,8 @@ class_name FIZResourceLoader
 
 ## Makes `.fiz` files directly `load()`-able as the vehicle's description - a
 ## MaszynaMoverRailVehicleController with the components it is made of - the same way `.e3d` files are directly loadable as an
-## MaszynaE3DModel via MaszynaE3DResourceFormatLoader, with no import step. Registered in libmaszyna.gd.
+## MaszynaE3DModel via MaszynaE3DResourceFormatLoader, with no import step - through MaszynaFizManager,
+## which keeps the descriptions. Registered in libmaszyna.gd.
 ##
 ## Not a PackedScene any more: a component belongs to a vehicle rather than to a scene, so a .fiz
 ## describes a vehicle, not a tree of nodes.
@@ -23,7 +24,7 @@ func _get_resource_type(path: String) -> String:
 
 
 func _load(path: String, original_path: String, use_sub_threads: bool, cache_mode: int) -> Variant:
-    var description: VehicleController = FizVehicleBuilder.build_description_at(path)
+    var description: VehicleController = MaszynaFizManager.load_description_at(path)
     if description == null:
         return ERR_CANT_OPEN
     return description

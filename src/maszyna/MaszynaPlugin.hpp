@@ -8,6 +8,8 @@ namespace godot {
     class MaszynaE3DParser;
     class MaszynaGameDirectory;
     class MaszynaFileIndexer;
+    class MaszynaFizManager;
+    class MaszynaVehicleMmdManager;
     class MaszynaE3DRailVehicleRenderingServer;
     class MaszynaE3DRenderingServer;
     class MaszynaE3DRoadVehicleRenderingServer;
@@ -30,6 +32,8 @@ namespace godot {
             /* Owned: created by create_servers(), freed by free_servers() */
             MaszynaGameDirectory *game_directory = nullptr;
             MaszynaFileIndexer *file_indexer = nullptr;
+            MaszynaFizManager *fiz_manager = nullptr;
+            MaszynaVehicleMmdManager *vehicle_mmd_manager = nullptr;
             MaszynaE3DParser *e3d_parser = nullptr;
             MaszynaE3DRenderingServer *e3d_rendering_server = nullptr;
             MaszynaE3DRailVehicleRenderingServer *rail_vehicle_rendering_server = nullptr;

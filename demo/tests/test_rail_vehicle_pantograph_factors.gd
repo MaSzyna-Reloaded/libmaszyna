@@ -36,11 +36,14 @@ func after_each() -> void:
 
 
 func test_the_factors_are_read_with_the_originals_corrections() -> void:
-    var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicle3DInstancer.read_structure(
-            DATA_PATH, "pantslider", "", "pantslider").appearance
-    assert_eq(appearance.pantograph_factors, PackedFloat64Array([FIRST_PLACE, -FIRST_PLACE, SLIDER_HEIGHT, SLIDER_HEIGHT]))
-    assert_eq(appearance.pantograph_front_arms, PackedStringArray(["", "", "", "", "slizg_pant01"]),
+    var mmd_data:MaszynaVehicleMmdData = MaszynaRailVehicle3DInstancer.read_mmd_data(
+            DATA_PATH, "pantslider", "", "pantslider")
+    var appearance:MaszynaRailVehicleAppearance = mmd_data.appearance
+    assert_eq(appearance.pantograph_arms[0], PackedStringArray(["", "", "", "", "slizg_pant01"]),
             "a slider alone is a pantograph")
+    assert_eq(mmd_data.pantograph_geometries.size(), 2, "both of the FIZ's pantographs")
+    assert_almost_eq(mmd_data.pantograph_geometries[0].slider_height, SLIDER_HEIGHT, TOLERANCE,
+            "the first height above 0.5 is the second's")
 
 
 func test_a_slider_only_pantograph_stands_where_the_factors_put_it() -> void:
@@ -50,8 +53,8 @@ func test_a_slider_only_pantograph_stands_where_the_factors_put_it() -> void:
     _assert_stands_where_the_factors_put_it()
 
 
-## The pantograph is the vehicle's, read off its model file: a vehicle not drawn - none is, while a
-## scenery loads and the streaming has no camera - raises it all the same
+## The pantograph is the vehicle's, measured from its model's data while its data is read: a vehicle
+## not drawn - none is, while a scenery loads and the streaming has no camera - has it all the same
 func test_a_pantograph_of_a_vehicle_not_drawn_stands_where_the_factors_put_it() -> void:
     assert_false(SceneryStreamingServer.streaming_has_camera(), "no camera to draw the vehicle near")
     var not_drawn:MaszynaRailVehicle3D = MaszynaRailVehicle3D.new()
@@ -68,8 +71,7 @@ func test_a_pantograph_of_a_vehicle_not_drawn_stands_where_the_factors_put_it() 
 
 
 func _assert_stands_where_the_factors_put_it() -> void:
-    var position:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(
-            vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_FIRST)
+    var position:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0)
     var lower_rest:float = deg_to_rad(LOWER_REST_ANGLE_DEGREES)
     var upper_rest:float = acos((LOWER_LENGTH * cos(lower_rest) + HORIZONTAL) / UPPER_LENGTH)
     var raised:float = LOWER_LENGTH * sin(lower_rest) + UPPER_LENGTH * sin(upper_rest) + SLIDER_HEIGHT

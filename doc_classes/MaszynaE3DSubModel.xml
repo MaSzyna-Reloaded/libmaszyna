@@ -4,7 +4,7 @@
 		Represents a single subcomponent of an E3D model, containing geometry and metadata.
 	</brief_description>
 	<description>
-		[MaszynaE3DSubModel] is a resource that stores the data for a specific part of an [MaszynaE3DModel]. It contains the [MaszynaE3DMesh] geometry, transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
+		[MaszynaE3DSubModel] is a resource that stores the data for a specific part of an [MaszynaE3DModel]. It contains its mesh once the model's geometry is applied ([method MaszynaE3DModel.apply_geometry]), transformation matrices, material properties, and animation logic specific to the MaSzyna E3D format. Submodels can be nested, allowing for complex hierarchical structures where child submodels inherit the transformations of their parents.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -32,6 +32,9 @@
 		</member>
 		<member name="far_attenuation_decay" type="int" setter="set_far_attenuation_decay" getter="get_far_attenuation_decay" default="0">
 			The type of distance attenuation (0: none, 1 or 2: inverse distance powers).
+		</member>
+		<member name="geometry_index" type="int" setter="set_geometry_index" getter="get_geometry_index" default="-1">
+			The submodel's surface in the model's geometry ([MaszynaE3DModelGeometry]); [code]-1[/code] for one without triangles.
 		</member>
 		<member name="light_angle" type="float" setter="set_light_angle" getter="get_light_angle" default="45.0">
 			The cone angle of the spotlight in degrees.
@@ -61,7 +64,7 @@
 			The submodel's material is translucent (bit 5 of the submodel's flags) - drawn with the blended variant.
 		</member>
 		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
-			The geometry of this submodel - an [MaszynaE3DMesh] when read from a model file, keeping its arrays in memory.
+			This submodel's mesh in the GPU, made of the model's geometry ([method MaszynaE3DModel.apply_geometry]); none in a description - what the cache keeps of a model.
 		</member>
 		<member name="near_attenuation_end" type="float" setter="set_near_attenuation_end" getter="get_near_attenuation_end" default="0.0">
 			Distance where the near attenuation ends.

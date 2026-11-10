@@ -78,7 +78,7 @@ func before_all() -> void:
 
     # the vehicle is configured by its model, before the Mover is initialised - applying a FIZ
     # afterwards leaves the backend running on the zeros it started with (mass 0 -> NaN velocity)
-    var model: VehicleController = FizVehicleBuilder.build_description_at(FIXTURE_FIZ)
+    var model: VehicleController = MaszynaFizManager.load_description_at(FIXTURE_FIZ)
     for index: int in VEHICLE_COUNT:
         var physics_node: RailVehiclePhysicsNode = RailVehiclePhysicsNode.new()
         physics_node.vehicle_id = "bench_vehicle_%d" % index

@@ -17,9 +17,9 @@ var received:Array[Array] = []
 
 func before_each() -> void:
     received.clear()
-    var cab:VehicleController = build_vehicle("TestHudCabCar", FizVehicleBuilder.build_description_at(CAB_CAR_PATH),
+    var cab:VehicleController = build_vehicle("TestHudCabCar", MaszynaFizManager.load_description_at(CAB_CAR_PATH),
             0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
-    var motor:VehicleController = build_vehicle("TestHudMotorCar", FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH))
+    var motor:VehicleController = build_vehicle("TestHudMotorCar", MaszynaFizManager.load_description_at(MOTOR_CAR_PATH))
     await wait_idle_frames(2)
     cab.couple(motor, RailVehicleController.COUPLER_END_REAR, RailVehicleController.COUPLER_END_FRONT,
             RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_PERMANENT

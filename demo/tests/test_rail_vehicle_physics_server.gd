@@ -659,7 +659,7 @@ func _create_controller(velocity: float = 0.0) -> VehicleController:
 ## A vehicle of the fixture FIZ - buffers and couplers that collide - rolling at `velocity` (m/s)
 func _create_fiz_vehicle(velocity: float) -> VehicleController:
     var controller: VehicleController = build_vehicle("fiz_train_%d" % created_controllers.size(),
-            FizVehicleBuilder.build_description_at(FIXTURE_PATH), velocity * 3.6)
+            MaszynaFizManager.load_description_at(FIXTURE_PATH), velocity * 3.6)
     created_controllers.append(controller)
     return controller
 

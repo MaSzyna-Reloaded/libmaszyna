@@ -1,10 +1,11 @@
 extends MaszynaGutTest
 
-## Where each pantograph sits on the vehicle is the vehicle's own geometry, and it comes from the
-## model: the original reads it off the pantograph submodel's matrix (TAnimPant::vPos,
-## DynObj.cpp:5508-5549 - sideways, up, and along the length). RailVehicleRenderingServer reads the
-## same thing off the arm submodels of the model and publishes it to RailVehicleServer, because the
-## wire is sampled at those points - one per pantograph.
+## Where each pantograph sits on the vehicle is the vehicle's own geometry - the configuration of its
+## RailVehiclePantographs - and what the FIZ does not give comes from the model: the original reads it
+## off the pantograph submodel's matrix (TAnimPant::vPos, DynObj.cpp:5508-5549 - sideways, up, and
+## along the length). MaszynaPantographGeometryReader reads the same thing off the arm submodels of
+## the model's data while the vehicle's data is read, because the wire is sampled at those points -
+## one per pantograph.
 ##
 ## The test discriminates: until the position was published, both pantographs of every vehicle in
 ## the game sampled the wire at the same place - the vehicle's origin - because the two exported
@@ -36,6 +37,13 @@ const SHORT_LOSS:float = 0.1
 const LONG_LOSS:float = 0.3
 ## Read by a pantograph at the wire [V]
 const POWERED_VOLTAGE:float = 100.0
+## AKP_4E's arms (DynObj.cpp:90-100) [m]
+const AKP_4E_LOWER_LENGTH:float = 1.22
+const AKP_4E_UPPER_LENGTH:float = 1.755
+## Arms shorter than the measured ones, which reach lower than the wire, and a rest angle higher than
+## the measured one [m, rad]
+const SHORT_ARM_LENGTH:float = 0.2
+const HIGH_REST_ANGLE:float = 0.8
 
 var vehicle:RailVehicle3D
 var physics_node:VehiclePhysicsNode
@@ -68,22 +76,41 @@ func after_each() -> void:
 ## A model with the five submodels a pantograph is animated through at each of `alongs`, in the order
 ## they are named: lower arm 1, lower arm 2, upper arm 1, upper arm 2, slider. The second arm of each
 ## pair is optional in the data, so it stands where the first one does.
+func _arm_positions(along:float) -> Array[Vector3]:
+    return [
+        Vector3(0.0, LOWER_HEIGHT, along),
+        Vector3(0.0, LOWER_HEIGHT, along),
+        Vector3(0.0, UPPER_HEIGHT, along + UPPER_LEAN),
+        Vector3(0.0, UPPER_HEIGHT, along + UPPER_LEAN),
+        Vector3(0.0, SLIDER_HEIGHT, along),
+    ]
+
+
+## The model drawn - its arms posed from the vehicle's pantographs
 func _add_model(alongs:Array[float]) -> void:
     var submodels:Dictionary = {}
     for pantograph:int in alongs.size():
-        var along:float = alongs[pantograph]
-        var positions:Array[Vector3] = [
-            Vector3(0.0, LOWER_HEIGHT, along),
-            Vector3(0.0, LOWER_HEIGHT, along),
-            Vector3(0.0, UPPER_HEIGHT, along + UPPER_LEAN),
-            Vector3(0.0, UPPER_HEIGHT, along + UPPER_LEAN),
-            Vector3(0.0, SLIDER_HEIGHT, along),
-        ]
+        var positions:Array[Vector3] = _arm_positions(alongs[pantograph])
         for index:int in range(ARM_NODE_COUNT):
             submodels["arm%d_%d" % [pantograph, index]] = Transform3D(Basis(), positions[index])
     var no_parents:Dictionary = {}
     vehicle.add_child(build_model_instance(submodels, no_parents))
     vehicle.model_instance_path = NodePath("Model")
+
+
+## The same model's description, as a vehicle's data reads it (MaszynaE3DModel without geometry)
+func _model_data(alongs:Array[float]) -> MaszynaE3DModel:
+    var submodels:Array[MaszynaE3DSubModel] = []
+    for pantograph:int in alongs.size():
+        var positions:Array[Vector3] = _arm_positions(alongs[pantograph])
+        for index:int in range(ARM_NODE_COUNT):
+            var submodel := MaszynaE3DSubModel.new()
+            submodel.resource_name = "arm%d_%d" % [pantograph, index]
+            submodel.transform = Transform3D(Basis(), positions[index])
+            submodels.append(submodel)
+    var data := MaszynaE3DModel.new()
+    data.submodels = submodels
+    return data
 
 
 ## The names of the pantograph's submodels, as the appearance of a vehicle assembled by hand gives
@@ -95,6 +122,19 @@ func _arm_names(pantograph:int) -> PackedStringArray:
     return names
 
 
+## The pantographs at `alongs` measured from the model's data, as a vehicle's data is read
+func _measured(alongs:Array[float], type:RailVehicleEnginePowerSource.PantographType) -> Array[RailVehiclePantograph]:
+    var data:MaszynaE3DModel = _model_data(alongs)
+    var factors:PackedFloat64Array = []
+    var measured:Array[RailVehiclePantograph] = []
+    for pantograph:int in alongs.size():
+        measured.append(MaszynaPantographGeometryReader.read(
+                data, "", _arm_names(pantograph), Transform3D(), type, factors, pantograph, 0.0,
+                RailVehicleEnginePowerSource.PANTOGRAPH_FIRST if pantograph % 2 == 0
+                else RailVehicleEnginePowerSource.PANTOGRAPH_SECOND))
+    return measured
+
+
 func _build_electric_vehicle() -> void:
     var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
     model.type_name = "test"
@@ -103,31 +143,34 @@ func _build_electric_vehicle() -> void:
     var power_source:RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
     power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
     power_source.current_collector_number_of_collectors = 2
+    var alongs:Array[float] = [FRONT_ALONG, REAR_ALONG]
+    var pantographs := RailVehiclePantographs.new()
+    pantographs.pantographs = _measured(alongs, RailVehicleEnginePowerSource.PANTOGRAPH_TYPE_NONE)
     var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     controller.add_component(engine)
     controller.add_component(power_source)
+    controller.add_component(pantographs)
 
     vehicle = RailVehicle3D.new()
-    var alongs:Array[float] = [FRONT_ALONG, REAR_ALONG]
     _add_model(alongs)
     var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicleAppearance.new()
-    appearance.pantograph_front_arms = _arm_names(0)
-    appearance.pantograph_rear_arms = _arm_names(1)
+    var arms:Array[PackedStringArray] = [_arm_names(0), _arm_names(1)]
+    appearance.pantograph_arms = arms
     vehicle.appearance = appearance
     vehicle.controller_path = NodePath("../%s" % physics_node.name)
     add_child(vehicle)
 
 
-func test_each_pantograph_publishes_its_own_position_to_the_vehicle() -> void:
+func test_each_pantograph_is_measured_where_its_lower_arm_stands() -> void:
     _build_electric_vehicle()
 
     assert_almost_eq(
-            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_FIRST),
+            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0),
             Vector3(0.0, LOWER_HEIGHT, FRONT_ALONG),
             Vector3(TOLERANCE, TOLERANCE, TOLERANCE),
             "the front pantograph's position is where its lower arm stands on the vehicle")
     assert_almost_eq(
-            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_SECOND),
+            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 1),
             Vector3(0.0, LOWER_HEIGHT, REAR_ALONG),
             Vector3(TOLERANCE, TOLERANCE, TOLERANCE),
             "the rear pantograph's position is where its lower arm stands on the vehicle")
@@ -136,8 +179,8 @@ func test_each_pantograph_publishes_its_own_position_to_the_vehicle() -> void:
 func test_the_two_pantographs_do_not_share_one_sampling_point() -> void:
     _build_electric_vehicle()
 
-    var front:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_FIRST)
-    var rear:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_SECOND)
+    var front:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 0)
+    var rear:Vector3 = RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), 1)
     assert_almost_eq(
             rear.z - front.z, REAR_ALONG - FRONT_ALONG, TOLERANCE,
             "the two pantographs are as far apart along the vehicle as the model puts them")
@@ -146,24 +189,23 @@ func test_the_two_pantographs_do_not_share_one_sampling_point() -> void:
             "neither pantograph samples the wire at the vehicle's origin, got %s and %s" % [front, rear])
 
 
-func test_a_vehicle_without_pantograph_arms_publishes_no_position() -> void:
-    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
-    model.type_name = "test"
-    physics_node = build_vehicle_node("test_pantograph_geometry_bare", model)
-    engine = MaszynaMoverRailVehicleElectricSeriesEngine.new()
-    var power_source:RailVehicleEnginePowerSource = MaszynaMoverRailVehicleEnginePowerSource.new()
-    power_source.source_type = RailVehicleController.POWER_SOURCE_CURRENTCOLLECTOR
-    var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
-    controller.add_component(engine)
-    controller.add_component(power_source)
+func test_a_pantograph_without_arms_in_the_model_has_no_geometry() -> void:
+    var none:Array[float] = []
+    var measured:RailVehiclePantograph = MaszynaPantographGeometryReader.read(
+            _model_data(none), "", PackedStringArray(), Transform3D(),
+            RailVehicleEnginePowerSource.PANTOGRAPH_TYPE_NONE, PackedFloat64Array(), 0, 0.0,
+            RailVehicleEnginePowerSource.PANTOGRAPH_FIRST)
+    assert_false(measured.has_geometry, "a model that carries no pantograph gives nothing to measure")
 
-    vehicle = RailVehicle3D.new()
-    vehicle.controller_path = NodePath("../%s" % physics_node.name)
-    add_child(vehicle)
 
-    assert_eq(
-            RailVehicleServer.vehicle_get_pantograph_position(vehicle.get_rid(), RailVehicleEnginePowerSource.PANTOGRAPH_FIRST), Vector3(),
-            "a vehicle whose model carries no pantograph has nothing to publish")
+## The FIZ comes first: a type it names gives the arms' dimensions, and the model only what the FIZ
+## does not give - where the pantograph stands
+func test_the_fizs_type_gives_the_arms_and_the_model_only_their_place() -> void:
+    var alongs:Array[float] = [FRONT_ALONG]
+    var measured:Array[RailVehiclePantograph] = _measured(alongs, RailVehicleEnginePowerSource.PANTOGRAPH_TYPE_AKP_4E)
+    assert_almost_eq(measured[0].lower_length, AKP_4E_LOWER_LENGTH, TOLERANCE, "the type's lower arm")
+    assert_almost_eq(measured[0].upper_length, AKP_4E_UPPER_LENGTH, TOLERANCE, "the type's upper arm")
+    assert_almost_eq(measured[0].position.y, LOWER_HEIGHT, TOLERANCE, "where the model's lower arm stands")
 
 
 ## A vehicle with one pantograph, standing under a powered wire on its track, with the pantograph
@@ -200,16 +242,20 @@ func _raise_pantograph_at_wire(vehicle_name:String) -> VehicleController:
     power_source.current_collector_max_voltage = 3600.0
     power_source.current_collector_number_of_collectors = 1
     power_source.current_collector_max_pantograph_tank_pressure = PANTOGRAPH_TANK_PRESSURE
+    var alongs:Array[float] = [FRONT_ALONG]
+    var pantographs := RailVehiclePantographs.new()
+    pantographs.pantographs = _measured(alongs, RailVehicleEnginePowerSource.PANTOGRAPH_TYPE_NONE)
     var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
     controller.add_component(engine)
     controller.add_component(power_source)
+    controller.add_component(pantographs)
     vehicle = RailVehicle3D.new()
     vehicle.start_track_name = "start"
     vehicle.start_track_offset = 20.0
-    var alongs:Array[float] = [FRONT_ALONG]
     _add_model(alongs)
     var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicleAppearance.new()
-    appearance.pantograph_front_arms = _arm_names(0)
+    var arms:Array[PackedStringArray] = [_arm_names(0)]
+    appearance.pantograph_arms = arms
     vehicle.appearance = appearance
     vehicle.controller_path = NodePath("../%s" % physics_node.name)
     add_child(vehicle)
@@ -231,7 +277,7 @@ func _raise_pantograph_at_wire(vehicle_name:String) -> VehicleController:
 
 ## FINDINGS.md 2026-09-29: entering the cab of a running 3E/1-42 rebuilt its model, and the arms
 ## taken again from the model's rest pose came down - the vehicle lost its voltage and its line
-## breaker opened. How far a pantograph is raised is the vehicle's own state (RailVehicleServer),
+## breaker opened. How far a pantograph is raised is the vehicle's own state (RailVehiclePantographs),
 ## and a model rebuilt to draw it keeps it.
 func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
     var controller:VehicleController = await _raise_pantograph_at_wire("test_pantograph_rebuilt")
@@ -254,6 +300,56 @@ func test_a_model_rebuilt_keeps_the_pantograph_at_the_wire() -> void:
     assert_eq(_vehicle_voltage(controller), 0.0, "a longer one does not")
 
 
+## The pantographs' configuration changed under a raised pantograph: it is rebuilt, and keeps its
+## slider at the wire
+func test_a_configuration_changed_keeps_the_pantograph_at_the_wire() -> void:
+    var controller:VehicleController = await _raise_pantograph_at_wire("test_pantograph_reconfigured")
+    assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "the raised pantograph reaches the wire")
+    var pantographs:RailVehiclePantographs = _pantographs(controller)
+    var height:float = pantographs.get_pantograph_height(0)
+
+    var alongs:Array[float] = [FRONT_ALONG]
+    pantographs.pantographs = _measured(alongs, RailVehicleEnginePowerSource.PANTOGRAPH_TYPE_NONE)
+    pantographs.apply_config()
+    assert_almost_eq(pantographs.get_pantograph_height(0), height, TOLERANCE, "the slider kept where it was")
+    VehicleServer.stepping_advance(STEP)
+
+    assert_gt(_front_voltage(controller), POWERED_VOLTAGE, "and the pantograph at the wire")
+
+
+## Arms rebuilt too short for the height the slider stood at reach as high as they can
+func test_arms_rebuilt_too_short_stand_as_high_as_they_reach() -> void:
+    var controller:VehicleController = await _raise_pantograph_at_wire("test_pantograph_shortened")
+    var pantographs:RailVehiclePantographs = _pantographs(controller)
+    var height:float = pantographs.get_pantograph_height(0)
+    var shortened:RailVehiclePantograph = pantographs.pantographs[0].duplicate()
+    shortened.lower_length = SHORT_ARM_LENGTH
+    shortened.upper_length = SHORT_ARM_LENGTH
+    var configuration:Array[RailVehiclePantograph] = [shortened]
+    pantographs.pantographs = configuration
+    pantographs.apply_config()
+
+    assert_lt(pantographs.get_pantograph_height(0), height, "lower than the slider stood")
+    assert_lt(pantographs.get_pantograph_height(0), 2.0 * SHORT_ARM_LENGTH + TOLERANCE,
+            "no higher than the arms reach")
+    assert_gt(pantographs.get_pantograph_lower_raise(0), 0.0, "and raised, not lowered")
+
+
+## Arms rebuilt resting higher than the slider stood stand at rest
+func test_arms_rebuilt_resting_higher_stand_at_rest() -> void:
+    _build_electric_vehicle()
+    var controller:VehicleController = VehicleServer.vehicle_get_controller(physics_node.get_vehicle_rid())
+    var pantographs:RailVehiclePantographs = _pantographs(controller)
+    var steep:RailVehiclePantograph = pantographs.pantographs[0].duplicate()
+    steep.lower_rest_angle = HIGH_REST_ANGLE
+    steep.upper_rest_angle = HIGH_REST_ANGLE
+    var configuration:Array[RailVehiclePantograph] = [steep, pantographs.pantographs[1]]
+    pantographs.pantographs = configuration
+    pantographs.apply_config()
+
+    assert_almost_eq(pantographs.get_pantograph_lower_raise(0), 0.0, TOLERANCE, "the lower arm at rest")
+
+
 ## The pantograph losing its wire is announced with the cause, beside the warning (Bad traction,
 ## scene.cpp:112) - what the game logs to place a main switch trip (#308, reports#16)
 func test_a_pantograph_losing_its_wire_announces_the_loss() -> void:
@@ -272,6 +368,10 @@ func test_a_pantograph_losing_its_wire_announces_the_loss() -> void:
     RailVehicleServer.vehicle_pantograph_contact_lost.disconnect(record)
     assert_eq(losses, [[controller.get_rid(), 0, RailVehicleServer.PANTOGRAPH_CONTACT_LOSS_NO_WIRE]],
             "the loss of the wire under the front pantograph, once")
+
+
+func _pantographs(controller:VehicleController) -> RailVehiclePantographs:
+    return controller.get_rail_component(RailVehicleComponentType.COMPONENT_PANTOGRAPHS) as RailVehiclePantographs
 
 
 func _vehicle_voltage(controller:VehicleController) -> float:

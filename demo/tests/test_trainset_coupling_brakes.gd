@@ -39,7 +39,7 @@ func before_each() -> void:
     nodes.clear()
     controllers.clear()
     brakes.clear()
-    var model:VehicleController = FizVehicleBuilder.build_description_at(FIXTURE_PATH)
+    var model:VehicleController = MaszynaFizManager.load_description_at(FIXTURE_PATH)
     for index:int in range(VEHICLE_COUNT):
         # the first vehicle is driven - an unmanned one is not simulated (FINDINGS, 09-23)
         var node:VehiclePhysicsNode = build_vehicle_node("TrainsetVehicle%d" % index, model,

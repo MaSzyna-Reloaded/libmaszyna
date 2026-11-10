@@ -3,10 +3,10 @@ extends EditorImportPlugin
 class_name FIZImportPlugin
 
 ## Standard Godot import pipeline for .fiz files placed inside the project (res://): gives the
-## Import dock, a .import sidecar, and Reimport - unlike FIZResourceLoader (a bare
+## Import dock, a .import sidecar, and Reimport - unlike fiz_resource_loader.gd (a bare
 ## ResourceFormatLoader), which only covers direct load()/FizTrainController.fiz_path access
 ## to .fiz files living outside the project, in the external MaSzyna data directory. Both
-## reuse the same FizVehicleBuilder builder. Registered via add_import_plugin() in
+## take the description from MaszynaFizManager. Registered via add_import_plugin() in
 ## libmaszyna.gd's _enter_tree()/_exit_tree().
 
 
@@ -60,7 +60,7 @@ func _get_priority() -> float:
 func _import(
         source_file: String, save_path: String, _options: Dictionary,
         _platform_variants: Array[String], _gen_files: Array[String]) -> Error:
-    var description: VehicleController = FizVehicleBuilder.build_description_at(source_file)
+    var description: VehicleController = MaszynaFizManager.load_description_at(source_file)
     if description == null:
         return ERR_CANT_CREATE
     return ResourceCache.resource_save(description, "%s.%s" % [save_path, _get_save_extension()])

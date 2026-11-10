@@ -91,6 +91,7 @@ namespace godot {
         BIND_PROPERTY(MaszynaE3DSubModel, Variant::TRANSFORM3D, transform);
         BIND_PROPERTY(MaszynaE3DSubModel, Variant::TRANSFORM3D, material_transform);
 
+        BIND_PROPERTY(MaszynaE3DSubModel, Variant::INT, geometry_index);
         BIND_PROPERTY_W_HINT(MaszynaE3DSubModel, Variant::OBJECT, mesh, PROPERTY_HINT_RESOURCE_TYPE, "Mesh");
 
         BIND_PROPERTY_W_HINT_RES_ARRAY(
