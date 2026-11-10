@@ -557,6 +557,9 @@ is in libreloaded's `TODO.md`.
   `command_param`, only as the guard of its key.
 * **Cab targets**: the motor car's ammeters, voltmeters and lamps (`mvControlled` in
   `update_gauges`) need `target` in `MmdSemanticCatalog`.
+* **`PrepareEngine()` without its heating gate**: the original prepares the vehicle only with
+  `IsHeatingTemperatureOK` as well as `ispoweravailable` (`Driver.cpp:2824-2825`); the driver
+  cues `WAIT_TEMPERATURE_TOO_LOW` and still goes on to close a cold diesel's line breaker.
 
 ## Game data
 
