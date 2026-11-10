@@ -299,7 +299,7 @@ func test_the_low_poly_interior_hides_the_cab_whose_interior_is_shown() -> void:
 
 
 func test_coupling_shows_the_owned_submodel_and_keeps_missing_hose_geometry_off() -> void:
-    var description:VehicleController = FizVehicleBuilder.build_description_at(VEHICLE_FIXTURE)
+    var description:VehicleController = MaszynaFizManager.load_description_at(VEHICLE_FIXTURE)
     _model = _coupler_model("cpneumatic2", HoseGeometry.HANGING_ONLY)
     _other_model = _coupler_model("cpneumatic1", HoseGeometry.CONNECTED)
     _vehicle = _build_coupler_vehicle("RenderingCouplerFirst", OFFSET, description, _model)

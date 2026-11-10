@@ -88,7 +88,7 @@ func test_starts_in_cab_two_for_rear_driver():
 ## position, the controllers at zero (TMoverParameters::ChangeCab(), Mover.cpp:735-749)
 func test_driver_cab_change_leaves_the_controls_at_rest():
     var locomotive:VehicleController = build_vehicle("TestCabChangeControls",
-            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+            MaszynaFizManager.load_description_at(LOCOMOTIVE_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await wait_idle_frames(2)
     var vehicle_rid:RID = locomotive.get_rid()
     var master:RailVehicleMasterController = RailVehicleServer.vehicle_component_get(

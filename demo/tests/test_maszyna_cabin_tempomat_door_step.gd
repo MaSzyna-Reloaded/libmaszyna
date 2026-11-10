@@ -15,7 +15,7 @@ var behaviours:Array[RefCounted] = []
 
 func before_each() -> void:
     var train:VehicleController = build_vehicle("TestTempomatDoorStep",
-            FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+            MaszynaFizManager.load_description_at(MOTOR_CAR_PATH), 0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()
     cabin = RailVehicleServer.vehicle_get_front_cabin(vehicle_rid)
     await wait_idle_frames(2)

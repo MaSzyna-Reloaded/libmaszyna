@@ -12,7 +12,7 @@ extends Node
 ## Reading a vehicle's .mmd is several passes over the same file - the body/lowpoly/passengers
 ## model names, the cab and the sound bank each do their own - and a scenery routinely places
 ## many vehicles sharing one data_path/file_name/skin (every wagon of one type in a trainset).
-## What the MMD says the vehicle is built from (MaszynaVehicleStructure) is cached, which turns an
+## What the MMD says the vehicle is built from (MaszynaVehicleMmdData) is cached, which turns an
 ## O(vehicle count) MMD parse into O(distinct data_path+file_name+skin combinations). What says
 ## which *instance* a vehicle is - its name, velocity, driver, load - is not in it: two wagons of
 ## the same type are still two vehicles.
@@ -38,8 +38,6 @@ class Vehicle:
     var driver:RID = RID()
     ## What _read_vehicle() read of its files, taken by its build; empty until read
     var read:Dictionary = {}
-    ## Its cabs' models, read with its files and kept, so a cab is built of a resident model
-    var cab_models:Array[MaszynaE3DModel] = []
 
 ## A mirror's glass is a submodel with nothing under it, named after a mirror - the data marks
 ## mirrors by name only: dynamic/pkp/elf_v1 "zwierciadlo", dynamic/pkp/impuls_v1 "szybka_lusterko_l"
@@ -57,7 +55,6 @@ const NARROW_LANE_FREE_SPACE:float = 0.1
 const LANE_MIDDLE_SHARE:float = 0.25
 const MINIMAL_CLEARANCE:float = 0.075
 
-var _cache = ResourceCache.create("rail_vehicle")
 var _vehicles:Dictionary[RID, Vehicle] = {}
 ## The vehicles' files are read here, off the main thread (_read_vehicle()) - GDScript, so drained
 ## before the scripts go (_exit_tree())
@@ -151,10 +148,6 @@ func vehicle_exists(vehicle:RID) -> bool:
     return _vehicles.has(vehicle)
 
 
-func clear_cache() -> void:
-    _cache.clear()
-
-
 ## In the order they were created, each once its files are read; one still being read waits in its
 ## place
 func _on_process_frame() -> void:
@@ -184,37 +177,29 @@ func _on_read_finished(task:int) -> void:
 
 func _take_read(record:Vehicle, read:Dictionary) -> void:
     record.read = read
-    record.cab_models.assign(read.get("cab_models", []))
 
 
-## On a worker: what the vehicle's build takes from its files - its structure, its physics, its cab
-## logic and the models of its cabs (MaszynaRailVehicle3DInstancer, FizVehicleBuilder, MMD). The
-## build gets { "structure": null } for a vehicle whose data cannot be read
+## On a worker: what the vehicle's build takes from its files - its MMD data, its physics and its
+## cab logic (MaszynaVehicleMmdManager, MaszynaFizManager, MMD). The models of its cabs are not: a
+## cab's model is loaded when the cab is built (MmdCabinInstancer, as Train.cpp:10599), the scenery's
+## hundreds of cabs nobody enters are not kept. The build gets { "mmd_data": null } for a vehicle
+## whose data cannot be read
 func _read_vehicle(dynamic:VehicleData) -> Dictionary:
     var data_path:String = dynamic.vehicle.get_base_dir()
     var file_name:String = dynamic.vehicle.get_file()
-    var read:Dictionary = {"structure": null}
-    var structure:MaszynaVehicleStructure = _get_structure(dynamic)
-    if not structure:
+    var read:Dictionary = {"mmd_data": null}
+    var mmd_data:MaszynaVehicleMmdData = MaszynaVehicleMmdManager.load_mmd_data(
+            dynamic.vehicle.get_base_dir(), dynamic.vehicle.get_file(), dynamic.livery, dynamic.vehicle_id
+    ) as MaszynaVehicleMmdData
+    if not mmd_data:
         return read
-    read["structure"] = structure
-    read["description"] = FizVehicleBuilder.build_description(structure.data_path, structure.file_name)
-    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(structure, dynamic.load_name)
+    read["mmd_data"] = mmd_data
+    read["description"] = MaszynaFizManager.load_description(mmd_data.data_path, mmd_data.file_name)
+    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(mmd_data, dynamic.load_name)
     # a road vehicle has no cab (FizVehicleBuilder)
     if Engine.is_editor_hint() or read["description"] is RoadVehicleController:
         return read
     read["cab_logic"] = MaszynaCabinLogic.from_mmd(data_path, file_name, dynamic.livery, dynamic.vehicle_id)
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(dynamic.vehicle_id, file_name, dynamic.livery)
-    var cab_models:Array[MaszynaE3DModel] = []
-    for kind:RailVehicleCabinKind.Kind in structure.cabin_kinds:
-        var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
-                abs_mmd_path, parameters, MmdCabinInstancer.cab_definition(kind), {})
-        if definition.model_relpath:
-            cab_models.append(MaszynaE3DModelManager.load_model(data_path, definition.model_relpath))
-    read["cab_models"] = cab_models
     return read
 
 
@@ -223,8 +208,8 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
 ## it looks like, its cab and its sound, handed to the servers by its handle.
 func _build(vehicle:RID, record:Vehicle) -> void:
     var dynamic:VehicleData = record.dynamic
-    var structure:MaszynaVehicleStructure = record.read["structure"]
-    if not structure:
+    var mmd_data:MaszynaVehicleMmdData = record.read["mmd_data"]
+    if not mmd_data:
         return
     VehicleServer.vehicle_set_name(vehicle, dynamic.name)
     var description:VehicleController = record.read["description"]
@@ -235,7 +220,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         VehicleServer.controller_configure(record.controller, description)
         VehicleServer.vehicle_bind_controller(vehicle, record.controller)
         RoadVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
-        RoadVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
+        RoadVehicleRenderingServer.vehicle_set_appearance(vehicle, mmd_data.appearance)
         if Engine.is_editor_hint():
             return
         if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
@@ -247,7 +232,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     # the cabins its MMD defines a cab for, and the scenery's driver at the controls of the front or
     # the rear one - before its simulation starts, which takes the occupied cab with it
     # (DynObj.cpp:1940-1963)
-    var cabin_kinds:Array[RailVehicleCabinKind.Kind] = structure.cabin_kinds.duplicate()
+    var cabin_kinds:Array[RailVehicleCabinKind.Kind] = mmd_data.cabin_kinds.duplicate()
     var driver_kind:RailVehicleCabinKind.Kind = (RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT
             if dynamic.driver_type == VehicleData.DRIVER_HEAD
             else RailVehicleCabinKind.RAIL_VEHICLE_CABIN_REAR)
@@ -286,28 +271,38 @@ func _build(vehicle:RID, record:Vehicle) -> void:
             push_warning("MaszynaVehicleSystem: %s has a driver but no cab to seat it in (%s)" % [
                     dynamic.vehicle_id, error_string(seated)])
     # the original's TypeName is the CHK/MMD name (DynObj.cpp:2019)
-    RailVehicleServer.vehicle_set_type_name(vehicle, structure.file_name)
+    RailVehicleServer.vehicle_set_type_name(vehicle, mmd_data.file_name)
     RailVehicleServer.vehicle_set_load(vehicle, dynamic.load_name, dynamic.load_amount)
     VehicleServer.controller_configure(record.controller, description)
     VehicleServer.vehicle_bind_controller(vehicle, record.controller)
+    # the pantographs' geometry the FIZ does not give, measured from the model's data with the
+    # vehicle's type (MaszynaRailVehicle3DInstancer.read_mmd_data())
+    var pantographs:RailVehiclePantographs = RailVehicleServer.vehicle_component_get(
+            vehicle, RailVehicleComponentType.COMPONENT_PANTOGRAPHS) as RailVehiclePantographs
+    if pantographs and pantographs.pantographs.size() == mmd_data.pantograph_geometries.size():
+        var geometries:Array[RailVehiclePantograph] = []
+        for geometry:RailVehiclePantograph in mmd_data.pantograph_geometries:
+            geometries.append(geometry.duplicate() as RailVehiclePantograph)
+        pantographs.pantographs = geometries
+        pantographs.apply_config()
     # the adapter it hands a neighbour of another coupler type, the original's own without one
-    if structure.coupler_adapter:
+    if mmd_data.coupler_adapter:
         var controller:RailVehicleController = VehicleServer.vehicle_get_controller(vehicle) as RailVehicleController
-        controller.coupler_adapter_model = structure.coupler_adapter["model"]
-        controller.coupler_adapter_length = structure.coupler_adapter["length"]
-        controller.coupler_adapter_height = structure.coupler_adapter["height"]
+        controller.coupler_adapter_model = mmd_data.coupler_adapter["model"]
+        controller.coupler_adapter_length = mmd_data.coupler_adapter["length"]
+        controller.coupler_adapter_height = mmd_data.coupler_adapter["height"]
 
     RailVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
-    RailVehicleRenderingServer.vehicle_set_appearance(vehicle, structure.appearance)
-    MaszynaE3DRailVehicleRenderingServer.vehicle_set_load_model(vehicle, structure.data_path, record.read["load_model_filename"])
-    MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, structure.appearance)
+    RailVehicleRenderingServer.vehicle_set_appearance(vehicle, mmd_data.appearance)
+    MaszynaE3DRailVehicleRenderingServer.vehicle_set_load_model(vehicle, mmd_data.data_path, record.read["load_model_filename"])
+    MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, mmd_data.appearance)
     if Engine.is_editor_hint():
         return
     if cabin_kinds:
         CabinSystem.vehicle_attach_cab_logic(vehicle, record.read["cab_logic"])
     # last of the cab: the scene is what the driving player's cab is shown from, built on the cab
     # logic (CabinSystem.vehicle_cabin_scene_changed)
-    CabinSystem.vehicle_set_cabin_scene(vehicle, structure.cabin_scene)
+    CabinSystem.vehicle_set_cabin_scene(vehicle, mmd_data.cabin_scene)
     # its sound is built only once it is within earshot - a scenery's vehicles all built at once
     # spent most of their loading on banks nobody hears
     MaszynaVehicleSoundServer.vehicle_set_bank_builder(vehicle, _build_sounds.bind(vehicle))
@@ -329,36 +324,6 @@ func _on_road_vehicle_placed(vehicle:RID) -> void:
                 else -LANE_MIDDLE_SHARE * road_width if free_space > NARROW_LANE_FREE_SPACE
                 else -0.5 * width - MINIMAL_CLEARANCE)
     VehicleServer.vehicle_send_command(vehicle, "side_offset_set", -offset_left)
-
-
-## The structure of a vehicle type and skin - of the vehicle itself when its MMD names (p1), the
-## vehicle's own name (DynObj.cpp:5263) - from the cache, or read and cached; null when the data
-## cannot be read
-func _get_structure(dynamic:VehicleData) -> MaszynaVehicleStructure:
-    var data_path:String = dynamic.vehicle.get_base_dir()
-    var file_name:String = dynamic.vehicle.get_file()
-    if not data_path or not file_name:
-        return null
-    var normalized_data_path:String = data_path if data_path.begins_with("/") else "/" + data_path
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
-    var variant:String = dynamic.livery
-    if MmdCabinInstancer.names_vehicle(abs_mmd_path):
-        variant += "|" + dynamic.vehicle_id
-    var cache_path:String = normalized_data_path.path_join("%s_%s.res" % [file_name, variant.md5_text()])
-    # Only the .mmd's own mtime is checked - not every .e3d/.fiz file it transitively references -
-    # matching FizVehicleBuilder._make_cache_hash()'s same simplification for FIZ `include`s.
-    # The hash cannot see changes to MaszynaRailVehicle3DInstancer's own code - bump this tag
-    # whenever that code changes the cached structure. v34: RoadVehicleAppearance of a road vehicle; v33: MaszynaRailVehicleAppearance; v32: the cabins the MMD defines; v31: coupleradapter:; v30 pantfactors:, a pantograph needs only its slider; v29 pendulums; v28 doors and door steps; v27 rolling wheels by the axle arrangement.
-    var cache_hash:String = ("structure-v34:%s:%s" % [FileAccess.get_modified_time(abs_mmd_path), abs_mmd_path]).md5_text()
-    var structure:MaszynaVehicleStructure = _cache.get(cache_path, cache_hash) as MaszynaVehicleStructure
-    if not structure:
-        structure = MaszynaRailVehicle3DInstancer.read_structure(
-                data_path, file_name, dynamic.livery, dynamic.vehicle_id)
-        if structure:
-            _cache.set(cache_path, structure, cache_hash)
-    return structure
 
 
 ## The vehicle's sound players, under a node of their own riding on the vehicle - called by

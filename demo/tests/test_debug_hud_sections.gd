@@ -14,9 +14,9 @@ var without_spring_brake:RID
 
 func before_each() -> void:
     with_spring_brake = build_vehicle("TestHudSpringBrake",
-            FizVehicleBuilder.build_description_at(WITH_SPRING_BRAKE_PATH)).get_rid()
+            MaszynaFizManager.load_description_at(WITH_SPRING_BRAKE_PATH)).get_rid()
     without_spring_brake = build_vehicle("TestHudNoSpringBrake",
-            FizVehicleBuilder.build_description_at(WITHOUT_SPRING_BRAKE_PATH)).get_rid()
+            MaszynaFizManager.load_description_at(WITHOUT_SPRING_BRAKE_PATH)).get_rid()
     await wait_idle_frames(2)
 
 

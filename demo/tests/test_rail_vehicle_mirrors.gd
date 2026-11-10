@@ -13,7 +13,7 @@ var vehicle_rid:RID
 
 
 func before_each() -> void:
-    var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
+    var description:VehicleController = MaszynaFizManager.load_description_at(MOTOR_CAR_PATH)
     var train:VehicleController = build_vehicle("TestMirrors", description, 0.0,
             MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()

@@ -553,7 +553,7 @@ func test_brakectrl_rotation_matches_the_raw_handle_position():
     descriptor.offset = OFFSET
     var widget:CabinKnob = autofree(CabinKnob.new())
     var controller:VehicleController = build_vehicle(
-            "TestTrain", FizVehicleBuilder.build_description_at("res://tests/fixtures/test_vehicle.fiz"))
+            "TestTrain", MaszynaFizManager.load_description_at("res://tests/fixtures/test_vehicle.fiz"))
     var brake:RailVehicleBrake = controller.get_rail_component(RailVehicleComponentType.COMPONENT_BRAKES)
     var diagnostics:Array[Dictionary] = []
 

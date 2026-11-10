@@ -1,6 +1,6 @@
 @tool
 extends Resource
-class_name MaszynaVehicleStructure
+class_name MaszynaVehicleMmdData
 
 ## What a vehicle's `.mmd` says it is built from, read once and cached on disk.
 ##
@@ -33,6 +33,11 @@ class_name MaszynaVehicleStructure
 ## coupleradapter: - the adapter the vehicle hands a neighbour of another coupler type
 ## (MmdCabinInstancer.parse_coupler_adapter()); empty without the key, the original's own then
 @export var coupler_adapter:Dictionary = {}
+
+## The geometry of the vehicle's pantographs (RailVehiclePantographs) its FIZ does not give, measured
+## from the model's data (MaszynaPantographGeometryReader) - one a pantograph of the FIZ, by its index;
+## empty when the FIZ gives it all or names no pantograph
+@export var pantograph_geometries:Array[RailVehiclePantograph] = []
 
 ## The cab is genuinely a tree of widgets, so it stays a scene of its own.
 @export var cabin_scene:PackedScene = null

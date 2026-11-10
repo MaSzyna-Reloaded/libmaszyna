@@ -86,9 +86,15 @@ func test_parked_electric_locomotive_keeps_stable_wire_voltage_and_main_switch_c
     power_source.current_collector_number_of_collectors = 1
     var master_controller: RailVehicleMasterController = MaszynaMoverRailVehicleMasterController.new()
     master_controller.main_position_count = 6
+    # its one pantograph, as the FIZ import makes it of CollectorsNo= (FizTrainPowerParser) - with no
+    # geometry, it samples the wire where the vehicle stands
+    var pantographs := RailVehiclePantographs.new()
+    var configuration:Array[RailVehiclePantograph] = [RailVehiclePantograph.new()]
+    pantographs.pantographs = configuration
     controller.add_component(master_controller)
     controller.add_component(engine)
     controller.add_component(power_source)
+    controller.add_component(pantographs)
 
     vehicle = RailVehicle3D.new()
     vehicle.start_track_name = "start"

@@ -26,8 +26,8 @@ var driver:RID
 func before_each() -> void:
     controllers.clear()
     vehicles.clear()
-    var engine:VehicleController = FizVehicleBuilder.build_description_at(ENGINE_PATH)
-    var wagon:VehicleController = FizVehicleBuilder.build_description_at(WAGON_PATH)
+    var engine:VehicleController = MaszynaFizManager.load_description_at(ENGINE_PATH)
+    var wagon:VehicleController = MaszynaFizManager.load_description_at(WAGON_PATH)
     for index:int in range(VEHICLE_COUNT):
         # the first vehicle is driven - an unmanned one is not simulated (FINDINGS, 09-23)
         var controller:VehicleController = build_vehicle("LightsVehicle%d" % index,

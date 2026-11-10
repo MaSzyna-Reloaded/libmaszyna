@@ -14,6 +14,8 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("register_smoke_source", "p_entry"), &MaszynaE3DModel::register_smoke_source);
         ClassDB::bind_method(D_METHOD("get_node", "p_path"), &MaszynaE3DModel::get_node);
         ClassDB::bind_method(D_METHOD("get_node_or_null", "p_path"), &MaszynaE3DModel::get_node_or_null);
+        ClassDB::bind_method(D_METHOD("apply_geometry", "geometry"), &MaszynaE3DModel::apply_geometry);
+        ClassDB::bind_method(D_METHOD("has_geometry"), &MaszynaE3DModel::has_geometry);
     }
 
     TypedDictionary<String, MaszynaE3DModelLightDefinition> MaszynaE3DModel::get_lights() const {
@@ -46,6 +48,35 @@ namespace godot {
 
     void MaszynaE3DModel::register_smoke_source(const Ref<MaszynaE3DModelSmokeSourceDefinition> &p_entry) {
         smoke_sources.append(p_entry);
+    }
+
+    void MaszynaE3DModel::apply_geometry(const Ref<MaszynaE3DModelGeometry> &p_geometry) {
+        ERR_FAIL_COND(p_geometry.is_null());
+        MutexLock lock(geometry_mutex);
+        if (geometry_applied) {
+            return;
+        }
+        _apply_geometry(submodels, p_geometry);
+        geometry_applied = true;
+    }
+
+    bool MaszynaE3DModel::has_geometry() const {
+        MutexLock lock(geometry_mutex);
+        return geometry_applied;
+    }
+
+    void MaszynaE3DModel::_apply_geometry(
+            const TypedArray<MaszynaE3DSubModel> &p_submodels, const Ref<MaszynaE3DModelGeometry> &p_geometry) {
+        for (int64_t index = 0; index < p_submodels.size(); ++index) {
+            const Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
+            if (submodel.is_null()) {
+                continue;
+            }
+            if (submodel->get_geometry_index() >= 0) {
+                submodel->set_mesh(p_geometry->mesh_create(submodel->get_geometry_index()));
+            }
+            _apply_geometry(submodel->get_submodels(), p_geometry);
+        }
     }
 
     void MaszynaE3DModel::add_child(const Ref<MaszynaE3DSubModel> &p_sub_model) {

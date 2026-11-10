@@ -23,9 +23,9 @@ func test_attachments_are_named_by_the_parameters_and_a_random_set_is_one_of_the
 
 
 func test_an_mmd_that_names_p1_belongs_to_its_vehicle():
-    assert_true(MmdCabinInstancer.names_vehicle(
+    assert_true(MaszynaVehicleMmdManager.names_vehicle(
             ProjectSettings.globalize_path(FIXTURE_DIR.path_join("vehicle.mmd"))))
-    assert_false(MmdCabinInstancer.names_vehicle(
+    assert_false(MaszynaVehicleMmdManager.names_vehicle(
             ProjectSettings.globalize_path(FIXTURE_DIR.path_join("plain.mmd"))))
 
 

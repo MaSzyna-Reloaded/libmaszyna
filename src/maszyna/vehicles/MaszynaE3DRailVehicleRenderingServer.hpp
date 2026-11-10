@@ -45,9 +45,9 @@ namespace godot {
                     RID coupler_adapter_resources[2];
                     /* How far the cargo sinks into an empty vehicle [m] (DynObj.cpp:3070-3080) */
                     double load_height = 0.0;
-                    /* RailVehicleEnginePowerSource::PantographSelector: lower arm, its pair, upper arm,
-                     * its pair, slider */
-                    Vector<Part> pantograph_arms[2];
+                    /* Every pantograph of the model, by the index of the vehicle's pantograph it
+                     * shows: lower arm, its pair, upper arm, its pair, slider */
+                    Vector<Vector<Part>> pantograph_arms;
                     Vector<Part> wiper_arms;
                     Vector<Part> mirrors;
                     /* MaszynaRailVehicleAppearance::get_doors(): DOOR_ELEMENTS a door */
@@ -106,10 +106,6 @@ namespace godot {
             Vector<RID> fading;
 
             void _register_coupler_adapters(const RID &p_vehicle, MaszynaVisual &p_maszyna);
-            void _publish_pantographs(const RID &p_vehicle, const Visual &p_visual) const;
-            void _publish_pantograph_geometry(
-                    const RID &p_vehicle, const Visual &p_visual, const Ref<MaszynaE3DModel> &p_model,
-                    RailVehicleEnginePowerSource::PantographSelector p_pantograph) const;
             void _pose_doors(const RID &p_vehicle, Visual &p_visual, MaszynaVisual &p_maszyna);
             void _pose_pendulums(const RID &p_vehicle, Visual &p_visual, const MaszynaVisual &p_maszyna);
             void _pose_pantographs(const RID &p_vehicle, Visual &p_visual, const MaszynaVisual &p_maszyna);

@@ -1,8 +1,8 @@
 #pragma once
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 
-#include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
+#include <godot_cpp/variant/typed_array.hpp>
 
 namespace godot {
     /* What a MaSzyna vehicle looks like beyond its models and running gear: the submodels of its
@@ -19,14 +19,12 @@ namespace godot {
             static constexpr double DEFAULT_LOW_POLY_EMISSION_FADE_TIME = 0.2;
 
         private:
-            PackedStringArray pantograph_front_arms;
-            PackedStringArray pantograph_rear_arms;
+            TypedArray<PackedStringArray> pantograph_arms;
             PackedStringArray wiper_arms;
             PackedStringArray mirrors;
             PackedStringArray doors;
             PackedStringArray door_steps;
             PackedStringArray pendulums;
-            PackedFloat64Array pantograph_factors;
             double pendulum_amplitude = 0.0;
             double low_poly_emission_energy = DEFAULT_LOW_POLY_EMISSION_ENERGY;
             double low_poly_emission_fade_time = DEFAULT_LOW_POLY_EMISSION_FADE_TIME;
@@ -36,11 +34,11 @@ namespace godot {
             static void _bind_methods();
 
         public:
-            /* Lower arm, its pair, upper arm, its pair, slider (TAnimPant, DynObj.cpp:5414) */
-            void set_pantograph_front_arms(const PackedStringArray &p_value);
-            PackedStringArray get_pantograph_front_arms() const;
-            void set_pantograph_rear_arms(const PackedStringArray &p_value);
-            PackedStringArray get_pantograph_rear_arms() const;
+            /* Every pantograph of the model, in the MMD's order: its lower arm, its pair, upper arm,
+             * its pair, slider (TAnimPant, DynObj.cpp:5414) - none for one without a slider. Posed
+             * from the pantograph of the same index of the vehicle's RailVehiclePantographs */
+            void set_pantograph_arms(const TypedArray<PackedStringArray> &p_value);
+            TypedArray<PackedStringArray> get_pantograph_arms() const;
             /* Arm 1, arm 2 and blade of every wiper (DynObj.cpp:5838-5870) */
             void set_wiper_arms(const PackedStringArray &p_value);
             PackedStringArray get_wiper_arms() const;
@@ -55,11 +53,6 @@ namespace godot {
             /* Every door step of animstepprefix:, numbered as the doors (DynObj.cpp:5763-5790) */
             void set_door_steps(const PackedStringArray &p_value);
             PackedStringArray get_door_steps() const;
-            /* pantfactors: - the first and the second pantograph's position along the vehicle and
-             * slider height, for one the model cannot be measured by (DynObj.cpp:5577-5633); empty
-             * without the key */
-            void set_pantograph_factors(const PackedFloat64Array &p_value);
-            PackedFloat64Array get_pantograph_factors() const;
             /* animpendulumprefix: 1 to 4, swinging about their x by pendulumamplitude: [deg] times
              * the cosine of the engine's turn (DynObj.cpp:1121-1125, 5702-5719) */
             void set_pendulums(const PackedStringArray &p_value);

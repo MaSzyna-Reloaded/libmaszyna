@@ -9,6 +9,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="apply_geometry">
+			<return type="void" />
+			<param index="0" name="geometry" type="MaszynaE3DModelGeometry" />
+			<description>
+				Makes the description a model to draw: every submodel of triangles gets its mesh, made of [param geometry] in the GPU, once. The geometry is not kept.
+			</description>
+		</method>
 		<method name="get_node" qualifiers="const">
 			<return type="MaszynaE3DSubModel" />
 			<param index="0" name="p_path" type="NodePath" />
@@ -21,6 +28,12 @@
 			<param index="0" name="p_path" type="NodePath" />
 			<description>
 				Finds and returns [MaszynaE3DSubModel] by [NodePath]. Returns null without an error, when not found.
+			</description>
+		</method>
+		<method name="has_geometry" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns whether the meshes were made ([method apply_geometry]); a description alone has none.
 			</description>
 		</method>
 		<method name="register_light">
@@ -51,7 +64,7 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="FORMAT_VERSION" value="20261019">
+		<constant name="FORMAT_VERSION" value="20261110">
 			Version of the serialized E3D model cache format.
 		</constant>
 	</constants>

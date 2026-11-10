@@ -16,7 +16,7 @@ var train:VehicleController
 
 
 func before_each() -> void:
-    var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
+    var description:VehicleController = MaszynaFizManager.load_description_at(MOTOR_CAR_PATH)
     train = build_vehicle("TestDistanceCounter", description, VELOCITY,
             MaszynaVehicleData.DriverType.DRIVER_HEAD)
     await step(2)

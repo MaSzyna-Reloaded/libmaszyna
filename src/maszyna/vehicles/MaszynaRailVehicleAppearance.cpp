@@ -3,20 +3,13 @@
 namespace godot {
     void MaszynaRailVehicleAppearance::_bind_methods() {
         ClassDB::bind_method(
-                D_METHOD("set_pantograph_front_arms", "value"),
-                &MaszynaRailVehicleAppearance::set_pantograph_front_arms);
-        ClassDB::bind_method(
-                D_METHOD("get_pantograph_front_arms"), &MaszynaRailVehicleAppearance::get_pantograph_front_arms);
+                D_METHOD("set_pantograph_arms", "value"), &MaszynaRailVehicleAppearance::set_pantograph_arms);
+        ClassDB::bind_method(D_METHOD("get_pantograph_arms"), &MaszynaRailVehicleAppearance::get_pantograph_arms);
         ADD_PROPERTY(
-                PropertyInfo(Variant::PACKED_STRING_ARRAY, "pantograph_front_arms"), "set_pantograph_front_arms",
-                "get_pantograph_front_arms");
-        ClassDB::bind_method(
-                D_METHOD("set_pantograph_rear_arms", "value"), &MaszynaRailVehicleAppearance::set_pantograph_rear_arms);
-        ClassDB::bind_method(
-                D_METHOD("get_pantograph_rear_arms"), &MaszynaRailVehicleAppearance::get_pantograph_rear_arms);
-        ADD_PROPERTY(
-                PropertyInfo(Variant::PACKED_STRING_ARRAY, "pantograph_rear_arms"), "set_pantograph_rear_arms",
-                "get_pantograph_rear_arms");
+                PropertyInfo(
+                        Variant::ARRAY, "pantograph_arms", PROPERTY_HINT_ARRAY_TYPE,
+                        Variant::get_type_name(Variant::PACKED_STRING_ARRAY)),
+                "set_pantograph_arms", "get_pantograph_arms");
         ClassDB::bind_method(D_METHOD("set_wiper_arms", "value"), &MaszynaRailVehicleAppearance::set_wiper_arms);
         ClassDB::bind_method(D_METHOD("get_wiper_arms"), &MaszynaRailVehicleAppearance::get_wiper_arms);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "wiper_arms"), "set_wiper_arms", "get_wiper_arms");
@@ -26,12 +19,6 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("set_doors", "value"), &MaszynaRailVehicleAppearance::set_doors);
         ClassDB::bind_method(D_METHOD("get_doors"), &MaszynaRailVehicleAppearance::get_doors);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "doors"), "set_doors", "get_doors");
-        ClassDB::bind_method(
-                D_METHOD("set_pantograph_factors", "value"), &MaszynaRailVehicleAppearance::set_pantograph_factors);
-        ClassDB::bind_method(D_METHOD("get_pantograph_factors"), &MaszynaRailVehicleAppearance::get_pantograph_factors);
-        ADD_PROPERTY(
-                PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "pantograph_factors"), "set_pantograph_factors",
-                "get_pantograph_factors");
         ClassDB::bind_method(D_METHOD("set_pendulums", "value"), &MaszynaRailVehicleAppearance::set_pendulums);
         ClassDB::bind_method(D_METHOD("get_pendulums"), &MaszynaRailVehicleAppearance::get_pendulums);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "pendulums"), "set_pendulums", "get_pendulums");
@@ -65,20 +52,12 @@ namespace godot {
         ADD_PROPERTY(PropertyInfo(Variant::BOOL, "joint_cabs"), "set_joint_cabs", "get_joint_cabs");
     }
 
-    void MaszynaRailVehicleAppearance::set_pantograph_front_arms(const PackedStringArray &p_value) {
-        pantograph_front_arms = p_value;
+    void MaszynaRailVehicleAppearance::set_pantograph_arms(const TypedArray<PackedStringArray> &p_value) {
+        pantograph_arms = p_value;
     }
 
-    PackedStringArray MaszynaRailVehicleAppearance::get_pantograph_front_arms() const {
-        return pantograph_front_arms;
-    }
-
-    void MaszynaRailVehicleAppearance::set_pantograph_rear_arms(const PackedStringArray &p_value) {
-        pantograph_rear_arms = p_value;
-    }
-
-    PackedStringArray MaszynaRailVehicleAppearance::get_pantograph_rear_arms() const {
-        return pantograph_rear_arms;
+    TypedArray<PackedStringArray> MaszynaRailVehicleAppearance::get_pantograph_arms() const {
+        return pantograph_arms;
     }
 
     void MaszynaRailVehicleAppearance::set_wiper_arms(const PackedStringArray &p_value) {
@@ -103,14 +82,6 @@ namespace godot {
 
     PackedStringArray MaszynaRailVehicleAppearance::get_doors() const {
         return doors;
-    }
-
-    void MaszynaRailVehicleAppearance::set_pantograph_factors(const PackedFloat64Array &p_value) {
-        pantograph_factors = p_value;
-    }
-
-    PackedFloat64Array MaszynaRailVehicleAppearance::get_pantograph_factors() const {
-        return pantograph_factors;
     }
 
     void MaszynaRailVehicleAppearance::set_pendulums(const PackedStringArray &p_value) {

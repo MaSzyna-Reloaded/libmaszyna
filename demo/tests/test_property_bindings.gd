@@ -7,7 +7,6 @@ const BOUND_CLASSES: Array[StringName] = [
     &"RailVehicleDimmerListItem",
     &"MaszynaE3DModel",
     &"MaszynaE3DSubModel",
-    &"MaszynaE3DMesh",
     &"RailVehicleLightListItem",
     &"RailVehicleLoadListItem",
     &"MaszynaMoverMotorParameter",

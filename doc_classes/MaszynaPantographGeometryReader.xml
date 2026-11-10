@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaPantographGeometryReader" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Measures a MaSzyna vehicle's pantograph from its model's data.
+	</brief_description>
+	<description>
+		A pantograph as the original's [code]TAnimPant[/code] builds it ([code]DynObj.cpp:5404-5480, 5577-5633[/code]), out of the data the original gives: the arms' dimensions of the type the FIZ names ([code]PantType=[/code]), and only what the FIZ does not give measured from the model - the lower arm's place, the arms' lengths and rest angles, the slider's height over its pivot and its place along the vehicle. A slider the model cannot be measured by takes its place and height from the MMD's [code]pantfactors:[/code]. Read while the vehicle's data is, from the model's description alone and its slider's own vertices ([method MaszynaE3DModelReader.read_submodel_positions]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="read" qualifiers="static">
+			<return type="RailVehiclePantograph" />
+			<param index="0" name="model" type="MaszynaE3DModel" />
+			<param index="1" name="model_path" type="String" />
+			<param index="2" name="arms" type="PackedStringArray" />
+			<param index="3" name="model_transform" type="Transform3D" />
+			<param index="4" name="type" type="int" enum="RailVehicleEnginePowerSource.PantographType" />
+			<param index="5" name="factors" type="PackedFloat64Array" />
+			<param index="6" name="index" type="int" />
+			<param index="7" name="vehicle_height" type="float" />
+			<param index="8" name="control" type="int" enum="RailVehicleEnginePowerSource.PantographSelector" />
+			<description>
+				Returns pantograph [param index] of the vehicle as a [RailVehiclePantograph]: [param model] the description of the model file at [param model_path], [param arms] its five submodel names (lower arm, its pair, upper arm, its pair, slider - without a slider the pantograph has no geometry), [param model_transform] where the model sits in the vehicle, [param type] the FIZ's [code]PantType=[/code], [param factors] the MMD's [code]pantfactors:[/code], [param vehicle_height] the FIZ's height of the vehicle [lb]m[rb] and [param control] the channel it is raised by.
+			</description>
+		</method>
+	</methods>
+</class>

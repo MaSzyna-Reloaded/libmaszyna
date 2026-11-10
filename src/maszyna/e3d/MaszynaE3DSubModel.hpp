@@ -75,7 +75,10 @@ namespace godot {
             String material_name = "";
             Transform3D transform = Transform3D();
             Transform3D material_transform = Transform3D();
-            /// An MaszynaE3DMesh when made of the model's data, which keeps its arrays (MaszynaE3DModelBuilder)
+            /// The submodel's surface in the model's geometry (MaszynaE3DModelGeometry), -1 for none
+            int geometry_index = -1;
+            /// Its mesh, in the GPU, once the model's geometry is applied (MaszynaE3DModel::apply_geometry());
+            /// none in a description - what the cache keeps of a model
             Ref<Mesh> mesh;
             TypedArray<MaszynaE3DSubModel> submodels;
             bool visible = true;
@@ -98,6 +101,7 @@ namespace godot {
             MAKE_GS_NR(String, material_name);
             MAKE_GS_NR(Transform3D, transform);
             MAKE_GS_NR(Transform3D, material_transform);
+            MAKE_GS_NR(int, geometry_index);
             MAKE_GS_NR(Ref<Mesh>, mesh);
             MAKE_GS_NR(TypedArray<MaszynaE3DSubModel>, submodels);
             MAKE_GS_NR(bool, visible);

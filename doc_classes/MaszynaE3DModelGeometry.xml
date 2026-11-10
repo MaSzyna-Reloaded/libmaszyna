@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaE3DModelGeometry" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The geometry of a model file, apart from its description.
+	</brief_description>
+	<description>
+		What of a model file ([code].e3d[/code], [code].t3d[/code]) goes to the GPU: the arrays of every submodel of triangles, by its [member MaszynaE3DSubModel.geometry_index]. It is data only, in memory while a model is read and its cache written or read, and let go once the model's meshes are made of it ([method MaszynaE3DModel.apply_geometry]) - an [ArrayMesh] keeps nothing of it but in the GPU. Written from the parse's arrays, so writing it reads nothing back from the GPU.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="mesh_create" qualifiers="const">
+			<return type="ArrayMesh" />
+			<param index="0" name="index" type="int" />
+			<description>
+				Returns the mesh of the surface [param index], made in the [RenderingServer] - the GPU; null for a submodel without triangles.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="surfaces" type="Dictionary[]" setter="set_surfaces" getter="get_surfaces" default="[]">
+			One surface a submodel, by its geometry index; empty for one without triangles. Keys: [code]vertices[/code], [code]normals[/code], [code]tangents[/code] (optional), [code]uvs[/code] ([PackedFloat32Array]), [code]indices[/code] ([PackedInt32Array], the triangles clockwise).
+		</member>
+	</members>
+	<constants>
+		<constant name="FORMAT_VERSION" value="20261110">
+			Version of what the parsers put into the geometry; raised to invalidate its cache.
+		</constant>
+	</constants>
+</class>

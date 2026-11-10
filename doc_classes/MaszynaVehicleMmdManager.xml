@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaVehicleMmdManager" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The vehicles' MMD data, each type's read once.
+	</brief_description>
+	<description>
+		What a vehicle type's [code].mmd[/code] says it is built from, in a skin - and of the vehicle itself when its MMD names [code](p1)[/code], the vehicle's own name - kept on disk: a scenery repeats the same type across its trainsets. An entry is read again when its [code].mmd[/code] or [code].fiz[/code] changes (their own modification times; the FIZ's for the pantographs measured from the model, the ones it declares and does not give the geometry of) or the reader's format does. The reader is handed in by the plugin's runtime ([method set_mmd_data_reader]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="load_mmd_data">
+			<return type="Resource" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="file_name" type="String" />
+			<param index="2" name="livery" type="String" />
+			<param index="3" name="vehicle_id" type="String" />
+			<description>
+				Returns the MMD data of the type [param data_path]/[param file_name] in its skin [param livery] - of the vehicle [param vehicle_id] when its MMD names the vehicle; null when the data cannot be read.
+			</description>
+		</method>
+		<method name="names_vehicle" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="abs_mmd_path" type="String" />
+			<description>
+				Returns whether the MMD at [param abs_mmd_path] names the vehicle it is read for ([code](p1)[/code]): its data is then the vehicle's own, not its type's.
+			</description>
+		</method>
+		<method name="set_mmd_data_reader">
+			<return type="void" />
+			<param index="0" name="reader" type="Callable" />
+			<param index="1" name="format_version" type="int" />
+			<description>
+				Sets what reads a vehicle's MMD data - [code](data_path, file_name, livery, vehicle_id: String) -&gt; Resource[/code] - and [param format_version], the version of what it puts into it, raised whenever it changes.
+			</description>
+		</method>
+	</methods>
+</class>

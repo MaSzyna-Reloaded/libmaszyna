@@ -19,7 +19,7 @@ func after_each() -> void:
 
 
 func _drive(fiz_path:String) -> RID:
-    var train:VehicleController = build_vehicle("TestDirectionKey", FizVehicleBuilder.build_description_at(fiz_path),
+    var train:VehicleController = build_vehicle("TestDirectionKey", MaszynaFizManager.load_description_at(fiz_path),
             0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var vehicle_rid:RID = train.get_rid()
     await wait_idle_frames(2)

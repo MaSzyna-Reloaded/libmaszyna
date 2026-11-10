@@ -20,8 +20,8 @@ var screw:VehicleController
 
 
 func before_each() -> void:
-    automatic = build_vehicle("TestAdapterAutomatic", FizVehicleBuilder.build_description_at(AUTOMATIC_PATH))
-    screw = build_vehicle("TestAdapterScrew", FizVehicleBuilder.build_description_at(SCREW_PATH))
+    automatic = build_vehicle("TestAdapterAutomatic", MaszynaFizManager.load_description_at(AUTOMATIC_PATH))
+    screw = build_vehicle("TestAdapterScrew", MaszynaFizManager.load_description_at(SCREW_PATH))
     await wait_idle_frames(2)
 
 

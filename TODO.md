@@ -344,10 +344,10 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   2425-2433`, CompartmentLights).
 * No test for `MaszynaE3DRailVehicleRenderingServer`'s low-poly cab lights, nor for the lamps drawn
   from the lighting (`_update_lights()`).
-* `MaszynaVehicleStructure` and `MaszynaRailVehicleAppearance` - candidates for a better name.
+* `MaszynaRailVehicleAppearance` - a candidate for a better name.
 * The 8 m shift of a trainset's first vehicle on a track with `Event0`
   (simulationstateserializer.cpp:1050-1057).
-* The `structure-vN` tag (`maszyna_vehicle_system.gd`) is bumped by hand.
+* `MMD_DATA_FORMAT_VERSION` (`maszyna_rail_vehicle_3d_instancer.gd`) is bumped by hand.
 * `LoadFIZ_Cntrl` start modes `CompressorStart`, `PantCompressorStart`, `MainStart`,
   `ConverterOverloadWhenMainIsOff` (Mover.cpp:10905-10925) are not parsed; their properties belong
   on `VehicleController`, not `RailVehicleElectricEngine`. The `converter` command is still an
@@ -436,7 +436,7 @@ libreloaded's `TODO.md`.
 * Other `config` entries dropped (`scenario.time.override/offset/current`, `Globals.cpp:356-385`).
 * Include instancing (`grass.inc` included 24078 times): classify includes as `instanced`/`full`,
   cache in local space, invalidate by dependency list.
-* Lazy loading off (default): a vehicle's cargo (`_build_load()`) and coupler adapters
+* Lazy loading off: a vehicle's cargo (`_build_load()`) and coupler adapters
   (`_update_coupler_adapters()`) still load through `model_load()` at their build, outside
   `ResourceLazyLoader` - their files change while the game runs. After a data reload a resource
   resident by registration is loaded again only by its next use.

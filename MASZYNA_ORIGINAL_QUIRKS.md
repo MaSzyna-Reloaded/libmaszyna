@@ -376,16 +376,29 @@ interface.
 * **A removed vehicle keeps its sections occupied.** Nothing counts its axles off the tracks when
   a vehicle is deleted. Wrapper: `vehicle_detach()` takes them off.
 
-## Pantograph geometry (`vehicle/DynObj.cpp`)
+## Pantographs (`vehicle/DynObj.cpp`)
+
+* **Pantographs are animations of the model, not physics.** The original keeps them in
+  `TDynamicObject` as `TAnimPant` (`DynObj.cpp:230-232`), and how many a vehicle has is the sixth
+  number of its MMD's `animations:` (`ANIM_PANTS`, `DynObj.h:37`, `DynObj.cpp:5309-5333`) - not
+  the FIZ's `CollectorsNo=`. Pantograph `i` feeds the Mover's `PantFrontVolt` or `PantRearVolt` by
+  its parity (`DynObj.cpp:3834-3900`).
+* **The data does not agree with itself.** Of the `.mmd`/`.fiz` pairs in `dynamic/`:
+
+  | MMD | FIZ | vehicles |
+  |---|---|---|
+  | 2 pantographs | `CollectorsNo=1` | 35 |
+  | 2 pantographs | `CollectorsNo=4` | 10 |
+  | 2 pantographs | `CollectorsNo=0` | 1 |
+  | 1 pantograph | `CollectorsNo=0` | 8 |
+  | no pantograph | `CollectorsNo=1` or `2` | 44 |
+  | pantographs | no `EnginePower=` | 5 |
 
 * **A pantograph's arms are measured from the vehicle's model, not read from its FIZ.** The original
   gives every pantograph the dimensions of its type (`PantType=`, AKP_4E by default,
   `DynObj.cpp:90-194`) and then overrides them with what it measures off the model's lower arm, upper
   arm and slider (`DynObj.cpp:5404-5480`); `pantfactors:` of the MMD places a slider the model cannot
-  be measured by (`DynObj.cpp:5577-5633`). No FIZ of the game data names `PantType=`. Wrapper: a FIZ
-  that names it takes that type's dimensions; one that does not - every FIZ today - has its arms
-  measured from the model as the original does, until the FIZ files name their pantographs
-  (libreloaded's `RailVehicleRenderingServer::_publish_pantograph_geometry`).
+  be measured by (`DynObj.cpp:5577-5633`). No FIZ of the game data names `PantType=`.
 
 ## Cab definitions (MMD data)
 
@@ -427,7 +440,7 @@ interface.
   cab definition matters only to the player's `TTrain` (`InitializeCab()`, `Train.cpp:10481`).
   A cab change steps through all three positions the same way and fails only after moving onto a
   missing one (`TTrain::CabChange()`, `Train.cpp:10324-10351`). Wrapper: a rail vehicle has the
-  cabins its MMD defines a cab for (`MaszynaVehicleStructure.cabin_kinds`), no more. For the data
+  cabins its MMD defines a cab for (`MaszynaVehicleMmdData.cabin_kinds`), no more. For the data
   that puts a driver at an end without a cab definition, `MaszynaVehicleSystem._build()`
   adds that end's cabin - only for a vehicle that can have a cab, one with a master controller
   (`FizTrainCntrlParser`, `MCPN` > 1). A wagon given a driver stays without one (a warning): the

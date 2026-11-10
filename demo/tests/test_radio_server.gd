@@ -48,7 +48,7 @@ func _listening_radio(position:Vector3) -> RID:
 func _build_locomotive(driver:MaszynaVehicleData.DriverType) -> void:
     _track = build_track(TRACK, TRACK_LENGTH)
     var physics_node:VehiclePhysicsNode = build_vehicle_node("TestRadioServer",
-            FizVehicleBuilder.build_description_at(LOCOMOTIVE_PATH), 0.0, driver)
+            MaszynaFizManager.load_description_at(LOCOMOTIVE_PATH), 0.0, driver)
     _vehicle = RailVehicle3D.new()
     _vehicle.start_track_name = TRACK
     _vehicle.start_track_offset = OFFSET

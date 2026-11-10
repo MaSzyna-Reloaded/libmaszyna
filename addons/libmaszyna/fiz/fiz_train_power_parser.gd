@@ -94,6 +94,26 @@ static func create_node(context: FizImportContext) -> RailVehicleEnginePowerSour
     return node
 
 
+## The vehicle's pantographs, one a collector of the power source (CollectorsNo=, or PhysicalLayout=),
+## or null for none. The FIZ names no channel: they go front, rear, front... (the original's
+## PantFrontVolt and PantRearVolt by the pantograph's parity, DynObj.cpp:3834-3900). The FIZ gives no
+## geometry either; it is measured from the model while the vehicle's data is read
+## (MaszynaRailVehicle3DInstancer.read_mmd_data()).
+## TODO: when the FIZ files give the pantographs' geometry, it is read here into each pantograph.
+static func create_pantographs(power_source: RailVehicleEnginePowerSource) -> RailVehiclePantographs:
+    if not power_source or power_source.current_collector_number_of_collectors <= 0:
+        return null
+    var node := RailVehiclePantographs.new()
+    var pantographs: Array[RailVehiclePantograph] = []
+    for index: int in power_source.current_collector_number_of_collectors:
+        var pantograph := RailVehiclePantograph.new()
+        pantograph.control = (RailVehicleEnginePowerSource.PANTOGRAPH_FIRST if index % 2 == 0
+                else RailVehicleEnginePowerSource.PANTOGRAPH_SECOND)
+        pantographs.append(pantograph)
+    node.pantographs = pantographs
+    return node
+
+
 ## PantType= - AKP_4E, DSA..., EC160 or EC200, WBL85 (Mover.cpp:11620-11629); none without the key
 static func pantograph_type(value: String) -> RailVehicleEnginePowerSource.PantographType:
     if value == "AKP_4E":

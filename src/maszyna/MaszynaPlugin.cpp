@@ -4,9 +4,10 @@
 #include "maszyna/MaszynaPlugin.hpp"
 #include "maszyna/cabin/MaszynaCabinLampIslands.hpp"
 #include "maszyna/cabin/PythonScreenServer.hpp"
-#include "maszyna/e3d/MaszynaE3DMesh.hpp"
 #include "maszyna/e3d/MaszynaE3DModel.hpp"
+#include "maszyna/e3d/MaszynaE3DModelGeometry.hpp"
 #include "maszyna/e3d/MaszynaE3DModelLightDefinition.hpp"
+#include "maszyna/e3d/MaszynaE3DModelReader.hpp"
 #include "maszyna/e3d/MaszynaE3DModelSmokeSourceDefinition.hpp"
 #include "maszyna/e3d/MaszynaE3DRenderingServer.hpp"
 #include "maszyna/e3d/MaszynaE3DSubModel.hpp"
@@ -49,6 +50,7 @@
 #include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "maszyna/vehicles/MaszynaE3DRailVehicleRenderingServer.hpp"
 #include "maszyna/vehicles/MaszynaE3DRoadVehicleRenderingServer.hpp"
+#include "maszyna/vehicles/MaszynaFizManager.hpp"
 #include "maszyna/vehicles/MaszynaMoverBrakePressureTableItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverCompressorListItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverDieselConfiguration.hpp"
@@ -85,7 +87,9 @@
 #include "maszyna/vehicles/MaszynaMoverUniversalControllerListItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverVehicleServer.hpp"
 #include "maszyna/vehicles/MaszynaMoverWWListItem.hpp"
+#include "maszyna/vehicles/MaszynaPantographGeometryReader.hpp"
 #include "maszyna/vehicles/MaszynaRailVehicleAppearance.hpp"
+#include "maszyna/vehicles/MaszynaVehicleMmdManager.hpp"
 #include "plugins/ReloadedPluginServer.hpp"
 #include "vehicles/base/VehiclePhysicsNode.hpp"
 #include "vehicles/base/VehicleServer.hpp"
@@ -104,9 +108,10 @@ namespace godot {
 
     void MaszynaPlugin::register_classes() {
         GDREGISTER_CLASS(MaszynaGameDirectory);
-        GDREGISTER_CLASS(MaszynaE3DMesh);
         GDREGISTER_CLASS(MaszynaE3DSubModel);
         GDREGISTER_CLASS(MaszynaE3DModel);
+        GDREGISTER_CLASS(MaszynaE3DModelGeometry);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaE3DModelReader);
         GDREGISTER_CLASS(MaszynaE3DParser);
         GDREGISTER_CLASS(MaszynaT3DParser);
         GDREGISTER_CLASS(MaszynaE3DModelLightDefinition);
@@ -114,6 +119,9 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaE3DRenderingServer);
         GDREGISTER_CLASS(MaszynaRailVehicleAppearance);
         GDREGISTER_CLASS(MaszynaE3DRailVehicleRenderingServer);
+        GDREGISTER_ABSTRACT_CLASS(MaszynaPantographGeometryReader);
+        GDREGISTER_CLASS(MaszynaFizManager);
+        GDREGISTER_CLASS(MaszynaVehicleMmdManager);
         GDREGISTER_CLASS(MaszynaE3DRoadVehicleRenderingServer);
         GDREGISTER_CLASS(MaszynaTractionServer);
         GDREGISTER_CLASS(MaszynaE3DResourceFormatLoader);
@@ -205,6 +213,12 @@ namespace godot {
         // (MaszynaDataPath::resolve()) and what a scenery's loading found of them
         file_indexer = memnew(MaszynaFileIndexer);
         Engine::get_singleton()->register_singleton("MaszynaFileIndexer", file_indexer);
+        // after the game directory and the file indexer: the vehicles' FIZ descriptions and MMD data,
+        // read by the readers the plugin's runtime hands in
+        fiz_manager = memnew(MaszynaFizManager);
+        Engine::get_singleton()->register_singleton("MaszynaFizManager", fiz_manager);
+        vehicle_mmd_manager = memnew(MaszynaVehicleMmdManager);
+        Engine::get_singleton()->register_singleton("MaszynaVehicleMmdManager", vehicle_mmd_manager);
         e3d_parser = memnew(MaszynaE3DParser);
         Engine::get_singleton()->register_singleton("MaszynaE3DParser", e3d_parser);
         // after SceneryStreamingServer and ModelRenderingServer are registered: the constructor takes
@@ -325,6 +339,14 @@ namespace godot {
         Engine::get_singleton()->unregister_singleton("MaszynaE3DParser");
         memdelete(e3d_parser);
         e3d_parser = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("MaszynaVehicleMmdManager");
+        memdelete(vehicle_mmd_manager);
+        vehicle_mmd_manager = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("MaszynaFizManager");
+        memdelete(fiz_manager);
+        fiz_manager = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaFileIndexer");
         memdelete(file_indexer);

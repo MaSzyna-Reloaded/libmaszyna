@@ -26,7 +26,7 @@ var cabin:RID
 func _build_cab(kind:RailVehicleCabinKind.Kind, with_selector:bool, with_lever:bool,
         fiz_path:String = EP07_PATH) -> void:
     # a driven vehicle is simulated (FINDINGS, 09-23); the test drives it, no AI sits aboard
-    train = build_vehicle("TestPantographPresets", FizVehicleBuilder.build_description_at(fiz_path), 0.0,
+    train = build_vehicle("TestPantographPresets", MaszynaFizManager.load_description_at(fiz_path), 0.0,
             MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var controls:MaszynaCabinControls = MaszynaCabinControls.new()
     if with_selector:

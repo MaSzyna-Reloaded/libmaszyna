@@ -18,7 +18,7 @@ func _direction_after(vehicle_rid:RID, command:String) -> int:
 
 
 func test_the_cab_car_reverser_goes_back_to_reverse() -> void:
-    var train:VehicleController = build_vehicle("TestEn57CabCar", FizVehicleBuilder.build_description_at(CAB_CAR_PATH),
+    var train:VehicleController = build_vehicle("TestEn57CabCar", MaszynaFizManager.load_description_at(CAB_CAR_PATH),
             0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     var vehicle_rid:RID = train.get_rid()
     await wait_idle_frames(2)
@@ -30,7 +30,7 @@ func test_the_cab_car_reverser_goes_back_to_reverse() -> void:
 
 
 func test_the_motor_car_keeps_its_circuit_thresholds() -> void:
-    var description:VehicleController = FizVehicleBuilder.build_description_at(MOTOR_CAR_PATH)
+    var description:VehicleController = MaszynaFizManager.load_description_at(MOTOR_CAR_PATH)
     var engine:RailVehicleElectricSeriesEngine = null
     for component:VehicleComponent in description.get_components():
         if component is RailVehicleElectricSeriesEngine:

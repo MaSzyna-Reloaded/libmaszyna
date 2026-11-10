@@ -1,4 +1,3 @@
-#include "maszyna/e3d/MaszynaE3DMesh.hpp"
 #include "maszyna/e3d/MaszynaE3DModelBuilder.hpp"
 #include "maszyna/e3d/MaszynaE3DModelLightDefinition.hpp"
 #include "maszyna/e3d/MaszynaE3DModelSmokeSourceDefinition.hpp"
@@ -18,13 +17,13 @@ namespace godot {
     static constexpr const char *LIGHT_OFF_PREFIX = "light_off";
     static constexpr const char *SMOKE_SOURCE_PREFIX = "smokesource_";
 
-    /// The vectors as floats, x y z after each other (MaszynaE3DMesh keeps them so)
+    /// The vectors as floats, x y z after each other (MaszynaE3DModelGeometry keeps them so)
     static PackedFloat32Array to_floats(const PackedVector3Array &p_vectors) {
         PackedFloat32Array floats;
-        floats.resize(p_vectors.size() * MaszynaE3DMesh::VECTOR3_FLOATS);
+        floats.resize(p_vectors.size() * MaszynaE3DModelGeometry::VECTOR3_FLOATS);
         for (int64_t index = 0; index < p_vectors.size(); index++) {
             const Vector3 &vector = p_vectors[index];
-            const int64_t first = index * MaszynaE3DMesh::VECTOR3_FLOATS;
+            const int64_t first = index * MaszynaE3DModelGeometry::VECTOR3_FLOATS;
             floats.set(first, static_cast<float>(vector.x));
             floats.set(first + 1, static_cast<float>(vector.y));
             floats.set(first + 2, static_cast<float>(vector.z));
@@ -34,10 +33,10 @@ namespace godot {
 
     static PackedFloat32Array to_floats(const PackedVector2Array &p_vectors) {
         PackedFloat32Array floats;
-        floats.resize(p_vectors.size() * MaszynaE3DMesh::VECTOR2_FLOATS);
+        floats.resize(p_vectors.size() * MaszynaE3DModelGeometry::VECTOR2_FLOATS);
         for (int64_t index = 0; index < p_vectors.size(); index++) {
             const Vector2 &vector = p_vectors[index];
-            const int64_t first = index * MaszynaE3DMesh::VECTOR2_FLOATS;
+            const int64_t first = index * MaszynaE3DModelGeometry::VECTOR2_FLOATS;
             floats.set(first, static_cast<float>(vector.x));
             floats.set(first + 1, static_cast<float>(vector.y));
         }
@@ -86,7 +85,8 @@ namespace godot {
         return normals;
     }
 
-    Ref<MaszynaE3DSubModel> MaszynaE3DModelBuilder::_create_submodel(SubModelData &p_submodel) {
+    Ref<MaszynaE3DSubModel>
+    MaszynaE3DModelBuilder::_create_submodel(const SubModelData &p_submodel, const int p_index) {
         Ref<MaszynaE3DSubModel> submodel;
         submodel.instantiate();
 
@@ -165,7 +165,8 @@ namespace godot {
                 submodel->set_transform(p_submodel.matrix);
                 return submodel;
             case MaszynaE3DSubModel::SubModelType::SUBMODEL_GL_TRIANGLES: {
-                const int64_t vertices_count = p_submodel.vertices.size();
+                // a description read without the geometry knows the count only (MaszynaE3DParser)
+                const int64_t vertices_count = MAX(p_submodel.vertices.size(), p_submodel.vertex_count);
                 const String mat_name = p_submodel.material != "" ? p_submodel.material.split(":").get(0) : "";
                 if (const std::unordered_map<int, MaszynaE3DSubModel::AnimationType>::const_iterator anim_it =
                             anim_map.find(p_submodel.anim);
@@ -195,33 +196,7 @@ namespace godot {
                 submodel->set_self_illumination(p_submodel.selfillum_color);
 
                 if (vertices_count > 0) {
-                    // The data is wound CCW (opengl33renderer.cpp:419), Godot's front face is CW. A
-                    // submodel without an IDX chunk is a plain triangle list and needs the same flip.
-                    const bool indexed = p_submodel.indices.size() > 0;
-                    const int64_t corner_count = indexed ? p_submodel.indices.size() : vertices_count;
-                    PackedInt32Array cw_indices;
-                    for (int32_t i = 0; i + 2 < corner_count; i += 3) {
-                        const int32_t i1 = static_cast<int32_t>(indexed ? p_submodel.indices.get(i) : i);
-                        const int32_t i2 = static_cast<int32_t>(indexed ? p_submodel.indices.get(i + 1) : i + 1);
-                        const int32_t i3 = static_cast<int32_t>(indexed ? p_submodel.indices.get(i + 2) : i + 2);
-                        cw_indices.append_array(PackedInt32Array({i1, i3, i2}));
-                    }
-
-                    p_submodel.indices = cw_indices;
-                    if (p_submodel.normals.is_empty()) {
-                        p_submodel.normals = _calculate_normals(p_submodel.vertices, p_submodel.indices);
-                    }
-
-                    Dictionary surface;
-                    surface[MaszynaE3DMesh::SURFACE_VERTICES] = to_floats(p_submodel.vertices);
-                    surface[MaszynaE3DMesh::SURFACE_NORMALS] = to_floats(p_submodel.normals);
-                    surface[MaszynaE3DMesh::SURFACE_TANGENTS] = PackedFloat32Array(p_submodel.tangents);
-                    surface[MaszynaE3DMesh::SURFACE_UVS] = to_floats(p_submodel.uvs);
-                    surface[MaszynaE3DMesh::SURFACE_INDICES] = p_submodel.indices;
-                    Ref<MaszynaE3DMesh> mesh;
-                    mesh.instantiate();
-                    mesh->set_surface(surface);
-                    submodel->set_mesh(mesh);
+                    submodel->set_geometry_index(p_index);
                 }
 
                 submodel->set_transform(p_submodel.matrix);
@@ -254,14 +229,14 @@ namespace godot {
         }
     }
 
-    Ref<MaszynaE3DModel> MaszynaE3DModelBuilder::build(std::vector<SubModelData> &p_submodels) {
+    Ref<MaszynaE3DModel> MaszynaE3DModelBuilder::build(const std::vector<SubModelData> &p_submodels) {
         // Build a list of submodels first using a simple vector to avoid Variant conversions.
         std::vector<Ref<MaszynaE3DSubModel>> submodels;
         std::vector<int> parent_indices(p_submodels.size(), -1);
         submodels.reserve(p_submodels.size());
 
-        for (SubModelData &i: p_submodels) {
-            submodels.push_back(_create_submodel(i));
+        for (size_t index = 0; index < p_submodels.size(); ++index) {
+            submodels.push_back(_create_submodel(p_submodels[index], static_cast<int>(index)));
         }
 
         // Track parentage to avoid duplication in MaszynaE3DModel
@@ -315,6 +290,51 @@ namespace godot {
         }
 
         return model;
+    }
+
+    Ref<MaszynaE3DModelGeometry> MaszynaE3DModelBuilder::build_geometry(std::vector<SubModelData> &p_submodels) {
+        TypedArray<Dictionary> surfaces;
+        surfaces.resize(static_cast<int64_t>(p_submodels.size()));
+        for (size_t index = 0; index < p_submodels.size(); ++index) {
+            SubModelData &submodel = p_submodels[index];
+            const int64_t vertices_count = submodel.vertices.size();
+            if (submodel.type != MaszynaE3DSubModel::SubModelType::SUBMODEL_GL_TRIANGLES || vertices_count == 0) {
+                surfaces[static_cast<int64_t>(index)] = Dictionary();
+                continue;
+            }
+            // The data is wound CCW (opengl33renderer.cpp:419), Godot's front face is CW. A
+            // submodel without an IDX chunk is a plain triangle list and needs the same flip.
+            const bool indexed = submodel.indices.size() > 0;
+            const int64_t corner_count = indexed ? submodel.indices.size() : vertices_count;
+            PackedInt32Array cw_indices;
+            for (int32_t i = 0; i + 2 < corner_count; i += 3) {
+                const int32_t i1 = static_cast<int32_t>(indexed ? submodel.indices.get(i) : i);
+                const int32_t i2 = static_cast<int32_t>(indexed ? submodel.indices.get(i + 1) : i + 1);
+                const int32_t i3 = static_cast<int32_t>(indexed ? submodel.indices.get(i + 2) : i + 2);
+                cw_indices.append_array(PackedInt32Array({i1, i3, i2}));
+            }
+            submodel.indices = cw_indices;
+            if (submodel.normals.is_empty()) {
+                submodel.normals = _calculate_normals(submodel.vertices, submodel.indices);
+            }
+            Dictionary surface;
+            surface[MaszynaE3DModelGeometry::SURFACE_VERTICES] = to_floats(submodel.vertices);
+            surface[MaszynaE3DModelGeometry::SURFACE_NORMALS] = to_floats(submodel.normals);
+            surface[MaszynaE3DModelGeometry::SURFACE_TANGENTS] = PackedFloat32Array(submodel.tangents);
+            surface[MaszynaE3DModelGeometry::SURFACE_UVS] = to_floats(submodel.uvs);
+            surface[MaszynaE3DModelGeometry::SURFACE_INDICES] = submodel.indices;
+            surfaces[static_cast<int64_t>(index)] = surface;
+            // the arrays are the geometry's now
+            submodel.vertices = PackedVector3Array();
+            submodel.normals = PackedVector3Array();
+            submodel.uvs = PackedVector2Array();
+            submodel.tangents = PackedFloat64Array();
+            submodel.indices = PackedInt32Array();
+        }
+        Ref<MaszynaE3DModelGeometry> geometry;
+        geometry.instantiate();
+        geometry->set_surfaces(surfaces);
+        return geometry;
     }
 
     // Built from the submodels' final names (not the raw E3D name table), so unnamed transforms

@@ -99,7 +99,7 @@ func _car(road:RID, offset:float, driven:bool) -> RID:
     _vehicles.append(vehicle)
     _controllers.append(controller)
     RoadVehicleServer.vehicle_attach(vehicle)
-    VehicleServer.controller_configure(controller, FizVehicleBuilder.build_description_at(ROAD_CAR_FIZ))
+    VehicleServer.controller_configure(controller, MaszynaFizManager.load_description_at(ROAD_CAR_FIZ))
     VehicleServer.vehicle_bind_controller(vehicle, controller)
     RoadVehicleServer.vehicle_set_road(vehicle, road, offset, RoadServer.ROAD_END_END)
     if driven:
@@ -142,7 +142,7 @@ func test_a_car_is_followed_in_every_view() -> void:
 
 
 func test_a_road_category_fiz_is_a_road_vehicle_driven_as_a_car() -> void:
-    var car:RoadVehicleController = FizVehicleBuilder.build_description_at(ROAD_CAR_FIZ) as RoadVehicleController
+    var car:RoadVehicleController = MaszynaFizManager.load_description_at(ROAD_CAR_FIZ) as RoadVehicleController
 
     assert_not_null(car, "Category=road is a road vehicle")
     assert_eq(car.mass, 1200.0)
@@ -156,7 +156,7 @@ func test_a_road_category_fiz_is_a_road_vehicle_driven_as_a_car() -> void:
     assert_eq(car.acceleration_limit, FizVehicleBuilder.CAR_ACCELERATION_LIMIT)
     assert_eq(car.obstacle_range, FizVehicleBuilder.CAR_OBSTACLE_RANGE)
     assert_eq(car.components.size(), 0, "no part of a rail vehicle")
-    assert_true(FizVehicleBuilder.build_description_at(RAIL_VEHICLE_FIZ) is MaszynaMoverRailVehicleController,
+    assert_true(MaszynaFizManager.load_description_at(RAIL_VEHICLE_FIZ) is MaszynaMoverRailVehicleController,
             "a train stays on the Mover")
 
 

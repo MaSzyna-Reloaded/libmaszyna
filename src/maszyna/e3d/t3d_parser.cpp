@@ -47,6 +47,37 @@ namespace godot {
     }
 
     Ref<MaszynaE3DModel> MaszynaT3DParser::parse(const Ref<FileAccess> &p_file) const {
+        std::vector<SubModelData> submodels;
+        if (!_parse_submodels(p_file, submodels)) {
+            return {};
+        }
+        Ref<MaszynaE3DModel> model = MaszynaE3DModelBuilder::build(submodels);
+        model->apply_geometry(MaszynaE3DModelBuilder::build_geometry(submodels));
+        return model;
+    }
+
+    Ref<MaszynaE3DModel> MaszynaT3DParser::parse_description(const Ref<FileAccess> &p_file) const {
+        std::vector<SubModelData> submodels;
+        return _parse_submodels(p_file, submodels) ? MaszynaE3DModelBuilder::build(submodels) : Ref<MaszynaE3DModel>();
+    }
+
+    Ref<MaszynaE3DModelGeometry> MaszynaT3DParser::parse_geometry(const Ref<FileAccess> &p_file) const {
+        std::vector<SubModelData> submodels;
+        return _parse_submodels(p_file, submodels) ? MaszynaE3DModelBuilder::build_geometry(submodels)
+                                                   : Ref<MaszynaE3DModelGeometry>();
+    }
+
+    PackedVector3Array
+    MaszynaT3DParser::parse_submodel_positions(const Ref<FileAccess> &p_file, const int p_index) const {
+        std::vector<SubModelData> submodels;
+        if (!_parse_submodels(p_file, submodels) || p_index < 0 || static_cast<size_t>(p_index) >= submodels.size()) {
+            return {};
+        }
+        return submodels[p_index].vertices;
+    }
+
+    bool
+    MaszynaT3DParser::_parse_submodels(const Ref<FileAccess> &p_file, std::vector<SubModelData> &p_r_submodels) const {
         // the original's TAnimType as the .t3d names it (Model3d.cpp:300-327); anything else is
         // at_Undefined
         static const std::unordered_map<std::string, MaszynaE3DSubModel::AnimationType> animations = {
@@ -246,7 +277,7 @@ namespace godot {
                         UtilityFunctions::push_error(
                                 "Bad model: incomplete triangle encountered in submodel \"" + submodel.name + "\" of " +
                                 p_file->get_path());
-                        return {};
+                        return false;
                     }
                     if (!submodel.indices.is_empty()) {
                         // indexed geometry comes with its normals and tangents
@@ -407,7 +438,8 @@ namespace godot {
                 }
             }
         }
-        std::vector<SubModelData> ordered;
+        std::vector<SubModelData> &ordered = p_r_submodels;
+        ordered.clear();
         ordered.reserve(order.size());
         for (const int old_index: order) {
             SubModelData &submodel = ordered.emplace_back(submodels[old_index]);
@@ -415,7 +447,7 @@ namespace godot {
             submodel.first_child_idx = submodel.first_child_idx < 0 ? -1 : new_indices[submodel.first_child_idx];
         }
 
-        return MaszynaE3DModelBuilder::build(ordered);
+        return true;
     }
 
     /// TSubModel::GetFromName(), Model3d.cpp:1092: case-insensitive, the next ones before the children

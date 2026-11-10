@@ -16,7 +16,7 @@ var received:Array[Array] = []
 
 
 func _drive(fiz_path:String) -> void:
-    var train:VehicleController = build_vehicle("TestCabinConverter", FizVehicleBuilder.build_description_at(fiz_path),
+    var train:VehicleController = build_vehicle("TestCabinConverter", MaszynaFizManager.load_description_at(fiz_path),
             0.0, MaszynaVehicleData.DriverType.DRIVER_HEAD)
     vehicle_rid = train.get_rid()
     await wait_idle_frames(2)

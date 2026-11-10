@@ -30,7 +30,13 @@ const POWERED_AXLES_FIRST:int = 65
 const POWERED_AXLES_LAST:int = 74
 const ROLLING_AXLES_FIRST:int = 49
 const ROLLING_AXLES_LAST:int = 57
-const PANTOGRAPH_COUNT:int = 2
+
+## Raised whenever read_mmd_data() changes what it puts into the data - the files' mtimes the
+## cache of it is kept by (MaszynaVehicleMmdManager) cannot see it. 36: the model's description alone,
+## the slider's height from its vertices; 35: the pantographs' geometry; 34: RoadVehicleAppearance of a road vehicle; 33: MaszynaRailVehicleAppearance;
+## 32: the cabins the MMD defines; 31: coupleradapter:; 30: pantfactors:, a pantograph needs only its
+## slider; 29: pendulums; 28: doors and door steps; 27: rolling wheels by the axle arrangement
+const MMD_DATA_FORMAT_VERSION:int = 36
 
 ## Every MaSzyna-authored piece of a vehicle (exterior, low-poly interior, passengers, cab) lives in
 ## one vehicle-local frame where +Z is the direction of travel: the original draws all of them under
@@ -43,8 +49,8 @@ const MASZYNA_VEHICLE_FRAME:Transform3D = Transform3D(Basis(Vector3.UP, PI), Vec
 ## Reads what the vehicle's MMD says it is built from. This is the expensive half - every call
 ## opens and re-parses the MMD and loads the exterior model - and its result is what
 ## MaszynaVehicleSystem caches.
-static func read_structure(
-        data_path:String, file_name:String, skin:String, vehicle_id:String) -> MaszynaVehicleStructure:
+static func read_mmd_data(
+        data_path:String, file_name:String, skin:String, vehicle_id:String) -> MaszynaVehicleMmdData:
     if not data_path or not file_name:
         return null
 
@@ -60,12 +66,12 @@ static func read_structure(
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_mmd_path))
     var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
 
-    var structure := MaszynaVehicleStructure.new()
-    structure.data_path = normalized_data_path
-    structure.file_name = file_name
+    var mmd_data := MaszynaVehicleMmdData.new()
+    mmd_data.data_path = normalized_data_path
+    mmd_data.file_name = file_name
     # a road vehicle is drawn with its wheels turned, nothing of a rail vehicle's; the wheels'
     # diameters and axle arrangement of a rail one split its axles into powered and rolling ones
-    var description:VehicleController = FizVehicleBuilder.build_description(
+    var description:VehicleController = MaszynaFizManager.load_description(
             normalized_data_path.trim_prefix("/"), file_name)
     var road_appearance:RoadVehicleAppearance = (
             RoadVehicleAppearance.new() if description is RoadVehicleController else null)
@@ -89,13 +95,15 @@ static func read_structure(
 
     appearance.attachment_model_filenames = MmdCabinInstancer.parse_attachments(abs_mmd_path, parameters)
 
-    structure.load_models = MmdCabinInstancer.parse_loads(abs_mmd_path, parameters)
-    var passengers_filename:String = structure.load_models.get("passengers", "")
+    mmd_data.load_models = MmdCabinInstancer.parse_loads(abs_mmd_path, parameters)
+    var passengers_filename:String = mmd_data.load_models.get("passengers", "")
     if passengers_filename:
         appearance.passengers_model_filename = passengers_filename
 
     appearance.skins = PackedStringArray(MmdCabinInstancer.resolve_skins(normalized_data_path, skin))
-    var model:MaszynaE3DModel = MaszynaE3DModelManager.load_model(normalized_data_path, appearance.model_filename)
+    # the model's description alone - none of its geometry, nothing in the GPU while the vehicle's
+    # data is read
+    var model:MaszynaE3DModel = MaszynaE3DModelManager.load_model_description(normalized_data_path, appearance.model_filename)
     if model:
         # the destination sign is the submodel with replaceable skin 4 (TSubModel::find_replacable4(),
         # Model3d.cpp:932-958; init_destination(), DynObj.cpp:2539-2545); none, no sign
@@ -124,13 +132,16 @@ static func read_structure(
                 MmdCabinInstancer.parse_mirror_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_door_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_door_step_names(abs_mmd_path, parameters),
-                MmdCabinInstancer.parse_pendulums(abs_mmd_path, parameters),
+                MmdCabinInstancer.parse_pendulums(abs_mmd_path, parameters))
+        mmd_data.pantograph_geometries = _measure_pantographs(
+                rail_appearance, model,
+                MaszynaE3DModelManager.get_model_path(normalized_data_path, appearance.model_filename), description,
                 MmdCabinInstancer.parse_pantograph_factors(abs_mmd_path, parameters))
-    structure.appearance = appearance
-    structure.coupler_adapter = MmdCabinInstancer.parse_coupler_adapter(abs_mmd_path, parameters)
-    structure.cabin_scene = _build_cabin_scene(normalized_data_path, file_name, skin)
-    structure.cabin_kinds = MmdCabinInstancer.parse_cabin_kinds(abs_mmd_path, parameters)
-    return structure
+    mmd_data.appearance = appearance
+    mmd_data.coupler_adapter = MmdCabinInstancer.parse_coupler_adapter(abs_mmd_path, parameters)
+    mmd_data.cabin_scene = _build_cabin_scene(normalized_data_path, file_name, skin)
+    mmd_data.cabin_kinds = MmdCabinInstancer.parse_cabin_kinds(abs_mmd_path, parameters)
+    return mmd_data
 
 
 ## Which model a cargo is drawn as, in the order the original tries them
@@ -138,17 +149,17 @@ static func read_structure(
 ## cargo, then a model named for this vehicle and the cargo together, then one named after the
 ## cargo alone. Empty when the cargo has no model anywhere, which is not an error - plenty of
 ## loads are only mass.
-static func load_model_filename(structure:MaszynaVehicleStructure, load_name:String) -> String:
+static func load_model_filename(mmd_data:MaszynaVehicleMmdData, load_name:String) -> String:
     if not load_name:
         return ""
-    var override:String = structure.load_models.get(load_name.to_lower(), "")
+    var override:String = mmd_data.load_models.get(load_name.to_lower(), "")
     if override:
         return override
-    var specialized:String = "%s_%s" % [structure.file_name, load_name]
-    if _model_exists(structure.data_path, specialized):
+    var specialized:String = "%s_%s" % [mmd_data.file_name, load_name]
+    if _model_exists(mmd_data.data_path, specialized):
         return specialized
     var generic:String = load_name
-    return generic if _model_exists(structure.data_path, generic) else ""
+    return generic if _model_exists(mmd_data.data_path, generic) else ""
 
 
 ## The vehicle's exterior as its MMD names it - the body model, and its attachments as its
@@ -216,7 +227,7 @@ static func _resolve_parts(
         appearance:MaszynaRailVehicleAppearance, model:MaszynaE3DModel, wheels:RailVehicleWheels, wheel_names:PackedStringArray,
         pantograph_elements:Array[PackedStringArray], wiper_names:PackedStringArray,
         mirror_names:PackedStringArray, door_names:PackedStringArray, door_step_names:PackedStringArray,
-        pendulums:Dictionary, pantograph_factors:PackedFloat64Array) -> void:
+        pendulums:Dictionary) -> void:
     var names:Dictionary[String, MaszynaE3DSubModel] = {}
     _index_submodels(model.submodels, names)
 
@@ -259,12 +270,11 @@ static func _resolve_parts(
     appearance.powered_wheels = wheel_groups[WheelGroup.POWERED]
     appearance.rear_rolling_wheels = wheel_groups[WheelGroup.REAR_ROLLING]
 
+    # every pantograph the MMD declares - as many as its arms' names, the slider's
     var pantographs:Array[PackedStringArray] = []
-    for pantograph:int in PANTOGRAPH_COUNT:
+    for pantograph:int in pantograph_elements[PANTOGRAPH_REQUIRED_ARMS[0]].size():
         pantographs.append(_find_pantograph_arms(names, pantograph_elements, pantograph))
-    appearance.pantograph_factors = pantograph_factors
-    appearance.pantograph_front_arms = pantographs[0]
-    appearance.pantograph_rear_arms = pantographs[1]
+    appearance.pantograph_arms = pantographs
     var wiper_arms:PackedStringArray = []
     for wiper_name:String in wiper_names:
         for element:String in WIPER_ELEMENT_SUFFIXES:
@@ -322,6 +332,36 @@ static func _find_pantograph_arms(
             return PackedStringArray()
         arms.append(arm)
     return arms
+
+
+## The geometry of the FIZ's pantographs it does not give itself, measured from the model's data -
+## pantograph i by the MMD's pantograph i - as MaszynaPantographGeometryReader reads it; the FIZ's
+## comes first, so one it gives is not measured. Empty for a vehicle the FIZ names no pantograph of.
+static func _measure_pantographs(
+        appearance:MaszynaRailVehicleAppearance, model:MaszynaE3DModel, model_path:String,
+        description:VehicleController, factors:PackedFloat64Array) -> Array[RailVehiclePantograph]:
+    var measured:Array[RailVehiclePantograph] = []
+    var pantographs:RailVehiclePantographs = null
+    var power_source:RailVehicleEnginePowerSource = null
+    for component:VehicleComponent in description.get_components() if description else []:
+        if component is RailVehiclePantographs:
+            pantographs = component
+        elif component is RailVehicleEnginePowerSource:
+            power_source = component
+    if not pantographs or not power_source:
+        return measured
+    var arms:Array[PackedStringArray] = []
+    arms.assign(appearance.pantograph_arms)
+    for index:int in pantographs.pantographs.size():
+        var given:RailVehiclePantograph = pantographs.pantographs[index]
+        if given and given.has_geometry:
+            measured.append(given)
+            continue
+        measured.append(MaszynaPantographGeometryReader.read(
+                model, model_path, arms[index] if index < arms.size() else PackedStringArray(), appearance.model_transform,
+                power_source.current_collector_pantograph_type, factors, index, description.dimensions_height,
+                given.control if given else RailVehicleEnginePowerSource.PANTOGRAPH_FIRST))
+    return measured
 
 
 ## RailVehicleWipers has to know how many wipers the model has: from cab 2 they are numbered from the

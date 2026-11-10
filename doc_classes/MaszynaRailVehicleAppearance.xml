@@ -27,14 +27,8 @@
 		<member name="mirrors" type="PackedStringArray" setter="set_mirrors" getter="get_mirrors" default="PackedStringArray()">
 			The mirrors in the original's order, odd on the left, even on the right.
 		</member>
-		<member name="pantograph_factors" type="PackedFloat64Array" setter="set_pantograph_factors" getter="get_pantograph_factors" default="PackedFloat64Array()">
-			[code]pantfactors:[/code] - the first and the second pantograph's place along the vehicle, then their slider heights, for a pantograph the model cannot be measured by (DynObj.cpp:5577-5633); empty without the key.
-		</member>
-		<member name="pantograph_front_arms" type="PackedStringArray" setter="set_pantograph_front_arms" getter="get_pantograph_front_arms" default="PackedStringArray()">
-			Lower arm, its pair, upper arm, its pair and slider of the front pantograph.
-		</member>
-		<member name="pantograph_rear_arms" type="PackedStringArray" setter="set_pantograph_rear_arms" getter="get_pantograph_rear_arms" default="PackedStringArray()">
-			Lower arm, its pair, upper arm, its pair and slider of the rear pantograph.
+		<member name="pantograph_arms" type="PackedStringArray[]" setter="set_pantograph_arms" getter="get_pantograph_arms" default="[]">
+			Every pantograph of the model in the MMD's order: its lower arm, its pair, upper arm, its pair and slider - none for one without a slider. Posed from the pantograph of the same index of the vehicle's [RailVehiclePantographs].
 		</member>
 		<member name="pendulum_amplitude" type="float" setter="set_pendulum_amplitude" getter="get_pendulum_amplitude" default="0.0">
 			[code]pendulumamplitude:[/code] - how far the pendulums swing [deg] (DynObj.cpp:5714-5718).

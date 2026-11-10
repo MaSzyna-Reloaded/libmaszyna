@@ -77,7 +77,7 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:Str
     var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
     var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
-    if MmdCabinInstancer.names_vehicle(abs_mmd_path):
+    if MaszynaVehicleMmdManager.names_vehicle(abs_mmd_path):
         key += ":" + vehicle_id
     if _profiles.has(key):
         var kept:Texture2D = _profiles[key]
@@ -113,7 +113,7 @@ func _remember_profile(key:String, texture:Texture2D) -> void:
 ## its FIZ gives and the vehicles are coupled at (DynObj.cpp). The side view may be longer - the
 ## shared bogies of an articulated unit overhang its neighbours. 0 when there is no length.
 func get_profile_coupling_width(data_path:String, file_name:String) -> float:
-    var description:VehicleController = FizVehicleBuilder.build_description(data_path.trim_prefix("/"), file_name)
+    var description:VehicleController = MaszynaFizManager.load_description(data_path.trim_prefix("/"), file_name)
     return description.dimensions_length * PROFILE_PIXELS_PER_METRE if description else 0.0
 
 

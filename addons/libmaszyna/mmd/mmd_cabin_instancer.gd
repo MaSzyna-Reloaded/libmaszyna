@@ -348,12 +348,6 @@ static func vehicle_parameters(vehicle_id:String, type_name:String, skin:String)
     return _include_parameters(values)
 
 
-## Whether what the MMD reads depends on the vehicle's id - its text names (p1), which no
-## include of it can name unless passed it. What is read from it then belongs to that vehicle alone.
-static func names_vehicle(abs_mmd_path:String) -> bool:
-    return FileAccess.get_file_as_bytes(abs_mmd_path).get_string_from_ascii().contains("(p1)")
-
-
 ## Reads just the exterior body model filename from the MMD's own top-level `models:` section
 ## (e.g. "models: 6da.t3d" as the file's very first line) - this is a DIFFERENT filename than
 ## the vehicle's shared .fiz/.mmd base name in general (confirmed against real data:
