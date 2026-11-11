@@ -1237,6 +1237,19 @@ func test_texture_sets_the_skin_with_the_cells_values() -> void:
     root.free()
 
 
+func test_trackvel_marks_its_tracks_as_changing_speed() -> void:
+    var changed:RID = TrackServer.track_create()
+    var other:RID = TrackServer.track_create()
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "event stop_here trackvel 0 t1 0 endevent", [], {}, {"t1": changed, "t2": other}
+    )
+
+    assert_true(MaszynaScenarioEventServer.track_is_velocity_changing(changed), "the trackvel's track")
+    assert_false(MaszynaScenarioEventServer.track_is_velocity_changing(other), "no event changes this one")
+    root.free()
+    TrackServer.track_free(changed)
+    TrackServer.track_free(other)
+
 func test_texture_lowercases_only_the_ascii_letters() -> void:
     var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
     instance.model = MaszynaE3DModel.new()

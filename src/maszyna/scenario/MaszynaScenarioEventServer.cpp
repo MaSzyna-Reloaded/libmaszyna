@@ -89,6 +89,12 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("track_get_events", "track", "slot"), &MaszynaScenarioEventServer::track_get_events);
         ClassDB::bind_method(
+                D_METHOD("track_set_velocity_changing", "track", "event"),
+                &MaszynaScenarioEventServer::track_set_velocity_changing);
+        ClassDB::bind_method(
+                D_METHOD("track_is_velocity_changing", "track"),
+                &MaszynaScenarioEventServer::track_is_velocity_changing);
+        ClassDB::bind_method(
                 D_METHOD("isolated_add_event", "isolated", "slot", "event"),
                 &MaszynaScenarioEventServer::isolated_add_event);
         ClassDB::bind_method(D_METHOD("launcher_create", "system"), &MaszynaScenarioEventServer::launcher_create);
@@ -992,6 +998,20 @@ namespace godot {
             result.push_back(event);
         }
         return result;
+    }
+
+    void MaszynaScenarioEventServer::track_set_velocity_changing(const RID &p_track, const RID &p_event) {
+        SystemData *system = _get_event_system(p_event);
+        ERR_FAIL_NULL(system);
+        if (!track_events.has(p_track)) {
+            system->tracks.push_back(p_track);
+        }
+        track_events[p_track].velocity_changing = true;
+    }
+
+    bool MaszynaScenarioEventServer::track_is_velocity_changing(const RID &p_track) const {
+        const TrackEvents *bound = track_events.getptr(p_track);
+        return bound != nullptr && bound->velocity_changing;
     }
 
     // --- isolated section ---

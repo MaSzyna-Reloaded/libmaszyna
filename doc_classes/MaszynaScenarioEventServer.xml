@@ -419,6 +419,21 @@
 				The events of [param track] in [param slot].
 			</description>
 		</method>
+		<method name="track_is_velocity_changing" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				Whether an event changes the speed of [param track] (see [method track_set_velocity_changing]).
+			</description>
+		</method>
+		<method name="track_set_velocity_changing">
+			<return type="void" />
+			<param index="0" name="track" type="RID" />
+			<param index="1" name="event" type="RID" />
+			<description>
+				Marks [param track] as one whose speed [param event], a [code]trackvel[/code] one, changes. A driver reading the way keeps such a track whatever its speed and reads the speed again on every update. The mark goes with the event's system.
+			</description>
+		</method>
 		<method name="vehicle_put_command">
 			<return type="void" />
 			<param index="0" name="vehicle" type="RID" />

@@ -668,7 +668,9 @@ func _append(segments:Array[TrackRouteSegment], front_along:float) -> void:
             entry.passed = entry.along <= front_along
             _read_command(entry)
             added.append(entry)
-        if segment.track_switch or segment.velocity == 0.0 or not segment.velocity == last_velocity or segment.line_end:
+        # a track an event changes the speed of counts whatever its speed now (iAction, Driver.cpp:647-648)
+        if segment.track_switch or segment.velocity == 0.0 or not segment.velocity == last_velocity or segment.line_end \
+                or MaszynaScenarioEventServer.track_is_velocity_changing(segment.track_rid):
             var entry:Entry = Entry.new()
             entry.kind = Kind.LINE_END if segment.line_end else (Kind.SWITCH if segment.track_switch else Kind.TRACK)
             entry.segment = segment

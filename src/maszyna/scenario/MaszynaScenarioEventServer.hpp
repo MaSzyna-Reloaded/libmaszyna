@@ -123,6 +123,9 @@ namespace godot {
 
             struct TrackEvents {
                     Vector<RID> events[TRACK_EVENT_MAX];
+                    /// A trackvel event changes its speed (iAction 0x200, track_event::init(),
+                    /// Event.cpp:1912-1922)
+                    bool velocity_changing = false;
             };
 
             struct IsolatedEvents {
@@ -317,6 +320,11 @@ namespace godot {
             /// goes with the event's system
             void track_add_event(const RID &p_track, TrackEvent p_slot, const RID &p_event);
             TypedArray<RID> track_get_events(const RID &p_track, TrackEvent p_slot) const;
+            /// The event, a trackvel one, changes the track's speed: a driver reading the way keeps
+            /// the track whatever its speed, to read the speed again on every update
+            /// (Driver.cpp:647-648, 302); the mark goes with the event's system
+            void track_set_velocity_changing(const RID &p_track, const RID &p_event);
+            bool track_is_velocity_changing(const RID &p_track) const;
 
             /// Fires the event when the isolated section (TrackServer) does what the slot says
             void isolated_add_event(const RID &p_isolated, IsolatedEvent p_slot, const RID &p_event);

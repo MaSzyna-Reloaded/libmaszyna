@@ -465,6 +465,9 @@ static func build(
                     var track:RID = TrackServer.track_get_rid_by_name(target)
                     if track.is_valid():
                         targets.append(track)
+                        # its speed matters to the drivers' reading whatever it is (track_event::init(),
+                        # Event.cpp:1912-1922)
+                        MaszynaScenarioEventServer.track_set_velocity_changing(track, rid)
                 var action:MaszynaTrackVelocityAction = MaszynaTrackVelocityAction.new()
                 action.tracks = targets
                 action.velocity = float(event.parameters[0])
