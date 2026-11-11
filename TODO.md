@@ -509,10 +509,14 @@ is in libreloaded's `TODO.md`.
 
 ## Scenario events
 
-* **Scenery sounds**: player defaults except `max_distance`; ambient fade and the 2750 m start
-  (`audiorenderer.cpp:184-199`, `sound.cpp:364-371`). Not checked by ear.
+* **Scenery sounds**: no Doppler effect (`alDopplerFactor(0.25)`, `audiorenderer.cpp:311`) and
+  no ambient and positional volume of the settings (`audiorenderer.cpp:167-174`). Not checked by ear.
 * **A click on a scenery model**: the Alt picking toggle is ignored (`drivermode.cpp:493-500`).
-* Station announcements (`load_sounds()`, `mtable.cpp:644-671`).
+* **A PA system's own soundproofing** (`soundproofing:` of the MMD's `announcements:`,
+  `DynObj.cpp:6532-6548`) is read past: its announcements are heard as any sound outside.
+* **A stop's name sound kept in its timetable entry's extra** is a stopgap: the core's radio could
+  send the announcements, were there a station's transmitter and receiver - the scenery has no
+  stations, only events.
 * Events of one include cannot refer to events of another `MaszynaIncludeNode`.
 * Proxy nodes for editor-built scenes (`ScenarioEventNode`, `ScenarioMemoryNode`,
   `ScenarioLauncherNode`).

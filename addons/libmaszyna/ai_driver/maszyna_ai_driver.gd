@@ -84,6 +84,8 @@ const EASY_REACTION_TIME:float = 0.5
 const ROLLING_START_SPEED:float = 5.0
 ## A vehicle slower than this [km/h] stands (EU07_AI_NOMOVEMENT, Driver.h:25)
 const NO_MOVEMENT_SPEED:float = 0.05
+## The command a vehicle's PA system takes an announcement by (MaszynaVehicleSoundServer.ANNOUNCE_COMMAND)
+const ANNOUNCE_COMMAND:StringName = &"announce"
 ## Coupling up, the way behind is not looked at while the vehicle to couple to is nearer than this
 ## [m] or than the first signal (check_route_behind(), Driver.cpp:8247-8250)
 const CONNECT_SCAN_DISTANCE:float = 2000.0
@@ -744,6 +746,16 @@ func _update(driver:RID) -> void:
         state.velocity = PRESSING_VELOCITY if pressing else 0.0
         state.velocity_next = 0.0
     # what its passenger stop asked of the orders (TableUpdateStopPoint(), Driver.cpp:1258-1370)
+    # what the train announces: to every vehicle of it, the driver's own and along its couplings either
+    # way, each with a PA system taking it (TController::announce(), Driver.cpp:4446-4449)
+    for index:int in state.route.announcements.size():
+        var announcement:MaszynaVehicleSoundServer.Announcement = state.route.announcements[index]
+        var files:PackedStringArray = state.route.announcement_files[index]
+        if ANNOUNCE_COMMAND in VehicleServer.vehicle_get_commands(vehicle):
+            VehicleServer.vehicle_send_command(vehicle, ANNOUNCE_COMMAND, announcement, files)
+        for end:RailVehicleController.CouplerEnd in [RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLER_END_REAR]:
+            RailVehicleServer.vehicle_send_line_command(
+                    vehicle, end, RailVehicleController.COUPLING_FLAG_COUPLER, ANNOUNCE_COMMAND, announcement, files)
     for stop_order:MaszynaDriverRoute.StopOrder in state.route.stop_orders:
         match stop_order:
             MaszynaDriverRoute.StopOrder.HOLD:

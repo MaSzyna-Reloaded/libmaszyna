@@ -117,6 +117,12 @@ const _BARE_PARAMETERS:Dictionary = {
 }
 
 
+## The PA system's block of the sounds: section and its keys (DynObj.cpp:6521-6530)
+const ANNOUNCEMENTS_LABEL:String = "announcements:"
+const ANNOUNCEMENTS_SOUNDPROOFING:String = "soundproofing:"
+const ANNOUNCEMENT_KEYS:Array[String] = ["near_stop", "stop", "next_stop", "destination", "chime"]
+
+
 static func parse(abs_mmd_path:String, context:MmdImportContext) -> Array[MmdSoundSourceDefinition]:
     var tokens:Array[String] = MmdCabinInstancer._tokenize_file(abs_mmd_path, context, context.parameters)
     var start_index:int = MmdCabinInstancer._find_label_index(tokens, "sounds:")
@@ -188,6 +194,40 @@ static func parse_locations(abs_mmd_path:String, context:MmdImportContext) -> Di
             i += step
         locations[key] = offsets
     return locations
+
+
+## The PA system's sounds, the MMD's `announcements: { near_stop: stop: next_stop: destination:
+## chime: }` in its sounds: section (DynObj.cpp:6521-6570): each key's file, by the key less its
+## colon. A key's value is a file, a random set of them or a block; another key's single value is
+## read past, and so is `soundproofing:`, the PA's own proofing, which is not ported (TODO.md).
+static func parse_announcements(abs_mmd_path:String, context:MmdImportContext) -> Dictionary:
+    var announcements:Dictionary = {}
+    var tokens:Array[String] = MmdCabinInstancer._tokenize_file(abs_mmd_path, context, context.parameters)
+    var start_index:int = MmdCabinInstancer._find_label_index(tokens, "sounds:")
+    var index:int = MmdCabinInstancer._find_label_index(tokens, ANNOUNCEMENTS_LABEL, start_index + 1) if start_index >= 0 else -1
+    if index < 0 or index + 1 >= tokens.size() or not tokens[index + 1] == "{":
+        return announcements
+    var i:int = index + 2
+    while i < tokens.size() and not tokens[i] == "}":
+        var key:String = tokens[i].to_lower()
+        i += 1
+        if key == ANNOUNCEMENTS_SOUNDPROOFING:
+            while i < tokens.size() and not tokens[i] == "]":
+                i += 1
+            i += 1
+        elif key.trim_suffix(":") in ANNOUNCEMENT_KEYS:
+            var definition := MmdSoundSourceDefinition.new()
+            definition.label = key.trim_suffix(":")
+            if i < tokens.size() and tokens[i] == "{":
+                i += _parse_one(tokens, i, definition, context, abs_mmd_path)
+            else:
+                var result:Dictionary = _read_random_set(tokens, i, context, abs_mmd_path, definition.label)
+                definition.sound_main = result["value"]
+                i += int(result["consumed"])
+            announcements[definition.label] = definition.sound_main
+        elif key.ends_with(":"):
+            i += 1
+    return announcements
 
 
 static func parse_vehicle_soundproofing(abs_mmd_path:String, context:MmdImportContext) -> Array[PackedFloat32Array]:

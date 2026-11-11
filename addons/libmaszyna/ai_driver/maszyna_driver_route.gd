@@ -30,6 +30,9 @@ const MOVING_RANGE:float = 400.0
 const STANDING_RANGE:float = 1500.0
 ## Moving faster than this [km/h] (EU07_AI_MOVEMENT)
 const MOVEMENT_SPEED:float = 1.0
+## A stop ahead is announced while it is this far [m] (Driver.cpp:1224-1225)
+const APPROACH_ANNOUNCEMENT_MIN:float = 250.0
+const APPROACH_ANNOUNCEMENT_MAX:float = 750.0
 ## determine_braking_distance() (Driver.cpp:6597-6618): fDriverBraking of a train, the speed floor,
 ## a heavy train, the G setting's reaction
 const DRIVER_BRAKING:float = 0.06
@@ -250,6 +253,16 @@ var _stops_moved:Dictionary[RID, float] = {}
 ## How far [m] the train still has to drive along the route before the next station is shown as
 ## current (fLastStopExpDist, counted on the Mover's DistCounter there), NEXT_STATION_SHOWN for none
 var _next_station_distance:float = NEXT_STATION_SHOWN
+## What its train announces on this update (TController::announce()), none from a cargo train, and
+## by the same index the files of the names each says, taken as it is announced - before the update
+## goes on to the next station (TDynamicObject::announce(), DynObj.cpp:7985-8002);
+## the last announced (m_lastannouncement), -1 for none, and whether the next stop's is due once
+## clear of the stop left (m_makenextstopannouncement)
+var announcements:Array[MaszynaVehicleSoundServer.Announcement] = []
+var announcement_files:Array[PackedStringArray] = []
+var _last_announcement:int = -1
+var _next_stop_announcement:bool = false
+var _cargo:bool = false
 ## The next station's stop was read on this update (IsScheduledPassengerStopVisible)
 var _scheduled_stop_visible:bool = false
 ## The way the driver drove when the tracks were last read (iTableDirection), 0 to read them afresh
@@ -279,6 +292,8 @@ func update(
 ) -> void:
     commands.clear()
     stop_orders.clear()
+    announcements.clear()
+    announcement_files.clear()
     at_passenger_stop = false
     waiting_for_departure = false
     # read the other way, or afresh: what was ahead is not passed and no stop is done (TableClear()),
@@ -295,6 +310,7 @@ func update(
     var trainset_type:RailVehicleServer.TrainsetType = RailVehicleServer.trainset_get_type(
             RailVehicleServer.vehicle_get_trainset(vehicle))
     var cargo:bool = trainset_type == RailVehicleServer.TRAINSET_TYPE_CARGO
+    _cargo = cargo
     # moveLate: late on leaving the last station (UpdateDelayFlag(), Driver.cpp:5683-5692)
     _determine_distances(vehicle, order, speed, trainset, shunt_velocity, velocity_desired, coupling, cargo,
             braking.acceleration_threshold, timetable.latency < 0.0)
@@ -309,6 +325,11 @@ func update(
         if order == MaszynaAIDriver.Order.OBEY_TRAIN and _next_station_distance == 0.0:
             _next_station_distance = NEXT_STATION_SHOWN
             timetable.show_next_station(hours)
+            # the next stop announced once, after a stop the train stood at (UpdateNextStop(),
+            # Driver.cpp:6588-6592)
+            if _next_stop_announcement:
+                _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_NEXT, timetable)
+                _next_stop_announcement = false
     # the passenger stops left behind are forgotten
     var read:Dictionary[RID, bool] = {}
     for entry:Entry in _table:
@@ -780,6 +801,15 @@ func _read_command(entry:Entry) -> void:
                 entry.velocity = 0.0
 
 
+## An announcement of its train (TController::announce(), Driver.cpp:4436-4450): the last one, and
+## none at all from a cargo train
+func _announce(announcement:MaszynaVehicleSoundServer.Announcement, timetable:MaszynaDriverTimetable) -> void:
+    _last_announcement = announcement
+    if not _cargo:
+        announcements.append(announcement)
+        announcement_files.append(timetable.announcement_files(announcement))
+
+
 ## What was read of the tracks is forgotten, read afresh on the next update - a player drove the
 ## vehicle and may have driven it against the signals (TakeControl(), Driver.cpp:5707-5708)
 func forget() -> void:
@@ -835,12 +865,20 @@ func _update_stop_point(
                     <= maxf(absf(entry.value2), 2.0 * max_proximity + trainset.length)
             if timetable.stop_closer else entry.distance < signal_distance)
     if speed > MOVEMENT_SPEED:
+        # the stop ahead announced (Driver.cpp:1222-1228)
+        if not _last_announcement == MaszynaVehicleSoundServer.ANNOUNCEMENT_APPROACHING \
+                and entry.distance < APPROACH_ANNOUNCEMENT_MAX and entry.distance > APPROACH_ANNOUNCEMENT_MIN:
+            _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_APPROACHING, timetable)
         return StopResult.USE
     if not at_passenger_stop:
         # standing short of it: let it draw up closer
         entry.velocity = NO_LIMIT
         return StopResult.USE
     var arrived:bool = timetable.arrive(hours)
+    # the stop announced as it is reached, the next one once clear of it (Driver.cpp:1252-1254)
+    if arrived:
+        _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_CURRENT, timetable)
+        _next_stop_announcement = true
     # further stations ahead: no horn before leaving this one (Driver.cpp:1236-1241)
     if arrived and not timetable.is_last_station():
         stop_orders.append(StopOrder.NO_START_HORN)

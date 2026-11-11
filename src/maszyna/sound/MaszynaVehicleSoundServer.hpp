@@ -53,6 +53,19 @@ namespace godot {
                 return singleton;
             }
 
+            /* What a PA system announces (announcement_t, DynObj.h), its event named by the MMD's key */
+            enum Announcement {
+                ANNOUNCEMENT_APPROACHING,
+                ANNOUNCEMENT_CURRENT,
+                ANNOUNCEMENT_NEXT,
+                ANNOUNCEMENT_DESTINATION,
+                ANNOUNCEMENT_MAX,
+            };
+            /* The command a vehicle with a PA system takes an announcement by: (announcement, the
+             * files of the stop's name and of the destination's) - sent along the train's couplings
+             * (RailVehicleServer.vehicle_send_line_command()) */
+            static constexpr const char *ANNOUNCE_COMMAND = "announce";
+
             /* Where a sound sits, the rows of a soundproofing profile (sound_placement, sound.h) */
             enum Placement {
                 PLACEMENT_INTERNAL,
@@ -282,6 +295,40 @@ namespace godot {
             };
 
             HashMap<ObjectID, Bank> banks;
+            /* A vehicle's PA system (m_pasystem, DynObj.h): its player, the stops' names made as
+             * they are announced, what waits to be played and what plays */
+            struct PublicAddress {
+                    ObjectID player;
+                    Callable build_stop_event;
+                    StringName distance_parameter;
+                    LocalVector<StringName> queue;
+                    StringName playing;
+            };
+            HashMap<RID, PublicAddress> public_addresses;
+            /* The PA's events: an announcement's by its key in the MMD, and its chime
+             * (DynObj.cpp:6525-6530) */
+            static constexpr const char *ANNOUNCEMENT_EVENTS[ANNOUNCEMENT_MAX] = {
+                    "near_stop", "stop", "next_stop", "destination"};
+            static constexpr const char *CHIME_EVENT = "chime";
+            /* The command's files: the stop's name, then the destination's */
+            static constexpr int64_t STOP_FILE = 0;
+            static constexpr int64_t DESTINATION_FILE = 1;
+            StringName play_method;
+            StringName stop_method;
+            StringName is_playing_method;
+            StringName set_parameter_method;
+            void _on_announce_command(int p_announcement, const Variant &p_stops, const RID &p_vehicle);
+            /* TDynamicObject::announce() (DynObj.cpp:7965-8020): the chime, the announcement and the
+             * stop's name queued - the next stop followed by the destination */
+            void _announce(
+                    PublicAddress &p_address, Announcement p_announcement, const PackedStringArray &p_stops,
+                    bool p_chime);
+            /* The player has an event of the name */
+            static bool _has_event(Object *p_player, const StringName &p_event);
+            /* The queue played one by one while the vehicle has its low voltage, emptied without it
+             * (DynObj.cpp:4790-4813) */
+            void _play_announcements();
+            void _on_public_address_exiting(const RID &p_vehicle);
             HashMap<RID, Vehicle> vehicles;
             LocalVector<RID> active;
             HashMap<RID, Callable> bank_builders;
@@ -357,8 +404,16 @@ namespace godot {
              * offsets, parameters axle_clicks_<index>), "brake_valve_events", "local_brake_events",
              * "tachometer_events". Every other parameter of the bank is a quantity by its name. */
             void bank_register(uint64_t p_player, const RID &p_vehicle, const Dictionary &p_registration);
+            /* p_vehicle's PA system: a gnd-sfx player, an event an announcement named by the MMD's
+             * key, and p_build_stop_event(file) making the event of a stop's name; its events read the
+             * listener's distance from the vehicle in p_distance_parameter. The vehicle takes
+             * ANNOUNCE_COMMAND from then on. */
+            void announcements_register(
+                    uint64_t p_player, const RID &p_vehicle, const Callable &p_build_stop_event,
+                    const StringName &p_distance_parameter);
     };
 } // namespace godot
 
 VARIANT_ENUM_CAST(MaszynaVehicleSoundServer::Placement);
+VARIANT_ENUM_CAST(MaszynaVehicleSoundServer::Announcement);
 VARIANT_ENUM_CAST(MaszynaVehicleSoundServer::Quantity);

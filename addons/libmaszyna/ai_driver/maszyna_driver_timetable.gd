@@ -89,6 +89,22 @@ func get_entry_count() -> int:
     return StationServer.timetable_get_entry_count(timetable) if timetable.is_valid() else 0
 
 
+## The files of the names its PA system announces (next_stop_sound(), current_stop_sound(),
+## last_stop_sound(), mtable.cpp:44-101): the stop's - the one it stands at for the current
+## station's announcement, the next scheduled stop's for another - and the last station's; "" for one
+## with none (MaszynaTimetableFactory.EXTRA_NAME_SOUND)
+func announcement_files(announcement:MaszynaVehicleSoundServer.Announcement) -> PackedStringArray:
+    var stop:int = station_index
+    if not announcement == MaszynaVehicleSoundServer.ANNOUNCEMENT_CURRENT:
+        while stop < get_entry_count() and not StationServer.timetable_entry_is_stop(timetable, stop):
+            stop += 1
+    var files:PackedStringArray = []
+    for entry:int in [stop, get_entry_count() - 1]:
+        files.append(StationServer.timetable_entry_get_extra(timetable, entry).get(
+                MaszynaTimetableFactory.EXTRA_NAME_SOUND, "") if entry >= 0 and entry < get_entry_count() else "")
+    return files
+
+
 ## The station's name, as its station is named
 func station_name(entry:int) -> String:
     return StationServer.station_get_name(StationServer.timetable_entry_get_station(timetable, entry))

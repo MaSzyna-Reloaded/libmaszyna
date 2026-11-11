@@ -38,6 +38,9 @@ const _RUNNING_PLACEMENTS:Dictionary = {
 }
 ## How high a door speaker stands over the rail [m] (DynObj.cpp:6636)
 const DOOR_SPEAKER_HEIGHT:float = 3.0
+## A PA announcement's range is half its vehicle's length, under 0: on the listener
+## (m_pasystem.announcement.range(), DynObj.cpp:4797)
+const PUBLIC_ADDRESS_RANGE_SHARE:float = 0.5
 const _RUNNING_RANGES:Dictionary = {
     "curve": 200.0,
     "outernoise": 200.0,
@@ -133,8 +136,62 @@ static func build_into(
     if running_exterior:
         players.append(_build_player(
                 parent, vehicle_rid, "RunningSfxPlayer3D", running_exterior, soundproofing, context, abs_mmd_path, false, locations))
+    # the PA system: its speakers are the doors' (m_doorspeakers, DynObj.cpp:7967), its announcements
+    # what the MMD gives
+    var announcements:Dictionary = MmdSoundSourceParser.parse_announcements(abs_mmd_path, context)
+    if announcements and (locations["doors"] as PackedFloat32Array) and controller:
+        players.append(_build_public_address(
+                parent, vehicle_rid, announcements, context.base_dir, controller.get_dimensions_length()))
     diagnostics.append_array(context.diagnostics)
     return players
+
+
+## The vehicle's PA player: an event an announcement, named by its key, and the stops' names made as
+## they are announced (MaszynaVehicleSoundServer.announcements_register()) - all heard on the
+## listener, as the original's range of half the vehicle's length under 0 makes them, faded out past
+## it (DynObj.cpp:4797-4800)
+static func _build_public_address(
+        parent:Node3D, vehicle_rid:RID, announcements:Dictionary, vehicle_dir:String, length:float) -> SfxPlayer3D:
+    var events:Array[SfxEvent] = []
+    for key:String in announcements:
+        events.append(_build_announcement_event(key, announcements[key], vehicle_dir, length))
+    var bank := SfxBank.new()
+    bank.events = events
+    # the listener's distance its loudness follows, set by MaszynaVehicleSoundServer - a parameter of
+    # the bank, as a player takes none its bank does not declare
+    var distance := SfxParameter.new()
+    distance.name = ScenerySoundServer.DISTANCE_PARAMETER
+    distance.min_value = 0.0
+    distance.max_value = INF
+    var parameters:Array[SfxParameter] = [distance]
+    bank.parameters = parameters
+    var player := SfxPlayer3D.new()
+    player.name = "PublicAddressSfxPlayer3D"
+    player.bank = bank
+    player.bus = &"Exterior"
+    parent.add_child(player, false, Node.INTERNAL_MODE_BACK)
+    MaszynaVehicleSoundServer.announcements_register(
+            player.get_instance_id(), vehicle_rid, _build_stop_event.bind(length),
+            ScenerySoundServer.DISTANCE_PARAMETER)
+    return player
+
+
+## A stop's name, a file of the timetable's (MaszynaTimetableFactory.EXTRA_NAME_SOUND), as an
+## announcement of the vehicle
+static func _build_stop_event(file:String, length:float) -> SfxEvent:
+    return _build_announcement_event(file, file.get_file().get_basename(), file.get_base_dir(), length)
+
+
+static func _build_announcement_event(event_name:String, file:String, vehicle_dir:String, length:float) -> SfxEvent:
+    var spatial_config := SfxSpatialConfig.new()
+    spatial_config.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+    spatial_config.max_distance = 0.0
+    spatial_config.panning_strength = 0.0
+    var event:SfxEvent = ScenerySoundServer.event_build(MmdSoundEventBuilder.build_stream(file, false, vehicle_dir), spatial_config)
+    event.name = StringName(event_name)
+    var modulations:Array[SfxParameterModulation] = [MaszynaScenerySounds._loudness(-PUBLIC_ADDRESS_RANGE_SHARE * length)]
+    event.parameter_modulations = modulations
+    return event
 
 
 static func _build_player(
