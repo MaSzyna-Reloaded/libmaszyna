@@ -238,6 +238,14 @@ interface.
 * **`ls_winter` (5) is declared and never handled** (`AnimModel.h:34`): `RaPrepare()` has no case
   for it, so such a light stays as it was. Wrapper: parsed as off.
 
+## Clock submodels (`model/Model3d.cpp`)
+
+* **The hour hands with jumps turn at the wrong rate.** `at_HoursJump`, an hour hand of a 12-hour
+  dial, turns by `wHour * 30 * 0.5` - 15 degrees an hour, twice too slow -, and `at_Hours24Jump`, of
+  a 24-hour dial, by `wHour * 15 * 0.25` - 3.75 degrees an hour, four times too slow
+  (`Model3d.cpp:1159-1164`); their smooth versions turn at 30 and 15 (`2 * fTimeAngleDeg`,
+  `fTimeAngleDeg`). Wrapper: 30 and 15 a whole hour (`MaszynaE3DRenderingServer::_process_clocks()`).
+
 ## Mover (`src/maszyna/maszyna-mover`, vendored)
 
 * **A vehicle running off a track end continues on an invisible track.** `TTrackFollower` makes an

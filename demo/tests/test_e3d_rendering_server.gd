@@ -11,6 +11,33 @@ extends MaszynaGutTest
 const DAY_LIGHT_LEVEL: float = 1.0
 const NIGHT_LIGHT_LEVEL: float = 0.1
 const MIDDAY: float = 12.0
+## 10:20:00 - what a clock shows of it (TSubModel::RaAnimation(), Model3d.cpp:1153-1211)
+const CLOCK_TIME: float = 10.0 + 20.0 / 60.0
+## A whole circle a minute, an hour, 12 hours or 24 hours; the minute hand on by a tenth of a degree
+## a second
+const SECOND_HAND_DEGREES_PER_SECOND: float = 6.0
+const MINUTE_HAND_DEGREES_PER_SECOND: float = 0.1
+const HOUR_HAND_DEGREES_PER_SECOND: float = 30.0 / 3600.0
+const HOURS24_HAND_DEGREES_PER_SECOND: float = 15.0 / 3600.0
+## By animation: the degrees its hand turns by a step of the simulation after CLOCK_TIME - the smooth
+## ones a step further on
+const CLOCK_HAND_DEGREES: Dictionary[MaszynaE3DSubModel.AnimationType, float] = {
+    MaszynaE3DSubModel.ANIMATION_JUMP_SECONDS: 0.0,
+    MaszynaE3DSubModel.ANIMATION_JUMP_MINUTES: 120.0,
+    MaszynaE3DSubModel.ANIMATION_JUMP_HOURS: 300.0,
+    MaszynaE3DSubModel.ANIMATION_JUMP_HOURS24: 150.0,
+    MaszynaE3DSubModel.ANIMATION_SECONDS: SECOND_HAND_DEGREES_PER_SECOND * TICK,
+    MaszynaE3DSubModel.ANIMATION_MINUTES: 120.0 + MINUTE_HAND_DEGREES_PER_SECOND * TICK,
+    MaszynaE3DSubModel.ANIMATION_HOURS: 310.0 + HOUR_HAND_DEGREES_PER_SECOND * TICK,
+    MaszynaE3DSubModel.ANIMATION_HOURS24: 155.0 + HOURS24_HAND_DEGREES_PER_SECOND * TICK,
+}
+## By drum (its digit): the degrees a digital clock's drum turns by at CLOCK_TIME, 36 backwards a
+## digit - units and tens of the seconds, the minutes and the hours: 0 0, 0 2, 0 1
+const CLOCK_DRUM_DEGREES: Dictionary[String, float] = {
+    "0": 0.0, "1": 0.0, "2": 0.0, "3": -72.0, "4": 0.0, "5": -36.0,
+}
+## Single precision of the nodes' transforms
+const CLOCK_TOLERANCE_DEGREES: float = 0.001
 
 
 func after_each() -> void:
@@ -261,3 +288,51 @@ func test_instance_free_releases_its_lights() -> void:
     assert_eq(
         MaszynaE3DRenderingServer.light_get_statistics()["total"], before, "freeing the instance frees its lights"
     )
+
+
+func test_the_time_turns_the_hands_and_drums_of_a_clock() -> void:
+    var previous_time:float = SimulationServer.time_of_day
+    var model: MaszynaE3DModel = MaszynaE3DModel.new()
+    var hands: Array[MaszynaE3DSubModel] = []
+    for animation: MaszynaE3DSubModel.AnimationType in CLOCK_HAND_DEGREES:
+        var hand: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
+        hand.resource_name = "hand%d" % animation
+        hand.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+        hand.animation = animation
+        hands.append(hand)
+    var digital_clock: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
+    digital_clock.resource_name = "digital"
+    digital_clock.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+    digital_clock.animation = MaszynaE3DSubModel.ANIMATION_DIGICLK
+    var drums: Array[MaszynaE3DSubModel] = []
+    for drum_name: String in CLOCK_DRUM_DEGREES:
+        var drum: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
+        drum.resource_name = drum_name
+        drum.submodel_type = MaszynaE3DSubModel.SUBMODEL_TRANSFORM
+        drums.append(drum)
+    digital_clock.submodels = drums
+    hands.append(digital_clock)
+    model.submodels = hands
+    var parent: Node3D = Node3D.new()
+    add_child_autoqfree(parent)
+    var rid: RID = MaszynaE3DRenderingServer.instance_create(model, ModelRenderingServer.INSTANCER_NODES, ModelRenderingServer.INSTANCE_KIND_STATIC)
+    MaszynaE3DRenderingServer.instance_attach_object_instance_id(rid, parent.get_instance_id())
+    MaszynaE3DRenderingServer.instance_build(rid)
+
+    SimulationServer.time_of_day = CLOCK_TIME
+    await step(1)
+
+    for animation: MaszynaE3DSubModel.AnimationType in CLOCK_HAND_DEGREES:
+        var hand_node: Node3D = parent.get_node(NodePath("hand%d" % animation))
+        assert_almost_eq(_turn_about_y(hand_node), wrapf(CLOCK_HAND_DEGREES[animation], -180.0, 180.0), CLOCK_TOLERANCE_DEGREES,
+                "hand of animation %d" % animation)
+    for drum_name: String in CLOCK_DRUM_DEGREES:
+        var drum_node: Node3D = parent.get_node(NodePath("digital/" + drum_name))
+        assert_almost_eq(_turn_about_y(drum_node), CLOCK_DRUM_DEGREES[drum_name], CLOCK_TOLERANCE_DEGREES, "drum " + drum_name)
+    MaszynaE3DRenderingServer.instance_free(rid)
+    SimulationServer.time_of_day = previous_time
+
+
+## The degrees a node is turned by about its y
+func _turn_about_y(node: Node3D) -> float:
+    return rad_to_deg(atan2(-node.basis.x.z, node.basis.x.x))

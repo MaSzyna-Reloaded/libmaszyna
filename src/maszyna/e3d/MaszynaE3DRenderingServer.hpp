@@ -102,6 +102,22 @@ namespace godot {
             /// Animating instances advanced per simulation slice, round-robin; one
             /// left for a later slice is advanced by the simulated time it waited
             static constexpr int MAX_ANIMATED_INSTANCES_PER_SLICE = 64;
+            /// Instances with a clock turned per simulation slice, round-robin
+            static constexpr int MAX_CLOCK_INSTANCES_PER_SLICE = 64;
+            /// What the time turns a clock's hands by (TSubModel::RaAnimation(), Model3d.cpp:1153-1179):
+            /// a circle a minute, an hour, 12 hours or 24 hours (fTimeAngleDeg, simulation.cpp:124)
+            static constexpr double SECOND_HAND_DEGREES_PER_SECOND = 6.0;
+            static constexpr double MINUTE_HAND_DEGREES_PER_MINUTE = 6.0;
+            static constexpr double MINUTE_HAND_DEGREES_PER_SECOND = 0.1;
+            static constexpr double HOUR_HAND_DEGREES_PER_HOUR = 30.0;
+            static constexpr double HOURS24_HAND_DEGREES_PER_HOUR = 15.0;
+            /// A drum of a digital clock turns a tenth of a circle a digit, backwards
+            /// (fClockAngleDeg, simulation.cpp:125-130; Model3d.cpp:1206)
+            static constexpr double DIGIT_DRUM_DEGREES_PER_DIGIT = -36.0;
+            static constexpr int DIGITAL_CLOCK_BASE = 10;
+            /// The drums of a digital clock, by the digit its child's name gives: units and tens
+            /// of the seconds, of the minutes and of the hours
+            static constexpr int DIGITAL_CLOCK_DRUMS = 6;
             /// Blinking instances visited per frame; above it an instance's edge comes a few
             /// frames late, the cycle itself runs on the clock and does not drift
             static constexpr int MAX_BLINKING_INSTANCES_PER_FRAME = 64;
@@ -177,6 +193,11 @@ namespace godot {
             /// pass allocates nothing
             LocalVector<String> finished_animations;
             bool animation_processing = false;
+            /// The built instances with a submodel the time turns, turned by _process_clocks() on the
+            /// simulation's clock - standing while it stands
+            Vector<RID> clock_instances;
+            int clock_cursor = 0;
+            bool clock_processing = false;
             double light_clock = 0.0;   // seconds, the clock every blinking light cycles on
             double current_time = 12.0; // hours, 0..24
             double light_level = 1.0;   // Global.fLuminance equivalent (simulationenvironment.cpp:184)
@@ -272,6 +293,15 @@ namespace godot {
             /// Connected to SceneTree's process_frame while a submodel moves
             void _process_animations(double p_seconds);
             void _set_animation_processing(bool p_processing);
+
+            /// The submodels under these the time turns, the drums of a digital clock among them
+            static void _collect_clock_submodels(
+                    const TypedArray<MaszynaE3DSubModel> &p_submodels,
+                    LocalVector<MaszynaE3DInstanceData::ClockSubmodel> &p_r_clocks);
+            void _clock_instance_remove(const RID &p_instance);
+            /// Connected to SimulationServer's simulation_advanced while a built instance has a clock
+            void _process_clocks(double p_seconds);
+            void _set_clock_processing(bool p_processing);
 
         protected:
             static void _bind_methods();
