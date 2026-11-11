@@ -39,6 +39,12 @@ class_name MaszynaVehicleMmdData
 ## empty when the FIZ gives it all or names no pantograph
 @export var pantograph_geometries:Array[RailVehiclePantograph] = []
 
+## The destination sign (MaszynaDestinationSigns): "submodel", the one of replaceable skin 4;
+## "lit", whether it shines (its submodel is self-illuminated); and what
+## MmdCabinInstancer.parse_destination_sign() read - "script", "parameters", "instancing",
+## "background". Empty for a vehicle with no sign submodel
+@export var destination_sign:Dictionary = {}
+
 ## The cab is genuinely a tree of widgets, so it stays a scene of its own.
 @export var cabin_scene:PackedScene = null
 

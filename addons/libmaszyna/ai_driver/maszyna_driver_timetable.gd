@@ -96,11 +96,11 @@ func station_name(entry:int) -> String:
 
 ## The arrival and the departure planned at the entry [h], as the run's - NO_TIME for none
 func arrival(entry:int) -> float:
-    return _shifted(StationServer.timetable_entry_get_arrival(timetable, entry))
+    return shifted(StationServer.timetable_entry_get_arrival(timetable, entry), offset)
 
 
 func departure(entry:int) -> float:
-    return _shifted(StationServer.timetable_entry_get_departure(timetable, entry))
+    return shifted(StationServer.timetable_entry_get_departure(timetable, entry), offset)
 
 
 func radio_channel(entry:int) -> int:
@@ -230,9 +230,9 @@ func _move_run() -> void:
         StationServer.run_previous_entry(run)
 
 
-## A time of the timetable as the run's [h]
-func _shifted(hours:float) -> float:
-    return hours if hours < 0.0 else fposmod(hours + offset, HOURS_PER_DAY)
+## A time of the timetable as the run's, shifted by its offset [h]; NO_TIME stays
+static func shifted(hours:float, run_offset:float) -> float:
+    return hours if hours < 0.0 else fposmod(hours + run_offset, HOURS_PER_DAY)
 
 
 ## Whether the train of a timetable state (a driver timetable's timetable, offset, station_index,

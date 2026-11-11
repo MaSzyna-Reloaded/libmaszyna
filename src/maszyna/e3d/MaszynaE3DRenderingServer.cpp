@@ -74,6 +74,9 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("instance_get_skins", "instance"), &MaszynaE3DRenderingServer::instance_get_skins);
         ClassDB::bind_method(
+                D_METHOD("instance_set_skin", "instance", "slot", "skin"),
+                &MaszynaE3DRenderingServer::instance_set_skin);
+        ClassDB::bind_method(
                 D_METHOD("instance_set_light_blink", "instance", "light", "on_time", "off_time", "phase"),
                 &MaszynaE3DRenderingServer::instance_set_light_blink);
         ClassDB::bind_method(
@@ -1676,6 +1679,25 @@ namespace godot {
         const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL_V(instance, PackedStringArray());
         return instance->skins;
+    }
+
+    void MaszynaE3DRenderingServer::instance_set_skin(const RID &p_instance, const int p_slot, const String &p_skin) {
+        MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL(instance);
+        ERR_FAIL_COND(p_slot < 0);
+        if (instance->skins.size() <= p_slot) {
+            instance->skins.resize(p_slot + 1);
+        }
+        instance->skins.set(p_slot, p_skin);
+        {
+            // what a worker preloads for the instance's next build
+            MutexLock lock(models_mutex);
+            StreamModel *stream_model = stream_models.getptr(p_instance);
+            if (stream_model != nullptr) {
+                stream_model->skins = instance->skins;
+            }
+        }
+        _rebuild_if_built(*instance);
     }
 
     AABB MaszynaE3DRenderingServer::instance_get_aabb(const RID &p_instance) const {

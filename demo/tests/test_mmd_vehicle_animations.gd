@@ -75,9 +75,24 @@ func test_wheels_of_one_diameter_are_all_powered() -> void:
     assert_eq(_appearance("animated").powered_wheels, PackedStringArray(["wheel1", "wheel2"]))
 
 
-# DynObj.cpp:2539-2545 - the destination sign is the submodel with replaceable skin 4
+# DynObj.cpp:2539-2545 - the destination sign is the submodel with replaceable skin 4; a submodel never
+# lit (SelfIllum: false) is a physical sign
 func test_the_destination_sign_is_the_replaceable_skin_4() -> void:
-    assert_eq(_appearance("animated").head_display_submodel, "tablica")
+    var sign:Dictionary = MaszynaRailVehicle3DInstancer.read_mmd_data(
+            DATA_PATH, "animated", "", "animated").destination_sign
+    assert_eq(sign["submodel"], "tablica")
+    assert_false(sign["lit"])
+
+
+# DynObj.cpp:357-381, 7024-7036 - pydestinationsign:'s script next to the vehicle when it names no
+# directory, its parameters and instance, update: passed over, the legacy key's background
+func test_a_destination_sign_reads_its_script() -> void:
+    var sign:Dictionary = MmdCabinInstancer.parse_destination_sign(
+            _mmd("destination_sign"), _parameters("destination_sign"), "/" + DATA_PATH)
+    assert_eq(sign["script"], DATA_PATH.path_join("led_sign"))
+    assert_eq(sign["parameters"], "kod=IC&margin=2")
+    assert_eq(sign["instancing"], "name")
+    assert_eq(sign["background"], "make:led_sign?dummy=1")
 
 
 # DynObj.cpp:5721-5790 - the doors by animdoorprefix:, each with the two submodels below it a folding

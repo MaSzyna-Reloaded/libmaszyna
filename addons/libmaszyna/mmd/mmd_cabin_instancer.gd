@@ -74,8 +74,6 @@ const _INCLUDE_END_KEYWORD := "end"
 ## in the original (parser.cpp:280)
 const MAX_INCLUDE_PARAMETERS:int = 12
 const _VARIABLE_ANIMATION_TYPES := ["rotvar", "movvar"]
-## A `pyscreen:` script drawn by Lua: its name with this extension beside the `.py`
-const LUA_SCREEN_EXTENSION:String = ".lua"
 ## Original engine: Globals.h:123 PythonScreenUpdateRate - the shortest interval a Python screen is
 ## redrawn at, in milliseconds
 const PYTHON_SCREEN_UPDATE_TIME_MSEC:int = 200
@@ -198,7 +196,8 @@ static func parse(
                         screen.update_time_msec = int(tokens[i])
                     elif key == "parameters:":
                         for pair:String in tokens[i].to_lower().split("&", false):
-                            # "$timetable=" pulls another vehicle's timetable in - not ported
+                            # "$timetable=" gives nothing: the cab's own timetable is put over it
+                            # (dictionary_source read with the MMD, Train.cpp:117, 704, 910)
                             if not pair.begins_with("$"):
                                 screen.parameters[pair.get_slice("=", 0)] = pair.substr(pair.find("=") + 1)
                     else:
@@ -523,6 +522,52 @@ static func _numbered_names(tokens:Array[String], label:String, type:AnimationTy
 
 ## Reads `jointcabs:` from the MMD (DynObj.cpp:6626) - all virtual cabs share one location and
 ## model, so the whole low-poly cab is hidden from inside any of them.
+## `pydestinationsign: { script parameters: ... instance: ... background: ... }` and the legacy
+## `destinationsignbackground:` (destination_data::deserialize_mapping(), DynObj.cpp:357-381,
+## 7024-7036): the script, its game-directory path without the ".py" - one without a directory
+## lives next to the vehicle (DynObj.cpp:7027-7030) -, the parameters added to its request, what
+## names its instance ("name" or "type"), and the background; empty for a vehicle with none
+static func parse_destination_sign(abs_mmd_path:String, parameters:Dictionary, data_path:String) -> Dictionary:
+    var context := MmdImportContext.new()
+    var tokens:Array[String] = _tokenize_file(abs_mmd_path, context, parameters)
+    var sign:Dictionary = {}
+    var index:int = _find_label_index(tokens, "pydestinationsign:")
+    if not index == -1:
+        var i:int = index + 1
+        while i < tokens.size() and not tokens[i] == "}":
+            var key:String = tokens[i].to_lower()
+            i += 1
+            if i >= tokens.size():
+                break
+            if key == "{":
+                var script:String = tokens[i]
+                sign["script"] = script if script.get_base_dir() else data_path.trim_prefix("/").path_join(script)
+            elif key == "parameters:":
+                sign["parameters"] = tokens[i]
+            elif key == "instance:":
+                sign["instancing"] = tokens[i].to_lower()
+            elif key == "background:":
+                sign["background"] = _generated_texture_name(tokens, i)
+                if sign["background"].begins_with(MaszynaMaterialManager.GENERATED_TEXTURE_SCHEME):
+                    i += 1
+            elif not key == "update:":
+                # a key of no value is passed over alone; update: takes its value, unused (DynObj.cpp:366-369)
+                continue
+            i += 1
+    var background_index:int = _find_label_index(tokens, "destinationsignbackground:")
+    if not background_index == -1 and background_index + 1 < tokens.size():
+        sign["background"] = _generated_texture_name(tokens, background_index + 1)
+    return sign
+
+
+## The texture's name at `index`: a generated one, "make:<script>?<query>", is split by the tokenizer
+## at its colon into "make:" and the rest, which is put back together
+static func _generated_texture_name(tokens:Array[String], index:int) -> String:
+    if tokens[index] == MaszynaMaterialManager.GENERATED_TEXTURE_SCHEME and index + 1 < tokens.size():
+        return tokens[index] + tokens[index + 1]
+    return tokens[index]
+
+
 static func parse_joint_cabs(abs_mmd_path:String, parameters:Dictionary) -> bool:
     var context := MmdImportContext.new()
     var tokens:Array[String] = _tokenize_file(abs_mmd_path, context, parameters)
@@ -752,10 +797,10 @@ static func build_into(
         # a script with a .lua file beside it is drawn by Lua (MaszynaScreenLuaNode), else by Python
         var script_dir:String = descriptor.script_path.get_base_dir()
         var lua_path:String = script_dir.path_join(
-                MaszynaDataPath.resolve(script_dir, descriptor.script_path.get_file() + LUA_SCREEN_EXTENSION))
+                MaszynaDataPath.resolve(script_dir, descriptor.script_path.get_file() + MaszynaTextureLuaNode.EXTENSION))
         var drawn_by_lua:bool = FileAccess.file_exists(lua_path)
         if not drawn_by_lua and not FileAccess.file_exists(descriptor.script_path + ".py"):
-            diagnostics.append(_diag("warning", "MMD_PYTHON_SCRIPT_NOT_FOUND", "Screen script '%s.py' or '%s' not found" % [descriptor.script_path, LUA_SCREEN_EXTENSION], definition.cab_number, "pyscreen", descriptor.target))
+            diagnostics.append(_diag("warning", "MMD_PYTHON_SCRIPT_NOT_FOUND", "Screen script '%s.py' or '%s' not found" % [descriptor.script_path, MaszynaTextureLuaNode.EXTENSION], definition.cab_number, "pyscreen", descriptor.target))
             continue
         var mesh:MeshInstance3D = null
         if not descriptor.target == "none":
@@ -769,8 +814,10 @@ static func build_into(
                 diagnostics.append(_diag("warning", "MMD_SUBMODEL_NOT_FOUND", "Screen submodel '%s' not found or has no texture" % descriptor.target, definition.cab_number, "pyscreen", descriptor.target))
                 continue
         if drawn_by_lua:
-            # drawn at the size of the texture it replaces
+            # drawn at the size of the texture it replaces, upside down as the data's textures are
+            # (the original turns a script's picture over, abstractscreenrenderer.py:69)
             var texture := DrawingTexture.new()
+            texture.flip_y = true
             if mesh:
                 texture.texture_size = Vector2i(
                         MaszynaMaterialManager.material_get_texture(mesh.material_override).get_size())

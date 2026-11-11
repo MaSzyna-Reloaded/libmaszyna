@@ -55,6 +55,45 @@ of the original (`style` "Squares (MaSzyna)") or as round LEDs; `led_color` colo
 `unlit_color` the dark ones, and `bloom` lights the neighbours. A `LuaTextureNode` takes it as its
 `material`, with the LEDs as its `drawing_size`.
 
+## Textures in Lua under a name of the data
+
+A `MaszynaTextureLuaNode` (a `LuaVehicleTextureNode`) draws a texture under its `texture_name`. A
+skin, a material or a `make:` request that names it shows the drawing, as it would show a texture
+file of that name. A material made before the node shows it too, and every one shows its own texture
+again when the node leaves the tree.
+
+A vehicle's destination sign is its replaceable skin 4. A skin of four names keeps its own sign,
+whatever the timetable says, so a scene can give every car of a train the same drawn sign:
+
+```
+skin = "ED78-019A,1|ED78-019A,2|ED78-019A,3|impuls_sign"
+```
+
+`demo_3d.tscn` does this for its Impuls: one `MaszynaTextureLuaNode` named `impuls_sign` under the
+trainset, drawn through the LED matrix material.
+
+A sign of the timetable is the `make:` texture its `pydestinationsign:` script draws for the train.
+When a `.lua` file stands beside the script, `MaszynaMaterialManager` draws it with a
+`MaszynaTextureLuaNode` named after the request instead of Python. Its file gets:
+
+```lua
+local drawing, vehicle, parameters = ...
+```
+
+`vehicle` is the vehicle the request's `$timetable=` names, the one whose driver runs the trainset.
+`parameters` are the request's other keys in lower case: `_id1` (the train's number), `_id2` and
+the `parameters:` of the MMD. The script reads the train itself:
+
+```lua
+local run = reloaded.station.run(vehicle)
+local timetable = reloaded.station.timetable(run)
+local number, category = reloaded.station.train(timetable)
+local destination = reloaded.station.name(reloaded.station.destination(timetable))
+```
+
+A Python script gets the timetable as the original hands it to it instead - `trainnumber`,
+`train_stationto`, `train_station<N>_name` and the rest (`PythonScreenState.timetable_state()`).
+
 ## `reloaded.memory` - memory cells
 
 This module gives access to the scenery's memory cells by name. It is available in every script as

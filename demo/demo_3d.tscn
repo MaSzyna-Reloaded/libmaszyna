@@ -22,6 +22,21 @@
 [ext_resource type="Script" uid="uid://64hu8w2fqcs2" path="res://addons/libreloaded/environment/procedural_sky_environment.gd" id="procedural_sky"]
 [ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
 [ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="scenery_streamer"]
+[ext_resource type="Script" uid="uid://o11koguhlntg" path="res://addons/libmaszyna/materials/maszyna_texture_lua_node.gd" id="texture_lua_node"]
+
+[sub_resource type="DrawingTexture" id="DrawingTexture_impuls_sign"]
+texture_size = Vector2i(512, 256)
+flip_y = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_impuls_sign_leds"]
+shader = ExtResource("led_matrix_shader")
+shader_parameter/style = 1
+shader_parameter/bloom = true
+shader_parameter/led_color = Color(1, 1, 1, 1)
+shader_parameter/led_radius = 0.4
+shader_parameter/led_edge = 0.06
+shader_parameter/unlit_color = Color(0.05, 0.03, 0.01, 1)
+shader_parameter/gap_glow = 0.25
 
 [sub_resource type="DrawingTexture" id="DrawingTexture_board"]
 texture_size = Vector2i(1024, 128)
@@ -196,15 +211,83 @@ start_track_offset = 126.44
 velocity = 20.0
 metadata/_custom_type_script = "uid://onxj3ocy4jip"
 
+[node name="DestinationSign" type="LuaVehicleTextureNode" parent="ImpulsTrainset" unique_id=2091870762]
+texture = SubResource("DrawingTexture_impuls_sign")
+material = SubResource("ShaderMaterial_impuls_sign_leds")
+drawing_size = Vector2i(128, 64)
+source = "-- The destination sign of the demo's Impuls: its texture is the data's atlas of the sign
+-- (led_impuls_n_2.py:39-52), the front sign above the side one - here in LEDs of 4 texels. A text too
+-- long for a sign is shown in parts, word by word, one after another, as the Impuls's signs show it
+local sign = ...
+local font = reloaded.draw.load_font('fonts/DejaVuSansMono.ttf', 'none')
+local TEXT = reloaded.export_var('text', 'MaSzyna Reloaded')
+local COLOR = reloaded.export_var('color', {255, 170, 0})
+local FRONT_SIZE = reloaded.export_var('front_text_size', 12)
+local SIDE_SIZE = reloaded.export_var('side_text_size', 9)
+-- how long each part of a text too long for a sign is shown [s]
+local PART_SECONDS = reloaded.export_var('part_seconds', 3.0)
+-- x, y, width, height [LEDs]
+local FRONT = {1, 0, 119, 20}
+local SIDE = {20, 24, 87, 25}
+
+-- the text in parts as wide as the area, word by word; a word wider than it is a part of its own
+local function parts(area, size)
+    local result = {}
+    local part = nil
+    for word in string.gmatch(TEXT, '%S+') do
+        local longer = part and (part .. ' ' .. word) or word
+        if part and reloaded.draw.text_size(font, longer, size) > area[3] then
+            table.insert(result, part)
+            part = word
+        else
+            part = longer
+        end
+    end
+    table.insert(result, part or '')
+    return result
+end
+
+local function centred(area, size, text)
+    local width, height = reloaded.draw.text_size(font, text, size)
+    reloaded.draw.text(sign, math.floor(area[1] + (area[3] - width) / 2),
+        math.floor(area[2] + (area[4] - height) / 2), text, font, size, COLOR)
+end
+
+local front = parts(FRONT, FRONT_SIZE)
+local side = parts(SIDE, SIDE_SIZE)
+local shown = 0
+
+local function show()
+    reloaded.draw.clear(sign, {0, 0, 0})
+    centred(FRONT, FRONT_SIZE, front[shown % #front + 1])
+    centred(SIDE, SIDE_SIZE, side[shown % #side + 1])
+end
+
+show()
+if #front > 1 or #side > 1 then
+    reloaded.time.every(PART_SECONDS, function()
+        shown = shown + 1
+        show()
+    end)
+end
+"
+script_variables = {
+"color": Color(1, 0.7, 0, 1),
+"side_text_size": 10,
+"text": "MaSzyna Reloaded on Rails Reloaded"
+}
+script = ExtResource("texture_lua_node")
+texture_name = "impuls_sign"
+
 [node name="31we-a_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=146660532]
 start_track_name = "diverging2"
 start_track_offset = 106.79557626267052
 trainset_coupling_mode = 4
-transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.9230311, 0.6616861199999999, 15.349757799999995)
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, 15.349757799999997)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-a_zachpom"
-skin = "ED78-019A"
+skin = "ED78-019A,1|ED78-019A,2|ED78-019A,3|impuls_sign"
 
 [node name="31we-b_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=602076295]
 start_track_name = "diverging2"
@@ -214,26 +297,26 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.661686119999
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-b_zachpom"
-skin = "ED78-019B"
+skin = "ED78-019B,1|ED78-019B,2|none|impuls_sign"
 
 [node name="31we-c_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=706861861]
 start_track_name = "diverging2"
 start_track_offset = 82.48086381410256
 trainset_coupling_mode = 4
-transform = Transform3D(-1, 0, 1.1299979894403631e-16, 0, 1, 0, -1.1299979894403631e-16, 0, -1, -11.923031099999998, 0.6616861199999999, -19.0602422)
+transform = Transform3D(-1, 0, 1.129997989440363e-16, 0, 1, 0, -1.129997989440363e-16, 0, -1, -11.923031099999998, 0.6616861199999999, -19.0602422)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-c_zachpom"
-skin = "ED78-019C"
+skin = "ED78-019C,1|ED78-019C,2|none|impuls_sign"
 
 [node name="31we-d_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1002100989]
 start_track_name = "diverging2"
 start_track_offset = 62.21919697198823
-transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.9230311, 0.6616861199999999, -37.55024220000001)
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, -37.55024220000001)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-d_zachpom"
-skin = "ED78-019D"
+skin = "ED78-019D,1|ED78-019D,2|ED78-019D,3|impuls_sign"
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=1495808372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6069689, -0.48168612, 0.5602422)
