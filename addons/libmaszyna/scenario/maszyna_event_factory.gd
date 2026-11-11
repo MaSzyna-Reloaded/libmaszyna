@@ -731,12 +731,6 @@ static func build(
             for event_name:String in names:
                 if events_by_name.has(event_name):
                     MaszynaScenarioEventServer.track_add_event(track_rids[index], TRACK_EVENTS[key], events_by_name[event_name])
-                    # a passenger stop's track is a stop point of its station
-                    var stop:MaszynaVehicleCommandAction = ScenarioEventServer.event_get_action(
-                            events_by_name[event_name]) as MaszynaVehicleCommandAction
-                    if stop and stop.command.begins_with(PASSENGER_STOP_POINT):
-                        MaszynaStations.add_stop_point(
-                                root, stop.command.trim_prefix(PASSENGER_STOP_POINT), track_rids[index])
 
     # a section's own memory is marked before its named events run, as the original updates it at
     # once (Track.cpp:128-130, 155-156) and the events are queued

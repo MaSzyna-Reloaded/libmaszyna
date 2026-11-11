@@ -237,6 +237,29 @@ func test_the_train_announces_its_stops() -> void:
 
 
 
+## The driver tells the train's run what it did, as it knows where the train stops: standing at its
+## first W4 it has arrived, and it has not left while it stands; it left once clear of the stop
+## (UpdateNextStop()), passed the station it did not stop at, and arrived at its next stop
+## (UpdateMTable() at the W4, Driver.cpp:1231, 6581-6592)
+func test_the_driver_tells_the_run_where_the_train_arrived_and_left() -> void:
+    _timetable.take(_timetable.timetable, RailVehicleServer.vehicle_get_trainset(_vehicle))
+    var run:RID = _timetable.run
+
+    _update(KRZYZOWA_DEPARTURE - MINUTE, STANDING_SPEED)
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 0), StationServer.NO_TIME, "arrived at its W4")
+    _update(KRZYZOWA_DEPARTURE, STANDING_SPEED)
+    assert_eq(StationServer.run_entry_get_actual_departure(run, 0), StationServer.NO_TIME, "not left while it stands")
+
+    _run_to(STOPS[0] + CLEAR_OF_THE_STOP, KRZYZOWA_DEPARTURE + MINUTE)
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 0), StationServer.NO_TIME, "left once clear of it")
+    _run_to(STOPS[2] - 100.0, DRAWOWO_ARRIVAL)
+    assert_eq(StationServer.run_entry_get_actual_arrival(run, 1), StationServer.NO_TIME, "Markowo_Górne not stopped at")
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 1), StationServer.NO_TIME, "but passed")
+    _update(DRAWOWO_ARRIVAL, STANDING_SPEED)
+    assert_eq(StationServer.run_get_current_entry(run), 2)
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 2), StationServer.NO_TIME, "arrived at Drawowo_Główne")
+    _timetable.take(RID())
+
 ## A late train leaves at once on the update it stops in, and still announces the stop it stood at,
 ## not the next one (current_stop_sound() while StationIndex is still the stop's, DynObj.cpp:7991-7993)
 func test_a_late_train_announces_the_stop_it_stands_at() -> void:

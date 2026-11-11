@@ -141,6 +141,10 @@ func arrive(hours:float) -> bool:
     latency = compare_time(hours, departure(station_index))
     delay = -compare_time(hours, arrival(station_index) if is_stop() else departure(station_index))
     arrived = true
+    # the run hears it from the driver, who knows where its train stops (UpdateMTable() at the W4,
+    # Driver.cpp:1231); a station passed at speed is told once the train is clear of it
+    if is_stop() and run.is_valid() and StationServer.run_get_current_entry(run) == station_index:
+        StationServer.run_record_arrival(run)
     if station_index < get_entry_count() - 1:
         _next_station = station_name(station_index + 1)
         velocity = StationServer.timetable_entry_get_speed_limit(timetable, station_index + 1)
@@ -159,12 +163,19 @@ func advance() -> void:
 
 
 ## The train has driven clear of the station it left at `hours`: its delay is the departure's, and
-## the next station is shown as current (UpdateNextStop(), Driver.cpp:6481-6487)
+## the next station is shown as current (UpdateNextStop(), Driver.cpp:6481-6487); the run is told
+## the train left each station it arrived at and passed the others
 func show_next_station(hours:float) -> void:
     if station_start < station_index and station_start < get_entry_count():
         if departure(station_start) >= 0.0:
             delay = -compare_time(hours, departure(station_start))
     station_start = station_index
+    while run.is_valid() and StationServer.run_get_current_entry(run) < station_start:
+        if StationServer.run_entry_get_actual_arrival(run, StationServer.run_get_current_entry(run)) >= 0.0:
+            StationServer.run_record_departure(run)
+        else:
+            StationServer.run_record_passing(run)
+        StationServer.run_next_entry(run)
     _move_run()
     changed.emit()
 
