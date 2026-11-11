@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaTurntableServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The original's turntables.
+	</brief_description>
+	<description>
+		A turntable is a [code]turn[/code] or [code]table[/code] track of a scenery ([code]TTrack[/code] of [code]tt_Table[/code]) bound to the model of its name, which an [code]animation[/code] event turns. A [code]switch 1[/code] unlocks it: it is taken off its neighbours, no traffic is let on it, and its track follows the model's first animated submodel from then on. A [code]switch 0[/code] locks it where it stands, joins it to the tracks its ends meet and lets traffic on again ([code]TTrack::Switch()[/code], [code]Track.cpp:1787-1833[/code]; [code]TTrack::RaAnimate()[/code], [code]Track.cpp:2024-2061[/code]). The track's shape, its neighbours and its speed limit are [TrackServer]'s; this server only says what they become.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="turntable_create">
+			<return type="RID" />
+			<param index="0" name="track" type="RID" />
+			<description>
+				A turntable of [param track], locked, as it is loaded.
+			</description>
+		</method>
+		<method name="turntable_free">
+			<return type="void" />
+			<param index="0" name="turntable" type="RID" />
+			<description>
+				Frees [param turntable].
+			</description>
+		</method>
+		<method name="turntable_is_locked" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="turntable" type="RID" />
+			<description>
+				Whether [param turntable] is locked - not turning, its track joined where it stands.
+			</description>
+		</method>
+		<method name="turntable_lock">
+			<return type="void" />
+			<param index="0" name="turntable" type="RID" />
+			<description>
+				[code]switch 0[/code] ([code]Track.cpp:1807-1831[/code]): its track laid where the model turned it to and joined to the tracks its ends meet ([method TrackServer.track_connect]) - and, if it met any, traffic let on at 6 km/h, on the tracks it joined that were stopped as well, and its [code]:joined[/code] event run.
+			</description>
+		</method>
+		<method name="turntable_set_joined_event">
+			<return type="void" />
+			<param index="0" name="turntable" type="RID" />
+			<param index="1" name="event" type="RID" />
+			<description>
+				The event run when [param turntable] is locked and joined ([code]&lt;track&gt;:joined[/code], [code]Track.cpp:3418[/code]).
+			</description>
+		</method>
+		<method name="turntable_set_model">
+			<return type="void" />
+			<param index="0" name="turntable" type="RID" />
+			<param index="1" name="instance" type="RID" />
+			<param index="2" name="submodel" type="String" />
+			<description>
+				The model of the track's name [param turntable] is bound to, and its submodel the track follows: the model's first animated submodel ([code]TAnimModel::GetContainer()[/code], [code]AnimModel.cpp:486-489[/code]). A turntable of no model does not turn.
+			</description>
+		</method>
+		<method name="turntable_unlock">
+			<return type="void" />
+			<param index="0" name="turntable" type="RID" />
+			<description>
+				[code]switch 1[/code] ([code]Track.cpp:1789-1806[/code]): its track taken off its neighbours ([method TrackServer.track_disconnect]), no traffic let on it, and following the model's submodel on every simulation step until it is locked.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -35,11 +35,9 @@ namespace godot {
                     command = SignalAspect::LIGHT_ON;
                 } else if (mode.mode == MaszynaLightMode::MODE_BLINK) {
                     command = SignalAspect::LIGHT_BLINK;
-                } else {
-                    // ls_Dark/ls_Home from an event: a signal head has no light that follows the
-                    // daylight yet, see TODO.md
-                    WARN_PRINT_ONCE("A `lights` event sets ls_Dark/ls_Home, which is not supported yet.");
                 }
+                // ls_Dark/ls_Home: the aspect keeps the light, MaszynaLightsAction sets it on the
+                // model to follow the daylight
                 lights.push_back(command);
                 on_times.push_back(mode.on_time);
                 off_times.push_back(mode.off_time);

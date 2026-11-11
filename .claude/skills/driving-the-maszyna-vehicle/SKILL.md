@@ -3,6 +3,19 @@ name: driving-the-maszyna-vehicle
 description: How a driver starts a MaSzyna locomotive or multiple unit from cold and moves it off, step by step, with the original engine's conditions behind each step (line contactors only on the first notch, security system after the battery, ground relay needing a direction, main switch held and released, brake pipe charging). Use before writing or judging a start-up test or probe (MaszynaStartupTest), before reading "the vehicle does not start / does not move / the controller does nothing" as a bug, and when scripting a vehicle by keys, cab controls or commands.
 ---
 
+## Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 # Driving a MaSzyna vehicle
 
 Every step below is a condition of the original engine, not a habit of this port. A test or a

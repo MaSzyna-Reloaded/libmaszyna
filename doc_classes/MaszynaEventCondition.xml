@@ -27,7 +27,7 @@
 		<member name="text_operator" type="int" setter="set_text_operator" getter="get_text_operator" enum="MaszynaEventCondition.Operator" default="0">
 			How a memory's text is compared with [member text].
 		</member>
-		<member name="track_test" type="int" setter="set_track_test" getter="get_track_test" enum="MaszynaEventCondition.TrackTest" default="0">
+		<member name="track_test" type="int" setter="set_track_test" getter="get_track_test" enum="MaszynaEventCondition.TrackTest" is_bitfield="true" default="0">
 			What every one of [member tracks] has to be.
 		</member>
 		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
@@ -74,13 +74,13 @@
 		<constant name="PASS_NONE" value="2" enum="Pass">
 			No compared field may match.
 		</constant>
-		<constant name="TRACK_TEST_NONE" value="0" enum="TrackTest">
+		<constant name="TRACK_TEST_NONE" value="0" enum="TrackTest" is_bitfield="true">
 			The tracks are not tested.
 		</constant>
-		<constant name="TRACK_TEST_OCCUPIED" value="1" enum="TrackTest">
+		<constant name="TRACK_TEST_OCCUPIED" value="1" enum="TrackTest" is_bitfield="true">
 			Every track has to be occupied ([code]trackoccupied[/code]).
 		</constant>
-		<constant name="TRACK_TEST_FREE" value="2" enum="TrackTest">
+		<constant name="TRACK_TEST_FREE" value="2" enum="TrackTest" is_bitfield="true">
 			Every track has to be free ([code]trackfree[/code]).
 		</constant>
 	</constants>

@@ -68,13 +68,8 @@ namespace godot {
         ADD_PROPERTY(
                 PropertyInfo(Variant::ARRAY, "tracks", PROPERTY_HINT_ARRAY_TYPE, "RID"), "set_tracks", "get_tracks");
         ADD_PROPERTY(
-                PropertyInfo(
-                        Variant::INT, "track_test", PROPERTY_HINT_ENUM,
-                        enum_hint(
-                                {{"None", TRACK_TEST_NONE},
-                                 {"Occupied", TRACK_TEST_OCCUPIED},
-                                 {"Free", TRACK_TEST_FREE}})),
-                "set_track_test", "get_track_test");
+                PropertyInfo(Variant::INT, "track_test", PROPERTY_HINT_FLAGS, "Occupied,Free"), "set_track_test",
+                "get_track_test");
 
         BIND_ENUM_CONSTANT(OPERATOR_EQUAL);
         BIND_ENUM_CONSTANT(OPERATOR_NOT_EQUAL);
@@ -85,9 +80,9 @@ namespace godot {
         BIND_ENUM_CONSTANT(PASS_ALL);
         BIND_ENUM_CONSTANT(PASS_ANY);
         BIND_ENUM_CONSTANT(PASS_NONE);
-        BIND_ENUM_CONSTANT(TRACK_TEST_NONE);
-        BIND_ENUM_CONSTANT(TRACK_TEST_OCCUPIED);
-        BIND_ENUM_CONSTANT(TRACK_TEST_FREE);
+        BIND_BITFIELD_FLAG(TRACK_TEST_NONE);
+        BIND_BITFIELD_FLAG(TRACK_TEST_OCCUPIED);
+        BIND_BITFIELD_FLAG(TRACK_TEST_FREE);
     }
 
     /// compare() (comparison.h:27-38)
@@ -120,7 +115,9 @@ namespace godot {
             const TrackServer *track_server = TrackServer::get_instance();
             ERR_FAIL_NULL_V(track_server, false);
             for (int i = 0; i < tracks.size(); i++) {
-                if (!(track_server->track_is_occupied(tracks[i]) == (track_test == TRACK_TEST_OCCUPIED))) {
+                const bool occupied = track_server->track_is_occupied(tracks[i]);
+                if ((track_test.has_flag(TRACK_TEST_OCCUPIED) && !occupied) ||
+                    (track_test.has_flag(TRACK_TEST_FREE) && occupied)) {
                     return false;
                 }
             }
@@ -254,11 +251,11 @@ namespace godot {
         return tracks;
     }
 
-    void MaszynaEventCondition::set_track_test(const TrackTest p_track_test) {
+    void MaszynaEventCondition::set_track_test(const BitField<TrackTest> p_track_test) {
         track_test = p_track_test;
     }
 
-    MaszynaEventCondition::TrackTest MaszynaEventCondition::get_track_test() const {
+    BitField<MaszynaEventCondition::TrackTest> MaszynaEventCondition::get_track_test() const {
         return track_test;
     }
 } // namespace godot

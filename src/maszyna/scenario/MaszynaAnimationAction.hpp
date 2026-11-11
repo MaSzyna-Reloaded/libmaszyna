@@ -5,7 +5,7 @@
 namespace godot {
     /// The original's `animation` event, `rotate` and `translate` (animation_event,
     /// Event.cpp:1569-1716): moves a submodel of its model instances towards the given angles or
-    /// offset at a speed. `digital` and `.vmd` animations are not ported (TODO.md).
+    /// offset at a speed. A `digital` or `.vmd` one runs nothing, as in the original (Event.cpp:1709).
     class MaszynaAnimationAction : public ScenarioEventAction {
             GDCLASS(MaszynaAnimationAction, ScenarioEventAction)
 

@@ -303,3 +303,27 @@ func _update(route:MaszynaDriverRoute, vehicle:RID, trainset:MaszynaDriverTrains
     route.update(vehicle, order, false, SHUNT_SPEED, speed, MaszynaDriverSpeed.EASY_ACCELERATION,
             MaszynaDriverSpeed.NO_LIMIT, trainset, MaszynaDriverTimetable.new(), 0.0, SHUNT_SPEED,
             LINE_VELOCITY, false, MaszynaDriverBraking.new(), human_driving)
+
+
+## A cab signalling magnet under the trainset sets the signal off while it moves, and is let go of
+## once past its range (cm_SecuritySystemMagnet, Driver.cpp:1419-1441)
+func test_a_cab_signal_magnet_passed_sets_the_signal_off_once() -> void:
+    var line:RID = _track(Vector3.ZERO, Vector3(LINE_LENGTH, 0.0, 0.0), null, LINE_VELOCITY, "line")
+    TrackServer.topology_rebuild()
+    var vehicle:RID = await _place("line", LINE_LENGTH / 2.0)
+    var trainset:MaszynaDriverTrainset = _trainset(vehicle, 1)
+    # behind the front by more than the vehicle's magnet distance and the magnet's range
+    var security:RailVehicleSecuritySystem = RailVehicleServer.vehicle_component_get(
+            vehicle, RailVehicleComponentType.COMPONENT_SECURITY) as RailVehicleSecuritySystem
+    var behind:float = security.shp_magnet_distance + MaszynaDriverRoute.MAGNET_RANGE * 2.0
+    var front:Vector3 = VehicleServer.vehicle_get_transform(vehicle).origin \
+            + Vector3(trainset.front_direction * VehicleServer.vehicle_get_dimensions(vehicle).z / 2.0, 0.0, 0.0)
+    _signal(line, "CabSignal", front - Vector3(trainset.front_direction * behind, 0.0, 0.0))
+    var route:MaszynaDriverRoute = MaszynaDriverRoute.new()
+
+    _update(route, vehicle, trainset, MOVING_SPEED)
+    assert_has(route.commands.map(func(command:Array) -> String: return command[0]), "CabSignal",
+            "the magnet passed moving")
+    _update(route, vehicle, trainset, MOVING_SPEED)
+    assert_does_not_have(route.commands.map(func(command:Array) -> String: return command[0]), "CabSignal",
+            "let go of once past its range")

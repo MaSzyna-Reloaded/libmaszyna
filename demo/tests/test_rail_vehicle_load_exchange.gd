@@ -16,6 +16,9 @@ const MOVING_VELOCITY:float = 5.0
 ## frames, the vehicle its configuration on its first step
 const SETTLE_TICKS:int = 2
 
+## How far from the car its load is put [m] - beyond the 10 m reach (Mover.cpp:12663), on the track
+const FAR_FROM_PLATFORM:float = 60.0
+
 const TRACK_NAME:String = "load_exchange_test"
 const TRACK_LENGTH:float = 400.0
 const TRACK_OFFSET:float = 100.0
@@ -125,3 +128,50 @@ func _doors_closing(vehicle:RID) -> float:
     var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
     return doors.close_delay + doors.max_shift / doors.close_speed
+
+
+## `putvalues Load=` and `UnLoad=` to a car nobody drives: the car takes the load itself, standing
+## within reach of where the event stands (Event.cpp:838-844, Mover.cpp:12658-12694)
+func test_putvalues_loads_and_unloads_a_car_nobody_drives() -> void:
+    var vehicle:RID = await _build()
+    var position:Vector3 = VehicleServer.vehicle_get_position(vehicle)
+    var load_action:MaszynaVehicleCommandAction = MaszynaVehicleCommandAction.new()
+    load_action.command = "Load=" + PASSENGERS
+    load_action.position = position
+    var unload_action:MaszynaVehicleCommandAction = MaszynaVehicleCommandAction.new()
+    unload_action.command = "UnLoad=" + PASSENGERS
+    unload_action.position = position
+    var load_event:RID = ScenarioEventServer.event_create()
+    ScenarioEventServer.event_attach_action(load_event, load_action)
+    var unload_event:RID = ScenarioEventServer.event_create()
+    ScenarioEventServer.event_attach_action(unload_event, unload_action)
+
+    ScenarioEventServer.event_run(load_event, vehicle)
+    assert_eq(_load.get_load_name(), PASSENGERS)
+    assert_almost_eq(_load.get_load_exchange_time(), MAX_LOAD / EXCHANGE_SPEED / BOTH_SIDES, 0.001,
+            "it loads up to its room")
+    if not await wait_simulated_until(func() -> bool: return _load.get_load_exchange_time() == 0.0,
+            MAX_LOAD / EXCHANGE_SPEED + _doors_opening(vehicle) + TICK, "the loading"):
+        return
+    ScenarioEventServer.event_run(unload_event, vehicle)
+    assert_almost_eq(_load.get_load_exchange_time(), MAX_LOAD / EXCHANGE_SPEED / BOTH_SIDES, 0.001,
+            "it unloads all it carries")
+    ScenarioEventServer.event_free(load_event)
+    ScenarioEventServer.event_free(unload_event)
+
+
+## A load put to a car nobody drives waits until the car stands within its reach (Load= is run again
+## on every step until it is done, Mover.cpp:12658-12676)
+func test_a_load_waits_for_the_car_to_stand_within_its_reach() -> void:
+    var vehicle:RID = await _build()
+    var far:Vector3 = VehicleServer.vehicle_get_position(vehicle) + Vector3(FAR_FROM_PLATFORM, 0.0, 0.0)
+
+    MaszynaScenarioEventServer.vehicle_put_command(vehicle, "Load=" + PASSENGERS, 0.0, 0.0, far)
+    await step(1)
+    assert_eq(_load.get_load_exchange_time(), 0.0, "out of reach: nothing yet")
+
+    RailVehicleServer.vehicle_set_track(vehicle, _track, TRACK_OFFSET + FAR_FROM_PLATFORM, TrackServer.DIRECTION_NORMAL)
+    if not await wait_simulated_until(func() -> bool: return _load.get_load_exchange_time() > 0.0,
+            TICK * SETTLE_TICKS, "the loading at the place"):
+        return
+    assert_eq(_load.get_load_name(), PASSENGERS)

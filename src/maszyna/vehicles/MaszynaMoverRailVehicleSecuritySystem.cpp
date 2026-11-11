@@ -142,6 +142,14 @@ namespace godot {
         mover->SecuritySystem.set_cabsignal();
     }
 
+    // TSecuritySystem::set_cabsignal_lock() (Mover.cpp:221): a person driving the vehicle cannot
+    // acknowledge the cab signal while its magnet is under the vehicle (Driver.cpp:1430)
+    void MaszynaMoverRailVehicleSecuritySystem::security_cabsignal_lock(const bool p_locked) {
+        TMoverParameters *mover = get_mover();
+        ASSERT_MOVER(mover);
+        mover->SecuritySystem.set_cabsignal_lock(p_locked);
+    }
+
     void MaszynaMoverRailVehicleSecuritySystem::security_radiostop(const bool p_enabled) {
         TMoverParameters *mover = get_mover();
         ASSERT_MOVER(mover);

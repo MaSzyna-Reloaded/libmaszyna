@@ -150,7 +150,11 @@ const SHUNTING_ORDERS:int = MaszynaAIDriver.Order.SHUNT | MaszynaAIDriver.Order.
 const VELOCITY_COMMANDS:Array[String] = ["SetVelocity", "ShuntVelocity", "OutsideStation", "SetProximityVelocity"]
 
 ## What an entry means (TSpeedPosFlag, Driver.h:127-149)
-enum Kind { TRACK, SWITCH, LINE_END, SEMAPHORE, SHUNT_SEMAPHORE, OUTSIDE_STATION, COMMAND, STOP_POINT, OTHER }
+## How far past a cab signalling magnet it still acts [m] (magnetrange, Driver.cpp:1423)
+const MAGNET_RANGE:float = 1.0
+enum Kind {
+    TRACK, SWITCH, LINE_END, SEMAPHORE, SHUNT_SEMAPHORE, OUTSIDE_STATION, COMMAND, STOP_POINT, SECURITY_MAGNET, OTHER,
+}
 ## What a passenger stop asks of the driver's orders, in the order asked (TableUpdateStopPoint()):
 ## HOLD and GO set whether it waits for the way to be clear (moveStopHere); OBEY_TRAIN drives on as
 ## a train; TURN_THEN_TRAIN and TURN_THEN_SHUNT turn a push-pull train by its cab, then drive on;
@@ -250,9 +254,6 @@ var _next_station_distance:float = NEXT_STATION_SHOWN
 var _scheduled_stop_visible:bool = false
 ## The way the driver drove when the tracks were last read (iTableDirection), 0 to read them afresh
 var _direction:int = 0
-## The memories' commands it sent, by event, not to send them again until they change
-## (StopCommandSent(), MemCell.cpp:196-205)
-var _sent:Dictionary[RID, String] = {}
 ## The table (sSpeedTable): the tracks traced from the front vehicle, entered at `distance` along
 ## the table, and the entries on them, nearest first; along the table counts from where the front
 ## vehicle's middle stood when the table was first traced [m]
@@ -342,6 +343,22 @@ func update(
     var command_entry:Entry = null
     var let_go:Array[Entry] = []
     for entry:Entry in _table:
+        # a cab signalling magnet sets the signal off while the front is past it by the vehicle's
+        # magnet distance, and is let go of past its range (cm_SecuritySystemMagnet,
+        # Driver.cpp:1419-1441) - a person driving cannot acknowledge it over the magnet, a computer can
+        if entry.kind == Kind.SECURITY_MAGNET:
+            var security:RailVehicleSecuritySystem = RailVehicleServer.vehicle_component_get(
+                    trainset.vehicles[0], RailVehicleComponentType.COMPONENT_SECURITY) as RailVehicleSecuritySystem \
+                    if trainset.vehicles else null
+            var magnet:float = security.shp_magnet_distance if security else 0.0
+            var magnet_passed:bool = entry.distance < -(magnet + MAGNET_RANGE)
+            if entry.distance < -magnet and (absf(speed) > MaszynaDriverTrainset.NO_MOVEMENT_SPEED or not magnet_passed):
+                VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_lock", human_driving)
+                commands.append([entry.command, entry.value1, entry.value2, entry.position])
+            if magnet_passed:
+                let_go.append(entry)
+                VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_lock", false)
+            continue
         if entry.kind == Kind.STOP_POINT:
             var result:StopResult = _update_stop_point(
                     entry, order, absf(speed), cargo, trainset, timetable, hours, signal_distance)
@@ -395,8 +412,10 @@ func update(
                             if allowed == 0.0:
                                 allowed = NO_LIMIT
                     Kind.COMMAND:
-                        # a memory's command for a standing driver, sent once (cm_Command, Driver.cpp:1708-1723)
-                        if go.is_empty() and not _sent.get(entry.event, "") == _signature(entry) \
+                        # a memory's command for a standing driver, while the memory has one not sent
+                        # (is_command(), Event.cpp:652; cm_Command, Driver.cpp:1704-1723)
+                        if go.is_empty() and entry.action.source.is_valid() \
+                                and MaszynaScenarioEventServer.memory_has_command(entry.action.source) \
                                 and (stop_here or distance <= max_proximity):
                             go = "Command"
                             command_entry = entry
@@ -519,9 +538,11 @@ func update(
             if not order & ~TAKES_SPEED:
                 commands.append(["ShuntVelocity", allowed, velocity_next, Vector3.ZERO])
         "Command":
-            if absf(speed) < COMMAND_SPEED:
+            # only in a mode that takes a speed, or waiting for orders (Driver.cpp:8340)
+            if not order & ~TAKES_SPEED and absf(speed) < COMMAND_SPEED:
                 commands.append([command_entry.command, command_entry.value1, command_entry.value2, command_entry.position])
-                _sent[command_entry.event] = _signature(command_entry)
+                # sent: the memory has no command any more, and says so (send_command(), Event.cpp:645-649)
+                MaszynaScenarioEventServer.memory_command_sent(command_entry.action.source)
     # the vehicles ahead, from the front of the trainset the way it drives (scan_obstacles(),
     # Driver.cpp:6638-6680)
     obstacle = null
@@ -740,7 +761,11 @@ func _read_command(entry:Entry) -> void:
         "OutsideStation":
             entry.kind = Kind.OUTSIDE_STATION
             entry.velocity = NO_LIMIT
-        "SetProximityVelocity", "RoadVelocity", "SectionVelocity", "CabSignal", "Emergency_brake":
+        "CabSignal":
+            # the cab signalling's magnet on the track (cm_SecuritySystemMagnet, Driver.cpp:272)
+            entry.kind = Kind.SECURITY_MAGNET
+            entry.velocity = NO_LIMIT
+        "SetProximityVelocity", "RoadVelocity", "SectionVelocity", "Emergency_brake":
             entry.kind = Kind.OTHER
             entry.velocity = NO_LIMIT
         _:
@@ -860,11 +885,6 @@ func _update_stop_point(
     # waiting for the departure time
     waiting_for_departure = true
     return StopResult.USE
-
-
-## A memory's command, as far as sending it again goes
-static func _signature(entry:Entry) -> String:
-    return "%s %s %s" % [entry.command, entry.value1, entry.value2]
 
 
 ## IsProperSemaphor() (Driver.cpp:373-388)

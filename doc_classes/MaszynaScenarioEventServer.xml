@@ -9,6 +9,14 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="event_add_to_query">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="activator" type="RID" default="RID()" />
+			<description>
+				Runs [param event] at once when it is an [code]addvalues[/code] of no delay - queued, a second request before it ran would be lost - and queues any other ([method ScenarioEventServer.event_queue]), with [param activator] as the vehicle that asked. Whatever queues an event of a MaSzyna scenery goes through it. Returns whether the event was run or queued.
+			</description>
+		</method>
 		<method name="event_get_departure_delay" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="event" type="RID" />
@@ -21,6 +29,13 @@
 			<param index="0" name="event" type="RID" />
 			<description>
 				Whether [param event] is never queued (see [method event_set_passive]).
+			</description>
+		</method>
+		<method name="event_is_queued_on_every_move" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="event" type="RID" />
+			<description>
+				Whether [param event] goes on on every move along its track (see [method event_set_queued_on_every_move]).
 			</description>
 		</method>
 		<method name="event_set_departure_delay">
@@ -37,6 +52,14 @@
 			<param index="1" name="passive" type="bool" />
 			<description>
 				A passive event is never queued - nothing runs it; drivers read it on the tracks ahead (the original's [code]m_passive[/code], [code]Event.cpp:2380-2384[/code]).
+			</description>
+		</method>
+		<method name="event_set_queued_on_every_move">
+			<return type="void" />
+			<param index="0" name="event" type="RID" />
+			<param index="1" name="every_move" type="bool" />
+			<description>
+				A track's [code]event1[/code]/[code]event2[/code] of a delay of -1 or less goes on on every simulation step a vehicle stays on the track - the crew ones for a vehicle whose cab is occupied, the [code]all[/code] ones for any ([code]TTrack::QueueEvents(..., -1.0)[/code], [code]TrkFoll.cpp:249-260[/code]) - not only once as the vehicle comes on.
 			</description>
 		</method>
 		<method name="implementation_get" qualifiers="const">
@@ -105,6 +128,13 @@
 				The key that fires [param launcher].
 			</description>
 		</method>
+		<method name="launcher_get_key_needs_shift" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="launcher" type="RID" />
+			<description>
+				Whether the key of [param launcher] fires it only with Shift.
+			</description>
+		</method>
 		<method name="launcher_get_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="launcher" type="RID" />
@@ -155,6 +185,14 @@
 				The event [param launcher] fires, and the one it fires with Shift ([code]Event1[/code], [code]Event2[/code], [code]EvLaunch.h[/code]).
 			</description>
 		</method>
+		<method name="launcher_set_fire_once">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="fire_once" type="bool" />
+			<description>
+				[param launcher] fires once, the first time it is in reach and its condition passes ([code]-10000[/code], [code]EvLaunch.cpp:182-186[/code]); it looks every second of simulated time, the original every frame.
+			</description>
+		</method>
 		<method name="launcher_set_interval">
 			<return type="void" />
 			<param index="0" name="launcher" type="RID" />
@@ -169,6 +207,14 @@
 			<param index="1" name="key" type="int" enum="Key" />
 			<description>
 				The key that fires [param launcher].
+			</description>
+		</method>
+		<method name="launcher_set_key_needs_shift">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="needs_shift" type="bool" />
+			<description>
+				The key of [param launcher] fires it only with Shift - a key given as a capital letter's code ([code]vk_to_glfw_key()[/code], [code]EvLaunch.cpp:32-50[/code]).
 			</description>
 		</method>
 		<method name="launcher_set_name">
@@ -212,12 +258,34 @@
 				[param launcher] fires when the clock shows [param hour]:[param minute], every day; [param hour] -1 for never ([code]EvLaunch.cpp:197-211[/code]).
 			</description>
 		</method>
+		<method name="launcher_set_train_triggered">
+			<return type="void" />
+			<param index="0" name="launcher" type="RID" />
+			<param index="1" name="train_triggered" type="bool" />
+			<description>
+				The radius of [param launcher] is measured to the front of the player's vehicle rather than to the camera ([code]traintriggered[/code], [code]scene.cpp:129-133[/code]).
+			</description>
+		</method>
 		<method name="memory_add_friction_track">
 			<return type="void" />
 			<param index="0" name="memory" type="RID" />
 			<param index="1" name="track" type="RID" />
 			<description>
 				[param memory] modifies the friction of [param track] by its values from now on: friction * value1 + value2 (a track's [code]friction &lt;memcell&gt;[/code], [code]Track.cpp:924, 2527-2533, 3526[/code]).
+			</description>
+		</method>
+		<method name="memory_check_command">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+				The text of [param memory] was written: whether it is a command for a driver to be sent is decided anew ([code]TMemCell::CommandCheck()[/code], [code]MemCell.cpp:52-99[/code]). Whoever writes the text calls it.
+			</description>
+		</method>
+		<method name="memory_command_sent">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+				A driver sent the command of [param memory]: it is not one any more, and its [code]:sent[/code] event is queued ([code]TMemCell::StopCommandSent()[/code], [code]MemCell.cpp:196-205[/code]).
 			</description>
 		</method>
 		<method name="memory_create">
@@ -284,6 +352,13 @@
 				The second value [param memory] holds.
 			</description>
 		</method>
+		<method name="memory_has_command" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="memory" type="RID" />
+			<description>
+				Whether the text of [param memory] is a command for a driver not sent yet.
+			</description>
+		</method>
 		<method name="memory_set_name">
 			<return type="void" />
 			<param index="0" name="memory" type="RID" />
@@ -298,6 +373,14 @@
 			<param index="1" name="position" type="Vector3" />
 			<description>
 				Where [param memory] stands - sent with its command to the drivers it reaches.
+			</description>
+		</method>
+		<method name="memory_set_sent_event">
+			<return type="void" />
+			<param index="0" name="memory" type="RID" />
+			<param index="1" name="event" type="RID" />
+			<description>
+				The event queued when the command of [param memory] is sent ([code]&lt;memory&gt;:sent[/code], [code]MemCell.cpp:265[/code]).
 			</description>
 		</method>
 		<method name="memory_set_track">
@@ -334,6 +417,17 @@
 			<param index="1" name="slot" type="int" enum="MaszynaScenarioEventServer.TrackEvent" />
 			<description>
 				The events of [param track] in [param slot].
+			</description>
+		</method>
+		<method name="vehicle_put_command">
+			<return type="void" />
+			<param index="0" name="vehicle" type="RID" />
+			<param index="1" name="command" type="String" />
+			<param index="2" name="value1" type="float" />
+			<param index="3" name="value2" type="float" />
+			<param index="4" name="position" type="Vector3" />
+			<description>
+				An order put to [param vehicle], which nobody drives ([code]TMoverParameters::PutCommand()[/code], [code]Event.cpp:808-816[/code], [code]lua.cpp:293-294[/code]): it takes the place of the order waiting and is carried out until it is done. [code]Load=[/code] and [code]UnLoad=[/code] go through the vehicle's load exchange ([method RailVehicleServer.load_add], [method RailVehicleServer.load_remove]) while it stands within the reach of [param position] - 10 m, or [param value2] when it is more than 1 ([code]Mover.cpp:12658-12694[/code]); any other order the vehicle carries out itself, again on every step.
 			</description>
 		</method>
 	</methods>

@@ -68,7 +68,26 @@ namespace godot {
                     Vector3 position;
                     /* The tracks whose friction it modifies (a track's `friction <memcell>`) */
                     Vector<RID> friction_tracks;
+                    /* Its text is a command for a driver not sent yet (bCommand, MemCell.cpp:52-99) */
+                    bool command = false;
+                    /* Queued when its command is sent (`<memory>:sent`, OnSent, MemCell.cpp:265) */
+                    RID sent_event;
             };
+
+            /// How often a launcher firing once looks whether it is in reach [simulated s]; the
+            /// original looks every frame (basic_cell::update_events(), scene.cpp:122-141)
+            static constexpr double FIRE_ONCE_CHECK_SECONDS = 1.0;
+
+            /// A load a vehicle nobody drives waits to take or to give at a place - an order put to it
+            /// (vehicle_put_command()), its Mover's CommandIn
+            struct PendingLoad {
+                    bool unload = false;
+                    String load_name;
+                    Vector3 position;
+                    double reach = 0.0;
+            };
+            RIDMap<PendingLoad> pending_loads;
+            bool pending_load_processing = false;
 
             struct LauncherData {
                     RID system;
@@ -79,7 +98,17 @@ namespace godot {
                     Vector3 position;
                     double radius = -1.0;
                     Key key = KEY_NONE;
+                    /// The key fires it only with Shift - a key given by its code, a capital letter
+                    /// (vk_to_glfw_key(), EvLaunch.cpp:32-50; check_activation_key(), :160-171)
+                    bool key_needs_shift = false;
                     double interval = 0.0;
+                    /// Fires once, the first time it is in reach and its condition passes (DeltaTime
+                    /// -10000, EvLaunch.cpp:182-186); fired already
+                    bool fire_once = false;
+                    bool fired = false;
+                    /// Reached by the player's train rather than the camera (traintriggered,
+                    /// scene.cpp:129-133)
+                    bool train_triggered = false;
                     /// HH:MM it fires at, hour -1 for none; armed again once the hour is another
                     /// (iHour, iMinute, UpdatedTime - EvLaunch.cpp:197-211)
                     int hour = -1;
@@ -127,6 +156,9 @@ namespace godot {
             RIDMap<LauncherData> launchers;
             /// The launchers that fire at a time of day
             Vector<RID> timed_launchers;
+            /// Some timed launcher has a radius: its reach changes as the camera moves, so the timed
+            /// launchers are looked at on every step (basic_cell::update_events(), scene.cpp:124-143)
+            bool timed_reach_processing = false;
             /// ...and the ones a radio call fires (m_radiodrivenlaunchers, Event.h)
             Vector<RID> radio_launchers;
             RIDMap<TrackEvents> track_events;
@@ -137,10 +169,19 @@ namespace godot {
             /// The events waiting for their train's departure, by the seconds after it
             RIDMap<double> departure_delays;
             RIDSet passive_events;
+            /// The events of a delay of -1 or less, queued on every move of a vehicle along their
+            /// track (TTrack::QueueEvents(..., -1.0), TrkFoll.cpp:249-260), and the tracks having
+            /// any, stepped only while there are some
+            RIDSet every_move_events;
+            RIDSet every_move_tracks;
+            bool every_move_processing = false;
 
             void _on_time_of_day_changed();
             /* The launchers of the clock's HH:MM fire, those of another hour are armed again */
             void _check_timed_launchers();
+            void _on_simulation_advanced_timed_launchers(double p_seconds);
+            /// Steps the timed launchers while one of them has a radius
+            void _update_timed_reach_processing();
             /* A launcher of a radius is in reach of the camera (basic_cell::update_events(),
              * scene.cpp:126-139); a negative radius is everywhere */
             static bool _in_reach(const LauncherData &p_launcher);
@@ -162,6 +203,14 @@ namespace godot {
             void _on_isolated_axle_entered(const RID &p_isolated, const RID &p_vehicle);
             void _on_isolated_axle_left(const RID &p_isolated, const RID &p_vehicle);
             void _on_event_freed(const RID &p_event);
+            void _queue_every_move_events(double p_seconds);
+            void _set_every_move_processing(bool p_processing);
+            /// The loads waiting, tried on every step until done (RunInternalCommand(),
+            /// Mover.cpp:12724-12746)
+            void _process_pending_loads(double p_seconds);
+            /// Starts the vehicle's load waiting where it can, forgets it once done
+            void _try_pending_load(const RID &p_vehicle);
+            void _set_pending_load_processing(bool p_processing);
             void _queue_isolated_events(const RID &p_isolated, IsolatedEvent p_slot, const RID &p_vehicle);
             /// The vehicle on the track, its flags cleared when the track is a new one
             VehicleOnTrack &_place_vehicle(const RID &p_vehicle, const RID &p_track);
@@ -209,6 +258,30 @@ namespace godot {
             /// ahead (the original's m_passive, Event.cpp:2380-2384)
             void event_set_passive(const RID &p_event, bool p_passive);
             bool event_is_passive(const RID &p_event) const;
+            /// A track's event1/event2 of a delay of -1 or less goes on on every move of a vehicle
+            /// staying on the track, not only once as it comes on (TrkFoll.cpp:249-260)
+            /// The commands a vehicle nobody drives takes as a load, the load after the `=`
+            /// (is_command_for_owner(), Event.cpp:838-844; Mover.cpp:12658-12694)
+            static constexpr const char *LOAD_COMMAND = "Load=";
+            static constexpr const char *UNLOAD_COMMAND = "UnLoad=";
+            /// How far from the order's place the vehicle loads, unless value 2 says more [m]
+            /// (CValue2 > 1.0 ? CValue2 : 10.0, Mover.cpp:12663, 12684)
+            static constexpr double LOAD_REACH = 10.0;
+            static constexpr double LOAD_REACH_GIVEN_ABOVE = 1.0;
+            /// TMoverParameters::PutCommand() of a vehicle nobody drives (Event.cpp:808-816,
+            /// lua.cpp:293-294): the order takes the place of the one waiting and is carried out
+            /// until it is done - Load= and UnLoad= through the vehicle's load exchange as it stands
+            /// within the reach of p_position, anything else by the vehicle itself (`put_command`)
+            void vehicle_put_command(
+                    const RID &p_vehicle, const String &p_command, double p_value1, double p_value2,
+                    const Vector3 &p_position);
+            void event_set_queued_on_every_move(const RID &p_event, bool p_every_move);
+            bool event_is_queued_on_every_move(const RID &p_event) const;
+            /// event_manager::AddToQuery() (Event.cpp:2380-2401): an `addvalues` of no delay runs at
+            /// once - queued, a second request before it ran would be lost; any other is queued
+            /// (ScenarioEventServer::event_queue()). Whatever queues an event of the system goes
+            /// through it. Returns whether the event was run or queued.
+            bool event_add_to_query(const RID &p_event, const RID &p_activator = RID());
 
             /// A memory of the event system
             RID memory_create(const RID &p_system);
@@ -220,6 +293,16 @@ namespace godot {
             String memory_get_text(const RID &p_memory) const;
             double memory_get_value1(const RID &p_memory) const;
             double memory_get_value2(const RID &p_memory) const;
+            /// Its text was written: whether it is a command for a driver to be sent is decided
+            /// anew (TMemCell::CommandCheck(), MemCell.cpp:52-99) - whoever writes the text says so
+            void memory_check_command(const RID &p_memory);
+            /// Its text is a command for a driver not sent yet (StopCommand(), MemCell.h:48)
+            bool memory_has_command(const RID &p_memory) const;
+            /// A driver sent its command: it is not one any more, and its `:sent` event is queued
+            /// (TMemCell::StopCommandSent(), MemCell.cpp:196-205)
+            void memory_command_sent(const RID &p_memory);
+            /// The event queued when its command is sent (`<memory>:sent`, MemCell.cpp:265)
+            void memory_set_sent_event(const RID &p_memory, const RID &p_event);
             /// The track the memory stands at (TMemCell::Track, MemCell.h:76)
             void memory_set_track(const RID &p_memory, const RID &p_track);
             /* The memory modifies the track's friction by its values from now on: friction * value1 +
@@ -256,6 +339,13 @@ namespace godot {
             double launcher_get_radius(const RID &p_launcher) const;
             void launcher_set_key(const RID &p_launcher, Key p_key);
             Key launcher_get_key(const RID &p_launcher) const;
+            /// The key fires the launcher only with Shift
+            void launcher_set_key_needs_shift(const RID &p_launcher, bool p_needs_shift);
+            bool launcher_get_key_needs_shift(const RID &p_launcher) const;
+            /// Fires once, the first time it is in reach and its condition passes
+            void launcher_set_fire_once(const RID &p_launcher, bool p_fire_once);
+            /// Its radius is measured to the front of the player's train rather than to the camera
+            void launcher_set_train_triggered(const RID &p_launcher, bool p_train_triggered);
             /// Fires every p_seconds of simulated time, 0 for never
             void launcher_set_interval(const RID &p_launcher, double p_seconds);
             /// Fires when the clock shows p_hour:p_minute, every day; p_hour -1 for never

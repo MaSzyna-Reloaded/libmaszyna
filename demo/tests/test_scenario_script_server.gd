@@ -385,3 +385,23 @@ func test_the_lua_keyword_records_the_script() -> void:
 
     var expected:Array[String] = ["scenario.lua"]
     assert_eq(context.scripts, expected)
+
+
+## dynobj_putvalues to a vehicle nobody drives: the vehicle takes the order itself
+## (lua::scriptapi_dynobj_putvalues(), lua.cpp:285-297)
+func test_the_original_api_puts_an_order_to_a_vehicle_nobody_drives() -> void:
+    var track:RID = build_track(PLAYER_TRACK, PLAYER_TRACK_LENGTH)
+    var model:RailVehicleController = MaszynaMoverRailVehicleController.new()
+    model.add_component(build_power_supply(BATTERY_VOLTAGE))
+    var controller:VehicleController = build_vehicle("LuaPutValuesTrain", model)
+    RailVehicleServer.vehicle_set_track(controller.get_rid(), track, PLAYER_TRACK_LENGTH / 2.0, TrackServer.DIRECTION_NORMAL)
+    var source:String = (
+        "local events = require('eu07.events')\n"
+        + "events.dynobj_putvalues(reloaded.vehicle.find('LuaPutValuesTrain'), { str = 'BatterySwitch', num1 = 1 })"
+    )
+    assert_true(ScenarioScriptServer.context_apply_source(_context, &"putvalues", source))
+    await step(1)
+
+    assert_true(controller.get_state()["battery_enabled"], "BatterySwitch (Mover.cpp:12471-12477)")
+    TrackServer.track_free(track)
+    TrackServer.topology_rebuild()

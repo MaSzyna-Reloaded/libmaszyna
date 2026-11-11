@@ -504,44 +504,18 @@ is in libreloaded's `TODO.md`.
   bridge - not a new sensor object on a track.
 * **The logical aspect for trains**: a signalling implementation has only the lights, nothing it shows
   reaches a train (the driver reads the memcells).
-* **`ls_Dark`/`ls_Home` from a `lights` event** (value 3, 24 times): no light following the
-  daylight.
 * **Semaphore arms** - the `animation` event on a named submodel (`Event.cpp:1569-1735`).
 * **Telling signal heads apart** from other lit models (street lamps included).
 
 ## Scenario events
 
-* **Track events**: the direction filter by the intended direction (`eventfilter`,
-  `TrkFoll.cpp:117-121`); delay <= -1 events
-  queued on every move along the track (`TrkFoll.cpp:249-260`); a crewed vehicle is any DRIVER,
-  the original's `Mechanik->primary()` one per trainset.
-* **`putvalues`/`getvalues`**: `CabSignal` acts on the vehicle crossing it; the Mover's other
-  commands (`Load=`, `UnLoad=`, `BrakeDelay`, ... `Mover.cpp:12187-12720`) are dropped.
-* `updatevalues`/`addvalues` of a memory on a track: the `:sent` event (`StopCommandSent()`).
-* **Event types without an action**: `whois` (`Event.cpp:993-1153`), `logvalues`, `texture`
-  (`:1474-1543`), `friction` (`:2100-2104`). `switch` ignores the blade speed and delay
-  (`:1855-1873`); `animation` has no `digital` or `.vmd` mode (`:1654-1682`); a radio message is
-  played and transcribed only when heard at its start.
 * **Scenery sounds**: player defaults except `max_distance`; ambient fade and the 2750 m start
   (`audiorenderer.cpp:184-199`, `sound.cpp:364-371`). Not checked by ear.
-* **Memory and the AI**: pushing a memory to the vehicles on its track when it changes
-  (`Event.cpp:538-548`), `bCommand`/`CommandCheck` and `:sent` (`MemCell.cpp:52-99`, `196-205`).
-* **`departuredelay`**: the original asks the vehicle's driver only when `primary()`
-  (`Event.cpp:2431-2435`).
-* **Launchers**: numeric key codes, `-10000` (`EvLaunch.cpp:182-186`), `traintriggered`; a timed
-  launcher of a radius is checked only at its minute, on a memory change and at the clock start.
-* **A click on a scenery model** is not hidden by what is in front; Alt picking toggle ignored
-  (`drivermode.cpp:493-500`).
-* The `queueevent` console command.
+* **A click on a scenery model**: the Alt picking toggle is ignored (`drivermode.cpp:493-500`).
 * Station announcements (`load_sounds()`, `mtable.cpp:644-671`).
 * Events of one include cannot refer to events of another `MaszynaIncludeNode`.
 * Proxy nodes for editor-built scenes (`ScenarioEventNode`, `ScenarioMemoryNode`,
   `ScenarioLauncherNode`).
-
-## Scenario scripts (Lua)
-
-* **`dynobj_putvalues` on a vehicle nobody drives** is dropped; the original hands it to the Mover
-  (`lua.cpp:293-294`).
 
 ## Drivers (#297)
 

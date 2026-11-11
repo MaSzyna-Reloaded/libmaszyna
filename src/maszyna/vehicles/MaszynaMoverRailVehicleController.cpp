@@ -12,6 +12,27 @@
 #include <tuple>
 
 namespace godot {
+    void MaszynaMoverRailVehicleController::_register_commands() {
+        RailVehicleController::_register_commands();
+        register_command(PUT_COMMAND, callable_mp(this, &MaszynaMoverRailVehicleController::put_command));
+    }
+
+    void MaszynaMoverRailVehicleController::_unregister_commands() {
+        RailVehicleController::_unregister_commands();
+        unregister_command(PUT_COMMAND);
+    }
+
+    void MaszynaMoverRailVehicleController::put_command(const String &p_command, const PackedFloat64Array &p_values) {
+        if (mover == nullptr) {
+            return;
+        }
+        const double value1 = p_values.size() > 0 ? p_values[0] : 0.0;
+        const double value2 = p_values.size() > 1 ? p_values[1] : 0.0;
+        // no place: of the orders only Load= and UnLoad= read one, and those go through the core's load
+        // exchange (MaszynaScenarioEventServer.vehicle_put_load_command())
+        mover->PutCommand(p_command.utf8().get_data(), value1, value2, TLocation{});
+    }
+
     void MaszynaMoverRailVehicleController::_bind_methods() {
         ClassDB::bind_method(
                 D_METHOD("get_compartment_lights_intensity"),

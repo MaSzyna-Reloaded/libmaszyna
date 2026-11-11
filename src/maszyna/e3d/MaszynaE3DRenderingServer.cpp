@@ -2,6 +2,7 @@
 #include "MaszynaE3DSubModelLookup.hpp"
 #include "MaszynaLightMode.hpp"
 #include "game_data/GameDataServer.hpp"
+#include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
 #include "rendering/SmokeServer.hpp"
 #include "resources/ResourceLazyLoader.hpp"
 #include "scenario/ScenarioEventServer.hpp"
@@ -43,13 +44,16 @@ namespace godot {
                 D_METHOD("instance_set_lights_modes", "instance", "modes"),
                 &MaszynaE3DRenderingServer::instance_set_lights_modes);
         ClassDB::bind_method(
+                D_METHOD("instance_get_light_mode", "instance", "light"),
+                &MaszynaE3DRenderingServer::instance_get_light_mode);
+        ClassDB::bind_method(
                 D_METHOD("instance_set_lights_colors", "instance", "lights_colors"),
                 &MaszynaE3DRenderingServer::instance_set_lights_colors);
         ClassDB::bind_static_method(
                 get_class_static(), D_METHOD("light_get_name", "index"), &MaszynaE3DRenderingServer::light_get_name);
         ClassDB::bind_method(
-                D_METHOD("instance_set_light_mode", "instance", "light", "mode"),
-                &MaszynaE3DRenderingServer::instance_set_light_mode);
+                D_METHOD("instance_set_light_mode", "instance", "light", "mode", "threshold"),
+                &MaszynaE3DRenderingServer::instance_set_light_mode, DEFVAL(0.0));
         ClassDB::bind_method(
                 D_METHOD("instance_get_light_count", "instance"), &MaszynaE3DRenderingServer::instance_get_light_count);
         ClassDB::bind_method(
@@ -64,6 +68,12 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("instance_set_submodel_translation", "instance", "submodel", "offset", "speed"),
                 &MaszynaE3DRenderingServer::instance_set_submodel_translation);
+        ClassDB::bind_method(
+                D_METHOD("instance_get_submodel_rotation", "instance", "submodel"),
+                &MaszynaE3DRenderingServer::instance_get_submodel_rotation);
+        ClassDB::bind_method(
+                D_METHOD("instance_get_submodel_translation", "instance", "submodel"),
+                &MaszynaE3DRenderingServer::instance_get_submodel_translation);
         ClassDB::bind_method(
                 D_METHOD("instance_get_model", "instance"), &MaszynaE3DRenderingServer::instance_get_model);
         ClassDB::bind_method(
@@ -675,19 +685,28 @@ namespace godot {
         _update_visibility_if_built(*instance);
     }
 
+    MaszynaE3DRenderingServer::LightMode
+    MaszynaE3DRenderingServer::instance_get_light_mode(const RID &p_instance, const int p_light) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, LIGHT_MODE_OFF);
+        const MaszynaE3DInstanceData::LightDeclaration *declaration =
+                instance->light_declarations.getptr(_light_name_for_index(p_light));
+        return declaration != nullptr ? static_cast<LightMode>(declaration->mode) : LIGHT_MODE_OFF;
+    }
+
     /// One light by index, what `LightSet()` does for a `lights` event (AnimModel.cpp:664-670).
     /// A LIGHT_MODE_BLINK set here blinks with the default times; see instance_set_light_blink().
     /// The newest command wins: it drops a manual override of the same light, as LightSet()
     /// replaces whatever the light was set to before.
     void MaszynaE3DRenderingServer::instance_set_light_mode(
-            const RID &p_instance, const int p_light, const LightMode p_mode) {
+            const RID &p_instance, const int p_light, const LightMode p_mode, const float p_threshold) {
         MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
         const String light_name = _light_name_for_index(p_light);
         instance->lights_override.erase(light_name);
         MaszynaE3DInstanceData::LightDeclaration &declaration = instance->light_declarations[light_name];
         declaration.mode = p_mode;
-        declaration.threshold = 0.0;
+        declaration.threshold = p_threshold;
         declaration.on_time = MaszynaLightMode::DEFAULT_ON_TIME;
         declaration.off_time = MaszynaLightMode::DEFAULT_OFF_TIME;
         declaration.phase = 0.0;
@@ -1393,6 +1412,24 @@ namespace godot {
         _start_submodel_animation(p_instance, *instance, p_submodel.to_lower());
     }
 
+    Vector3
+    MaszynaE3DRenderingServer::instance_get_submodel_rotation(const RID &p_instance, const String &p_submodel) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Vector3());
+        const MaszynaE3DInstanceData::SubmodelAnimation *animation =
+                instance->submodel_animations.getptr(p_submodel.to_lower());
+        return animation != nullptr ? animation->angles : Vector3();
+    }
+
+    Vector3 MaszynaE3DRenderingServer::instance_get_submodel_translation(
+            const RID &p_instance, const String &p_submodel) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Vector3());
+        const MaszynaE3DInstanceData::SubmodelAnimation *animation =
+                instance->submodel_animations.getptr(p_submodel.to_lower());
+        return animation != nullptr ? animation->offset : Vector3();
+    }
+
     void MaszynaE3DRenderingServer::_start_submodel_animation(
             const RID &p_instance, MaszynaE3DInstanceData &p_instance_data, const String &p_submodel) {
         if (p_instance_data.built) {
@@ -1812,9 +1849,9 @@ namespace godot {
                 const RID *done_event =
                         finished != nullptr ? finished->submodel_done_events.getptr(submodel.to_lower()) : nullptr;
                 if (done_event != nullptr) {
-                    ScenarioEventServer *scenario_events = ScenarioEventServer::get_instance();
+                    MaszynaScenarioEventServer *scenario_events = MaszynaScenarioEventServer::get_instance();
                     ERR_FAIL_NULL(scenario_events);
-                    scenario_events->event_queue(*done_event);
+                    scenario_events->event_add_to_query(*done_event);
                 }
             }
         }

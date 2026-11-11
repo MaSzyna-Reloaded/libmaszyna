@@ -10,7 +10,7 @@ const LONE_COUPLING:String = "3"
 ## Reads a `dynamic` (deserialize_dynamic(), simulationstateserializer.cpp) into the trainset it
 ## is a vehicle of. Field order: datafolder, skinfile, mmdfile, [pathname - only when not inside a
 ## trainset], offset, drivertype, [couplingdata - only inside a trainset], [velocity - only when
-## not inside a trainset], loadcount, [loadtype if loadcount != 0], optional trailing destination,
+## not inside a trainset], loadcount, [loadtype if loadcount != 0], optional destination,
 ## "enddynamic".
 ##
 ## Inside a trainset the vehicle stands where the trainset puts it: the original computes
@@ -77,9 +77,10 @@ func import(p:MaszynaParser, context: MaszynaImporterContext, vehicle_name:Strin
                 % [context.get_current_file(), vehicle_name, coupling_data, _flag_names(coupling_flags)])
     trainset.members.append(member)
 
-    var next_token:String = p.next_token().to_lower()
-    if not next_token == "enddynamic":
-        # optional trailing destination parameter, not used yet
+    # the optional destination: the token after the next one, read in lower case, then nothing more
+    # (simulationstateserializer.cpp:1095-1099)
+    if not p.next_token().to_lower() == "enddynamic":
+        dynamic.destination = p.next_token().to_lower()
         p.get_tokens_until("enddynamic")
 
     return dynamic

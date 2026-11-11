@@ -36,7 +36,7 @@ func _unhandled_input(event:InputEvent) -> void:
         if event.is_action_pressed(KEYCTRL_ACTIONS[index], false, true):
             var keyctrl:RID = ScenarioEventServer.event_get_rid_by_name(KEYCTRL_EVENT % index)
             if keyctrl.is_valid():
-                ScenarioEventServer.event_queue(keyctrl)
+                MaszynaScenarioEventServer.event_add_to_query(keyctrl)
             get_viewport().set_input_as_handled()
             return
 
@@ -51,7 +51,9 @@ func _unhandled_input(event:InputEvent) -> void:
         var in_range:bool = radius < 0.0 or (
             camera and camera.global_position.distance_to(MaszynaScenarioEventServer.launcher_get_position(launcher)) <= radius
         )
-        if not in_range:
+        # a key given as a capital letter's code fires only with Shift (check_activation_key(),
+        # EvLaunch.cpp:160-171)
+        if not in_range or (MaszynaScenarioEventServer.launcher_get_key_needs_shift(launcher) and not key_event.shift_pressed):
             continue
         if key_event.shift_pressed:
             MaszynaScenarioEventServer.launcher_fire_shift(launcher)

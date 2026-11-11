@@ -8,6 +8,9 @@ class_name MaszynaStations
 ## space for each `_`; the tracks of a scenery's stops are its stop points while the scenery is
 ## loaded.
 
+## Between the station and the track of a vehicle's destination, "(stacja):(tor)" (DynObj.h:216)
+const DESTINATION_TRACK_SEPARATOR:String = ":"
+
 ## The station of each name, by its key
 static var _stations:Dictionary[String, RID] = {}
 ## The stations a loaded scenery gave stop points to, by the scenery's node's ObjectID

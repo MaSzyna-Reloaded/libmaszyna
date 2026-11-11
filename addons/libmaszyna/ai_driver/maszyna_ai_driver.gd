@@ -691,6 +691,16 @@ func _handle_command(driver:RID, command:String, value1:float, value2:float, pos
             state.light_hints = Vector2i(int(value1), int(value2))
             if state.orders[state.order_position] & Order.OBEY_TRAIN:
                 _check_vehicles(state)
+        "CabSignal":
+            # the magnet of the track sets the vehicle's cab signal off (Driver.cpp:4470-4477)
+            VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_trigger")
+        "Overhead", "SetProximityVelocity":
+            # the driver's own, never the vehicle's (Driver.cpp:4479, 4641)
+            pass
+        _:
+            # an order it does not know goes to its vehicle (TController::PutCommand(),
+            # Driver.cpp:4464-4465, 4906)
+            MaszynaScenarioEventServer.vehicle_put_command(vehicle, command, value1, value2, position)
 
 
 ## One moment of the driver (TController::Update(), handle_engine(), handle_orders(),

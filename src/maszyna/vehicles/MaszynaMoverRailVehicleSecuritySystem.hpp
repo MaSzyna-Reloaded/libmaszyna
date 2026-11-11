@@ -40,6 +40,7 @@ namespace godot {
             void security_acknowledge(bool p_enabled) override;
             void security_cabsignal_acknowledge() override;
             void security_cabsignal_trigger() override;
+            void security_cabsignal_lock(bool p_locked) override;
             void security_radiostop(bool p_enabled) override;
     };
 } // namespace godot

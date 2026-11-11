@@ -5,6 +5,7 @@
 #include "MaszynaE3DNodesBackend.hpp"
 #include "MaszynaE3DOptimizedBackend.hpp"
 #include "MaszynaE3DSmokeSourceFactory.hpp"
+#include "MaszynaLightMode.hpp"
 #include "rendering/ModelRenderingBackend.hpp"
 #include "utils/RIDHash.hpp"
 #include <godot_cpp/classes/engine.hpp>
@@ -295,6 +296,12 @@ namespace godot {
             /// translate`, TAnimContainer::SetTranslateAnim())
             void instance_set_submodel_translation(
                     const RID &p_instance, const String &p_submodel, const Vector3 &p_offset, double p_speed);
+            /// The degrees the submodel is turned to now about its own x, y and z, zero for one no
+            /// event animated (TAnimContainer::vRotateAngles)
+            Vector3 instance_get_submodel_rotation(const RID &p_instance, const String &p_submodel) const;
+            /// The offset the submodel is moved to now, zero for one no event animated
+            /// (TAnimContainer::vTranslation)
+            Vector3 instance_get_submodel_translation(const RID &p_instance, const String &p_submodel) const;
             /// Poses submodels, by name, on top of their own transform - a submodel to pose and the
             /// transform it takes, kept across rebuilds. What a vehicle's running gear, pantographs,
             /// wipers and mirrors are drawn with; an empty transform takes a submodel back to rest.
@@ -369,7 +376,10 @@ namespace godot {
             void instance_set_lights_colors(const RID &p_instance, const Dictionary &p_lights_colors) override;
             /// The name of the scenery node's light p_index: its light_onNN submodel's, "00" for light 0
             static String light_get_name(int p_index);
-            void instance_set_light_mode(const RID &p_instance, int p_light, LightMode p_mode);
+            /// p_threshold: the light level a LIGHT_MODE_DARK/HOME light comes on at, 0 for the default
+            void instance_set_light_mode(const RID &p_instance, int p_light, LightMode p_mode, float p_threshold = 0.0);
+            /// The mode light p_light is in now; LIGHT_MODE_OFF for one never set
+            LightMode instance_get_light_mode(const RID &p_instance, int p_light) const;
             /// Lights addressed by index (light_on00...), 0 until the instance is built
             int instance_get_light_count(const RID &p_instance) const;
             /// The instance ids of the drawn meshes of opaque submodels - what the original draws into

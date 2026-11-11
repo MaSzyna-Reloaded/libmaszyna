@@ -3,6 +3,19 @@ name: user-reports
 description: Handle a player's report from the MaSzyna-Reloaded/reports repository (or a screenshot the operator passes on) from reading to closing the loop - reproduce it headless, find the root cause, fix it, and file what was found as issues in libmaszyna, libreloaded or maszyna-reloaded that reference the report, with commits referencing those issues. Use whenever the operator brings an issue "od usera", a reports#N link, a report.zip or a player's screenshot, and before creating any GitHub issue or comment about one.
 ---
 
+## Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 # Player reports
 
 A player's report lives in **MaSzyna-Reloaded/reports** (`player-report`): a title `[build] vehicle:

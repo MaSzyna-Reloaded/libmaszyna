@@ -46,6 +46,7 @@
 #include "maszyna/tracks/MaszynaTrackLook.hpp"
 #include "maszyna/tracks/MaszynaTrackLooks.hpp"
 #include "maszyna/tracks/MaszynaTrackRenderingBackend.hpp"
+#include "maszyna/tracks/MaszynaTurntableServer.hpp"
 #include "maszyna/traction/MaszynaTractionServer.hpp"
 #include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "maszyna/vehicles/MaszynaE3DRailVehicleRenderingServer.hpp"
@@ -138,6 +139,7 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaMultipleAction);
         GDREGISTER_CLASS(MaszynaLightsAction);
         GDREGISTER_CLASS(MaszynaSwitchAction);
+        GDREGISTER_CLASS(MaszynaTurntableServer);
         GDREGISTER_CLASS(MaszynaVoltageAction);
         GDREGISTER_CLASS(MaszynaTrackVelocityAction);
         GDREGISTER_CLASS(MaszynaFrictionAction);
@@ -264,6 +266,8 @@ namespace godot {
         // the constructor follows their events, clock, tracks, radio and isolated sections
         scenario_event_server = memnew(MaszynaScenarioEventServer);
         Engine::get_singleton()->register_singleton("MaszynaScenarioEventServer", scenario_event_server);
+        turntable_server = memnew(MaszynaTurntableServer);
+        Engine::get_singleton()->register_singleton("MaszynaTurntableServer", turntable_server);
         // after VehicleServer, RoadVehicleServer and MaszynaScenarioEventServer: the constructor
         // follows the vehicles' lifetime, and it reads the roads' memories
         car_driver = memnew(MaszynaCarDriver);
@@ -302,6 +306,10 @@ namespace godot {
         Engine::get_singleton()->unregister_singleton("MaszynaCarDriver");
         memdelete(car_driver);
         car_driver = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("MaszynaTurntableServer");
+        memdelete(turntable_server);
+        turntable_server = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaScenarioEventServer");
         memdelete(scenario_event_server);

@@ -3,6 +3,19 @@ name: mover-cabin-wrapper-feature
 description: Wire a new player-facing Mover control end-to-end in libmaszyna - vendored Mover method -> wrapper command -> state/config exposure -> MMD cabin catalog entry (mouse) -> InputMap keybind (keyboard). Use when a cab control (lever, button, knob) does nothing in-game, when it cannot be clicked, dragged or outlined with the mouse (CabinHUDMouseSystem), when its caption or position sounds are wrong, or when porting a control the wrapper never implemented (e.g. the independent/local brake handle, "localbrake:").
 ---
 
+## Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 # Wiring a new Mover cabin control end-to-end
 
 libmaszyna exposes the vendored `TMoverParameters` (`src/maszyna/maszyna-mover/`, never edited

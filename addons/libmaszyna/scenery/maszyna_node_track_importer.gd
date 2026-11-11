@@ -20,10 +20,13 @@ const STRUCTURES:Dictionary[MaszynaTrackData.MaszynaEnvironmentType, TrackData.S
 ## names (TrackData's features; the .scn knows only textures)
 const FEATURES:MaszynaTrackFeatures = preload("maszyna_track_features.tres")
 ## The track types built so far; a road is read as a normal track (Track.cpp:397-438: road is
-## tt_Normal with the road category), a crossroad of roads as its two curves (tt_Cross, Track.cpp:422-426)
+## tt_Normal with the road category), a crossroad of roads as its two curves (tt_Cross, Track.cpp:422-426),
+## a turntable - `turn`, or `table` for a transfer table too - as a rail track (tt_Table, Track.cpp:407-416)
 const TYPES:Dictionary[String, TrackServer.TrackType] = {
     "normal": TrackServer.TRACK_NORMAL,
     "switch": TrackServer.TRACK_SWITCH,
+    "turn": TrackServer.TRACK_TURN,
+    "table": TrackServer.TRACK_TABLE,
     "road": TrackServer.TRACK_ROAD,
     "cross": TrackServer.TRACK_CROSS,
 }
@@ -40,7 +43,7 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
     # the type in lower case, as the original reads it (Track.cpp:395-438)
     var type_token:String = p.next_token().to_lower()
     if not TYPES.has(type_token):
-        # river/turn/table are not built yet - discard the whole node, otherwise the
+        # a river is not built yet - discard the whole node, otherwise the
         # shared parser cursor stays inside it and keeps eating tokens until the next keyword.
         p.get_tokens_until("endtrack")
         return null

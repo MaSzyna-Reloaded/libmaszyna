@@ -8,6 +8,33 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_daylight_lights" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				The lights the event sets to follow the daylight.
+			</description>
+		</method>
+		<method name="get_daylight_modes" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				Their [enum MaszynaE3DRenderingServer.LightMode]: [constant MaszynaE3DRenderingServer.LIGHT_MODE_DARK] or [constant MaszynaE3DRenderingServer.LIGHT_MODE_HOME].
+			</description>
+		</method>
+		<method name="get_daylight_thresholds" qualifiers="const">
+			<return type="PackedFloat32Array" />
+			<description>
+				The light level each of them comes on at, 0 for the default.
+			</description>
+		</method>
+		<method name="read_lights">
+			<return type="void" />
+			<param index="0" name="lights" type="PackedFloat32Array" />
+			<description>
+				The event's list of lights, read once: the ones it sets to follow the daylight are kept and set on the model drawing each signal head when the event runs, as [code]TAnimModel::LightSet()[/code] sets them ([code]AnimModel.cpp:664-670[/code]).
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="aspects" type="StringName[]" setter="set_aspects" getter="get_aspects" default="[]">
 			The aspect each of [member signal_heads] shows, in their order.

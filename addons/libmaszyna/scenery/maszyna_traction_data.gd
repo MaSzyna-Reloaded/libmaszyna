@@ -16,6 +16,9 @@ const DAMAGE_BREAK: int = 128
 const RENDERING_BACKEND: StringName = &"maszyna"
 
 @export var material: WireMaterial = WireMaterial.COPPER
+## The node's name in lower case, empty for none - what a `visible` event finds the span by
+## (simulation::Traction.find(), Event.cpp:2030-2033)
+@export var name: String = ""
 
 
 func _init() -> void:
