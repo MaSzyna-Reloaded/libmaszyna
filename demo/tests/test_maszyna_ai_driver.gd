@@ -10,6 +10,8 @@ const DRIVER_UPDATE:float = MaszynaAIDriver.PREPARE_TIME + TICK
 const WATER_HEATER_MAX_TEMPERATURE:float = 60.0
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 const SHUNT_SPEED:float = 40.0
+## What a moving train starts with [km/h]
+const STARTING_SPEED:float = 10.0
 ## The track every driver's vehicle stands on, and where [m]: off the tracks a vehicle is in no
 ## trainset, whose type the driver reads (RailVehicleServer.trainset_get_type())
 const TRACK_NAME:String = "AIDriverTrack"
@@ -351,6 +353,26 @@ func test_a_new_driver_is_told_to_drive_the_way_it_faces() -> void:
     assert_ne(state["direction_order"], 0, "never told to drive no way (Driver.cpp:1872)")
     assert_eq(state["direction_order"], state["direction"])
 
+
+
+## A train that starts moving is driven the way it moves, whichever way its driver's cab faces - a
+## locomotive reversed at the head of its train moves backwards and pulls it on (DirectionInitial(),
+## Driver.cpp:2612-2622)
+func test_a_driver_of_a_moving_train_drives_the_way_it_moves() -> void:
+    var ai:MaszynaAIDriver = MaszynaAIDriver.new()
+    var train:VehicleController = build_vehicle(
+            "AIDriverMovingTest", SM42, -STARTING_SPEED, MaszynaVehicleData.DriverType.DRIVER_HEAD)
+    var vehicle:RID = train.get_rid()
+    RailVehicleServer.vehicle_set_track(vehicle, _track, TRACK_OFFSET, TrackServer.DIRECTION_NORMAL)
+    await step(2)
+    assert_lt(VehicleServer.vehicle_get_velocity(vehicle), 0.0, "moving backwards, the cab at its front")
+    var driver:RID = get_vehicle_driver(vehicle)
+    attach_driver_implementation(driver, ai)
+
+    var state:Dictionary = get_driver_internal_state(driver)
+    assert_eq(state["direction"], -1, "the way it moves")
+    assert_eq(state["direction_order"], -1)
+    attach_driver_implementation(driver, null)
 
 func test_taking_control_back_takes_the_way_of_the_cab_left() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()

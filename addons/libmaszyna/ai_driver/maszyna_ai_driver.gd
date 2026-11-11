@@ -282,7 +282,13 @@ func _on_vehicle_command_received(vehicle:RID, command:String, _p1:Variant, _p2:
 func _driver_attached(driver:RID) -> void:
     var state:AIDriverState = AIDriverState.new()
     state.driver = driver
-    if _cabin_direction(driver) < 0:
+    var vehicle:RID = VehicleServer.person_get_vehicle(driver)
+    # a train that starts moving drives the way it moves, whichever cab its driver sits in - a
+    # locomotive reversed at the head of its train pulls it on (DirectionInitial(), Driver.cpp:2612-2622);
+    # the reverser follows the way it drives, relative to the cab
+    if vehicle.is_valid() and VehicleServer.vehicle_get_speed(vehicle) > NO_MOVEMENT_SPEED:
+        state.direction = 1 if VehicleServer.vehicle_get_velocity(vehicle) > 0.0 else -1
+    elif _cabin_direction(driver) < 0:
         state.direction = -1
     # told to drive the way it faces until told otherwise (iDirectionOrder = CabActive,
     # Driver.cpp:1872) - never none: turning towards none puts the reverser at neutral and takes
