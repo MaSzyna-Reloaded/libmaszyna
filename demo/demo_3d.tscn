@@ -17,10 +17,47 @@
 [ext_resource type="Script" uid="uid://djd17om24oh3s" path="res://addons/libmaszyna/vehicle/maszyna_rail_vehicle_3d.gd" id="29_dcvyd"]
 [ext_resource type="PackedScene" path="res://addons/libreloaded/debug_hud/debug_hud.tscn" id="debug_hud_scene"]
 [ext_resource type="SignallingImplementation" path="res://signalling/demo_block_implementation.tres" id="demo_block_implementation"]
+[ext_resource type="Shader" uid="uid://xroawqgq6vfy" path="res://addons/libmaszyna/cabin/led_matrix.gdshader" id="led_matrix_shader"]
 [ext_resource type="SfxBank" path="res://sounds/player/player_sfx_bank.tres" id="player_sfx_bank"]
 [ext_resource type="Script" uid="uid://64hu8w2fqcs2" path="res://addons/libreloaded/environment/procedural_sky_environment.gd" id="procedural_sky"]
 [ext_resource type="SignalHeadKind" uid="uid://diyvl26to634d" path="res://signalling/sbl_3.tres" id="sbl_3_kind"]
 [ext_resource type="Script" uid="uid://clkcp3220jqpe" path="res://addons/libreloaded/scenery/scenery_streamer.gd" id="scenery_streamer"]
+
+[sub_resource type="DrawingTexture" id="DrawingTexture_board"]
+texture_size = Vector2i(1024, 128)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_board"]
+shading_mode = 0
+albedo_texture = SubResource("DrawingTexture_board")
+
+[sub_resource type="QuadMesh" id="QuadMesh_board"]
+material = SubResource("StandardMaterial3D_board")
+size = Vector2(4, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board_frame"]
+size = Vector3(0.1, 0.7, 4.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board_post"]
+size = Vector3(0.1, 2.6, 0.1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_board_leds"]
+shader = ExtResource("led_matrix_shader")
+shader_parameter/style = 1
+shader_parameter/bloom = true
+shader_parameter/led_color = Color(0.96317273, 0.61267304, 0.35874876, 1)
+shader_parameter/led_radius = 0.4
+shader_parameter/led_edge = 0.06
+shader_parameter/unlit_color = Color(0.2347674, 0.16437924, 0.08728709, 1)
+shader_parameter/gap_glow = 0.25
+
+[sub_resource type="DrawingTexture" id="DrawingTexture_clock"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_clock"]
+albedo_texture = SubResource("DrawingTexture_clock")
+
+[sub_resource type="QuadMesh" id="QuadMesh_clock"]
+material = SubResource("StandardMaterial3D_clock")
+size = Vector2(0.8, 0.8)
 
 [sub_resource type="TrackCurve" id="TrackCurve_common"]
 p1 = Vector3(-25.8, 0, -136)
@@ -126,8 +163,8 @@ night_tonemap_agx_contrast = 1.0
 day_adjustment_contrast = 1.1
 sun_energy = 1.5
 auto_exposure_enabled = true
-day_auto_exposure_scale = 0.1
 auto_exposure_speed = 1.0
+day_auto_exposure_scale = 0.1
 day_auto_exposure_min_sensitivity = 50.0
 day_auto_exposure_max_sensitivity = 90.0
 night_auto_exposure_scale = 0.1
@@ -144,8 +181,8 @@ night_ambient_sky_contribution = 0.7
 
 [node name="Player" parent="." unique_id=423486079 instance=ExtResource("13_nxmm0")]
 transform = Transform3D(-0.543175, 0, 0.83962, 0, 1, 0, -0.83962, 0, -0.543175, -18.508982, 1.959, 168.0919)
-sfx_bank = ExtResource("player_sfx_bank")
 auto_start = true
+sfx_bank = ExtResource("player_sfx_bank")
 
 [node name="SceneryStreamer" type="Node" parent="." unique_id=197017765]
 script = ExtResource("scenery_streamer")
@@ -162,37 +199,37 @@ metadata/_custom_type_script = "uid://onxj3ocy4jip"
 [node name="31we-a_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=146660532]
 start_track_name = "diverging2"
 start_track_offset = 106.79557626267052
-transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, 15.349757799999997)
+trainset_coupling_mode = 4
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.9230311, 0.6616861199999999, 15.349757799999995)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-a_zachpom"
-trainset_coupling_mode = 4
 skin = "ED78-019A"
 
 [node name="31we-b_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=602076295]
 start_track_name = "diverging2"
 start_track_offset = 95.088643299126
+trainset_coupling_mode = 4
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -11.9230311, 0.6616861199999999, -3.1402421999999985)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-b_zachpom"
-trainset_coupling_mode = 4
 skin = "ED78-019B"
 
 [node name="31we-c_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=706861861]
 start_track_name = "diverging2"
 start_track_offset = 82.48086381410256
-transform = Transform3D(-1, 0, 1.129997989440363e-16, 0, 1, 0, -1.129997989440363e-16, 0, -1, -11.923031099999998, 0.6616861199999999, -19.0602422)
+trainset_coupling_mode = 4
+transform = Transform3D(-1, 0, 1.1299979894403631e-16, 0, 1, 0, -1.1299979894403631e-16, 0, -1, -11.923031099999998, 0.6616861199999999, -19.0602422)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-c_zachpom"
-trainset_coupling_mode = 4
 skin = "ED78-019C"
 
 [node name="31we-d_zachpom" type="RailVehicle3D" parent="ImpulsTrainset" unique_id=1002100989]
 start_track_name = "diverging2"
 start_track_offset = 62.21919697198823
-transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.923031100000001, 0.6616861199999999, -37.55024220000001)
+transform = Transform3D(-1, 0, -1.277954560719604e-16, 0, 1, 0, 1.277954560719604e-16, 0, -1, -11.9230311, 0.6616861199999999, -37.55024220000001)
 script = ExtResource("29_dcvyd")
 data_path = "/dynamic/pkp/impuls_v1"
 file_name = "31we-d_zachpom"
@@ -361,6 +398,54 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -184.59415, 0, -29.266571)
 script = ExtResource("4_drlsl")
 data_path = "models/przemysl"
 model_filename = "chlodnia_belchatow"
+
+[node name="TablicaOlkusz" type="Node3D" parent="Dekoracje" unique_id=657008828]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -5)
+
+[node name="Tablica" type="MeshInstance3D" parent="Dekoracje/TablicaOlkusz" unique_id=1528980109]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.06, 2.9, 0)
+mesh = SubResource("QuadMesh_board")
+
+[node name="Rama" type="MeshInstance3D" parent="Dekoracje/TablicaOlkusz" unique_id=1082350161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 0)
+mesh = SubResource("BoxMesh_board_frame")
+
+[node name="Slup" type="MeshInstance3D" parent="Dekoracje/TablicaOlkusz" unique_id=1046536748]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+mesh = SubResource("BoxMesh_board_post")
+
+[node name="Script" type="LuaTextureNode" parent="Dekoracje/TablicaOlkusz" unique_id=733075782]
+texture = SubResource("DrawingTexture_board")
+material = SubResource("ShaderMaterial_board_leds")
+drawing_size = Vector2i(128, 16)
+script_path = "res://scripts/tablica.lua"
+script_variables = {
+"color": Color(1, 1, 1, 1),
+"step": 2,
+"step_seconds": 0.09,
+"text": "Pociąg osobowy do Sosnowca Głównego odjedzie z toru 1"
+}
+data_dir = "res://"
+
+[node name="ZegarOlkusz" type="Node3D" parent="Dekoracje" unique_id=1461590814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -1)
+
+[node name="Slup" type="MeshInstance3D" parent="Dekoracje/ZegarOlkusz" unique_id=2108940383]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+mesh = SubResource("BoxMesh_board_post")
+
+[node name="TarczaZachod" type="MeshInstance3D" parent="Dekoracje/ZegarOlkusz" unique_id=1823069651]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.06, 2.9, 0)
+mesh = SubResource("QuadMesh_clock")
+
+[node name="TarczaWschod" type="MeshInstance3D" parent="Dekoracje/ZegarOlkusz" unique_id=368190941]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.06, 2.9, 0)
+mesh = SubResource("QuadMesh_clock")
+
+[node name="Skrypt" type="LuaTextureNode" parent="Dekoracje/ZegarOlkusz" unique_id=883012548]
+texture = SubResource("DrawingTexture_clock")
+script_path = "res://scripts/zegar.lua"
+data_dir = "res://"
 
 [node name="chlodnia_belchatow3" type="ReloadedModel3D" parent="Dekoracje" unique_id=2018873026]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -184.59415, 0, -281.21332)

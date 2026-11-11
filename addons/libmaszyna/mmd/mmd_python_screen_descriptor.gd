@@ -1,8 +1,8 @@
 extends RefCounted
 class_name MmdPythonScreenDescriptor
 
-## One `pyscreen:` of an MMD - a cab screen drawn by a Python 2 script (TTrain::screen_entry,
-## Train.h:129).
+## One `pyscreen:` of an MMD - a cab screen drawn by a Python script (TTrain::screen_entry,
+## Train.h:129), or by a Lua one when a `.lua` file stands beside the script (MaszynaScreenLuaNode).
 
 ## Absolute path of the script, without ".py"
 var script_path:String = ""

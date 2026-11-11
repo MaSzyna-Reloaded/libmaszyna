@@ -74,6 +74,8 @@ const _INCLUDE_END_KEYWORD := "end"
 ## in the original (parser.cpp:280)
 const MAX_INCLUDE_PARAMETERS:int = 12
 const _VARIABLE_ANIMATION_TYPES := ["rotvar", "movvar"]
+## A `pyscreen:` script drawn by Lua: its name with this extension beside the `.py`
+const LUA_SCREEN_EXTENSION:String = ".lua"
 ## Original engine: Globals.h:123 PythonScreenUpdateRate - the shortest interval a Python screen is
 ## redrawn at, in milliseconds
 const PYTHON_SCREEN_UPDATE_TIME_MSEC:int = 200
@@ -747,8 +749,13 @@ static func build_into(
                 radio.position = generated_root.to_local((lamps[0] as Node3D).global_position)
 
     for descriptor:MmdPythonScreenDescriptor in definition.python_screens:
-        if not FileAccess.file_exists(descriptor.script_path + ".py"):
-            diagnostics.append(_diag("warning", "MMD_PYTHON_SCRIPT_NOT_FOUND", "Python screen script '%s.py' not found" % descriptor.script_path, definition.cab_number, "pyscreen", descriptor.target))
+        # a script with a .lua file beside it is drawn by Lua (MaszynaScreenLuaNode), else by Python
+        var script_dir:String = descriptor.script_path.get_base_dir()
+        var lua_path:String = script_dir.path_join(
+                MaszynaDataPath.resolve(script_dir, descriptor.script_path.get_file() + LUA_SCREEN_EXTENSION))
+        var drawn_by_lua:bool = FileAccess.file_exists(lua_path)
+        if not drawn_by_lua and not FileAccess.file_exists(descriptor.script_path + ".py"):
+            diagnostics.append(_diag("warning", "MMD_PYTHON_SCRIPT_NOT_FOUND", "Screen script '%s.py' or '%s' not found" % [descriptor.script_path, LUA_SCREEN_EXTENSION], definition.cab_number, "pyscreen", descriptor.target))
             continue
         var mesh:MeshInstance3D = null
         if not descriptor.target == "none":
@@ -759,8 +766,25 @@ static func build_into(
             mesh = matches[0] as MeshInstance3D if matches else null
             if (not submodel or submodel.dynamic_material or not submodel.material_name
                     or not mesh or not mesh.material_override is ShaderMaterial):
-                diagnostics.append(_diag("warning", "MMD_SUBMODEL_NOT_FOUND", "Python screen submodel '%s' not found or has no texture" % descriptor.target, definition.cab_number, "pyscreen", descriptor.target))
+                diagnostics.append(_diag("warning", "MMD_SUBMODEL_NOT_FOUND", "Screen submodel '%s' not found or has no texture" % descriptor.target, definition.cab_number, "pyscreen", descriptor.target))
                 continue
+        if drawn_by_lua:
+            # drawn at the size of the texture it replaces
+            var texture := DrawingTexture.new()
+            if mesh:
+                texture.texture_size = Vector2i(
+                        MaszynaMaterialManager.material_get_texture(mesh.material_override).get_size())
+            var lua_screen := MaszynaScreenLuaNode.new()
+            lua_screen.name = "LuaScreen_" + descriptor.target.validate_node_name()
+            lua_screen.mesh = mesh
+            lua_screen.texture = texture
+            lua_screen.script_path = lua_path
+            lua_screen.data_dir = MaszynaGameDirectory.get_game_dir()
+            lua_screen.cabin_implementation = CabinScriptImplementation.new()
+            lua_screen.parameters = descriptor.parameters
+            lua_screen.update_time_msec = descriptor.update_time_msec
+            generated_root.add_child(lua_screen)
+            continue
         var screen := CabinPythonScreen.new()
         screen.name = "PythonScreen_" + descriptor.target.validate_node_name()
         screen.mesh = mesh

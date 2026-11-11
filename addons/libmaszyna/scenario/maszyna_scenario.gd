@@ -28,6 +28,8 @@ func start(scenery:SceneryContentNode, progressed:Callable = Callable()) -> void
     print("[ScenarioStart] creating the script context")
     _script_context = ScenarioScriptServer.context_create(
             MaszynaGameDirectory.get_game_dir().path_join(SCRIPTS_DIRECTORY))
+    # the scripts draw with the game's fonts and textures (fonts/, textures/, dynamic/)
+    ScenarioScriptServer.context_set_data_dir(_script_context, MaszynaGameDirectory.get_game_dir())
     ScenarioScriptServer.context_attach_cabin_implementation(_script_context, CabinScriptImplementation.new())
     for script_path:String in scenery.get_scenario_scripts():
         print("[ScenarioStart] running script %s" % script_path)
