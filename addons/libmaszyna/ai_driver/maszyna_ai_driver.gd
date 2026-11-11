@@ -878,9 +878,11 @@ func _update(driver:RID) -> void:
         if channel > 0:
             if state.guard_radio:
                 state.guard_radio = channel
-            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RADIO_CHANNEL, channel, func() -> void:
-                state.radio_channel = channel
-                MaszynaDriverHints.send(vehicle, &"radio_channel_set", channel))
+            # only when the driver's radio is on another channel (iRadioChannel != radiochannel)
+            if not state.radio_channel == channel:
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RADIO_CHANNEL, channel, func() -> void:
+                    state.radio_channel = channel
+                    MaszynaDriverHints.send(vehicle, &"radio_channel_set", channel))
     # waiting for the passengers (adjust_desired_speed_for_limits(), Driver.cpp:7550-7555)
     if StationServer.dispatch_get_step(vehicle) == StationServer.DISPATCH_STEP_EXCHANGE:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.WAIT_LOAD_EXCHANGE)
