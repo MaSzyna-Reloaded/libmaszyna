@@ -358,7 +358,8 @@ namespace godot {
     }
 
     /// A script not checked yet goes to the 3.x host, which checks it first; one that does not
-    /// compile or load there, and every script while 3.x is unavailable, goes to 2.7
+    /// compile or load there, or fails there while it draws, and every script while 3.x is
+    /// unavailable, goes to 2.7
     void PythonScreenServer::screen_request_render(const RID &p_screen, const Dictionary &p_state) {
         const Screen *screen = screens.getptr(p_screen);
         ERR_FAIL_NULL(screen);
@@ -476,10 +477,12 @@ namespace godot {
         const int64_t pid = process.get("pid", -1);
 
         // Reads the host's replies to one request up to its last: the lines it logs on the way,
-        // then DONE, the FRAME of a render, which is published, or CHECKED, kept in `compiles`.
+        // then DONE, the FRAME of a render, which is published, FAILED, kept in `render_failed`,
+        // or CHECKED, kept in `compiles`.
         // False when the host has ended - or speaks out of turn, and is ended so that its stderr
         // can be read to the end
         bool compiles = false;
+        bool render_failed = false;
         const auto receive = [&]() -> bool {
             while (true) {
                 const PackedByteArray size_field = read_exact(pipe, sizeof(uint32_t));
@@ -505,6 +508,14 @@ namespace godot {
                             os->kill(static_cast<int32_t>(pid));
                             return false;
                         }
+                        return true;
+                    case Reply::FAILED:
+                        reader.get<uint64_t>();
+                        if (!reader.valid) {
+                            os->kill(static_cast<int32_t>(pid));
+                            return false;
+                        }
+                        render_failed = true;
                         return true;
                     case Reply::FRAME: {
                         const RID screen =
@@ -627,7 +638,25 @@ namespace godot {
                     message.put(static_cast<uint64_t>(request.screen.get_id()));
                     message.put_string(request.script_path);
                     message.put_state(request.state);
+                    render_failed = false;
                     running = message.send(pipe) && receive();
+                    if (running && render_failed) {
+                        // a script of the game data written for 2.7 that passed the check, but not
+                        // what it draws (#395): on 2.7 from now on, this frame included, and its
+                        // instance here goes
+                        {
+                            MutexLock lock(mutex);
+                            script_runtimes.insert(request.script_path, RUNTIME_PYTHON_2);
+                        }
+                        UtilityFunctions::print(
+                                "[PythonScreen] ", request.script_path,
+                                " fails on Python 3 while it draws - it runs on Python 2.7");
+                        RequestWriter free(python_host::Request::FREE);
+                        free.put(static_cast<uint64_t>(request.screen.get_id()));
+                        running = free.send(pipe) && receive();
+                        callable_mp(this, &PythonScreenServer::_render_after_check)
+                                .call_deferred(request.screen, request.state);
+                    }
                 }
                 if (!running) {
                     fail();

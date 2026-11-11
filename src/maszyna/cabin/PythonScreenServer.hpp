@@ -29,7 +29,8 @@ namespace godot {
     /// python-runtime-windows), else the game directory's (`maszyna/python/home` for 2.7). A script
     /// runs on 3.x when it compiles there with the modules of the game directory it imports and
     /// loads (the 3.x host checks it before its first render), on 2.7 otherwise, and on 2.7 when no
-    /// 3.x runtime is found. Each host
+    /// 3.x runtime is found. A script that fails on 3.x while it is made or draws - written for 2.7
+    /// and the Pillow of its time - runs on 2.7 from then on. Each host
     /// has the base classes of its runtime first in its search path (`cabin/python/<runtime>/`, the
     /// original's `python/local/`, copied out to `user://python/`), not the game directory's. A host
     /// serves one game directory: a data reload ends both, and the next render finds the runtimes
@@ -117,7 +118,8 @@ namespace godot {
             void _stop_hosts();
             void _on_data_reload_requested();
             void _announce_failure(const String &p_message);
-            /// A screen whose script did not compile on 3.x, rendered again - on 2.7 now
+            /// A screen whose script did not compile on 3.x, or failed there while it drew,
+            /// rendered again - on 2.7 now
             void _render_after_check(const RID &p_screen, const Dictionary &p_state);
             /// `p_runtime` a Runtime, bound as an int: a callable binds no unregistered enum
             void _worker_loop(int p_runtime, const String &p_host, const PackedStringArray &p_arguments);

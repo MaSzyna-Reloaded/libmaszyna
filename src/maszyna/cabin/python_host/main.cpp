@@ -541,7 +541,17 @@ static bool render(MessageReader &p_reader) {
             }
         }
         python.print_error();
-
+    }
+    // a script of the game data written for 2.7 and the Pillow of its time may fail on 3.x only
+    // while it is made or draws (a rectangle with its corners swapped): no frame, and the server
+    // runs it on 2.7 from then on
+    if (output == nullptr && python.python3) {
+        python.Py_DecRef(state);
+        MessageWriter failed;
+        failed.put(screen);
+        return send_captured_errors() && failed.send(Reply::FAILED);
+    }
+    if (renderer != nullptr) {
         PyObject *command_list = python.PyObject_CallMethod(renderer, const_cast<char *>("getCommands"), nullptr);
         if (command_list != nullptr) {
             const Py_ssize_t command_count = python.PySequence_Size(command_list);

@@ -10,8 +10,8 @@
 /// Both ends run on one machine, so numbers are in its own byte order: integers fixed-size, a
 /// double as itself, a string as its size (uint32) and its UTF-8 bytes.
 namespace python_host {
-    /// Server -> host. Every request is answered by DONE, FRAME or CHECKED, LOG lines may come before
-    /// it.
+    /// Server -> host. Every request is answered by DONE, FRAME, FAILED or CHECKED, LOG lines may
+    /// come before it.
     enum class Request : uint8_t {
         /// uint64 screen, string script_path, uint32 count, count x (string key, a Value)
         RENDER = 2,
@@ -33,6 +33,9 @@ namespace python_host {
         FRAME = 3,
         /// uint8 1 when the script of a CHECK compiles and loads, 0 when it does not
         CHECKED = 4,
+        /// uint64 screen: on 3.x the script of a RENDER could not be made or raised while drawing
+        /// (what it printed came as LOG); there is no frame
+        FAILED = 5,
     };
 
     /// A value of the state: its type (uint8), then the value

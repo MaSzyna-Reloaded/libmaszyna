@@ -17,6 +17,7 @@ const COUNTER_SCRIPT:String = "res://tests/fixtures/python/fixture_counter_scree
 const PYTHON2_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_screen"
 const PYTHON2_IMPORT_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_import_screen"
 const PYTHON2_LOAD_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_load_screen"
+const PYTHON2_DRAW_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_draw_screen"
 const BASE_SCRIPT:String = "res://tests/fixtures/python/fixture_base_screen"
 ## The modules the fixtures import from their game directory
 const FIXTURE_MODULES:String = "res://tests/fixtures/fixture_modules"
@@ -179,6 +180,29 @@ func test_a_script_runs_on_python_3_when_it_compiles_and_loads_there_and_on_2_7_
     assert_eq(versions[PYTHON2_IMPORT_SCRIPT], PackedStringArray(["2"]), "it imports a module written for Python 2")
     assert_eq(versions[PYTHON2_LOAD_SCRIPT], PackedStringArray(["2"]), "it compiles on 3.x, but does not load there")
     assert_eq(versions[BASE_SCRIPT], PackedStringArray(["3", "True"]), "the base class of 3.x")
+    assert_eq(_failures, PackedStringArray())
+
+
+func test_a_script_that_fails_on_python_3_while_it_draws_runs_on_2_7_from_then_on() -> void:
+    var home:String = OS.get_environment("MASZYNA_PYTHON_HOME")
+    var home3:String = OS.get_environment("MASZYNA_PYTHON3_HOME")
+    if not home or not home3:
+        pending("MASZYNA_PYTHON_HOME or MASZYNA_PYTHON3_HOME is not set")
+        return
+    ProjectSettings.set_setting(HOME_SETTING, home)
+    MaszynaGameDirectory.save_game_dir(_make_game_dir("3", home3))
+    var server:Object = _create_server()
+    var versions:Array[String] = []
+    var screen:RID = server.screen_create(ProjectSettings.globalize_path(PYTHON2_DRAW_SCRIPT),
+            func(commands:PackedStringArray) -> void: versions.append(commands[0]))
+    var state:Dictionary = {}
+    server.screen_request_render(screen, state)
+    await wait_until(func() -> bool: return versions.size() == 1, RENDER_TIMEOUT_SEC)
+    server.screen_request_render(screen, state)
+    await wait_until(func() -> bool: return versions.size() == 2, RENDER_TIMEOUT_SEC)
+
+    assert_eq(versions, ["2", "2"] as Array[String], "the first frame and the next are drawn on 2.7")
+    assert_eq(_rendered, [screen, screen])
     assert_eq(_failures, PackedStringArray())
 
 
