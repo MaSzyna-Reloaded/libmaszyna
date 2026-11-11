@@ -1053,7 +1053,8 @@ func _build_scenery(
 
 func _parse(text:String, context:MaszynaImporterContext = MaszynaImporterContext.new()) -> MaszynaImporterContext:
     var parser:MaszynaParser = MaszynaParser.new()
-    parser.initialize(text.to_utf8_buffer())
+    # in cp1250, as the data is written
+    parser.initialize(Windows1250.encode(text))
     parser.register_handler("event", func(p:MaszynaParser) -> Array: return EventImporter.new().import(p, context))
     parser.register_handler("node", func(p:MaszynaParser) -> Array: return NodeImporter.new().import(p, context))
     parser.register_handler("isolated", func(p:MaszynaParser) -> Array: return IsolatedImporter.new().import(p, context))
@@ -1235,6 +1236,24 @@ func test_texture_sets_the_skin_with_the_cells_values() -> void:
     assert_eq(skins[1], "make:scripts/board?do=Rudawa&delay=5", "the cell's text and its value as a whole number")
     root.free()
 
+
+func test_texture_lowercases_only_the_ascii_letters() -> void:
+    var instance:MaszynaE3DModelInstance = MaszynaE3DModelInstance.new()
+    instance.model = MaszynaE3DModel.new()
+    add_child_autoqfree(instance)
+    var model_data:MaszynaModelData = MaszynaModelData.new()
+    model_data.name = "board"
+    var models:Array[ModelData] = [model_data]
+    var instances:Dictionary[String, RID] = {"board": instance.get_model_instance()}
+    var root:MaszynaIncludeNode = await _build_scenery(
+        "event show texture 0 board 1 make:scripts/Board?do=Łódź_Kaliska none endevent", models, instances
+    )
+
+    if not await _run_event(&"show"):
+        return
+    var skins:PackedStringArray = MaszynaE3DRenderingServer.instance_get_skins(instance.get_model_instance())
+    assert_eq(skins[0], "make:scripts/board?do=Łódź_kaliska", "std::tolower of the C locale leaves Ł as it is")
+    root.free()
 
 ## A vehicle without a controller standing on its own track, named as the scenery names it - what
 ## a `whois` test queues its events by

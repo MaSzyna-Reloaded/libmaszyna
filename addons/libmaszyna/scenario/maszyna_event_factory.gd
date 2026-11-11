@@ -385,8 +385,12 @@ static func build(
                 for target:String in event.targets:
                     action.instances.append(instances_by_name[target])
                 action.skin_index = clampi(absi(int(event.parameters[0])), SKIN_INDEX_MIN, SKIN_INDEX_MAX)
-                # read in lower case, as the original's getTokens(3) reads it (Event.cpp:1499, parser.h:71)
-                action.skin = event.parameters[1].to_lower()
+                # read in lower case, as the original's getTokens(3) reads it (Event.cpp:1499, parser.h:71):
+                # std::tolower in the C locale, ASCII letters only, so "Łódź" stays "Łódź" (parser.cpp:37,245)
+                var skin:String = ""
+                for character:String in event.parameters[1]:
+                    skin += character.to_lower() if character >= "A" and character <= "Z" else character
+                action.skin = skin
                 var input_name:String = event.parameters[2].to_lower() if event.parameters.size() > 2 else NO_MEMORY
                 if not input_name == NO_MEMORY:
                     if not memories.has(input_name):

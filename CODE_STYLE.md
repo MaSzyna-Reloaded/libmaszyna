@@ -742,6 +742,20 @@ if event.is_action_pressed("menu_activate", false, true):
   loaded a scenery on Alt+Enter, the fullscreen shortcut (`FINDINGS.md`, 2026-10-01). A shortcut
   with a modifier is another action, and only an exact match keeps it one.
 
+### Text is UTF-8; cp1250 belongs to MaSzyna's legacy data
+
+**The standard is UTF-8.** Every text the code writes, keeps or hands to another layer is Unicode -
+a `String`, and UTF-8 wherever it is bytes.
+
+cp1250 is a trait of MaSzyna's legacy data pack, nothing more. Its files are written in cp1250, in
+UTF-8, or **mixed** - both in one file. So:
+
+* **A reader of that data never assumes one encoding for a file.** It decodes what is valid UTF-8 as
+  UTF-8 and anything else as cp1250, and hands on Unicode. Past the reader nothing knows cp1250.
+* **Back to cp1250 only at the boundary to the legacy data's own code that expects it**: the data's
+  Python 2.7 scripts get their strings in cp1250 (`maszyna-python-host`), as the original gives
+  them. Nothing else writes cp1250.
+
 ### Tests
 Tests use only the public interface of the tested classes - no calls to private methods
 (`_name()`) and no reads/writes of private members (`_name`). If a test needs private access,

@@ -5,6 +5,7 @@
 //
 // Usage: maszyna-python-host <game_dir> <home> <library> <base_dir>, <home> and <library> relative
 // to <game_dir> or absolute; <base_dir> holds the base classes of the scripts for this runtime.
+#include "../../parsers/windows1250.hpp"
 #include "PythonHostProtocol.hpp"
 #include <cstdint>
 #include <cstdio>
@@ -388,8 +389,12 @@ static PyObject *read_value(MessageReader &p_reader) {
             return python.int_from_long(static_cast<long>(p_reader.get<int64_t>()));
         case Value::FLOAT:
             return python.PyFloat_FromDouble(p_reader.get<double>());
-        case Value::STRING:
-            return python.string_from_utf8(p_reader.get_string().c_str());
+        case Value::STRING: {
+            // a str of 2.7 holds the data's cp1250 bytes, which the scripts decode as such
+            // (PyGetString, PyInt.h:58; tablica_pti.py); a str of 3.x is text
+            const std::string text = p_reader.get_string();
+            return python.string_from_utf8(python.python3 ? text.c_str() : windows1250::encode(text).c_str());
+        }
         case Value::POINT: {
             const auto x = p_reader.get<double>();
             const auto y = p_reader.get<double>();

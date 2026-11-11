@@ -31,7 +31,8 @@ ENDIF ()
 # later, one process each - at run time.
 # A platform without it (Android, iOS) names none, and the screens stay blank with the error said.
 IF (CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux|Darwin)$")
-    ADD_EXECUTABLE(maszyna-python-host "${MASZYNA_PLUGIN_DIR}/src/maszyna/cabin/python_host/main.cpp")
+    ADD_EXECUTABLE(maszyna-python-host "${MASZYNA_PLUGIN_DIR}/src/maszyna/cabin/python_host/main.cpp"
+            "${MASZYNA_PLUGIN_DIR}/src/maszyna/parsers/windows1250.cpp")
     SET_TARGET_PROPERTIES(maszyna-python-host PROPERTIES
             OUTPUT_NAME "maszyna-python-host${ARCH_SUFFIX}"
             RUNTIME_OUTPUT_DIRECTORY "${GODOT_PROJECT_BINARY_DIR}"
