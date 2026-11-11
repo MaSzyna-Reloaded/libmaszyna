@@ -29,6 +29,32 @@ libmaszyna's Lua modules are compiled only when the core is built with Lua (`LIB
 by default). Without Lua, every script fails with "This build has no Lua runtime: scenario scripts
 do not run."
 
+The scenario's scripts read fonts and images (`reloaded.draw`) from the game directory:
+`reloaded.draw.load_font("fonts/arialbd.ttf")`.
+
+## Cab screens in Lua
+
+A `pyscreen:` of an MMD names a script without its extension. When a `.lua` file stands beside the
+script, the screen is drawn by it instead of Python - by a `MaszynaScreenLuaNode`, a
+`LuaCabinTextureNode` of the cab. The script draws at the size of the texture it replaces, and its
+picture replaces that texture in every material of its name, as the original draws a screen. Its
+file gets:
+
+```lua
+local drawing, vehicle, cabin, parameters, update_time = ...
+```
+
+`parameters` are the screen's `parameters:` (keys in lower case) and `update_time` its interval in
+seconds, negative for a screen drawn once. The script redraws itself, for example with
+`reloaded.sim.every(update_time, ...)`, and reads the vehicle's state through `reloaded.vehicle`.
+Fonts and images come from the game directory.
+
+The LED look of the data's screens (`led_util.render_post()`) is the material
+`addons/libmaszyna/cabin/led_matrix.gdshader`: each pixel of the drawing is one LED, as square cells
+of the original (`style` "Squares (MaSzyna)") or as round LEDs; `led_color` colours the lit ones,
+`unlit_color` the dark ones, and `bloom` lights the neighbours. A `LuaTextureNode` takes it as its
+`material`, with the LEDs as its `drawing_size`.
+
 ## `reloaded.memory` - memory cells
 
 This module gives access to the scenery's memory cells by name. It is available in every script as
