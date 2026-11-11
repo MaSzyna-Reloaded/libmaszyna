@@ -752,10 +752,13 @@ static func build_into(
             continue
         var mesh:MeshInstance3D = null
         if not descriptor.target == "none":
-            # Train.cpp:10676-10689 - a screen whose submodel is missing or has no texture is dropped
+            # Train.cpp:10676-10689 - a screen whose submodel is missing, has no texture or a
+            # replaceable skin's is dropped
+            var submodel:MaszynaE3DSubModel = model.model.find_submodel(descriptor.target)
             var matches:Array = submodel_index.get(descriptor.target.validate_node_name().to_lower(), [])
             mesh = matches[0] as MeshInstance3D if matches else null
-            if not mesh or not mesh.material_override is ShaderMaterial:
+            if (not submodel or submodel.dynamic_material or not submodel.material_name
+                    or not mesh or not mesh.material_override is ShaderMaterial):
                 diagnostics.append(_diag("warning", "MMD_SUBMODEL_NOT_FOUND", "Python screen submodel '%s' not found or has no texture" % descriptor.target, definition.cab_number, "pyscreen", descriptor.target))
                 continue
         var screen := CabinPythonScreen.new()

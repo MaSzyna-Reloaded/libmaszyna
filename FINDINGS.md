@@ -68,6 +68,10 @@ code belongs to the game's `FINDINGS.md`.
   *(10-06 a cab change in the 36WEa froze the game)*
 
 ## Porting the original engine
+* A cab screen draws into the texture of its submodel's material - every material of that name
+  shows it (`timetable_podsw` beside `timetable`, 101 of 565 screens of the data) - never into a
+  copy of one submodel's material, which the model also sets back when it updates. *(11-11 the
+  timetable that went out with its backlight)*
 * The original's parser lowers every token unless told not to (`cParser::getToken(ToLower =
   true)`, parser.h:40), ours keeps the case: a token matched against a fixed vocabulary - a
   keyword, a closing word, a type, a key, a load name - is lowered where it is matched, a name or

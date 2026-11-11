@@ -1,4 +1,5 @@
 #include "MaszynaE3DModel.hpp"
+#include "MaszynaE3DSubModelLookup.hpp"
 #include "macros.hpp"
 
 namespace godot {
@@ -16,6 +17,11 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_node_or_null", "p_path"), &MaszynaE3DModel::get_node_or_null);
         ClassDB::bind_method(D_METHOD("apply_geometry", "geometry"), &MaszynaE3DModel::apply_geometry);
         ClassDB::bind_method(D_METHOD("has_geometry"), &MaszynaE3DModel::has_geometry);
+        ClassDB::bind_method(D_METHOD("find_submodel", "name"), &MaszynaE3DModel::find_submodel);
+    }
+
+    Ref<MaszynaE3DSubModel> MaszynaE3DModel::find_submodel(const String &p_name) const {
+        return godot::find_submodel(submodels, p_name.to_lower());
     }
 
     TypedDictionary<String, MaszynaE3DModelLightDefinition> MaszynaE3DModel::get_lights() const {
