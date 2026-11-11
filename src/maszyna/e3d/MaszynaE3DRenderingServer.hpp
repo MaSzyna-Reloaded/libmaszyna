@@ -326,6 +326,10 @@ namespace godot {
             /// from a model (instance_create())
             String instance_get_model_filename(const RID &p_instance) const;
             PackedStringArray instance_get_skins(const RID &p_instance) const;
+            /// The replaceable skin of slot p_slot - 0 for the first, a submodel's material -1 - is
+            /// p_skin from now on, and the instance is built again with it (TAnimModel::SkinSet(),
+            /// AnimModel.cpp:690-693)
+            void instance_set_skin(const RID &p_instance, int p_slot, const String &p_skin);
             /// The bounds of every mesh of the model, in the model's space
             AABB instance_get_aabb(const RID &p_instance) const override;
             /// Builds the instance again with another instancer, keeping the RID and everything set on

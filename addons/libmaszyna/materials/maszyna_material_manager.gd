@@ -33,6 +33,10 @@ const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scene
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
 ## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
 const GENERATED_TEXTURE_SCHEME: String = "make:"
+## A key of the request asking for a set of data, not a value (dictionary.cpp:25): of them, the
+## timetable of a vehicle's train
+const DATASET_KEY_PREFIX: String = "$"
+const TIMETABLE_KEY: String = "$timetable"
 ## The diffuse texture of the materials (MaszynaMaterialFactory)
 const ALBEDO_TEXTURE_PARAMETER: StringName = &"texture_albedo"
 
@@ -46,6 +50,12 @@ var _replaced_textures: Dictionary[String, Texture2D] = {}
 ## The PythonScreenServer screens drawing the generated textures, by their names - kept until the
 ## game's data is unloaded
 var _generated_screens: Dictionary[String, RID] = {}
+## The textures given names by whoever draws them (MaszynaTextureLuaNode), by their names in lower
+## case - a skin, a material or a `make:` request names one as it names a file
+var _named_textures: Dictionary[String, Texture2D] = {}
+## The Lua scripts drawing the generated textures that have one (`<script>.lua`) - kept until the
+## game's data is unloaded
+var _generated_nodes: Array[MaszynaTextureLuaNode] = []
 ## Weak, like _managed_materials: a texture goes, from RAM and VRAM, with the last material using it
 var _dds_cache: Dictionary[String, WeakRef] = {}
 ## What preloads read on workers (material_preload()), by the material's and the texture's keys
@@ -180,6 +190,9 @@ func _on_data_unload_requested() -> void:
     for screen:RID in _generated_screens.values():
         PythonScreenServer.screen_free(screen)
     _generated_screens.clear()
+    for node:MaszynaTextureLuaNode in _generated_nodes:
+        node.queue_free()
+    _generated_nodes.clear()
     _preload_mutex.lock()
     _dds_cache.clear()
     _preloaded.clear()
@@ -437,6 +450,9 @@ func load_texture(
     normal:bool = false,
     max_texture_size:int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT,
 ) -> Texture:
+    var named: Texture2D = _named_textures.get(material_name.to_lower())
+    if named:
+        return named
     if material_name.begins_with(GENERATED_TEXTURE_SCHEME):
         return _load_generated_texture(material_name)
     var full_path:String = _get_texture_file(model_path, material_name)
@@ -478,22 +494,73 @@ func get_material_texture_size(material_name:String) -> Vector2i:
     return DDSTextureLoader.get_size(full_path) if full_path else Vector2i.ZERO
 
 
+## The texture is the one of the name - before any file of it - in every material of the name, made
+## already or later; a texture drawn for a skin, a material or a `make:` request
+func named_texture_add(texture_name:String, texture:Texture2D) -> void:
+    _named_textures[texture_name.to_lower()] = texture
+    _apply_named_texture(texture_name)
+
+
+## The materials of the name show their own texture again
+func named_texture_remove(texture_name:String) -> void:
+    _named_textures.erase(texture_name.to_lower())
+    _apply_named_texture(texture_name)
+
+
+## The managed materials of the name made again of their files - with the named texture, while it is
+func _apply_named_texture(texture_name:String) -> void:
+    for managed_material: Dictionary in _managed_materials.values():
+        var managed: ShaderMaterial = (managed_material["material_ref"] as WeakRef).get_ref() as ShaderMaterial
+        if managed and String(managed_material["material_path"]).to_lower() == texture_name.to_lower():
+            var model_path: String = managed_material["model_path"]
+            MaszynaMaterialFactory.apply(
+                managed, load_material(model_path, managed_material["material_path"]), model_path, season,
+                weather, managed_material["options"])
+
+
 ## The texture its script draws, once, with the query for its state: keys in lower case, values as
-## written (make_request(), Texture.cpp:428; dictionary_source, dictionary.cpp:18). Blank until drawn
+## written (make_request(), Texture.cpp:428; dictionary_source, dictionary.cpp:18). A script with a
+## `.lua` file beside it is drawn by Lua - a MaszynaTextureLuaNode named after the request, given the
+## vehicle `$timetable=` names and the query -, any other by Python, with the timetable of that vehicle's
+## train (PythonScreenState.timetable_state()). Blank until drawn
 func _load_generated_texture(texture_name:String) -> Texture2D:
     var screen:RID = _generated_screens.get(texture_name, RID())
-    if not screen.is_valid():
-        var request:PackedStringArray = texture_name.trim_prefix(GENERATED_TEXTURE_SCHEME).split("?", true, 1)
-        var game_dir:String = MaszynaGameDirectory.get_game_dir()
-        var script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + ".py")
-        screen = PythonScreenServer.screen_create(game_dir.path_join(script).trim_suffix(".py"), Callable())
-        _generated_screens[texture_name] = screen
-        var state:Dictionary = {}
-        # a pair without "=" is its own key and value, as the original's substr() takes it
-        for pair:String in (request[1] if request.size() > 1 else "").split("&", false):
-            var key_value:PackedStringArray = pair.split("=", true, 1)
-            state[key_value[0].to_lower()] = key_value[key_value.size() - 1]
-        PythonScreenServer.screen_request_render(screen, state)
+    if screen.is_valid():
+        return PythonScreenServer.screen_get_texture(screen)
+    var request:PackedStringArray = texture_name.trim_prefix(GENERATED_TEXTURE_SCHEME).split("?", true, 1)
+    var game_dir:String = MaszynaGameDirectory.get_game_dir()
+    var state:Dictionary = {}
+    var vehicle:RID = RID()
+    # a pair without "=" is its own key and value, as the original's substr() takes it; "$timetable="
+    # names the vehicle whose train's timetable is drawn (dictionary.cpp:36-43)
+    for pair:String in (request[1] if request.size() > 1 else "").split("&", false):
+        var key_value:PackedStringArray = pair.split("=", true, 1)
+        var key:String = key_value[0].to_lower()
+        var value:String = key_value[key_value.size() - 1]
+        if key == TIMETABLE_KEY:
+            vehicle = VehicleServer.vehicle_get_rid_by_id(value.to_lower())
+        elif not key.begins_with(DATASET_KEY_PREFIX):
+            state[key] = value
+    var lua_script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + MaszynaTextureLuaNode.EXTENSION)
+    if FileAccess.file_exists(game_dir.path_join(lua_script)):
+        var node: MaszynaTextureLuaNode = MaszynaTextureLuaNode.new()
+        node.texture = DrawingTexture.new()
+        # upside down, as the data's textures are (abstractscreenrenderer.py:69)
+        node.texture.flip_y = true
+        node.texture_name = texture_name
+        node.set_vehicle(vehicle)
+        node.parameters = state
+        node.data_dir = game_dir
+        node.script_path = game_dir.path_join(lua_script)
+        _generated_nodes.append(node)
+        add_child(node)
+        return node.texture
+    if vehicle.is_valid():
+        state.merge(PythonScreenState.timetable_state(vehicle), true)
+    var script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + ".py")
+    screen = PythonScreenServer.screen_create(game_dir.path_join(script).trim_suffix(".py"), Callable())
+    _generated_screens[texture_name] = screen
+    PythonScreenServer.screen_request_render(screen, state)
     return PythonScreenServer.screen_get_texture(screen)
 
 

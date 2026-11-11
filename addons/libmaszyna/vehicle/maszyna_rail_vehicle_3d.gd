@@ -6,7 +6,7 @@ class_name MaszynaRailVehicle3D
 ## by hand - a node over a vehicle of MaszynaVehicleSystem, which builds it through the
 ## servers as it builds a scenery's `dynamic`s (those have no node). The node rides on its vehicle
 ## (RailVehicleRenderingServer moves it). Everything it stores is its own data below and what
-## RailVehicle3D has of a vehicle's place (start_track_*, head_display_material); the vehicle is
+## RailVehicle3D has of a vehicle's place (start_track_*); the vehicle is
 ## never saved with the scene.
 
 ## The vehicle has been (re)built: it has its handle now - or none when its data cannot be read

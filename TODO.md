@@ -186,9 +186,8 @@ drivermouseinput.cpp in it is in libreloaded's `TODO.md`.
   count, held by the model layer), lamps beyond the five carried in `lights_front`/`lights_rear`/
   `lights_train_*`.
 * **Cab keys**: `universal10`..`29` are read, but only `universal0`..`9` have a catalog entry.
-* **AI/timetable keys**: `velocity_desired`, `velroad`, `vellimitlast`, `velsignallast`,
-  `velsignalnext`, `velnext`, `actualproximitydist`, `train_atpassengerstop`, `train_length`,
-  `trainnumber`, every `train_*` key (mtable.cpp:641), and `$timetable=` (dictionary.cpp:36).
+* **AI keys**: `velocity_desired`, `velroad`, `vellimitlast`, `velsignallast`,
+  `velsignalnext`, `velnext`, `actualproximitydist`, `train_atpassengerstop`, `train_length`.
 * **Tests**: `vehicle_get_coupled()` stopping at a coupling without the flags asked for;
   `PythonScreenState.compose()` beyond the EIM row.
 * **Commands a script returns are not executed** (two scripts send `lightsset`); map

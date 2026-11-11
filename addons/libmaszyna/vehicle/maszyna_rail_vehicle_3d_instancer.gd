@@ -32,11 +32,11 @@ const ROLLING_AXLES_FIRST:int = 49
 const ROLLING_AXLES_LAST:int = 57
 
 ## Raised whenever read_mmd_data() changes what it puts into the data - the files' mtimes the
-## cache of it is kept by (MaszynaVehicleMmdManager) cannot see it. 36: the model's description alone,
+## cache of it is kept by (MaszynaVehicleMmdManager) cannot see it. 37: the destination sign; 36: the model's description alone,
 ## the slider's height from its vertices; 35: the pantographs' geometry; 34: RoadVehicleAppearance of a road vehicle; 33: MaszynaRailVehicleAppearance;
 ## 32: the cabins the MMD defines; 31: coupleradapter:; 30: pantfactors:, a pantograph needs only its
 ## slider; 29: pendulums; 28: doors and door steps; 27: rolling wheels by the axle arrangement
-const MMD_DATA_FORMAT_VERSION:int = 36
+const MMD_DATA_FORMAT_VERSION:int = 37
 
 ## Every MaSzyna-authored piece of a vehicle (exterior, low-poly interior, passengers, cab) lives in
 ## one vehicle-local frame where +Z is the direction of travel: the original draws all of them under
@@ -44,6 +44,8 @@ const MMD_DATA_FORMAT_VERSION:int = 36
 ## opengl33renderer.cpp:1174, 2856, 2976). A vehicle faces -Z here, so each of them is turned about
 ## its vertical by half a turn.
 const MASZYNA_VEHICLE_FRAME:Transform3D = Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO)
+## A submodel's light threshold of a submodel never lit (`SelfIllum: false`, Model3d.cpp:343-351)
+const NEVER_LIT:float = -1.0
 
 
 ## Reads what the vehicle's MMD says it is built from. This is the expensive half - every call
@@ -106,9 +108,14 @@ static func read_mmd_data(
     var model:MaszynaE3DModel = MaszynaE3DModelManager.load_model_description(normalized_data_path, appearance.model_filename)
     if model:
         # the destination sign is the submodel with replaceable skin 4 (TSubModel::find_replacable4(),
-        # Model3d.cpp:932-958; init_destination(), DynObj.cpp:2539-2545); none, no sign
+        # Model3d.cpp:932-958; init_destination(), DynObj.cpp:2539-2545); none, no sign. It shines
+        # unless it is never lit (has_light, Model3d.cpp:937)
         var sign:MaszynaE3DSubModel = _find_destination_sign(model.submodels, 0)
-        appearance.head_display_submodel = sign.resource_name if sign else ""
+        if sign:
+            mmd_data.destination_sign = MmdCabinInstancer.parse_destination_sign(
+                    abs_mmd_path, parameters, normalized_data_path)
+            mmd_data.destination_sign["submodel"] = sign.resource_name
+            mmd_data.destination_sign["lit"] = not sign.lights_on_threshold == NEVER_LIT
     if model and road_appearance:
         var names:Dictionary[String, MaszynaE3DSubModel] = {}
         _index_submodels(model.submodels, names)

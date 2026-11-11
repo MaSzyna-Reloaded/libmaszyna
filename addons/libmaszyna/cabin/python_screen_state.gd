@@ -28,6 +28,10 @@ const DIESEL_FIELDS:Array[String] = [
     "enrot", "nrot", "fill_des", "fill_real", "clutch_des", "clutch_real", "water_temp", "oil_press",
     "engine_temp", "retarder_fill"]
 const PRESSURE_FIELDS:Array[String] = ["bc", "bp", "sp", "cp", "rp", "mass", "spring"]
+## The train of a trainset running no timetable (TTrainParameters("none"), Driver.cpp:1907)
+const NO_TRAIN:String = "none"
+## The precision a planned time's minutes are given with: the timetable keeps hours
+const MINUTE_PRECISION:float = 0.001
 ## mtable.cpp:660-668 - a station of the timetable, with TMTableLine's defaults (mtable.h:28-38)
 const STATION_FIELDS:Dictionary[String, Variant] = {
     "name": "nowhere", "fclt": "", "lctn": 0.0, "vmax": -1.0, "ah": -1, "am": -1.0, "dh": -1, "dm": -1.0,
@@ -124,6 +128,8 @@ static func compose(vehicle:RID, parameters:Dictionary) -> Dictionary:
 
     # DynamicObject->asName (Train.cpp:710) - the name as the scenery writes it, not the id in lower case
     result["name"] = VehicleServer.vehicle_get_name(vehicle)
+    # the driver's timetable (Train.cpp:910) - the run of the vehicle's trainset
+    result.merge(timetable_state(vehicle), true)
     for key:String in STATE_KEYS:
         if STATE_KEYS[key] in state:
             result[key] = state[STATE_KEYS[key]]
@@ -343,12 +349,7 @@ static func _static_init() -> void:
         "compressors_no": 0, "car_no": 0, "power_no": 0, "unit_no": 0,
         "velocity_desired": 0.0, "velroad": 0.0, "vellimitlast": 0.0, "velsignallast": 0.0,
         "velsignalnext": 0.0, "velnext": 0.0, "actualproximitydist": 0.0,
-        # TTrainParameters::serialize() (mtable.cpp:641) of a driver without a timetable -
-        # TTrainParameters("none"), Driver.cpp:1907
-        "trainnumber": "none", "traincategory": "", "trainname": "", "train_brakingmassratio": 0.0,
-        "train_enginetype": "", "train_engineload": 0.0, "train_stationfrom": "",
-        "train_stationto": "", "train_stationindex": 0, "train_stationcount": 0,
-        "train_stationstart": 0, "train_atpassengerstop": false, "train_length": 0.0,
+        "train_atpassengerstop": false, "train_length": 0.0,
         "scenario": "", "hours": 0, "minutes": 0, "seconds": 0, "air_temperature": 0.0,
         "light_level": 0.0,
         # update_screens() adds the touches of the screen (Train.cpp:10302)
@@ -386,7 +387,64 @@ static func _static_init() -> void:
         state["compressors_%d_allow" % car] = false
         state["compressors_%d_work" % car] = false
         state["compressors_%d_car_no" % car] = 0
+    state.merge(timetable_state(RID()))
     for station:int in range(1, STATION_COUNT + 1):
         for field:String in STATION_FIELDS:
             state["train_station%d_%s" % [station, field]] = STATION_FIELDS[field]
     _neutral_state = state
+
+
+## TTrainParameters::serialize() (mtable.cpp:641-671) of the train the vehicle's trainset runs: its
+## timetable (StationServer) and how far it got (its run), under the keys the data's scripts read -
+## the stations counted from 1 (mtable.h:24), their names plain (Bezogonkow()); the train NO_TRAIN
+## for a trainset running no timetable. The station the train stands at or drives to is
+## StationStart, the next one StationIndex once the train has arrived there or passed it
+## (StationIndexInc(), Driver.cpp:4533)
+static func timetable_state(vehicle:RID) -> Dictionary:
+    var result:Dictionary = {
+        "trainnumber": NO_TRAIN, "traincategory": "", "trainname": "", "train_brakingmassratio": 0.0,
+        "train_enginetype": "", "train_engineload": 0.0, "train_stationfrom": "", "train_stationto": "",
+        "train_stationindex": 0, "train_stationcount": 0, "train_stationstart": 0,
+    }
+    var trainset:RID = RailVehicleServer.vehicle_get_trainset(vehicle) if vehicle.is_valid() else RID()
+    var run:RID = StationServer.run_find_by_trainset(trainset) if trainset.is_valid() else RID()
+    if not run.is_valid():
+        return result
+    var timetable:RID = StationServer.run_get_timetable(run)
+    var offset:float = StationServer.run_get_offset(run)
+    var count:int = StationServer.timetable_get_entry_count(timetable)
+    var current:int = StationServer.run_get_current_entry(run)
+    var origin:RID = StationServer.timetable_get_origin(timetable)
+    var destination:RID = StationServer.timetable_get_destination(timetable)
+    var reached:bool = current < count and (
+            not StationServer.run_entry_get_actual_arrival(run, current) == StationServer.NO_TIME
+            or not StationServer.run_entry_get_actual_departure(run, current) == StationServer.NO_TIME)
+    result["trainnumber"] = StationServer.timetable_get_train_name(timetable)
+    result["traincategory"] = StationServer.timetable_get_train_category(timetable)
+    result["trainname"] = StationServer.timetable_get_train_label(timetable)
+    result["train_brakingmassratio"] = StationServer.timetable_get_required_brake_ratio(timetable)
+    result["train_enginetype"] = StationServer.timetable_get_required_locomotive(timetable)
+    result["train_engineload"] = StationServer.timetable_get_required_mass(timetable)
+    result["train_stationfrom"] = StationServer.station_get_name(origin) if origin.is_valid() else ""
+    result["train_stationto"] = StationServer.station_get_name(destination) if destination.is_valid() else ""
+    result["train_stationcount"] = count
+    result["train_stationstart"] = current + 1
+    result["train_stationindex"] = current + 1 + (1 if reached else 0)
+    for entry:int in count:
+        var station:String = "train_station%d_" % (entry + 1)
+        var extra:Dictionary = StationServer.timetable_entry_get_extra(timetable, entry)
+        result[station + "name"] = StationServer.station_get_name(StationServer.timetable_entry_get_station(timetable, entry))
+        result[station + "fclt"] = Windows1250.to_ascii(extra.get(MaszynaTimetableFactory.EXTRA_FACILITIES, ""))
+        result[station + "lctn"] = StationServer.timetable_entry_get_kilometre(timetable, entry)
+        result[station + "vmax"] = StationServer.timetable_entry_get_speed_limit(timetable, entry)
+        result[station + "tracks"] = StationServer.timetable_entry_get_track_count(timetable, entry)
+        for time:String in ["a", "d"]:
+            var hours:float = MaszynaDriverTimetable.shifted(
+                    StationServer.timetable_entry_get_arrival(timetable, entry) if time == "a"
+                    else StationServer.timetable_entry_get_departure(timetable, entry), offset)
+            var minutes:float = snappedf(hours * MaszynaDriverTimetable.MINUTES_PER_HOUR, MINUTE_PRECISION)
+            var hour:int = floori(minutes / MaszynaDriverTimetable.MINUTES_PER_HOUR)
+            result[station + time + "h"] = hour if hours >= 0.0 else STATION_FIELDS["ah"]
+            result[station + time + "m"] = (minutes - hour * MaszynaDriverTimetable.MINUTES_PER_HOUR
+                    if hours >= 0.0 else STATION_FIELDS["am"])
+    return result

@@ -64,6 +64,8 @@ var _read_vehicles:Dictionary[int, RID] = {}
 ## Vehicles waiting for their build, in the order they were created; processed while it is not empty
 var _build_queue:Array[RID] = []
 var _auto_rewident:MaszynaAutoRewident = null
+## The vehicles' destination signs
+var destination_signs:MaszynaDestinationSigns = null
 ## REAL_MIRRORS_SETTING as the vehicles' mirrors show it
 var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 
@@ -71,6 +73,7 @@ var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
 ## The editor drives no vehicle and plays no sound: CabinSystem, MaszynaVehicleSoundServer and DriverServer's
 ## drivers are the game's
 func _ready() -> void:
+    destination_signs = MaszynaDestinationSigns.new()
     _reads.task_finished.connect(_on_read_finished)
     RailVehicleRenderingServer.vehicle_model_built.connect(_on_vehicle_model_built)
     RoadVehicleServer.vehicle_placed.connect(_on_road_vehicle_placed)
@@ -132,6 +135,7 @@ func vehicle_free(vehicle:RID) -> void:
         CabinSystem.vehicle_attach_cab_logic(vehicle, null)
     if record.sound_mount:
         record.sound_mount.queue_free()
+    destination_signs.vehicle_remove(vehicle)
     VehicleServer.vehicle_free(vehicle)
     VehicleServer.controller_free(record.controller)
     if record.driver.is_valid():
@@ -296,6 +300,9 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     RailVehicleRenderingServer.vehicle_set_appearance(vehicle, mmd_data.appearance)
     MaszynaE3DRailVehicleRenderingServer.vehicle_set_load_model(vehicle, mmd_data.data_path, record.read["load_model_filename"])
     MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, mmd_data.appearance)
+    if mmd_data.destination_sign:
+        destination_signs.vehicle_add(vehicle, mmd_data.data_path, mmd_data.file_name, mmd_data.destination_sign,
+                mmd_data.appearance.skins.size())
     if Engine.is_editor_hint():
         return
     if cabin_kinds:
