@@ -59,9 +59,9 @@ namespace godot {
             };
 
             /* The submodels; with p_geometry their arrays too, without it the vertex and index chunks
-             * are only located (r_vertices) */
+             * are only located (p_r_vertices) */
             std::vector<SubModelData>
-            _parse_file(const Ref<FileAccess> &p_file, bool p_geometry, VertexChunk &r_vertices) const;
+            _parse_file(const Ref<FileAccess> &p_file, bool p_geometry, VertexChunk &p_r_vertices) const;
             std::vector<String> _buffer_to_strings(const PackedByteArray &p_buffer) const;
     };
 } // namespace godot

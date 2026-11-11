@@ -6,27 +6,25 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
-    namespace {
-        /* What p_read gives of the file, by its extension's parser; empty when it cannot be opened */
-        template<typename Result, typename Read>
-        Result read_with_parser(const String &p_path, const Read &p_read) {
-            const Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::ModeFlags::READ);
-            if (file.is_null()) {
-                UtilityFunctions::push_error("Failed to open model file: " + p_path);
-                return {};
-            }
-            if (p_path.get_extension().to_lower() == "t3d") {
-                MaszynaT3DParser *parser = memnew(MaszynaT3DParser);
-                Result result = p_read(*parser, file);
-                memdelete(parser);
-                return result;
-            }
-            MaszynaE3DParser *parser = memnew(MaszynaE3DParser);
+    /* What p_read gives of the file, by its extension's parser; empty when it cannot be opened */
+    template<typename Result, typename Read>
+    static Result read_with_parser(const String &p_path, const Read &p_read) {
+        const Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::ModeFlags::READ);
+        if (file.is_null()) {
+            UtilityFunctions::push_error("Failed to open model file: " + p_path);
+            return {};
+        }
+        if (p_path.get_extension().to_lower() == "t3d") {
+            MaszynaT3DParser *parser = memnew(MaszynaT3DParser);
             Result result = p_read(*parser, file);
             memdelete(parser);
             return result;
         }
-    } // namespace
+        MaszynaE3DParser *parser = memnew(MaszynaE3DParser);
+        Result result = p_read(*parser, file);
+        memdelete(parser);
+        return result;
+    }
 
     void MaszynaE3DModelReader::_bind_methods() {
         ClassDB::bind_static_method(

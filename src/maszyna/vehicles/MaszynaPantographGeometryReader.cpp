@@ -29,31 +29,31 @@ namespace godot {
                 bool found = false;
                 Transform3D rest;
         };
-
-        /* The submodel of the model by its lowered name, and where it rests in the model's frame - the
-         * chain of its parents' transforms; null when the model has none of that name */
-        Ref<MaszynaE3DSubModel> find_submodel(
-                const TypedArray<MaszynaE3DSubModel> &p_submodels, const String &p_name, const Transform3D &p_parent,
-                Transform3D &p_r_transform) {
-            for (int64_t index = 0; index < p_submodels.size(); ++index) {
-                const Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
-                if (submodel.is_null()) {
-                    continue;
-                }
-                const Transform3D transform = p_parent * submodel->get_transform();
-                if (submodel->get_name().to_lower() == p_name) {
-                    p_r_transform = transform;
-                    return submodel;
-                }
-                if (Ref<MaszynaE3DSubModel> found =
-                            find_submodel(submodel->get_submodels(), p_name, transform, p_r_transform);
-                    found.is_valid()) {
-                    return found;
-                }
-            }
-            return {};
-        }
     } // namespace
+
+    /* The submodel of the model by its lowered name, and where it rests in the model's frame - the
+     * chain of its parents' transforms; null when the model has none of that name */
+    static Ref<MaszynaE3DSubModel> find_submodel(
+            const TypedArray<MaszynaE3DSubModel> &p_submodels, const String &p_name, const Transform3D &p_parent,
+            Transform3D &p_r_transform) {
+        for (int64_t index = 0; index < p_submodels.size(); ++index) {
+            Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
+            if (submodel.is_null()) {
+                continue;
+            }
+            const Transform3D transform = p_parent * submodel->get_transform();
+            if (submodel->get_name().to_lower() == p_name) {
+                p_r_transform = transform;
+                return submodel;
+            }
+            if (Ref<MaszynaE3DSubModel> found =
+                        find_submodel(submodel->get_submodels(), p_name, transform, p_r_transform);
+                found.is_valid()) {
+                return found;
+            }
+        }
+        return {};
+    }
 
     void MaszynaPantographGeometryReader::_bind_methods() {
         ClassDB::bind_static_method(
