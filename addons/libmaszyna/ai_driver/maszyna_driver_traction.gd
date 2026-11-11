@@ -517,6 +517,12 @@ func set_series_mode(situation:Situation) -> void:
         pass
 
 
+## Whether the engine is set past idle: a position with power (MainCtrlPowerPos() > 0), a diesel's
+## its clutch engaged (control_doors(), Driver.cpp:6558-6561)
+func is_past_idle(situation:Situation) -> bool:
+    return main_powercontroller_position(situation) > 0
+
+
 ## MainCtrlPowerPos(): the master controller's position past the last without power
 static func main_powercontroller_position(situation:Situation) -> int:
     var master:RailVehicleMasterController = master_controller(situation.controlling)

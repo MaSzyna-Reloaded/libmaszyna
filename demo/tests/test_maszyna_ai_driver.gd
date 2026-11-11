@@ -9,6 +9,12 @@ const DRIVER_UPDATE:float = MaszynaAIDriver.PREPARE_TIME + TICK
 ## A water heater that switches itself off at this [C] (HeaterMaxTemperature)
 const WATER_HEATER_MAX_TEMPERATURE:float = 60.0
 const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
+## A wagon whose doors passengers open and close by hand (OpenCtrl=CloseCtrl=Passenger)
+const WAGON_PATH:String = "res://tests/fixtures/test_wagon.fiz"
+## The wagon's battery [V], for its doors' low voltage
+const WAGON_BATTERY_VOLTAGE:float = 24.0
+## Doors that stay open until they are closed (no DoorStayOpen: no auto_timer, Mover.cpp:8780)
+const DOORS_STAY_OPEN:float = -1.0
 const SHUNT_SPEED:float = 40.0
 ## What a moving train starts with [km/h]
 const STARTING_SPEED:float = 10.0
@@ -199,6 +205,57 @@ func test_the_line_breaker_hint_stays_while_an_engine_under_control_has_it_open(
             "so the hint to close it stays")
     assert_false(MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.LINE_BREAKER_OPEN, 0.0),
             "the hint to open it reads the driver's own, closed")
+
+
+## reports#80: the doors passengers close by hand are closed on a player's train too, once its engine
+## is set past idle or it moves (control_doors(), Driver.cpp:6545-6566; Doors(), Driver.cpp:4396-4411)
+## - left open, they held the station dispatch for ever
+func test_a_players_train_closes_the_doors_passengers_close_set_past_idle() -> void:
+    var train:VehicleController = _build_on_track("AIDriverDoorsTest", SM42)
+    var vehicle:RID = train.get_rid()
+    var wagon:VehicleController = build_vehicle("AIDriverDoorsWagon", MaszynaFizManager.load_description_at(WAGON_PATH))
+    # the wagon behind the engine, their buffers touching
+    RailVehicleServer.vehicle_set_track(wagon.get_rid(), _track, TRACK_OFFSET
+            - (VehicleServer.vehicle_get_dimensions(vehicle).z + VehicleServer.vehicle_get_dimensions(wagon.get_rid()).z) / 2.0,
+            TrackServer.DIRECTION_NORMAL)
+    await wait_idle_frames(2)
+    train.couple(wagon, RailVehicleController.COUPLER_END_REAR, RailVehicleController.COUPLER_END_FRONT,
+            RailVehicleController.COUPLING_FLAG_COUPLER)
+    # the wagon's doors work on its low voltage (DoorVoltage=24), which the fixture has no battery for
+    var power_supply:RailVehiclePowerSupply = RailVehicleServer.vehicle_component_get(
+            wagon.get_rid(), RailVehicleComponentType.COMPONENT_POWER_SUPPLY) as RailVehiclePowerSupply
+    power_supply.battery_voltage = WAGON_BATTERY_VOLTAGE
+    power_supply.apply_config()
+    VehicleServer.vehicle_send_command(wagon.get_rid(), "battery", true)
+    var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
+            wagon.get_rid(), VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
+    # open until closed, as the report's Bd4: the fixture's close by themselves (DoorStayOpen)
+    doors.open_time = DOORS_STAY_OPEN
+    doors.apply_config()
+    VehicleServer.vehicle_send_command(wagon.get_rid(), "doors_left_local", true)
+    # the engine started by the driver through the cab, a cab whose every control is there unmodelled
+    var controls:MaszynaCabinControls = MaszynaCabinControls.new()
+    CabinSystem.vehicle_attach_cab_logic(
+            vehicle, MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls))
+    var driver:RID = get_vehicle_driver(vehicle)
+    attach_driver_implementation(driver, MaszynaAIDriver.new())
+    DriverServer.driver_send_command(driver, "Prepare_engine", 1.0, 0.0)
+    var ready:bool = await wait_simulated_until(
+            func() -> bool: return get_driver_internal_state(driver)["engine_active"] and doors.get_left_open(),
+            MaszynaStartupTest.STEP_TIMEOUT, "the engine ready and the wagon's left doors open")
+    if ready:
+        # the player takes it over and sets the engine past idle, standing
+        PlayerServer.player_take_over_vehicle(vehicle)
+        VehicleServer.vehicle_send_command(vehicle, "main_controller_increase")
+        ready = await wait_simulated_until(func() -> bool: return not doors.get_left_open(),
+                MaszynaAIDriver.PREPARE_TIME + doors.close_delay + doors.max_shift / doors.close_speed + TICK,
+                "the wagon's left doors closed")
+    PlayerServer.player_leave_vehicle()
+    attach_driver_implementation(driver, null)
+    CabinSystem.vehicle_attach_cab_logic(vehicle, null)
+    if not ready:
+        return
+    assert_false(doors.get_left_open(), "the player's train closes them, its engine set past idle")
 
 
 func test_a_driver_not_in_control_touches_nothing() -> void:

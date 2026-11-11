@@ -221,6 +221,15 @@ func set_time_controllers(situation:MaszynaDriverTraction.Situation) -> void:
                 pass
 
 
+## A diesel past idle: its clutch engaged at the master controller's position (RList[].Mn > 0,
+## Driver.cpp:6558-6559)
+func is_past_idle(situation:MaszynaDriverTraction.Situation) -> bool:
+    var configuration:MaszynaMoverDieselConfiguration = diesel_configuration(VehicleServer.vehicle_component_get(
+            situation.controlling, VehicleComponentType.COMPONENT_ENGINE) as RailVehicleDieselEngine)
+    return configuration != null \
+            and not _clutch(situation, configuration) == MaszynaMoverThrottlePositionItem.CLUTCH_BEHAVIOR_NONE
+
+
 ## RList[MainCtrlPos].Mn of a diesel: the clutch at the master controller's position (0 idle)
 func _clutch(situation:MaszynaDriverTraction.Situation,
         configuration:MaszynaMoverDieselConfiguration) -> MaszynaMoverThrottlePositionItem.ClutchBehavior:
