@@ -20,6 +20,9 @@ PREFIX="$(realpath -m "$2")"
 BUILD_DIR="$(realpath -m "$3")"
 # the SDK's compiler in its container, the host's own with LINUX_HOST (make python-runtime-linux)
 CC="${CC:-gcc}"
+# CPython compiled through ccache where there is one (the host's, the Linux SDK's), as the engine
+# and the libraries are: a changed script or a switched branch rebuilds both runtimes
+COMPILER="$(command -v ccache >/dev/null && echo "ccache ${CC}" || echo "${CC}")"
 
 case "${RUNTIME}" in
     2.7)
@@ -63,11 +66,11 @@ if [ "${RUNTIME}" = 2.7 ]; then
     # it in the sysroot on its own (and zlib is built into libpython, above)
     printf 'zlib zlibmodule.c -lz\n' > Modules/Setup.local
     # GCC 15 defaults to C23, where bool and false are keywords Include/asdl.h redefines
-    ./configure CFLAGS=-std=gnu11 --prefix="${PREFIX}" --enable-shared --enable-unicode=ucs4 --without-ensurepip
+    ./configure CC="${COMPILER}" CFLAGS=-std=gnu11 --prefix="${PREFIX}" --enable-shared --enable-unicode=ucs4 --without-ensurepip
 else
     # zlib built into libpython, above
     printf 'zlib zlibmodule.c -lz\n' > Modules/Setup.local
-    ./configure --prefix="${PREFIX}" --enable-shared --without-ensurepip --disable-test-modules
+    ./configure CC="${COMPILER}" --prefix="${PREFIX}" --enable-shared --without-ensurepip --disable-test-modules
 fi
 # $ORIGIN for libpython (lib/), $ORIGIN/../lib for the python program (bin/); "\$$" is a "$" once
 # make and the shell have read it. 2.7 links libpython and the program alone with LDLAST, 3.x with
