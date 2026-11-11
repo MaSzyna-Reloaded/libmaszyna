@@ -33,11 +33,16 @@ const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING: StringName = &"maszyna/scene
 const RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT: float = 0.03
 ## A texture a script draws, "make:<script>?<key>=<value>&..." (Texture.cpp:1294-1305)
 const GENERATED_TEXTURE_SCHEME: String = "make:"
+## The diffuse texture of the materials (MaszynaMaterialFactory)
+const ALBEDO_TEXTURE_PARAMETER: StringName = &"texture_albedo"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
 var _free_spotlight_material: ShaderMaterial = null
 var _managed_materials: Dictionary = {}
+## The pictures of the cab screens that replace the textures of materials, by the materials' names
+## (_texture_owner_key()) - material_replace_texture()
+var _replaced_textures: Dictionary[String, Texture2D] = {}
 ## The PythonScreenServer screens drawing the generated textures, by their names - kept until the
 ## game's data is unloaded
 var _generated_screens: Dictionary[String, RID] = {}
@@ -171,6 +176,7 @@ func _on_weather_changed() -> void:
 ## anew - none of them is handed out again
 func _on_data_unload_requested() -> void:
     _managed_materials.clear()
+    _replaced_textures.clear()
     for screen:RID in _generated_screens.values():
         PythonScreenServer.screen_free(screen)
     _generated_screens.clear()
@@ -365,6 +371,9 @@ func get_material(
         "material_path": material_path,
         "options": options,
     }
+    var replaced: Texture2D = _replaced_textures.get(_texture_owner_key(_managed_materials[material_key]))
+    if replaced:
+        output.set_shader_parameter(ALBEDO_TEXTURE_PARAMETER, replaced)
     return output
 
 ## Material override of an E3D submodel - the material resolver of [MaszynaE3DRenderingServer].
@@ -570,6 +579,67 @@ func _material_key(
     return model_path.path_join("%s_%s" % [material_path, options_hash])
 
 
+## The diffuse texture of a material
+func material_get_texture(material: ShaderMaterial) -> Texture2D:
+    return material.get_shader_parameter(ALBEDO_TEXTURE_PARAMETER) as Texture2D
+
+
+## A cab screen's picture replaces the diffuse texture of the material: in every material of its
+## name, whatever its options - a self-illuminated variant too, so a timetable shows its picture
+## with its backlight on (timetable_podsw) - as the original draws a screen into the texture itself
+## (Train.cpp:10691, python_rt::shared_tex). Kept through the materials' refreshes, and given to the
+## ones built later, until material_restore_texture()
+func material_replace_texture(material: ShaderMaterial, texture: Texture2D) -> void:
+    var material_key: String = _managed_material_key(material)
+    if not material_key:
+        push_error("MaszynaMaterialManager: a screen's texture on a material it does not manage")
+        return
+    var managed_material: Dictionary = _managed_materials[material_key]
+    _replaced_textures[_texture_owner_key(managed_material)] = texture
+    _apply_replaced_texture(managed_material)
+
+
+## The materials of the material's name show their own texture again
+func material_restore_texture(material: ShaderMaterial) -> void:
+    var material_key: String = _managed_material_key(material)
+    if not material_key:
+        return
+    var owner_key: String = _texture_owner_key(_managed_materials[material_key])
+    _replaced_textures.erase(owner_key)
+    for key: String in _managed_materials.keys():
+        var managed_material: Dictionary = _managed_materials[key]
+        var managed: ShaderMaterial = (managed_material["material_ref"] as WeakRef).get_ref() as ShaderMaterial
+        if managed and _texture_owner_key(managed_material) == owner_key:
+            var model_path: String = managed_material["model_path"]
+            MaszynaMaterialFactory.apply(
+                managed, load_material(model_path, managed_material["material_path"]), model_path, season,
+                weather, managed_material["options"])
+
+
+## The key a material is managed under; empty for one it does not manage
+func _managed_material_key(material: ShaderMaterial) -> String:
+    for material_key: String in _managed_materials:
+        var material_ref: WeakRef = _managed_materials[material_key].get("material_ref") as WeakRef
+        if material_ref and material_ref.get_ref() == material:
+            return material_key
+    return ""
+
+
+## What a replaced texture belongs to: a material's name, whatever its options
+func _texture_owner_key(managed_material: Dictionary) -> String:
+    return String(managed_material["model_path"]).path_join(managed_material["material_path"])
+
+
+## A screen's picture in every managed material of the name it replaces
+func _apply_replaced_texture(replacing: Dictionary) -> void:
+    var owner_key: String = _texture_owner_key(replacing)
+    var texture: Texture2D = _replaced_textures[owner_key]
+    for managed_material: Dictionary in _managed_materials.values():
+        var managed: ShaderMaterial = (managed_material["material_ref"] as WeakRef).get_ref() as ShaderMaterial
+        if managed and _texture_owner_key(managed_material) == owner_key:
+            managed.set_shader_parameter(ALBEDO_TEXTURE_PARAMETER, texture)
+
+
 func _refresh_managed_materials() -> void:
     var material_keys: Array = _managed_materials.keys()
     for material_key: String in material_keys:
@@ -591,3 +661,6 @@ func _refresh_managed_material(material_key: String) -> void:
     var options:MaterialOptions = managed_material.get("options")
     var mmat: MaszynaMaterial = load_material(model_path, material_path)
     MaszynaMaterialFactory.apply(material, mmat, model_path, season, weather, options)
+    var replaced: Texture2D = _replaced_textures.get(_texture_owner_key(managed_material))
+    if replaced:
+        material.set_shader_parameter(ALBEDO_TEXTURE_PARAMETER, replaced)

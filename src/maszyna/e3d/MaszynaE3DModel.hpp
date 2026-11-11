@@ -23,7 +23,7 @@ namespace godot {
             bool geometry_applied = false;
 
         public:
-            static constexpr int FORMAT_VERSION = 20261110; // must be incremented when public API of MaszynaE3DModel or
+            static constexpr int FORMAT_VERSION = 20261111; // must be incremented when public API of MaszynaE3DModel or
                                                             // MaszynaE3DSubModel is changing
 
             TypedDictionary<String, MaszynaE3DModelLightDefinition> get_lights() const;
@@ -45,6 +45,9 @@ namespace godot {
             void apply_geometry(const Ref<MaszynaE3DModelGeometry> &p_geometry);
             /* Whether its meshes were made (apply_geometry()) - a description alone has none */
             bool has_geometry() const;
+            /// The first submodel of the name, in any case, anywhere in the model
+            /// (TModel3d::GetFromName()); null for none
+            Ref<MaszynaE3DSubModel> find_submodel(const String &p_name) const;
 
         protected:
             static void _bind_methods();

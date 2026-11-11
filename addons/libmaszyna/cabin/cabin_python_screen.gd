@@ -5,8 +5,6 @@ class_name CabinPythonScreen
 ## draws replaces the one of the target submodel, and the screen is redrawn from the vehicle's
 ## state at its own interval (TTrain::update_screens(), Train.cpp:10288).
 
-## The albedo texture of the cab's materials (MaszynaMaterialFactory)
-const TEXTURE_PARAMETER:StringName = &"texture_albedo"
 const MSEC_PER_SEC:float = 1000.0
 ## Whether the submodel's material shines (MaszynaMaterialFactory, from the E3D self-illumination)
 const SELF_ILLUMINATION_PARAMETER:StringName = &"emission_enabled"
@@ -41,10 +39,8 @@ var _unsupported_commands:Dictionary[String, bool] = {}
 func _enter_tree() -> void:
     _screen = PythonScreenServer.screen_create(script_path, _on_commands_received)
     if mesh:
-        # the cab's materials are shared through MaszynaMaterialManager's cache - the screen gets its own
-        var material:ShaderMaterial = mesh.material_override.duplicate()
-        material.set_shader_parameter(TEXTURE_PARAMETER, PythonScreenServer.screen_get_texture(_screen))
-        mesh.material_override = material
+        MaszynaMaterialManager.material_replace_texture(
+                mesh.material_override, PythonScreenServer.screen_get_texture(_screen))
     # only a screen that shines - a self-illuminated submodel; E186's log book "okladka" is paper
     # the script only draws on
     if (mesh and mesh.mesh
@@ -72,6 +68,8 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+    if mesh:
+        MaszynaMaterialManager.material_restore_texture(mesh.material_override)
     if _glow:
         PythonScreenServer.screen_rendered.disconnect(_on_screen_rendered)
     PythonScreenServer.screen_free(_screen)

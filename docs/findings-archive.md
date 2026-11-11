@@ -6,6 +6,23 @@ and the rule. Headings keep their date and title, because comments in the code c
 Entries wholly about libreloaded's code are in libreloaded's own
 `docs/findings-archive.md`.
 
+## 2026-11-11 - The timetable that went out with its backlight
+
+* **Symptom:** a cab screen replaced the texture of a copy of its target submodel's material: the
+  backlit timetable (`timetable_podsw`, shown with the backlight on) kept the static texture, and
+  the copy written to the node's `material_override` was set back to the model's own material the
+  next time the E3D backend updated the instance (a test saw it after two frames).
+* **What proved it:** a probe of every `pyscreen:` of the game data: 101 of 565 targets share their
+  material with another submodel of the cab (`timetable`/`timetable_podsw`, `okladka`/`reszta`,
+  `wyswietlacz_ft95`/`wyswietlaczzgaszony_ft95`). The original writes the screen into the texture
+  itself (`python_rt::shared_tex`, Train.cpp:10691), so every one of them shows it; it drops a screen
+  on a replaceable skin's texture (Train.cpp:10684).
+* **Fix:** `MaszynaMaterialManager.material_replace_texture()` puts the screen's picture into every
+  managed material of the texture's name, keeps it through the materials' refreshes and gives it to
+  the ones built later; a screen on a skin's texture is dropped (`MaszynaE3DModel.find_submodel()`).
+* **Rule:** a cab screen draws into the texture of its submodel's material name, never into a copy
+  of one submodel's material.
+
 ## 2026-10-09 - Mover configured five times, spring brake released
 
 * **Symptom:** none reported directly - the review of `REQUIRED_CLEANING` (RC-004) and the operator's

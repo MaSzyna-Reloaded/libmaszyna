@@ -16,6 +16,13 @@
 				Makes the description a model to draw: every submodel of triangles gets its mesh, made of [param geometry] in the GPU, once. The geometry is not kept.
 			</description>
 		</method>
+		<method name="find_submodel" qualifiers="const">
+			<return type="MaszynaE3DSubModel" />
+			<param index="0" name="name" type="String" />
+			<description>
+				The first submodel named [param name], in any case, anywhere in the model, as the original looks a submodel up by its name ([code]TModel3d::GetFromName()[/code]). [code]null[/code] when there is none.
+			</description>
+		</method>
 		<method name="get_node" qualifiers="const">
 			<return type="MaszynaE3DSubModel" />
 			<param index="0" name="p_path" type="NodePath" />
@@ -64,7 +71,7 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="FORMAT_VERSION" value="20261110">
+		<constant name="FORMAT_VERSION" value="20261111">
 			Version of the serialized E3D model cache format.
 		</constant>
 	</constants>
