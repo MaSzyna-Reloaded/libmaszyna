@@ -1,9 +1,10 @@
-// maszyna-python-host: CPython 2.7 for PythonScreenServer, in a process of its own (the protocol:
-// PythonHostProtocol.hpp). Whatever the runtime does - Py_FatalError() ends with abort(), an
-// extension module of a broken installation crashes - ends this process, never the game.
+// maszyna-python-host: CPython 2.7 or 3.14+ for PythonScreenServer, in a process of its own (the
+// protocol: PythonHostProtocol.hpp). Whatever the runtime does - Py_FatalError() ends with abort(),
+// an extension module of a broken installation crashes - ends this process, never the game. The
+// server runs one host a runtime, side by side.
 //
-// Usage: maszyna-python-host <game_dir> <home> <library>, <home> and <library> relative to
-// <game_dir> or absolute.
+// Usage: maszyna-python-host <game_dir> <home> <library> <base_dir>, <home> and <library> relative
+// to <game_dir> or absolute; <base_dir> holds the base classes of the scripts for this runtime.
 #include "PythonHostProtocol.hpp"
 #include <cstdint>
 #include <cstdio>
@@ -40,20 +41,44 @@ static void print_to_stderr(const std::string &p_text) {
     fputs((p_text + "\n").c_str(), stderr);
 }
 
-/// The part of the CPython 2.7 C API the screens need, resolved from the library at run
-/// time. PyObject stays opaque: references are counted through Py_IncRef/Py_DecRef, which
-/// 2.7 exports as functions, so no Python header is needed to build the host.
+/// The part of the CPython C API the screens need, resolved from the library at run time - of 2.7
+/// or of 3.14 and later, told apart by PyInitConfig_Create (PEP 741, 3.14). PyObject stays opaque:
+/// references are counted through Py_IncRef/Py_DecRef, which both export as functions, and 3.x is
+/// configured through the PyInitConfig functions, not a structure, so no Python header is needed
+/// to build the host.
 struct PyObject;
+struct PyInitConfig;
 // names mirror the Python C API symbols resolved below
 // NOLINTBEGIN(readability-identifier-naming)
 using Py_ssize_t = intptr_t;
 
 struct PythonApi {
+        /// The library is CPython 3.x, not 2.7
+        bool python3 = false;
+
+        // 2.7 only
         int *Py_IgnoreEnvironmentFlag = nullptr;
         int *Py_DontWriteBytecodeFlag = nullptr;
         int *Py_NoUserSiteDirectory = nullptr;
         void (*Py_SetPythonHome)(char *) = nullptr;
         void (*Py_InitializeEx)(int) = nullptr;
+
+        // 3.14 and later only
+        PyInitConfig *(*PyInitConfig_Create)() = nullptr;
+        void (*PyInitConfig_Free)(PyInitConfig *) = nullptr;
+        int (*PyInitConfig_SetInt)(PyInitConfig *, const char *, int64_t) = nullptr;
+        int (*PyInitConfig_SetStr)(PyInitConfig *, const char *, const char *) = nullptr;
+        int (*PyInitConfig_GetError)(PyInitConfig *, const char **) = nullptr;
+        int (*Py_InitializeFromInitConfig)(PyInitConfig *) = nullptr;
+
+        // both, under their names in either version: an int, a string in UTF-8 and the bytes of a
+        // frame are PyInt, PyString and PyString on 2.7, PyLong, PyUnicode and PyBytes on 3.x
+        PyObject *(*int_from_long)(long) = nullptr;
+        long (*int_as_long)(PyObject *) = nullptr;
+        PyObject *(*string_from_utf8)(const char *) = nullptr;
+        const char *(*string_as_utf8)(PyObject *) = nullptr;
+        int (*bytes_as_buffer)(PyObject *, char **, Py_ssize_t *) = nullptr;
+
         int (*PyRun_SimpleStringFlags)(const char *, void *) = nullptr;
         PyObject *(*PyImport_AddModule)(const char *) = nullptr;
         PyObject *(*PyObject_GetAttrString)(PyObject *, const char *) = nullptr;
@@ -66,12 +91,7 @@ struct PythonApi {
         PyObject *(*Py_BuildValue)(const char *, ...) = nullptr;
         int (*PyDict_SetItemString)(PyObject *, const char *, PyObject *) = nullptr;
         PyObject *(*PyBool_FromLong)(long) = nullptr;
-        PyObject *(*PyInt_FromLong)(long) = nullptr;
-        long (*PyInt_AsLong)(PyObject *) = nullptr;
         PyObject *(*PyFloat_FromDouble)(double) = nullptr;
-        PyObject *(*PyString_FromString)(const char *) = nullptr;
-        char *(*PyString_AsString)(PyObject *) = nullptr;
-        int (*PyString_AsStringAndSize)(PyObject *, char **, Py_ssize_t *) = nullptr;
         Py_ssize_t (*PySequence_Size)(PyObject *) = nullptr;
         PyObject *(*PySequence_GetItem)(PyObject *, Py_ssize_t) = nullptr;
         PyObject *(*PyErr_Occurred)() = nullptr;
@@ -83,7 +103,9 @@ struct PythonApi {
         bool load(const std::string &p_library_path) {
 #ifdef _WIN32
             const std::wstring wide_path = to_wide(p_library_path);
-            HMODULE library = LoadLibraryW(wide_path.c_str());
+            // the libraries it loads are looked for beside it first: the C runtime of the game's own
+            // runtime (vcruntime140.dll, 2.7's private msvcr90.dll) is in its directory, not the host's
+            HMODULE library = LoadLibraryExW(wide_path.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
             auto resolve = [library](const char *p_name) -> void * {
                 return reinterpret_cast<void *>(GetProcAddress(library, p_name));
             };
@@ -110,11 +132,34 @@ struct PythonApi {
                     resolved = false;
                 }
             };
-            bind(Py_IgnoreEnvironmentFlag, "Py_IgnoreEnvironmentFlag");
-            bind(Py_DontWriteBytecodeFlag, "Py_DontWriteBytecodeFlag");
-            bind(Py_NoUserSiteDirectory, "Py_NoUserSiteDirectory");
-            bind(Py_SetPythonHome, "Py_SetPythonHome");
-            bind(Py_InitializeEx, "Py_InitializeEx");
+            python3 = resolve("PyInitConfig_Create") != nullptr;
+            if (python3) {
+                bind(PyInitConfig_Create, "PyInitConfig_Create");
+                bind(PyInitConfig_Free, "PyInitConfig_Free");
+                bind(PyInitConfig_SetInt, "PyInitConfig_SetInt");
+                bind(PyInitConfig_SetStr, "PyInitConfig_SetStr");
+                bind(PyInitConfig_GetError, "PyInitConfig_GetError");
+                bind(Py_InitializeFromInitConfig, "Py_InitializeFromInitConfig");
+                bind(int_from_long, "PyLong_FromLong");
+                bind(int_as_long, "PyLong_AsLong");
+                bind(string_from_utf8, "PyUnicode_FromString");
+                bind(string_as_utf8, "PyUnicode_AsUTF8");
+                bind(bytes_as_buffer, "PyBytes_AsStringAndSize");
+            } else if (resolve("PyInt_FromLong") != nullptr) {
+                bind(Py_IgnoreEnvironmentFlag, "Py_IgnoreEnvironmentFlag");
+                bind(Py_DontWriteBytecodeFlag, "Py_DontWriteBytecodeFlag");
+                bind(Py_NoUserSiteDirectory, "Py_NoUserSiteDirectory");
+                bind(Py_SetPythonHome, "Py_SetPythonHome");
+                bind(Py_InitializeEx, "Py_InitializeEx");
+                bind(int_from_long, "PyInt_FromLong");
+                bind(int_as_long, "PyInt_AsLong");
+                bind(string_from_utf8, "PyString_FromString");
+                bind(string_as_utf8, "PyString_AsString");
+                bind(bytes_as_buffer, "PyString_AsStringAndSize");
+            } else {
+                print_to_stderr(p_library_path + " is neither CPython 2.7 nor 3.14 or later (no PyInitConfig_Create)");
+                return false;
+            }
             bind(PyRun_SimpleStringFlags, "PyRun_SimpleStringFlags");
             bind(PyImport_AddModule, "PyImport_AddModule");
             bind(PyObject_GetAttrString, "PyObject_GetAttrString");
@@ -127,12 +172,7 @@ struct PythonApi {
             bind(Py_BuildValue, "Py_BuildValue");
             bind(PyDict_SetItemString, "PyDict_SetItemString");
             bind(PyBool_FromLong, "PyBool_FromLong");
-            bind(PyInt_FromLong, "PyInt_FromLong");
-            bind(PyInt_AsLong, "PyInt_AsLong");
             bind(PyFloat_FromDouble, "PyFloat_FromDouble");
-            bind(PyString_FromString, "PyString_FromString");
-            bind(PyString_AsString, "PyString_AsString");
-            bind(PyString_AsStringAndSize, "PyString_AsStringAndSize");
             bind(PySequence_Size, "PySequence_Size");
             bind(PySequence_GetItem, "PySequence_GetItem");
             bind(PyErr_Occurred, "PyErr_Occurred");
@@ -148,13 +188,21 @@ struct PythonApi {
             }
         }
 
+        /// Sets a string attribute of a module
+        void set_string(PyObject *p_module, const char *p_name, const std::string &p_value) const {
+            PyObject *value = string_from_utf8(p_value.c_str());
+            PyObject_SetAttrString(p_module, p_name, value);
+            Py_DecRef(value);
+        }
+
         /// Runs a script file in __main__, the way the original runs every script
-        /// (python_taskqueue::run_file()) - the class it defines lands there
+        /// (python_taskqueue::run_file()) - the class it defines lands there. execfile() is 2.x
+        /// only; exec() of the compiled file is the same on both
         bool run_file(PyObject *p_main, const std::string &p_path) const {
-            PyObject *path = PyString_FromString(p_path.c_str());
-            PyObject_SetAttrString(p_main, "_maszyna_script_path", path);
-            Py_DecRef(path);
-            return PyRun_SimpleStringFlags("execfile(_maszyna_script_path)", nullptr) == 0;
+            set_string(p_main, "_maszyna_script_path", p_path);
+            return PyRun_SimpleStringFlags(
+                           "exec(compile(open(_maszyna_script_path, 'rb').read(), _maszyna_script_path, 'exec'))",
+                           nullptr) == 0;
         }
 
 #ifdef _WIN32
@@ -312,15 +360,19 @@ static bool send_captured_errors() {
     PyObject *sys = python.PyImport_AddModule("sys");
     PyObject *captured = python.PyObject_GetAttrString(sys, "stderr");
     PyObject *text = python.PyObject_CallMethod(captured, const_cast<char *>("getvalue"), nullptr);
-    const char *value = text != nullptr ? python.PyString_AsString(text) : nullptr;
+    const char *value = text != nullptr ? python.string_as_utf8(text) : nullptr;
     const bool sent = value == nullptr || *value == '\0' || send_log(value);
     if (text != nullptr) {
         python.Py_DecRef(text);
     }
-    PyObject *result =
-            python.PyObject_CallMethod(captured, const_cast<char *>("truncate"), const_cast<char *>("(i)"), 0);
-    if (result != nullptr) {
-        python.Py_DecRef(result);
+    // io.StringIO (3.x) keeps its position past a truncate and would pad the next text with zeros
+    // up to it; the original seeks back too (python_taskqueue::error())
+    for (const char *method: {"truncate", "seek"}) {
+        PyObject *result =
+                python.PyObject_CallMethod(captured, const_cast<char *>(method), const_cast<char *>("(i)"), 0);
+        if (result != nullptr) {
+            python.Py_DecRef(result);
+        }
     }
     python.Py_DecRef(captured);
     return sent;
@@ -333,11 +385,11 @@ static PyObject *read_value(MessageReader &p_reader) {
         case Value::BOOL:
             return python.PyBool_FromLong(p_reader.get<uint8_t>());
         case Value::INT:
-            return python.PyInt_FromLong(static_cast<long>(p_reader.get<int64_t>()));
+            return python.int_from_long(static_cast<long>(p_reader.get<int64_t>()));
         case Value::FLOAT:
             return python.PyFloat_FromDouble(p_reader.get<double>());
         case Value::STRING:
-            return python.PyString_FromString(p_reader.get_string().c_str());
+            return python.string_from_utf8(p_reader.get_string().c_str());
         case Value::POINT: {
             const auto x = p_reader.get<double>();
             const auto y = p_reader.get<double>();
@@ -376,37 +428,35 @@ static bool file_exists(const std::string &p_path) {
 /// every update
 static std::unordered_map<uint64_t, PyObject *> renderers;
 static PyObject *main_module = nullptr;
+/// The base classes of the scripts for this runtime (PythonScreenServer's own, not the game
+/// directory's python/local/), first in sys.path
+static std::string base_dir;
 
-/// The scripts open "./fonts/..." and "./textures/..." and import "from scripts", all
-/// relative to the game directory, which the original is always started in. Entering
-/// another one forgets the scripts' instances and the modules imported from the last one.
-static void enter_game_dir(const std::string &p_game_dir) {
-    for (const auto &renderer: renderers) {
-        if (renderer.second != nullptr) {
-            python.Py_DecRef(renderer.second);
-        }
+/// Answers whether a script compiles on this runtime, with the modules of the game directory it
+/// imports, and loads there (_maszyna_check()); PythonScreenServer asks the 3.x host, and a script
+/// that does not runs on 2.7. False when the request is malformed or the answer cannot be sent
+static bool check(MessageReader &p_reader) {
+    const std::string script_path = p_reader.get_string();
+    if (!p_reader.valid) {
+        print_to_stderr("a malformed check request");
+        return false;
     }
-    renderers.clear();
-    PyObject *game_dir = python.PyString_FromString(p_game_dir.c_str());
-    python.PyObject_SetAttrString(main_module, "_maszyna_game_dir", game_dir);
-    python.Py_DecRef(game_dir);
-    python.PyRun_SimpleStringFlags(
-            "import os, sys\n"
-            "_maszyna_left_dir = globals().get('_maszyna_entered_dir')\n"
-            "if _maszyna_left_dir:\n"
-            "    if _maszyna_left_dir in sys.path:\n"
-            "        sys.path.remove(_maszyna_left_dir)\n"
-            "    for _maszyna_name, _maszyna_module in list(sys.modules.items()):\n"
-            "        _maszyna_file = getattr(_maszyna_module, '__file__', None)\n"
-            "        if _maszyna_file and os.path.abspath(_maszyna_file).startswith(_maszyna_left_dir):\n"
-            "            del sys.modules[_maszyna_name]\n"
-            "_maszyna_entered_dir = _maszyna_game_dir\n"
-            "os.chdir(_maszyna_game_dir)\n"
-            "sys.path.insert(0, _maszyna_game_dir)\n",
-            nullptr);
-    // the base class of nearly every screen; a script that does not derive from it
-    // still runs when it is missing
-    python.run_file(main_module, p_game_dir + "/python/local/abstractscreenrenderer.py");
+    PyObject *checker = python.PyObject_GetAttrString(main_module, "_maszyna_check");
+    PyObject *result =
+            checker != nullptr
+                    ? python.PyObject_CallFunction(checker, const_cast<char *>("(s)"), (script_path + ".py").c_str())
+                    : nullptr;
+    const bool compiles = result != nullptr && python.int_as_long(result) != 0;
+    if (result != nullptr) {
+        python.Py_DecRef(result);
+    }
+    if (checker != nullptr) {
+        python.Py_DecRef(checker);
+    }
+    python.print_error();
+    MessageWriter checked;
+    checked.put(static_cast<uint8_t>(compiles ? 1 : 0));
+    return send_captured_errors() && checked.send(Reply::CHECKED);
 }
 
 /// Draws one frame of a screen and answers with it; false when the request is malformed or
@@ -470,9 +520,9 @@ static bool render(MessageReader &p_reader) {
             char *buffer = nullptr;
             Py_ssize_t size = 0;
             if (width_object != nullptr && height_object != nullptr &&
-                python.PyString_AsStringAndSize(output, &buffer, &size) == 0) {
-                width = static_cast<int>(python.PyInt_AsLong(width_object));
-                height = static_cast<int>(python.PyInt_AsLong(height_object));
+                python.bytes_as_buffer(output, &buffer, &size) == 0) {
+                width = static_cast<int>(python.int_as_long(width_object));
+                height = static_cast<int>(python.int_as_long(height_object));
                 const int64_t expected = static_cast<int64_t>(width) * height * BYTES_PER_PIXEL;
                 if (width > 0 && height > 0 && size >= expected) {
                     pixels = buffer;
@@ -497,7 +547,7 @@ static bool render(MessageReader &p_reader) {
             const Py_ssize_t command_count = python.PySequence_Size(command_list);
             for (Py_ssize_t i = 0; i < command_count; i++) {
                 PyObject *command = python.PySequence_GetItem(command_list, i);
-                const char *text = command != nullptr ? python.PyString_AsString(command) : nullptr;
+                const char *text = command != nullptr ? python.string_as_utf8(command) : nullptr;
                 if (text != nullptr) {
                     commands.emplace_back(text);
                 }
@@ -569,15 +619,16 @@ static std::vector<std::string> get_arguments(const int p_argc, char **p_argv) {
 
 int main(int p_argc, char **p_argv) {
     const std::vector<std::string> arguments = get_arguments(p_argc, p_argv);
-    // the program, the game directory, the home, the library
-    constexpr size_t ARGUMENT_COUNT = 4;
+    // the program, the game directory, the home, the library, the base classes' directory
+    constexpr size_t ARGUMENT_COUNT = 5;
     if (arguments.size() != ARGUMENT_COUNT) {
-        print_to_stderr("usage: maszyna-python-host <game_dir> <home> <library>");
+        print_to_stderr("usage: maszyna-python-host <game_dir> <home> <library> <base_dir>");
         return python_host::EXIT_FAILED;
     }
     const std::string &game_dir = arguments[1];
     std::string home = arguments[2];
     const std::string &library = arguments[3];
+    base_dir = arguments[4];
 
     // the runtime is started where the original starts it: in the game directory, which the
     // relative home and library are resolved against, and on Windows with the game directory
@@ -589,60 +640,107 @@ int main(int p_argc, char **p_argv) {
     const std::wstring wide_game_dir = PythonApi::to_wide(game_dir);
     const bool entered = SetCurrentDirectoryW(wide_game_dir.c_str()) != 0;
     SetDllDirectoryW(wide_game_dir.c_str());
-    // PC/getpathp.c looks for Lib\os.py under the home
+    // 2.7's PC/getpathp.c looks for Lib\os.py under the home
     const char *landmark = "/Lib/os.py";
 #else
     protocol_out = dup(STDOUT_FILENO);
     dup2(STDERR_FILENO, STDOUT_FILENO);
     const bool entered = chdir(game_dir.c_str()) == 0;
-    // Modules/getpath.c looks for lib/python2.7/os.py under the home
+    // 2.7's Modules/getpath.c looks for lib/python2.7/os.py under the home
     const char *landmark = "/lib/python2.7/os.py";
 #endif
     if (!entered) {
         print_to_stderr("cannot enter the game directory " + game_dir);
         return python_host::EXIT_FAILED;
     }
-    for (const std::string &required: {library, std::string(home).append(landmark)}) {
-        if (!file_exists(required)) {
-            print_to_stderr(std::string(required).append(" is missing in ").append(game_dir));
-            return python_host::EXIT_FAILED;
-        }
+    if (!file_exists(library)) {
+        print_to_stderr(library + " is missing in " + game_dir);
+        return python_host::EXIT_FAILED;
     }
     if (!python.load(library)) {
         return python_host::EXIT_FAILED;
     }
-    send_log("library loaded: " + library + ", home " + home);
+    // 3.x reports a home it cannot start from itself (PyInitConfig_GetError()); 2.7 ends in
+    // Py_FatalError()
+    if (!python.python3 && !file_exists(std::string(home).append(landmark))) {
+        print_to_stderr(std::string(home).append(landmark).append(" is missing in ").append(game_dir));
+        return python_host::EXIT_FAILED;
+    }
+    send_log("library loaded: " + library + ", home " + home + (python.python3 ? ", Python 3" : ", Python 2"));
 
     // the player's own Python installation must not leak in, and nothing is written into the
     // game directory (the scripts' .pyc would land next to them)
-    *python.Py_IgnoreEnvironmentFlag = 1;
-    *python.Py_DontWriteBytecodeFlag = 1;
-    *python.Py_NoUserSiteDirectory = 1;
-    // Py_SetPythonHome keeps the pointer: `home` lives as long as the interpreter
-    python.Py_SetPythonHome(home.data());
-    python.Py_InitializeEx(0);
+    if (python.python3) {
+        // an isolated configuration: no environment, no user site directory; the signal handlers
+        // stay the process' own, as the original's (PyInt.cpp, install_signal_handlers = 0)
+        PyInitConfig *config = python.PyInitConfig_Create();
+        const bool configured = config != nullptr && python.PyInitConfig_SetStr(config, "home", home.c_str()) == 0 &&
+                                python.PyInitConfig_SetInt(config, "write_bytecode", 0) == 0 &&
+                                python.PyInitConfig_SetInt(config, "install_signal_handlers", 0) == 0;
+        if (!configured || python.Py_InitializeFromInitConfig(config) != 0) {
+            const char *error = nullptr;
+            if (config != nullptr && python.PyInitConfig_GetError(config, &error) == 1) {
+                print_to_stderr(std::string("cannot start the interpreter: ") + error);
+            } else {
+                print_to_stderr("cannot start the interpreter");
+            }
+            if (config != nullptr) {
+                python.PyInitConfig_Free(config);
+            }
+            return python_host::EXIT_FAILED;
+        }
+        python.PyInitConfig_Free(config);
+    } else {
+        *python.Py_IgnoreEnvironmentFlag = 1;
+        *python.Py_DontWriteBytecodeFlag = 1;
+        *python.Py_NoUserSiteDirectory = 1;
+        // Py_SetPythonHome keeps the pointer: `home` lives as long as the interpreter
+        python.Py_SetPythonHome(home.data());
+        python.Py_InitializeEx(0);
+    }
     send_log("interpreter started");
     main_module = python.PyImport_AddModule("__main__");
+    python.set_string(main_module, "_maszyna_base_dir", base_dir);
+    // The same code on 2.7 and 3.x: what moved (cStringIO, __builtin__, basestring) is taken
+    // from where the runtime has it.
     // sys.stderr is captured and sent to the game's log, sys.stdout dropped (PyInt.cpp:265
     // keeps the first in a StringIO too). The home may be relative to the game directory, which a
-    // script may leave: the search path is made absolute while it still resolves.
+    // script may leave: the search path is made absolute while it still resolves. The base
+    // classes' directory goes first, the game directory after it.
     // The data is made on Windows, whose file names ignore letter case, and the scripts name files
     // as they please ("WS_gotowosc.png" for ws_gotowosc.png): a path that is not there as written
     // is looked for letter case aside, one directory at a time - for open(), which PIL opens images
-    // with, and os.path.isfile(), which the scripts look for them with
+    // with, and os.path.isfile(), which the scripts look for them with.
+    // _maszyna_check() compiles a script and the modules of the game directory it imports
+    // (`from scripts import rozklad_tabelka`), then loads the script - its imports and its class -
+    // into a copy of __main__, as check() asks: `from sys import maxint` compiles on 3.x and fails
+    // only there
     python.PyRun_SimpleStringFlags(
-            "import os, sys, cStringIO, __builtin__\n"
+            "import ast, os, sys\n"
+            "try:\n"
+            "    from cStringIO import StringIO as _MaszynaStringIO\n"
+            "except ImportError:\n"
+            "    from io import StringIO as _MaszynaStringIO\n"
+            "try:\n"
+            "    import __builtin__ as _maszyna_builtins\n"
+            "except ImportError:\n"
+            "    import builtins as _maszyna_builtins\n"
+            "try:\n"
+            "    _maszyna_string_types = basestring\n"
+            "except NameError:\n"
+            "    _maszyna_string_types = str\n"
             "class _MaszynaDiscard(object):\n"
             "    def write(self, text):\n"
             "        pass\n"
             "    def flush(self):\n"
             "        pass\n"
             "sys.stdout = _MaszynaDiscard()\n"
-            "sys.stderr = cStringIO.StringIO()\n"
+            "sys.stderr = _MaszynaStringIO()\n"
             "sys.path = [os.path.abspath(path) for path in sys.path]\n"
+            "sys.path.insert(0, os.path.abspath(_maszyna_base_dir))\n"
             "_maszyna_exists = os.path.exists\n"
             "def _maszyna_find_path(path):\n"
-            "    if not isinstance(path, basestring) or _maszyna_exists(path):\n"
+            "    if not isinstance(path, _maszyna_string_types) or _maszyna_exists(path):\n"
             "        return path\n"
             "    parts = os.path.normpath(path).split(os.sep)\n"
             "    current = '.' if parts[0] else os.sep\n"
@@ -660,13 +758,54 @@ int main(int p_argc, char **p_argv) {
             "            candidate = os.path.join(current, names[0])\n"
             "        current = candidate\n"
             "    return current\n"
-            "_maszyna_open = __builtin__.open\n"
-            "__builtin__.open = lambda name, *args, **kwargs: _maszyna_open(_maszyna_find_path(name), *args, "
+            "_maszyna_open = _maszyna_builtins.open\n"
+            "_maszyna_builtins.open = lambda name, *args, **kwargs: _maszyna_open(_maszyna_find_path(name), *args, "
             "**kwargs)\n"
             "_maszyna_isfile = os.path.isfile\n"
-            "os.path.isfile = lambda path: _maszyna_isfile(_maszyna_find_path(path))\n",
+            "os.path.isfile = lambda path: _maszyna_isfile(_maszyna_find_path(path))\n"
+            "def _maszyna_check(path):\n"
+            "    pending = [path]\n"
+            "    checked = set()\n"
+            "    while pending:\n"
+            "        current = pending.pop()\n"
+            "        if current in checked:\n"
+            "            continue\n"
+            "        checked.add(current)\n"
+            "        try:\n"
+            "            with open(current, 'rb') as source:\n"
+            "                tree = compile(source.read(), current, 'exec', ast.PyCF_ONLY_AST)\n"
+            "            compile(tree, current, 'exec')\n"
+            "        except (SyntaxError, ValueError) as error:\n"
+            "            sys.stderr.write('%s does not compile: %s\\n' % (current, error))\n"
+            "            return False\n"
+            "        for node in ast.walk(tree):\n"
+            "            if isinstance(node, ast.Import):\n"
+            "                names = [alias.name for alias in node.names]\n"
+            "            elif isinstance(node, ast.ImportFrom) and node.module and not node.level:\n"
+            "                names = [node.module] + [node.module + '.' + alias.name for alias in node.names]\n"
+            "            else:\n"
+            "                continue\n"
+            "            for name in names:\n"
+            "                module = os.path.join(_maszyna_game_dir, *name.split('.'))\n"
+            "                for candidate in (module + '.py', os.path.join(module, '__init__.py')):\n"
+            "                    if os.path.isfile(candidate):\n"
+            "                        pending.append(_maszyna_find_path(candidate))\n"
+            "    try:\n"
+            "        with open(path, 'rb') as source:\n"
+            "            exec(compile(source.read(), path, 'exec'), dict(globals()))\n"
+            "    except Exception as error:\n"
+            "        sys.stderr.write('%s does not load: %s: %s\\n' % (path, type(error).__name__, error))\n"
+            "        return False\n"
+            "    return True\n",
             nullptr);
-    enter_game_dir(game_dir);
+    // The scripts open "./fonts/..." and "./textures/..." and import "from scripts", all relative to
+    // the game directory, which the original is always started in; a host serves one game
+    // directory for its whole life
+    python.set_string(main_module, "_maszyna_game_dir", game_dir);
+    python.PyRun_SimpleStringFlags("sys.path.insert(1, os.path.abspath(_maszyna_game_dir))\n", nullptr);
+    // the base class of nearly every screen, as the original runs python/local/'s at its start
+    // (python_taskqueue::init())
+    python.run_file(main_module, base_dir + "/abstractscreenrenderer.py");
     if (!send_captured_errors() || !MessageWriter().send(Reply::DONE)) {
         return EXIT_DONE;
     }
@@ -685,16 +824,13 @@ int main(int p_argc, char **p_argv) {
         }
         MessageReader reader{data, 0, true};
         switch (static_cast<Request>(reader.get<uint8_t>())) {
-            case Request::ENTER_GAME_DIR: {
-                const std::string entering = reader.get_string();
-                enter_game_dir(entering);
-                if (!send_captured_errors() || !MessageWriter().send(Reply::DONE)) {
-                    return EXIT_DONE;
-                }
-                break;
-            }
             case Request::RENDER:
                 if (!render(reader)) {
+                    return python_host::EXIT_FAILED;
+                }
+                break;
+            case Request::CHECK:
+                if (!check(reader)) {
                     return python_host::EXIT_FAILED;
                 }
                 break;

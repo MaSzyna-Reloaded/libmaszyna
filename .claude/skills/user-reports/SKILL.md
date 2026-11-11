@@ -63,8 +63,9 @@ commit and not only a finding:
   https://github.com/MaSzyna-Reloaded/reports/issues/N`.
 - Show every issue and comment as a draft and wait for the operator's yes before posting (GitHub
   posts as the operator).
-- Unconfirmed observations made on the way (a speed that "looks wrong") go to `TODO.md`, not to an
-  issue, until measured.
+- Unconfirmed observations made on the way (a speed that "looks wrong") are named to the operator,
+  not put into an issue, until measured; they go to `TODO.md` only on the operator's order
+  (AGENTS.md, "General guidelines").
 
 ## 5. Commits and the report
 
@@ -77,5 +78,6 @@ commit and not only a finding:
 - On the report, a comment linking the issues, saying what was found and what is left (a second
   symptom in the same report that was not handled stays named as open). The report is not closed
   by us unless the operator says so.
-- The root cause also goes to `docs/findings-archive.md` with its rule in `FINDINGS.md`, and what
-  was left out to `TODO.md` (AGENTS.md, "General guidelines").
+- The root cause also goes to `docs/findings-archive.md` with its rule in `FINDINGS.md`; what was
+  left out is named to the operator, and goes to `TODO.md` only on their order (AGENTS.md, "General
+  guidelines").

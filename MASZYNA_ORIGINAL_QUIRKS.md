@@ -641,7 +641,18 @@ interface.
   `RailVehicleElectricEngine.pantograph_up`/`pantograph_down`; which pantograph it was is not yet
   used for the sound's position (`TODO.md`).
 
-## Cab Python screens (`pyscreen:`, the original's Python 2 scripts)
+## Cab Python screens (`pyscreen:`, the original's Python scripts)
+
+* **One runtime, the one the executable was built against.** The original runs every script on one
+  CPython: 2.7 (`python27.dll`, `python64/`) until 2026, 3.14 since (`python314.dll`, its standard
+  library in the same `python64/`; `PyInt.cpp`, `b46a1d8c`). A game directory holds scripts of
+  both - 17 of the 143 of the 2.7 package do not compile on 3.x - and the base class every script
+  derives from (`python/local/abstractscreenrenderer.py`) is the package's, for its one runtime.
+  Wrapper: a 2.7 and a 3.x host side by side (`PythonScreenServer`); a script runs on 3.x when it
+  compiles there with the modules of the game directory it imports and loads (19 of the 2.7
+  package's compile but import `sys.maxint`), on 2.7 otherwise, and each host
+  takes the base class of its own runtime (`cabin/python/<runtime>/`, the original's MPL sources),
+  not the game directory's.
 
 * **A missing key is a blank screen, not a missing value.** A script reads `state['hours']`
   directly, so a key the dictionary lacks raises `KeyError`, `render()` fails whole and nothing is

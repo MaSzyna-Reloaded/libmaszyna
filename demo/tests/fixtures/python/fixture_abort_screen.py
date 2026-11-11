@@ -1,5 +1,5 @@
-# A Python 2 cab screen that ends the interpreter's process the way a broken runtime does
-# (Py_FatalError() ends with abort()) - PythonScreenServer must survive it.
+# A cab screen, the same on Python 2 and 3, that ends the interpreter's process the way a broken
+# runtime does (Py_FatalError() ends with abort()) - PythonScreenServer must survive it.
 import os
 
 

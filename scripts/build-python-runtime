@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# A CPython runtime the cab screen scripts run on (PythonScreenServer): CPython with Pillow,
+# installed as one relocatable directory, python2.7/ or python3.14/ beside the game's executable
+# (or in the game dir). Linux; the Windows runtimes are taken whole (fetch-python-runtime-windows).
+# Run in libreloaded's Linux SDK container (make python-runtime-linux), so it starts on the same
+# glibc as the release.
+#
+# It needs nothing of the system but glibc: the libz.so.1 its zlib module and Pillow's _imaging
+# load (a wheel of Pillow 13 has none of its own) comes with it, in lib/. zlib is built into
+# libpython (Modules/Setup.local), so libpython loads libz.so.1 itself, by its DT_RPATH $ORIGIN; an
+# extension module loaded later finds it loaded already - glibc never searches the RPATH of
+# libpython for a module's own libraries, only the module's and the program's. A system without
+# libz.so.1 (NixOS) runs it as well.
+#
+# Usage: build-python-runtime <2.7|3.14> <prefix> <build_dir>
+set -euo pipefail
+
+RUNTIME="$1"
+PREFIX="$(realpath -m "$2")"
+BUILD_DIR="$(realpath -m "$3")"
+
+case "${RUNTIME}" in
+    2.7)
+        PYTHON_VERSION=2.7.18
+        PYTHON_SHA256=da3080e3b488f648a3d7a4560ddee895284c3380b11d6de75edb986526b9a814
+        # the manylinux1 wheel carries its own libjpeg, freetype and zlib, so the runtime depends
+        # on no image library of the host; cp27mu is the UCS4 build configured below
+        PILLOW_WHEEL=Pillow-6.2.2-cp27-cp27mu-manylinux1_x86_64.whl
+        PILLOW_URL=https://files.pythonhosted.org/packages/12/ad/61f8dfba88c4e56196bf6d056cdbba64dc9c5dfdfbc97d02e6472feed913/${PILLOW_WHEEL}
+        PILLOW_SHA256=e3a797a079ce289e59dbd7eac9ca3bf682d52687f718686857281475b7ca8e6a
+        ;;
+    3.14)
+        PYTHON_VERSION=3.14.10
+        PYTHON_SHA256=9e4996c19ae5a3df31f10c37723661f71d3455d73bd005f79df7098e5cc13192
+        # manylinux_2_28: the SDK's sysroot has glibc 2.34
+        PILLOW_WHEEL=pillow-13.0.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+        PILLOW_URL=https://files.pythonhosted.org/packages/1d/f2/1371707ce438ba9a43f9d24089828494ec6f9396e28cd7903aa704dd6306/${PILLOW_WHEEL}
+        PILLOW_SHA256=e91c2b1cbeae768c98752e67e717e283d68dae45717b41f2d91eaee648e37b7d
+        ;;
+    *)
+        echo "usage: build-python-runtime <2.7|3.14> <prefix> <build_dir>" >&2
+        exit 2
+        ;;
+esac
+
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+curl -fsSLo "Python-${PYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz"
+curl -fsSLo "${PILLOW_WHEEL}" "${PILLOW_URL}"
+echo "${PYTHON_SHA256}  Python-${PYTHON_VERSION}.tgz" | sha256sum -c -
+echo "${PILLOW_SHA256}  ${PILLOW_WHEEL}" | sha256sum -c -
+
+rm -rf "Python-${PYTHON_VERSION}"
+tar -xzf "Python-${PYTHON_VERSION}.tgz"
+cd "Python-${PYTHON_VERSION}"
+if [ "${RUNTIME}" = 2.7 ]; then
+    # setup.py adds the host's /usr/local unless cross compiling, and the SDK's compiler refuses
+    # any header or library path outside its sysroot
+    sed -i "s/add_dir_to_list(self.compiler.*'\/usr\/local.*/pass/" setup.py
+    # for the same reason setup.py looks for zlib.h on the host and skips zlib; the compiler finds
+    # it in the sysroot on its own (and zlib is built into libpython, above)
+    printf 'zlib zlibmodule.c -lz\n' > Modules/Setup.local
+    # GCC 15 defaults to C23, where bool and false are keywords Include/asdl.h redefines
+    ./configure CFLAGS=-std=gnu11 --prefix="${PREFIX}" --enable-shared --enable-unicode=ucs4 --without-ensurepip
+else
+    # zlib built into libpython, above
+    printf 'zlib zlibmodule.c -lz\n' > Modules/Setup.local
+    ./configure --prefix="${PREFIX}" --enable-shared --without-ensurepip --disable-test-modules
+fi
+# $ORIGIN for libpython (lib/), $ORIGIN/../lib for the python program (bin/); "\$$" is a "$" once
+# make and the shell have read it. 2.7 links libpython and the program alone with LDLAST, 3.x with
+# LDFLAGS_NODIST (its extension modules too, harmlessly)
+RPATH_FLAGS='-Wl,--disable-new-dtags -Wl,-rpath,\$$ORIGIN:\$$ORIGIN/../lib'
+if [ "${RUNTIME}" = 2.7 ]; then
+    RPATH_VARIABLE=LDLAST
+else
+    RPATH_VARIABLE=LDFLAGS_NODIST
+fi
+make -j"$(nproc)" "${RPATH_VARIABLE}=${RPATH_FLAGS}"
+rm -rf "${PREFIX}"
+make install "${RPATH_VARIABLE}=${RPATH_FLAGS}"
+cp -L "$("${CC:-gcc}" -print-file-name=libz.so.1)" "${PREFIX}/lib/libz.so.1"
+
+# a wheel is a zip unpacked into site-packages; no pip is needed for one package
+python3 -m zipfile -e "../${PILLOW_WHEEL}" "${PREFIX}/lib/python${RUNTIME}/site-packages"
+
+# what a cab screen never needs: the IDE, Tk, pip's installer, the tests, the headers, the static
+# library and the man pages, the optimised byte code (the host runs at optimisation 0), and the
+# symbols of what was built here
+STDLIB="${PREFIX}/lib/python${RUNTIME}"
+rm -rf "${PREFIX}/include" "${PREFIX}/share" "${PREFIX}/lib/pkgconfig" "${STDLIB}"/config-* \
+    "${STDLIB}/idlelib" "${STDLIB}/tkinter" "${STDLIB}/lib-tk" "${STDLIB}/turtledemo" \
+    "${STDLIB}/ensurepip" "${STDLIB}/test" "${STDLIB}/lib2to3/tests"
+find "${STDLIB}" -depth -type d \( -name tests -o -name test \) -path "${STDLIB}/*/*" \
+    -not -path "${STDLIB}/site-packages/*" -exec rm -rf {} +
+find "${STDLIB}" \( -name '*.opt-1.pyc' -o -name '*.opt-2.pyc' -o -name '*.pyo' \) -delete
+find "${PREFIX}/bin" -mindepth 1 -not -name "python${RUNTIME}" -delete
+# 2.7 installs its libraries read-only
+chmod -R u+w "${PREFIX}"
+"${CC%gcc}strip" --strip-unneeded "${PREFIX}/bin/python${RUNTIME}" "${PREFIX}"/lib/libpython*.so.1.0 \
+    "${STDLIB}"/lib-dynload/*.so
+
+# no LD_LIBRARY_PATH: the runtime finds libpython and libz.so.1 by itself
+PYTHONHOME="${PREFIX}" "${PREFIX}/bin/python${RUNTIME}" \
+    -c 'import zlib, PIL.Image, PIL.ImageDraw, PIL.ImageFont; print("Pillow " + PIL.__version__)'
+# and libz from its own lib/, even where the system has one, when libpython is loaded as the game's
+# host loads it: dlopen() by a program with no RPATH of its own
+printf '#include <dlfcn.h>\nint main(int argc, char **argv) { return dlopen(argv[1], RTLD_NOW) == 0; }\n' \
+    > ../dlopen.c
+"${CC:-gcc}" -o ../dlopen ../dlopen.c -ldl
+LD_DEBUG=libs ../dlopen "${PREFIX}/lib/libpython${RUNTIME}.so.1.0" 2> ../ld-debug.log
+grep -q "calling init: ${PREFIX}/lib/libz.so.1$" ../ld-debug.log \
+    || { echo "libz.so.1 not taken from ${PREFIX}/lib" >&2; exit 1; }

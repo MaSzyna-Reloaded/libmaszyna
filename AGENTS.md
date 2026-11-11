@@ -198,8 +198,9 @@ General guidelines:
 * IMPORTANT: do only what operator want, do not assume anything by yourself!
 * IMPORTANT: do not expand requested scope, API, or stored state unless operator explicitly asks for it
 * if you are not sure, ask operator for decision
-* whatever is left out of a task (not ported, skipped, deferred) goes to `TODO.md`, not only to the
-  session report, so it isn't forgotten
+* PROHIBITED: **nothing is written into `TODO.md` on your own.** What is left out of a task (not
+  ported, skipped, deferred) is named to the operator; an entry goes to `TODO.md` only on the
+  operator's explicit order, after the operator has approved that entry
 * every significant finding (a root cause that took a measurement to find, a trap in the data or in
   the engine, a wrong assumption that cost time) goes to `docs/findings-archive.md` - symptom, what
   proved the cause, the fix and the rule - and its rule, one line, to the index in `FINDINGS.md`;

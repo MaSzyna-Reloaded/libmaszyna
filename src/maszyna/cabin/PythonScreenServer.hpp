@@ -16,21 +16,32 @@
 #include <godot_cpp/variant/packed_string_array.hpp>
 
 namespace godot {
-    /// Cab screens drawn by the original engine's Python 2 scripts (`pyscreen:` of an MMD).
+    /// Cab screens drawn by the original engine's Python scripts (`pyscreen:` of an MMD), written
+    /// for Python 2 or 3.
     ///
     /// A script is a class named after its file, built with the directory it lives in; each
     /// update hands it a dictionary of the train state, `render()` returns an RGBA buffer and
     /// `getCommands()` the commands the screen sends back to the train (PyInt.cpp:23-224).
     ///
-    /// CPython 2.7 runs in a process of its own, maszyna-python-host (python_host/main.cpp), which
-    /// loads the game directory's runtime (`maszyna/python/home`) the way the original does. Nothing
-    /// the runtime does can end the game: when the host ends - a fatal Python error, a crash in an
-    /// extension module, a runtime that is missing - what it printed and its exit code go to the
-    /// log, `python_runtime_failed` is emitted once and the screens stay blank. One worker thread
-    /// talks to the host (PythonHostProtocol.hpp), a request at a time. Each screen has an instance
-    /// of its script's class of its own, made on its first render and released by screen_free();
-    /// the original shares one a script for as long as it runs (python_taskqueue::fetch_renderer(),
-    /// MASZYNA_ORIGINAL_QUIRKS.md).
+    /// CPython runs in processes of their own, maszyna-python-host (python_host/main.cpp): one host
+    /// for a Python 3 runtime (3.14 or later) and one for a 2.7 runtime, side by side. A runtime is
+    /// the game's own beside the host (python3.NN/, python2.7/ - make python-runtime-linux and
+    /// python-runtime-windows), else the game directory's (`maszyna/python/home` for 2.7). A script
+    /// runs on 3.x when it compiles there with the modules of the game directory it imports and
+    /// loads (the 3.x host checks it before its first render), on 2.7 otherwise, and on 2.7 when no
+    /// 3.x runtime is found. Each host
+    /// has the base classes of its runtime first in its search path (`cabin/python/<runtime>/`, the
+    /// original's `python/local/`, copied out to `user://python/`), not the game directory's. A host
+    /// serves one game directory: a data reload ends both, and the next render finds the runtimes
+    /// of the game directory set by then.
+    ///
+    /// Nothing a runtime does can end the game: when a host ends - a fatal Python error, a crash in
+    /// an extension module, a runtime that is missing - what it printed and its exit code go to the
+    /// log, `python_runtime_failed` is emitted once and its screens stay blank (a 3.x host's
+    /// scripts then run on 2.7). One worker thread a host talks to it (PythonHostProtocol.hpp), a
+    /// request at a time. Each screen has an instance of its script's class of its own, made on its
+    /// first render and released by screen_free(); the original shares one a script for as long as
+    /// it runs (python_taskqueue::fetch_renderer(), MASZYNA_ORIGINAL_QUIRKS.md).
     class PythonScreenServer : public Object {
             GDCLASS(PythonScreenServer, Object)
 
@@ -45,6 +56,10 @@ namespace godot {
             static const char *python_runtime_failed_signal;
             /// Command-line switch: no Python runtime is loaded and the screens stay blank
             static constexpr const char *ARG_NO_PYTHON = "--no-python";
+            /// The base classes of the scripts, a directory a runtime ("3", "2.7")
+            static constexpr const char *BASE_SCRIPTS_PATH = "res://addons/libmaszyna/cabin/python";
+            /// Where the base classes are copied out for the hosts, which read only files on disk
+            static constexpr const char *BASE_SCRIPTS_COPY_PATH = "user://python";
 
             static PythonScreenServer *get_instance() {
                 return Object::cast_to<PythonScreenServer>(
@@ -52,6 +67,13 @@ namespace godot {
             }
 
         private:
+            /// The runtime a host runs, the one a script is checked on first
+            enum Runtime {
+                RUNTIME_PYTHON_3,
+                RUNTIME_PYTHON_2,
+                RUNTIME_COUNT,
+            };
+
             struct Screen {
                     String script_path;
                     Ref<ImageTexture> texture;
@@ -72,20 +94,33 @@ namespace godot {
             RIDMap<Screen> screens;
             const bool disabled = OS::get_singleton()->get_cmdline_args().has(ARG_NO_PYTHON);
 
-            // shared with the worker, under the mutex
-            Mutex mutex;
-            Ref<Semaphore> semaphore;
-            Ref<Thread> worker;
-            List<Request> requests;
-            /// The game directory the worker moves the interpreter into, empty when it stays
-            String entering_game_dir;
-            bool exiting = false;
-            /// The host has ended; no more requests are taken
-            bool host_failed = false;
+            struct Host {
+                    /// Started by the first render (3.x) or the first script that needs it (2.7), ended
+                    /// when the data is reloaded
+                    Ref<Thread> worker;
+                    Ref<Semaphore> semaphore;
+                    // under the mutex
+                    List<Request> requests;
+                    /// The runtime is missing or its host has ended; no more requests are taken
+                    bool unavailable = false;
+            };
 
+            // shared with the workers, under the mutex
+            Mutex mutex;
+            Host hosts[RUNTIME_COUNT];
+            /// The runtime each script checked runs on, by its path
+            HashMap<String, Runtime> script_runtimes;
+            /// The workers end (_stop_hosts())
+            bool stopping = false;
+
+            void _start_host(Runtime p_runtime);
+            void _stop_hosts();
             void _on_data_reload_requested();
             void _announce_failure(const String &p_message);
-            void _worker_loop(const String &p_host, const PackedStringArray &p_arguments);
+            /// A screen whose script did not compile on 3.x, rendered again - on 2.7 now
+            void _render_after_check(const RID &p_screen, const Dictionary &p_state);
+            /// `p_runtime` a Runtime, bound as an int: a callable binds no unregistered enum
+            void _worker_loop(int p_runtime, const String &p_host, const PackedStringArray &p_arguments);
             void _publish(
                     const RID &p_screen, int p_width, int p_height, const PackedByteArray &p_pixels,
                     const PackedStringArray &p_commands);
@@ -95,7 +130,7 @@ namespace godot {
 
         public:
             PythonScreenServer();
-            /// Joins the worker, whose pipe closes with it - the host then ends on its own. The worker
+            /// Joins the workers, whose pipes close with them - the hosts then end on their own. A worker
             /// never calls into a script of the project, so this is late enough (unlike the scenery
             /// workers in FINDINGS.md, 2026-09-24)
             ~PythonScreenServer() override;

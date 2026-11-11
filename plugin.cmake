@@ -27,7 +27,8 @@ ENDIF ()
 
 # PythonScreenServer runs CPython in maszyna-python-host, a program next to the library (and next
 # to an exported game's executable, [dependencies] of libreloaded.gdextension): whatever the runtime
-# does ends that process, never the game. It has no Godot in it; it loads CPython at run time.
+# does ends that process, never the game. It has no Godot in it; it loads CPython - 2.7 or 3.14 and
+# later, one process each - at run time.
 # A platform without it (Android, iOS) names none, and the screens stay blank with the error said.
 IF (CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux|Darwin)$")
     ADD_EXECUTABLE(maszyna-python-host "${MASZYNA_PLUGIN_DIR}/src/maszyna/cabin/python_host/main.cpp")

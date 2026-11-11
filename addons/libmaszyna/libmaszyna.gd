@@ -10,6 +10,7 @@ var e3d_model_instance_script = preload("e3d/maszyna_e3d_model_instance.gd")
 var e3d_model_instance_icon = preload("e3d/e3d_model_instance.png")
 var maszyna_rail_vehicle_physics_node_script = preload("vehicle/maszyna_rail_vehicle_physics_node.gd")
 var fiz_import_plugin = preload("fiz/fiz_import_plugin.gd").new()
+var python_screens_export_plugin = preload("editor/python_screens_export_plugin.gd").new()
 
 func _enable_plugin():
     add_autoload_singleton("MaszynaMaterialManager", "res://addons/libmaszyna/materials/maszyna_material_manager.gd")
@@ -97,7 +98,8 @@ func _enter_tree():
     add_custom_project_setting(
         "maszyna/cabin/instrument_glow_range", 0.564628, TYPE_FLOAT, PROPERTY_HINT_RANGE, "0.01,2.0,0.01,suffix:m")
     # CPython 2.7 prefix PythonScreenServer runs the cab screens with (lib/libpython2.7.so.1.0 on
-    # Linux); empty is python2.7 in the game directory on Linux and the original's python64 on Windows
+    # Linux); empty is python2.7 in the game directory on Linux and the original's python64 on Windows.
+    # The 3.x runtime the scripts that compile there run on is found in the game directory itself
     add_custom_project_setting("maszyna/python/home", "", TYPE_STRING, PROPERTY_HINT_GLOBAL_DIR)
     # A scenery light is streamed with a range of its own, shorter than the model's - a street lamp
     # is visible from half a kilometre and lights forty metres. This is how far the camera may be
@@ -248,9 +250,11 @@ func _enter_tree():
         PROPERTY_HINT_ENUM, "512:512,1024:1024,2048:2048,4096:4096,8192:8192"
     )
     add_import_plugin(fiz_import_plugin)
+    add_export_plugin(python_screens_export_plugin)
 
 func _exit_tree():
     remove_import_plugin(fiz_import_plugin)
+    remove_export_plugin(python_screens_export_plugin)
 
 func add_custom_project_setting(name: String, default_value, type: int, hint: int = PROPERTY_HINT_NONE, hint_string: String = "") -> void:
     var setting_info: Dictionary = {

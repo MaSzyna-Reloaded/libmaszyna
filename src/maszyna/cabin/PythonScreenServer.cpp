@@ -4,6 +4,7 @@
 #include "maszyna/cabin/python_host/PythonHostProtocol.hpp"
 #include <cstdint>
 #include <cstring>
+#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -20,6 +21,10 @@ namespace godot {
 
         /// Bytes of the host's stderr read at a time, once it has ended
         constexpr int64_t ERRORS_CHUNK_SIZE = 4096;
+        /// By PythonScreenServer::Runtime: its directory of the base classes (BASE_SCRIPTS_PATH)
+        /// and its name in the log
+        constexpr const char *BASE_SCRIPTS_DIRS[] = {"3", "2.7"};
+        constexpr const char *RUNTIME_NAMES[] = {"Python 3", "Python 2.7"};
 
         /// One request, its fields written in order after the room left for its size and type
         /// (PythonHostProtocol.hpp)
@@ -183,7 +188,6 @@ namespace godot {
     }
 
     PythonScreenServer::PythonScreenServer() {
-        semaphore.instantiate();
         if (disabled) {
             UtilityFunctions::print("[PythonScreen] disabled by ", ARG_NO_PYTHON, " - the screens stay blank");
         }
@@ -194,73 +198,147 @@ namespace godot {
         }
     }
 
-    /// The scripts are the game directory's: the host moves the interpreter into the new one.
-    /// The interpreter itself stays - CPython 2.7 with its extension modules (PIL) is not started
-    /// twice in one process - and so does the runtime it was loaded from.
+    /// The runtimes and the scripts are the game directory's: the hosts end, and the next render
+    /// finds the runtimes of the game directory set by then, starts their hosts in it and checks
+    /// its scripts again
     void PythonScreenServer::_on_data_reload_requested() {
-        const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
-        ERR_FAIL_NULL(game_directory);
-        if (worker.is_null()) {
-            return; // the host starts in whatever game directory is set when a screen needs it
-        }
-        {
-            MutexLock lock(mutex);
-            entering_game_dir = game_directory->get_game_dir();
-        }
-        semaphore->post();
+        _stop_hosts();
     }
 
     PythonScreenServer::~PythonScreenServer() {
-        if (worker.is_null()) {
-            return;
-        }
-        {
-            MutexLock lock(mutex);
-            exiting = true;
-        }
-        semaphore->post();
-        worker->wait_to_finish();
+        _stop_hosts();
     }
 
-    /* The host is started by the first screen, not with the server: it is a process of its own with
-     * a CPython in it, which most sessions - no cab with a Python screen - never need; it starts
-     * in the game directory set by then, not the one at the engine's start. Started once: its
-     * worker stays for the session, a host that failed included, so no call starts it again */
-    RID PythonScreenServer::screen_create(const String &p_script_path, const Callable &p_commands_received) {
-        if (worker.is_null() && !disabled) {
-            const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
-            ERR_FAIL_NULL_V(game_directory, RID());
-            OS *os = OS::get_singleton();
-            const String game_dir = game_directory->get_game_dir();
-            String home = ProjectSettings::get_singleton()->get_setting("maszyna/python/home", "");
-            // the home is relative to the game directory, which the host starts in, as the original
-            // gives it (PyInt.cpp:233); the library is a path, which Windows does not search for
+    /// Each worker ends, its pipe closes with it and its host ends on its own; the hosts are as
+    /// before the first render then
+    void PythonScreenServer::_stop_hosts() {
+        {
+            MutexLock lock(mutex);
+            stopping = true;
+        }
+        for (Host &host: hosts) {
+            if (host.worker.is_valid()) {
+                host.semaphore->post();
+                host.worker->wait_to_finish();
+            }
+        }
+        MutexLock lock(mutex);
+        for (Host &host: hosts) {
+            host = Host();
+        }
+        script_runtimes.clear();
+        stopping = false;
+    }
+
+    /* A host is a process of its own with a CPython in it, which most sessions - no cab with a
+     * Python screen - never need: the 3.x one is started by the first render, the 2.7 one by the
+     * first script that needs it, in the game directory set by then, not the one at the engine's
+     * start. Started once a game directory: its worker stays until the data is reloaded, a host
+     * that failed included, so no render starts it again. Its runtime is the game's own, beside the
+     * host (python2.7/, python3.NN/, each its own home), else the game directory's; without a 3.x
+     * runtime none starts, and every script runs on 2.7 */
+    void PythonScreenServer::_start_host(const Runtime p_runtime) {
+        const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
+        ERR_FAIL_NULL(game_directory);
+        OS *os = OS::get_singleton();
+        const String game_dir = game_directory->get_game_dir();
+        // an exported game has the host next to its executable (the [dependencies] of
+        // libmaszyna.gdextension), the project next to this library
+        String library_path;
+        gdextension_interface::get_library_path(gdextension_interface::library, library_path._native_ptr());
+        const String host_dir = os->has_feature("template")
+                                        ? os->get_executable_path().get_base_dir()
+                                        : ProjectSettings::get_singleton()->globalize_path(library_path.get_base_dir());
+
+        String home;
+        String library;
+        // the game's own runtime, as make python-runtime-linux and python-runtime-windows make it:
+        // python3.NN/ or python2.7/, with libpython3.NN.so.1.0 in its lib/, or python3NN.dll in it
+        for (const String &dir: DirAccess::get_directories_at(host_dir)) {
+            if (p_runtime == RUNTIME_PYTHON_3 ? !dir.begins_with("python3.") : dir != "python2.7") {
+                continue;
+            }
+#ifdef _WIN32
+            const String candidate = host_dir.path_join(dir).path_join(dir.replace(".", "") + ".dll");
+#else
+            const String candidate = host_dir.path_join(dir).path_join("lib/lib" + dir + ".so.1.0");
+#endif
+            if (FileAccess::file_exists(candidate)) {
+                home = host_dir.path_join(dir);
+                library = candidate;
+            }
+        }
+        // else the game directory's: the home is relative to it, which the host starts in, as the
+        // original gives it (PyInt.cpp:233); the library is a path, which Windows does not search for
+        if (library.is_empty() && p_runtime == RUNTIME_PYTHON_3) {
+#ifdef _WIN32
+            // the original's 3.x runtime: python3NN.dll beside eu07.exe, its home python64 as 2.7's
+            // (PyInt.cpp, python_taskqueue::init()); python3.dll is only the stable ABI's forwarder
+            for (const String &file: DirAccess::get_files_at(game_dir)) {
+                const String name = file.to_lower();
+                if (name.begins_with("python3") && name.get_extension() == "dll" && name != "python3.dll") {
+                    home = "python64";
+                    library = game_dir.path_join(file);
+                }
+            }
+#else
+            // a runtime of make python-runtime-linux put there: python3.NN/lib/libpython3.NN.so.1.0
+            for (const String &dir: DirAccess::get_directories_at(game_dir)) {
+                const String candidate = dir.path_join("lib/lib" + dir + ".so.1.0");
+                if (dir.begins_with("python3.") && FileAccess::file_exists(game_dir.path_join(candidate))) {
+                    home = dir;
+                    library = candidate;
+                }
+            }
+#endif
+            if (library.is_empty()) {
+                UtilityFunctions::print(
+                        "[PythonScreen] no Python 3 runtime beside ", host_dir, " nor in ", game_dir,
+                        " - the scripts run on Python 2.7");
+                MutexLock lock(mutex);
+                hosts[p_runtime].unavailable = true;
+                return;
+            }
+        } else if (library.is_empty()) {
+            home = ProjectSettings::get_singleton()->get_setting("maszyna/python/home", "");
 #ifdef _WIN32
             // the 64-bit Windows runtime ships in the game directory
             home = home.is_empty() ? String("python64") : home;
-            const String library = game_dir.path_join("python27.dll");
+            library = game_dir.path_join("python27.dll");
 #else
             // the original's linuxpython64 (PyInt.cpp:238) is only a virtualenv over the system's
-            // libpython, without PIL - the wrapper's own runtime has a directory of its own
+            // libpython, without PIL - a runtime of make python-runtime-linux has a directory of its own
             home = home.is_empty() ? String("python2.7") : home;
-            const String library = home.path_join("lib/libpython2.7.so.1.0");
+            library = home.path_join("lib/libpython2.7.so.1.0");
 #endif
-            // an exported game has the host next to its executable (the [dependencies] of
-            // libmaszyna.gdextension), the project next to this library
-            String library_path;
-            gdextension_interface::get_library_path(gdextension_interface::library, library_path._native_ptr());
-            const String host_dir =
-                    os->has_feature("template")
-                            ? os->get_executable_path().get_base_dir()
-                            : ProjectSettings::get_singleton()->globalize_path(library_path.get_base_dir());
-            const String host = host_dir.path_join(MASZYNA_PYTHON_HOST_FILE);
-            UtilityFunctions::print(
-                    "[PythonScreen] starting the host: ", host, ", game directory ", game_dir, ", home ", home,
-                    ", library ", library);
-            worker.instantiate();
-            worker->start(callable_mp(this, &PythonScreenServer::_worker_loop)
-                                  .bind(host, PackedStringArray({game_dir, home, library})));
         }
+
+        // the base classes go out of the project (or the exported pack) to files the host can read
+        const String base_source = String(BASE_SCRIPTS_PATH).path_join(BASE_SCRIPTS_DIRS[p_runtime]);
+        const String base_dir = ProjectSettings::get_singleton()->globalize_path(
+                String(BASE_SCRIPTS_COPY_PATH).path_join(BASE_SCRIPTS_DIRS[p_runtime]));
+        DirAccess::make_dir_recursive_absolute(base_dir);
+        for (const String &file: DirAccess::get_files_at(base_source)) {
+            if (file.get_extension() == "py") {
+                const Ref<FileAccess> copy = FileAccess::open(base_dir.path_join(file), FileAccess::WRITE);
+                ERR_CONTINUE_MSG(copy.is_null(), "[PythonScreen] cannot write " + base_dir.path_join(file));
+                copy->store_buffer(FileAccess::get_file_as_bytes(base_source.path_join(file)));
+            }
+        }
+
+        const String host_path = host_dir.path_join(MASZYNA_PYTHON_HOST_FILE);
+        UtilityFunctions::print(
+                "[PythonScreen] starting the ", RUNTIME_NAMES[p_runtime], " host: ", host_path, ", game directory ",
+                game_dir, ", home ", home, ", library ", library, ", base classes ", base_dir);
+        Host &host = hosts[p_runtime];
+        host.semaphore.instantiate();
+        host.worker.instantiate();
+        host.worker->start(callable_mp(this, &PythonScreenServer::_worker_loop)
+                                   .bind(static_cast<int>(p_runtime), host_path,
+                                         PackedStringArray({game_dir, home, library, base_dir})));
+    }
+
+    RID PythonScreenServer::screen_create(const String &p_script_path, const Callable &p_commands_received) {
         Ref<Image> blank = Image::create_empty(1, 1, false, Image::FORMAT_RGBA8);
         const RID rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
         screens.insert(rid, Screen{p_script_path, ImageTexture::create_from_image(blank), p_commands_received});
@@ -279,19 +357,38 @@ namespace godot {
         return screen->average_color;
     }
 
+    /// A script not checked yet goes to the 3.x host, which checks it first; one that does not
+    /// compile or load there, and every script while 3.x is unavailable, goes to 2.7
     void PythonScreenServer::screen_request_render(const RID &p_screen, const Dictionary &p_state) {
         const Screen *screen = screens.getptr(p_screen);
         ERR_FAIL_NULL(screen);
         if (disabled) {
             return; // no interpreter to draw it
         }
+        // a host is written only by its worker once it is started, so before that no lock is needed
+        if (hosts[RUNTIME_PYTHON_3].worker.is_null() && !hosts[RUNTIME_PYTHON_3].unavailable) {
+            _start_host(RUNTIME_PYTHON_3);
+        }
+        Runtime runtime = RUNTIME_PYTHON_2;
         {
             MutexLock lock(mutex);
-            if (host_failed) {
+            if (!hosts[RUNTIME_PYTHON_3].unavailable) {
+                const Runtime *checked = script_runtimes.getptr(screen->script_path);
+                runtime = checked != nullptr ? *checked : RUNTIME_PYTHON_3;
+            }
+        }
+        if (runtime == RUNTIME_PYTHON_2 && hosts[RUNTIME_PYTHON_2].worker.is_null() &&
+            !hosts[RUNTIME_PYTHON_2].unavailable) {
+            _start_host(RUNTIME_PYTHON_2);
+        }
+        Host &host = hosts[runtime];
+        {
+            MutexLock lock(mutex);
+            if (host.unavailable) {
                 return; // reported once, when the host ended
             }
             bool replaced = false;
-            for (Request &request: requests) {
+            for (Request &request: host.requests) {
                 if (request.screen == p_screen) {
                     request.state = p_state.duplicate();
                     replaced = true;
@@ -299,28 +396,36 @@ namespace godot {
                 }
             }
             if (!replaced) {
-                requests.push_back(Request{p_screen, screen->script_path, p_state.duplicate()});
+                host.requests.push_back(Request{p_screen, screen->script_path, p_state.duplicate()});
             }
         }
-        semaphore->post();
+        host.semaphore->post();
     }
 
+    void PythonScreenServer::_render_after_check(const RID &p_screen, const Dictionary &p_state) {
+        if (screens.has(p_screen)) {
+            screen_request_render(p_screen, p_state); // freed while it was checked otherwise
+        }
+    }
+
+    /// The instance of its script is released in whichever host has one - a screen of a 3.x host
+    /// that ended draws on 2.7 since
     void PythonScreenServer::screen_free(const RID &p_screen) {
         screens.erase(p_screen);
-        {
-            MutexLock lock(mutex);
-            for (List<Request>::Element *element = requests.front(); element != nullptr; element = element->next()) {
+        MutexLock lock(mutex);
+        for (Host &host: hosts) {
+            for (List<Request>::Element *element = host.requests.front(); element != nullptr;
+                 element = element->next()) {
                 if (element->get().screen == p_screen) {
                     element->erase();
                     break;
                 }
             }
-            if (worker.is_null() || host_failed) {
-                return; // no host holds an instance of its script
+            if (host.worker.is_valid() && !host.unavailable) {
+                host.requests.push_back(Request{p_screen, String(), Dictionary(), true});
+                host.semaphore->post();
             }
-            requests.push_back(Request{p_screen, String(), Dictionary(), true});
         }
-        semaphore->post();
     }
 
     void PythonScreenServer::_publish(
@@ -360,16 +465,21 @@ namespace godot {
         emit_signal(python_runtime_failed_signal, p_message);
     }
 
-    void PythonScreenServer::_worker_loop(const String &p_host, const PackedStringArray &p_arguments) {
+    void
+    PythonScreenServer::_worker_loop(const int p_runtime, const String &p_host, const PackedStringArray &p_arguments) {
+        const auto runtime = static_cast<Runtime>(p_runtime);
         OS *os = OS::get_singleton();
+        Host &host = hosts[runtime];
         const Dictionary process = os->execute_with_pipe(p_host, p_arguments);
         const Ref<FileAccess> pipe = process.get("stdio", Variant());
         const Ref<FileAccess> errors = process.get("stderr", Variant());
         const int64_t pid = process.get("pid", -1);
 
         // Reads the host's replies to one request up to its last: the lines it logs on the way,
-        // then DONE or the FRAME of a render, which is published. False when the host has ended -
-        // or speaks out of turn, and is ended so that its stderr can be read to the end
+        // then DONE, the FRAME of a render, which is published, or CHECKED, kept in `compiles`.
+        // False when the host has ended - or speaks out of turn, and is ended so that its stderr
+        // can be read to the end
+        bool compiles = false;
         const auto receive = [&]() -> bool {
             while (true) {
                 const PackedByteArray size_field = read_exact(pipe, sizeof(uint32_t));
@@ -388,6 +498,13 @@ namespace godot {
                         UtilityFunctions::print("[PythonScreen] ", reader.get_string().strip_edges());
                         break;
                     case Reply::DONE:
+                        return true;
+                    case Reply::CHECKED:
+                        compiles = reader.get<uint8_t>() != 0;
+                        if (!reader.valid) {
+                            os->kill(static_cast<int32_t>(pid));
+                            return false;
+                        }
                         return true;
                     case Reply::FRAME: {
                         const RID screen =
@@ -419,7 +536,8 @@ namespace godot {
 
         // The host has ended: what it printed on its way out (a Python fatal error, the runtime
         // file it did not find) and its exit code go to the log, and the game hears of it once.
-        // The screens stay blank; the host is not restarted.
+        // Its screens stay blank - a 3.x host's draw on 2.7 from their next render; the host is
+        // not restarted.
         const auto fail = [&]() {
             PackedByteArray output;
             while (errors.is_valid()) {
@@ -432,15 +550,16 @@ namespace godot {
             // -1 while the process is still on its way out; on Windows a crash is an NTSTATUS
             // (0xC0000005 an access violation) and abort() is 3
             const int64_t exit_code = pid >= 0 ? os->get_process_exit_code(static_cast<int32_t>(pid)) : -1;
-            const String message = pipe.is_null() ? "cannot start " + p_host
-                                                  : vformat("the Python host ended with exit code %d (0x%x): %s",
-                                                            exit_code, static_cast<uint32_t>(exit_code),
-                                                            output.get_string_from_utf8().strip_edges());
+            const String message =
+                    pipe.is_null() ? "cannot start " + p_host
+                                   : vformat("the %s host ended with exit code %d (0x%x): %s", RUNTIME_NAMES[runtime],
+                                             exit_code, static_cast<uint32_t>(exit_code),
+                                             output.get_string_from_utf8().strip_edges());
             UtilityFunctions::push_error("[PythonScreen] ", message, " - Python screens stay blank");
             {
                 MutexLock lock(mutex);
-                host_failed = true;
-                requests.clear();
+                host.unavailable = true;
+                host.requests.clear();
             }
             callable_mp(this, &PythonScreenServer::_announce_failure).call_deferred(message);
         };
@@ -451,36 +570,58 @@ namespace godot {
             fail();
         }
         while (true) {
-            semaphore->wait();
+            host.semaphore->wait();
             while (true) {
                 Request request;
-                String entering;
+                bool checked = true;
+                Runtime script_runtime = runtime;
                 {
                     MutexLock lock(mutex);
-                    if (exiting) {
+                    if (stopping) {
                         return; // the pipe closes with it, and the host ends on its own
                     }
-                    entering = entering_game_dir;
-                    entering_game_dir = String();
-                    if (entering.is_empty()) {
-                        if (requests.is_empty()) {
-                            break;
-                        }
-                        request = requests.front()->get();
-                        requests.pop_front();
+                    if (host.requests.is_empty()) {
+                        break;
                     }
+                    request = host.requests.front()->get();
+                    host.requests.pop_front();
+                    // a script reaches the 3.x host before it is checked
+                    const Runtime *known = script_runtimes.getptr(request.script_path);
+                    checked = request.freed || runtime == RUNTIME_PYTHON_2 || known != nullptr;
+                    script_runtime = known != nullptr ? *known : script_runtime;
                 }
                 if (!running) {
                     continue; // no host; the failure has been reported once already
                 }
-                if (!entering.is_empty()) {
-                    RequestWriter message(python_host::Request::ENTER_GAME_DIR);
-                    message.put_string(entering);
-                    running = message.send(pipe) && receive();
-                } else if (request.freed) {
+                if (request.freed) {
                     RequestWriter message(python_host::Request::FREE);
                     message.put(static_cast<uint64_t>(request.screen.get_id()));
                     running = message.send(pipe) && receive();
+                } else if (!checked) {
+                    RequestWriter message(python_host::Request::CHECK);
+                    message.put_string(request.script_path);
+                    running = message.send(pipe) && receive();
+                    if (running) {
+                        {
+                            MutexLock lock(mutex);
+                            script_runtimes.insert(request.script_path, compiles ? RUNTIME_PYTHON_3 : RUNTIME_PYTHON_2);
+                        }
+                        if (compiles) {
+                            // drawn on this host, as checked now
+                            MutexLock lock(mutex);
+                            host.requests.push_front(request);
+                        } else {
+                            UtilityFunctions::print(
+                                    "[PythonScreen] ", request.script_path,
+                                    " does not run on Python 3 - it runs on Python 2.7");
+                            callable_mp(this, &PythonScreenServer::_render_after_check)
+                                    .call_deferred(request.screen, request.state);
+                        }
+                    }
+                } else if (script_runtime == RUNTIME_PYTHON_2 && runtime == RUNTIME_PYTHON_3) {
+                    // checked by another screen of the same script since it was queued here
+                    callable_mp(this, &PythonScreenServer::_render_after_check)
+                            .call_deferred(request.screen, request.state);
                 } else {
                     RequestWriter message(python_host::Request::RENDER);
                     message.put(static_cast<uint64_t>(request.screen.get_id()));

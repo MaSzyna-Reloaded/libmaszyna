@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# A CPython runtime the cab screen scripts run on (PythonScreenServer), for Windows: python.org's
+# own build of CPython, as its NuGet package carries it (the whole installation, relocatable, no
+# installer), with Pillow's wheel unpacked into it - python2.7/ or python3.14/ beside the game's
+# executable. Nothing is compiled; the Linux runtimes are built (build-python-runtime).
+#
+# CPython 2.7 is built against the C runtime of Visual Studio 2008 (msvcr90.dll), which no Windows
+# has by itself; python.org's 2.7 installer puts it beside python27.dll as a private assembly, and so
+# does this, from that installer (7z reads its cabinet).
+#
+# Usage: fetch-python-runtime-windows <2.7|3.14> <prefix> <download_dir>
+set -euo pipefail
+
+RUNTIME="$1"
+PREFIX="$(realpath -m "$2")"
+DOWNLOAD_DIR="$(realpath -m "$3")"
+
+case "${RUNTIME}" in
+    2.7)
+        PACKAGE=python2
+        PACKAGE_VERSION=2.7.18
+        PACKAGE_SHA256=c8df5bd4c103f37a946e94f942a5625cdd84665ee160bbcc57af93857c892e22
+        PILLOW_WHEEL=Pillow-6.2.2-cp27-cp27m-win_amd64.whl
+        PILLOW_URL=https://files.pythonhosted.org/packages/5e/b6/8960697526a79bd1cb4520293078be3a10d725f23f20abbee298ebdeaabd/${PILLOW_WHEEL}
+        PILLOW_SHA256=cbd5647097dc55e501f459dbac7f1d0402225636deeb9e0a98a8d2df649fc19d
+        INSTALLER=python-2.7.18.amd64.msi
+        INSTALLER_SHA256=b74a3afa1e0bf2a6fc566a7b70d15c9bfabba3756fb077797d16fffa27800c05
+        ;;
+    3.14)
+        PACKAGE=python
+        PACKAGE_VERSION=3.14.10
+        PACKAGE_SHA256=f54ba67c9951c3d773ea47d2bb095150c037c399f0423a968bcda22809241784
+        PILLOW_WHEEL=pillow-13.0.0-cp314-cp314-win_amd64.whl
+        PILLOW_URL=https://files.pythonhosted.org/packages/50/e2/7ad17747517e4c813dca78257d6bb593466f8231baf1384bc98d92745edb/${PILLOW_WHEEL}
+        PILLOW_SHA256=f7cbb7a64e7ec664775195e4f81923bc8a93d9451b963f844e59118f63147a7a
+        ;;
+    *)
+        echo "usage: fetch-python-runtime-windows <2.7|3.14> <prefix> <download_dir>" >&2
+        exit 2
+        ;;
+esac
+
+NUPKG="${PACKAGE}.${PACKAGE_VERSION}.nupkg"
+mkdir -p "${DOWNLOAD_DIR}"
+cd "${DOWNLOAD_DIR}"
+curl -fsSLo "${NUPKG}" "https://api.nuget.org/v3-flatcontainer/${PACKAGE}/${PACKAGE_VERSION}/${NUPKG}"
+curl -fsSLo "${PILLOW_WHEEL}" "${PILLOW_URL}"
+echo "${PACKAGE_SHA256}  ${NUPKG}" | sha256sum -c -
+echo "${PILLOW_SHA256}  ${PILLOW_WHEEL}" | sha256sum -c -
+
+# the package's tools/ is the installation
+rm -rf "${PREFIX}" "${PACKAGE}-${PACKAGE_VERSION}"
+python3 -m zipfile -e "${NUPKG}" "${PACKAGE}-${PACKAGE_VERSION}"
+mkdir -p "$(dirname "${PREFIX}")"
+mv "${PACKAGE}-${PACKAGE_VERSION}/tools" "${PREFIX}"
+rm -rf "${PACKAGE}-${PACKAGE_VERSION}"
+
+# a wheel is a zip unpacked into site-packages; no pip is needed for one package
+python3 -m zipfile -e "${PILLOW_WHEEL}" "${PREFIX}/Lib/site-packages"
+
+if [ "${RUNTIME}" = 2.7 ]; then
+    curl -fsSLo "${INSTALLER}" "https://www.python.org/ftp/python/2.7.18/${INSTALLER}"
+    echo "${INSTALLER_SHA256}  ${INSTALLER}" | sha256sum -c -
+    # the installer's files are in its cabinet, the stream "python"
+    rm -rf installer && mkdir installer
+    7z e -y -tCompound -oinstaller "${INSTALLER}" python > /dev/null
+    7z e -y -tCab -o"${PREFIX}" installer/python msvcr90.dll Microsoft.VC90.CRT.manifest > /dev/null
+    rm -rf installer
+    test -f "${PREFIX}/msvcr90.dll" && test -f "${PREFIX}/Microsoft.VC90.CRT.manifest"
+fi
+
+# what a cab screen never needs: the headers and import libraries, the scripts and tools, Tk, pip
+# and setuptools the package installs and their installer, and the optimised byte code (the host
+# runs at optimisation 0)
+rm -rf "${PREFIX}/include" "${PREFIX}/libs" "${PREFIX}/Scripts" "${PREFIX}/Tools" "${PREFIX}/tcl" \
+    "${PREFIX}/Lib/lib-tk" "${PREFIX}/Lib/tkinter" "${PREFIX}/Lib/idlelib" "${PREFIX}/Lib/turtledemo" \
+    "${PREFIX}/Lib/ensurepip" "${PREFIX}/Lib/test" "${PREFIX}/DLLs/_tkinter.pyd" "${PREFIX}"/DLLs/tcl*.dll \
+    "${PREFIX}"/DLLs/tk*.dll
+find "${PREFIX}/Lib/site-packages" -mindepth 1 -maxdepth 1 \
+    \( -name 'pip*' -o -name 'setuptools*' -o -name 'pkg_resources' -o -name 'easy_install*' \
+    -o -name '_distutils_hack' -o -name 'distutils-precedence.pth' \) -exec rm -rf {} +
+find "${PREFIX}" \( -name '*.opt-1.pyc' -o -name '*.opt-2.pyc' -o -name '*.pyo' \) -delete
+echo "CPython ${PACKAGE_VERSION} for Windows with ${PILLOW_WHEEL} in ${PREFIX}"
