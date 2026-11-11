@@ -18,6 +18,8 @@ set -euo pipefail
 RUNTIME="$1"
 PREFIX="$(realpath -m "$2")"
 BUILD_DIR="$(realpath -m "$3")"
+# the SDK's compiler in its container, the host's own with LINUX_HOST (make python-runtime-linux)
+CC="${CC:-gcc}"
 
 case "${RUNTIME}" in
     2.7)
@@ -79,7 +81,7 @@ fi
 make -j"$(nproc)" "${RPATH_VARIABLE}=${RPATH_FLAGS}"
 rm -rf "${PREFIX}"
 make install "${RPATH_VARIABLE}=${RPATH_FLAGS}"
-cp -L "$("${CC:-gcc}" -print-file-name=libz.so.1)" "${PREFIX}/lib/libz.so.1"
+cp -L "$("${CC}" -print-file-name=libz.so.1)" "${PREFIX}/lib/libz.so.1"
 
 # a wheel is a zip unpacked into site-packages; no pip is needed for one package
 python3 -m zipfile -e "../${PILLOW_WHEEL}" "${PREFIX}/lib/python${RUNTIME}/site-packages"
@@ -107,7 +109,7 @@ PYTHONHOME="${PREFIX}" "${PREFIX}/bin/python${RUNTIME}" \
 # host loads it: dlopen() by a program with no RPATH of its own
 printf '#include <dlfcn.h>\nint main(int argc, char **argv) { return dlopen(argv[1], RTLD_NOW) == 0; }\n' \
     > ../dlopen.c
-"${CC:-gcc}" -o ../dlopen ../dlopen.c -ldl
+"${CC}" -o ../dlopen ../dlopen.c -ldl
 LD_DEBUG=libs ../dlopen "${PREFIX}/lib/libpython${RUNTIME}.so.1.0" 2> ../ld-debug.log
 grep -q "calling init: ${PREFIX}/lib/libz.so.1$" ../ld-debug.log \
     || { echo "libz.so.1 not taken from ${PREFIX}/lib" >&2; exit 1; }
