@@ -1016,6 +1016,8 @@ namespace godot {
         if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
             lazy_loader->resource_release(_get_stream_model(p_instance));
         }
+        // its model is gone, and ModelRenderingServer searches it no more (libreloaded#69)
+        emit_signal(instance_cleared_signal, p_instance);
     }
 
     RID MaszynaE3DRenderingServer::_light_create(
