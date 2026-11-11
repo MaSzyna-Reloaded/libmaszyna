@@ -164,6 +164,43 @@ func test_the_trainset_shows_a_powered_vehicles_line_breaker_open() -> void:
     assert_true(trainset.line_breaker_open, "and the trainset's state shows it")
 
 
+## reports#79: a second engine joined by the control line, cold, keeps the hint to close the line
+## breaker after the driver's own is closed (IsAnyLineBreakerOpen, driverhints.cpp:370-379); the
+## hint to open it is about the controlling vehicle alone (driverhints.cpp:381-391)
+func test_the_line_breaker_hint_stays_while_an_engine_under_control_has_it_open() -> void:
+    var train:VehicleController = _build_on_track("AIDriverOwnBreakerTest", SM42)
+    var vehicle:RID = train.get_rid()
+    var other:RID = build_vehicle("AIDriverOtherBreakerTest", SM42).get_rid()
+    # the driver starts the engine through the cab, a cab whose every control is there unmodelled
+    var controls:MaszynaCabinControls = MaszynaCabinControls.new()
+    CabinSystem.vehicle_attach_cab_logic(
+            vehicle, MaszynaCabinLogic.new(func(_cabin:RID) -> MaszynaCabinControls: return controls))
+    var driver:RID = get_vehicle_driver(vehicle)
+    attach_driver_implementation(driver, MaszynaAIDriver.new())
+    DriverServer.driver_send_command(driver, "Prepare_engine", 1.0, 0.0)
+    var started:bool = await wait_simulated_until(func() -> bool: return train.get_state()["main_switch_enabled"],
+            MaszynaStartupTest.STEP_TIMEOUT, "the driver's own line breaker closed")
+    attach_driver_implementation(driver, null)
+    CabinSystem.vehicle_attach_cab_logic(vehicle, null)
+    if not started:
+        return
+    RailVehicleServer.coupler_attach(vehicle, RailVehicleController.COUPLER_END_REAR, other,
+            RailVehicleController.COUPLER_END_FRONT,
+            RailVehicleController.COUPLING_FLAG_COUPLER | RailVehicleController.COUPLING_FLAG_CONTROL)
+    var situation:MaszynaDriverTraction.Situation = MaszynaDriverTraction.Situation.new()
+    situation.vehicle = vehicle
+    situation.controlling = vehicle
+    situation.trainset = MaszynaDriverTrainset.new()
+
+    situation.trainset.update(vehicle, 1, true)
+
+    assert_true(situation.trainset.line_breaker_open, "the other engine's line breaker is open")
+    assert_false(MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.LINE_BREAKER_CLOSE, 0.0),
+            "so the hint to close it stays")
+    assert_false(MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.LINE_BREAKER_OPEN, 0.0),
+            "the hint to open it reads the driver's own, closed")
+
+
 func test_a_driver_not_in_control_touches_nothing() -> void:
     var ai:MaszynaAIDriver = MaszynaAIDriver.new()
     var train:VehicleController = _build_on_track("AIDriverControlTest", SM42)

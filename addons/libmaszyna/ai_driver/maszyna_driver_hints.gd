@@ -1028,9 +1028,13 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
             var diesel_electric:RailVehicleDieselElectricEngine = _engine(controlling) as RailVehicleDieselElectricEngine
             return not ((electric != null and electric.get_fuse_active())
                     or (diesel_electric != null and diesel_electric.get_fuse_active()))
-        Hint.LINE_BREAKER_CLOSE, Hint.LINE_BREAKER_OPEN:
+        # closed: no line breaker under control open (IsAnyLineBreakerOpen, driverhints.cpp:370-379);
+        # open: the controlling vehicle's (driverhints.cpp:381-391)
+        Hint.LINE_BREAKER_CLOSE:
+            return not situation.trainset.line_breaker_open
+        Hint.LINE_BREAKER_OPEN:
             var engine:RailVehicleEngine = _engine(controlling)
-            return engine == null or engine.get_main_switch_enabled() == (hint == Hint.LINE_BREAKER_CLOSE)
+            return engine == null or not engine.get_main_switch_enabled()
         # any vehicle under control's - an EMU's compressor is in another car than its motors - allowed
         # to run, not running: it stops itself once the reservoir is full (driverhints.cpp:394-414)
         Hint.COMPRESSOR_ON:
