@@ -646,6 +646,36 @@ interface.
     (`DDSTextureLoader.has_alpha()`), as `MaszynaMaterialManager` loads only `.dds` textures.
     Another source of translucency is set there and nowhere else.
 
+## Textures and materials (`model/Texture.cpp`, `model/material.cpp`)
+
+* **The extension the data names is thrown away.** A texture's or a material's name is cut at its
+  last dot whatever stands after it (`erase_extension()`, `utilities.cpp:363-377`; `Texture.cpp:1321`,
+  `material.cpp:486`) - only a dot ending a `..` is kept. The coal load of the RZD 12-119
+  (`dynamic/rzd/rus-12-119/loads/coal.e3d`) names `loads/coal.bmp`, and the original looks for
+  `loads/coal` in every format; a dot in a directory of a name without an extension cuts the path
+  there just the same.
+* **Any format, a .dds first wherever it is.** The cut name is looked for as `.dds` in every place
+  (`asCurrentTexturePath`, the name itself, `textures/`), and only then in each place with `.dds`,
+  `.tga`, `.ktx`, `.png`, `.bmp`, `.jpg` and `.tex` in turn (`find_on_disk()`,
+  `Texture.cpp:1482-1504`; `FileExists()`, `utilities.cpp:334-349`). So a `.bmp` the data names beside
+  the model is not read when a `.dds` of the name lies in `textures/`. The data holds 4075 `.bmp`,
+  1031 `.png` and 150 `.jpg` textures against 22828 `.dds`.
+* **A vehicle's extra model looks its textures up from the vehicle's directory, not its own.** A
+  load, a cab or a low-poly interior is loaded with the texture path set to the vehicle's
+  `asBaseDir` (`DynObj.cpp:3007`, `5299`; `MdlMngr.cpp:83-90` takes the model's own directory only
+  for a model that is no vehicle's), and a name is then looked for there, as itself from the data's
+  root, and in `textures/` - never beside the model that names it. The RZD 12-119's loads
+  (`dynamic/rzd/rus-12-119/loads/*.e3d`, their `.bmp` beside them) show it: the coal names
+  `dynamic/rzd/rus-12-119/loads/coal.bmp` and is found from the root, while the logs name
+  `dynamic/rzd/rus-12-119/logs` and the ores `dynamic/rzd/rus-12-119/iron_ore.bmp` and
+  `iron_ore2.bmp` - files that are nowhere. The original never shows those two: the wagon accepts
+  `ruda1`, `ruda2` and `drzewo`, not the `logs` and `iron_ore` braniewo_szeroki gives it, and a load
+  it does not accept is no load (`AssignLoad()`, libmaszyna#411).
+  - Wrapper: `MaszynaDataPath.erase_extension()` for the texture's and the `.mat`'s name, and
+    `MaszynaMaterialManager._get_texture_file()` in the original's order; `.ktx` and `.tex` are not
+    read (Godot reads neither, and the data has none). A non-DDS file is read by Godot's image
+    loader, halved down to the max texture size.
+
 ## Sound (`audio/audiorenderer.cpp`, `vehicle/DynObj.cpp`)
 
 * **The original knows its running noise combs and works around it in one line.** Every vehicle of

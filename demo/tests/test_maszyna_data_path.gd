@@ -35,3 +35,11 @@ func test_a_file_is_found_whatever_its_case_in_a_directory_as_written() -> void:
         pending("Windows resolves the original spelling case-insensitively")
         return
     assert_eq(MaszynaDataPath.resolve(FIXTURES, "fallback/capital.ctr"), "fallback/Capital.ctr")
+
+
+## erase_extension() (utilities.cpp:363-377): the name cut at its last dot, whatever stands after it
+func test_the_extension_the_data_names_is_cut() -> void:
+    assert_eq(MaszynaDataPath.erase_extension("loads/coal.bmp"), "loads/coal", "a legacy image format's")
+    assert_eq(MaszynaDataPath.erase_extension("skins/56246697"), "skins/56246697", "none to cut")
+    assert_eq(MaszynaDataPath.erase_extension("../textures/tex"), "../textures/tex", "a dot ending a .. is kept")
+    assert_eq(MaszynaDataPath.erase_extension("pkp/sn61.v2/tex"), "pkp/sn61", "a directory's dot cuts there too")

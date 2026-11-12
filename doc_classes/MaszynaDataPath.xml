@@ -9,6 +9,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="erase_extension" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="file_name" type="String" />
+			<description>
+				[param file_name] without the extension the data may give it - a legacy image format's or [code].mat[/code] - cut at its last dot, unless that dot ends a [code]..[/code]: [code]loads/coal.bmp[/code] is [code]loads/coal[/code]. The original looks a texture and a material up by the name cut so, in every format.
+			</description>
+		</method>
 		<method name="resolve" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="base_dir" type="String" />
