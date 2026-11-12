@@ -139,3 +139,17 @@ func test_vehicles_of_one_type_have_their_own_sound_built_within_earshot() -> vo
 ## The sound players the system has built, for whatever vehicles
 func _sound_players() -> Array[Node]:
     return MaszynaVehicleSystem.find_children("", "SfxPlayer3D", true, false)
+
+
+## reports#82: the RZD 12-119 (LoadAccepted=coal,ruda1,ruda2,drzewo) given `logs` by the scenery is
+## left empty, as the original assigns no load it does not accept (AssignLoad()) - its model is
+## drawn only for an accepted one
+func test_a_load_the_vehicle_does_not_accept_has_no_model() -> void:
+    var mmd_data:MaszynaVehicleMmdData = MaszynaVehicleMmdData.new()
+    mmd_data.load_models = {"logs": "loads/logs", "coal": "loads/coal"} as Dictionary[String, String]
+    var accepted:Array[String] = ["coal", "ruda1", "ruda2", "drzewo"]
+
+    assert_eq(MaszynaRailVehicle3DInstancer.load_model_filename(mmd_data, "logs", accepted), "",
+            "logs are no load of its")
+    assert_eq(MaszynaRailVehicle3DInstancer.load_model_filename(mmd_data, "coal", accepted), "loads/coal",
+            "coal is, drawn as its MMD names it")

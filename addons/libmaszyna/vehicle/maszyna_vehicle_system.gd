@@ -199,7 +199,14 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
         return read
     read["mmd_data"] = mmd_data
     read["description"] = MaszynaFizManager.load_description(mmd_data.data_path, mmd_data.file_name)
-    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(mmd_data, dynamic.load_name)
+    var description:VehicleController = read["description"] as VehicleController
+    var load:RailVehicleLoad = description.get_component(VehicleComponentType.COMPONENT_LOAD) as RailVehicleLoad \
+            if description else null
+    var accepted_loads:Array[String] = []
+    if load:
+        accepted_loads.assign(load.accepted_loads)
+    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(
+            mmd_data, dynamic.load_name, accepted_loads)
     # a road vehicle has no cab (FizVehicleBuilder)
     if Engine.is_editor_hint() or read["description"] is RoadVehicleController:
         return read
