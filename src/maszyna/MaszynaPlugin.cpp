@@ -288,6 +288,14 @@ namespace godot {
 #endif
     }
 
+    Dictionary MaszynaPlugin::dump_state() const {
+        Dictionary state;
+        if (scenario_event_server != nullptr) {
+            state["memory_cells"] = scenario_event_server->memory_dump();
+        }
+        return state;
+    }
+
     void MaszynaPlugin::free_servers() {
 #ifdef LIBRELOADED_LUA
         if (MaszynaScenarioEventServer *events = MaszynaScenarioEventServer::get_instance(); events != nullptr) {

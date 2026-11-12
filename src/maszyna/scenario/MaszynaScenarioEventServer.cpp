@@ -84,6 +84,7 @@ namespace godot {
                 &MaszynaScenarioEventServer::memory_set_position);
         ClassDB::bind_method(
                 D_METHOD("memory_get_position", "memory"), &MaszynaScenarioEventServer::memory_get_position);
+        ClassDB::bind_method(D_METHOD("memory_dump"), &MaszynaScenarioEventServer::memory_dump);
         ClassDB::bind_method(
                 D_METHOD("track_add_event", "track", "slot", "event"), &MaszynaScenarioEventServer::track_add_event);
         ClassDB::bind_method(
@@ -963,6 +964,23 @@ namespace godot {
         MemoryData *memory = memories.getptr(p_memory);
         ERR_FAIL_NULL(memory);
         memory->position = p_position;
+    }
+
+    TypedArray<Dictionary> MaszynaScenarioEventServer::memory_dump() const {
+        const TrackServer *tracks = TrackServer::get_instance();
+        TypedArray<Dictionary> dump;
+        for (const KeyValue<RID, MemoryData> &entry: memories) {
+            const MemoryData &memory = entry.value;
+            Dictionary cell;
+            cell["name"] = memory.name;
+            cell["text"] = memory.text;
+            cell["value1"] = memory.value1;
+            cell["value2"] = memory.value2;
+            cell["track"] =
+                    tracks != nullptr && memory.track.is_valid() ? tracks->track_get_name(memory.track) : String();
+            dump.push_back(cell);
+        }
+        return dump;
     }
 
     Vector3 MaszynaScenarioEventServer::memory_get_position(const RID &p_memory) const {

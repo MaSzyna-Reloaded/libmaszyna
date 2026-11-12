@@ -296,6 +296,12 @@
 				Creates a memory cell: an empty text and both values 0.
 			</description>
 		</method>
+		<method name="memory_dump" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+				Every memory cell as a problem report shows it, in the order they were made: [code]name[/code], [code]text[/code], [code]value1[/code], [code]value2[/code] and [code]track[/code], the name of the track it stands at (empty for none). [MaszynaPlugin] gives it in its [method ReloadedPlugin.dump_state] as [code]memory_cells[/code].
+			</description>
+		</method>
 		<method name="memory_free">
 			<return type="void" />
 			<param index="0" name="memory" type="RID" />

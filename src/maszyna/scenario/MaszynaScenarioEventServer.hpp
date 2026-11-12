@@ -315,6 +315,9 @@ namespace godot {
             /// Where the memory stands - sent with its command to the drivers it reaches
             void memory_set_position(const RID &p_memory, const Vector3 &p_position);
             Vector3 memory_get_position(const RID &p_memory) const;
+            /// Every memory as a problem report shows it, in the order they were made: its name, text,
+            /// values and the name of its track
+            TypedArray<Dictionary> memory_dump() const;
 
             /// Fires the event when a vehicle does what the slot says on the track; the binding
             /// goes with the event's system

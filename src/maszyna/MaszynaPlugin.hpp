@@ -58,5 +58,7 @@ namespace godot {
             void register_classes() override;
             void create_servers() override;
             void free_servers() override;
+            /* The scenery's memory cells, as the scenario waits on them (memory_dump()) */
+            Dictionary dump_state() const override;
     };
 } // namespace godot

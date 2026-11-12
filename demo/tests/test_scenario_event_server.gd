@@ -1815,3 +1815,20 @@ func test_the_queueevent_command_queues_the_event_by_the_vehicle() -> void:
 
     _free_events([event])
     VehicleServer.vehicle_free(vehicle)
+
+
+## reports#84: a problem report carries the scenery's memory cells - the plugin's own state, as the
+## core hands it on (ReloadedPlugin.dump_state())
+func test_the_plugin_dumps_the_memory_cells_for_a_report() -> void:
+    var memory:RID = MaszynaScenarioEventServer.memory_create(_event_system)
+    MaszynaScenarioEventServer.memory_set_name(memory, &"Br_Iz48")
+    MaszynaScenarioEventServer.memory_set_values(memory, "ShuntVelocity", 0.0, 1.0)
+    var dumped:Dictionary = {}
+    for plugin:ReloadedPlugin in ReloadedPluginServer.plugin_get_list():
+        for cell:Dictionary in plugin.dump_state().get("memory_cells", []):
+            if cell["name"] == &"Br_Iz48":
+                dumped = cell
+    assert_eq(dumped.get("text"), "ShuntVelocity", "found by the core's plugins, with its text")
+    assert_eq(dumped.get("value2"), 1.0, "and its values")
+    assert_eq(dumped.get("track"), "", "standing at no track")
+    MaszynaScenarioEventServer.memory_free(memory)
