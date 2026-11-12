@@ -12,8 +12,8 @@ class_name MaszynaTimetableFactory
 ## A table becomes a timetable of StationServer, its stations MaszynaStations' of their names; an
 ## entry's facilities as the table writes them go to its extra (EXTRA_FACILITIES). A file is read once: every run by it is the same timetable, shifted by the run's
 ## offset (StationServer.run_create()).
-##
-## Not read: the station announcements (load_sounds(), mtable.cpp:644-671) - see TODO.md.
+## A stop's name said by a train's PA system, a sound file of the scenery's directory or of
+## sounds/sip, goes to the entry's extra too (EXTRA_NAME_SOUND).
 
 const EXTENSION:String = ".txt"
 ## A timetable that is only a number is the train's speed limit, within these (mtable.cpp:283-293)
@@ -38,6 +38,13 @@ const NO_TIME:float = StationServer.NO_TIME
 ## mtable.h:23-39). What the original reads of them is the entry's own - its radio channel, a
 ## technical stop, a change of direction - and the station's type
 const EXTRA_FACILITIES:String = "facilities"
+## An entry's extra: the file of its stop's name (TMTableLine::name_sound, load_sounds(),
+## mtable.cpp:604-632) - of a scheduled stop only, its name less a `_po`, in the scenery's directory
+## or else in NAME_SOUND_DIRECTORY, of the first of NAME_SOUND_EXTENSIONS found
+const EXTRA_NAME_SOUND:String = "name_sound"
+const NAME_SOUND_DIRECTORY:String = "sounds/sip"
+const NAME_SOUND_EXTENSIONS:PackedStringArray = [".ogg", ".flac", ".wav"]
+const SMALL_STOP_SUFFIX:String = "_po"
 ## A small passenger stop has "po" at the end of its name or among its facilities, a technical stop
 ## "pt" there (station.cpp:31-34, mtable.cpp:486); a change of direction is `@` (DirectionChange(),
 ## mtable.cpp:632-638)
@@ -71,14 +78,14 @@ static func load_timetable(directory:String, name:String) -> RID:
         StationServer.timetable_set_speed_limit(numeric, velocity)
         _timetables[name] = numeric
         return numeric
-    var timetable:RID = create_timetable(Windows1250.decode(FileAccess.get_file_as_bytes(path)))
+    var timetable:RID = create_timetable(Windows1250.decode(FileAccess.get_file_as_bytes(path)), directory)
     if timetable.is_valid():
         _timetables[path] = timetable
     return timetable
 
 
 ## The timetable the table text describes, RID() when it is no table
-static func create_timetable(text:String) -> RID:
+static func create_timetable(text:String, directory:String = "") -> RID:
     var first_line_end:int = text.find("\n")
     if first_line_end < 0 or not text.substr(0, first_line_end).contains(TOP_BORDER):
         return RID()
@@ -201,11 +208,11 @@ static func create_timetable(text:String) -> RID:
     # a train that starts at the first station stops there (mtable.cpp:612-619)
     if entries and entries[0].station_name == timetable.relation_from and entries[0].arrival < 0.0:
         entries[0].arrival = entries[0].departure
-    return _create(timetable, entries)
+    return _create(timetable, entries, directory)
 
 
 ## The timetable of StationServer the table read makes
-static func _create(header:Header, lines:Array[Line]) -> RID:
+static func _create(header:Header, lines:Array[Line], directory:String) -> RID:
     var timetable:RID = StationServer.timetable_create()
     StationServer.timetable_set_train_name(timetable, header.train_name)
     StationServer.timetable_set_train_category(timetable, header.train_category)
@@ -231,7 +238,15 @@ static func _create(header:Header, lines:Array[Line]) -> RID:
         StationServer.timetable_entry_set_kilometre(timetable, entry, line.kilometre)
         StationServer.timetable_entry_set_running_time(timetable, entry, line.travel_minutes)
         StationServer.timetable_entry_set_track_count(timetable, entry, line.track_count)
-        StationServer.timetable_entry_set_extra(timetable, entry, {EXTRA_FACILITIES: line.facilities})
+        var extra:Dictionary = {EXTRA_FACILITIES: line.facilities}
+        if not line.arrival == NO_TIME:
+            var stop_name:String = line.station_name.trim_suffix(SMALL_STOP_SUFFIX)
+            for sounds:String in [directory, MaszynaGameDirectory.get_game_dir().path_join(NAME_SOUND_DIRECTORY)]:
+                for extension:String in NAME_SOUND_EXTENSIONS:
+                    var file:String = sounds.path_join(MaszynaDataPath.resolve(sounds, stop_name + extension))
+                    if sounds and not extra.has(EXTRA_NAME_SOUND) and FileAccess.file_exists(file):
+                        extra[EXTRA_NAME_SOUND] = file
+        StationServer.timetable_entry_set_extra(timetable, entry, extra)
     return timetable
 
 

@@ -83,9 +83,13 @@ namespace godot {
                 }
             }
             server->memory_set_values(memory, memory_text, memory_value1, memory_value2);
-            // updatevalues/addvalues also give the memory's command to the driver of every vehicle
-            // on its track (Event.cpp:538-547); copyvalues and a section's own memory do not
-            if (copy || mode == MODE_ISOLATED_BUSY || mode == MODE_ISOLATED_FREE) {
+            // a written text may be a command for a driver (UpdateValues(), MemCell.cpp:47-49)
+            if (mask.has_flag(MaszynaScenarioEventServer::MEMORY_FIELD_TEXT)) {
+                server->memory_check_command(memory);
+            }
+            // updatevalues/addvalues and copyvalues also give the memory's command to the driver of
+            // every vehicle on its track (Event.cpp:538-547, 949-959); a section's own memory does not
+            if (mode == MODE_ISOLATED_BUSY || mode == MODE_ISOLATED_FREE) {
                 continue;
             }
             const RID track = server->memory_get_track(memory);

@@ -2,6 +2,7 @@
 #include "MaszynaE3DSubModelLookup.hpp"
 #include "MaszynaLightMode.hpp"
 #include "game_data/GameDataServer.hpp"
+#include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
 #include "rendering/SmokeServer.hpp"
 #include "resources/ResourceLazyLoader.hpp"
 #include "scenario/ScenarioEventServer.hpp"
@@ -43,13 +44,16 @@ namespace godot {
                 D_METHOD("instance_set_lights_modes", "instance", "modes"),
                 &MaszynaE3DRenderingServer::instance_set_lights_modes);
         ClassDB::bind_method(
+                D_METHOD("instance_get_light_mode", "instance", "light"),
+                &MaszynaE3DRenderingServer::instance_get_light_mode);
+        ClassDB::bind_method(
                 D_METHOD("instance_set_lights_colors", "instance", "lights_colors"),
                 &MaszynaE3DRenderingServer::instance_set_lights_colors);
         ClassDB::bind_static_method(
                 get_class_static(), D_METHOD("light_get_name", "index"), &MaszynaE3DRenderingServer::light_get_name);
         ClassDB::bind_method(
-                D_METHOD("instance_set_light_mode", "instance", "light", "mode"),
-                &MaszynaE3DRenderingServer::instance_set_light_mode);
+                D_METHOD("instance_set_light_mode", "instance", "light", "mode", "threshold"),
+                &MaszynaE3DRenderingServer::instance_set_light_mode, DEFVAL(0.0));
         ClassDB::bind_method(
                 D_METHOD("instance_get_light_count", "instance"), &MaszynaE3DRenderingServer::instance_get_light_count);
         ClassDB::bind_method(
@@ -64,6 +68,12 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("instance_set_submodel_translation", "instance", "submodel", "offset", "speed"),
                 &MaszynaE3DRenderingServer::instance_set_submodel_translation);
+        ClassDB::bind_method(
+                D_METHOD("instance_get_submodel_rotation", "instance", "submodel"),
+                &MaszynaE3DRenderingServer::instance_get_submodel_rotation);
+        ClassDB::bind_method(
+                D_METHOD("instance_get_submodel_translation", "instance", "submodel"),
+                &MaszynaE3DRenderingServer::instance_get_submodel_translation);
         ClassDB::bind_method(
                 D_METHOD("instance_get_model", "instance"), &MaszynaE3DRenderingServer::instance_get_model);
         ClassDB::bind_method(
@@ -297,6 +307,7 @@ namespace godot {
         lights.clear();
         _set_light_processing(false);
         _set_animation_processing(false);
+        _set_clock_processing(false);
         for (KeyValue<RID, MaszynaE3DInstanceData> &item: instances) {
             item.value.light_objects.clear();
             _clear_instance_smoke_sources(item.value);
@@ -405,6 +416,7 @@ namespace godot {
             animating_instances.erase(p_instance);
             _set_animation_processing(!animating_instances.is_empty());
         }
+        _clock_instance_remove(p_instance);
         MaszynaE3DInstanceData clearing = data;
         _clear_instance_lights(clearing);
         _clear_instance_smoke_sources(clearing);
@@ -449,6 +461,14 @@ namespace godot {
         instance->submodel_poses.clear();
         for (KeyValue<String, MaszynaE3DInstanceData::SubmodelAnimation> &animation: instance->submodel_animations) {
             animation.value.submodel = find_submodel(instance->model->get_submodels(), animation.key);
+        }
+        instance->clock_submodels.clear();
+        _collect_clock_submodels(instance->model->get_submodels(), instance->clock_submodels);
+        if (instance->clock_submodels.is_empty()) {
+            _clock_instance_remove(p_instance);
+        } else if (!clock_instances.has(p_instance)) {
+            clock_instances.push_back(p_instance);
+            _set_clock_processing(true);
         }
         _apply_client_submodels(*instance);
         _build_instance_lights(p_instance, *instance);
@@ -675,19 +695,28 @@ namespace godot {
         _update_visibility_if_built(*instance);
     }
 
+    MaszynaE3DRenderingServer::LightMode
+    MaszynaE3DRenderingServer::instance_get_light_mode(const RID &p_instance, const int p_light) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, LIGHT_MODE_OFF);
+        const MaszynaE3DInstanceData::LightDeclaration *declaration =
+                instance->light_declarations.getptr(_light_name_for_index(p_light));
+        return declaration != nullptr ? static_cast<LightMode>(declaration->mode) : LIGHT_MODE_OFF;
+    }
+
     /// One light by index, what `LightSet()` does for a `lights` event (AnimModel.cpp:664-670).
     /// A LIGHT_MODE_BLINK set here blinks with the default times; see instance_set_light_blink().
     /// The newest command wins: it drops a manual override of the same light, as LightSet()
     /// replaces whatever the light was set to before.
     void MaszynaE3DRenderingServer::instance_set_light_mode(
-            const RID &p_instance, const int p_light, const LightMode p_mode) {
+            const RID &p_instance, const int p_light, const LightMode p_mode, const float p_threshold) {
         MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
         const String light_name = _light_name_for_index(p_light);
         instance->lights_override.erase(light_name);
         MaszynaE3DInstanceData::LightDeclaration &declaration = instance->light_declarations[light_name];
         declaration.mode = p_mode;
-        declaration.threshold = 0.0;
+        declaration.threshold = p_threshold;
         declaration.on_time = MaszynaLightMode::DEFAULT_ON_TIME;
         declaration.off_time = MaszynaLightMode::DEFAULT_OFF_TIME;
         declaration.phase = 0.0;
@@ -981,10 +1010,14 @@ namespace godot {
         _get_backend(*instance).clear(*instance);
         instance->built = false;
         built_instances.erase(p_instance);
+        instance->clock_submodels.clear();
+        _clock_instance_remove(p_instance);
         instance->model.unref();
         if (ResourceLazyLoader *lazy_loader = ResourceLazyLoader::get_instance(); lazy_loader != nullptr) {
             lazy_loader->resource_release(_get_stream_model(p_instance));
         }
+        // its model is gone, and ModelRenderingServer searches it no more (libreloaded#69)
+        emit_signal(instance_cleared_signal, p_instance);
     }
 
     RID MaszynaE3DRenderingServer::_light_create(
@@ -1391,6 +1424,24 @@ namespace godot {
         animation.target_offset = p_offset;
         animation.translate_speed = p_speed;
         _start_submodel_animation(p_instance, *instance, p_submodel.to_lower());
+    }
+
+    Vector3
+    MaszynaE3DRenderingServer::instance_get_submodel_rotation(const RID &p_instance, const String &p_submodel) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Vector3());
+        const MaszynaE3DInstanceData::SubmodelAnimation *animation =
+                instance->submodel_animations.getptr(p_submodel.to_lower());
+        return animation != nullptr ? animation->angles : Vector3();
+    }
+
+    Vector3 MaszynaE3DRenderingServer::instance_get_submodel_translation(
+            const RID &p_instance, const String &p_submodel) const {
+        const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL_V(instance, Vector3());
+        const MaszynaE3DInstanceData::SubmodelAnimation *animation =
+                instance->submodel_animations.getptr(p_submodel.to_lower());
+        return animation != nullptr ? animation->offset : Vector3();
     }
 
     void MaszynaE3DRenderingServer::_start_submodel_animation(
@@ -1812,9 +1863,9 @@ namespace godot {
                 const RID *done_event =
                         finished != nullptr ? finished->submodel_done_events.getptr(submodel.to_lower()) : nullptr;
                 if (done_event != nullptr) {
-                    ScenarioEventServer *scenario_events = ScenarioEventServer::get_instance();
+                    MaszynaScenarioEventServer *scenario_events = MaszynaScenarioEventServer::get_instance();
                     ERR_FAIL_NULL(scenario_events);
-                    scenario_events->event_queue(*done_event);
+                    scenario_events->event_add_to_query(*done_event);
                 }
             }
         }
@@ -1837,6 +1888,127 @@ namespace godot {
         simulation->disconnect(
                 SimulationServer::simulation_advanced_signal,
                 callable_mp(this, &MaszynaE3DRenderingServer::_process_animations));
+    }
+
+    void MaszynaE3DRenderingServer::_collect_clock_submodels(
+            const TypedArray<MaszynaE3DSubModel> &p_submodels,
+            LocalVector<MaszynaE3DInstanceData::ClockSubmodel> &p_r_clocks) {
+        for (int64_t index = 0; index < p_submodels.size(); index++) {
+            const Ref<MaszynaE3DSubModel> submodel = p_submodels[index];
+            if (submodel.is_null()) {
+                continue;
+            }
+            const MaszynaE3DSubModel::AnimationType animation = submodel->get_animation();
+            if (animation >= MaszynaE3DSubModel::ANIMATION_JUMP_SECONDS &&
+                animation <= MaszynaE3DSubModel::ANIMATION_HOURS24) {
+                p_r_clocks.push_back({submodel.ptr(), animation, 0});
+            }
+            const TypedArray<MaszynaE3DSubModel> children = submodel->get_submodels();
+            if (animation == MaszynaE3DSubModel::ANIMATION_DIGICLK) {
+                // a drum is a child whose name begins with its digit (Model3d.cpp:1196-1209)
+                for (int64_t child_index = 0; child_index < children.size(); child_index++) {
+                    const Ref<MaszynaE3DSubModel> child = children[child_index];
+                    const String name = child.is_valid() ? child->get_name() : String();
+                    const int digit = name.is_empty() ? -1 : static_cast<int>(name[0] - '0');
+                    if (digit >= 0 && digit < DIGITAL_CLOCK_DRUMS) {
+                        p_r_clocks.push_back({child.ptr(), animation, digit});
+                    }
+                }
+            }
+            _collect_clock_submodels(children, p_r_clocks);
+        }
+    }
+
+    void MaszynaE3DRenderingServer::_clock_instance_remove(const RID &p_instance) {
+        if (clock_instances.has(p_instance)) {
+            clock_instances.erase(p_instance);
+            _set_clock_processing(!clock_instances.is_empty());
+        }
+    }
+
+    /// TSubModel::RaAnimation() (Model3d.cpp:1153-1211): every hand and drum turned about its own y
+    /// by the time of day, on top of its own transform
+    void MaszynaE3DRenderingServer::_process_clocks(double /*p_seconds*/) {
+        const SimulationServer *simulation = SimulationServer::get_instance();
+        ERR_FAIL_NULL(simulation);
+        const double hours = simulation->get_time_of_day();
+        const double day_seconds = hours * Units::SECONDS_PER_HOUR;
+        const auto whole_seconds = static_cast<int64_t>(Math::floor(day_seconds));
+        const int64_t hour = whole_seconds / Units::SECONDS_PER_HOUR;
+        const int64_t minute = whole_seconds / Units::SECONDS_PER_MINUTE % Units::MINUTES_PER_HOUR;
+        const int64_t second = whole_seconds % Units::SECONDS_PER_MINUTE;
+        // Time.second(): the second with its milliseconds
+        const double second_exact = static_cast<double>(second) + day_seconds - static_cast<double>(whole_seconds);
+        const int64_t digits[DIGITAL_CLOCK_DRUMS] = {second % DIGITAL_CLOCK_BASE, second / DIGITAL_CLOCK_BASE,
+                                                     minute % DIGITAL_CLOCK_BASE, minute / DIGITAL_CLOCK_BASE,
+                                                     hour % DIGITAL_CLOCK_BASE,   hour / DIGITAL_CLOCK_BASE};
+        const int visits = MIN(static_cast<int>(clock_instances.size()), MAX_CLOCK_INSTANCES_PER_SLICE);
+        for (int visit = 0; visit < visits; visit++) {
+            if (clock_cursor >= clock_instances.size()) {
+                clock_cursor = 0;
+            }
+            MaszynaE3DInstanceData *instance = instances.getptr(clock_instances[clock_cursor]);
+            clock_cursor++;
+            if (instance == nullptr || !instance->built) {
+                continue;
+            }
+            for (const MaszynaE3DInstanceData::ClockSubmodel &clock: instance->clock_submodels) {
+                double degrees = 0.0;
+                switch (clock.animation) {
+                    case MaszynaE3DSubModel::ANIMATION_JUMP_SECONDS:
+                        degrees = static_cast<double>(second) * SECOND_HAND_DEGREES_PER_SECOND;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_JUMP_MINUTES:
+                        degrees = static_cast<double>(minute) * MINUTE_HAND_DEGREES_PER_MINUTE;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_JUMP_HOURS:
+                        degrees = static_cast<double>(hour) * HOUR_HAND_DEGREES_PER_HOUR;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_JUMP_HOURS24:
+                        degrees = static_cast<double>(hour) * HOURS24_HAND_DEGREES_PER_HOUR;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_SECONDS:
+                        degrees = second_exact * SECOND_HAND_DEGREES_PER_SECOND;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_MINUTES:
+                        degrees = (static_cast<double>(minute) * MINUTE_HAND_DEGREES_PER_MINUTE) +
+                                  (second_exact * MINUTE_HAND_DEGREES_PER_SECOND);
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_HOURS:
+                        degrees = hours * HOUR_HAND_DEGREES_PER_HOUR;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_HOURS24:
+                        degrees = hours * HOURS24_HAND_DEGREES_PER_HOUR;
+                        break;
+                    case MaszynaE3DSubModel::ANIMATION_DIGICLK:
+                        degrees = static_cast<double>(digits[clock.digit]) * DIGIT_DRUM_DEGREES_PER_DIGIT;
+                        break;
+                    default:
+                        break;
+                }
+                instance->submodel_poses[clock.submodel] =
+                        Transform3D(Basis(Vector3(0.0, 1.0, 0.0), Math::deg_to_rad(degrees)), Vector3());
+            }
+            _get_backend(*instance).apply_poses(*instance);
+        }
+    }
+
+    void MaszynaE3DRenderingServer::_set_clock_processing(const bool p_processing) {
+        if (clock_processing == p_processing) {
+            return;
+        }
+        SimulationServer *simulation = SimulationServer::get_instance();
+        ERR_FAIL_NULL(simulation);
+        clock_processing = p_processing;
+        if (p_processing) {
+            simulation->connect(
+                    SimulationServer::simulation_advanced_signal,
+                    callable_mp(this, &MaszynaE3DRenderingServer::_process_clocks));
+            return;
+        }
+        simulation->disconnect(
+                SimulationServer::simulation_advanced_signal,
+                callable_mp(this, &MaszynaE3DRenderingServer::_process_clocks));
     }
 
     /// Addressable handle for the model's own light_onNN/light_offNN submodel pair. The submodels

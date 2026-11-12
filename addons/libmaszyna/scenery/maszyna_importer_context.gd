@@ -24,6 +24,8 @@ const REGION_EXTENSION:String = ".sbt"
 ## What Rainsted prefixes a scenario it modified with, and the base scenario it writes
 const RAINSTED_PREFIX:String = "$"
 const RAINSTED_SCENARIO:String = "$.scn"
+## Global.iHiddenEvents when no `config` sets it (Globals.h:120)
+const DEFAULT_HIDDEN_EVENTS:int = 1
 
 var _states: Array[Dictionary] = []
 var include_depth: int = 0
@@ -66,6 +68,12 @@ var binary_terrain_state:bool = false
 ## is set: an include inherits it, and what follows the include gets the value the include left
 ## (merge_pending_includes())
 var join_duplicated_events:bool = false
+## The original's Global.iHiddenEvents, a scenery's `config hiddenevents` (Globals.cpp:674-677, 1 by
+## default, Globals.h:120): with its bit 1 a named track takes the events named `<track>:event0` ...
+## `<track>:eventall2` too (TTrack::AssignEvents(), Track.cpp:968-980). The tracks take them after
+## the whole load (Track.cpp:3404), so the value is the last one read - an include's own leaves its
+## value for what follows it (merge_pending_includes())
+var hidden_events:int = DEFAULT_HIDDEN_EVENTS
 var dependencies:Dictionary = {}
 var cacheable:bool = true
 ## Objects parsed from the file (set by MaszynaSceneryProvider.parse_file_task())
@@ -88,6 +96,11 @@ var _files:Array[String] = []
 ## join_duplicated_events where this file begins, and what the file's `config` changes it to
 var _joined_at_start:bool = false
 var _join_changes:Array[JoinChange] = []
+## hidden_events where this file begins, and what the file's `config` changes it to: x the number of
+## includes submitted before the change, y the value
+var _hidden_at_start:int = DEFAULT_HIDDEN_EVENTS
+var _hidden_changes:Array[Vector2i] = []
+var _includes_submitted:int = 0
 
 
 ## A file the parse read, or looked for: one that is not there is skipped, as the original skips a
@@ -162,6 +175,12 @@ func set_join_duplicated_events(joined:bool) -> void:
     _join_changes.append(change)
 
 
+## `config hiddenevents <value>`: the last one read holds for the whole scenery (hidden_events)
+func set_hidden_events(value:int) -> void:
+    hidden_events = value
+    _hidden_changes.append(Vector2i(_includes_submitted, value))
+
+
 func push_rotate(new_rotate: Vector3):
     _rotates.push_front(rotate)
     rotate = new_rotate
@@ -190,6 +209,7 @@ func get_state() -> Dictionary:
         "binary_terrain": binary_terrain,
         "binary_terrain_state": binary_terrain_state,
         "join_duplicated_events": join_duplicated_events,
+        "hidden_events": hidden_events,
         "active_files": _active_files.duplicate(),
     }
 
@@ -205,6 +225,8 @@ static func from_state(state:Dictionary) -> MaszynaImporterContext:
     context.binary_terrain_state = state["binary_terrain_state"]
     context.join_duplicated_events = state["join_duplicated_events"]
     context._joined_at_start = state["join_duplicated_events"]
+    context.hidden_events = state["hidden_events"]
+    context._hidden_at_start = state["hidden_events"]
     context._active_files = state["active_files"]
     return context
 
@@ -220,6 +242,7 @@ func submit_include(task:Callable, filename:String, parameters:Dictionary) -> Pe
     state["include_depth"] = include_depth + 1
     # one bind() - chained binds prepend the later arguments
     pending.task_id = queue.submit(task.bind(filename, parameters, state, queue))
+    _includes_submitted += 1
     return pending
 
 
@@ -266,6 +289,17 @@ func merge_pending_includes() -> void:
         if not last and children[index]:
             joined = children[index].join_duplicated_events
     join_duplicated_events = joined
+
+    # the last hiddenevents read: the file's own changes and its includes' in the order they stand
+    var hidden:int = _hidden_at_start
+    var hidden_index:int = 0
+    for index:int in pendings.size() + 1:
+        while hidden_index < _hidden_changes.size() and _hidden_changes[hidden_index].x <= index:
+            hidden = _hidden_changes[hidden_index].y
+            hidden_index += 1
+        if index < pendings.size() and children[index]:
+            hidden = children[index].hidden_events
+    hidden_events = hidden
 
     objects = _merge_list(own_objects, object_sizes, children, "objects")
     for list_name:String in RESULT_LISTS:

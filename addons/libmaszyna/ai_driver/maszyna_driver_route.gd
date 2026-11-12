@@ -30,6 +30,9 @@ const MOVING_RANGE:float = 400.0
 const STANDING_RANGE:float = 1500.0
 ## Moving faster than this [km/h] (EU07_AI_MOVEMENT)
 const MOVEMENT_SPEED:float = 1.0
+## A stop ahead is announced while it is this far [m] (Driver.cpp:1224-1225)
+const APPROACH_ANNOUNCEMENT_MIN:float = 250.0
+const APPROACH_ANNOUNCEMENT_MAX:float = 750.0
 ## determine_braking_distance() (Driver.cpp:6597-6618): fDriverBraking of a train, the speed floor,
 ## a heavy train, the G setting's reaction
 const DRIVER_BRAKING:float = 0.06
@@ -150,7 +153,11 @@ const SHUNTING_ORDERS:int = MaszynaAIDriver.Order.SHUNT | MaszynaAIDriver.Order.
 const VELOCITY_COMMANDS:Array[String] = ["SetVelocity", "ShuntVelocity", "OutsideStation", "SetProximityVelocity"]
 
 ## What an entry means (TSpeedPosFlag, Driver.h:127-149)
-enum Kind { TRACK, SWITCH, LINE_END, SEMAPHORE, SHUNT_SEMAPHORE, OUTSIDE_STATION, COMMAND, STOP_POINT, OTHER }
+## How far past a cab signalling magnet it still acts [m] (magnetrange, Driver.cpp:1423)
+const MAGNET_RANGE:float = 1.0
+enum Kind {
+    TRACK, SWITCH, LINE_END, SEMAPHORE, SHUNT_SEMAPHORE, OUTSIDE_STATION, COMMAND, STOP_POINT, SECURITY_MAGNET, OTHER,
+}
 ## What a passenger stop asks of the driver's orders, in the order asked (TableUpdateStopPoint()):
 ## HOLD and GO set whether it waits for the way to be clear (moveStopHere); OBEY_TRAIN drives on as
 ## a train; TURN_THEN_TRAIN and TURN_THEN_SHUNT turn a push-pull train by its cab, then drive on;
@@ -246,13 +253,20 @@ var _stops_moved:Dictionary[RID, float] = {}
 ## How far [m] the train still has to drive along the route before the next station is shown as
 ## current (fLastStopExpDist, counted on the Mover's DistCounter there), NEXT_STATION_SHOWN for none
 var _next_station_distance:float = NEXT_STATION_SHOWN
+## What its train announces on this update (TController::announce()), none from a cargo train, and
+## by the same index the files of the names each says, taken as it is announced - before the update
+## goes on to the next station (TDynamicObject::announce(), DynObj.cpp:7985-8002);
+## the last announced (m_lastannouncement), -1 for none, and whether the next stop's is due once
+## clear of the stop left (m_makenextstopannouncement)
+var announcements:Array[MaszynaVehicleSoundServer.Announcement] = []
+var announcement_files:Array[PackedStringArray] = []
+var _last_announcement:int = -1
+var _next_stop_announcement:bool = false
+var _cargo:bool = false
 ## The next station's stop was read on this update (IsScheduledPassengerStopVisible)
 var _scheduled_stop_visible:bool = false
 ## The way the driver drove when the tracks were last read (iTableDirection), 0 to read them afresh
 var _direction:int = 0
-## The memories' commands it sent, by event, not to send them again until they change
-## (StopCommandSent(), MemCell.cpp:196-205)
-var _sent:Dictionary[RID, String] = {}
 ## The table (sSpeedTable): the tracks traced from the front vehicle, entered at `distance` along
 ## the table, and the entries on them, nearest first; along the table counts from where the front
 ## vehicle's middle stood when the table was first traced [m]
@@ -278,6 +292,8 @@ func update(
 ) -> void:
     commands.clear()
     stop_orders.clear()
+    announcements.clear()
+    announcement_files.clear()
     at_passenger_stop = false
     waiting_for_departure = false
     # read the other way, or afresh: what was ahead is not passed and no stop is done (TableClear()),
@@ -294,6 +310,7 @@ func update(
     var trainset_type:RailVehicleServer.TrainsetType = RailVehicleServer.trainset_get_type(
             RailVehicleServer.vehicle_get_trainset(vehicle))
     var cargo:bool = trainset_type == RailVehicleServer.TRAINSET_TYPE_CARGO
+    _cargo = cargo
     # moveLate: late on leaving the last station (UpdateDelayFlag(), Driver.cpp:5683-5692)
     _determine_distances(vehicle, order, speed, trainset, shunt_velocity, velocity_desired, coupling, cargo,
             braking.acceleration_threshold, timetable.latency < 0.0)
@@ -308,6 +325,11 @@ func update(
         if order == MaszynaAIDriver.Order.OBEY_TRAIN and _next_station_distance == 0.0:
             _next_station_distance = NEXT_STATION_SHOWN
             timetable.show_next_station(hours)
+            # the next stop announced once, after a stop the train stood at (UpdateNextStop(),
+            # Driver.cpp:6588-6592)
+            if _next_stop_announcement:
+                _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_NEXT, timetable)
+                _next_stop_announcement = false
     # the passenger stops left behind are forgotten
     var read:Dictionary[RID, bool] = {}
     for entry:Entry in _table:
@@ -342,6 +364,22 @@ func update(
     var command_entry:Entry = null
     var let_go:Array[Entry] = []
     for entry:Entry in _table:
+        # a cab signalling magnet sets the signal off while the front is past it by the vehicle's
+        # magnet distance, and is let go of past its range (cm_SecuritySystemMagnet,
+        # Driver.cpp:1419-1441) - a person driving cannot acknowledge it over the magnet, a computer can
+        if entry.kind == Kind.SECURITY_MAGNET:
+            var security:RailVehicleSecuritySystem = RailVehicleServer.vehicle_component_get(
+                    trainset.vehicles[0], RailVehicleComponentType.COMPONENT_SECURITY) as RailVehicleSecuritySystem \
+                    if trainset.vehicles else null
+            var magnet:float = security.shp_magnet_distance if security else 0.0
+            var magnet_passed:bool = entry.distance < -(magnet + MAGNET_RANGE)
+            if entry.distance < -magnet and (absf(speed) > MaszynaDriverTrainset.NO_MOVEMENT_SPEED or not magnet_passed):
+                VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_lock", human_driving)
+                commands.append([entry.command, entry.value1, entry.value2, entry.position])
+            if magnet_passed:
+                let_go.append(entry)
+                VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_lock", false)
+            continue
         if entry.kind == Kind.STOP_POINT:
             var result:StopResult = _update_stop_point(
                     entry, order, absf(speed), cargo, trainset, timetable, hours, signal_distance)
@@ -395,8 +433,10 @@ func update(
                             if allowed == 0.0:
                                 allowed = NO_LIMIT
                     Kind.COMMAND:
-                        # a memory's command for a standing driver, sent once (cm_Command, Driver.cpp:1708-1723)
-                        if go.is_empty() and not _sent.get(entry.event, "") == _signature(entry) \
+                        # a memory's command for a standing driver, while the memory has one not sent
+                        # (is_command(), Event.cpp:652; cm_Command, Driver.cpp:1704-1723)
+                        if go.is_empty() and entry.action.source.is_valid() \
+                                and MaszynaScenarioEventServer.memory_has_command(entry.action.source) \
                                 and (stop_here or distance <= max_proximity):
                             go = "Command"
                             command_entry = entry
@@ -519,9 +559,11 @@ func update(
             if not order & ~TAKES_SPEED:
                 commands.append(["ShuntVelocity", allowed, velocity_next, Vector3.ZERO])
         "Command":
-            if absf(speed) < COMMAND_SPEED:
+            # only in a mode that takes a speed, or waiting for orders (Driver.cpp:8340)
+            if not order & ~TAKES_SPEED and absf(speed) < COMMAND_SPEED:
                 commands.append([command_entry.command, command_entry.value1, command_entry.value2, command_entry.position])
-                _sent[command_entry.event] = _signature(command_entry)
+                # sent: the memory has no command any more, and says so (send_command(), Event.cpp:645-649)
+                MaszynaScenarioEventServer.memory_command_sent(command_entry.action.source)
     # the vehicles ahead, from the front of the trainset the way it drives (scan_obstacles(),
     # Driver.cpp:6638-6680)
     obstacle = null
@@ -626,7 +668,9 @@ func _append(segments:Array[TrackRouteSegment], front_along:float) -> void:
             entry.passed = entry.along <= front_along
             _read_command(entry)
             added.append(entry)
-        if segment.track_switch or segment.velocity == 0.0 or not segment.velocity == last_velocity or segment.line_end:
+        # a track an event changes the speed of counts whatever its speed now (iAction, Driver.cpp:647-648)
+        if segment.track_switch or segment.velocity == 0.0 or not segment.velocity == last_velocity or segment.line_end \
+                or MaszynaScenarioEventServer.track_is_velocity_changing(segment.track_rid):
             var entry:Entry = Entry.new()
             entry.kind = Kind.LINE_END if segment.line_end else (Kind.SWITCH if segment.track_switch else Kind.TRACK)
             entry.segment = segment
@@ -740,7 +784,11 @@ func _read_command(entry:Entry) -> void:
         "OutsideStation":
             entry.kind = Kind.OUTSIDE_STATION
             entry.velocity = NO_LIMIT
-        "SetProximityVelocity", "RoadVelocity", "SectionVelocity", "CabSignal", "Emergency_brake":
+        "CabSignal":
+            # the cab signalling's magnet on the track (cm_SecuritySystemMagnet, Driver.cpp:272)
+            entry.kind = Kind.SECURITY_MAGNET
+            entry.velocity = NO_LIMIT
+        "SetProximityVelocity", "RoadVelocity", "SectionVelocity", "Emergency_brake":
             entry.kind = Kind.OTHER
             entry.velocity = NO_LIMIT
         _:
@@ -753,6 +801,15 @@ func _read_command(entry:Entry) -> void:
                 # any other text is a command for a standing driver: it stops there for it
                 entry.kind = Kind.COMMAND
                 entry.velocity = 0.0
+
+
+## An announcement of its train (TController::announce(), Driver.cpp:4436-4450): the last one, and
+## none at all from a cargo train
+func _announce(announcement:MaszynaVehicleSoundServer.Announcement, timetable:MaszynaDriverTimetable) -> void:
+    _last_announcement = announcement
+    if not _cargo:
+        announcements.append(announcement)
+        announcement_files.append(timetable.announcement_files(announcement))
 
 
 ## What was read of the tracks is forgotten, read afresh on the next update - a player drove the
@@ -810,12 +867,20 @@ func _update_stop_point(
                     <= maxf(absf(entry.value2), 2.0 * max_proximity + trainset.length)
             if timetable.stop_closer else entry.distance < signal_distance)
     if speed > MOVEMENT_SPEED:
+        # the stop ahead announced (Driver.cpp:1222-1228)
+        if not _last_announcement == MaszynaVehicleSoundServer.ANNOUNCEMENT_APPROACHING \
+                and entry.distance < APPROACH_ANNOUNCEMENT_MAX and entry.distance > APPROACH_ANNOUNCEMENT_MIN:
+            _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_APPROACHING, timetable)
         return StopResult.USE
     if not at_passenger_stop:
         # standing short of it: let it draw up closer
         entry.velocity = NO_LIMIT
         return StopResult.USE
     var arrived:bool = timetable.arrive(hours)
+    # the stop announced as it is reached, the next one once clear of it (Driver.cpp:1252-1254)
+    if arrived:
+        _announce(MaszynaVehicleSoundServer.ANNOUNCEMENT_CURRENT, timetable)
+        _next_stop_announcement = true
     # further stations ahead: no horn before leaving this one (Driver.cpp:1236-1241)
     if arrived and not timetable.is_last_station():
         stop_orders.append(StopOrder.NO_START_HORN)
@@ -860,11 +925,6 @@ func _update_stop_point(
     # waiting for the departure time
     waiting_for_departure = true
     return StopResult.USE
-
-
-## A memory's command, as far as sending it again goes
-static func _signature(entry:Entry) -> String:
-    return "%s %s %s" % [entry.command, entry.value1, entry.value2]
 
 
 ## IsProperSemaphor() (Driver.cpp:373-388)

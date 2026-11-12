@@ -24,6 +24,7 @@ func _enable_plugin():
     add_autoload_singleton("FIZResourceLoaderRegistrar", "res://addons/libmaszyna/fiz/fiz_resource_loader_registrar.gd")
     add_autoload_singleton("MaszynaSceneryChunkRenderingServer", "res://addons/libmaszyna/scenery/maszyna_scenery_chunk_rendering_server.gd")
     add_autoload_singleton("MaszynaSmokeSourceLibrary", "res://addons/libmaszyna/smoke/maszyna_smoke_source_library.gd")
+    add_autoload_singleton("MaszynaConsoleCommands", "res://addons/libmaszyna/console/maszyna_console_commands.gd")
 
     add_custom_type(
         "MaszynaE3DModelInstance",
@@ -59,6 +60,7 @@ func _disable_plugin():
     remove_custom_type("MaszynaE3DModelInstance")
     remove_custom_type("MaszynaRailVehiclePhysicsNode")
 
+    remove_autoload_singleton("MaszynaConsoleCommands")
     remove_autoload_singleton("FIZResourceLoaderRegistrar")
     remove_autoload_singleton("MaszynaVehicleProfileManager")
     remove_autoload_singleton("MaszynaVehicleSystem")

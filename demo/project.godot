@@ -59,6 +59,7 @@ DebugMenu="*uid://cggqb75a8w8r"
 SceneryServer="*res://addons/libreloaded/scenery/scenery_server.gd"
 WorldSceneryProvider="*res://addons/libreloaded/world/world_scenery_provider.gd"
 MaszynaSceneryProvider="*uid://d33kyubri6utw"
+MaszynaConsoleCommands="*res://addons/libmaszyna/console/maszyna_console_commands.gd"
 
 [debug]
 

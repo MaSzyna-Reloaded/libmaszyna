@@ -18,6 +18,7 @@ const PYTHON2_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_scree
 const PYTHON2_IMPORT_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_import_screen"
 const PYTHON2_LOAD_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_load_screen"
 const PYTHON2_DRAW_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_draw_screen"
+const PYTHON2_CP1250_SCRIPT:String = "res://tests/fixtures/python/fixture_python2_cp1250_screen"
 const BASE_SCRIPT:String = "res://tests/fixtures/python/fixture_base_screen"
 ## The modules the fixtures import from their game directory
 const FIXTURE_MODULES:String = "res://tests/fixtures/fixture_modules"
@@ -85,6 +86,22 @@ func test_script_draws_the_state_into_the_texture_and_sends_commands(runtime:Str
     var average:Color = server.screen_get_average_color(screen)
     assert_almost_eq(average.r, (1.0 + 128.0 / 255.0) * 0.5, 0.01)
     assert_almost_eq(average.a, 1.0, 0.01)
+    assert_eq(_failures, PackedStringArray())
+
+
+func test_a_string_reaches_python_2_7_in_cp1250() -> void:
+    var server:Object = _create_server_on("2.7")
+    if not server:
+        return
+    var screen:RID = server.screen_create(ProjectSettings.globalize_path(PYTHON2_CP1250_SCRIPT), _on_commands_received)
+
+    server.screen_request_render(screen, {"do": "Bałtyk Plaża"})
+    await wait_until(func() -> bool: return _commands.size() > 0, RENDER_TIMEOUT_SEC)
+
+    var code_points:PackedStringArray = []
+    for character:String in "Bałtyk Plaża":
+        code_points.append("%x" % character.unicode_at(0))
+    assert_eq(_commands, PackedStringArray([" ".join(code_points)]), "decoded as cp1250, every letter as it was")
     assert_eq(_failures, PackedStringArray())
 
 

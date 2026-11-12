@@ -155,9 +155,12 @@ static func read_mmd_data(
 ## (TDynamicObject::LoadMMediaFile_mdload(), DynObj.cpp:7195): the vehicle's own override for that
 ## cargo, then a model named for this vehicle and the cargo together, then one named after the
 ## cargo alone. Empty when the cargo has no model anywhere, which is not an error - plenty of
-## loads are only mass.
-static func load_model_filename(mmd_data:MaszynaVehicleMmdData, load_name:String) -> String:
-    if not load_name:
+## loads are only mass - and for a cargo the vehicle does not accept: the original assigns none of
+## those (TMoverParameters::AssignLoad(), Mover.cpp: "this type is unsupported") and draws the model
+## of the load it took (DynObj.cpp:3008).
+static func load_model_filename(mmd_data:MaszynaVehicleMmdData, load_name:String,
+        accepted_loads:Array[String]) -> String:
+    if not load_name or not accepted_loads.has(load_name):
         return ""
     var override:String = mmd_data.load_models.get(load_name.to_lower(), "")
     if override:

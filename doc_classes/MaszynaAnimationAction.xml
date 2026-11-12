@@ -4,7 +4,7 @@
 		The original's [code]animation[/code] event, [code]rotate[/code] and [code]translate[/code].
 	</brief_description>
 	<description>
-		Moves a submodel of its model instances towards the given angles or offset at a speed (animation_event, [code]Event.cpp:1569-1716[/code]). [code]digital[/code] and [code].vmd[/code] animations are not ported.
+		Moves a submodel of its model instances towards the given angles or offset at a speed (animation_event, [code]Event.cpp:1569-1716[/code]). A [code]digital[/code] or [code].vmd[/code] animation runs nothing, as in the original ([code]Event.cpp:1709[/code]).
 	</description>
 	<tutorials>
 	</tutorials>

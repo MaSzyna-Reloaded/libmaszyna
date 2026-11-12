@@ -31,7 +31,10 @@ namespace godot {
         const String text = String::utf8(luaL_checkstring(p_state, 2));
         const double value1 = luaL_checknumber(p_state, 3);
         const double value2 = luaL_checknumber(p_state, 4);
-        LuaModules::server<MaszynaScenarioEventServer>(p_state)->memory_set_values(memory, text, value1, value2);
+        MaszynaScenarioEventServer *server = LuaModules::server<MaszynaScenarioEventServer>(p_state);
+        server->memory_set_values(memory, text, value1, value2);
+        // all three written, the text among them (scriptapi_memcell_update(), lua.cpp:329-337)
+        server->memory_check_command(memory);
         return 0;
     }
 

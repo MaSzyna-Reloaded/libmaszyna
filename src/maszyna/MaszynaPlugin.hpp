@@ -17,6 +17,7 @@ namespace godot {
     class MaszynaTrackRenderingBackend;
     class MaszynaTractionServer;
     class MaszynaScenarioEventServer;
+    class MaszynaTurntableServer;
     class PythonScreenServer;
 
     /* MaSzyna's vehicles and sceneries for Rails Reloaded: the vehicles simulated on the vendored
@@ -40,6 +41,7 @@ namespace godot {
             MaszynaE3DRoadVehicleRenderingServer *road_vehicle_rendering_server = nullptr;
             MaszynaTractionServer *traction_server = nullptr;
             MaszynaScenarioEventServer *scenario_event_server = nullptr;
+            MaszynaTurntableServer *turntable_server = nullptr;
             MaszynaCarDriver *car_driver = nullptr;
             MaszynaVehicleSoundServer *vehicle_sound_server = nullptr;
             MaszynaMoverVehicleServer *mover_vehicle_server = nullptr;
@@ -56,5 +58,7 @@ namespace godot {
             void register_classes() override;
             void create_servers() override;
             void free_servers() override;
+            /* The scenery's memory cells, as the scenario waits on them (memory_dump()) */
+            Dictionary dump_state() const override;
     };
 } // namespace godot

@@ -87,3 +87,12 @@ func test_a_number_instead_of_a_timetable_is_the_speed() -> void:
     assert_eq(StationServer.timetable_get_speed_limit(timetable), 90.0)
     assert_eq(StationServer.timetable_get_entry_count(timetable), 0)
     assert_eq(MaszynaTimetableFactory.load_timetable(FIXTURES, "none"), RID(), "no file and no number")
+
+
+## A scheduled stop's name sound is the file of its name in the scenery's directory, or else in
+## sounds/sip (load_sounds(), mtable.cpp:604-632); a station passed has none
+func test_a_stop_takes_the_sound_of_its_name() -> void:
+    var timetable:RID = MaszynaTimetableFactory.load_timetable(FIXTURES, "test_timetable")
+
+    assert_eq(_extra(timetable, 0, MaszynaTimetableFactory.EXTRA_NAME_SOUND), FIXTURES.path_join("Poczatkowa.ogg"))
+    assert_null(_extra(timetable, 2, MaszynaTimetableFactory.EXTRA_NAME_SOUND), "passed: no stop")

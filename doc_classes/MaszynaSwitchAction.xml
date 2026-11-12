@@ -4,16 +4,36 @@
 		The original's [code]switch[/code] event.
 	</brief_description>
 	<description>
-		Sets its switches to one track (switch_event, [code]Event.cpp:1824-1893[/code]). The blade speed and the second blade's delay it may carry are not ported.
+		Sets its switches to one track (switch_event, [code]Event.cpp:1822-1893[/code]), with the blade speed and the second blade's delay it may carry ([code]TTrack::Switch()[/code], [code]Track.cpp:1752-1762[/code]); a negative one leaves the switch's own. Its turntables are unlocked or locked ([MaszynaTurntableServer], [code]Track.cpp:1787-1833[/code]).
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="set_switches">
+			<return type="void" />
+			<description>
+				The switches go to [member active_track] with [member blade_speed] and [member blade_delay], the [member turntables] are unlocked or locked - what running the event does, and what the scenery's load does to an event setting state 0 with a delay ([code]switch_event::init()[/code], [code]Event.cpp:1834-1842[/code]).
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="active_track" type="int" setter="set_active_track" getter="get_active_track" enum="TrackServer.SwitchTrack" default="0">
 			The track the switches are set to.
 		</member>
+		<member name="blade_delay" type="float" setter="set_blade_delay" getter="get_blade_delay" default="-1.0">
+			How far past its travel the second blade goes on [m]; negative for the switch's own.
+		</member>
+		<member name="blade_speed" type="float" setter="set_blade_speed" getter="get_blade_speed" default="-1.0">
+			How fast the blades move [m/s]; negative for the switch's own.
+		</member>
 		<member name="tracks" type="RID[]" setter="set_tracks" getter="get_tracks" default="[]">
 			The [TrackServer] switch tracks set.
+		</member>
+		<member name="turntables" type="RID[]" setter="set_turntables" getter="get_turntables" default="[]">
+			The [MaszynaTurntableServer] turntables of its tracks.
+		</member>
+		<member name="unlock_turntables" type="bool" setter="set_unlock_turntables" getter="get_unlock_turntables" default="false">
+			Whether the [member turntables] are unlocked - by any state but 0 ([code]Track.cpp:1789[/code]) - or locked.
 		</member>
 	</members>
 </class>

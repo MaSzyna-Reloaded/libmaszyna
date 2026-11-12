@@ -167,6 +167,9 @@ namespace godot {
                 D_METHOD("vehicle_set_bank_builder", "vehicle", "builder"),
                 &MaszynaVehicleSoundServer::vehicle_set_bank_builder);
         ClassDB::bind_method(
+                D_METHOD("announcements_register", "player", "vehicle", "build_stop_event", "distance_parameter"),
+                &MaszynaVehicleSoundServer::announcements_register);
+        ClassDB::bind_method(
                 D_METHOD("bank_register", "player", "vehicle", "registration"),
                 &MaszynaVehicleSoundServer::bank_register);
 
@@ -248,6 +251,11 @@ namespace godot {
         BIND_ENUM_CONSTANT(QUANTITY_PANTOGRAPH_DOWN);
         BIND_ENUM_CONSTANT(QUANTITY_DERAILED);
         BIND_ENUM_CONSTANT(QUANTITY_MAX);
+        BIND_ENUM_CONSTANT(ANNOUNCEMENT_APPROACHING);
+        BIND_ENUM_CONSTANT(ANNOUNCEMENT_CURRENT);
+        BIND_ENUM_CONSTANT(ANNOUNCEMENT_NEXT);
+        BIND_ENUM_CONSTANT(ANNOUNCEMENT_DESTINATION);
+        BIND_ENUM_CONSTANT(ANNOUNCEMENT_MAX);
     }
 
     MaszynaVehicleSoundServer::MaszynaVehicleSoundServer() {
@@ -257,6 +265,10 @@ namespace godot {
         }
         set_parameter_values_method = "set_parameter_values";
         set_cut_method = "set_cut";
+        play_method = "play";
+        stop_method = "stop";
+        is_playing_method = "is_playing";
+        set_parameter_method = "set_parameter";
     }
 
     MaszynaVehicleSoundServer::~MaszynaVehicleSoundServer() {
@@ -451,6 +463,134 @@ namespace godot {
         sweep_elapsed = SWEEP_INTERVAL;
     }
 
+    void MaszynaVehicleSoundServer::announcements_register(
+            const uint64_t p_player, const RID &p_vehicle, const Callable &p_build_stop_event,
+            const StringName &p_distance_parameter) {
+        _wire();
+        Object *player = ObjectDB::get_instance(ObjectID(p_player));
+        VehicleServer *vehicle_server = VehicleServer::get_instance();
+        ERR_FAIL_NULL(player);
+        ERR_FAIL_NULL(vehicle_server);
+        const Ref<VehicleController> controller = vehicle_server->vehicle_get_controller(p_vehicle);
+        ERR_FAIL_COND(controller.is_null());
+        PublicAddress &address = public_addresses.insert(p_vehicle, PublicAddress())->value;
+        address.player = ObjectID(p_player);
+        address.build_stop_event = p_build_stop_event;
+        address.distance_parameter = p_distance_parameter;
+        // an announcement is this server's to queue and play: it takes the vehicle's command, as a
+        // server whose logic a command is does (RailVehicleServer and load_add)
+        controller->register_command(
+                ANNOUNCE_COMMAND, callable_mp(this, &MaszynaVehicleSoundServer::_on_announce_command).bind(p_vehicle));
+        player->connect(
+                "tree_exiting",
+                callable_mp(this, &MaszynaVehicleSoundServer::_on_public_address_exiting).bind(p_vehicle),
+                CONNECT_ONE_SHOT);
+        _set_advancing(true);
+    }
+
+    void MaszynaVehicleSoundServer::_on_public_address_exiting(const RID &p_vehicle) {
+        public_addresses.erase(p_vehicle);
+        VehicleServer *vehicle_server = VehicleServer::get_instance();
+        const Ref<VehicleController> controller = vehicle_server != nullptr
+                                                          ? vehicle_server->vehicle_get_controller(p_vehicle)
+                                                          : Ref<VehicleController>();
+        if (controller.is_valid()) {
+            controller->unregister_command(ANNOUNCE_COMMAND);
+        }
+    }
+
+    void MaszynaVehicleSoundServer::_on_announce_command(
+            const int p_announcement, const Variant &p_stops, const RID &p_vehicle) {
+        PublicAddress *address = public_addresses.getptr(p_vehicle);
+        ERR_FAIL_NULL(address);
+        ERR_FAIL_INDEX(p_announcement, ANNOUNCEMENT_MAX);
+        // an announcement chimed first, when the vehicle has a chime (DynObj.cpp:7966)
+        _announce(*address, static_cast<Announcement>(p_announcement), p_stops, true);
+    }
+
+    void MaszynaVehicleSoundServer::_announce(
+            PublicAddress &p_address, const Announcement p_announcement, const PackedStringArray &p_stops,
+            const bool p_chime) {
+        Object *player = ObjectDB::get_instance(p_address.player);
+        ERR_FAIL_NULL(player);
+        const StringName announcement = ANNOUNCEMENT_EVENTS[p_announcement];
+        // the destination's name, the stop's for any other
+        const int64_t stop_index = p_announcement == ANNOUNCEMENT_DESTINATION ? DESTINATION_FILE : STOP_FILE;
+        const String stop_file = stop_index < p_stops.size() ? p_stops[stop_index] : String();
+        bool chime = p_chime;
+        if (_has_event(player, announcement) && !stop_file.is_empty()) {
+            if (chime && _has_event(player, CHIME_EVENT)) {
+                p_address.queue.push_back(CHIME_EVENT);
+                chime = false;
+            }
+            // a stop's name is made the first time it is announced, an event of the player's bank
+            const StringName stop_event = stop_file;
+            if (!_has_event(player, stop_event)) {
+                Object *bank = Object::cast_to<Object>(player->get("bank"));
+                ERR_FAIL_NULL(bank);
+                Array events = bank->get("events");
+                events.push_back(p_address.build_stop_event.call(stop_file));
+                bank->set("events", events);
+            }
+            p_address.queue.push_back(announcement);
+            p_address.queue.push_back(stop_event);
+        }
+        if (p_announcement == ANNOUNCEMENT_NEXT) {
+            _announce(p_address, ANNOUNCEMENT_DESTINATION, p_stops, chime);
+        }
+    }
+
+    bool MaszynaVehicleSoundServer::_has_event(Object *p_player, const StringName &p_event) {
+        const Object *bank = Object::cast_to<Object>(p_player->get("bank"));
+        const Array events = bank != nullptr ? Array(bank->get("events")) : Array();
+        for (const Variant &event: events) {
+            const Object *sfx_event = Object::cast_to<Object>(event);
+            if (sfx_event != nullptr && StringName(sfx_event->get("name")) == p_event) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void MaszynaVehicleSoundServer::_play_announcements() {
+        VehicleServer *vehicle_server = VehicleServer::get_instance();
+        const RailVehicleServer *rail = RailVehicleServer::get_instance();
+        const TrainSoundListener3D *heard_by = _get_listener();
+        ERR_FAIL_NULL(vehicle_server);
+        ERR_FAIL_NULL(rail);
+        for (KeyValue<RID, PublicAddress> &entry: public_addresses) {
+            PublicAddress &address = entry.value;
+            Object *player = ObjectDB::get_instance(address.player);
+            if (player == nullptr) {
+                continue;
+            }
+            // the low voltage of either kind (Power24vIsAvailable, Power110vIsAvailable, DynObj.cpp:4790)
+            const Ref<RailVehiclePowerSupply> power_supply =
+                    rail->vehicle_component_get(entry.key, RailVehicleComponentType::COMPONENT_POWER_SUPPLY);
+            const bool powered = power_supply.is_valid() &&
+                                 (power_supply->get_power24_available() || power_supply->get_power110_available());
+            if (!powered) {
+                if (!address.playing.is_empty()) {
+                    player->call(stop_method, address.playing);
+                    address.playing = StringName();
+                }
+                address.queue.clear();
+                continue;
+            }
+            if (heard_by != nullptr) {
+                player->call(
+                        set_parameter_method, address.distance_parameter,
+                        heard_by->get_global_position().distance_to(vehicle_server->vehicle_get_position(entry.key)));
+            }
+            if (!address.queue.is_empty() &&
+                (address.playing.is_empty() || !static_cast<bool>(player->call(is_playing_method, address.playing)))) {
+                address.playing = address.queue[0];
+                address.queue.remove_at(0);
+                player->call(play_method, address.playing);
+            }
+        }
+    }
+
     void MaszynaVehicleSoundServer::_on_bank_exiting(const uint64_t p_player) {
         const ObjectID player_id(p_player);
         if (!banks.has(player_id)) {
@@ -553,6 +693,7 @@ namespace godot {
     }
 
     void MaszynaVehicleSoundServer::_on_vehicle_freed(const RID &p_vehicle) {
+        public_addresses.erase(p_vehicle);
         bank_builders.erase(p_vehicle);
         bank_build_queue.erase(p_vehicle);
         if (vehicles.has(p_vehicle)) {
@@ -653,6 +794,7 @@ namespace godot {
     /* The sounds' state moves with the simulation - an axle's run to the next rail joint: its
      * seconds, not the frame's */
     void MaszynaVehicleSoundServer::_on_simulation_advanced(const double p_seconds) {
+        _play_announcements();
         sweep_elapsed += p_seconds;
         if (sweep_elapsed >= SWEEP_INTERVAL) {
             sweep_elapsed = 0.0;
@@ -732,7 +874,7 @@ namespace godot {
                 tree->connect("process_frame", callable_mp(this, &MaszynaVehicleSoundServer::_on_bank_build_frame));
             }
         }
-        _set_advancing(!vehicles.is_empty() || !bank_builders.is_empty());
+        _set_advancing(!vehicles.is_empty() || !bank_builders.is_empty() || !public_addresses.is_empty());
     }
 
     /* The queued vehicles' sound, a budget a frame: a station's worth of vehicles coming within

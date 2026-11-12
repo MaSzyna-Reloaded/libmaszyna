@@ -51,8 +51,9 @@ func import(p:MaszynaParser, context: MaszynaImporterContext):
             context.sounds.append(sound)
 
         "traction":
-            var traction = traction_importer.import(p, context)
+            var traction:MaszynaTractionData = traction_importer.import(p, context)
             if traction:
+                traction.name = name
                 context.traction.append(traction)
 
         "tractionpowersource":

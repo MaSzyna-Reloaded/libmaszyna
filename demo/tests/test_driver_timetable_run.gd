@@ -24,6 +24,8 @@ const DRAWOWO_ARRIVAL:float = 10.0 + 46.0 / 60.0
 const DRAWOWO_DEPARTURE:float = 10.0 + 47.0 / 60.0
 const CHELMINOW_ARRIVAL:float = 10.0 + 54.0 / 60.0
 const MINUTE:float = 1.0 / 60.0
+## The file of an entry's stop name, by the entry
+const NAME_SOUND:String = "stop%d.ogg"
 ## Arriving at Krzyżowa at 10:35 (the test below), late against its arrival at 10:31 [min]; driven
 ## clear of it at 10:36, late against its departure at 10:32; and some time later on the way
 const KRZYZOWA_ARRIVAL_LATE_MINUTES:int = 4
@@ -48,6 +50,8 @@ var _vehicle:RID = RID()
 var _trainset:MaszynaDriverTrainset = null
 var _route:MaszynaDriverRoute = null
 var _timetable:MaszynaDriverTimetable = null
+## What the train announced on the updates so far
+var _announced:Array[MaszynaVehicleSoundServer.Announcement] = []
 ## Where the front of the train is [m along the line]
 var _position:float = START
 
@@ -216,6 +220,66 @@ func test_the_terminus_ends_the_timetable() -> void:
     assert_eq(_timetable.timetable, RID(), "the timetable ends at the terminus")
 
 
+## The train announces the stop it stands at, the next stop once clear of it, and a stop ahead
+## between 250 and 750 m from it - each once (Driver.cpp:1222-1228, 1252-1254, 6588-6592)
+func test_the_train_announces_its_stops() -> void:
+    _announced.clear()
+    _update(KRZYZOWA_DEPARTURE - MINUTE, STANDING_SPEED)
+    _update(KRZYZOWA_DEPARTURE, STANDING_SPEED)
+    _run_to(STOPS[0] + CLEAR_OF_THE_STOP, KRZYZOWA_DEPARTURE + MINUTE)
+    assert_eq(_announced, [MaszynaVehicleSoundServer.ANNOUNCEMENT_CURRENT, MaszynaVehicleSoundServer.ANNOUNCEMENT_NEXT],
+            "Krzyżowa at its W4, then the next stop")
+    _announced.clear()
+
+    _run_to(STOPS[2] - 100.0, DRAWOWO_ARRIVAL - MINUTE)
+    assert_eq(_announced, [MaszynaVehicleSoundServer.ANNOUNCEMENT_APPROACHING],
+            "Drawowo_Główne ahead; Markowo_Górne, passed at speed, not")
+
+
+
+## The driver tells the train's run what it did, as it knows where the train stops: standing at its
+## first W4 it has arrived, and it has not left while it stands; it left once clear of the stop
+## (UpdateNextStop()), passed the station it did not stop at, and arrived at its next stop
+## (UpdateMTable() at the W4, Driver.cpp:1231, 6581-6592)
+func test_the_driver_tells_the_run_where_the_train_arrived_and_left() -> void:
+    _timetable.take(_timetable.timetable, RailVehicleServer.vehicle_get_trainset(_vehicle))
+    var run:RID = _timetable.run
+
+    _update(KRZYZOWA_DEPARTURE - MINUTE, STANDING_SPEED)
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 0), StationServer.NO_TIME, "arrived at its W4")
+    _update(KRZYZOWA_DEPARTURE, STANDING_SPEED)
+    assert_eq(StationServer.run_entry_get_actual_departure(run, 0), StationServer.NO_TIME, "not left while it stands")
+
+    _run_to(STOPS[0] + CLEAR_OF_THE_STOP, KRZYZOWA_DEPARTURE + MINUTE)
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 0), StationServer.NO_TIME, "left once clear of it")
+    _run_to(STOPS[2] - 100.0, DRAWOWO_ARRIVAL)
+    assert_eq(StationServer.run_entry_get_actual_arrival(run, 1), StationServer.NO_TIME, "Markowo_Górne not stopped at")
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 1), StationServer.NO_TIME, "but passed")
+    _update(DRAWOWO_ARRIVAL, STANDING_SPEED)
+    assert_eq(StationServer.run_get_current_entry(run), 2)
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 2), StationServer.NO_TIME, "arrived at Drawowo_Główne")
+    _timetable.take(RID())
+
+## A late train leaves at once on the update it stops in, and still announces the stop it stood at,
+## not the next one (current_stop_sound() while StationIndex is still the stop's, DynObj.cpp:7991-7993)
+func test_a_late_train_announces_the_stop_it_stands_at() -> void:
+    var extras:Array[Dictionary] = []
+    for entry:int in _timetable.get_entry_count():
+        var extra:Dictionary = StationServer.timetable_entry_get_extra(_timetable.timetable, entry)
+        extras.append(extra)
+        var named:Dictionary = extra.duplicate()
+        named[MaszynaTimetableFactory.EXTRA_NAME_SOUND] = NAME_SOUND % entry
+        StationServer.timetable_entry_set_extra(_timetable.timetable, entry, named)
+
+    _update(KRZYZOWA_DEPARTURE + 3.0 * MINUTE, STANDING_SPEED)
+
+    assert_eq(_timetable.station_index, 1, "late: it went on at once")
+    assert_eq(_route.announcements, [MaszynaVehicleSoundServer.ANNOUNCEMENT_CURRENT])
+    assert_eq(_route.announcement_files, [PackedStringArray([NAME_SOUND % 0, NAME_SOUND % 3])],
+            "Krzyżowa's name, then the last station's")
+    for entry:int in extras.size():
+        StationServer.timetable_entry_set_extra(_timetable.timetable, entry, extras[entry])
+
 ## The train driven forward to `position` [m] in steps at RUNNING_SPEED, the route read at every
 ## step, the time `hours`
 func _run_to(position:float, hours:float) -> void:
@@ -231,6 +295,7 @@ func _update(hours:float, speed:float) -> void:
     _route.update(_vehicle, Order.OBEY_TRAIN, false, LINE_VELOCITY, speed, MaszynaDriverSpeed.EASY_ACCELERATION,
             LINE_VELOCITY, _trainset, _timetable, hours, LINE_VELOCITY, LINE_VELOCITY, false,
             MaszynaDriverBraking.new(), false)
+    _announced.append_array(_route.announcements)
 
 
 ## The driver's timetable state (MaszynaDriverTimetable.state_is_standing())

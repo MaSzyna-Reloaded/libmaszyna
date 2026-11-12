@@ -96,6 +96,10 @@ namespace godot {
     }
 
     void MaszynaTractionServer::network_build() {
+        // built afresh from the spans and the sources: a build after a span was freed or added (the
+        // editor, a hot reload) must not keep the neighbours and the feeds of the one before; the
+        // fuses' state is the simulation's and stays
+        networks.clear();
         _resolve_power_sources();
         _connect_wires();
         _resolve_parallel_spans();

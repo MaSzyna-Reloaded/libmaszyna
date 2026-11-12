@@ -53,6 +53,14 @@
 				How many lights of [param instance] are addressed by index ([code]light_on00[/code]...), 0 until the instance is built.
 			</description>
 		</method>
+		<method name="instance_get_light_mode" qualifiers="const">
+			<return type="int" enum="MaszynaE3DRenderingServer.LightMode" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="light" type="int" />
+			<description>
+				The mode light [param light] of [param instance] is in now; [constant LIGHT_MODE_OFF] for one never set.
+			</description>
+		</method>
 		<method name="instance_get_model" qualifiers="const">
 			<return type="MaszynaE3DModel" />
 			<param index="0" name="instance" type="RID" />
@@ -81,6 +89,22 @@
 				The skins the instance's model is drawn with.
 			</description>
 		</method>
+		<method name="instance_get_submodel_rotation" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+				The degrees [param submodel] of [param instance] is turned to now about its own x, y and z by [method instance_set_submodel_rotation], zero for a submodel no event animated ([code]TAnimContainer::vRotateAngles[/code]).
+			</description>
+		</method>
+		<method name="instance_get_submodel_translation" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="instance" type="RID" />
+			<param index="1" name="submodel" type="String" />
+			<description>
+				The offset [param submodel] of [param instance] is moved to now by [method instance_set_submodel_translation], zero for a submodel no event animated ([code]TAnimContainer::vTranslation[/code]).
+			</description>
+		</method>
 		<method name="instance_set_layer_mask">
 			<return type="void" />
 			<param index="0" name="instance" type="RID" />
@@ -105,8 +129,9 @@
 			<param index="0" name="instance" type="RID" />
 			<param index="1" name="light" type="int" />
 			<param index="2" name="mode" type="int" enum="MaszynaE3DRenderingServer.LightMode" />
+			<param index="3" name="threshold" type="float" default="0.0" />
 			<description>
-				The light [param light] of [param instance] in [param mode], blinking at the default times.
+				The light [param light] of [param instance] in [param mode], blinking at the default times; a [constant LIGHT_MODE_DARK] or [constant LIGHT_MODE_HOME] light comes on at the light level [param threshold], 0 for the default.
 			</description>
 		</method>
 		<method name="instance_set_lights_colors">

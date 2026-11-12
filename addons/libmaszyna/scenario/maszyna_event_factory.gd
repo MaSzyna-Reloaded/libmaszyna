@@ -8,12 +8,13 @@ class_name MaszynaEventFactory
 ## and conditions. Names are matched in lower case, as the original reads them (its parser lowers
 ## every token it is not told to keep, parser.h:71).
 ##
-## Built: `updatevalues`, `addvalues`, `copyvalues`, `multiple`, `lights`, `switch`, `trackvel`,
-## `voltage`, `animation` (rotate, translate), `sound`, `putvalues` and `getvalues` (the commands a
-## vehicle acts on); conditions `memcompare`, `memcompareex`,
-## `probability`, `trackoccupied`, `trackfree`; a track's `event0/1/2`, `eventall0/1/2` and the
-## events named `<track>:<slot>` (Track.cpp:970-983); the isolated sections with their own memory and
-## `<section>:busy/:free/:inc/:dec` events. The other types get an event without an action (TODO.md).
+## Built: every type of make_event() (Event.cpp:2207-2224) - `updatevalues`, `addvalues`,
+## `copyvalues`, `getvalues`, `putvalues`, `whois`, `logvalues`, `multiple`, `switch`, `trackvel`,
+## `sound`, `texture`, `animation` (rotate, translate), `lights`, `voltage`, `visible`, `friction`,
+## and `message`, which does nothing in the original either (Event.cpp:2174-2188); conditions
+## `memcompare`, `memcompareex`, `probability`, `trackoccupied`, `trackfree`; a track's
+## `event0/1/2`, `eventall0/1/2` and the events named `<track>:<slot>` (Track.cpp:970-983); the
+## isolated sections with their own memory and `<section>:busy/:free/:inc/:dec` events.
 ## A name defined more than once runs its definitions as the scenery's `joinduplicatedevents`
 ## says (MaszynaEventData.joined; see where the names defined more than once are set up).
 
@@ -23,16 +24,17 @@ const FIELD_KEPT:String = "*"
 const ELSE:String = "else"
 ## An event with this in its name is queued when the scenery starts (Event.cpp:2341-2345)
 const ONSTART:String = "onstart"
-## `copyvalues` copies all three fields unless given a mask (Event.cpp:898)
+## `copyvalues` and `whois` set all three fields unless given a mask (Event.cpp:898, 997)
 const ALL_FIELDS:int = MaszynaScenarioEventServer.MEMORY_FIELD_TEXT | MaszynaScenarioEventServer.MEMORY_FIELD_VALUE1 | MaszynaScenarioEventServer.MEMORY_FIELD_VALUE2
 ## `<text> <value1> <value2>`
 const MEMCOMPARE_FIELDS:int = 3
 ## The commands a driver reads on the tracks ahead rather than being sent them: a `putvalues`
 ## with one of these (or a stop point) and a `getvalues` whose memory holds one of the others at
-## the start are passive - never run, only read (Event.cpp:577-597, 715-754). `CabSignal` stays active
-## unlike the original: a vehicle the player drives has no driver to read the magnet (TODO.md)
+## the start are passive - never run, only read (Event.cpp:577-597, 715-754); a `CabSignal` is the
+## cab signalling's magnet, read by the driver of the vehicle crossing it, a player's too
+## (Event.cpp:748-751; cm_SecuritySystemMagnet, Driver.cpp:1419-1441)
 const PASSIVE_PUT_COMMANDS:Array[String] = [
-    "SetVelocity", "RoadVelocity", "SectionVelocity", "ShuntVelocity", "OutsideStation",
+    "SetVelocity", "RoadVelocity", "SectionVelocity", "ShuntVelocity", "OutsideStation", "CabSignal",
 ]
 const PASSENGER_STOP_POINT:String = "PassengerStopPoint:"
 ## What follows it in a stop's name only makes the name unique
@@ -45,8 +47,17 @@ const DROPPED_DUPLICATE_PREFIX:String = "#"
 const DROPPED_DUPLICATE_SUFFIXES:Array[String] = ["lineinfo:", "_warning", "_shp"]
 ## A launcher's HHMM (EvLaunch.cpp:139-140)
 const HHMM_HOUR:int = 100
-## A launcher firing the first time it is in range (EvLaunch.cpp:182-186) - not ported (TODO.md)
+## The event of a memory queued when its command is sent (MemCell.cpp:265)
+const SENT_EVENT_SUFFIX:String = ":sent"
+## A launcher firing the first time it is in range (EvLaunch.cpp:136-137, 182-186)
 const FIRE_ONCE_IN_RANGE:float = -10000.0
+## The codes of a launcher's key given by its code (vk_to_glfw_key(), EvLaunch.cpp:32-50): the
+## capital letters, the small ones, and how far apart the two are
+const KEY_CODE_CAPITAL_A:int = 65
+const KEY_CODE_CAPITAL_Z:int = 90
+const KEY_CODE_SMALL_A:int = 97
+const KEY_CODE_SMALL_Z:int = 122
+const KEY_CODE_CASE_OFFSET:int = 32
 ## A track's event slots by the key the `.scn` gives them (Track.cpp:815-858, 952-954)
 const TRACK_EVENTS:Dictionary[String, MaszynaScenarioEventServer.TrackEvent] = {
     "event0": MaszynaScenarioEventServer.TRACK_EVENT0,
@@ -98,10 +109,36 @@ const SOUND_MODES:Dictionary[int, MaszynaSoundAction.Mode] = {
     -1: MaszynaSoundAction.Mode.LOOP,
 }
 ## `animation <rotate|translate> <submodel> <x> <y> <z> <speed>` (Event.cpp:1606-1682)
+## `animation digital <submodel> ...`: a counter's submodel, set up and never run (Event.cpp:1640-1653)
+const DIGITAL_ANIMATION:String = "digital"
 const ANIMATION_MODES:Dictionary[String, MaszynaAnimationAction.Mode] = {
     "rotate": MaszynaAnimationAction.MODE_ROTATE,
     "translate": MaszynaAnimationAction.MODE_TRANSLATE,
 }
+## The types that read a `condition` block; the others pass over it (Event.cpp:510, 1261, 316-321)
+const CONDITIONED_TYPES:Array[String] = ["updatevalues", "addvalues", "multiple", "lights"]
+## What each type is aimed at - an event whose target does not exist is disabled, a `multiple` only
+## loses its memory comparison (init_targets(), Event.h:743-752; multi_event::init(), Event.cpp:1213-1222)
+const MEMORY_TYPES:Array[String] = [
+    "updatevalues", "addvalues", "copyvalues", "getvalues", "whois", "logvalues", "multiple",
+]
+const MODEL_TYPES:Array[String] = ["texture", "animation"]
+const TRACK_TYPES:Array[String] = ["switch", "trackvel"]
+## The tracks that are turntables, `turn` and `table` (tt_Table, Track.cpp:407-416)
+const TURNTABLE_KINDS:Array[TrackServer.TrackType] = [TrackServer.TRACK_TURN, TrackServer.TRACK_TABLE]
+## The bit of hiddenevents a track takes the events named after it and the slot with (Track.cpp:968)
+const HIDDEN_EVENTS_BY_TRACK_NAME:int = 1
+## A track's event1/event2 of this delay or less goes on on every move along the track
+## (TTrack::QueueEvents(..., -1.0), TrkFoll.cpp:255-258)
+const EVERY_MOVE_DELAY:float = -1.0
+## The event a turntable runs when it is locked and joined, after its track's name (Track.cpp:3418)
+const TURNTABLE_JOINED_SUFFIX:String = ":joined"
+## `texture <index> <skin> <memcell>`: the replaceable skin's index, kept within 1-4 and positive as
+## the .t3d writes it negative (Event.cpp:1500-1506)
+const SKIN_INDEX_MIN:int = 1
+const SKIN_INDEX_MAX:int = 4
+## A `texture` or a `copyvalues` reading no memory cell
+const NO_MEMORY:String = "none"
 
 
 static func build(
@@ -116,9 +153,21 @@ static func build(
     models:Array[ModelData],
     model_rids:Array[RID],
     power_sources:Array[PowerSourceData],
+    track_render_rids:Array[RID] = [],
+    traction:Array[TractionData] = [],
+    traction_rids:Array[RID] = [],
+    hidden_events:int = MaszynaImporterContext.DEFAULT_HIDDEN_EVENTS,
 ) -> void:
-    # the tracks and models come with the RIDs they were built as, in their order; a track is found
-    # by its name in TrackServer
+    # the tracks, models and traction come with the RIDs they were built as, in their order; a
+    # track is found by its name in TrackServer
+    var track_renders:Dictionary[RID, RID] = {}
+    for index:int in track_render_rids.size():
+        track_renders[track_rids[index]] = track_render_rids[index]
+    var traction_by_name:Dictionary[String, RID] = {}
+    for index:int in traction.size():
+        var span:MaszynaTractionData = traction[index] as MaszynaTractionData
+        if span and span.name:
+            traction_by_name[span.name] = traction_rids[index]
     var model_names:Dictionary[String, String] = {}
     var instances_by_name:Dictionary[String, RID] = {}
     for index:int in models.size():
@@ -140,6 +189,8 @@ static func build(
         var memory:RID = MaszynaScenarioEventServer.memory_create(system)
         MaszynaScenarioEventServer.memory_set_name(memory, memcell.name)
         MaszynaScenarioEventServer.memory_set_values(memory, memcell.text, memcell.value1, memcell.value2)
+        # TMemCell::Load() checks its command (MemCell.cpp:120)
+        MaszynaScenarioEventServer.memory_check_command(memory)
         MaszynaScenarioEventServer.memory_set_position(memory, memcell.position)
         if memcell.track:
             MaszynaScenarioEventServer.memory_set_track(memory, TrackServer.track_get_rid_by_name(memcell.track))
@@ -228,12 +279,57 @@ static func build(
             ScenarioEventServer.event_set_name(named, event_name)
             events_by_name[event_name] = named
 
+    # the turntables, each bound to the model of its name; one of no model is a derailer, left off its
+    # neighbours (path_table::InitTracks(), Track.cpp:3410-3427)
+    var turntables:Dictionary[RID, RID] = {}
+    var turntable_names:Dictionary[RID, String] = {}
+    var turntable_rids:Array[RID] = []
+    root.content_own(turntable_rids, MaszynaTurntableServer.turntable_free, Callable())
+    for index:int in tracks.size():
+        if not tracks[index].kind in TURNTABLE_KINDS:
+            continue
+        var turntable:RID = MaszynaTurntableServer.turntable_create(track_rids[index])
+        turntable_rids.append(turntable)
+        turntables[track_rids[index]] = turntable
+        var track_name:String = tracks[index].name.to_lower()
+        turntable_names[turntable] = track_name
+        if events_by_name.has(track_name + TURNTABLE_JOINED_SUFFIX):
+            MaszynaTurntableServer.turntable_set_joined_event(turntable, events_by_name[track_name + TURNTABLE_JOINED_SUFFIX])
+        if not instances_by_name.has(track_name):
+            TrackServer.track_disconnect(track_rids[index])
+    # a model's first animated submodel, the one a turntable of its name follows: the submodel of the
+    # first `animation` event aimed at it (TAnimModel::GetContainer(), AnimModel.cpp:486-489)
+    var first_animated:Dictionary[RID, String] = {}
+
     for index:int in kept_events.size():
         await SceneryServer.frame_budget_wait()
         var event:MaszynaEventData = kept_events[index]
         var rid:RID = event_rids[index]
         var event_memories:Array[RID] = _get_memories(event.targets, memories)
         var targets:Array[RID] = []
+        # an event aimed at what does not exist is disabled (init_targets(), Event.h:743-752)
+        var missing:PackedStringArray = []
+        for target:String in event.targets:
+            var found:bool = true
+            if event.type in MEMORY_TYPES:
+                found = memories.has(target)
+            elif event.type in MODEL_TYPES:
+                found = instances_by_name.has(target)
+            elif event.type in TRACK_TYPES:
+                found = TrackServer.track_get_rid_by_name(target).is_valid()
+            elif event.type == "voltage":
+                found = power_source_names.has(target)
+            elif event.type == "sound":
+                found = scenery_sounds.has_sound(target)
+            elif event.type == "visible":
+                # a model, else a track, else a wire (visible_event::init(), Event.cpp:2017-2034)
+                found = (instances_by_name.has(target) or TrackServer.track_get_rid_by_name(target).is_valid()
+                        or traction_by_name.has(target))
+            if not found:
+                missing.append(target)
+        if missing and not event.type == "multiple":
+            push_warning("Bad event: \"%s\" (type: %s) can't find %s" % [event.name, event.type, ", ".join(missing)])
+            continue
         match event.type:
             "updatevalues", "addvalues":
                 var action:MaszynaMemoryAction = MaszynaMemoryAction.new()
@@ -245,11 +341,65 @@ static func build(
                 action.mode = MaszynaMemoryAction.MODE_ADD if event.type == "addvalues" else MaszynaMemoryAction.MODE_SET
                 ScenarioEventServer.event_attach_action(rid, action)
             "copyvalues":
+                # a source cell that does not exist disables the event (copyvalues_event::init(),
+                # Event.cpp:880-884)
+                var source_name:String = event.parameters[0].to_lower() if event.parameters else NO_MEMORY
+                if not memories.has(source_name):
+                    push_warning("Bad event: \"%s\" (type: copyvalues) can't find memory cell \"%s\"" % [event.name, source_name])
+                    continue
                 var action:MaszynaMemoryAction = MaszynaMemoryAction.new()
                 action.memories = event_memories
-                action.source = memories.get(event.parameters[0].to_lower(), RID())
-                action.mask = int(event.parameters[1]) if event.parameters.size() > 1 else ALL_FIELDS
+                action.source = memories[source_name]
+                # stol_def(token, 7): what is no number is all three (Event.cpp:913-915)
+                action.mask = int(event.parameters[1]) if event.parameters.size() > 1 and event.parameters[1].is_valid_int() else ALL_FIELDS
                 ScenarioEventServer.event_attach_action(rid, action)
+            "whois":
+                # the mask and the mode, stol_def(token, 7) (Event.cpp:997-1015)
+                var flags:int = int(event.parameters[0]) if event.parameters and event.parameters[0].is_valid_int() else ALL_FIELDS
+                var action:MaszynaWhoisAction = MaszynaWhoisAction.new()
+                action.memories = event_memories
+                action.mask = flags & ALL_FIELDS
+                action.mode = flags & ~ALL_FIELDS
+                ScenarioEventServer.event_attach_action(rid, action)
+            "logvalues":
+                var action:MaszynaLogValuesAction = MaszynaLogValuesAction.new()
+                # no target: every memory cell of the scenery (logvalues_event::run_(), Event.cpp:1187-1190)
+                var logged:Array[RID] = event_memories
+                if not event.targets:
+                    logged.assign(memories.values())
+                action.memories = logged
+                ScenarioEventServer.event_attach_action(rid, action)
+            "visible":
+                var action:MaszynaVisibleAction = MaszynaVisibleAction.new()
+                for target:String in event.targets:
+                    if instances_by_name.has(target):
+                        action.instances.append(instances_by_name[target])
+                    elif TrackServer.track_get_rid_by_name(target).is_valid():
+                        action.track_renders.append(track_renders.get(TrackServer.track_get_rid_by_name(target), RID()))
+                    else:
+                        action.tractions.append(traction_by_name[target])
+                action.visible = event.parameters and not int(event.parameters[0]) == 0
+                ScenarioEventServer.event_attach_action(rid, action)
+            "texture":
+                var action:MaszynaTextureAction = MaszynaTextureAction.new()
+                for target:String in event.targets:
+                    action.instances.append(instances_by_name[target])
+                action.skin_index = clampi(absi(int(event.parameters[0])), SKIN_INDEX_MIN, SKIN_INDEX_MAX)
+                # read in lower case, as the original's getTokens(3) reads it (Event.cpp:1499, parser.h:71):
+                # std::tolower in the C locale, ASCII letters only, so "Łódź" stays "Łódź" (parser.cpp:37,245)
+                var skin:String = ""
+                for character:String in event.parameters[1]:
+                    skin += character.to_lower() if character >= "A" and character <= "Z" else character
+                action.skin = skin
+                var input_name:String = event.parameters[2].to_lower() if event.parameters.size() > 2 else NO_MEMORY
+                if not input_name == NO_MEMORY:
+                    if not memories.has(input_name):
+                        push_error("Bad event: \"%s\" (type: texture) can't find memory cell \"%s\"" % [event.name, input_name])
+                    action.source = memories.get(input_name, RID())
+                ScenarioEventServer.event_attach_action(rid, action)
+            "message":
+                # message_event::run_() does nothing (Event.cpp:2174-2188)
+                pass
             "multiple":
                 var children:Array[RID] = []
                 var else_children:Array[RID] = []
@@ -280,22 +430,44 @@ static func build(
                 var action:MaszynaLightsAction = MaszynaLightsAction.new()
                 action.signal_heads = targets
                 action.aspects = aspects
+                var lights:PackedFloat32Array = []
+                for light:String in event.parameters:
+                    lights.append(float(light))
+                action.read_lights(lights)
                 ScenarioEventServer.event_attach_action(rid, action)
             "switch":
+                var turntable_targets:Array[RID] = []
                 for target:String in event.targets:
                     var track:RID = TrackServer.track_get_rid_by_name(target)
-                    if track.is_valid():
+                    if turntables.has(track):
+                        turntable_targets.append(turntables[track])
+                    elif track.is_valid():
                         targets.append(track)
                 var action:MaszynaSwitchAction = MaszynaSwitchAction.new()
                 action.tracks = targets
+                action.turntables = turntable_targets
+                # any state but 0 unlocks a turntable (Track.cpp:1789)
+                action.unlock_turntables = not int(event.parameters[0]) == 0
                 # the state is 0 or 1 (TTrack::Switch(), Track.cpp:1752)
                 action.active_track = TrackServer.TRACK_DIVERGING if int(event.parameters[0]) == TrackServer.TRACK_DIVERGING else TrackServer.TRACK_COMMON
+                # the blades' speed and the second blade's delay, when given (Event.cpp:1855-1872)
+                if event.parameters.size() > 1:
+                    action.blade_speed = float(event.parameters[1])
+                if event.parameters.size() > 2:
+                    action.blade_delay = float(event.parameters[2])
                 ScenarioEventServer.event_attach_action(rid, action)
+                # state 0 with a delay sets the switches up, and locks the turntables, at load
+                # (Event.cpp:1834-1842)
+                if int(event.parameters[0]) == 0 and action.blade_delay >= 0.0:
+                    action.set_switches()
             "trackvel":
                 for target:String in event.targets:
                     var track:RID = TrackServer.track_get_rid_by_name(target)
                     if track.is_valid():
                         targets.append(track)
+                        # its speed matters to the drivers' reading whatever it is (track_event::init(),
+                        # Event.cpp:1912-1922)
+                        MaszynaScenarioEventServer.track_set_velocity_changing(track, rid)
                 var action:MaszynaTrackVelocityAction = MaszynaTrackVelocityAction.new()
                 action.tracks = targets
                 action.velocity = float(event.parameters[0])
@@ -369,25 +541,39 @@ static func build(
                 ScenarioEventServer.event_attach_action(rid, action)
             "animation":
                 var mode:String = event.parameters[0].to_lower()
-                if not ANIMATION_MODES.has(mode):
+                # a .vmd animation takes the whole model and sets nothing up (Event.cpp:1572-1575)
+                if not ANIMATION_MODES.has(mode) and not mode == DIGITAL_ANIMATION:
                     continue
+                var submodel:String = event.parameters[1]
                 for target:String in event.targets:
                     if instances_by_name.has(target) and instances_by_name[target].is_valid():
                         targets.append(instances_by_name[target])
+                for instance:RID in targets:
+                    if not first_animated.has(instance):
+                        first_animated[instance] = submodel
+                # the event an animation of the submodel runs when it is done (Event.cpp:1588-1592)
+                for target:String in event.targets:
+                    var done:String = target + "." + submodel.to_lower() + ":done"
+                    if instances_by_name.has(target) and events_by_name.has(done):
+                        MaszynaE3DRenderingServer.instance_set_submodel_done_event(instances_by_name[target], submodel, events_by_name[done])
+                # a `digital` one animates its submodel, set up as the others, but runs nothing
+                # (animation_event::run_(), Event.cpp:1709: "TODO: implement digital mode")
+                if mode == DIGITAL_ANIMATION:
+                    continue
                 var action:MaszynaAnimationAction = MaszynaAnimationAction.new()
                 action.instances = targets
                 action.mode = ANIMATION_MODES[mode]
-                action.submodel = event.parameters[1]
+                action.submodel = submodel
                 action.target = Vector3(float(event.parameters[2]), float(event.parameters[3]), float(event.parameters[4]))
                 action.speed = float(event.parameters[5])
                 ScenarioEventServer.event_attach_action(rid, action)
-                # the event an animation of the submodel runs when it is done (Event.cpp:1588-1592)
-                for target:String in event.targets:
-                    var done:String = target + "." + action.submodel.to_lower() + ":done"
-                    if instances_by_name.has(target) and events_by_name.has(done):
-                        MaszynaE3DRenderingServer.instance_set_submodel_done_event(instances_by_name[target], action.submodel, events_by_name[done])
+            _:
+                push_warning("Bad event: unrecognized type \"%s\" specified for event \"%s\"" % [event.type, event.name])
 
-        # the targets of an event are the memories its `memcompare` reads (Event.cpp:1213-1233)
+        # the targets of an event are the memories its `memcompare` reads (Event.cpp:1213-1233); only
+        # some types read a condition at all
+        if not event.type in CONDITIONED_TYPES:
+            continue
         var condition:MaszynaEventCondition = MaszynaEventCondition.new()
         var conditioned:bool = false
         var position:int = 0
@@ -439,11 +625,16 @@ static func build(
                         condition_tracks.append(track)
                 if condition_tracks.size() == event.targets.size():
                     condition.tracks = condition_tracks
-                    condition.track_test = (
+                    condition.track_test |= (
                         MaszynaEventCondition.TRACK_TEST_OCCUPIED if keyword == "trackoccupied"
                         else MaszynaEventCondition.TRACK_TEST_FREE
                     )
                     conditioned = true
+        # a `multiple` aimed at a memory cell that does not exist compares none (multi_event::init(),
+        # Event.cpp:1218-1222)
+        if missing:
+            var compared:Array[RID] = []
+            condition.memories = compared
         if conditioned:
             ScenarioEventServer.event_attach_condition(rid, condition)
 
@@ -518,7 +709,15 @@ static func build(
             _set_chain(named, head, chain)
             chain_starts[indices[0]] = named
 
-    # the events a track names for its slots, and the ones named after the track and the slot
+    # a memory's `<memory>:sent` event, queued when its command is sent (memory_table::InitCells(),
+    # MemCell.cpp:265)
+    for memory_name:String in memories:
+        if events_by_name.has(memory_name + SENT_EVENT_SUFFIX):
+            MaszynaScenarioEventServer.memory_set_sent_event(memories[memory_name], events_by_name[memory_name + SENT_EVENT_SUFFIX])
+
+    # the events a track names for its slots, and - with bit 1 of hiddenevents - the ones named after
+    # the track and the slot (TTrack::AssignEvents(), Track.cpp:968-980)
+    var named_track_events:bool = not (hidden_events & HIDDEN_EVENTS_BY_TRACK_NAME) == 0
     for index:int in tracks.size():
         var track_data:TrackData = tracks[index]
         var scn_track:MaszynaTrackData = track_data as MaszynaTrackData
@@ -527,17 +726,11 @@ static func build(
             if scn_track:
                 for event_name:String in scn_track.events.get(key, PackedStringArray()):
                     names.append(event_name.to_lower())
-            if track_data.name:
+            if track_data.name and named_track_events:
                 names.append(track_data.name.to_lower() + ":" + key)
             for event_name:String in names:
                 if events_by_name.has(event_name):
                     MaszynaScenarioEventServer.track_add_event(track_rids[index], TRACK_EVENTS[key], events_by_name[event_name])
-                    # a passenger stop's track is a stop point of its station
-                    var stop:MaszynaVehicleCommandAction = ScenarioEventServer.event_get_action(
-                            events_by_name[event_name]) as MaszynaVehicleCommandAction
-                    if stop and stop.command.begins_with(PASSENGER_STOP_POINT):
-                        MaszynaStations.add_stop_point(
-                                root, stop.command.trim_prefix(PASSENGER_STOP_POINT), track_rids[index])
 
     # a section's own memory is marked before its named events run, as the original updates it at
     # once (Track.cpp:128-130, 155-156) and the events are queued
@@ -568,11 +761,24 @@ static func build(
         MaszynaScenarioEventServer.launcher_set_events(
             launcher, events_by_name.get(launcher_data.event1, RID()), events_by_name.get(launcher_data.event2, RID())
         )
-        # key codes are not ported (TODO.md)
         if RADIO_CALLS.has(launcher_data.key):
             MaszynaScenarioEventServer.launcher_set_radio_call(launcher, RADIO_CALLS[launcher_data.key])
         elif launcher_data.key.length() == 1:
             MaszynaScenarioEventServer.launcher_set_key(launcher, OS.find_keycode_from_string(launcher_data.key.to_upper()))
+        elif launcher_data.key.is_valid_int():
+            # a key by its code (vk_to_glfw_key(), EvLaunch.cpp:32-50, 76-78): a capital letter is
+            # the letter with Shift, a small one the letter, anything below either the key itself
+            var code:int = int(launcher_data.key)
+            if code >= KEY_CODE_CAPITAL_A and code <= KEY_CODE_CAPITAL_Z:
+                MaszynaScenarioEventServer.launcher_set_key(launcher, code as Key)
+                MaszynaScenarioEventServer.launcher_set_key_needs_shift(launcher, true)
+            elif code >= KEY_CODE_SMALL_A and code <= KEY_CODE_SMALL_Z:
+                MaszynaScenarioEventServer.launcher_set_key(launcher, (code - KEY_CODE_CASE_OFFSET) as Key)
+            elif code < KEY_CODE_SMALL_A:
+                MaszynaScenarioEventServer.launcher_set_key(launcher, code as Key)
+            else:
+                push_warning("Bad scenario: unknown key %d of launcher \"%s\"" % [code, launcher_data.name])
+        MaszynaScenarioEventServer.launcher_set_train_triggered(launcher, launcher_data.train_triggered)
         if launcher_data.condition:
             var condition:MaszynaEventCondition = MaszynaEventCondition.new()
             _set_memcompare(
@@ -582,7 +788,9 @@ static func build(
         if launcher_data.delta_time > 0.0:
             var hhmm:int = int(launcher_data.delta_time)
             MaszynaScenarioEventServer.launcher_set_time_of_day(launcher, floori(hhmm / float(HHMM_HOUR)), hhmm % HHMM_HOUR)
-        elif launcher_data.delta_time < 0.0 and not launcher_data.delta_time == FIRE_ONCE_IN_RANGE:
+        elif launcher_data.delta_time == FIRE_ONCE_IN_RANGE:
+            MaszynaScenarioEventServer.launcher_set_fire_once(launcher, true)
+        elif launcher_data.delta_time < 0.0:
             MaszynaScenarioEventServer.launcher_set_interval(launcher, -launcher_data.delta_time)
 
     # a click on a model fires the launchers of its name that have it within their radius
@@ -614,6 +822,12 @@ static func build(
                 MaszynaScenarioEventServer.launcher_fire_shift.bind(launcher),
             ))
 
+    # the turntables follow their models' first animated submodels
+    for turntable:RID in turntable_names:
+        var instance:RID = instances_by_name.get(turntable_names[turntable], RID())
+        if instance.is_valid():
+            MaszynaTurntableServer.turntable_set_model(turntable, instance, first_animated.get(instance, ""))
+
     # queued at the start: a negative delay (InitEvents(), Event.cpp:2493-2499) and the first event
     # of each name containing "onstart" (Event.cpp:2336-2345); of a name defined more than once,
     # what its setup above left to start
@@ -625,9 +839,9 @@ static func build(
         if not (event.delay < 0.0 or onstart):
             continue
         if definitions[event.name].size() == 1:
-            ScenarioEventServer.event_queue(event_rids[index])
+            MaszynaScenarioEventServer.event_add_to_query(event_rids[index])
         elif chain_starts.has(index):
-            ScenarioEventServer.event_queue(chain_starts[index])
+            MaszynaScenarioEventServer.event_add_to_query(chain_starts[index])
 
 
 ## The event runs as the definition says: its delay, random delay and departure delay
@@ -635,6 +849,7 @@ static func _set_delays(rid:RID, definition:MaszynaEventData) -> void:
     ScenarioEventServer.event_set_delay(rid, absf(definition.delay))
     ScenarioEventServer.event_set_random_delay(rid, definition.random_delay)
     MaszynaScenarioEventServer.event_set_departure_delay(rid, definition.departure_delay)
+    MaszynaScenarioEventServer.event_set_queued_on_every_move(rid, definition.delay <= EVERY_MOVE_DELAY)
 
 
 ## The event runs the chain of definitions of one name, in their order, with the delays of the

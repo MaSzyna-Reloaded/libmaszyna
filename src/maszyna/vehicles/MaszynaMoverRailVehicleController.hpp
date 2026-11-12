@@ -66,6 +66,8 @@ namespace godot {
 
         protected:
             static void _bind_methods();
+            void _register_commands() override;
+            void _unregister_commands() override;
             void _initialize_simulation() override;
             void _fill_config_dictionary(Dictionary &p_config) const override;
 
@@ -104,6 +106,14 @@ namespace godot {
             /* C++ only and unbound: the Mover is this implementation's own business. */
             TMoverParameters *get_mover() const;
 
+            /// The command an order to the vehicle itself comes as (put_command())
+            static constexpr const char *PUT_COMMAND = "put_command";
+            /// The `put_command` command: an order the vehicle carries out itself, again on every
+            /// step until it is done, a later one in its place (TMoverParameters::PutCommand(),
+            /// Mover.cpp:12097-12106; RunInternalCommand(), :12724-12746) - what a putvalues event or
+            /// a script gives a vehicle nobody drives (Event.cpp:808-816, lua.cpp:293-294).
+            /// p_values are its value1 and value2, none for 0.
+            void put_command(const String &p_command, const PackedFloat64Array &p_values);
             void cab_activation(bool p_enabled) override;
             Vector2 get_body_offset() const override;
             void compartment_lights(bool p_enabled) override;

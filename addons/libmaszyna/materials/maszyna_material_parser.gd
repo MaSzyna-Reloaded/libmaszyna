@@ -8,7 +8,8 @@ const STOP_VALUE = [" ", ";", char(9), char(10), char(13)]
 func parse(model_path:String, material_file:String) -> MaszynaMaterial:
     var final_path:String = ""
     var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
-    var material_name:String = material_file
+    # the extension the data may give the name is no part of the file's (material.cpp:486)
+    var material_name:String = MaszynaDataPath.erase_extension(material_file)
     # FIXME: move this to MaszynaMaterialManager
     var possible_paths:Array[String] = [
         model_path.trim_prefix("/").path_join(material_name + ".mat"),

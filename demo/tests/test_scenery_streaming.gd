@@ -70,6 +70,20 @@ func test_model_is_held_only_while_an_instance_of_it_is_built() -> void:
     ResourceLazyLoader.resource_free(model_resource)
 
 
+## A piece the camera has left lets its model go, and ModelRenderingServer searches it no more: the
+## hit search asked the backend for the bounds of a model it had released and crashed - on the
+## first mouse motion over the scenery (libreloaded#69)
+func test_a_piece_the_camera_has_left_is_not_searched() -> void:
+    _register(Vector3.ZERO, 200.0)
+    var from:Vector3 = Vector3(0.0, 100.0, 0.0)
+    var to:Vector3 = Vector3(0.0, -100.0, 0.0)
+
+    await _move_camera(Vector3.ZERO)
+    await _move_camera(Vector3(4 * CHUNK_SIZE_M, 0, 0))
+    assert_eq(SceneryStreamingServer.streaming_get_streamed_count(), 0, "not cleared after leaving")
+    assert_eq(ModelRenderingServer.instance_find_nearest_hit(from, to), {}, "a cleared piece was searched")
+
+
 func test_range_of_a_node_without_one_is_capped_by_the_draw_distance() -> void:
     var draw_distance:float = SceneryStreamingServer.streaming_get_draw_distance()
     await _move_camera(Vector3(draw_distance + 2 * CHUNK_SIZE_M, 0, 0))

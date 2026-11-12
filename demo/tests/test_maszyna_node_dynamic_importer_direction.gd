@@ -233,3 +233,18 @@ func test_every_coupling_flag_has_its_own_mover_bit() -> void:
         assert_eq(seen & bit, 0, "%s is no other flag's bit" % flag_name)
         seen |= bit
         assert_eq(MaszynaMoverCoupling.flags_from_mover(bit), flag, "%s read back" % flag_name)
+
+
+## The optional destination after the load: the token after the next one, in lower case
+## (simulationstateserializer.cpp:1095-1099)
+func test_the_destination_is_read_after_the_load() -> void:
+    var vehicle:MaszynaVehicleData = _import(_trainset_context(0.0),
+            "fixtures skin short 0 headdriver 99 0 destination Gdansk:3 enddynamic")
+
+    assert_eq(vehicle.destination, "gdansk:3")
+
+
+func test_a_vehicle_without_a_destination_has_none() -> void:
+    var vehicle:MaszynaVehicleData = _import(_trainset_context(0.0), "fixtures skin short 0 headdriver 99 0 enddynamic")
+
+    assert_eq(vehicle.destination, "")

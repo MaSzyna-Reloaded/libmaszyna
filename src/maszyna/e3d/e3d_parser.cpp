@@ -96,8 +96,8 @@ namespace godot {
         return result;
     }
 
-    std::vector<MaszynaE3DParser::SubModelData>
-    MaszynaE3DParser::_parse_file(const Ref<FileAccess> &p_file, const bool p_geometry, VertexChunk &r_vertices) const {
+    std::vector<MaszynaE3DParser::SubModelData> MaszynaE3DParser::_parse_file(
+            const Ref<FileAccess> &p_file, const bool p_geometry, VertexChunk &p_r_vertices) const {
         ChunkHeader chunk_header = _read_chunk_header(p_file);
         std::vector<SubModelData> submodels;
         if (chunk_header.id != "E3D0") {
@@ -191,7 +191,7 @@ namespace godot {
                 const bool has_tangents = chunk.id == "VNT2";
                 const uint64_t vertex_size = has_tangents ? VNT2_VERTEX_SIZE : VNT0_VERTEX_SIZE;
                 const uint64_t pos = p_file->get_position();
-                r_vertices = VertexChunk{pos, vertex_size};
+                p_r_vertices = VertexChunk{pos, vertex_size};
                 if (!p_geometry) {
                     p_file->seek(pos + chunk.data_len);
                     continue;

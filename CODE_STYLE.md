@@ -4,6 +4,19 @@ server named here without a path that is not `Maszyna*` (`VehicleServer`, `Smoke
 `CabinSystem`, `GameLog`, ...) is libreloaded's, the core this repository is built on - see
 `AGENTS.md`, "libmaszyna and libreloaded".
 
+### Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 > [!IMPORTANT]  
 > Exported/All classes used in Godot do live in the `godot` namespace   
 > Your linter must be compatible with code style defined in `.clang-format`
@@ -728,6 +741,20 @@ if event.is_action_pressed("menu_activate", false, true):
   Ctrl+Enter and Shift+Enter as well. The starter's sections took `ui_text_submit` loosely and
   loaded a scenery on Alt+Enter, the fullscreen shortcut (`FINDINGS.md`, 2026-10-01). A shortcut
   with a modifier is another action, and only an exact match keeps it one.
+
+### Text is UTF-8; cp1250 belongs to MaSzyna's legacy data
+
+**The standard is UTF-8.** Every text the code writes, keeps or hands to another layer is Unicode -
+a `String`, and UTF-8 wherever it is bytes.
+
+cp1250 is a trait of MaSzyna's legacy data pack, nothing more. Its files are written in cp1250, in
+UTF-8, or **mixed** - both in one file. So:
+
+* **A reader of that data never assumes one encoding for a file.** It decodes what is valid UTF-8 as
+  UTF-8 and anything else as cp1250, and hands on Unicode. Past the reader nothing knows cp1250.
+* **Back to cp1250 only at the boundary to the legacy data's own code that expects it**: the data's
+  Python 2.7 scripts get their strings in cp1250 (`maszyna-python-host`), as the original gives
+  them. Nothing else writes cp1250.
 
 ### Tests
 Tests use only the public interface of the tested classes - no calls to private methods

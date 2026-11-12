@@ -84,6 +84,8 @@ const EASY_REACTION_TIME:float = 0.5
 const ROLLING_START_SPEED:float = 5.0
 ## A vehicle slower than this [km/h] stands (EU07_AI_NOMOVEMENT, Driver.h:25)
 const NO_MOVEMENT_SPEED:float = 0.05
+## The command a vehicle's PA system takes an announcement by (MaszynaVehicleSoundServer.ANNOUNCE_COMMAND)
+const ANNOUNCE_COMMAND:StringName = &"announce"
 ## Coupling up, the way behind is not looked at while the vehicle to couple to is nearer than this
 ## [m] or than the first signal (check_route_behind(), Driver.cpp:8247-8250)
 const CONNECT_SCAN_DISTANCE:float = 2000.0
@@ -280,7 +282,13 @@ func _on_vehicle_command_received(vehicle:RID, command:String, _p1:Variant, _p2:
 func _driver_attached(driver:RID) -> void:
     var state:AIDriverState = AIDriverState.new()
     state.driver = driver
-    if _cabin_direction(driver) < 0:
+    var vehicle:RID = VehicleServer.person_get_vehicle(driver)
+    # a train that starts moving drives the way it moves, whichever cab its driver sits in - a
+    # locomotive reversed at the head of its train pulls it on (DirectionInitial(), Driver.cpp:2612-2622);
+    # the reverser follows the way it drives, relative to the cab
+    if vehicle.is_valid() and VehicleServer.vehicle_get_speed(vehicle) > NO_MOVEMENT_SPEED:
+        state.direction = 1 if VehicleServer.vehicle_get_velocity(vehicle) > 0.0 else -1
+    elif _cabin_direction(driver) < 0:
         state.direction = -1
     # told to drive the way it faces until told otherwise (iDirectionOrder = CabActive,
     # Driver.cpp:1872) - never none: turning towards none puts the reverser at neutral and takes
@@ -383,9 +391,10 @@ func _start_closing_doors(situation:MaszynaDriverTraction.Situation) -> void:
     _close_doors(situation)
 
 
-## The doors closed once the train is let go (Doors(), Driver.cpp:4380-4395): the permits taken
-## back and the doors the driver works closed - cued; a driver the computer is also closes the
-## doors passengers close by hand, in the cars done exchanging
+## The doors closed once the train is let go (Doors(), Driver.cpp:4380-4411): the permits taken
+## back and the doors the driver works closed - cued, the other cars' closed by a driver the
+## computer is; the doors passengers close by hand closed in the cars done exchanging or moving,
+## whoever drives
 func _close_doors(situation:MaszynaDriverTraction.Situation) -> void:
     var state:AIDriverState = situation.state
     var vehicle:RID = situation.vehicle
@@ -398,20 +407,29 @@ func _close_doors(situation:MaszynaDriverTraction.Situation) -> void:
     if doors and doors.permit_required:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
-    if not DriverServer.vehicle_is_control_active(vehicle):
-        return
+    var in_control:bool = DriverServer.vehicle_is_control_active(vehicle)
     for car:RID in state.trainset.vehicles:
         var car_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(car, VehicleComponentType.COMPONENT_DOORS)
         if not car_doors:
             continue
-        if not car == vehicle and car_doors.close_method in REMOTE_CLOSE_CONTROLS:
+        if in_control and not car == vehicle and car_doors.close_method in REMOTE_CLOSE_CONTROLS:
             MaszynaDriverHints.send(car, &"doors_left", false)
             MaszynaDriverHints.send(car, &"doors_right", false)
         if car_doors.close_auto_close_velocity == NO_AUTO_CLOSE_VELOCITY \
                 and car_doors.close_method in MANUAL_CLOSE_CONTROLS \
-                and RailVehicleServer.load_get_exchange_time(car) == 0.0:
+                and (RailVehicleServer.load_get_exchange_time(car) == 0.0
+                    or VehicleServer.vehicle_get_speed(car) > MaszynaDriverTrainset.MOVEMENT_SPEED):
             MaszynaDriverHints.send(car, &"doors_left_local", false)
             MaszynaDriverHints.send(car, &"doors_right_local", false)
+
+
+## IsAnyDoorOpen (doors_open(), Driver.cpp:4419-4425): a door of the trainset open
+static func _trainset_doors_open(state:AIDriverState) -> bool:
+    for car:RID in state.trainset.vehicles:
+        var car_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(car, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
+        if car_doors != null and (car_doors.get_left_open() or car_doors.get_right_open()):
+            return true
+    return false
 
 
 ## The seconds from `hours` to the departure of the driver's train, NAN without a timetable
@@ -691,6 +709,16 @@ func _handle_command(driver:RID, command:String, value1:float, value2:float, pos
             state.light_hints = Vector2i(int(value1), int(value2))
             if state.orders[state.order_position] & Order.OBEY_TRAIN:
                 _check_vehicles(state)
+        "CabSignal":
+            # the magnet of the track sets the vehicle's cab signal off (Driver.cpp:4470-4477)
+            VehicleServer.vehicle_send_command(vehicle, "security_cabsignal_trigger")
+        "Overhead", "SetProximityVelocity":
+            # the driver's own, never the vehicle's (Driver.cpp:4479, 4641)
+            pass
+        _:
+            # an order it does not know goes to its vehicle (TController::PutCommand(),
+            # Driver.cpp:4464-4465, 4906)
+            MaszynaScenarioEventServer.vehicle_put_command(vehicle, command, value1, value2, position)
 
 
 ## One moment of the driver (TController::Update(), handle_engine(), handle_orders(),
@@ -734,6 +762,16 @@ func _update(driver:RID) -> void:
         state.velocity = PRESSING_VELOCITY if pressing else 0.0
         state.velocity_next = 0.0
     # what its passenger stop asked of the orders (TableUpdateStopPoint(), Driver.cpp:1258-1370)
+    # what the train announces: to every vehicle of it, the driver's own and along its couplings either
+    # way, each with a PA system taking it (TController::announce(), Driver.cpp:4446-4449)
+    for index:int in state.route.announcements.size():
+        var announcement:MaszynaVehicleSoundServer.Announcement = state.route.announcements[index]
+        var files:PackedStringArray = state.route.announcement_files[index]
+        if ANNOUNCE_COMMAND in VehicleServer.vehicle_get_commands(vehicle):
+            VehicleServer.vehicle_send_command(vehicle, ANNOUNCE_COMMAND, announcement, files)
+        for end:RailVehicleController.CouplerEnd in [RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLER_END_REAR]:
+            RailVehicleServer.vehicle_send_line_command(
+                    vehicle, end, RailVehicleController.COUPLING_FLAG_COUPLER, ANNOUNCE_COMMAND, announcement, files)
     for stop_order:MaszynaDriverRoute.StopOrder in state.route.stop_orders:
         match stop_order:
             MaszynaDriverRoute.StopOrder.HOLD:
@@ -850,9 +888,11 @@ func _update(driver:RID) -> void:
         if channel > 0:
             if state.guard_radio:
                 state.guard_radio = channel
-            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RADIO_CHANNEL, channel, func() -> void:
-                state.radio_channel = channel
-                MaszynaDriverHints.send(vehicle, &"radio_channel_set", channel))
+            # only when the driver's radio is on another channel (iRadioChannel != radiochannel)
+            if not state.radio_channel == channel:
+                MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.RADIO_CHANNEL, channel, func() -> void:
+                    state.radio_channel = channel
+                    MaszynaDriverHints.send(vehicle, &"radio_channel_set", channel))
     # waiting for the passengers (adjust_desired_speed_for_limits(), Driver.cpp:7550-7555)
     if StationServer.dispatch_get_step(vehicle) == StationServer.DISPATCH_STEP_EXCHANGE:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.WAIT_LOAD_EXCHANGE)
@@ -883,9 +923,15 @@ func _update(driver:RID) -> void:
             state.start_horn_now = false
         MaszynaDriverPantographs.control(
                 situation, MaszynaDriverBraking.is_emu(vehicle), state.traction.action_time <= 0.0)
-        # the delayed actions: the lights of its order kept up (Driver.cpp:4933-4936)
+        # the delayed actions: the lights of its order kept up, and the doors closed (Driver.cpp:4933-4937)
         if state.traction.action_time > 0.0:
             MaszynaDriverLights.control(situation)
+            # control_doors() (Driver.cpp:6545-6566): once the train moves, or a player's engine is
+            # set past idle - not to shuffle the doors over a W4 stop taken at a crawl
+            if _trainset_doors_open(state) \
+                    and (VehicleServer.vehicle_get_speed(vehicle) > MaszynaDriverTrainset.MOVEMENT_SPEED
+                        or (not in_control and state.traction.is_past_idle(situation))):
+                _start_closing_doors(situation)
     # the controllers held by time back to holding, the power and the brakes, the controllers
     # held by time set to work until the next update (UpdateSituation(), Driver.cpp:5016-5027) -
     # the controllers held by time are the computer's own (CheckTimeControllers(),
@@ -897,10 +943,8 @@ func _update(driver:RID) -> void:
     # Driver.cpp:8052-8057): a door of the trainset open, or the driver's permit given
     var own_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
-    var doors_open:bool = own_doors != null and (own_doors.get_left_open_permit() or own_doors.get_right_open_permit())
-    for car:RID in state.trainset.vehicles:
-        var car_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(car, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
-        doors_open = doors_open or (car_doors != null and (car_doors.get_left_open() or car_doors.get_right_open()))
+    var doors_open:bool = (own_doors != null and (own_doors.get_left_open_permit() or own_doors.get_right_open_permit())) \
+            or _trainset_doors_open(state)
     if doors_open and not state.departure_warned and state.speed.velocity_desired > 0.0 \
             and state.speed.acceleration_desired > MaszynaDriverSpeed.NO_ACCELERATION \
             and state.traction.action_time >= 0.0:

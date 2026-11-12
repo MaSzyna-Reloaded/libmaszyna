@@ -3,6 +3,19 @@ name: godot-frame-time
 description: Diagnose and fix frame-rate, stutter, hitching and long-load problems of libmaszyna, the MaSzyna port on the Reloaded core - low fps in a scenery, juddering vehicles, a frame time that no profiler seems to account for, a loading screen that takes minutes, or the world popping in while you drive. Use it whenever the question is "why is this slow" or "where does the frame time go" in demo/, src/maszyna or addons/libmaszyna, before proposing any optimization, because the instruments in this project report narrower things than their labels suggest and guessing from node counts reliably points at the wrong subsystem.
 ---
 
+## Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 # Where the frame time goes
 
 A real scenery here is enormous - `baltyk_skm1.scn` with every include expanded

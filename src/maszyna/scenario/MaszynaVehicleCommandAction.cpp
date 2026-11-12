@@ -3,6 +3,8 @@
 #include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
 #include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "vehicles/base/VehicleServer.hpp"
+#include "vehicles/rail/RailVehicleLoad.hpp"
+#include "vehicles/rail/RailVehicleServer.hpp"
 
 namespace godot {
     void MaszynaVehicleCommandAction::_bind_methods() {
@@ -31,12 +33,20 @@ namespace godot {
 
     /// getvalues_event::run_() / putvalues_event::run_() (Event.cpp:615-635, 771-844)
     void MaszynaVehicleCommandAction::run(const RID &p_event, const RID &p_activator) {
-        const MaszynaScenarioEventServer *events = MaszynaScenarioEventServer::get_instance();
+        MaszynaScenarioEventServer *events = MaszynaScenarioEventServer::get_instance();
         VehicleServer *vehicle_server = VehicleServer::get_instance();
         ERR_FAIL_NULL(events);
         ERR_FAIL_NULL(vehicle_server);
         const bool read = source.is_valid();
         const String text = read ? events->memory_get_text(source) : command;
+        // a getvalues goes to the activator's own driver alone, nothing happens without one
+        // (getvalues_event::run_(), Event.cpp:629-631; TMemCell::PutCommand(), MemCell.cpp:124-128)
+        const DriverServer *own_drivers = DriverServer::get_instance();
+        const MaszynaCarDriver *car_drivers = MaszynaCarDriver::get_instance();
+        if (read && (own_drivers == nullptr || !own_drivers->vehicle_get_driver(p_activator).is_valid()) &&
+            (car_drivers == nullptr || !car_drivers->vehicle_is_attached(p_activator))) {
+            return;
+        }
         if (text == CAB_SIGNAL && p_activator.is_valid()) {
             vehicle_server->vehicle_send_command(p_activator, "security_cabsignal_trigger");
             return;
@@ -63,11 +73,33 @@ namespace godot {
         }
         DriverServer *drivers = DriverServer::get_instance();
         ERR_FAIL_NULL(drivers);
-        const RID driver = drivers->vehicle_get_driver(p_activator);
-        if (text.is_empty() || !driver.is_valid()) {
+        if (text.is_empty()) {
             return;
         }
-        drivers->driver_send_command(driver, text, command_value1, command_value2, position);
+        RID driver = drivers->vehicle_get_driver(p_activator);
+        if (driver.is_valid()) {
+            drivers->driver_send_command(driver, text, command_value1, command_value2, position);
+            return;
+        }
+        // nobody aboard: a load is the vehicle's own, anything else goes to the driver of its trainset
+        // (ctOwner, is_command_for_owner(), Event.cpp:796-806, 836-845) - and with none there, to the
+        // vehicle itself (Event.cpp:808-816)
+        if (!text.begins_with(MaszynaScenarioEventServer::LOAD_COMMAND) &&
+            !text.begins_with(MaszynaScenarioEventServer::UNLOAD_COMMAND)) {
+            RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+            ERR_FAIL_NULL(rail_vehicles);
+            const RID trainset = rail_vehicles->vehicle_get_trainset(p_activator);
+            const TypedArray<RID> vehicles =
+                    trainset.is_valid() ? rail_vehicles->trainset_get_vehicles(trainset) : TypedArray<RID>();
+            for (int i = 0; i < vehicles.size() && !driver.is_valid(); i++) {
+                driver = drivers->vehicle_get_driver(vehicles[i]);
+            }
+            if (driver.is_valid()) {
+                drivers->driver_send_command(driver, text, command_value1, command_value2, position);
+                return;
+            }
+        }
+        events->vehicle_put_command(p_activator, text, command_value1, command_value2, position);
     }
 
     void MaszynaVehicleCommandAction::set_command(const String &p_command) {

@@ -151,3 +151,27 @@ func test_a_loaded_span_a_kilometre_from_the_substation_keeps_its_voltage() -> v
         await step(1)
 
     assert_gt(voltage, MIN_VOLTAGE_UNDER_LOAD, "a kilometre of wire should cost tens of volts, not the line")
+
+
+## Built again, the network is built afresh: a span taken out of a chain cuts the spans after it off
+## its substation, and put back feeds them again (the editor, a hot reload)
+func test_a_network_built_again_follows_a_span_taken_out_and_put_back() -> void:
+    _add_source("pwr01", SUBSTATION_VOLTAGE, false)
+    _add_source("sec01", NOMINAL_VOLTAGE, true)
+    _add_wire(0, "pwr01")
+    _add_wire(1, "sec01")
+    var middle:RID = _add_wire(2, "sec01")
+    var far:RID = _add_wire(3, "sec01")
+    TractionServer.network_build()
+
+    TractionServer.wire_free(middle)
+    _wires.erase(middle)
+    TractionServer.network_build()
+    assert_eq(TractionServer.wire_get_voltage(far, 0.0, NO_CURRENT), 0.0, "cut off without the span between")
+
+    var put_back:RID = _add_wire(2, "sec01")
+    TractionServer.network_build()
+    assert_almost_eq(TractionServer.wire_get_voltage(put_back, 0.0, NO_CURRENT), SUBSTATION_VOLTAGE, 1.0,
+            "the span put back is fed")
+    assert_almost_eq(TractionServer.wire_get_voltage(far, 0.0, NO_CURRENT), SUBSTATION_VOLTAGE, 1.0,
+            "and feeds the span after it again")

@@ -10,6 +10,16 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="announcements_register">
+			<return type="void" />
+			<param index="0" name="player" type="int" />
+			<param index="1" name="vehicle" type="RID" />
+			<param index="2" name="build_stop_event" type="Callable" />
+			<param index="3" name="distance_parameter" type="StringName" />
+			<description>
+				The PA system of [param vehicle] ([code]m_pasystem[/code], [code]DynObj.cpp:4790-4813, 7965-8020[/code]): [param player], a gnd-sfx player with an event an announcement, named by the MMD's key ([code]near_stop[/code], [code]stop[/code], [code]next_stop[/code], [code]destination[/code], [code]chime[/code]), and [param build_stop_event] making the event of a stop's name out of its file. Its events read the listener's distance from the vehicle in [param distance_parameter]. From then on the vehicle takes the [code]announce[/code] command (an [enum Announcement] and the files of the stop's name and of the destination's), sent along the train's couplings ([method RailVehicleServer.vehicle_send_line_command]): it queues its chime, its announcement and the stop's name - the next stop's followed by the destination's - and plays them one by one while it has its low voltage, emptying the queue without it.
+			</description>
+		</method>
 		<method name="bank_register">
 			<return type="void" />
 			<param index="0" name="player" type="int" />
@@ -266,6 +276,21 @@
 		</constant>
 		<constant name="QUANTITY_MAX" value="71" enum="Quantity">
 			The number of quantities.
+		</constant>
+		<constant name="ANNOUNCEMENT_APPROACHING" value="0" enum="Announcement">
+			A stop ahead, its name the next stop's ([code]near_stop:[/code]).
+		</constant>
+		<constant name="ANNOUNCEMENT_CURRENT" value="1" enum="Announcement">
+			The stop the train stands at ([code]stop:[/code]).
+		</constant>
+		<constant name="ANNOUNCEMENT_NEXT" value="2" enum="Announcement">
+			The next stop, followed by the destination ([code]next_stop:[/code]).
+		</constant>
+		<constant name="ANNOUNCEMENT_DESTINATION" value="3" enum="Announcement">
+			The last station ([code]destination:[/code]).
+		</constant>
+		<constant name="ANNOUNCEMENT_MAX" value="4" enum="Announcement">
+			The number of announcements.
 		</constant>
 	</constants>
 </class>

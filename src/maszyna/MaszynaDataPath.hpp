@@ -22,5 +22,9 @@ namespace godot {
             static String resolve(const String &p_base_dir, const String &p_relative_path);
             /// The relative path as written or in lowercase when it is on disk, empty otherwise
             static String find_as_written(const String &p_base_dir, const String &p_relative_path);
+            /// erase_extension() (utilities.cpp:363-377): the file name without the extension the data
+            /// may give it - a legacy image format's or .mat - cut at the last dot, unless that dot ends
+            /// a ".."
+            static String erase_extension(const String &p_file_name);
     };
 } // namespace godot

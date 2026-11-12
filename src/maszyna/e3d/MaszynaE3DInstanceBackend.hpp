@@ -8,6 +8,7 @@
 #include <godot_cpp/core/object_id.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/callable.hpp>
 #include <godot_cpp/variant/rid.hpp>
@@ -46,6 +47,15 @@ namespace godot {
                     double translate_speed = 0.0;
                     /// The animated submodel of the built model, found once per build
                     MaszynaE3DSubModel *submodel = nullptr;
+            };
+
+            /// A submodel the time turns (TSubModel::RaAnimation(), Model3d.cpp:1153-1211): a hand
+            /// of a clock, or a drum of a digital one - a child of its at_DigiClk submodel, whose name
+            /// is its `digit` (0-5)
+            struct ClockSubmodel {
+                    MaszynaE3DSubModel *submodel = nullptr;
+                    MaszynaE3DSubModel::AnimationType animation = MaszynaE3DSubModel::ANIMATION_NONE;
+                    int digit = 0;
             };
 
             /// What a client set on one named submodel (instance_set_submodel_*()) - a vehicle's
@@ -129,6 +139,8 @@ namespace godot {
             double animation_time = 0.0;
             /// By lower-case submodel name, kept across a rebuild (instance_set_submodel_*())
             HashMap<String, SubmodelSettings> submodel_settings;
+            /// The submodels of the built model the time turns, found once per build
+            LocalVector<ClockSubmodel> clock_submodels;
             /// What the animations and the client's poses make of their submodels, on top of the
             /// submodel's own transform; what the backends read
             HashMap<MaszynaE3DSubModel *, Transform3D> submodel_poses;

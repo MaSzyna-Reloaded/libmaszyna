@@ -9,6 +9,16 @@ namespace godot {
     void MaszynaDataPath::_bind_methods() {
         ClassDB::bind_static_method(
                 "MaszynaDataPath", D_METHOD("resolve", "base_dir", "relative_path"), &MaszynaDataPath::resolve);
+        ClassDB::bind_static_method(
+                "MaszynaDataPath", D_METHOD("erase_extension", "file_name"), &MaszynaDataPath::erase_extension);
+    }
+
+    String MaszynaDataPath::erase_extension(const String &p_file_name) {
+        const int64_t extension_position = p_file_name.rfind(".");
+        if (extension_position < 0 || extension_position == p_file_name.rfind("..") + 1) {
+            return p_file_name;
+        }
+        return p_file_name.left(extension_position);
     }
 
     String MaszynaDataPath::resolve(const String &p_base_dir, const String &p_relative_path) {

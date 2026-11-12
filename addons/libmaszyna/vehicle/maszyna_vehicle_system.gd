@@ -199,7 +199,14 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
         return read
     read["mmd_data"] = mmd_data
     read["description"] = MaszynaFizManager.load_description(mmd_data.data_path, mmd_data.file_name)
-    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(mmd_data, dynamic.load_name)
+    var description:VehicleController = read["description"] as VehicleController
+    var load:RailVehicleLoad = description.get_component(VehicleComponentType.COMPONENT_LOAD) as RailVehicleLoad \
+            if description else null
+    var accepted_loads:Array[String] = []
+    if load:
+        accepted_loads.assign(load.accepted_loads)
+    read["load_model_filename"] = MaszynaRailVehicle3DInstancer.load_model_filename(
+            mmd_data, dynamic.load_name, accepted_loads)
     # a road vehicle has no cab (FizVehicleBuilder)
     if Engine.is_editor_hint() or read["description"] is RoadVehicleController:
         return read
@@ -268,6 +275,12 @@ func _build(vehicle:RID, record:Vehicle) -> void:
     # the original's TypeName is the CHK/MMD name (DynObj.cpp:2019)
     RailVehicleServer.vehicle_set_type_name(vehicle, mmd_data.file_name)
     RailVehicleServer.load_set(vehicle, dynamic.load_name, dynamic.load_amount)
+    # where the scenario sends it: a station, and a track of it after a `:`
+    var scn_dynamic:MaszynaVehicleData = dynamic as MaszynaVehicleData
+    if scn_dynamic and scn_dynamic.destination:
+        var destination:PackedStringArray = scn_dynamic.destination.split(MaszynaStations.DESTINATION_TRACK_SEPARATOR, true, 1)
+        RailVehicleServer.vehicle_set_destination(vehicle, MaszynaStations.station_of(destination[0]),
+                TrackServer.track_get_rid_by_name(destination[1]) if destination.size() > 1 else RID())
     VehicleServer.controller_configure(record.controller, description)
     VehicleServer.vehicle_bind_controller(vehicle, record.controller)
     # the pantographs' geometry the FIZ does not give, measured from the model's data with the

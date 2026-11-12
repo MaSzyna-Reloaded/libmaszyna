@@ -1,5 +1,8 @@
 #include "MaszynaLuaEventsModule.hpp"
 #include "lauxlib.h"
+#include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
+#include "scripting/lua/LuaHandle.hpp"
+#include "scripting/lua/LuaModules.hpp"
 #include <cstring>
 
 namespace godot {
@@ -8,6 +11,9 @@ namespace godot {
         constexpr const char *SOURCE = R"lua(
 local event, memory, track, vehicle, driver, sim, log =
     reloaded.event, reloaded.memory, reloaded.track, reloaded.vehicle, reloaded.driver, reloaded.sim, reloaded.log
+-- the order put to a vehicle nobody drives (MaszynaScenarioEventServer.vehicle_put_command()),
+-- handed in by the module's opener
+local put_command = ...
 
 local events = {}
 
@@ -99,9 +105,13 @@ function events.train_getname(dynobj)
     end
 end
 
--- lua.cpp:285-297: what a `putvalues` event does, to the vehicle's driver
+-- lua.cpp:285-297: what a `putvalues` event does: to the vehicle's driver, and to the vehicle
+-- itself when nobody drives it - with no place, as the original's empty TLocation
 function events.dynobj_putvalues(dynobj, values)
-    driver.send_command(dynobj, values_of(values))
+    local text, value1, value2 = values_of(values)
+    if not driver.send_command(dynobj, text, value1, value2) then
+        put_command(dynobj, text, value1, value2)
+    end
 end
 
 function events.memcell_find(name)
@@ -151,13 +161,27 @@ end
 eu07 = { events = events }
 return events
 )lua";
+
     } // namespace
+
+    /// put_command(v, command, value1, value2) - the order to the vehicle itself, at no place
+    /// (TMoverParameters::PutCommand(), lua.cpp:293-294)
+    static int put_command(lua_State *p_state) {
+        const RID vehicle = LuaHandle::check(p_state, 1, ScriptHandleKind::VEHICLE);
+        const String command = String::utf8(luaL_checkstring(p_state, 2));
+        const double value1 = luaL_optnumber(p_state, 3, 0.0);
+        const double value2 = luaL_optnumber(p_state, 4, 0.0);
+        LuaModules::server<MaszynaScenarioEventServer>(p_state)->vehicle_put_command(
+                vehicle, command, value1, value2, Vector3());
+        return 0;
+    }
 
     void MaszynaLuaEventsModule::open(lua_State *p_state) {
         if (!(luaL_loadbufferx(p_state, SOURCE, std::strlen(SOURCE), "=eu07.events", "t") == LUA_OK)) {
             lua_error(p_state);
         }
-        lua_call(p_state, 0, 1);
+        lua_pushcfunction(p_state, &put_command);
+        lua_call(p_state, 1, 1);
         luaL_getsubtable(p_state, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
         lua_insert(p_state, -2);
         lua_setfield(p_state, -2, MODULE_NAME);

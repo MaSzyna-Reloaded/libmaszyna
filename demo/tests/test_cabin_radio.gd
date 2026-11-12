@@ -8,6 +8,14 @@ extends MaszynaGutTest
 
 const LOOP_PATH:String = "res://tests/fixtures/dynamic/test/animated_v1/test_loop.ogg"
 const CHANNEL:int = 3
+## Presses of the volume knob down from any volume to silence (RailVehicleRadio.VOLUME_STEP)
+const PRESSES_TO_SILENCE:int = 8
+## Below it a message is not heard: a gain of 0 plays at -80 dB (gnd-sfx's floor of 0.0001)
+const SILENT_DB:float = -60.0
+const VOLUME_TOLERANCE_DB:float = 0.1
+const TRANSCRIPT_LINE:String = "Pociag do Krakowa"
+## How long the line shows [s]
+const TRANSCRIPT_SECONDS:float = 5.0
 
 const LOCOMOTIVE_PATH:String = "res://tests/fixtures/dynamic/pkp/ep09_v1/104e-039.fiz"
 const TRACK:String = "TestCabinRadioTrack"
@@ -106,6 +114,34 @@ func test_switching_the_radio_off_mutes_a_message() -> void:
     assert_false(_message_played(), "muted with the radio off")
 
 
+## A message is played as loud as the radio is set on its channel, and silent off it or with the
+## radio off (TTrain::update_sounds_radio(), Train.cpp:10227-10262)
+func test_a_message_follows_the_radio_volume_channel_and_power() -> void:
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
+    await _tune(CHANNEL)
+    await _send(CHANNEL)
+    var volume:float = (VehicleServer.vehicle_component_get(
+            vehicle_rid, VehicleComponentType.COMPONENT_RADIO) as RailVehicleRadio).get_volume()
+    assert_almost_eq(_message_volume_db(), linear_to_db(volume), VOLUME_TOLERANCE_DB, "as loud as the radio is set")
+
+    await _tune(1)
+    assert_lt(_message_volume_db(), SILENT_DB, "silent off its channel")
+
+    await _tune(CHANNEL)
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", false)
+    await step(2)
+    assert_lt(_message_volume_db(), SILENT_DB, "silent with the radio off")
+
+
+## How loud the last message plays [dB]: the volume its player's voice is set to
+func _message_volume_db() -> float:
+    var players:Array[Node] = radio.get_children().filter(func(child:Node) -> bool: return child is SfxPlayer3D)
+    var loudest:float = -INF
+    for voice:Node in players.back().get_children(true):
+        if voice is AudioStreamPlayer3D and (voice as AudioStreamPlayer3D).playing:
+            loudest = maxf(loudest, (voice as AudioStreamPlayer3D).volume_db)
+    return loudest
+
 func test_messages_overlap() -> void:
     VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
     await step(2)
@@ -123,3 +159,17 @@ func test_the_radio_stop_alarm_and_its_lamp() -> void:
     await step(2)
     assert_true(CabinSystem.vehicle_state_value(vehicle_rid, CabinRadio3D.RADIO_STOP_LAMP_KEY, false), "the lamp")
     assert_true(_message_played(), "the alarm sounds on the radio")
+
+
+## A message the radio receives as it starts shows its transcript however low the volume is: it
+## starts at full gain (TTrain::radio_message(), Train.cpp:11047-11048)
+func test_a_received_message_shows_its_transcript_at_any_volume() -> void:
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio", true)
+    await _tune(CHANNEL)
+    VehicleServer.vehicle_send_command(vehicle_rid, "radio_volume_decrease", PRESSES_TO_SILENCE)
+    var transcript := Transcript.new()
+    transcript.add_line(TRANSCRIPT_LINE, 0.0, TRANSCRIPT_SECONDS)
+    SceneryVirtualRadio.new().transmit(Vector3.ZERO, CHANNEL, 0.0, RadioServer.KIND_MESSAGE,
+            {"sound": _event(&"message"), "transcript": transcript})
+    await step(2)
+    assert_has(TranscriptSystem.get_lines(), TRANSCRIPT_LINE)

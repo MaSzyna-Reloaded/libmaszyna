@@ -44,6 +44,18 @@ water 4.0 none 0.0 0.0 0.0
 endtrack
 MARKER
 """
+## linia61/czestochowa.scm's CzO_obrotnica: a turntable, read as a rail track of its own type
+const TURNTABLE_SOURCE:String = """
+turn 0 1.435 0.15 25 20 0 flat vis
+rail_screw_used1 4 none 0.2 0.5 1.3
+-20514.665 248.351 7028.804 0
+0 0 0
+0 0 0
+-20514.665 248.351 7012.804 0
+0
+endtrack
+MARKER
+"""
 ## td/drogi.scm's d1: a road with its surface and its shoulders
 const ROAD_SOURCE:String = """
 road 0 8 0.85 0 20 0 flat vis
@@ -135,3 +147,15 @@ func test_a_closing_word_with_capitals_closes_the_track() -> void:
     assert_eq((skipped[1] as MaszynaParser).next_token(), "MARKER", "a skipped track ends at EndTrack")
     assert_eq((kept[0] as MaszynaTrackData).speed_limit, 80.0, "a kept track keeps its properties")
     assert_eq((kept[1] as MaszynaParser).next_token(), "MARKER", "a kept track ends at EndTrack")
+
+
+func test_a_turntable_is_read_as_its_own_type() -> void:
+    var result:Array = _import(TURNTABLE_SOURCE)
+    var track:MaszynaTrackData = result[0]
+    var parser:MaszynaParser = result[1]
+
+    assert_not_null(track)
+    assert_eq(track.kind, TrackServer.TRACK_TURN, "turn is tt_Table (Track.cpp:407-411)")
+    assert_eq(parser.next_token(), "MARKER", "the node read to its end")
+    var table:MaszynaTrackData = _import(TURNTABLE_SOURCE.replace("turn 0", "table 0"))[0]
+    assert_eq(table.kind, TrackServer.TRACK_TABLE, "table is tt_Table too (Track.cpp:412-416)")

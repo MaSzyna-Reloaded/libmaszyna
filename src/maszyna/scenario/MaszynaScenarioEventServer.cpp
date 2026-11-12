@@ -1,18 +1,32 @@
 #include "driver/DriverServer.hpp"
+#include "maszyna/scenario/MaszynaMemoryAction.hpp"
 #include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
+#include "maszyna/vehicles/MaszynaMoverRailVehicleController.hpp"
+#include "player/PlayerServer.hpp"
 #include "radio/RadioServer.hpp"
 #include "scenario/ScenarioEventServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
 #include "simulation/SimulationServer.hpp"
+#include "station/StationServer.hpp"
 #include "tracks/TrackServer.hpp"
 #include "utils/Names.hpp"
 #include "utils/Units.hpp"
 #include "vehicles/base/VehicleServer.hpp"
+#include "vehicles/rail/RailVehicleLoad.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
+    namespace {
+        /// What drivers read on the tracks, or nothing a memory carries for them: no command to
+        /// send (TMemCell::CommandCheck(), MemCell.cpp:52-99), and a passenger stop by its prefix
+        const char *const TEXTS_NOT_SENT[] = {"SetVelocity",          "ShuntVelocity",   "OutsideStation",
+                                              "SetProximityVelocity", "Emergency_brake", "CabSignal"};
+        const char *const PASSENGER_STOP_POINT = "PassengerStopPoint:";
+    } // namespace
+
     const char *MaszynaScenarioEventServer::memory_values_changed_signal = "memory_values_changed";
     MaszynaScenarioEventServer *MaszynaScenarioEventServer::singleton = nullptr;
 
@@ -25,7 +39,19 @@ namespace godot {
                 D_METHOD("event_get_departure_delay", "event"), &MaszynaScenarioEventServer::event_get_departure_delay);
         ClassDB::bind_method(
                 D_METHOD("event_set_passive", "event", "passive"), &MaszynaScenarioEventServer::event_set_passive);
+        ClassDB::bind_method(
+                D_METHOD("vehicle_put_command", "vehicle", "command", "value1", "value2", "position"),
+                &MaszynaScenarioEventServer::vehicle_put_command);
+        ClassDB::bind_method(
+                D_METHOD("event_set_queued_on_every_move", "event", "every_move"),
+                &MaszynaScenarioEventServer::event_set_queued_on_every_move);
+        ClassDB::bind_method(
+                D_METHOD("event_is_queued_on_every_move", "event"),
+                &MaszynaScenarioEventServer::event_is_queued_on_every_move);
         ClassDB::bind_method(D_METHOD("event_is_passive", "event"), &MaszynaScenarioEventServer::event_is_passive);
+        ClassDB::bind_method(
+                D_METHOD("event_add_to_query", "event", "activator"), &MaszynaScenarioEventServer::event_add_to_query,
+                DEFVAL(RID()));
         ClassDB::bind_method(D_METHOD("memory_create", "system"), &MaszynaScenarioEventServer::memory_create);
         ClassDB::bind_method(D_METHOD("memory_free", "memory"), &MaszynaScenarioEventServer::memory_free);
         ClassDB::bind_method(
@@ -36,6 +62,14 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("memory_set_values", "memory", "text", "value1", "value2"),
                 &MaszynaScenarioEventServer::memory_set_values);
+        ClassDB::bind_method(
+                D_METHOD("memory_check_command", "memory"), &MaszynaScenarioEventServer::memory_check_command);
+        ClassDB::bind_method(D_METHOD("memory_has_command", "memory"), &MaszynaScenarioEventServer::memory_has_command);
+        ClassDB::bind_method(
+                D_METHOD("memory_command_sent", "memory"), &MaszynaScenarioEventServer::memory_command_sent);
+        ClassDB::bind_method(
+                D_METHOD("memory_set_sent_event", "memory", "event"),
+                &MaszynaScenarioEventServer::memory_set_sent_event);
         ClassDB::bind_method(D_METHOD("memory_get_text", "memory"), &MaszynaScenarioEventServer::memory_get_text);
         ClassDB::bind_method(D_METHOD("memory_get_value1", "memory"), &MaszynaScenarioEventServer::memory_get_value1);
         ClassDB::bind_method(D_METHOD("memory_get_value2", "memory"), &MaszynaScenarioEventServer::memory_get_value2);
@@ -50,10 +84,17 @@ namespace godot {
                 &MaszynaScenarioEventServer::memory_set_position);
         ClassDB::bind_method(
                 D_METHOD("memory_get_position", "memory"), &MaszynaScenarioEventServer::memory_get_position);
+        ClassDB::bind_method(D_METHOD("memory_dump"), &MaszynaScenarioEventServer::memory_dump);
         ClassDB::bind_method(
                 D_METHOD("track_add_event", "track", "slot", "event"), &MaszynaScenarioEventServer::track_add_event);
         ClassDB::bind_method(
                 D_METHOD("track_get_events", "track", "slot"), &MaszynaScenarioEventServer::track_get_events);
+        ClassDB::bind_method(
+                D_METHOD("track_set_velocity_changing", "track", "event"),
+                &MaszynaScenarioEventServer::track_set_velocity_changing);
+        ClassDB::bind_method(
+                D_METHOD("track_is_velocity_changing", "track"),
+                &MaszynaScenarioEventServer::track_is_velocity_changing);
         ClassDB::bind_method(
                 D_METHOD("isolated_add_event", "isolated", "slot", "event"),
                 &MaszynaScenarioEventServer::isolated_add_event);
@@ -88,6 +129,18 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("launcher_set_key", "launcher", "key"), &MaszynaScenarioEventServer::launcher_set_key);
         ClassDB::bind_method(D_METHOD("launcher_get_key", "launcher"), &MaszynaScenarioEventServer::launcher_get_key);
+        ClassDB::bind_method(
+                D_METHOD("launcher_set_key_needs_shift", "launcher", "needs_shift"),
+                &MaszynaScenarioEventServer::launcher_set_key_needs_shift);
+        ClassDB::bind_method(
+                D_METHOD("launcher_get_key_needs_shift", "launcher"),
+                &MaszynaScenarioEventServer::launcher_get_key_needs_shift);
+        ClassDB::bind_method(
+                D_METHOD("launcher_set_fire_once", "launcher", "fire_once"),
+                &MaszynaScenarioEventServer::launcher_set_fire_once);
+        ClassDB::bind_method(
+                D_METHOD("launcher_set_train_triggered", "launcher", "train_triggered"),
+                &MaszynaScenarioEventServer::launcher_set_train_triggered);
         ClassDB::bind_method(
                 D_METHOD("launcher_set_interval", "launcher", "seconds"),
                 &MaszynaScenarioEventServer::launcher_set_interval);
@@ -202,7 +255,9 @@ namespace godot {
         }
         for (const RID &track: owned.tracks) {
             track_events.erase(track);
+            every_move_tracks.erase(track);
         }
+        _set_every_move_processing(!every_move_tracks.is_empty());
         for (const RID &isolated: owned.isolated) {
             isolated_events.erase(isolated);
         }
@@ -222,15 +277,22 @@ namespace godot {
         if (departure_delay == nullptr || vehicles == nullptr || !vehicles->vehicle_exists(p_activator)) {
             return p_run_time;
         }
-        const DriverServer *drivers = DriverServer::get_instance();
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        const StationServer *stations = StationServer::get_instance();
         const SimulationServer *runtime = SimulationServer::get_instance();
-        ERR_FAIL_NULL_V(drivers, p_run_time);
+        ERR_FAIL_NULL_V(rail_vehicles, p_run_time);
+        ERR_FAIL_NULL_V(stations, p_run_time);
         ERR_FAIL_NULL_V(runtime, p_run_time);
+        // the timetable is the trainset's: its run's departure from where it stands, none without
+        // one (TTrainParameters::seconds_until_departure(), mtable.cpp:184-190)
+        const RID trainset = rail_vehicles->vehicle_get_trainset(p_activator);
+        const RID run = trainset.is_valid() ? stations->run_find_by_trainset(trainset) : RID();
+        const double until_departure = run.is_valid()
+                                               ? stations->run_get_time_to_departure(run, runtime->get_time_of_day()) *
+                                                         Units::SECONDS_PER_MINUTE
+                                               : 0.0;
         // the departure may be past already: the event runs at once (Event.cpp:2444)
-        return MAX(
-                p_now, p_run_time +
-                               drivers->vehicle_get_seconds_until_departure(p_activator, runtime->get_time_of_day()) +
-                               *departure_delay);
+        return MAX(p_now, p_run_time + until_departure + *departure_delay);
     }
 
     /// A track's event0 goes on while its vehicle stands there, on the tracks of both its axles (the
@@ -247,7 +309,7 @@ namespace godot {
             const TrackEvents *standing_events = track_events.getptr(standing_track);
             if (standing_events != nullptr && (standing_events->events[TRACK_EVENT0].has(p_event) ||
                                                standing_events->events[TRACK_EVENTALL0].has(p_event))) {
-                scenario->event_queue(p_event, p_activator);
+                event_add_to_query(p_event, p_activator);
                 return;
             }
         }
@@ -260,15 +322,27 @@ namespace godot {
             return;
         }
         launcher->scheduled_ticket = 0;
+        const SimulationServer *runtime = SimulationServer::get_instance();
+        ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
+        ERR_FAIL_NULL(runtime);
+        ERR_FAIL_NULL(scenario);
+        if (launcher->fire_once) {
+            // the first time it is in reach and its condition passes (EvLaunch.cpp:182-186)
+            launcher->fired = _in_reach(*launcher) && _fire(launcher->condition, launcher->event);
+            if (!launcher->fired) {
+                launcher->scheduled_ticket = scenario->system_schedule(
+                        launcher->system, p_owner, runtime->simulation_get_time() + FIRE_ONCE_CHECK_SECONDS);
+            }
+            return;
+        }
         if (launcher->interval > 0.0) {
-            const SimulationServer *runtime = SimulationServer::get_instance();
-            ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
-            ERR_FAIL_NULL(runtime);
-            ERR_FAIL_NULL(scenario);
             launcher->scheduled_ticket = scenario->system_schedule(
                     launcher->system, p_owner, runtime->simulation_get_time() + launcher->interval);
         }
-        _fire(launcher->condition, launcher->event);
+        // an interval counts only in reach (scene.cpp:135-139)
+        if (_in_reach(*launcher)) {
+            _fire(launcher->condition, launcher->event);
+        }
     }
 
     void MaszynaScenarioEventServer::event_set_departure_delay(const RID &p_event, const double p_seconds) {
@@ -296,9 +370,93 @@ namespace godot {
         return passive_events.has(p_event);
     }
 
+    void MaszynaScenarioEventServer::event_set_queued_on_every_move(const RID &p_event, const bool p_every_move) {
+        if (p_every_move) {
+            every_move_events.insert(p_event);
+            return;
+        }
+        every_move_events.erase(p_event);
+    }
+
+    bool MaszynaScenarioEventServer::event_is_queued_on_every_move(const RID &p_event) const {
+        return every_move_events.has(p_event);
+    }
+
+    /// TTrackFollower::Move() of a primary axle staying on its track (TrkFoll.cpp:249-260): on every
+    /// step the track's event1/event2 of a delay of -1 or less go on for a vehicle whose cab is
+    /// occupied (CabOccupied), its eventall1/eventall2 for any - an event already queued is not
+    /// queued twice (Event.cpp:2384)
+    void MaszynaScenarioEventServer::_queue_every_move_events(const double /* p_seconds */) {
+        const TrackServer *tracks = TrackServer::get_instance();
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        const ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
+        ERR_FAIL_NULL(tracks);
+        ERR_FAIL_NULL(rail_vehicles);
+        ERR_FAIL_NULL(scenario);
+        // copied: queueing emits event_queued, and a listener may bind events to a track
+        LocalVector<RID> moving_tracks;
+        for (const RID &track: every_move_tracks) {
+            moving_tracks.push_back(track);
+        }
+        for (const RID &track: moving_tracks) {
+            const TypedArray<RID> on_track = tracks->track_get_vehicles(track);
+            for (int64_t i = 0; i < on_track.size(); i++) {
+                const RID vehicle = on_track[i];
+                const bool occupied = rail_vehicles->vehicle_get_driver_cabin(vehicle).is_valid();
+                for (const TrackEvent slot: {TRACK_EVENT1, TRACK_EVENT2, TRACK_EVENTALL1, TRACK_EVENTALL2}) {
+                    const TrackEvents *bound = track_events.getptr(track);
+                    if (bound == nullptr || (!occupied && (slot == TRACK_EVENT1 || slot == TRACK_EVENT2))) {
+                        continue;
+                    }
+                    const Vector<RID> slot_events = bound->events[slot];
+                    for (const RID &event: slot_events) {
+                        if (every_move_events.has(event) && scenario->event_exists(event)) {
+                            event_add_to_query(event, vehicle);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void MaszynaScenarioEventServer::_set_every_move_processing(const bool p_processing) {
+        if (every_move_processing == p_processing) {
+            return;
+        }
+        SimulationServer *runtime = SimulationServer::get_instance();
+        ERR_FAIL_NULL(runtime);
+        every_move_processing = p_processing;
+        if (p_processing) {
+            runtime->connect(
+                    SimulationServer::simulation_advanced_signal,
+                    callable_mp(this, &MaszynaScenarioEventServer::_queue_every_move_events));
+            return;
+        }
+        runtime->disconnect(
+                SimulationServer::simulation_advanced_signal,
+                callable_mp(this, &MaszynaScenarioEventServer::_queue_every_move_events));
+    }
+
+    bool MaszynaScenarioEventServer::event_add_to_query(const RID &p_event, const RID &p_activator) {
+        ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
+        ERR_FAIL_NULL_V(scenario, false);
+        const Ref<MaszynaMemoryAction> action = scenario->event_get_action(p_event);
+        // basic_event::is_instant(), updatevalues_event::is_instant() (Event.cpp:566-571)
+        if (action.is_valid() && action->get_mode() == MaszynaMemoryAction::MODE_ADD &&
+            scenario->event_get_delay(p_event) == 0.0) {
+            if (!event_can_queue(p_event)) {
+                return false;
+            }
+            scenario->event_run(p_event, p_activator);
+            return true;
+        }
+        return scenario->event_queue(p_event, p_activator);
+    }
+
     void MaszynaScenarioEventServer::_on_event_freed(const RID &p_event) {
         departure_delays.erase(p_event);
         passive_events.erase(p_event);
+        every_move_events.erase(p_event);
     }
 
     MaszynaScenarioEventServer::SystemData *MaszynaScenarioEventServer::_get_event_system(const RID &p_event) {
@@ -313,10 +471,12 @@ namespace godot {
         _check_timed_launchers();
     }
     /// TEventLauncher::check_activation() (EvLaunch.cpp:197-211) under event_manager::update()
-    /// (Event.cpp:2293-2306): the original looks every frame - a launcher fires once while the
-    /// clock shows its HH:MM and its condition passes, and is armed again when the hour is another.
-    /// Its condition is a memory's (check_conditions(), EvLaunch.cpp:213-222), so here it is looked
-    /// at when the minute comes and again whenever a memory changes within it. The minute is the
+    /// (Event.cpp:2276-2284) and basic_cell::update_events() (scene.cpp:124-143): the original looks
+    /// every frame, and only at a launcher in reach whose condition passes - it fires once while the
+    /// clock shows its HH:MM, and is armed again when the hour is another. Its condition is a
+    /// memory's (check_conditions(), EvLaunch.cpp:213-222), so here a launcher of no radius is looked
+    /// at when the minute comes and again whenever a memory changes within it; one of a radius on
+    /// every step besides, as the camera comes into its reach (_update_timed_reach_processing()). The minute is the
     /// clock's whole minutes, as SimulationServer counts them: a start set to 21:05 is
     /// 21.08333..., which truncated to minutes was 21:04 (docs/findings-archive.md, 2026-10-03
     /// scenarios that did not start).
@@ -333,19 +493,69 @@ namespace godot {
             if (launcher == nullptr) {
                 continue;
             }
+            // only a launcher in reach whose condition passes is looked at (scene.cpp:132-134,
+            // Event.cpp:2277), its arming included
+            if (!_in_reach(*launcher) ||
+                (launcher->condition.is_valid() && !launcher->condition->test(launcher->event, RID()))) {
+                continue;
+            }
             if (!(launcher->hour == hour)) {
                 launcher->armed = true;
                 continue;
             }
-            if (!(launcher->minute == minute) || !launcher->armed || !_in_reach(*launcher)) {
+            if (!(launcher->minute == minute) || !launcher->armed) {
                 continue;
             }
             launcher->armed = !_fire(launcher->condition, launcher->event);
         }
     }
+
+    void MaszynaScenarioEventServer::_on_simulation_advanced_timed_launchers(const double /* p_seconds */) {
+        _check_timed_launchers();
+    }
+
+    void MaszynaScenarioEventServer::_update_timed_reach_processing() {
+        bool reach = false;
+        for (const RID &rid: timed_launchers) {
+            const LauncherData *launcher = launchers.getptr(rid);
+            reach = reach || (launcher != nullptr && launcher->radius >= 0.0);
+        }
+        if (reach == timed_reach_processing) {
+            return;
+        }
+        SimulationServer *runtime = SimulationServer::get_instance();
+        ERR_FAIL_NULL(runtime);
+        timed_reach_processing = reach;
+        const Callable step = callable_mp(this, &MaszynaScenarioEventServer::_on_simulation_advanced_timed_launchers);
+        if (reach) {
+            runtime->connect(SimulationServer::simulation_advanced_signal, step);
+        } else {
+            runtime->disconnect(SimulationServer::simulation_advanced_signal, step);
+        }
+    }
     bool MaszynaScenarioEventServer::_in_reach(const LauncherData &p_launcher) {
         if (p_launcher.radius < 0.0) {
             return true;
+        }
+        const PlayerServer *player = PlayerServer::get_instance();
+        const RID train = player != nullptr ? player->player_get_vehicle() : RID();
+        if (p_launcher.train_triggered && train.is_valid()) {
+            // the front of the player's vehicle, its coupler towards its trainset's head
+            // (HeadPosition(), DynObj.h:702-703); its front is the body's -Z
+            const VehicleServer *vehicles = VehicleServer::get_instance();
+            const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+            ERR_FAIL_NULL_V(vehicles, false);
+            ERR_FAIL_NULL_V(rail_vehicles, false);
+            const Transform3D transform = vehicles->vehicle_get_transform(train);
+            const Ref<VehicleController> controller = vehicles->vehicle_get_controller(train);
+            const double half_length = controller.is_valid() ? controller->get_dimensions_length() / 2.0 : 0.0;
+            const double head_side = rail_vehicles->vehicle_get_trainset(train).is_valid() &&
+                                                     rail_vehicles->trainset_vehicle_get_direction(train) ==
+                                                             TrackServer::DIRECTION_REVERSED
+                                             ? -1.0
+                                             : 1.0;
+            const Vector3 head = transform.origin - transform.basis.get_column(2) * half_length * head_side;
+            return p_launcher.position.distance_to(head) < p_launcher.radius;
         }
         const SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
         return streaming != nullptr && streaming->streaming_has_camera() &&
@@ -386,6 +596,38 @@ namespace godot {
         if (fired) {
             return;
         }
+        // the trainset fires the events of a move only going the way its head's driver set it to go
+        // - the head's direction (CheckDirection(), Driver.cpp:2384-2392), turned as the vehicle
+        // faces the head; a trainset nobody drives goes any way (eventfilter, TrkFoll.cpp:115-121,
+        // 131, 147). A move filtered out leaves the events for a later one (SetFlag(), :132, 148)
+        const VehicleServer *vehicles = VehicleServer::get_instance();
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        ERR_FAIL_NULL(vehicles);
+        ERR_FAIL_NULL(rail_vehicles);
+        const RID trainset = rail_vehicles->vehicle_get_trainset(p_vehicle);
+        const RID head = trainset.is_valid() ? rail_vehicles->trainset_get_head(trainset) : RID();
+        if (head.is_valid() && vehicles->vehicle_has_person_role(head, VehiclePersonRole::VEHICLE_PERSON_ROLE_DRIVER)) {
+            const Ref<RailVehicleController> head_controller = vehicles->vehicle_get_controller(head);
+            const Ref<VehicleController> controller = vehicles->vehicle_get_controller(p_vehicle);
+            ERR_FAIL_COND(head_controller.is_null() || controller.is_null());
+            int intended = head_controller->get_direction_absolute();
+            if (intended == VehicleController::DIRECTION_NEUTRAL) {
+                const RailVehicleCabinKind::Kind cabin = head_controller->get_active_cabin_kind();
+                if (cabin == RailVehicleCabinKind::RAIL_VEHICLE_CABIN_FRONT) {
+                    intended = VehicleController::DIRECTION_FORWARD;
+                } else if (cabin == RailVehicleCabinKind::RAIL_VEHICLE_CABIN_REAR) {
+                    intended = VehicleController::DIRECTION_BACKWARD;
+                }
+            }
+            if (!(rail_vehicles->trainset_vehicle_get_direction(head) ==
+                  rail_vehicles->trainset_vehicle_get_direction(p_vehicle))) {
+                intended = -intended;
+            }
+            const double velocity = controller->get_velocity();
+            if (intended == VehicleController::DIRECTION_NEUTRAL || (velocity > 0.0) != (intended > 0)) {
+                return;
+            }
+        }
         fired = true;
         _queue_track_events(
                 p_track, to_start ? TRACK_EVENT1 : TRACK_EVENT2, to_start ? TRACK_EVENTALL1 : TRACK_EVENTALL2,
@@ -409,6 +651,100 @@ namespace godot {
     }
     void MaszynaScenarioEventServer::_on_vehicle_freed(const RID &p_vehicle) {
         vehicles_on_tracks.erase(p_vehicle);
+        pending_loads.erase(p_vehicle);
+        _set_pending_load_processing(!pending_loads.is_empty());
+    }
+
+    void MaszynaScenarioEventServer::vehicle_put_command(
+            const RID &p_vehicle, const String &p_command, const double p_value1, const double p_value2,
+            const Vector3 &p_position) {
+        VehicleServer *vehicles = VehicleServer::get_instance();
+        ERR_FAIL_NULL(vehicles);
+        const bool load = p_command.begins_with(LOAD_COMMAND);
+        const bool unload = p_command.begins_with(UNLOAD_COMMAND);
+        PackedFloat64Array values;
+        values.push_back(p_value1);
+        values.push_back(p_value2);
+        if (!load && !unload) {
+            pending_loads.erase(p_vehicle);
+            _set_pending_load_processing(!pending_loads.is_empty());
+            vehicles->vehicle_send_command(
+                    p_vehicle, MaszynaMoverRailVehicleController::PUT_COMMAND, p_command, values);
+            return;
+        }
+        // the load takes the place of the vehicle's own order waiting (PutCommand(), Mover.cpp:12101)
+        vehicles->vehicle_send_command(p_vehicle, MaszynaMoverRailVehicleController::PUT_COMMAND, String(), values);
+        PendingLoad pending;
+        pending.unload = unload;
+        pending.load_name = p_command.trim_prefix(load ? LOAD_COMMAND : UNLOAD_COMMAND).to_lower();
+        pending.position = p_position;
+        pending.reach = p_value2 > LOAD_REACH_GIVEN_ABOVE ? p_value2 : LOAD_REACH;
+        pending_loads[p_vehicle] = pending;
+        _try_pending_load(p_vehicle);
+        _set_pending_load_processing(!pending_loads.is_empty());
+    }
+
+    /// Load= and UnLoad= (Mover.cpp:12658-12694): taken or given while the vehicle stands within the
+    /// reach, again after a move, until it is full or empty - tried as it is put, then on every step
+    void MaszynaScenarioEventServer::_process_pending_loads(const double /* p_seconds */) {
+        // copied: an exchange started emits signals, and a listener may put another order
+        LocalVector<RID> waiting;
+        for (const KeyValue<RID, PendingLoad> &entry: pending_loads) {
+            waiting.push_back(entry.key);
+        }
+        for (const RID &vehicle: waiting) {
+            _try_pending_load(vehicle);
+        }
+        _set_pending_load_processing(!pending_loads.is_empty());
+    }
+
+    void MaszynaScenarioEventServer::_try_pending_load(const RID &p_vehicle) {
+        VehicleServer *vehicles = VehicleServer::get_instance();
+        RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        ERR_FAIL_NULL(vehicles);
+        ERR_FAIL_NULL(rail_vehicles);
+        const PendingLoad *pending = pending_loads.getptr(p_vehicle);
+        if (pending == nullptr) {
+            return;
+        }
+        const Ref<RailVehicleLoad> load =
+                vehicles->vehicle_component_get(p_vehicle, VehicleComponentType::COMPONENT_LOAD);
+        const Ref<VehicleController> controller = vehicles->vehicle_get_controller(p_vehicle);
+        if (load.is_null() || controller.is_null() ||
+            (pending->unload ? load->get_load_amount() <= 0.0 : load->get_load_amount() >= load->get_max_load())) {
+            pending_loads.erase(p_vehicle);
+            return;
+        }
+        if (rail_vehicles->load_get_exchange_time(p_vehicle) > 0.0 || !rail_vehicles->vehicle_is_standing(p_vehicle)) {
+            return;
+        }
+        // Distance(): across the ground, less the vehicle's length (Mover.cpp:575-578)
+        const Vector3 offset = vehicles->vehicle_get_position(p_vehicle) - pending->position;
+        if (Vector2(offset.x, offset.z).length() - controller->get_dimensions_length() >= pending->reach) {
+            return;
+        }
+        if (pending->unload) {
+            rail_vehicles->load_remove(p_vehicle, load->get_load_amount(), RailVehicleLoad::PLATFORM_SIDE_BOTH);
+        } else {
+            rail_vehicles->load_add(
+                    p_vehicle, load->get_max_load() - load->get_load_amount(), RailVehicleLoad::PLATFORM_SIDE_BOTH,
+                    pending->load_name);
+        }
+    }
+
+    void MaszynaScenarioEventServer::_set_pending_load_processing(const bool p_processing) {
+        if (pending_load_processing == p_processing) {
+            return;
+        }
+        SimulationServer *runtime = SimulationServer::get_instance();
+        ERR_FAIL_NULL(runtime);
+        pending_load_processing = p_processing;
+        const Callable step = callable_mp(this, &MaszynaScenarioEventServer::_process_pending_loads);
+        if (p_processing) {
+            runtime->connect(SimulationServer::simulation_advanced_signal, step);
+        } else {
+            runtime->disconnect(SimulationServer::simulation_advanced_signal, step);
+        }
     }
     void MaszynaScenarioEventServer::_on_isolated_occupied(const RID &p_isolated, const RID &p_vehicle) {
         _queue_isolated_events(p_isolated, ISOLATED_BUSY, p_vehicle);
@@ -433,7 +769,7 @@ namespace godot {
         const Vector<RID> slot_events = bound->events[p_slot];
         for (const RID &event: slot_events) {
             if (scenario->event_exists(event)) {
-                scenario->event_queue(event, p_vehicle);
+                event_add_to_query(event, p_vehicle);
             }
         }
     }
@@ -459,17 +795,24 @@ namespace godot {
         ERR_FAIL_NULL(vehicles);
         // copied: queueing emits event_queued, and a listener may bind events to a track
         const Vector<RID> all_events = bound->events[p_all_slot];
-        const bool crewed = !bound->events[p_crew_slot].is_empty() &&
-                            vehicles->vehicle_has_person_role(p_vehicle, VehiclePersonRole::VEHICLE_PERSON_ROLE_DRIVER);
+        // the crew events go for one driver of a trainset, the one at its head (Mechanik->primary(),
+        // TrkFoll.cpp:125, 138, 151) - a vehicle alone is its own head
+        const RailVehicleServer *rail_vehicles = RailVehicleServer::get_instance();
+        ERR_FAIL_NULL(rail_vehicles);
+        const RID trainset = rail_vehicles->vehicle_get_trainset(p_vehicle);
+        const bool crewed =
+                !bound->events[p_crew_slot].is_empty() &&
+                vehicles->vehicle_has_person_role(p_vehicle, VehiclePersonRole::VEHICLE_PERSON_ROLE_DRIVER) &&
+                (!trainset.is_valid() || rail_vehicles->trainset_get_head(trainset) == p_vehicle);
         const Vector<RID> crew_events = crewed ? bound->events[p_crew_slot] : Vector<RID>();
         for (const RID &event: crew_events) {
             if (scenario->event_exists(event)) {
-                scenario->event_queue(event, p_vehicle);
+                event_add_to_query(event, p_vehicle);
             }
         }
         for (const RID &event: all_events) {
             if (scenario->event_exists(event)) {
-                scenario->event_queue(event, p_vehicle);
+                event_add_to_query(event, p_vehicle);
             }
         }
     }
@@ -482,9 +825,9 @@ namespace godot {
         if (p_condition.is_valid() && !p_condition->test(p_event, RID())) {
             return false;
         }
-        ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
-        ERR_FAIL_NULL_V(scenario, false);
-        scenario->event_queue(p_event);
+        MaszynaScenarioEventServer *events = get_instance();
+        ERR_FAIL_NULL_V(events, false);
+        events->event_add_to_query(p_event);
         return true;
     }
     // --- memory ---
@@ -544,6 +887,40 @@ namespace godot {
         _check_timed_launchers();
     }
 
+    void MaszynaScenarioEventServer::memory_check_command(const RID &p_memory) {
+        MemoryData *memory = memories.getptr(p_memory);
+        ERR_FAIL_NULL(memory);
+        bool command = !memory->text.begins_with(PASSENGER_STOP_POINT);
+        for (const char *text: TEXTS_NOT_SENT) {
+            command = command && !(memory->text == text);
+        }
+        memory->command = command;
+    }
+
+    bool MaszynaScenarioEventServer::memory_has_command(const RID &p_memory) const {
+        const MemoryData *memory = memories.getptr(p_memory);
+        ERR_FAIL_NULL_V(memory, false);
+        return memory->command;
+    }
+
+    void MaszynaScenarioEventServer::memory_command_sent(const RID &p_memory) {
+        MemoryData *memory = memories.getptr(p_memory);
+        ERR_FAIL_NULL(memory);
+        if (!memory->command) {
+            return;
+        }
+        memory->command = false;
+        if (memory->sent_event.is_valid()) {
+            event_add_to_query(memory->sent_event);
+        }
+    }
+
+    void MaszynaScenarioEventServer::memory_set_sent_event(const RID &p_memory, const RID &p_event) {
+        MemoryData *memory = memories.getptr(p_memory);
+        ERR_FAIL_NULL(memory);
+        memory->sent_event = p_event;
+    }
+
     String MaszynaScenarioEventServer::memory_get_text(const RID &p_memory) const {
         const MemoryData *memory = memories.getptr(p_memory);
         ERR_FAIL_NULL_V(memory, String());
@@ -589,6 +966,23 @@ namespace godot {
         memory->position = p_position;
     }
 
+    TypedArray<Dictionary> MaszynaScenarioEventServer::memory_dump() const {
+        const TrackServer *tracks = TrackServer::get_instance();
+        TypedArray<Dictionary> dump;
+        for (const KeyValue<RID, MemoryData> &entry: memories) {
+            const MemoryData &memory = entry.value;
+            Dictionary cell;
+            cell["name"] = memory.name;
+            cell["text"] = memory.text;
+            cell["value1"] = memory.value1;
+            cell["value2"] = memory.value2;
+            cell["track"] =
+                    tracks != nullptr && memory.track.is_valid() ? tracks->track_get_name(memory.track) : String();
+            dump.push_back(cell);
+        }
+        return dump;
+    }
+
     Vector3 MaszynaScenarioEventServer::memory_get_position(const RID &p_memory) const {
         const MemoryData *memory = memories.getptr(p_memory);
         ERR_FAIL_NULL_V(memory, Vector3());
@@ -605,6 +999,10 @@ namespace godot {
             system->tracks.push_back(p_track);
         }
         track_events[p_track].events[p_slot].push_back(p_event);
+        if (every_move_events.has(p_event) && p_slot != TRACK_EVENT0 && p_slot != TRACK_EVENTALL0) {
+            every_move_tracks.insert(p_track);
+            _set_every_move_processing(true);
+        }
     }
 
     TypedArray<RID> MaszynaScenarioEventServer::track_get_events(const RID &p_track, const TrackEvent p_slot) const {
@@ -618,6 +1016,20 @@ namespace godot {
             result.push_back(event);
         }
         return result;
+    }
+
+    void MaszynaScenarioEventServer::track_set_velocity_changing(const RID &p_track, const RID &p_event) {
+        SystemData *system = _get_event_system(p_event);
+        ERR_FAIL_NULL(system);
+        if (!track_events.has(p_track)) {
+            system->tracks.push_back(p_track);
+        }
+        track_events[p_track].velocity_changing = true;
+    }
+
+    bool MaszynaScenarioEventServer::track_is_velocity_changing(const RID &p_track) const {
+        const TrackEvents *bound = track_events.getptr(p_track);
+        return bound != nullptr && bound->velocity_changing;
     }
 
     // --- isolated section ---
@@ -655,6 +1067,7 @@ namespace godot {
         launchers.erase(p_launcher);
         timed_launchers.erase(p_launcher);
         radio_launchers.erase(p_launcher);
+        _update_timed_reach_processing();
     }
 
     void MaszynaScenarioEventServer::launcher_set_name(const RID &p_launcher, const StringName &p_name) {
@@ -719,6 +1132,7 @@ namespace godot {
         LauncherData *launcher = launchers.getptr(p_launcher);
         ERR_FAIL_NULL(launcher);
         launcher->radius = p_radius;
+        _update_timed_reach_processing();
     }
 
     double MaszynaScenarioEventServer::launcher_get_radius(const RID &p_launcher) const {
@@ -769,6 +1183,7 @@ namespace godot {
         } else if (!timed_launchers.has(p_launcher)) {
             timed_launchers.push_back(p_launcher);
         }
+        _update_timed_reach_processing();
     }
 
     void MaszynaScenarioEventServer::launcher_set_radio_call(
@@ -795,9 +1210,45 @@ namespace godot {
         _fire(launcher->condition, launcher->event);
     }
 
+    /// launch_event(): with Shift its second event, its first when it has none (scene.cpp:700-703)
     void MaszynaScenarioEventServer::launcher_fire_shift(const RID &p_launcher) {
         const LauncherData *launcher = launchers.getptr(p_launcher);
         ERR_FAIL_NULL(launcher);
-        _fire(launcher->condition, launcher->shift_event);
+        _fire(launcher->condition, launcher->shift_event.is_valid() ? launcher->shift_event : launcher->event);
+    }
+
+    void MaszynaScenarioEventServer::launcher_set_key_needs_shift(const RID &p_launcher, const bool p_needs_shift) {
+        LauncherData *launcher = launchers.getptr(p_launcher);
+        ERR_FAIL_NULL(launcher);
+        launcher->key_needs_shift = p_needs_shift;
+    }
+
+    bool MaszynaScenarioEventServer::launcher_get_key_needs_shift(const RID &p_launcher) const {
+        const LauncherData *launcher = launchers.getptr(p_launcher);
+        ERR_FAIL_NULL_V(launcher, false);
+        return launcher->key_needs_shift;
+    }
+
+    void MaszynaScenarioEventServer::launcher_set_fire_once(const RID &p_launcher, const bool p_fire_once) {
+        LauncherData *launcher = launchers.getptr(p_launcher);
+        ERR_FAIL_NULL(launcher);
+        launcher->fire_once = p_fire_once;
+        launcher->fired = false;
+        launcher->scheduled_ticket = 0;
+        if (!p_fire_once) {
+            return;
+        }
+        const SimulationServer *runtime = SimulationServer::get_instance();
+        ScenarioEventServer *scenario = ScenarioEventServer::get_instance();
+        ERR_FAIL_NULL(runtime);
+        ERR_FAIL_NULL(scenario);
+        launcher->scheduled_ticket = scenario->system_schedule(
+                launcher->system, p_launcher, runtime->simulation_get_time() + FIRE_ONCE_CHECK_SECONDS);
+    }
+
+    void MaszynaScenarioEventServer::launcher_set_train_triggered(const RID &p_launcher, const bool p_train_triggered) {
+        LauncherData *launcher = launchers.getptr(p_launcher);
+        ERR_FAIL_NULL(launcher);
+        launcher->train_triggered = p_train_triggered;
     }
 } // namespace godot

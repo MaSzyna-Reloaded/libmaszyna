@@ -4,6 +4,11 @@ extends Node
 static var UNKNOWN_MATERIAL = preload("res://addons/libmaszyna/materials/unknown.tres")
 static var UNKNOWN_TEXTURE = preload("res://addons/libmaszyna/materials/missing_texture.png")
 const DDSTextureLoader = preload("res://addons/libmaszyna/materials/dds_texture_loader.gd")
+## A texture file's default extension, looked for first in every place (Global.szDefaultExt)
+const DEFAULT_TEXTURE_EXTENSION: String = ".dds"
+## The extensions then looked for in each place, in the original's order (texture_manager::find_on_disk(),
+## Texture.cpp:1503) - but .ktx and .tex, which Godot reads not and the game data has none of
+const TEXTURE_EXTENSIONS: Array[String] = [".dds", ".tga", ".png", ".bmp", ".jpg"]
 const COLORED_MATERIAL: Material = preload("res://addons/libmaszyna/e3d/colored.tres")
 ## A free spotlight drawn as a point of a constant size on the screen (types/free_spotlight.gdshader)
 ## and its glare (types/free_spotlight_glare.gdshader) as the next pass
@@ -292,7 +297,7 @@ func material_preload(
             continue
         var image:Image = _hold_preloaded(texture_key, files) as Image
         if not image:
-            image = DDSTextureLoader.load_image(full_path, max_size)
+            image = _load_image(full_path, max_size)
             if not image:
                 continue
             image = _put_preloaded(texture_key, image, files) as Image
@@ -460,7 +465,7 @@ func load_texture(
         MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
 
-    var texture:Texture2D = _load_dds_clamped(full_path, _get_max_texture_size(max_texture_size))
+    var texture:Texture2D = _load_clamped(full_path, _get_max_texture_size(max_texture_size))
     if not texture:
         texture = load(full_path) as Texture2D
     if texture:
@@ -480,18 +485,29 @@ func is_material_translucent(material_name:String) -> bool:
     if not ("@" in texture_name):
         return false
     var full_path:String = _get_texture_file("", texture_name)
-    return full_path and DDSTextureLoader.has_alpha(full_path)
+    if not full_path:
+        return false
+    if _is_dds(full_path):
+        return DDSTextureLoader.has_alpha(full_path)
+    # any other file by its image's channels (data_components, Texture.cpp:358)
+    var image:Image = Image.load_from_file(full_path)
+    return image != null and not image.detect_alpha() == Image.ALPHA_NONE
 
 
-## The size in pixels of a material's diffuse texture, read from its file's header; zero when
-## there is no such file or it is not a .dds
+## The size in pixels of a material's diffuse texture, read from a .dds's header or any other file's
+## image; zero when there is no such file
 func get_material_texture_size(material_name:String) -> Vector2i:
     var variant:MaszynaMaterial.MaszynaMaterialVariant = load_material("", material_name).default
     var texture_name:String = variant.get_texture_path("diffuse")
     if not texture_name:
         texture_name = variant.get_texture_path("tex1")
     var full_path:String = _get_texture_file("", texture_name if texture_name else material_name)
-    return DDSTextureLoader.get_size(full_path) if full_path else Vector2i.ZERO
+    if not full_path:
+        return Vector2i.ZERO
+    if _is_dds(full_path):
+        return DDSTextureLoader.get_size(full_path)
+    var image:Image = Image.load_from_file(full_path)
+    return image.get_size() if image else Vector2i.ZERO
 
 
 ## The texture is the one of the name - before any file of it - in every material of the name, made
@@ -571,6 +587,9 @@ func _get_texture_file(model_path:String, material_name:String) -> String:
     var trait_position:int = material_name.rfind(":")
     if trait_position >= 0:
         material_name = material_name.left(trait_position)
+    # nor the extension the data may give it: "loads/coal.bmp" is looked for as "loads/coal" in every
+    # format (Texture.cpp:1321)
+    material_name = MaszynaDataPath.erase_extension(material_name)
     var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
     if (project_data_dir.ends_with("\\")):
         project_data_dir = project_data_dir.trim_suffix("\\")
@@ -578,26 +597,37 @@ func _get_texture_file(model_path:String, material_name:String) -> String:
         project_data_dir = project_data_dir.trim_suffix("/")
 
     var possible_paths:Array[String] = [
-        model_path.path_join(material_name+".dds"),
-        "textures".path_join(model_path.path_join(material_name+".dds")),
-        material_name+".dds",
-        "textures".path_join(material_name+".dds"),
+        model_path.path_join(material_name),
+        "textures".path_join(model_path.path_join(material_name)),
+        material_name,
+        "textures".path_join(material_name),
     ]
-
+    # the default extension in every place first, then each place with every extension
+    # (find_on_disk(), Texture.cpp:1482-1504; FileExists(), utilities.cpp:334-349)
     for p:String in possible_paths:
-        var resolved_path:String = MaszynaDataPath.resolve(project_data_dir, p)
-        if FileAccess.file_exists(project_data_dir.path_join(resolved_path)):
-            return project_data_dir.path_join(resolved_path)
+        var found:String = _find_data_file(project_data_dir, p + DEFAULT_TEXTURE_EXTENSION)
+        if found:
+            return found
+    for p:String in possible_paths:
+        for extension:String in TEXTURE_EXTENSIONS:
+            var found:String = _find_data_file(project_data_dir, p + extension)
+            if found:
+                return found
     return ""
 
 
-## Loads a .dds with its top mipmap levels discarded down to max_size - port of the original
-## engine's iMaxTextureSize/maxtexturesize clamp (Texture.cpp), which this wrapper had no
-## equivalent of. Cached by path+max_size since this bypasses Godot's own load() resource
+## The file of the game data's path, resolved as the data names it; empty when there is none
+static func _find_data_file(data_dir:String, path:String) -> String:
+    var resolved_path:String = data_dir.path_join(MaszynaDataPath.resolve(data_dir, path))
+    return resolved_path if FileAccess.file_exists(resolved_path) else ""
+
+
+## Loads a texture limited to max_size (_load_image()) - port of the original engine's
+## iMaxTextureSize/maxtexturesize clamp (Texture.cpp), which this wrapper had no equivalent of. Cached by path+max_size since this bypasses Godot's own load() resource
 ## cache, and the same texture file is commonly referenced by several distinct materials
 ## (e.g. a shared normal map across dynamic skin slots).
 ## The image a preload read is taken while its build holds it; the file is read here only without one.
-func _load_dds_clamped(full_path:String, max_size:int) -> Texture2D:
+func _load_clamped(full_path:String, max_size:int) -> Texture2D:
     var cache_key:String = _get_texture_key(full_path, max_size)
     _preload_mutex.lock()
     var cached:WeakRef = _dds_cache.get(cache_key)
@@ -613,7 +643,7 @@ func _load_dds_clamped(full_path:String, max_size:int) -> Texture2D:
         _preload_mutex.unlock()
     var image:Image = _get_preloaded(cache_key) as Image
     if not image:
-        image = DDSTextureLoader.load_image(full_path, max_size)
+        image = _load_image(full_path, max_size)
     if not image:
         return null
     texture = ImageTexture.create_from_image(image)
@@ -621,6 +651,27 @@ func _load_dds_clamped(full_path:String, max_size:int) -> Texture2D:
     _dds_cache[cache_key] = weakref(texture)
     _preload_mutex.unlock()
     return texture
+
+
+## The texture file's image, read on any thread: a .dds by DDSTextureLoader, its top mipmap levels
+## dropped down to max_size; any other file by Godot's image loader - as the original reads them with
+## stb_image (Texture.cpp:252-258) - halved down to max_size the same way, with its mipmaps made
+static func _load_image(full_path:String, max_size:int) -> Image:
+    if _is_dds(full_path):
+        return DDSTextureLoader.load_image(full_path, max_size)
+    var image:Image = Image.load_from_file(full_path)
+    if not image:
+        return null
+    while (image.get_width() > max_size or image.get_height() > max_size) \
+            and image.get_width() > 1 and image.get_height() > 1:
+        image.resize(image.get_width() / 2, image.get_height() / 2)
+    image.generate_mipmaps()
+    return image
+
+
+## Whether the texture file is a .dds, which DDSTextureLoader reads
+static func _is_dds(full_path:String) -> bool:
+    return full_path.get_extension().to_lower() == DEFAULT_TEXTURE_EXTENSION.trim_prefix(".")
 
 
 ## The material handed out for a path with these options, the same while it is alive

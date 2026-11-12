@@ -176,7 +176,7 @@ namespace godot {
                 parser->next_token(); // "nearattenend:"
                 submodel.near_attenuation_end = read_float();
                 parser->next_token(); // "usenearatten:"
-                submodel.use_near_attenuation = parser->as_bool(parser->next_token());
+                submodel.use_near_attenuation = MaszynaParser::as_bool(parser->next_token());
                 parser->next_token(); // "farattendecay:"
                 submodel.far_attenuation_decay = static_cast<int>(parser->next_token().to_int());
                 parser->next_token(); // "fardecayradius:"
@@ -261,7 +261,7 @@ namespace godot {
                 String key = parser->next_token().to_lower();
                 bool has_userdata = false;
                 if (key == "userdata:") {
-                    has_userdata = parser->as_bool(parser->next_token());
+                    has_userdata = MaszynaParser::as_bool(parser->next_token());
                     key = parser->next_token().to_lower();
                 }
                 if (key == "numindices:") {

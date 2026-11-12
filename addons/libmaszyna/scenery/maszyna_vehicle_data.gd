@@ -33,5 +33,11 @@ var skin:String:
         livery = value
 
 
+## Where the scenario sends the vehicle, `station` or `station:track`, in lower case as the original
+## reads it after its load (simulationstateserializer.cpp:1095-1099); empty for none. Handed to
+## RailVehicleServer as the vehicle is made (MaszynaVehicleSystem)
+@export var destination:String = ""
+
+
 func _init() -> void:
     vehicle_provider = VEHICLE_PROVIDER

@@ -1,4 +1,5 @@
 #include "MaszynaMultipleAction.hpp"
+#include "maszyna/scenario/MaszynaScenarioEventServer.hpp"
 #include "scenario/ScenarioEventServer.hpp"
 
 namespace godot {
@@ -16,18 +17,26 @@ namespace godot {
     }
 
     void MaszynaMultipleAction::run(const RID &p_event, const RID &p_activator) {
-        ScenarioEventServer *server = ScenarioEventServer::get_instance();
-        ERR_FAIL_NULL(server);
-        for (int i = 0; i < events.size(); i++) {
-            server->event_queue(events[i], p_activator);
-        }
+        _queue(events, p_event, p_activator);
     }
 
     void MaszynaMultipleAction::run_else(const RID &p_event, const RID &p_activator) {
-        ScenarioEventServer *server = ScenarioEventServer::get_instance();
+        _queue(else_events, p_event, p_activator);
+    }
+
+    /// multi_event::run_() (Event.cpp:1290-1307): the event queues itself again only with a
+    /// sensible period of repetition
+    void MaszynaMultipleAction::_queue(const TypedArray<RID> &p_events, const RID &p_event, const RID &p_activator) {
+        const ScenarioEventServer *server = ScenarioEventServer::get_instance();
+        MaszynaScenarioEventServer *events = MaszynaScenarioEventServer::get_instance();
         ERR_FAIL_NULL(server);
-        for (int i = 0; i < else_events.size(); i++) {
-            server->event_queue(else_events[i], p_activator);
+        ERR_FAIL_NULL(events);
+        for (int i = 0; i < p_events.size(); i++) {
+            const RID child = p_events[i];
+            if (child == p_event && server->event_get_delay(p_event) < SELF_QUEUE_MIN_DELAY) {
+                continue;
+            }
+            events->event_add_to_query(child, p_activator);
         }
     }
 

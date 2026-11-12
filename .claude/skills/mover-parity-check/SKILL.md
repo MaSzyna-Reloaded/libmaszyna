@@ -3,6 +3,19 @@ name: mover-parity-check
 description: Diagnose Godot-side train behavior bugs (electrical relays, engine startup, main switch/wyłącznik szybki, pantograph, brakes, etc.) by tracing the exact logic in the vendored original MaSzyna C++ simulator (~/src/maszyna) and comparing it against libmaszyna's port. Use whenever an in-game behavior looks wrong/inconsistent and the question is "does our port match the original simulator's physics/electrical model, and where does it diverge?"
 ---
 
+## Rule zero: only what the operator orders
+
+REQUIRED, ABSOLUTE: **do always and only what the operator orders.** Nothing is edited, reverted,
+"restored", renamed, redesigned or posted (an issue, a comment, a PR) without the operator's
+explicit order - not even one's own work after a complaint. A complaint is not an order: name the
+facts and wait. Never touch an existing, reviewed mechanism outside the task.
+
+REQUIRED, ABSOLUTE: **no separation-of-concerns breach, ever.** Before any new state, API, enum,
+command or read from another layer, name to the operator which layer owns the value, where it is
+read from and why that keeps every layer to its own concern - and write nothing until the operator
+says yes. Data a scenery or a starter hands in is never read as live state; a value is read from
+its owner, never from a plugin's implementation, a dump or a copy.
+
 # Mover parity check
 
 This repo (libmaszyna) ports the original MaSzyna train simulator's

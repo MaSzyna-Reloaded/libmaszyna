@@ -33,11 +33,12 @@ namespace godot {
                 PASS_NONE,
             };
 
-            /// What the tracks have to be (flags::track_busy, flags::track_free)
+            /// What the tracks have to be (flags::track_busy, flags::track_free) - both may be asked
+            /// for at once (event_conditions::test(), Event.cpp:89-146)
             enum TrackTest {
-                TRACK_TEST_NONE,
-                TRACK_TEST_OCCUPIED,
-                TRACK_TEST_FREE,
+                TRACK_TEST_NONE = 0,
+                TRACK_TEST_OCCUPIED = 1,
+                TRACK_TEST_FREE = 2,
             };
 
         private:
@@ -52,7 +53,7 @@ namespace godot {
             Operator value2_operator = OPERATOR_EQUAL;
             Pass pass = PASS_ALL;
             TypedArray<RID> tracks;
-            TrackTest track_test = TRACK_TEST_NONE;
+            BitField<TrackTest> track_test = TRACK_TEST_NONE;
 
             template<typename T>
             static bool _compare(const T &p_left, const T &p_right, Operator p_operator);
@@ -87,11 +88,11 @@ namespace godot {
             /// TrackServer tracks every one of which has to be as track_test says
             void set_tracks(const TypedArray<RID> &p_tracks);
             TypedArray<RID> get_tracks() const;
-            void set_track_test(TrackTest p_track_test);
-            TrackTest get_track_test() const;
+            void set_track_test(BitField<TrackTest> p_track_test);
+            BitField<TrackTest> get_track_test() const;
     };
 } // namespace godot
 
 VARIANT_ENUM_CAST(MaszynaEventCondition::Operator)
 VARIANT_ENUM_CAST(MaszynaEventCondition::Pass)
-VARIANT_ENUM_CAST(MaszynaEventCondition::TrackTest)
+VARIANT_BITFIELD_CAST(MaszynaEventCondition::TrackTest)

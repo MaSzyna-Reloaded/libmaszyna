@@ -13,6 +13,8 @@ class_name MaszynaCompiledScenery
 @export var memcells:Array[MaszynaMemcellData] = []
 @export var launchers:Array[MaszynaEventLauncherData] = []
 @export var isolated_sections:Array[MaszynaIsolatedData] = []
+## The last `config hiddenevents` read (MaszynaImporterContext.hidden_events)
+@export var hidden_events:int = MaszynaImporterContext.DEFAULT_HIDDEN_EVENTS
 ## The region files (.sbt) whose terrain is supplied as the camera comes near
 ## (MaszynaSBTTerrainProvider), not read into triangle_chunks
 @export var region_files:Array[String] = []

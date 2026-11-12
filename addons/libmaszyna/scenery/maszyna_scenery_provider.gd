@@ -44,7 +44,7 @@ static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
 ## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read
-const CACHE_FORMAT_VERSION:int = 56
+const CACHE_FORMAT_VERSION:int = 57
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -294,7 +294,8 @@ func instantiate_content(root:SceneryContentNode, compiled:CompiledScenery, trac
     # the original's firstinit: everything the events are aimed at exists by now
     await MaszynaEventFactory.build(
         root, scn.events, scn.memcells, scn.launchers, compiled.sounds, scn.isolated_sections, compiled.tracks,
-        track_rids, models, model_rids, compiled.power_sources
+        track_rids, models, model_rids, compiled.power_sources, root._track_render_rids, compiled.traction,
+        root._traction_rids, scn.hidden_events
     )
     if SceneryServer.is_load_given_up(root):
         return
@@ -389,6 +390,7 @@ static func _compile_scenery(
     compiled.launchers = context.launchers
     compiled.sounds = context.sounds
     compiled.isolated_sections = context.isolated_sections
+    compiled.hidden_events = context.hidden_events
     compiled.lines = context.lines
     compiled.trainsets = context.trainsets
     compiled.scripts = context.scripts
@@ -538,7 +540,7 @@ func parse_subscene_task(
     var state_hash:String = var_to_str(
         [
             state["origin"], state["rotate"], state["binary_terrain"], state["binary_terrain_state"],
-            state["join_duplicated_events"],
+            state["join_duplicated_events"], state["hidden_events"],
         ]
     ).md5_text()
     var cache_path:String = _get_cache_path(source_path, state_hash)
@@ -559,6 +561,7 @@ func parse_subscene_task(
         cached.trainsets.assign(compiled.trainsets)
         cached.region_files.assign(compiled.region_files)
         cached.join_duplicated_events = compiled.join_duplicated_events
+        cached.hidden_events = compiled.hidden_events
         for chunk_path:String in compiled.triangle_chunk_paths:
             scenery_sink.add_geometry_file(chunk_path)
         cached.dependencies = compiled.dependencies.duplicate(true)
