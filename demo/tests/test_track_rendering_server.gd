@@ -3,13 +3,13 @@ extends MaszynaGutTest
 ## The rail profile a track is drawn with (models/tory/railprofile_default.txt) comes from the
 ## fixtures, not the game directory
 const FIXTURES_GAME_DIR: String = "res://tests/fixtures"
-## Frames given to the streaming to build a road cell in the camera's range
-const STREAMING_FRAMES: int = 60
 ## A trackbed material of a neighbour the default bed's (maszyna_track_looks.tres) is not
 const APPROACH_TRACKBED: String = "1435mm/tpbps-approach"
 
 var created_tracks: Array[TrackNormal3D] = []
 var created_track_rids: Array[RID] = []
+## The streamed tracks' render RIDs a test has not freed itself
+var created_render_rids: Array[RID] = []
 var _previous_game_dir: String = ""
 
 
@@ -24,6 +24,9 @@ func after_each() -> void:
         remove_child(track)
         track.queue_free()
     created_tracks.clear()
+    for render_rid: RID in created_render_rids:
+        TrackRenderingServer.track_free(render_rid)
+    created_render_rids.clear()
     for track_rid: RID in created_track_rids:
         if TrackServer.track_exists(track_rid):
             TrackServer.track_free(track_rid)
@@ -352,7 +355,8 @@ func test_streamed_roads_are_one_mesh_of_their_cell() -> void:
 
     assert_true(cell_rid.is_valid(), "a streamed road goes into a cell")
     assert_eq(backend.track_get_road_cell(render_rids[1]), cell_rid, "roads of one square share their cell")
-    await wait_streaming(STREAMING_FRAMES)
+    assert_true(await wait_until(func() -> bool: return backend.road_cell_get_mesh(cell_rid) != null, LOAD_TIMEOUT),
+            "the cell built as the camera is near - its geometry computed on the streaming's worker first")
     assert_true(backend.road_cell_get_instance(cell_rid).is_valid())
     var mesh: ArrayMesh = backend.road_cell_get_mesh(cell_rid)
     assert_eq(mesh.get_surface_count(), 2, "the surface and the shoulders, both roads in each")
@@ -363,6 +367,88 @@ func test_streamed_roads_are_one_mesh_of_their_cell() -> void:
         TrackRenderingServer.track_free(render_rid)
     assert_false(backend.road_cell_exists(cell_rid), "the cell goes with its last road")
     SceneryStreamingServer.streaming_set_camera(0)
+
+
+## Streamed tracks near each other are drawn by their cell, computed on the streaming's worker: one
+## instance of their rails and one of their trackbeds, each one mesh of a surface per material, and
+## no rail or trackbed instance of the tracks' own
+func test_streamed_tracks_are_one_mesh_of_their_cell() -> void:
+    var camera: Camera3D = _streaming_camera()
+    var backend: MaszynaTrackRenderingBackend = _backend()
+    var render_rids: Array[RID] = []
+    for i in 2:
+        render_rids.append(_create_streamed_track(TrackServer.TRACK_NORMAL,
+                _curve(Vector3(10.0 * i, 0.0, 5.0), Vector3(10.0 * i + 10.0, 0.0, 5.0)), null, _plain_look()))
+    var cell_rid: RID = backend.track_get_track_cell(render_rids[0])
+
+    assert_true(cell_rid.is_valid(), "a streamed track goes into a cell")
+    assert_eq(backend.track_get_track_cell(render_rids[1]), cell_rid, "tracks of one square share their cell")
+    assert_false(backend.track_get_road_cell(render_rids[0]).is_valid(), "no road cell of a track")
+    assert_true(await _wait_cell_built(cell_rid), "the cell built as the camera is near")
+    var rails: ArrayMesh = backend.track_cell_get_mesh(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_RAILS)
+    assert_eq(rails.get_surface_count(), 1, "the rails of both tracks of one material")
+    assert_almost_eq(rails.get_aabb().size.x, 20.0, 0.001, "both tracks in the mesh")
+    var bed: ArrayMesh = backend.track_cell_get_mesh(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_BED)
+    assert_eq(bed.get_surface_count(), 1, "the trackbeds of both tracks of one material")
+    assert_true(backend.track_cell_get_instance(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_RAILS).is_valid())
+    assert_true(backend.track_cell_get_instance(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_BED).is_valid())
+    for render_rid: RID in render_rids:
+        assert_true(backend.track_get_instances(render_rid).is_empty(), "no instance of its own")
+    SceneryStreamingServer.streaming_set_camera(0)
+    camera.free()
+
+
+## A switch of a cell has its fixed rails in the cell's mesh, and its blades - which move - in
+## instances of its own
+func test_a_switch_of_a_cell_keeps_its_own_blades() -> void:
+    var camera: Camera3D = _streaming_camera()
+    var backend: MaszynaTrackRenderingBackend = _backend()
+    var render_rid: RID = _create_streamed_track(TrackServer.TRACK_SWITCH,
+            _curve(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, -20.0)),
+            _curve(Vector3(0.0, 0.0, 0.0), Vector3(6.0, 0.0, -20.0), Vector3(0.0, 0.0, -16.667), Vector3(0.0, 0.0, 16.667)),
+            _scn_look(TrackServer.TRACK_SWITCH, "rail_screw_used1", "rail_screw_used1", 4.0, 0.0, 0.0, 0.0))
+    var cell_rid: RID = backend.track_get_track_cell(render_rid)
+
+    assert_true(await _wait_cell_built(cell_rid), "the cell built as the camera is near")
+    var instances: Dictionary = backend.track_get_instances(render_rid)
+    assert_true(instances.get(MaszynaTrackRenderingBackend.SLOT_PRIMARY_BLADE, RID()).is_valid(), "its main blade")
+    assert_true(instances.get(MaszynaTrackRenderingBackend.SLOT_SECONDARY_BLADE, RID()).is_valid(), "its diverging blade")
+    assert_false(instances.get(MaszynaTrackRenderingBackend.SLOT_PRIMARY_RAIL, RID()).is_valid(), "its rails are the cell's")
+    assert_false(instances.get(MaszynaTrackRenderingBackend.SLOT_TRACKBED, RID()).is_valid(), "its trackbed is the cell's")
+    var meshes: Dictionary = backend.track_get_meshes(render_rid)
+    assert_gt((meshes[MaszynaTrackRenderingBackend.SLOT_PRIMARY_BLADE] as Mesh).get_surface_count(), 0)
+    assert_gt((meshes[MaszynaTrackRenderingBackend.SLOT_SECONDARY_BLADE] as Mesh).get_surface_count(), 0)
+    SceneryStreamingServer.streaming_set_camera(0)
+    camera.free()
+
+
+## A hidden track leaves its cell's meshes as the cell is built again, a freed one too; the cell goes
+## with its last track
+func test_a_hidden_or_freed_track_leaves_its_cell() -> void:
+    var camera: Camera3D = _streaming_camera()
+    var backend: MaszynaTrackRenderingBackend = _backend()
+    var render_rids: Array[RID] = []
+    for i in 3:
+        render_rids.append(_create_streamed_track(TrackServer.TRACK_NORMAL,
+                _curve(Vector3(10.0 * i, 0.0, 5.0), Vector3(10.0 * i + 10.0, 0.0, 5.0)), null, _plain_look()))
+    var cell_rid: RID = backend.track_get_track_cell(render_rids[0])
+    assert_true(await _wait_cell_built(cell_rid), "the cell built as the camera is near")
+    assert_almost_eq(_rails_length(cell_rid), 30.0, 0.001, "the three tracks")
+
+    TrackRenderingServer.track_set_visible(render_rids[2], false)
+    assert_true(await _wait_cell_built(cell_rid), "the cell built again")
+    assert_almost_eq(_rails_length(cell_rid), 20.0, 0.001, "without the hidden track")
+
+    TrackRenderingServer.track_set_visible(render_rids[2], true)
+    _free_streamed_track(render_rids[0])
+    assert_true(await _wait_cell_built(cell_rid), "the cell built again")
+    assert_almost_eq(_rails_length(cell_rid), 20.0, 0.001, "without the freed track, with the shown one back")
+
+    _free_streamed_track(render_rids[1])
+    _free_streamed_track(render_rids[2])
+    assert_false(backend.track_cell_exists(cell_rid), "the cell goes with its last track")
+    SceneryStreamingServer.streaming_set_camera(0)
+    camera.free()
 
 
 ## A track of no .scn is drawn with the look its features map to (maszyna_track_looks.tres)
@@ -433,6 +519,56 @@ func test_switch_blade_layout_uses_curve1_right_and_curve2_left_for_left_switch(
     assert_true(layout["secondary_blade_mirrored"], "left switch should place curve2 blade on the left rail")
     assert_almost_eq(layout["primary_blade_offset"], 0.0, 0.001)
     assert_almost_eq(layout["secondary_blade_offset"], 0.15, 0.001)
+
+
+## A camera the streaming follows, at the world's origin
+func _streaming_camera() -> Camera3D:
+    var camera: Camera3D = Camera3D.new()
+    add_child(camera)
+    SceneryStreamingServer.streaming_set_camera(camera.get_instance_id())
+    return camera
+
+
+## A track of TrackServer streamed, as a scenery's are (scenery_server.gd, build_track())
+func _create_streamed_track(kind: TrackServer.TrackType, curve: TrackCurve, diverging: TrackCurve,
+        look: MaszynaTrackData) -> RID:
+    var track_rid: RID = TrackServer.track_create()
+    created_track_rids.append(track_rid)
+    var render_rid: RID = TrackRenderingServer.track_create(track_rid)
+    created_render_rids.append(render_rid)
+    TrackRenderingServer.track_set_scenario(render_rid, get_tree().root.world_3d.scenario)
+    TrackServer.track_update_curves(track_rid, curve, diverging)
+    TrackServer.track_update(track_rid, kind, "", BUILT_TRACK_GAUGE)
+    TrackRenderingServer.track_set_description(render_rid, look)
+    TrackRenderingServer.track_stream(render_rid)
+    return render_rid
+
+
+func _free_streamed_track(render_rid: RID) -> void:
+    TrackRenderingServer.track_free(render_rid)
+    created_render_rids.erase(render_rid)
+
+
+## A plain track's look: its rails and its own trackbed
+func _plain_look() -> MaszynaTrackData:
+    return _scn_look(TrackServer.TRACK_NORMAL, "rail_screw_used1", "1435mm/tpbps-new2", 4.0, 0.0, 0.0, 0.0)
+
+
+## The cell's rails are built (again) - its geometry computed on the streaming's worker first; a
+## build that does not come within LOAD_TIMEOUT fails the test
+func _wait_cell_built(cell_rid: RID) -> bool:
+    var backend: MaszynaTrackRenderingBackend = _backend()
+    if await wait_until(func() -> bool:
+            return backend.track_cell_get_mesh(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_RAILS) != null,
+            LOAD_TIMEOUT):
+        return true
+    fail_test("the cell was not built within %.0f s" % LOAD_TIMEOUT)
+    return false
+
+
+## How long the cell's rails are along x [m]
+func _rails_length(cell_rid: RID) -> float:
+    return _backend().track_cell_get_mesh(cell_rid, MaszynaTrackRenderingBackend.CELL_LAYER_RAILS).get_aabb().size.x
 
 
 ## MaSzyna's track rendering backend, as TrackRenderingServer has it

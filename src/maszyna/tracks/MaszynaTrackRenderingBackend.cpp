@@ -20,73 +20,12 @@
 
 namespace godot {
     namespace {
-        constexpr Vector3 UP(0.0, 1.0, 0.0);
-        constexpr Vector3 RIGHT(1.0, 0.0, 0.0);
-        constexpr Vector3 LEFT(-1.0, 0.0, 0.0);
-        constexpr Vector3 FORWARD(0.0, 0.0, -1.0);
-
-        /// Original engine: Segment.cpp:128-140 - a switch's curves are drawn in this many segments
-        constexpr int SWITCH_SEGMENT_COUNT = 6;
-        /// Original engine: Track.cpp:1371 bladelength - the blade's share of the way to the frog
-        constexpr double SWITCH_BLADE_RATIO = 0.65;
         /// A track is drawn in segments of this length at least and at most [m]
         constexpr double MIN_CURVED_MESH_SEGMENT_LENGTH = 2.0;
         constexpr double MAX_MESH_SEGMENT_LENGTH = 10.0;
         /// An arc's segment as a share of its radius, a curve's as a share of its chord
         constexpr double ARC_SEGMENT_PER_RADIUS = 0.02;
         constexpr double CURVE_SEGMENT_PER_CHORD = 0.1;
-        /// Original engine: Segment.cpp:84 - a roll lifts the curve by sin(roll) times this [m] (0.75 m
-        /// for 1435 mm)
-        constexpr double ROLL_FIX_FACTOR = 0.75;
-        /// The switch trackbed's edges under the other curve go this much lower, so the two do not fight
-        /// where they overlap [m]
-        constexpr double SWITCH_TRACKBED_Z_FIGHT_OFFSET = 0.025;
-        /// Original engine: Track.cpp:2860-2880 - a trackbed section: its outer edges, its slopes' upper
-        /// edges and its crown
-        constexpr int TRACKBED_SECTION_POINT_COUNT = 5;
-        /// The trackbed section's points of the slopes' upper edges and of the crown (_build_trackbed_section())
-        constexpr int TRACKBED_LEFT_EDGE_POINT = 1;
-        constexpr int TRACKBED_CENTRE_POINT = 2;
-        constexpr int TRACKBED_RIGHT_EDGE_POINT = 3;
-        /// Original engine: Segment.cpp:452-492 - a strip chunk holds each section point twice, at the
-        /// segment's start and at its end
-        constexpr int STRIP_VERTICES_PER_POINT = 2;
-        /// Original engine: Track.cpp:2855 - a trackbed texture 4 m long keeps the old fixed mapping
-        constexpr double TRACKBED_OLD_MAPPING_TEXTURE_LENGTH = 4.0;
-        /// Original engine: Track.cpp:2857-2858 - the old mapping's slope normals, 75 degrees up
-        constexpr double TRACKBED_OLD_MAPPING_NORMAL_ANGLE = 75.0;
-        /// Original engine: Track.cpp:2869, 2877 - the old mapping's u at the slope's upper edges
-        constexpr double TRACKBED_OLD_MAPPING_BREAK_U = 0.33;
-        /// Original engine: Track.cpp:2872 - the trackbed's crown lies this much over its edges [m]
-        constexpr double TRACKBED_CROWN_LIFT = 0.01;
-        /// The least length a texture or a loft is divided by [m]
-        constexpr double MIN_LENGTH = 0.001;
-        /// A tangent or a parallel shorter than this, squared, gives no direction
-        constexpr double MIN_DIRECTION_LENGTH_SQUARED = 0.000001;
-        /// A tangent this close to the vertical takes another reference for its frame
-        constexpr double VERTICAL_TANGENT_DOT = 0.999;
-        /// Step along both curves of a switch while looking for the frog, where they part [m]
-        constexpr double FROG_SEARCH_STEP = 0.5;
-        /// A switch's curve going on past its frog by more than this has its tail drawn too [m], in
-        /// segments of about SWITCH_TAIL_SEGMENT_LENGTH [m]
-        constexpr double SWITCH_TAIL_MIN_LENGTH = 0.05;
-        constexpr double SWITCH_TAIL_SEGMENT_LENGTH = 2.0;
-        /// Original engine: utilities.h:277 clamp_circular() - the switch trackbed's v wraps within this
-        /// range, from its top
-        constexpr double TEXTURE_V_RANGE = 1.0;
-        /// Original engine: Track.cpp:3022 - a road texture of no known width is cut in its middle
-        constexpr double ROAD_DEFAULT_MAP = 0.5;
-        /// Original engine: Track.cpp:3160-3163 - a curb's face is sloped 1:3.75 (150 mm high, it leans
-        /// 40 mm)
-        constexpr double CURB_SLOPE = 3.75;
-        /// Original engine: Track.cpp:3162 - the curbs are mapped from 31/64 to 32/64 and from 32/64 to
-        /// 33/64 of the texture
-        constexpr double CURB_LEFT_U = 0.484375;
-        constexpr double CURB_RIGHT_U = 0.515625;
-        /// Original engine: Track.cpp:3192 - the lean of a curb's face over this is its share of u
-        constexpr double CURB_LEAN_PER_U = 2.56;
-        /// The loft goes on to the curve's end, its last sampled point
-        constexpr int CURVE_END = -1;
         /// A rail profile's line: x, y, normal x, normal y, u
         constexpr int PROFILE_POINT_VALUE_COUNT = 5;
         /// The rail profile of a track that names none: x, y, normal x, normal y, u
@@ -117,6 +56,38 @@ namespace godot {
         constexpr const char *LOOK_TEX_WIDTH = "tex_width";
         constexpr const char *LOOK_TEX_SLOPE = "tex_slope";
         constexpr const char *LOOK_RAILPROFILE = "railprofile";
+        /// The streaming's names of the cells' owners, by CellKind
+        constexpr const char *CELL_STREAM_OWNER_NAMES[] = {"roads", "track cells"};
+        /// _cell_preload()'s result: the cell's surfaces, an Array of them per CellLayer, and its
+        /// switches' blades...
+        enum PreloadedCell {
+            PRELOADED_SURFACES,
+            PRELOADED_BLADES,
+            PRELOADED_CELL_FIELD_COUNT,
+        };
+        /// ...a surface: the name of its material and its arrays...
+        enum PreloadedSurface {
+            SURFACE_MATERIAL,
+            SURFACE_ARRAYS,
+            SURFACE_FIELD_COUNT,
+        };
+        /// ...and the blades of a switch: its track, where their meshes stand (the start of its curve),
+        /// their materials, their arrays and how each turns
+        enum PreloadedBlades {
+            BLADES_TRACK_RENDER,
+            BLADES_ORIGIN,
+            BLADES_SWITCH_IS_RIGHT,
+            BLADES_PRIMARY_MATERIAL,
+            BLADES_SECONDARY_MATERIAL,
+            BLADES_PRIMARY_ARRAYS,
+            BLADES_SECONDARY_ARRAYS,
+            BLADES_PRIMARY_PIVOT,
+            BLADES_PRIMARY_ANGLE_FACTOR,
+            BLADES_SECONDARY_PIVOT,
+            BLADES_SECONDARY_ANGLE_FACTOR,
+            BLADES_FIELD_COUNT,
+        };
+
     } // namespace
 
     void MaszynaTrackRenderingBackend::_bind_methods() {
@@ -126,6 +97,9 @@ namespace godot {
         BIND_ENUM_CONSTANT(SLOT_SECONDARY_BLADE);
         BIND_ENUM_CONSTANT(SLOT_TRACKBED);
         BIND_ENUM_CONSTANT(SLOT_MAX);
+        BIND_ENUM_CONSTANT(CELL_LAYER_RAILS);
+        BIND_ENUM_CONSTANT(CELL_LAYER_BED);
+        BIND_ENUM_CONSTANT(CELL_LAYER_MAX);
 
         ClassDB::bind_method(
                 D_METHOD("track_get_meshes", "track_render"), &MaszynaTrackRenderingBackend::track_get_meshes);
@@ -138,6 +112,14 @@ namespace godot {
         ClassDB::bind_method(
                 D_METHOD("road_cell_get_instance", "cell"), &MaszynaTrackRenderingBackend::road_cell_get_instance);
         ClassDB::bind_method(D_METHOD("road_cell_get_mesh", "cell"), &MaszynaTrackRenderingBackend::road_cell_get_mesh);
+        ClassDB::bind_method(
+                D_METHOD("track_get_track_cell", "track_render"), &MaszynaTrackRenderingBackend::track_get_track_cell);
+        ClassDB::bind_method(D_METHOD("track_cell_exists", "cell"), &MaszynaTrackRenderingBackend::track_cell_exists);
+        ClassDB::bind_method(
+                D_METHOD("track_cell_get_instance", "cell", "layer"),
+                &MaszynaTrackRenderingBackend::track_cell_get_instance);
+        ClassDB::bind_method(
+                D_METHOD("track_cell_get_mesh", "cell", "layer"), &MaszynaTrackRenderingBackend::track_cell_get_mesh);
         ClassDB::bind_static_method(
                 get_class_static(), D_METHOD("mesh_curve_bake_interval", "curve"),
                 &MaszynaTrackRenderingBackend::mesh_curve_bake_interval);
@@ -164,18 +146,20 @@ namespace godot {
         }
         default_rail_profile.blade = default_rail_profile.rail;
         if (GameDataServer *game_data = GameDataServer::get_instance(); game_data != nullptr) {
+            // the data read again builds every track again (TrackRenderingServer), and with it the
+            // pieces of the cells
             game_data->connect(
                     GameDataServer::data_unload_requested_signal,
                     callable_mp(this, &MaszynaTrackRenderingBackend::_on_data_unload_requested));
-            game_data->connect(
-                    GameDataServer::data_reload_requested_signal,
-                    callable_mp(this, &MaszynaTrackRenderingBackend::_on_data_reload_requested));
         }
         if (SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance(); streaming != nullptr) {
-            // the owner lives as long as the streaming does
-            road_stream_owner = streaming->owner_create(
-                    "roads", Callable(), callable_mp(this, &MaszynaTrackRenderingBackend::_road_cell_build),
-                    callable_mp(this, &MaszynaTrackRenderingBackend::_road_cell_clear));
+            // the owners live as long as the streaming does
+            for (int kind = 0; kind < CELL_KIND_MAX; kind++) {
+                stream_owners[kind] = streaming->owner_create(
+                        CELL_STREAM_OWNER_NAMES[kind], callable_mp(this, &MaszynaTrackRenderingBackend::_cell_preload),
+                        callable_mp(this, &MaszynaTrackRenderingBackend::_cell_build),
+                        callable_mp(this, &MaszynaTrackRenderingBackend::_cell_clear));
+            }
         }
         looks = ResourceLoader::get_singleton()->load(LOOKS_PATH);
         ERR_FAIL_COND_MSG(looks.is_null(), "MaszynaTrackRenderingBackend: no track looks at " + String(LOOKS_PATH));
@@ -186,9 +170,6 @@ namespace godot {
             game_data->disconnect(
                     GameDataServer::data_unload_requested_signal,
                     callable_mp(this, &MaszynaTrackRenderingBackend::_on_data_unload_requested));
-            game_data->disconnect(
-                    GameDataServer::data_reload_requested_signal,
-                    callable_mp(this, &MaszynaTrackRenderingBackend::_on_data_reload_requested));
         }
         RenderingServer *rendering = RenderingServer::get_singleton();
         if (rendering == nullptr) {
@@ -202,12 +183,14 @@ namespace godot {
             }
         }
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
-        for (const KeyValue<RID, RoadCell> &item: road_cells) {
+        for (const KeyValue<RID, Cell> &item: cells) {
             if (streaming != nullptr) {
                 streaming->stream_free(item.value.stream_rid);
             }
-            if (item.value.instance.is_valid()) {
-                rendering->free_rid(item.value.instance);
+            for (const RID &instance: item.value.instances) {
+                if (instance.is_valid()) {
+                    rendering->free_rid(instance);
+                }
             }
         }
     }
@@ -216,17 +199,14 @@ namespace godot {
         return track.is_valid() && curve1.is_valid();
     }
 
-    bool MaszynaTrackRenderingBackend::RoadLook::same_as(const RoadLook &p_other) const {
-        return width == p_other.width && tex_height == p_other.tex_height && tex_width == p_other.tex_width &&
-               tex_slope == p_other.tex_slope;
+    bool MaszynaTrackRenderingBackend::CellKey::operator==(const CellKey &p_other) const {
+        return scenario == p_other.scenario && coords == p_other.coords && kind == p_other.kind;
     }
 
-    bool MaszynaTrackRenderingBackend::RoadCellKey::operator==(const RoadCellKey &p_other) const {
-        return scenario == p_other.scenario && coords == p_other.coords;
-    }
-
-    uint32_t MaszynaTrackRenderingBackend::RoadCellKeyHasher::hash(const RoadCellKey &p_key) {
-        return hash_murmur3_one_64(p_key.scenario.get_id(), HashMapHasherDefault::hash(p_key.coords));
+    uint32_t MaszynaTrackRenderingBackend::CellKeyHasher::hash(const CellKey &p_key) {
+        return hash_murmur3_one_32(
+                static_cast<uint32_t>(p_key.kind),
+                hash_murmur3_one_64(p_key.scenario.get_id(), HashMapHasherDefault::hash(p_key.coords)));
     }
 
     void MaszynaTrackRenderingBackend::track_create(const RID &p_track_render, const RID &p_track) {
@@ -235,12 +215,12 @@ namespace godot {
         tracks.insert(p_track_render, track);
     }
 
-    /// The track's meshes and instances go, and a road leaves its cell
+    /// The track's meshes and instances go, and a streamed track leaves its cell
     void MaszynaTrackRenderingBackend::track_free(const RID &p_track_render) {
         Track *track = tracks.getptr(p_track_render);
         ERR_FAIL_NULL(track);
-        if (track->road_cell.is_valid()) {
-            _road_cell_remove(p_track_render, *track);
+        if (track->cell.is_valid()) {
+            _cell_remove(p_track_render, *track);
         }
         _reset_track_instances(*track);
         RenderingServer *rendering = RenderingServer::get_singleton();
@@ -253,7 +233,7 @@ namespace godot {
     }
 
     /// What the track is drawn with: a .scn's track (MaszynaTrackData) with its own textures and
-    /// section, any other with those its features map to (looks)
+    /// section, any other with those its features map to (looks). A track of a cell is drawn so at once
     void MaszynaTrackRenderingBackend::track_set_description(
             const RID &p_track_render, const Ref<TrackData> &p_description) {
         Track *track = tracks.getptr(p_track_render);
@@ -270,30 +250,34 @@ namespace godot {
             // optional switch attribute, Track.cpp:2378
             track->material_trackbed_name = scn_track->get_parameters().get(TRACKBED_PARAMETER, "");
             track->railprofile = scn_track->get_railprofile();
-            return;
+        } else {
+            ERR_FAIL_COND(looks.is_null());
+            const bool road = p_description->get_kind() == TrackServer::TRACK_ROAD;
+            const Ref<MaszynaTrackLook> look =
+                    road ? looks->get_road_looks().get(
+                                   p_description->get_surface(),
+                                   looks->get_road_looks().get(looks->get_default_surface(), Variant()))
+                         : looks->get_rail_looks().get(
+                                   p_description->get_bed(),
+                                   looks->get_rail_looks().get(looks->get_default_bed(), Variant()));
+            ERR_FAIL_COND_MSG(look.is_null(), "MaszynaTrackRenderingBackend: no look for the track's features");
+            track->material1_name = p_description->get_centre_line() && !look->get_material1_centre_line().is_empty()
+                                            ? look->get_material1_centre_line()
+                                            : look->get_material1();
+            track->material2_name = !road || p_description->get_shoulder() ? look->get_material2() : String();
+            track->tex_length = look->get_tex_length() > 0.0 ? look->get_tex_length() : p_description->get_width();
+            track->tex_height = look->get_tex_height();
+            track->tex_width = look->get_tex_width();
+            track->tex_slope = look->get_tex_slope();
+            track->material_trackbed_name = String();
+            track->railprofile = look->get_railprofile();
         }
-        ERR_FAIL_COND(looks.is_null());
-        const bool road = p_description->get_kind() == TrackServer::TRACK_ROAD;
-        const Ref<MaszynaTrackLook> look =
-                road ? looks->get_road_looks().get(
-                               p_description->get_surface(),
-                               looks->get_road_looks().get(looks->get_default_surface(), Variant()))
-                     : looks->get_rail_looks().get(
-                               p_description->get_bed(),
-                               looks->get_rail_looks().get(looks->get_default_bed(), Variant()));
-        ERR_FAIL_COND_MSG(look.is_null(), "MaszynaTrackRenderingBackend: no look for the track's features");
-        track->material1_name = p_description->get_centre_line() && !look->get_material1_centre_line().is_empty()
-                                        ? look->get_material1_centre_line()
-                                        : look->get_material1();
-        track->material2_name = !road || p_description->get_shoulder() ? look->get_material2() : String();
-        track->tex_length = look->get_tex_length() > 0.0 ? look->get_tex_length() : p_description->get_width();
-        track->tex_height = look->get_tex_height();
-        track->tex_width = look->get_tex_width();
-        track->tex_slope = look->get_tex_slope();
-        track->material_trackbed_name = String();
-        track->railprofile = look->get_railprofile();
+        if (track->cell.is_valid()) {
+            _cell_update_track(p_track_render, *track);
+        }
     }
 
+    /// A track of a cell is drawn by it as long as it is visible; one drawn by itself shows its instances
     void MaszynaTrackRenderingBackend::track_set_visible(const RID &p_track_render, const bool p_visible) {
         Track *track = tracks.getptr(p_track_render);
         ERR_FAIL_NULL(track);
@@ -304,8 +288,8 @@ namespace godot {
                 rendering->instance_set_visible(instance, p_visible);
             }
         }
-        if (RoadCell *cell = road_cells.getptr(track->road_cell); cell != nullptr) {
-            _queue_road_cell_rebuild(*cell);
+        if (track->cell.is_valid()) {
+            _cell_update_track(p_track_render, *track);
         }
     }
 
@@ -319,10 +303,10 @@ namespace godot {
                 rendering->instance_set_scenario(instance, p_scenario);
             }
         }
-        if (track->road_cell.is_valid()) {
+        if (track->cell.is_valid()) {
             // into the cell of its new scenario
-            _road_cell_remove(p_track_render, *track);
-            _road_cell_add(p_track_render, *track);
+            _cell_remove(p_track_render, *track);
+            _cell_add(p_track_render, *track);
         }
     }
 
@@ -340,279 +324,86 @@ namespace godot {
         if (track->instances[SLOT_PRIMARY_BLADE].is_valid()) {
             rendering->instance_set_transform(
                     track->instances[SLOT_PRIMARY_BLADE],
-                    _build_blade_transform(
-                            track->origin, track->primary_blade.pivot, track->primary_blade.angle_factor,
-                            layout.primary_blade_offset));
+                    MaszynaTrackMeshBuilder::build_blade_transform(
+                            track->origin, track->primary_blade.pose, layout.primary_blade_offset));
         }
         if (track->instances[SLOT_SECONDARY_BLADE].is_valid()) {
             rendering->instance_set_transform(
                     track->instances[SLOT_SECONDARY_BLADE],
-                    _build_blade_transform(
-                            track->origin, track->secondary_blade.pivot, track->secondary_blade.angle_factor,
-                            layout.secondary_blade_offset));
+                    MaszynaTrackMeshBuilder::build_blade_transform(
+                            track->origin, track->secondary_blade.pose, layout.secondary_blade_offset));
         }
     }
 
     bool MaszynaTrackRenderingBackend::track_stream(const RID &p_track_render) {
         Track *track = tracks.getptr(p_track_render);
         ERR_FAIL_NULL_V(track, false);
-        if (!_is_road(track->track, _read_track_geometry(track->track))) {
-            return false;
-        }
-        _road_cell_add(p_track_render, *track);
-        return true;
+        _cell_add(p_track_render, *track);
+        return track->cell.is_valid();
     }
 
+    /// A track of a cell is drawn by the cell as it is now; one drawn by itself is built at once
     void MaszynaTrackRenderingBackend::track_build(const RID &p_track_render) {
         Track *track = tracks.getptr(p_track_render);
         ERR_FAIL_NULL(track);
-        if (track->road_cell.is_valid()) {
-            if (RoadCell *cell = road_cells.getptr(track->road_cell); cell != nullptr) {
-                _queue_road_cell_rebuild(*cell);
-            }
+        if (track->cell.is_valid()) {
+            _cell_update_track(p_track_render, *track);
             return;
         }
-        TrackServer *track_server = TrackServer::get_instance();
-        if (track_server == nullptr) {
+        TrackSnapshot snapshot;
+        if (!_read_track_piece(p_track_render, *track, snapshot)) {
             return;
         }
-        const TrackGeometry geometry = _read_track_geometry(track->track);
-        if (!geometry.is_valid()) {
-            return;
-        }
-
         _clear_track_meshes(*track);
-        _resolve_materials(*track);
-
-        const Ref<TrackCurve> &curve1_data = geometry.curve1;
-        const Ref<TrackCurve> &curve2_data = geometry.curve2;
-        const double track_width = geometry.width;
-        track->origin = curve1_data->get_p1();
-        const Ref<Curve3D> curve1 = _build_curve(curve1_data);
-
-        if (curve1->get_baked_length() == 0.0) {
-            return;
-        }
-
-        if (_is_road(track->track, geometry)) {
-            _build_road(*track, geometry, curve1);
-            return;
-        }
-
-        const RailProfile &rail_profile = _load_rail_profile(track->railprofile);
-        const Ref<Material> trackbed_material = _resolve_trackbed_material(*track);
-
-        if (_is_switch_track(geometry)) {
-            const Ref<Curve3D> curve2 = _build_curve(curve2_data);
-
-            Geometry primary;
-            Geometry secondary;
-            Geometry primary_blade;
-            Geometry secondary_blade;
-            const Vector<ProfilePoint> &regular_profile = rail_profile.rail;
-            const Vector<ProfilePoint> &blade_profile = rail_profile.blade;
-            const double rail_height = Math::abs(regular_profile[0].y);
-            const bool is_right_switch = track_server->track_is_switch_right(track->track);
-            track->switch_is_right = is_right_switch;
-            // MaSzyna Track.cpp:1367-1453 emits switch rail segments.
-            const double frog_dist = _find_switch_frog_distance(curve1, curve2, track_width);
-            const PackedVector3Array primary_sampled_points = _sample_switch_curve_points(curve1, frog_dist);
-            const PackedVector3Array secondary_sampled_points = _sample_switch_curve_points(curve2, frog_dist);
-            const int blade_sample_count =
-                    static_cast<int>(Math::ceil(static_cast<double>(SWITCH_SEGMENT_COUNT) * SWITCH_BLADE_RATIO));
-            const SwitchBladeLayout layout = _switch_blade_layout(
-                    is_right_switch, geometry.switch_f_offset1, geometry.switch_f_offset2,
-                    track_server->get_switch_max_offset());
-
-            _append_switch_fixed_rail_geometry(
-                    primary, primary_sampled_points, regular_profile, track_width, curve1_data->get_roll1(),
-                    curve1_data->get_roll2(), track->tex_length, rail_height, layout.primary_other_mirrored,
-                    layout.primary_blade_mirrored, blade_sample_count);
-            _append_switch_fixed_rail_geometry(
-                    secondary, secondary_sampled_points, regular_profile, track_width, curve2_data->get_roll1(),
-                    curve2_data->get_roll2(), track->tex_length, rail_height, layout.secondary_other_mirrored,
-                    layout.secondary_blade_mirrored, blade_sample_count);
-            _append_switch_blade_geometry(
-                    primary_blade, primary_sampled_points, regular_profile, blade_profile, track_width,
-                    curve1_data->get_roll1(), curve1_data->get_roll2(), track->tex_length, rail_height,
-                    layout.primary_blade_mirrored, blade_sample_count);
-            _append_switch_blade_geometry(
-                    secondary_blade, secondary_sampled_points, regular_profile, blade_profile, track_width,
-                    curve2_data->get_roll1(), curve2_data->get_roll2(), track->tex_length, rail_height,
-                    layout.secondary_blade_mirrored, blade_sample_count);
-            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(primary, track->origin);
-            track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary, track->origin);
-
-            track->meshes[SLOT_PRIMARY_BLADE] = _build_array_mesh(primary_blade, track->origin);
-            track->primary_blade.move_direction = -_build_planar_parallel(primary_sampled_points, 0);
-            track->primary_blade.pivot = _get_switch_blade_pivot(
-                    primary_sampled_points, regular_profile, track_width, curve1_data->get_roll1(),
-                    curve1_data->get_roll2(), layout.primary_blade_mirrored, blade_sample_count, rail_height);
-            track->primary_blade.angle_factor = _get_blade_angle_factor(
-                    primary_sampled_points, blade_profile, track_width, curve1_data->get_roll1(),
-                    layout.primary_blade_mirrored, rail_height, track->primary_blade.move_direction,
-                    track->primary_blade.pivot);
-            track->primary_blade.offset = layout.primary_blade_offset;
-
-            track->meshes[SLOT_SECONDARY_BLADE] = _build_array_mesh(secondary_blade, track->origin);
-            track->secondary_blade.move_direction = -_build_planar_parallel(secondary_sampled_points, 0);
-            track->secondary_blade.pivot = _get_switch_blade_pivot(
-                    secondary_sampled_points, regular_profile, track_width, curve2_data->get_roll1(),
-                    curve2_data->get_roll2(), layout.secondary_blade_mirrored, blade_sample_count, rail_height);
-            track->secondary_blade.angle_factor = _get_blade_angle_factor(
-                    secondary_sampled_points, blade_profile, track_width, curve2_data->get_roll1(),
-                    layout.secondary_blade_mirrored, rail_height, track->secondary_blade.move_direction,
-                    track->secondary_blade.pivot);
-            track->secondary_blade.offset = layout.secondary_blade_offset;
-
-            if (trackbed_material.is_valid()) {
-                // Port of switch trackbed assembly from Track.cpp:3236-3302.
-                track->meshes[SLOT_TRACKBED] =
-                        _build_switch_trackbed_mesh(*track, geometry, curve1, curve2, rail_height, is_right_switch);
-            }
-        } else {
-            Geometry rails;
-            const double rail_height = Math::abs(rail_profile.rail[0].y);
-            const Section right_start =
-                    _build_rail_section(rail_profile.rail, track_width, curve1_data->get_roll1(), false);
-            const Section right_end =
-                    _build_rail_section(rail_profile.rail, track_width, curve1_data->get_roll2(), false);
-            const Section left_start =
-                    _build_rail_section(rail_profile.rail, track_width, curve1_data->get_roll1(), true);
-            const Section left_end =
-                    _build_rail_section(rail_profile.rail, track_width, curve1_data->get_roll2(), true);
-
-            const PackedVector3Array curve1_points = curve1->get_baked_points();
-            _append_loft_geometry_range_points(
-                    rails, curve1_points, right_start, right_end, track->tex_length, rail_height, 0, CURVE_END);
-            _append_loft_geometry_range_points(
-                    rails, curve1_points, left_start, left_end, track->tex_length, rail_height, 0, CURVE_END);
-            track->meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(rails, track->origin);
-
-            if (curve2_data.is_valid()) {
-                const Ref<Curve3D> secondary_curve = _build_curve(curve2_data);
-                const PackedVector3Array secondary_points = secondary_curve->get_baked_points();
-                Geometry secondary;
-                const Section second_right_start =
-                        _build_rail_section(rail_profile.rail, track_width, curve2_data->get_roll1(), false);
-                const Section second_right_end =
-                        _build_rail_section(rail_profile.rail, track_width, curve2_data->get_roll2(), false);
-                const Section second_left_start =
-                        _build_rail_section(rail_profile.rail, track_width, curve2_data->get_roll1(), true);
-                const Section second_left_end =
-                        _build_rail_section(rail_profile.rail, track_width, curve2_data->get_roll2(), true);
-                _append_loft_geometry_range_points(
-                        secondary, secondary_points, second_right_start, second_right_end, track->tex_length,
-                        rail_height, 0, CURVE_END);
-                _append_loft_geometry_range_points(
-                        secondary, secondary_points, second_left_start, second_left_end, track->tex_length, rail_height,
-                        0, CURVE_END);
-                track->meshes[SLOT_SECONDARY_RAIL] = _build_array_mesh(secondary, track->origin);
-            }
-
-            if (trackbed_material.is_valid()) {
-                Geometry trackbed;
-                double end_width = track_width;
-                double end_tex_height = track->tex_height + _get_roll_fix_height(curve1_data->get_roll1());
-                double end_tex_width = track->tex_width;
-                double end_tex_slope = track->tex_slope;
-                const Ref<TrackEndpointRef> next_connection =
-                        unique_endpoint_connection(track->track, TrackServer::CURVE1_P2);
-                const RID next_track_rid = next_connection.is_valid() ? next_connection->get_track_rid() : RID();
-                const TrackGeometry next_track =
-                        next_track_rid.is_valid() ? _read_track_geometry(next_track_rid) : TrackGeometry();
-                const Track *next_track_state = _find_track(next_track_rid);
-
-                if (next_connection.is_valid() && next_track.is_valid() && next_track_state != nullptr &&
-                    next_track.curve2.is_null()) {
-                    end_width = next_track.width;
-                    end_tex_height =
-                            next_track_state->tex_height +
-                            _get_roll_fix_height(_get_track_roll(next_track, next_connection->get_endpoint_index()));
-                    end_tex_width = next_track_state->tex_width;
-                    end_tex_slope = next_track_state->tex_slope;
-                }
-
-                const Section start_section = _build_trackbed_section(
-                        track_width, track->tex_height + _get_roll_fix_height(curve1_data->get_roll1()),
-                        track->tex_width, track->tex_slope, curve1_data->get_roll1(), rail_height,
-                        track->resolved_trackbed_texture_length);
-                const Section end_section = _build_trackbed_section(
-                        end_width, end_tex_height, end_tex_width, end_tex_slope, curve1_data->get_roll2(), rail_height,
-                        track->resolved_trackbed_texture_length);
-                _append_loft_geometry_range_points(
-                        trackbed, curve1_points, start_section, end_section, track->resolved_trackbed_texture_length,
-                        rail_height, 0, CURVE_END);
-
-                if (curve2_data.is_valid()) {
-                    const Ref<Curve3D> second_curve = _build_curve(curve2_data);
-                    const Section second_start_section = _build_trackbed_section(
-                            track_width, track->tex_height + _get_roll_fix_height(curve2_data->get_roll1()),
-                            track->tex_width, track->tex_slope, curve2_data->get_roll1(), rail_height,
-                            track->resolved_trackbed_texture_length);
-                    const Section second_end_section = _build_trackbed_section(
-                            track_width, track->tex_height + _get_roll_fix_height(curve2_data->get_roll2()),
-                            track->tex_width, track->tex_slope, curve2_data->get_roll2(), rail_height,
-                            track->resolved_trackbed_texture_length);
-                    _append_loft_geometry_range_points(
-                            trackbed, second_curve->get_baked_points(), second_start_section, second_end_section,
-                            track->resolved_trackbed_texture_length, rail_height, 0, CURVE_END);
-                }
-                track->meshes[SLOT_TRACKBED] = _build_array_mesh(trackbed, track->origin);
-            }
-        }
-
+        track->origin = snapshot.piece.curve1.p1;
+        track->switch_is_right = snapshot.piece.switch_is_right;
+        const PieceGeometry geometry = MaszynaTrackMeshBuilder::build_piece_geometry(snapshot.piece);
+        const Geometry *slot_geometries[SLOT_MAX] = {
+                &geometry.primary_rails, &geometry.secondary_rails, &geometry.primary_blade, &geometry.secondary_blade,
+                &geometry.bed};
+        const String slot_materials[SLOT_MAX] = {
+                snapshot.primary_material, snapshot.secondary_material, snapshot.primary_material,
+                snapshot.secondary_material, snapshot.bed_material};
         for (int slot = 0; slot < SLOT_MAX; slot++) {
-            if (track->meshes[slot].is_valid()) {
-                _slot_draw(*track, static_cast<Slot>(slot));
-            }
-        }
-
-        // The second path of a switch carries its own rail texture; everything else, and a switch
-        // that declares none, uses the track's own one.
-        const Ref<Material> secondary_material =
-                curve2_data.is_valid() && track->material2.is_valid() ? track->material2 : track->material1;
-        const Ref<Material> slot_materials[SLOT_MAX] = {
-                track->material1, secondary_material, track->material1, secondary_material, trackbed_material};
-        RenderingServer *rendering = RenderingServer::get_singleton();
-        for (int slot = 0; slot < SLOT_MAX; slot++) {
-            const Ref<ArrayMesh> &mesh = track->meshes[slot];
-            if (mesh.is_null() || slot_materials[slot].is_null()) {
+            if (slot_geometries[slot]->vertices.is_empty()) {
                 continue;
             }
-            for (int surface_index = 0; surface_index < mesh->get_surface_count(); surface_index++) {
-                rendering->mesh_surface_set_material(mesh->get_rid(), surface_index, slot_materials[slot]->get_rid());
-            }
+            Ref<ArrayMesh> mesh;
+            mesh.instantiate();
+            _mesh_add_surface(
+                    mesh, MaszynaTrackMeshBuilder::build_surface_arrays(*slot_geometries[slot], track->origin),
+                    slot_materials[slot]);
+            track->meshes[slot] = mesh;
+            _slot_draw(*track, static_cast<Slot>(slot));
         }
-
-        track_set_switch_blade_offsets(p_track_render, geometry.switch_f_offset1, geometry.switch_f_offset2);
+        track->primary_blade.pose = geometry.primary_blade_pose;
+        track->secondary_blade.pose = geometry.secondary_blade_pose;
+        const TrackGeometry switch_geometry = _read_track_geometry(track->track);
+        track_set_switch_blade_offsets(
+                p_track_render, switch_geometry.switch_f_offset1, switch_geometry.switch_f_offset2);
     }
 
     void MaszynaTrackRenderingBackend::track_clear(const RID &p_track_render) {
         Track *track = tracks.getptr(p_track_render);
         ERR_FAIL_NULL(track);
         _clear_track_meshes(*track);
-        track->material1.unref();
-        track->material2.unref();
-        track->material_trackbed.unref();
-        track->resolved_trackbed_material.unref();
-        track->resolved_trackbed_material_valid = false;
     }
 
-    /* A track built whose trackbed is borrowed from its neighbours (_copy_adjacent_trackbed_material(),
-     * Track.cpp:3326) - a switch, a track declaring "none" - is built again with the neighbours it
-     * has now: one built before the topology (the editor, until its Rebuild topology) had the default
-     * bed's (_resolve_trackbed_material()) */
+    /* A track drawn by itself whose trackbed is borrowed from its neighbours
+     * (_copy_adjacent_trackbed_material(), Track.cpp:3326) - a switch, a track declaring "none" - is
+     * built again with the neighbours it has now: one built before the topology (the editor, until
+     * its Rebuild topology) had the default bed's (_resolve_trackbed()). The pieces of the cells are
+     * read again with their neighbours - a scenery's tracks go into their cells as it loads, before
+     * the topology is rebuilt - and the cells are streamed again */
     void MaszynaTrackRenderingBackend::topology_rebuilt() {
         TrackServer *track_server = TrackServer::get_instance();
         TrackRenderingServer *track_rendering = TrackRenderingServer::get_instance();
         ERR_FAIL_NULL(track_server);
         ERR_FAIL_NULL(track_rendering);
         Vector<RID> borrowing;
-        for (KeyValue<RID, Track> &item: tracks) {
-            Track &track = item.value;
-            track.resolved_trackbed_material_valid = false;
-            if (track.meshes[SLOT_PRIMARY_RAIL].is_valid() && !track.road_cell.is_valid() &&
+        for (const KeyValue<RID, Track> &item: tracks) {
+            const Track &track = item.value;
+            if (track.meshes[SLOT_PRIMARY_RAIL].is_valid() && !track.cell.is_valid() &&
                 track.material_trackbed_name.is_empty() &&
                 (track_server->track_is_switch(track.track) || track.material2_name.is_empty())) {
                 borrowing.push_back(item.key);
@@ -621,9 +412,20 @@ namespace godot {
         for (const RID &track_render: borrowing) {
             track_rendering->track_rebuild(track_render);
         }
-        // a road turns into the next one it is joined to
-        for (KeyValue<RID, RoadCell> &item: road_cells) {
-            _queue_road_cell_rebuild(item.value);
+        for (KeyValue<RID, Cell> &item: cells) {
+            Vector<TrackSnapshot> snapshots;
+            for (const RID &track_render: item.value.tracks) {
+                const Track *track = tracks.getptr(track_render);
+                TrackSnapshot snapshot;
+                if (track != nullptr && track->visible && _read_track_piece(track_render, *track, snapshot)) {
+                    snapshots.push_back(snapshot);
+                }
+            }
+            {
+                MutexLock lock(cells_mutex);
+                item.value.snapshots = snapshots;
+            }
+            _cell_stream(item.key, item.value);
         }
     }
 
@@ -667,25 +469,60 @@ namespace godot {
     }
 
     RID MaszynaTrackRenderingBackend::track_get_road_cell(const RID &p_track_render) const {
-        const Track *track = tracks.getptr(p_track_render);
-        ERR_FAIL_NULL_V(track, RID());
-        return track->road_cell;
+        return _track_get_cell(p_track_render, CELL_ROADS);
     }
 
     bool MaszynaTrackRenderingBackend::road_cell_exists(const RID &p_cell) const {
-        return road_cells.has(p_cell);
+        const Cell *cell = cells.getptr(p_cell);
+        return cell != nullptr && cell->kind == CELL_ROADS;
     }
 
     RID MaszynaTrackRenderingBackend::road_cell_get_instance(const RID &p_cell) const {
-        const RoadCell *cell = road_cells.getptr(p_cell);
-        ERR_FAIL_NULL_V(cell, RID());
-        return cell->instance;
+        return _cell_get_instance(p_cell, CELL_ROADS, CELL_LAYER_BED);
     }
 
     Ref<ArrayMesh> MaszynaTrackRenderingBackend::road_cell_get_mesh(const RID &p_cell) const {
-        const RoadCell *cell = road_cells.getptr(p_cell);
-        ERR_FAIL_NULL_V(cell, Ref<ArrayMesh>());
-        return cell->mesh;
+        return _cell_get_mesh(p_cell, CELL_ROADS, CELL_LAYER_BED);
+    }
+
+    RID MaszynaTrackRenderingBackend::track_get_track_cell(const RID &p_track_render) const {
+        return _track_get_cell(p_track_render, CELL_TRACKS);
+    }
+
+    bool MaszynaTrackRenderingBackend::track_cell_exists(const RID &p_cell) const {
+        const Cell *cell = cells.getptr(p_cell);
+        return cell != nullptr && cell->kind == CELL_TRACKS;
+    }
+
+    RID MaszynaTrackRenderingBackend::track_cell_get_instance(const RID &p_cell, const CellLayer p_layer) const {
+        return _cell_get_instance(p_cell, CELL_TRACKS, p_layer);
+    }
+
+    Ref<ArrayMesh> MaszynaTrackRenderingBackend::track_cell_get_mesh(const RID &p_cell, const CellLayer p_layer) const {
+        return _cell_get_mesh(p_cell, CELL_TRACKS, p_layer);
+    }
+
+    RID MaszynaTrackRenderingBackend::_track_get_cell(const RID &p_track_render, const CellKind p_kind) const {
+        const Track *track = tracks.getptr(p_track_render);
+        ERR_FAIL_NULL_V(track, RID());
+        const Cell *cell = cells.getptr(track->cell);
+        return cell != nullptr && cell->kind == p_kind ? track->cell : RID();
+    }
+
+    RID MaszynaTrackRenderingBackend::_cell_get_instance(
+            const RID &p_cell, const CellKind p_kind, const CellLayer p_layer) const {
+        const Cell *cell = cells.getptr(p_cell);
+        ERR_FAIL_COND_V(cell == nullptr || cell->kind != p_kind, RID());
+        ERR_FAIL_INDEX_V(p_layer, CELL_LAYER_MAX, RID());
+        return cell->instances[p_layer];
+    }
+
+    Ref<ArrayMesh> MaszynaTrackRenderingBackend::_cell_get_mesh(
+            const RID &p_cell, const CellKind p_kind, const CellLayer p_layer) const {
+        const Cell *cell = cells.getptr(p_cell);
+        ERR_FAIL_COND_V(cell == nullptr || cell->kind != p_kind, Ref<ArrayMesh>());
+        ERR_FAIL_INDEX_V(p_layer, CELL_LAYER_MAX, Ref<ArrayMesh>());
+        return cell->meshes[p_layer];
     }
 
     double MaszynaTrackRenderingBackend::mesh_curve_bake_interval(const Ref<TrackCurve> &p_curve) {
@@ -755,6 +592,19 @@ namespace godot {
         return geometry;
     }
 
+    MaszynaTrackRenderingBackend::CurveShape
+    MaszynaTrackRenderingBackend::_read_curve_shape(const Ref<TrackCurve> &p_curve) {
+        CurveShape shape;
+        shape.p1 = p_curve->get_p1();
+        shape.c1 = p_curve->get_c1();
+        shape.c2 = p_curve->get_c2();
+        shape.p2 = p_curve->get_p2();
+        shape.roll1 = p_curve->get_roll1();
+        shape.roll2 = p_curve->get_roll2();
+        shape.bake_interval = mesh_curve_bake_interval(p_curve);
+        return shape;
+    }
+
     bool MaszynaTrackRenderingBackend::_is_road(const RID &p_track, const TrackGeometry &p_geometry) {
         TrackServer *track_server = TrackServer::get_instance();
         ERR_FAIL_NULL_V(track_server, false);
@@ -786,26 +636,6 @@ namespace godot {
         }
     }
 
-    double MaszynaTrackRenderingBackend::_get_roll_fix_height(const double p_roll_degrees) {
-        return Math::abs(Math::sin(Math::deg_to_rad(p_roll_degrees)) * ROLL_FIX_FACTOR);
-    }
-
-    Ref<Curve3D> MaszynaTrackRenderingBackend::_build_curve(const Ref<TrackCurve> &p_curve) {
-        Ref<Curve3D> curve;
-        curve.instantiate();
-        curve->set_closed(false);
-        curve->set_bake_interval(static_cast<real_t>(mesh_curve_bake_interval(p_curve)));
-        curve->add_point(
-                p_curve->get_p1() + Vector3(0.0, static_cast<real_t>(_get_roll_fix_height(p_curve->get_roll1())), 0.0),
-                Vector3(), p_curve->get_c1());
-        curve->add_point(
-                p_curve->get_p2() + Vector3(0.0, static_cast<real_t>(_get_roll_fix_height(p_curve->get_roll2())), 0.0),
-                p_curve->get_c2(), Vector3());
-        curve->set_point_tilt(0, static_cast<real_t>(p_curve->get_roll1()));
-        curve->set_point_tilt(1, static_cast<real_t>(p_curve->get_roll2()));
-        return curve;
-    }
-
     MaszynaTrackRenderingBackend::SwitchBladeLayout MaszynaTrackRenderingBackend::_switch_blade_layout(
             const bool p_is_right_switch, const double p_f_offset1, const double p_f_offset2,
             const double p_f_max_offset) {
@@ -828,591 +658,22 @@ namespace godot {
         return layout;
     }
 
-    MaszynaTrackRenderingBackend::Section MaszynaTrackRenderingBackend::_build_rail_section(
-            const Vector<ProfilePoint> &p_profile, const double p_width, const double p_roll, const bool p_mirrored) {
-        Section section;
-        const double half_width = 0.5 * Math::abs(p_width);
-        // The loft frames here map the profile's x to the left of the track direction, the original's
-        // RenderLoft to the right (Segment.cpp:398 parallel): the profile is mirrored, so the cant
-        // (Track.cpp:2652) turns the other way
-        const double roll_radians = -Math::deg_to_rad(p_roll);
-        const double sin_roll = Math::sin(roll_radians);
-        const double cos_roll = Math::cos(roll_radians);
-
-        for (const ProfilePoint &point: p_profile) {
-            SectionPoint section_point;
-            section_point.u = point.u;
-            if (p_mirrored) {
-                section_point.position =
-                        Vector3(static_cast<real_t>(((-half_width - point.x) * cos_roll) + (point.y * sin_roll)),
-                                static_cast<real_t>((-(-half_width - point.x) * sin_roll) + (point.y * cos_roll)), 0.0);
-                section_point.normal =
-                        Vector3(static_cast<real_t>((-point.normal_x * cos_roll) + (point.normal_y * sin_roll)),
-                                static_cast<real_t>((point.normal_x * sin_roll) + (point.normal_y * cos_roll)), 0.0)
-                                .normalized();
-                section.insert(0, section_point);
-            } else {
-                section_point.position =
-                        Vector3(static_cast<real_t>(((half_width + point.x) * cos_roll) + (point.y * sin_roll)),
-                                static_cast<real_t>((-(half_width + point.x) * sin_roll) + (point.y * cos_roll)), 0.0);
-                section_point.normal =
-                        Vector3(static_cast<real_t>((point.normal_x * cos_roll) + (point.normal_y * sin_roll)),
-                                static_cast<real_t>((-point.normal_x * sin_roll) + (point.normal_y * cos_roll)), 0.0)
-                                .normalized();
-                section.push_back(section_point);
-            }
-        }
-        return section;
-    }
-
-    // Port of trackbed profile construction from Track.cpp:2825-2982.
-    MaszynaTrackRenderingBackend::Section MaszynaTrackRenderingBackend::_build_trackbed_section(
-            const double p_width, const double p_tex_height, const double p_tex_width, const double p_tex_slope,
-            const double p_roll, const double p_rail_height, const double p_tex_length) {
-        const double half_width = 0.5 * Math::abs(p_width);
-        const double side = Math::abs(p_tex_width);
-        const double slope_abs = Math::abs(p_tex_slope);
-        const double spread = half_width + side + slope_abs;
-        double hypot_value = Math::sqrt((slope_abs * slope_abs) + (p_tex_height * p_tex_height));
-        if (Math::is_zero_approx(hypot_value)) {
-            hypot_value = 1.0;
-        }
-
-        double normal_x = p_tex_height / hypot_value;
-        double normal_y = p_tex_slope / hypot_value;
-        if (Math::is_zero_approx(normal_x) && Math::is_zero_approx(normal_y)) {
-            normal_x = 1.0;
-            normal_y = 0.0;
-        }
-
-        // mirrored like the rail profile (_build_rail_section())
-        const double roll_radians = -Math::deg_to_rad(p_roll);
-        const double sin_roll = Math::sin(roll_radians);
-        const double cos_roll = Math::cos(roll_radians);
-        // the texture's width is proportional to its length (fTexRatio2 is 1 for rail track,
-        // Track.cpp:2930-2932); a 4 m texture keeps the old fixed mapping (Track.cpp:2855-2926)
-        const double safe_tex_length = MAX(Math::abs(p_tex_length), MIN_LENGTH);
-        double u_inner = 0.5 - ((half_width + side) / safe_tex_length);
-        double u_outer = 0.5 - ((half_width + side + hypot_value) / safe_tex_length);
-        Vector3 slope_normal = Vector3(static_cast<real_t>(normal_x), static_cast<real_t>(normal_y), 0.0).normalized();
-        if (Math::is_equal_approx(p_tex_length, TRACKBED_OLD_MAPPING_TEXTURE_LENGTH)) {
-            u_inner = TRACKBED_OLD_MAPPING_BREAK_U;
-            u_outer = 0.0;
-            slope_normal =
-                    Vector3(static_cast<real_t>(Math::cos(Math::deg_to_rad(TRACKBED_OLD_MAPPING_NORMAL_ANGLE))),
-                            static_cast<real_t>(Math::sin(Math::deg_to_rad(TRACKBED_OLD_MAPPING_NORMAL_ANGLE))), 0.0);
-        }
-        const Vector3 mirrored_normal(-slope_normal.x, slope_normal.y, 0.0);
-
-        Section section;
-        section.push_back(
-                {Vector3(static_cast<real_t>((spread * cos_roll) - (p_tex_height * sin_roll)),
-                         static_cast<real_t>((-spread * sin_roll) - (p_tex_height * cos_roll) - p_rail_height), 0.0),
-                 slope_normal, u_outer});
-        section.push_back(
-                {Vector3(static_cast<real_t>((half_width + side) * cos_roll),
-                         static_cast<real_t>((-(half_width + side) * sin_roll) - p_rail_height), 0.0),
-                 slope_normal, u_inner});
-        section.push_back({Vector3(0.0, static_cast<real_t>(-p_rail_height + TRACKBED_CROWN_LIFT), 0.0), UP, 0.5});
-        section.push_back(
-                {Vector3(static_cast<real_t>(-(half_width + side) * cos_roll),
-                         static_cast<real_t>(((half_width + side) * sin_roll) - p_rail_height), 0.0),
-                 mirrored_normal, 1.0 - u_inner});
-        section.push_back(
-                {Vector3(static_cast<real_t>((-spread * cos_roll) - (p_tex_height * sin_roll)),
-                         static_cast<real_t>((spread * sin_roll) - (p_tex_height * cos_roll) - p_rail_height), 0.0),
-                 mirrored_normal, 1.0 - u_outer});
-        return section;
-    }
-
-    MaszynaTrackRenderingBackend::BladeSections MaszynaTrackRenderingBackend::_get_switch_blade_sections(
-            const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_regular_profile,
-            const Vector<ProfilePoint> &p_blade_profile, const double p_width, const double p_roll_start,
-            const double p_roll_end, const bool p_blade_mirrored, const int p_blade_sample_count) {
-        BladeSections sections;
-        sections.transition_sample_count = MAX(p_blade_sample_count / 2, 1);
-        double total_dist = _get_baked_segment_length(p_sampled_points, 0, CURVE_END);
-        if (total_dist <= 0.0) {
-            total_dist = MIN_LENGTH;
-        }
-
-        const double d_trans = _get_baked_segment_length(p_sampled_points, 0, sections.transition_sample_count);
-        const double d_blade = _get_baked_segment_length(p_sampled_points, 0, p_blade_sample_count);
-        const double roll_trans = Math::lerp(p_roll_start, p_roll_end, d_trans / total_dist);
-        const double roll_blade = Math::lerp(p_roll_start, p_roll_end, d_blade / total_dist);
-
-        sections.blade_start = _build_rail_section(p_blade_profile, p_width, p_roll_start, p_blade_mirrored);
-        sections.reg_trans = _build_rail_section(p_regular_profile, p_width, roll_trans, p_blade_mirrored);
-        sections.reg_blade = _build_rail_section(p_regular_profile, p_width, roll_blade, p_blade_mirrored);
-        sections.reg_end = _build_rail_section(p_regular_profile, p_width, p_roll_end, p_blade_mirrored);
-        return sections;
-    }
-
-    void MaszynaTrackRenderingBackend::_append_loft_geometry_range_points(
-            Geometry &p_geometry, const PackedVector3Array &p_sampled_points, const Section &p_start_section,
-            const Section &p_end_section, const double p_tex_length, const double p_rail_height,
-            const int p_start_sample, const int p_end_sample) {
-        if (p_start_section.size() < 2 || p_start_section.size() != p_end_section.size()) {
-            return;
-        }
-        if (p_sampled_points.size() < 2) {
-            return;
-        }
-
-        const int last_index = static_cast<int>(p_sampled_points.size()) - 1;
-        const int first_sample = CLAMP(p_start_sample, 0, last_index);
-        const int last_sample = p_end_sample < 0 ? last_index : CLAMP(p_end_sample, 0, last_index);
-        if (last_sample <= first_sample) {
-            return;
-        }
-
-        const double safe_tex_length = MAX(Math::abs(p_tex_length), MIN_LENGTH);
-        const int section_size = static_cast<int>(p_start_section.size());
-        const int base_vertex = static_cast<int>(p_geometry.vertices.size());
-        double distance = 0.0;
-        const double total_length =
-                MAX(_get_baked_segment_length(p_sampled_points, first_sample, last_sample), MIN_LENGTH);
-
-        for (int sample_index = first_sample; sample_index <= last_sample; sample_index++) {
-            const double t = distance / total_length;
-            Transform3D frame = _build_curve_frame(p_sampled_points, sample_index);
-            frame.origin.y += static_cast<real_t>(p_rail_height);
-
-            for (int point_index = 0; point_index < section_size; point_index++) {
-                const SectionPoint &start_point = p_start_section[point_index];
-                const SectionPoint &end_point = p_end_section[point_index];
-
-                const Vector3 local_position = start_point.position.lerp(end_point.position, static_cast<real_t>(t));
-                const Vector3 local_normal =
-                        start_point.normal.lerp(end_point.normal, static_cast<real_t>(t)).normalized();
-                const double uv_x = Math::lerp(start_point.u, end_point.u, t);
-
-                p_geometry.vertices.push_back(frame.xform(local_position));
-                p_geometry.normals.push_back(frame.basis.xform(local_normal).normalized());
-                p_geometry.uvs.push_back(
-                        Vector2(static_cast<real_t>(uv_x), static_cast<real_t>(distance / safe_tex_length)));
-            }
-
-            if (sample_index < last_sample) {
-                distance += p_sampled_points[sample_index].distance_to(p_sampled_points[sample_index + 1]);
-            }
-        }
-
-        _append_loft_strip_indices(p_geometry.indices, last_sample - first_sample + 1, section_size, base_vertex);
-    }
-
-    void MaszynaTrackRenderingBackend::_append_loft_strip_indices(
-            PackedInt32Array &p_indices, const int p_step_count, const int p_section_size, const int p_base_vertex) {
-        for (int step = 0; step < p_step_count - 1; step++) {
-            const int current_base = p_base_vertex + (step * p_section_size);
-            const int next_base = p_base_vertex + ((step + 1) * p_section_size);
-            for (int point_index = 0; point_index < p_section_size - 1; point_index++) {
-                const int current = current_base + point_index;
-                const int current_next = current_base + point_index + 1;
-                const int next_current = next_base + point_index;
-                const int next_next = next_base + point_index + 1;
-
-                p_indices.push_back(current);
-                p_indices.push_back(next_current);
-                p_indices.push_back(current_next);
-                p_indices.push_back(current_next);
-                p_indices.push_back(next_current);
-                p_indices.push_back(next_next);
-            }
-        }
-    }
-
-    Vector3 MaszynaTrackRenderingBackend::_get_section_world_center(
-            const PackedVector3Array &p_sampled_points, const int p_sample_index, const Section &p_section,
-            const double p_rail_height) {
-        if (p_sampled_points.is_empty()) {
-            return {};
-        }
-        const int safe_sample_index = CLAMP(p_sample_index, 0, static_cast<int>(p_sampled_points.size()) - 1);
-        Transform3D frame = _build_curve_frame(p_sampled_points, safe_sample_index);
-        frame.origin.y += static_cast<real_t>(p_rail_height);
-        Vector3 center;
-        if (!p_section.is_empty()) {
-            for (const SectionPoint &point: p_section) {
-                center += point.position;
-            }
-            center /= static_cast<real_t>(p_section.size());
-        }
-        return frame.xform(center);
-    }
-
-    Vector3 MaszynaTrackRenderingBackend::_get_switch_blade_pivot(
-            const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_regular_profile,
-            const double p_width, const double p_roll_start, const double p_roll_end, const bool p_blade_mirrored,
-            const int p_blade_sample_count, const double p_rail_height) {
-        const BladeSections sections = _get_switch_blade_sections(
-                p_sampled_points, p_regular_profile, p_regular_profile, p_width, p_roll_start, p_roll_end,
-                p_blade_mirrored, p_blade_sample_count);
-        return _get_section_world_center(p_sampled_points, p_blade_sample_count, sections.reg_blade, p_rail_height);
-    }
-
-    double MaszynaTrackRenderingBackend::_get_blade_angle_factor(
-            const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_blade_profile,
-            const double p_width, const double p_roll_start, const bool p_blade_mirrored, const double p_rail_height,
-            const Vector3 &p_move_direction, const Vector3 &p_pivot) {
-        if (p_sampled_points.is_empty()) {
-            return 0.0;
-        }
-        const Section blade_start_section =
-                _build_rail_section(p_blade_profile, p_width, p_roll_start, p_blade_mirrored);
-        const Vector3 blade_start = _get_section_world_center(p_sampled_points, 0, blade_start_section, p_rail_height);
-        const Vector3 per_radian_motion = UP.cross(blade_start - p_pivot);
-        return p_move_direction.dot(per_radian_motion);
-    }
-
-    /// The blade's mesh, relative to p_origin, turned about its pivot in the world
-    Transform3D MaszynaTrackRenderingBackend::_build_blade_transform(
-            const Vector3 &p_origin, const Vector3 &p_pivot, const double p_angle_factor, const double p_offset) {
-        if (Math::is_zero_approx(p_angle_factor)) {
-            return {Basis(), p_origin};
-        }
-        const double angle = p_offset / p_angle_factor;
-        return Transform3D(Basis(UP, static_cast<real_t>(angle)), p_pivot) * Transform3D(Basis(), p_origin - p_pivot);
-    }
-
-    // Fixed rail parts are generated once; moving blades are separate mesh instances.
-    // MaSzyna Track.cpp:1372-1443 separates blades from fixed rails.
-    void MaszynaTrackRenderingBackend::_append_switch_fixed_rail_geometry(
-            Geometry &p_geometry, const PackedVector3Array &p_sampled_points,
-            const Vector<ProfilePoint> &p_regular_profile, const double p_width, const double p_roll_start,
-            const double p_roll_end, const double p_tex_length, const double p_rail_height, const bool p_other_mirrored,
-            const bool p_blade_mirrored, const int p_blade_sample_count) {
-        const Section other_start = _build_rail_section(p_regular_profile, p_width, p_roll_start, p_other_mirrored);
-        const Section other_end = _build_rail_section(p_regular_profile, p_width, p_roll_end, p_other_mirrored);
-        _append_loft_geometry_range_points(
-                p_geometry, p_sampled_points, other_start, other_end, p_tex_length, p_rail_height, 0, CURVE_END);
-
-        const BladeSections sections = _get_switch_blade_sections(
-                p_sampled_points, p_regular_profile, p_regular_profile, p_width, p_roll_start, p_roll_end,
-                p_blade_mirrored, p_blade_sample_count);
-        _append_loft_geometry_range_points(
-                p_geometry, p_sampled_points, sections.reg_blade, sections.reg_end, p_tex_length, p_rail_height,
-                p_blade_sample_count, CURVE_END);
-    }
-
-    // The blade mesh is built at zero offset; domain fOffsetX is applied as instance transform.
-    // MaSzyna Track.cpp:1975-2007 updates blade geometry only.
-    // MaSzyna Segment.cpp:376-524 applies fOffsetX laterally.
-    void MaszynaTrackRenderingBackend::_append_switch_blade_geometry(
-            Geometry &p_geometry, const PackedVector3Array &p_sampled_points,
-            const Vector<ProfilePoint> &p_regular_profile, const Vector<ProfilePoint> &p_blade_profile,
-            const double p_width, const double p_roll_start, const double p_roll_end, const double p_tex_length,
-            const double p_rail_height, const bool p_blade_mirrored, const int p_blade_sample_count) {
-        const BladeSections sections = _get_switch_blade_sections(
-                p_sampled_points, p_regular_profile, p_blade_profile, p_width, p_roll_start, p_roll_end,
-                p_blade_mirrored, p_blade_sample_count);
-        _append_loft_geometry_range_points(
-                p_geometry, p_sampled_points, sections.blade_start, sections.reg_trans, p_tex_length, p_rail_height, 0,
-                sections.transition_sample_count);
-        _append_loft_geometry_range_points(
-                p_geometry, p_sampled_points, sections.reg_trans, sections.reg_blade, p_tex_length, p_rail_height,
-                sections.transition_sample_count, p_blade_sample_count);
-    }
-
-    // Port of the transition branch of TSegment::RenderLoft from Segment.cpp:376-524.
-    Vector<MaszynaTrackRenderingBackend::StripChunk> MaszynaTrackRenderingBackend::_build_transition_loft_strip_chunks(
-            const Ref<Curve3D> &p_curve, const Section &p_start_section, const Section &p_end_section,
-            const double p_tex_length, const double p_rail_height) {
-        Vector<StripChunk> chunks;
-        if (p_start_section.size() < TRACKBED_SECTION_POINT_COUNT || p_start_section.size() != p_end_section.size()) {
-            return chunks;
-        }
-
-        // Port of fixed switch segmentation from Segment.cpp:128-140.
-        const PackedVector3Array sampled_points =
-                p_curve->get_baked_length() > 0.0
-                        ? _sample_curve_points_range(p_curve, 0.0, p_curve->get_baked_length(), SWITCH_SEGMENT_COUNT)
-                        : PackedVector3Array();
-        if (sampled_points.size() < 2) {
-            return chunks;
-        }
-
-        const double safe_tex_length = MAX(Math::abs(p_tex_length), MIN_LENGTH);
-        const int segment_count = static_cast<int>(sampled_points.size()) - 1;
-        double tv1 = TEXTURE_V_RANGE;
-        const Vector3 lift(0.0, static_cast<real_t>(p_rail_height), 0.0);
-
-        for (int segment_index = 0; segment_index < segment_count; segment_index++) {
-            // Port note for Segment.cpp:398-399 and Track.cpp:644-646 / 708-710:
-            // original switch segments used by RenderLoft are already lifted by railheight.
-            const Vector3 pos1 = sampled_points[segment_index] + lift;
-            const Vector3 pos2 = sampled_points[segment_index + 1] + lift;
-            // to the left, as every loft here maps the profile's x (_build_rail_section())
-            const Vector3 parallel1 = -_build_planar_parallel(sampled_points, segment_index);
-            const Vector3 parallel2 = -_build_planar_parallel(sampled_points, segment_index + 1);
-            const double m1 = static_cast<double>(segment_index) / static_cast<double>(segment_count);
-            const double m2 = static_cast<double>(segment_index + 1) / static_cast<double>(segment_count);
-            const double jmm1 = 1.0 - m1;
-            const double jmm2 = 1.0 - m2;
-            const double segment_length = pos1.distance_to(pos2);
-            // clamp_circular() of utilities.h:277
-            tv1 = Math::fmod(tv1, TEXTURE_V_RANGE);
-            if (tv1 < 0.0) {
-                tv1 += TEXTURE_V_RANGE;
-            }
-            const double tv2 = tv1 - (segment_length / safe_tex_length);
-            StripChunk chunk;
-
-            // Port of per-segment strip vertex generation from Segment.cpp:452-492.
-            for (int point_index = 0; point_index < TRACKBED_SECTION_POINT_COUNT; point_index++) {
-                const SectionPoint &start_point = p_start_section[point_index];
-                const SectionPoint &end_point = p_end_section[point_index];
-                const double start_x = (jmm1 * start_point.position.x) + (m1 * end_point.position.x);
-                const double start_y = (jmm1 * start_point.position.y) + (m1 * end_point.position.y);
-                const double end_x = (jmm2 * start_point.position.x) + (m2 * end_point.position.x);
-                const double end_y = (jmm2 * start_point.position.y) + (m2 * end_point.position.y);
-                const double start_normal_x = (jmm1 * start_point.normal.x) + (m1 * end_point.normal.x);
-                const double start_normal_y = (jmm1 * start_point.normal.y) + (m1 * end_point.normal.y);
-                const double end_normal_x = (jmm2 * start_point.normal.x) + (m2 * end_point.normal.x);
-                const double end_normal_y = (jmm2 * start_point.normal.y) + (m2 * end_point.normal.y);
-                const double uv_x_start = (jmm1 * start_point.u) + (m1 * end_point.u);
-                const double uv_x_end = (jmm2 * start_point.u) + (m2 * end_point.u);
-
-                chunk.push_back(
-                        {pos1 + parallel1 * static_cast<real_t>(start_x) +
-                                 Vector3(0.0, static_cast<real_t>(start_y), 0.0),
-                         (parallel1 * static_cast<real_t>(start_normal_x) +
-                          Vector3(0.0, static_cast<real_t>(start_normal_y), 0.0))
-                                 .normalized(),
-                         Vector2(static_cast<real_t>(uv_x_start), static_cast<real_t>(tv1))});
-                chunk.push_back(
-                        {pos2 + parallel2 * static_cast<real_t>(end_x) + Vector3(0.0, static_cast<real_t>(end_y), 0.0),
-                         (parallel2 * static_cast<real_t>(end_normal_x) +
-                          Vector3(0.0, static_cast<real_t>(end_normal_y), 0.0))
-                                 .normalized(),
-                         Vector2(static_cast<real_t>(uv_x_end), static_cast<real_t>(tv2))});
-            }
-
-            chunks.push_back(chunk);
-            tv1 = tv2;
-        }
-        return chunks;
-    }
-
-    double MaszynaTrackRenderingBackend::_find_switch_frog_distance(
-            const Ref<Curve3D> &p_curve1, const Ref<Curve3D> &p_curve2, const double p_width) {
-        const double length = MIN(p_curve1->get_baked_length(), p_curve2->get_baked_length());
-        double dist = 0.0;
-        while (dist < length) {
-            const Vector3 p1 = p_curve1->sample_baked(static_cast<real_t>(dist));
-            const Vector3 p2 = p_curve2->sample_baked(static_cast<real_t>(dist));
-            if (p1.distance_to(p2) >= p_width) {
-                return dist;
-            }
-            dist += FROG_SEARCH_STEP;
-        }
-        return length;
-    }
-
-    PackedVector3Array MaszynaTrackRenderingBackend::_sample_curve_points_range(
-            const Ref<Curve3D> &p_curve, const double p_start_dist, const double p_end_dist,
-            const int p_segment_count) {
-        PackedVector3Array points;
-        const double length = p_end_dist - p_start_dist;
-        if (length <= 0.0) {
-            return points;
-        }
-        for (int i = 0; i <= p_segment_count; i++) {
-            const double d = p_start_dist + (length * static_cast<double>(i) / static_cast<double>(p_segment_count));
-            points.push_back(p_curve->sample_baked(static_cast<real_t>(d), true));
-        }
-        return points;
-    }
-
-    PackedVector3Array
-    MaszynaTrackRenderingBackend::_sample_switch_curve_points(const Ref<Curve3D> &p_curve, const double p_frog_dist) {
-        PackedVector3Array points = _sample_curve_points_range(p_curve, 0.0, p_frog_dist, SWITCH_SEGMENT_COUNT);
-        const double total_length = p_curve->get_baked_length();
-        if (total_length > p_frog_dist + SWITCH_TAIL_MIN_LENGTH) {
-            const int rem_segments =
-                    MAX(1, static_cast<int>((total_length - p_frog_dist) / SWITCH_TAIL_SEGMENT_LENGTH));
-            const PackedVector3Array rem_points =
-                    _sample_curve_points_range(p_curve, p_frog_dist, total_length, rem_segments);
-            for (int i = 1; i < rem_points.size(); i++) {
-                points.push_back(rem_points[i]);
-            }
-        }
-        return points;
-    }
-
-    // Port of planar cross-track vector construction from Segment.cpp:398-405 and Segment.cpp:444-450.
-    Vector3
-    MaszynaTrackRenderingBackend::_build_planar_parallel(const PackedVector3Array &p_points, const int p_sample_index) {
-        const int last = static_cast<int>(p_points.size()) - 1;
-        Vector3 tangent;
-        if (p_sample_index <= 0) {
-            tangent = p_points[1] - p_points[0];
-        } else if (p_sample_index >= last) {
-            tangent = p_points[last] - p_points[last - 1];
-        } else {
-            tangent = p_points[p_sample_index + 1] - p_points[p_sample_index - 1];
-        }
-
-        Vector3 parallel(-tangent.z, 0.0, tangent.x);
-        if (parallel.length_squared() <= MIN_DIRECTION_LENGTH_SQUARED) {
-            parallel = p_points[last] - p_points[0];
-            parallel = Vector3(-parallel.z, 0.0, parallel.x);
-        }
-        if (parallel.length_squared() <= MIN_DIRECTION_LENGTH_SQUARED) {
-            return RIGHT;
-        }
-        return parallel.normalized();
-    }
-
-    double MaszynaTrackRenderingBackend::_get_baked_segment_length(
-            const PackedVector3Array &p_points, const int p_start_sample, const int p_end_sample) {
-        double length = 0.0;
-        const int last = p_end_sample < 0 ? static_cast<int>(p_points.size()) - 1 : p_end_sample;
-        for (int sample_index = p_start_sample; sample_index < last; sample_index++) {
-            length += p_points[sample_index].distance_to(p_points[sample_index + 1]);
-        }
-        return length;
-    }
-
-    Transform3D
-    MaszynaTrackRenderingBackend::_build_curve_frame(const PackedVector3Array &p_points, const int p_sample_index) {
-        const Vector3 origin = p_points[p_sample_index];
-        Vector3 tangent;
-        if (p_sample_index == 0) {
-            tangent = p_points[1] - p_points[0];
-        } else if (p_sample_index == p_points.size() - 1) {
-            tangent = p_points[p_sample_index] - p_points[p_sample_index - 1];
-        } else {
-            tangent = p_points[p_sample_index + 1] - p_points[p_sample_index - 1];
-        }
-
-        if (tangent.length_squared() <= MIN_DIRECTION_LENGTH_SQUARED) {
-            tangent = FORWARD;
-        } else {
-            tangent = tangent.normalized();
-        }
-
-        Vector3 reference_up = UP;
-        if (Math::abs(tangent.dot(reference_up)) > VERTICAL_TANGENT_DOT) {
-            reference_up = RIGHT;
-        }
-
-        const Vector3 right = reference_up.cross(tangent).normalized();
-        const Vector3 up = tangent.cross(right).normalized();
-        return {Basis(right, up, tangent).orthonormalized(), origin};
-    }
-
-    PackedVector3Array
-    MaszynaTrackRenderingBackend::_vertices_relative_to(const PackedVector3Array &p_vertices, const Vector3 &p_origin) {
-        PackedVector3Array vertices = p_vertices;
-        for (Vector3 &vertex: vertices) {
-            vertex -= p_origin;
-        }
-        return vertices;
-    }
-
-    Ref<ArrayMesh>
-    MaszynaTrackRenderingBackend::_build_array_mesh(const Geometry &p_geometry, const Vector3 &p_origin) {
-        Array arrays;
-        arrays.resize(Mesh::ARRAY_MAX);
-        arrays[Mesh::ARRAY_VERTEX] = _vertices_relative_to(p_geometry.vertices, p_origin);
-        arrays[Mesh::ARRAY_NORMAL] = p_geometry.normals;
-        arrays[Mesh::ARRAY_TEX_UV] = p_geometry.uvs;
-        arrays[Mesh::ARRAY_INDEX] = p_geometry.indices;
-
-        Ref<ArrayMesh> mesh;
-        mesh.instantiate();
-        mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+    void MaszynaTrackRenderingBackend::_mesh_add_surface(
+            const Ref<ArrayMesh> &p_mesh, const Array &p_arrays, const String &p_material_name) const {
+        p_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, p_arrays);
         // regen_normal_maps() computes tangents for normal-mapped rail/ballast textures (the arrays
-        // above never set ARRAY_TANGENT), but costs ~7-9ms PER CALL almost independent of mesh size -
+        // never set ARRAY_TANGENT), but costs ~7-9ms PER CALL almost independent of mesh size -
         // for a real scenery with hundreds of track segments (2-3 calls each: rail, trackbed, and
         // switch secondary rail), that alone was ~2.1-2.3s of a ~3s scenery load, confirmed by
         // profiling. Skipped here; the tradeoff is flatter-looking (untangented) normal-map shading
         // on rails/ballast specifically, not missing geometry or broken base-color/roughness texturing.
-        return mesh;
-    }
-
-    /// Port of TTrack::create_road_profile() (Track.cpp:3008-3067) at one end of the road: its left
-    /// and right edges in the original's frame (x to the right of the road's direction), the texture
-    /// cut to the road's width - a texture is as wide as its length times its width/height ratio
-    MaszynaTrackRenderingBackend::Section MaszynaTrackRenderingBackend::_build_road_section(
-            const double p_width, const double p_roll, const double p_texture_length, const double p_ratio) {
-        const double half_width = 0.5 * Math::abs(p_width);
-        const double texture_width = p_ratio * p_texture_length;
-        const double map = texture_width > 0.0 ? half_width / texture_width : ROAD_DEFAULT_MAP;
-        const Vector3 left(
-                static_cast<real_t>(half_width * Math::cos(p_roll)),
-                static_cast<real_t>(-half_width * Math::sin(p_roll)), 0.0);
-        Section section;
-        section.push_back({left, UP, 0.5 - map});
-        section.push_back({-left, UP, 0.5 + map});
-        return section;
-    }
-
-    /// Port of TTrack::create_road_side_profile() (Track.cpp:3069-3256) at one end of the road: right
-    /// and left, each a section in the original's frame. A non-negative texture height is a shoulder:
-    /// flat for tex_width, then down to -tex_height over tex_slope. A negative one is a sidewalk: a curb
-    /// as high, its face sloped 1:3.75, then a sidewalk tex_slope wide on the right and tex_width wide
-    /// on the left, mapped in proportion to its width.
-    void MaszynaTrackRenderingBackend::_build_road_side_sections(
-            const RoadLook &p_road, const Section &p_surface, const double p_texture_length, const double p_ratio,
-            Section &p_r_right, Section &p_r_left) {
-        const double half_width = 0.5 * Math::abs(p_road.width);
-        const double side = Math::abs(p_road.tex_width);
-        const double slope = Math::abs(p_road.tex_slope);
-        const Vector3 road_left = p_surface[0].position;
-        const Vector3 road_right = p_surface[1].position;
-        p_r_right.clear();
-        p_r_left.clear();
-        if (p_road.tex_height >= 0.0) {
-            const double outer = half_width + side + slope;
-            p_r_right.push_back(
-                    {Vector3(static_cast<real_t>(outer), static_cast<real_t>(-p_road.tex_height), 0.0), RIGHT, 0.0});
-            p_r_right.push_back({Vector3(road_left.x + static_cast<real_t>(side), road_left.y, 0.0), UP, 0.5});
-            p_r_right.push_back({road_left, UP, 1.0});
-            p_r_left.push_back({road_right, UP, 1.0});
-            p_r_left.push_back({Vector3(road_right.x - static_cast<real_t>(side), road_right.y, 0.0), UP, 0.5});
-            p_r_left.push_back(
-                    {Vector3(static_cast<real_t>(-outer), static_cast<real_t>(-p_road.tex_height), 0.0), LEFT, 0.0});
+        if (p_material_name.is_empty()) {
             return;
         }
-        // a curb 150 mm high leans 40 mm; the curbs are mapped from 31/64 to 32/64 and 32/64 to 33/64
-        const double lean = -p_road.tex_height / CURB_SLOPE;
-        const double texture_width = p_ratio * p_texture_length;
-        const double map_left = texture_width > 0.0 ? side / texture_width : CURB_LEFT_U;
-        const double map_right = texture_width > 0.0 ? slope / texture_width : CURB_LEFT_U;
-        const double height_right = slope > lean ? -p_road.tex_height : 0.0;
-        const double height_left = side > lean ? -p_road.tex_height : 0.0;
-        p_r_right.push_back(
-                {Vector3(road_left.x + static_cast<real_t>(slope), road_left.y + static_cast<real_t>(height_right),
-                         0.0),
-                 UP, CURB_RIGHT_U + map_right});
-        p_r_right.push_back(
-                {Vector3(road_left.x + static_cast<real_t>(lean), road_left.y + static_cast<real_t>(height_right), 0.0),
-                 UP, CURB_RIGHT_U});
-        p_r_right.push_back({road_left, LEFT, CURB_RIGHT_U - (lean / CURB_LEAN_PER_U)});
-        p_r_left.push_back({road_right, RIGHT, CURB_LEFT_U + (lean / CURB_LEAN_PER_U)});
-        p_r_left.push_back(
-                {Vector3(road_right.x - static_cast<real_t>(lean), road_right.y + static_cast<real_t>(height_left),
-                         0.0),
-                 UP, CURB_LEFT_U});
-        p_r_left.push_back(
-                {Vector3(road_right.x - static_cast<real_t>(side), road_right.y + static_cast<real_t>(height_left),
-                         0.0),
-                 UP, CURB_LEFT_U - map_left});
-    }
-
-    /// A section of the original's frame (x to the right of the road's direction) in this backend's
-    /// loft frame, which has x to the left (_build_rail_section()): mirrored, and reversed so its faces
-    /// still face up
-    MaszynaTrackRenderingBackend::Section MaszynaTrackRenderingBackend::_mirror_road_section(const Section &p_section) {
-        Section mirrored;
-        for (const SectionPoint &point: p_section) {
-            mirrored.insert(
-                    0, {Vector3(-point.position.x, point.position.y, 0.0),
-                        Vector3(-point.normal.x, point.normal.y, 0.0), point.u});
-        }
-        return mirrored;
+        ReloadedMaterialServer *materials = ReloadedMaterialServer::get_instance();
+        ERR_FAIL_NULL(materials);
+        p_mesh->surface_set_material(
+                p_mesh->get_surface_count() - 1, materials->material_get(p_material_name, track_material_options));
     }
 
     bool MaszynaTrackRenderingBackend::_has_trackbed_profile_options(const Track *p_track) {
@@ -1530,55 +791,25 @@ namespace godot {
         return size_length >= 0.0 ? size_length : p_track.tex_length;
     }
 
-    /// The track's materials by the names it has, as it is built - a streamed track holds them, and
-    /// their textures, only while it is built
-    void MaszynaTrackRenderingBackend::_resolve_materials(Track &p_track) const {
-        ReloadedMaterialServer *materials = ReloadedMaterialServer::get_instance();
-        ERR_FAIL_NULL(materials);
-        // An unnamed slot has no material at all - ReloadedMaterialServer would hand back the
-        // missing-texture placeholder instead (Track.cpp:485-491 keeps a null handle here).
-        p_track.material1 = p_track.material1_name.is_empty()
-                                    ? Ref<Material>()
-                                    : materials->material_get(p_track.material1_name, track_material_options);
-        p_track.material2 = p_track.material2_name.is_empty()
-                                    ? Ref<Material>()
-                                    : materials->material_get(p_track.material2_name, track_material_options);
-        p_track.material_trackbed =
-                p_track.material_trackbed_name.is_empty()
-                        ? Ref<Material>()
-                        : materials->material_get(p_track.material_trackbed_name, track_material_options);
-        p_track.resolved_trackbed_material_valid = false;
-    }
-
-    Ref<Material> MaszynaTrackRenderingBackend::_resolve_trackbed_material(Track &p_track) {
-        if (!p_track.resolved_trackbed_material_valid) {
-            RIDSet visited;
-            const Track *owner = _copy_adjacent_trackbed_material(&p_track, visited);
-            String material_name;
-            p_track.resolved_trackbed_material.unref();
-            TrackServer *track_server = TrackServer::get_instance();
-            ERR_FAIL_NULL_V(track_server, Ref<Material>());
-            if (owner != nullptr) {
-                material_name = owner->material_trackbed_name.is_empty() ? owner->material2_name
-                                                                         : owner->material_trackbed_name;
-            } else if (track_server->get_is_topology_changed() && looks.is_valid()) {
-                // the neighbours are not known yet (the editor, until its Rebuild topology): the default
-                // bed's trackbed, built again with the neighbour's once they are (topology_rebuilt())
-                const Ref<MaszynaTrackLook> look = looks->get_rail_looks().get(looks->get_default_bed(), Variant());
-                material_name = look.is_valid() ? look->get_material2() : String();
-            }
-            if (!material_name.is_empty()) {
-                // by its name: the neighbour holds its own material only while it is built itself
-                ReloadedMaterialServer *materials = ReloadedMaterialServer::get_instance();
-                ERR_FAIL_NULL_V(materials, Ref<Material>());
-                p_track.resolved_trackbed_material = materials->material_get(material_name, track_material_options);
-            }
-            // TTrack::texture_length() (Track.cpp:2481-2493): the material's size, else the track's own
-            const double size_length = material_name.is_empty() ? -1.0 : _load_texture_length(material_name);
-            p_track.resolved_trackbed_texture_length = size_length >= 0.0 ? size_length : p_track.tex_length;
-            p_track.resolved_trackbed_material_valid = true;
+    void MaszynaTrackRenderingBackend::_resolve_trackbed(
+            const Track &p_track, String &p_r_material_name, double &p_r_texture_length) {
+        RIDSet visited;
+        const Track *owner = _copy_adjacent_trackbed_material(&p_track, visited);
+        p_r_material_name = String();
+        TrackServer *track_server = TrackServer::get_instance();
+        ERR_FAIL_NULL(track_server);
+        if (owner != nullptr) {
+            p_r_material_name =
+                    owner->material_trackbed_name.is_empty() ? owner->material2_name : owner->material_trackbed_name;
+        } else if (track_server->get_is_topology_changed() && looks.is_valid()) {
+            // the neighbours are not known yet (the editor, until its Rebuild topology): the default
+            // bed's trackbed, built again with the neighbour's once they are (topology_rebuilt())
+            const Ref<MaszynaTrackLook> look = looks->get_rail_looks().get(looks->get_default_bed(), Variant());
+            p_r_material_name = look.is_valid() ? look->get_material2() : String();
         }
-        return p_track.resolved_trackbed_material;
+        // TTrack::texture_length() (Track.cpp:2481-2493): the material's size, else the track's own
+        const double size_length = p_r_material_name.is_empty() ? -1.0 : _load_texture_length(p_r_material_name);
+        p_r_texture_length = size_length >= 0.0 ? size_length : p_track.tex_length;
     }
 
     /// Port of TTrack::copy_adjacent_trackbed_material() (Track.cpp:3326). A switch carries no
@@ -1648,8 +879,8 @@ namespace godot {
     // Port of switch trackbed profile source selection from Track.cpp:2753-2809.
     void MaszynaTrackRenderingBackend::_build_switch_trackbed_sections(
             const Track &p_track, const TrackGeometry &p_geometry, const TrackServer::SwitchTrack p_switch_track,
-            const double p_start_roll, const double p_end_roll, const double p_rail_height, Section &p_r_start,
-            Section &p_r_end) {
+            const double p_start_roll, const double p_end_roll, const double p_rail_height,
+            const double p_texture_length, Section &p_r_start, Section &p_r_end) {
         TrackServer *track_server = TrackServer::get_instance();
         ERR_FAIL_NULL(track_server);
         const Ref<TrackBranchNeighbors> neighbors =
@@ -1671,7 +902,8 @@ namespace godot {
             source_state = next_state;
         }
 
-        const double start_tex_height = source_state->tex_height + _get_roll_fix_height(p_start_roll);
+        const double start_tex_height =
+                source_state->tex_height + MaszynaTrackMeshBuilder::roll_fix_height(p_start_roll);
         const double start_tex_width = source_state->tex_width;
         const double start_tex_slope = source_state->tex_slope;
         double end_width = p_geometry.width;
@@ -1681,165 +913,28 @@ namespace godot {
 
         if (next_track.is_valid() && _has_trackbed_profile_options(next_state) && next_track.curve2.is_null()) {
             end_width = next_track.width;
-            end_tex_height = next_state->tex_height +
-                             _get_roll_fix_height(_get_track_roll(next_track, neighbors->get_next_endpoint_index()));
+            end_tex_height = next_state->tex_height + MaszynaTrackMeshBuilder::roll_fix_height(_get_track_roll(
+                                                              next_track, neighbors->get_next_endpoint_index()));
             end_tex_width = next_state->tex_width;
             end_tex_slope = next_state->tex_slope;
         }
 
-        p_r_start = _build_trackbed_section(
+        p_r_start = MaszynaTrackMeshBuilder::build_trackbed_section(
                 p_geometry.width, start_tex_height, start_tex_width, start_tex_slope, p_start_roll, p_rail_height,
-                p_track.resolved_trackbed_texture_length);
-        p_r_end = _build_trackbed_section(
-                end_width, end_tex_height, end_tex_width, end_tex_slope, p_end_roll, p_rail_height,
-                p_track.resolved_trackbed_texture_length);
-    }
-
-    // Port of switch trackbed generation and assembly from Track.cpp:3236-3302.
-    Ref<ArrayMesh> MaszynaTrackRenderingBackend::_build_switch_trackbed_mesh(
-            const Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_primary_curve,
-            const Ref<Curve3D> &p_secondary_curve, const double p_rail_height, const bool p_is_right_switch) {
-        Geometry trackbed;
-        Section primary_start;
-        Section primary_end;
-        Section secondary_start;
-        Section secondary_end;
-        _build_switch_trackbed_sections(
-                p_track, p_geometry, TrackServer::TRACK_COMMON, p_geometry.curve1->get_roll1(),
-                p_geometry.curve1->get_roll2(), p_rail_height, primary_start, primary_end);
-        _build_switch_trackbed_sections(
-                p_track, p_geometry, TrackServer::TRACK_DIVERGING, p_geometry.curve2->get_roll1(),
-                p_geometry.curve2->get_roll2(), p_rail_height, secondary_start, secondary_end);
-
-        // Port of per-branch loft generation from Track.cpp:3250-3259.
-        const Vector<StripChunk> primary_chunks = _build_transition_loft_strip_chunks(
-                p_primary_curve, primary_start, primary_end, p_track.resolved_trackbed_texture_length, p_rail_height);
-        const Vector<StripChunk> secondary_chunks = _build_transition_loft_strip_chunks(
-                p_secondary_curve, secondary_start, secondary_end, p_track.resolved_trackbed_texture_length,
-                p_rail_height);
-
-        const int segment_count = static_cast<int>(MIN(primary_chunks.size(), secondary_chunks.size()));
-
-        for (int segment_index = 0; segment_index < segment_count; segment_index++) {
-            StripChunk primary_chunk = primary_chunks[segment_index];
-            StripChunk secondary_chunk = secondary_chunks[segment_index];
-
-            // Port of samplersoffset-based edge lowering from Track.cpp:3265-3299.
-            // The left edge is the profile's +x edge, to the left of the track
-            // (_build_transition_loft_strip_chunks())
-            const int primary_fallback_edge = p_is_right_switch ? TRACKBED_RIGHT_EDGE_POINT : TRACKBED_LEFT_EDGE_POINT;
-            const int secondary_fallback_edge =
-                    p_is_right_switch ? TRACKBED_LEFT_EDGE_POINT : TRACKBED_RIGHT_EDGE_POINT;
-            const int primary_lower_edge =
-                    _nearest_strip_inner_edge(primary_chunk, secondary_chunk, primary_fallback_edge);
-            const int secondary_lower_edge =
-                    _nearest_strip_inner_edge(secondary_chunk, primary_chunk, secondary_fallback_edge);
-            _lower_strip_edge(primary_chunk, primary_lower_edge);
-            _lower_strip_edge(secondary_chunk, secondary_lower_edge);
-
-            // Port of the per-branch output order from Track.cpp:3280-3297.
-            // Segment.cpp:452-492 emits one 10-vertex strip chunk at a time; only that chunk
-            // describes loft faces. Triangulating across chunk boundaries exposes strip
-            // connector triangles as visible geometry in Godot.
-            _append_strip_chunk(trackbed, primary_chunk);
-            _append_strip_chunk(trackbed, secondary_chunk);
-        }
-
-        return _build_array_mesh(trackbed, p_track.origin);
-    }
-
-    // Port of vertex lowering index selection used during switch trackbed assembly from
-    // Track.cpp:3271-3293: both vertices of the section point p_edge_point go down.
-    void MaszynaTrackRenderingBackend::_lower_strip_edge(StripChunk &p_chunk, const int p_edge_point) {
-        for (int vertex = 0; vertex < STRIP_VERTICES_PER_POINT; vertex++) {
-            const int vertex_index = (p_edge_point * STRIP_VERTICES_PER_POINT) + vertex;
-            if (vertex_index < 0 || vertex_index >= p_chunk.size()) {
-                continue;
-            }
-            p_chunk.write[vertex_index].position.y -= static_cast<real_t>(SWITCH_TRACKBED_Z_FIGHT_OFFSET);
-        }
-    }
-
-    /// The edge of p_chunk (a section point of its upper slope edges) nearer to the middle of
-    /// p_other_chunk, across the ground; p_fallback_edge when the two are as near
-    int MaszynaTrackRenderingBackend::_nearest_strip_inner_edge(
-            const StripChunk &p_chunk, const StripChunk &p_other_chunk, const int p_fallback_edge) {
-        constexpr int RIGHT_EDGE_END = (TRACKBED_RIGHT_EDGE_POINT + 1) * STRIP_VERTICES_PER_POINT;
-        constexpr int CENTRE_END = (TRACKBED_CENTRE_POINT + 1) * STRIP_VERTICES_PER_POINT;
-        if (p_chunk.size() < RIGHT_EDGE_END || p_other_chunk.size() < CENTRE_END) {
-            return p_fallback_edge;
-        }
-        const auto edge_center = [](const StripChunk &p_strip, const int p_point) {
-            const int first = p_point * STRIP_VERTICES_PER_POINT;
-            return (p_strip[first].position + p_strip[first + 1].position) * 0.5;
-        };
-        const Vector3 other_center = edge_center(p_other_chunk, TRACKBED_CENTRE_POINT);
-        Vector3 left_delta = edge_center(p_chunk, TRACKBED_LEFT_EDGE_POINT) - other_center;
-        Vector3 right_delta = edge_center(p_chunk, TRACKBED_RIGHT_EDGE_POINT) - other_center;
-        left_delta.y = 0.0;
-        right_delta.y = 0.0;
-
-        const double left_distance = left_delta.length_squared();
-        const double right_distance = right_delta.length_squared();
-        if (Math::is_equal_approx(left_distance, right_distance)) {
-            return p_fallback_edge;
-        }
-        return left_distance < right_distance ? TRACKBED_LEFT_EDGE_POINT : TRACKBED_RIGHT_EDGE_POINT;
-    }
-
-    // Port of strip vertex copying from Track.cpp:3280-3297, and of the visible strip faces emitted per
-    // loft chunk by Segment.cpp:452-492. Wound like _append_loft_strip_indices(): the chunk maps the
-    // profile's x to the left, so the original's order faces up here without reversing it.
-    void MaszynaTrackRenderingBackend::_append_strip_chunk(Geometry &p_geometry, const StripChunk &p_chunk) {
-        const int base_vertex = static_cast<int>(p_geometry.vertices.size());
-        for (const StripPoint &point: p_chunk) {
-            p_geometry.vertices.push_back(point.position);
-            p_geometry.normals.push_back(point.normal);
-            p_geometry.uvs.push_back(point.uv);
-        }
-        for (int point_index = 0; point_index < p_chunk.size() - 2; point_index++) {
-            const int a = base_vertex + point_index;
-            const int b = base_vertex + point_index + 1;
-            const int c = base_vertex + point_index + 2;
-            if (point_index % 2 == 0) {
-                p_geometry.indices.push_back(a);
-                p_geometry.indices.push_back(b);
-            } else {
-                p_geometry.indices.push_back(b);
-                p_geometry.indices.push_back(a);
-            }
-            p_geometry.indices.push_back(c);
-        }
-    }
-
-    void MaszynaTrackRenderingBackend::_build_road(
-            Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_curve) {
-        Geometry surface;
-        Geometry sides;
-        _append_road_geometry(p_track, p_geometry, p_curve, surface, sides);
-        RenderingServer *rendering = RenderingServer::get_singleton();
-        if (p_track.material1.is_valid() && !surface.vertices.is_empty()) {
-            p_track.meshes[SLOT_PRIMARY_RAIL] = _build_array_mesh(surface, p_track.origin);
-            _slot_draw(p_track, SLOT_PRIMARY_RAIL);
-            rendering->mesh_surface_set_material(
-                    p_track.meshes[SLOT_PRIMARY_RAIL]->get_rid(), 0, p_track.material1->get_rid());
-        }
-        if (p_track.material2.is_valid() && !sides.vertices.is_empty()) {
-            p_track.meshes[SLOT_TRACKBED] = _build_array_mesh(sides, p_track.origin);
-            _slot_draw(p_track, SLOT_TRACKBED);
-            rendering->mesh_surface_set_material(
-                    p_track.meshes[SLOT_TRACKBED]->get_rid(), 0, p_track.material2->get_rid());
-        }
+                p_texture_length);
+        p_r_end = MaszynaTrackMeshBuilder::build_trackbed_section(
+                end_width, end_tex_height, end_tex_width, end_tex_slope, p_end_roll, p_rail_height, p_texture_length);
     }
 
     /// Port of the road drawing of TTrack::create_geometry() (Track.cpp:1479-1517): the surface of
-    /// material1 across the track's width into p_surface, then the shoulders - or the curbs and
-    /// sidewalks - of material2 on both sides into p_sides; a slot without a material name gets
-    /// nothing. A road has no rails: its points are its surface (Track.cpp:552-559 lifts rail tracks
-    /// only).
-    void MaszynaTrackRenderingBackend::_append_road_geometry(
-            const Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_curve, Geometry &p_surface,
-            Geometry &p_sides) {
+    /// material1 across the track's width, then the shoulders - or the curbs and sidewalks - of
+    /// material2 on both sides; a part without a material name gets no section. A road has no rails:
+    /// its points are its surface (Track.cpp:552-559 lifts rail tracks only).
+    void MaszynaTrackRenderingBackend::_read_road_piece(
+            const Track &p_track, const TrackGeometry &p_geometry, TrackSnapshot &p_snapshot) {
+        TrackPiece &piece = p_snapshot.piece;
+        p_snapshot.primary_material = p_track.material1_name;
+        p_snapshot.bed_material = p_track.material2_name;
         if (p_track.material1_name.is_empty() && p_track.material2_name.is_empty()) {
             return;
         }
@@ -1878,15 +973,15 @@ namespace godot {
 
         const double surface_length = _load_road_texture_length(p_track, p_track.material1_name);
         const double surface_ratio = _load_texture_ratio(p_track.material1_name);
-        const Section surface_start = _build_road_section(road.width, roll1, surface_length, surface_ratio);
-        const Section surface_end =
-                _build_road_section(next_road.width, transition ? roll2 : roll1, surface_length, surface_ratio);
-        const PackedVector3Array points = p_curve->get_baked_points();
+        const Section surface_start =
+                MaszynaTrackMeshBuilder::build_road_section(road.width, roll1, surface_length, surface_ratio);
+        const Section surface_end = MaszynaTrackMeshBuilder::build_road_section(
+                next_road.width, transition ? roll2 : roll1, surface_length, surface_ratio);
 
         if (!p_track.material1_name.is_empty()) {
-            _append_loft_geometry_range_points(
-                    p_surface, points, _mirror_road_section(surface_start), _mirror_road_section(surface_end),
-                    surface_length, 0.0, 0, CURVE_END);
+            piece.surface_start = MaszynaTrackMeshBuilder::mirror_road_section(surface_start);
+            piece.surface_end = MaszynaTrackMeshBuilder::mirror_road_section(surface_end);
+            piece.primary_texture_length = surface_length;
         }
 
         if (!p_track.material2_name.is_empty()) {
@@ -1896,20 +991,114 @@ namespace godot {
             Section left_start;
             Section right_end;
             Section left_end;
-            _build_road_side_sections(road, surface_start, side_length, side_ratio, right_start, left_start);
-            _build_road_side_sections(next_road, surface_end, side_length, side_ratio, right_end, left_end);
+            MaszynaTrackMeshBuilder::build_road_side_sections(
+                    road, surface_start, side_length, side_ratio, right_start, left_start);
+            MaszynaTrackMeshBuilder::build_road_side_sections(
+                    next_road, surface_end, side_length, side_ratio, right_end, left_end);
+            piece.bed_texture_length = side_length;
             // Track.cpp:1503-1514: a shoulder on both sides, a sidewalk only where it has a width
             if (road.tex_height >= 0.0 || !Math::is_zero_approx(road.tex_slope)) {
-                _append_loft_geometry_range_points(
-                        p_sides, points, _mirror_road_section(right_start), _mirror_road_section(right_end),
-                        side_length, 0.0, 0, CURVE_END);
+                piece.right_start = MaszynaTrackMeshBuilder::mirror_road_section(right_start);
+                piece.right_end = MaszynaTrackMeshBuilder::mirror_road_section(right_end);
             }
             if (road.tex_height >= 0.0 || !Math::is_zero_approx(road.tex_width)) {
-                _append_loft_geometry_range_points(
-                        p_sides, points, _mirror_road_section(left_start), _mirror_road_section(left_end), side_length,
-                        0.0, 0, CURVE_END);
+                piece.left_start = MaszynaTrackMeshBuilder::mirror_road_section(left_start);
+                piece.left_end = MaszynaTrackMeshBuilder::mirror_road_section(left_end);
             }
         }
+    }
+
+    bool MaszynaTrackRenderingBackend::_read_track_piece(
+            const RID &p_track_render, const Track &p_track, TrackSnapshot &p_snapshot) {
+        const TrackGeometry geometry = _read_track_geometry(p_track.track);
+        TrackServer *track_server = TrackServer::get_instance();
+        if (!geometry.is_valid() || track_server == nullptr) {
+            return false;
+        }
+        const Ref<TrackCurve> &curve1 = geometry.curve1;
+        const Ref<TrackCurve> &curve2 = geometry.curve2;
+        TrackPiece &piece = p_snapshot.piece;
+        p_snapshot.track_render = p_track_render;
+        piece.curve1 = _read_curve_shape(curve1);
+        piece.has_curve2 = curve2.is_valid();
+        if (piece.has_curve2) {
+            piece.curve2 = _read_curve_shape(curve2);
+        }
+        piece.width = geometry.width;
+        if (_is_road(p_track.track, geometry)) {
+            piece.shape = MaszynaTrackMeshBuilder::PIECE_ROAD;
+            _read_road_piece(p_track, geometry, p_snapshot);
+            return true;
+        }
+
+        piece.shape = _is_switch_track(geometry) ? MaszynaTrackMeshBuilder::PIECE_SWITCH
+                                                 : MaszynaTrackMeshBuilder::PIECE_RAILS;
+        piece.rail_profile = _load_rail_profile(p_track.railprofile);
+        piece.rail_height = Math::abs(piece.rail_profile.rail[0].y);
+        piece.switch_is_right = piece.shape == MaszynaTrackMeshBuilder::PIECE_SWITCH &&
+                                track_server->track_is_switch_right(p_track.track);
+        piece.blade_layout = _switch_blade_layout(
+                piece.switch_is_right, geometry.switch_f_offset1, geometry.switch_f_offset2,
+                track_server->get_switch_max_offset());
+        p_snapshot.primary_material = p_track.material1_name;
+        // The second path of a switch carries its own rail texture; everything else, and a switch
+        // that declares none, uses the track's own one.
+        p_snapshot.secondary_material = piece.has_curve2 && !p_track.material2_name.is_empty() ? p_track.material2_name
+                                                                                               : p_track.material1_name;
+        piece.primary_texture_length = p_track.tex_length;
+        _resolve_trackbed(p_track, p_snapshot.bed_material, piece.bed_texture_length);
+        if (p_snapshot.bed_material.is_empty()) {
+            return true;
+        }
+
+        const double rail_height = piece.rail_height;
+        const double track_width = geometry.width;
+        if (piece.shape == MaszynaTrackMeshBuilder::PIECE_SWITCH) {
+            // Port of switch trackbed assembly from Track.cpp:3236-3302: each branch's sections by the
+            // neighbours it has
+            _build_switch_trackbed_sections(
+                    p_track, geometry, TrackServer::TRACK_COMMON, curve1->get_roll1(), curve1->get_roll2(), rail_height,
+                    piece.bed_texture_length, piece.bed_start, piece.bed_end);
+            _build_switch_trackbed_sections(
+                    p_track, geometry, TrackServer::TRACK_DIVERGING, curve2->get_roll1(), curve2->get_roll2(),
+                    rail_height, piece.bed_texture_length, piece.second_bed_start, piece.second_bed_end);
+            return true;
+        }
+
+        double end_width = track_width;
+        double end_tex_height = p_track.tex_height + MaszynaTrackMeshBuilder::roll_fix_height(curve1->get_roll1());
+        double end_tex_width = p_track.tex_width;
+        double end_tex_slope = p_track.tex_slope;
+        const Ref<TrackEndpointRef> next_connection = unique_endpoint_connection(p_track.track, TrackServer::CURVE1_P2);
+        const RID next_track_rid = next_connection.is_valid() ? next_connection->get_track_rid() : RID();
+        const TrackGeometry next_track =
+                next_track_rid.is_valid() ? _read_track_geometry(next_track_rid) : TrackGeometry();
+        const Track *next_track_state = _find_track(next_track_rid);
+
+        if (next_connection.is_valid() && next_track.is_valid() && next_track_state != nullptr &&
+            next_track.curve2.is_null()) {
+            end_width = next_track.width;
+            end_tex_height = next_track_state->tex_height + MaszynaTrackMeshBuilder::roll_fix_height(_get_track_roll(
+                                                                    next_track, next_connection->get_endpoint_index()));
+            end_tex_width = next_track_state->tex_width;
+            end_tex_slope = next_track_state->tex_slope;
+        }
+
+        piece.bed_start = MaszynaTrackMeshBuilder::build_trackbed_section(
+                track_width, p_track.tex_height + MaszynaTrackMeshBuilder::roll_fix_height(curve1->get_roll1()),
+                p_track.tex_width, p_track.tex_slope, curve1->get_roll1(), rail_height, piece.bed_texture_length);
+        piece.bed_end = MaszynaTrackMeshBuilder::build_trackbed_section(
+                end_width, end_tex_height, end_tex_width, end_tex_slope, curve1->get_roll2(), rail_height,
+                piece.bed_texture_length);
+        if (curve2.is_valid()) {
+            piece.second_bed_start = MaszynaTrackMeshBuilder::build_trackbed_section(
+                    track_width, p_track.tex_height + MaszynaTrackMeshBuilder::roll_fix_height(curve2->get_roll1()),
+                    p_track.tex_width, p_track.tex_slope, curve2->get_roll1(), rail_height, piece.bed_texture_length);
+            piece.second_bed_end = MaszynaTrackMeshBuilder::build_trackbed_section(
+                    track_width, p_track.tex_height + MaszynaTrackMeshBuilder::roll_fix_height(curve2->get_roll2()),
+                    p_track.tex_width, p_track.tex_slope, curve2->get_roll2(), rail_height, piece.bed_texture_length);
+        }
+        return true;
     }
 
     void MaszynaTrackRenderingBackend::_slot_draw(Track &p_track, const Slot p_slot) {
@@ -1955,184 +1144,282 @@ namespace godot {
         for (Ref<ArrayMesh> &mesh: p_track.meshes) {
             mesh.unref();
         }
-        for (Blade *blade: {&p_track.primary_blade, &p_track.secondary_blade}) {
-            blade->move_direction = Vector3();
-            blade->pivot = Vector3();
-            blade->angle_factor = 0.0;
-        }
+        p_track.primary_blade.pose = BladePose();
+        p_track.secondary_blade.pose = BladePose();
     }
 
-    /// Puts a streamed road into the cell of its scenario holding its start, the cell made and
-    /// registered with the streaming as its first road comes
-    void MaszynaTrackRenderingBackend::_road_cell_add(const RID &p_track_render, Track &p_track) {
+    void MaszynaTrackRenderingBackend::_cell_add(const RID &p_track_render, Track &p_track) {
         const TrackGeometry geometry = _read_track_geometry(p_track.track);
         ERR_FAIL_COND(!geometry.is_valid());
         const Vector3 start = geometry.curve1->get_p1();
         const Vector2i coords(
-                static_cast<int32_t>(Math::floor(start.x / ROAD_CELL_SIZE)),
-                static_cast<int32_t>(Math::floor(start.z / ROAD_CELL_SIZE)));
-        const RoadCellKey key{p_track.scenario, coords};
+                static_cast<int32_t>(Math::floor(start.x / CELL_SIZE)),
+                static_cast<int32_t>(Math::floor(start.z / CELL_SIZE)));
+        const CellKey key{p_track.scenario, coords, _is_road(p_track.track, geometry) ? CELL_ROADS : CELL_TRACKS};
         RID cell_rid;
-        if (const RID *found = road_cells_by_key.getptr(key); found != nullptr) {
+        if (const RID *found = cells_by_key.getptr(key); found != nullptr) {
             cell_rid = *found;
         } else {
-            SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
-            TrackRenderingServer *track_rendering = TrackRenderingServer::get_instance();
-            ERR_FAIL_NULL(streaming);
-            ERR_FAIL_NULL(track_rendering);
-            const Vector2 centre = (Vector2(coords) + Vector2(0.5, 0.5)) * static_cast<real_t>(ROAD_CELL_SIZE);
-            RoadCell cell;
+            const Vector2 centre = (Vector2(coords) + Vector2(0.5, 0.5)) * static_cast<real_t>(CELL_SIZE);
+            Cell cell;
+            cell.kind = key.kind;
             cell.scenario = p_track.scenario;
             cell.coords = coords;
             cell.origin = Vector3(centre.x, start.y, centre.y);
             cell_rid = UtilityFunctions::rid_from_int64(UtilityFunctions::rid_allocate_id());
-            road_cells.insert(cell_rid, cell);
-            road_cells_by_key.insert(key, cell_rid);
-            road_cells[cell_rid].stream_rid = streaming->stream_register(
-                    road_stream_owner, cell_rid, cell.origin,
-                    static_cast<float>(track_rendering->get_tracks_distance()));
+            {
+                MutexLock lock(cells_mutex);
+                cells.insert(cell_rid, cell);
+            }
+            cells_by_key.insert(key, cell_rid);
         }
-        RoadCell &cell = road_cells[cell_rid];
-        if (!cell.tracks.has(p_track_render)) {
-            cell.tracks.push_back(p_track_render);
+        Cell *cell = cells.getptr(cell_rid);
+        if (!cell->tracks.has(p_track_render)) {
+            cell->tracks.push_back(p_track_render);
         }
-        p_track.road_cell = cell_rid;
-        _queue_road_cell_rebuild(cell);
+        p_track.cell = cell_rid;
+        _cell_update_track(p_track_render, p_track);
     }
 
-    void MaszynaTrackRenderingBackend::_road_cell_remove(const RID &p_track_render, Track &p_track) {
-        const RID cell_rid = p_track.road_cell;
-        p_track.road_cell = RID();
-        RoadCell *cell = road_cells.getptr(cell_rid);
+    /// The track's blades go with it, and the cell with its last track
+    void MaszynaTrackRenderingBackend::_cell_remove(const RID &p_track_render, Track &p_track) {
+        const RID cell_rid = p_track.cell;
+        p_track.cell = RID();
+        _clear_track_meshes(p_track);
+        Cell *cell = cells.getptr(cell_rid);
         if (cell == nullptr) {
             return;
         }
         cell->tracks.erase(p_track_render);
+        {
+            MutexLock lock(cells_mutex);
+            for (int index = 0; index < cell->snapshots.size(); index++) {
+                if (cell->snapshots[index].track_render == p_track_render) {
+                    cell->snapshots.remove_at(index);
+                    break;
+                }
+            }
+        }
         if (!cell->tracks.is_empty()) {
-            _queue_road_cell_rebuild(*cell);
+            _cell_stream(cell_rid, *cell);
             return;
         }
         if (SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance(); streaming != nullptr) {
             streaming->stream_free(cell->stream_rid);
         }
-        _road_cell_clear(cell_rid);
-        if (cell->instance.is_valid()) {
-            RenderingServer::get_singleton()->free_rid(cell->instance);
+        _cell_clear(cell_rid);
+        for (const RID &instance: cell->instances) {
+            if (instance.is_valid()) {
+                RenderingServer::get_singleton()->free_rid(instance);
+            }
         }
-        road_cells_by_key.erase(RoadCellKey{cell->scenario, cell->coords});
-        road_cells.erase(cell_rid);
+        cells_by_key.erase(CellKey{cell->scenario, cell->coords, cell->kind});
+        MutexLock lock(cells_mutex);
+        cells.erase(cell_rid);
     }
 
-    /// A built cell is built again once, at the end of the frame, however many of its roads changed
-    /// (a scenery puts hundreds into one cell as it loads)
-    void MaszynaTrackRenderingBackend::_queue_road_cell_rebuild(RoadCell &p_cell) {
-        if (!p_cell.streamed || p_cell.rebuild_queued) {
-            return;
+    void MaszynaTrackRenderingBackend::_cell_update_track(const RID &p_track_render, const Track &p_track) {
+        Cell *cell = cells.getptr(p_track.cell);
+        ERR_FAIL_NULL(cell);
+        TrackSnapshot snapshot;
+        const bool drawn = p_track.visible && _read_track_piece(p_track_render, p_track, snapshot);
+        {
+            MutexLock lock(cells_mutex);
+            int index = 0;
+            while (index < cell->snapshots.size() && cell->snapshots[index].track_render != p_track_render) {
+                index++;
+            }
+            if (index == cell->snapshots.size()) {
+                if (drawn) {
+                    cell->snapshots.push_back(snapshot);
+                }
+            } else if (drawn) {
+                cell->snapshots.write[index] = snapshot;
+            } else {
+                cell->snapshots.remove_at(index);
+            }
         }
-        p_cell.rebuild_queued = true;
-        if (!road_rebuild_pending) {
-            road_rebuild_pending = true;
-            callable_mp(this, &MaszynaTrackRenderingBackend::_rebuild_queued_road_cells).call_deferred();
-        }
+        _cell_stream(p_track.cell, *cell);
     }
 
-    void MaszynaTrackRenderingBackend::_rebuild_queued_road_cells() {
-        road_rebuild_pending = false;
-        for (KeyValue<RID, RoadCell> &item: road_cells) {
-            RoadCell &cell = item.value;
-            if (!cell.rebuild_queued) {
+    void MaszynaTrackRenderingBackend::_cell_stream(const RID &p_cell_rid, Cell &p_cell) {
+        SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
+        TrackRenderingServer *track_rendering = TrackRenderingServer::get_instance();
+        ERR_FAIL_NULL(streaming);
+        ERR_FAIL_NULL(track_rendering);
+        if (p_cell.stream_rid.is_valid()) {
+            streaming->stream_free(p_cell.stream_rid);
+        }
+        if (p_cell.streamed) {
+            _cell_clear(p_cell_rid);
+        }
+        p_cell.stream_rid = streaming->stream_register(
+                stream_owners[p_cell.kind], p_cell_rid, p_cell.origin,
+                static_cast<float>(track_rendering->get_tracks_distance()));
+    }
+
+    Variant MaszynaTrackRenderingBackend::_cell_preload(const RID &p_cell) {
+        Vector<TrackSnapshot> snapshots;
+        Vector3 origin;
+        {
+            MutexLock lock(cells_mutex);
+            const Cell *cell = cells.getptr(p_cell);
+            if (cell == nullptr) {
+                return {};
+            }
+            snapshots = cell->snapshots;
+            origin = cell->origin;
+        }
+        // by layer, by the material's name
+        HashMap<String, Geometry> layers[CELL_LAYER_MAX];
+        Array blades;
+        for (const TrackSnapshot &snapshot: snapshots) {
+            const TrackPiece &piece = snapshot.piece;
+            const PieceGeometry geometry = MaszynaTrackMeshBuilder::build_piece_geometry(piece);
+            // a road's surface lies on the ground as its sides do
+            const CellLayer rails_layer =
+                    piece.shape == MaszynaTrackMeshBuilder::PIECE_ROAD ? CELL_LAYER_BED : CELL_LAYER_RAILS;
+            MaszynaTrackMeshBuilder::append_geometry(
+                    layers[rails_layer][snapshot.primary_material], geometry.primary_rails);
+            MaszynaTrackMeshBuilder::append_geometry(
+                    layers[rails_layer][snapshot.secondary_material], geometry.secondary_rails);
+            MaszynaTrackMeshBuilder::append_geometry(layers[CELL_LAYER_BED][snapshot.bed_material], geometry.bed);
+            if (piece.shape != MaszynaTrackMeshBuilder::PIECE_SWITCH) {
                 continue;
             }
-            cell.rebuild_queued = false;
-            if (cell.streamed) {
-                _build_road_cell(cell);
-            }
+            Array blade;
+            blade.resize(BLADES_FIELD_COUNT);
+            blade[BLADES_TRACK_RENDER] = snapshot.track_render;
+            blade[BLADES_ORIGIN] = piece.curve1.p1;
+            blade[BLADES_SWITCH_IS_RIGHT] = piece.switch_is_right;
+            blade[BLADES_PRIMARY_MATERIAL] = snapshot.primary_material;
+            blade[BLADES_SECONDARY_MATERIAL] = snapshot.secondary_material;
+            blade[BLADES_PRIMARY_ARRAYS] =
+                    MaszynaTrackMeshBuilder::build_surface_arrays(geometry.primary_blade, piece.curve1.p1);
+            blade[BLADES_SECONDARY_ARRAYS] =
+                    MaszynaTrackMeshBuilder::build_surface_arrays(geometry.secondary_blade, piece.curve1.p1);
+            blade[BLADES_PRIMARY_PIVOT] = geometry.primary_blade_pose.pivot;
+            blade[BLADES_PRIMARY_ANGLE_FACTOR] = geometry.primary_blade_pose.angle_factor;
+            blade[BLADES_SECONDARY_PIVOT] = geometry.secondary_blade_pose.pivot;
+            blade[BLADES_SECONDARY_ANGLE_FACTOR] = geometry.secondary_blade_pose.angle_factor;
+            blades.push_back(blade);
         }
+        Array surfaces;
+        surfaces.resize(CELL_LAYER_MAX);
+        for (int layer = 0; layer < CELL_LAYER_MAX; layer++) {
+            Array layer_surfaces;
+            for (const KeyValue<String, Geometry> &item: layers[layer]) {
+                if (item.value.vertices.is_empty()) {
+                    continue;
+                }
+                Array surface;
+                surface.resize(SURFACE_FIELD_COUNT);
+                surface[SURFACE_MATERIAL] = item.key;
+                surface[SURFACE_ARRAYS] = MaszynaTrackMeshBuilder::build_surface_arrays(item.value, origin);
+                layer_surfaces.push_back(surface);
+            }
+            surfaces[layer] = layer_surfaces;
+        }
+        Array preloaded;
+        preloaded.resize(PRELOADED_CELL_FIELD_COUNT);
+        preloaded[PRELOADED_SURFACES] = surfaces;
+        preloaded[PRELOADED_BLADES] = blades;
+        return preloaded;
     }
 
-    void MaszynaTrackRenderingBackend::_road_cell_build(const RID &p_cell, const Variant & /* p_preloaded */) {
-        RoadCell *cell = road_cells.getptr(p_cell);
+    /// The meshes of the layers, a surface per material, each in the layer's instance; the switches'
+    /// blades in their tracks' instances, placed as the switches stand
+    void MaszynaTrackRenderingBackend::_cell_build(const RID &p_cell, const Variant &p_preloaded) {
+        Cell *cell = cells.getptr(p_cell);
         if (cell == nullptr) {
             return;
         }
         cell->streamed = true;
-        _build_road_cell(*cell);
+        const Array preloaded = p_preloaded;
+        ERR_FAIL_COND(preloaded.size() != PRELOADED_CELL_FIELD_COUNT);
+        RenderingServer *rendering = RenderingServer::get_singleton();
+        const Array surfaces = preloaded[PRELOADED_SURFACES];
+        for (int layer = 0; layer < CELL_LAYER_MAX; layer++) {
+            const Array layer_surfaces = surfaces[layer];
+            RID &instance = cell->instances[layer];
+            if (layer_surfaces.is_empty()) {
+                cell->meshes[layer].unref();
+                if (instance.is_valid()) {
+                    rendering->instance_set_base(instance, RID());
+                }
+                continue;
+            }
+            Ref<ArrayMesh> mesh;
+            mesh.instantiate();
+            for (int index = 0; index < layer_surfaces.size(); index++) {
+                const Array surface = layer_surfaces[index];
+                _mesh_add_surface(mesh, surface[SURFACE_ARRAYS], surface[SURFACE_MATERIAL]);
+            }
+            cell->meshes[layer] = mesh;
+            if (!instance.is_valid()) {
+                instance = rendering->instance_create();
+                rendering->instance_set_scenario(instance, cell->scenario);
+                rendering->instance_set_transform(instance, Transform3D(Basis(), cell->origin));
+                if (layer == CELL_LAYER_BED) {
+                    // The bed casts no sun shadow: a 0.2 m trackbed barely shades the ground, but its
+                    // slopes, lit at a grazing angle, shaded themselves - a dark band that read as a gap
+                    // to the terrain (FINDINGS.md, 2026-09-28); a road's shoulders did the same
+                    rendering->instance_geometry_set_cast_shadows_setting(
+                            instance, RenderingServer::SHADOW_CASTING_SETTING_OFF);
+                }
+            }
+            rendering->instance_set_base(instance, mesh->get_rid());
+        }
+        const Array blades = preloaded[PRELOADED_BLADES];
+        for (int index = 0; index < blades.size(); index++) {
+            const Array blade = blades[index];
+            const RID track_render = blade[BLADES_TRACK_RENDER];
+            Track *track = tracks.getptr(track_render);
+            ERR_CONTINUE(track == nullptr);
+            track->origin = blade[BLADES_ORIGIN];
+            track->switch_is_right = blade[BLADES_SWITCH_IS_RIGHT];
+            struct BladeSide {
+                    Slot slot;
+                    PreloadedBlades arrays;
+                    PreloadedBlades material;
+            };
+            for (const BladeSide &side:
+                 {BladeSide{SLOT_PRIMARY_BLADE, BLADES_PRIMARY_ARRAYS, BLADES_PRIMARY_MATERIAL},
+                  BladeSide{SLOT_SECONDARY_BLADE, BLADES_SECONDARY_ARRAYS, BLADES_SECONDARY_MATERIAL}}) {
+                Ref<ArrayMesh> mesh;
+                mesh.instantiate();
+                _mesh_add_surface(mesh, blade[side.arrays], blade[side.material]);
+                track->meshes[side.slot] = mesh;
+                _slot_draw(*track, side.slot);
+            }
+            track->primary_blade.pose.pivot = blade[BLADES_PRIMARY_PIVOT];
+            track->primary_blade.pose.angle_factor = blade[BLADES_PRIMARY_ANGLE_FACTOR];
+            track->secondary_blade.pose.pivot = blade[BLADES_SECONDARY_PIVOT];
+            track->secondary_blade.pose.angle_factor = blade[BLADES_SECONDARY_ANGLE_FACTOR];
+            const TrackGeometry geometry = _read_track_geometry(track->track);
+            track_set_switch_blade_offsets(track_render, geometry.switch_f_offset1, geometry.switch_f_offset2);
+        }
     }
 
-    void MaszynaTrackRenderingBackend::_road_cell_clear(const RID &p_cell) {
-        RoadCell *cell = road_cells.getptr(p_cell);
+    /// The cell's meshes go, and its tracks' blades with them
+    void MaszynaTrackRenderingBackend::_cell_clear(const RID &p_cell) {
+        Cell *cell = cells.getptr(p_cell);
         if (cell == nullptr) {
             return;
         }
         cell->streamed = false;
-        cell->rebuild_queued = false;
-        if (cell->instance.is_valid()) {
-            RenderingServer::get_singleton()->instance_set_base(cell->instance, RID());
-        }
-        cell->mesh.unref();
-    }
-
-    /// The cell's visible roads as one mesh, a surface per material
-    void MaszynaTrackRenderingBackend::_build_road_cell(RoadCell &p_cell) {
-        HashMap<String, Geometry> geometries;
-        for (const RID &track_render: p_cell.tracks) {
-            const Track *track = tracks.getptr(track_render);
-            if (track == nullptr || !track->visible) {
-                continue;
-            }
-            const TrackGeometry geometry = _read_track_geometry(track->track);
-            if (!geometry.is_valid()) {
-                continue;
-            }
-            const Ref<Curve3D> curve = _build_curve(geometry.curve1);
-            if (curve->get_baked_length() == 0.0) {
-                continue;
-            }
-            if (!track->material1_name.is_empty() && !geometries.has(track->material1_name)) {
-                geometries.insert(track->material1_name, Geometry());
-            }
-            if (!track->material2_name.is_empty() && !geometries.has(track->material2_name)) {
-                geometries.insert(track->material2_name, Geometry());
-            }
-            Geometry unnamed_surface;
-            Geometry unnamed_sides;
-            _append_road_geometry(
-                    *track, geometry, curve,
-                    track->material1_name.is_empty() ? unnamed_surface : geometries[track->material1_name],
-                    track->material2_name.is_empty() ? unnamed_sides : geometries[track->material2_name]);
-        }
-
-        ReloadedMaterialServer *materials = ReloadedMaterialServer::get_instance();
-        ERR_FAIL_NULL(materials);
-        Ref<ArrayMesh> mesh;
-        mesh.instantiate();
-        for (const KeyValue<String, Geometry> &item: geometries) {
-            const Geometry &geometry = item.value;
-            if (geometry.vertices.is_empty()) {
-                continue;
-            }
-            Array arrays;
-            arrays.resize(Mesh::ARRAY_MAX);
-            arrays[Mesh::ARRAY_VERTEX] = _vertices_relative_to(geometry.vertices, p_cell.origin);
-            arrays[Mesh::ARRAY_NORMAL] = geometry.normals;
-            arrays[Mesh::ARRAY_TEX_UV] = geometry.uvs;
-            arrays[Mesh::ARRAY_INDEX] = geometry.indices;
-            mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-            mesh->surface_set_material(
-                    mesh->get_surface_count() - 1, materials->material_get(item.key, track_material_options));
-        }
-        p_cell.mesh = mesh;
         RenderingServer *rendering = RenderingServer::get_singleton();
-        if (!p_cell.instance.is_valid()) {
-            p_cell.instance = rendering->instance_create();
-            rendering->instance_set_scenario(p_cell.instance, p_cell.scenario);
-            rendering->instance_set_transform(p_cell.instance, Transform3D(Basis(), p_cell.origin));
-            // flat on the ground: a road's shadow is its shoulder's, and those shaded themselves as the
-            // trackbed's slopes did (_slot_draw())
-            rendering->instance_geometry_set_cast_shadows_setting(
-                    p_cell.instance, RenderingServer::SHADOW_CASTING_SETTING_OFF);
+        for (int layer = 0; layer < CELL_LAYER_MAX; layer++) {
+            if (cell->instances[layer].is_valid()) {
+                rendering->instance_set_base(cell->instances[layer], RID());
+            }
+            cell->meshes[layer].unref();
         }
-        rendering->instance_set_base(p_cell.instance, mesh->get_surface_count() > 0 ? mesh->get_rid() : RID());
+        for (const RID &track_render: cell->tracks) {
+            if (Track *track = tracks.getptr(track_render); track != nullptr) {
+                _clear_track_meshes(*track);
+            }
+        }
     }
 
     /// The rail profiles and the materials' sizes are the old data's
@@ -2140,13 +1427,5 @@ namespace godot {
         rail_profiles.clear();
         material_texture_lengths.clear();
         material_texture_ratios.clear();
-    }
-
-    /// The roads' cells are built again, taking their materials again (TrackRenderingServer builds the
-    /// tracks again itself)
-    void MaszynaTrackRenderingBackend::_on_data_reload_requested() {
-        if (SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance(); streaming != nullptr) {
-            streaming->owner_rebuild(road_stream_owner);
-        }
     }
 } // namespace godot
