@@ -622,6 +622,8 @@ func _apply_water(
     model_path: String,
     options: MaszynaMaterialManager.MaterialOptions,
 ) -> void:
+    # what the water shader takes of the material (water.gdshaderinc): the original's textures,
+    # glossiness and waves - not its colour and reflection, which made the alpha the water has not
     var diffuse_texture_path: String = _texture_path(variant, texture_map, texture_map.albedo)
     var normalmap_texture_path: String = _texture_path(variant, texture_map, texture_map.normalmap)
     var dudvmap_texture_path: String = _texture_path(variant, texture_map, texture_map.dudvmap)
@@ -641,20 +643,9 @@ func _apply_water(
     if dudvmap_texture_path:
         dudv_texture = MaszynaMaterialManager.load_texture(model_path, dudvmap_texture_path, false, options.max_texture_size)
 
-    var material_color := Vector4(1.0, 1.0, 1.0, 0.0)
-    if variant.has_parameter_vec4("color"):
-        material_color = variant.get_parameter_vec4("color")
-
     material.set_shader_parameter("diffuse_texture", diffuse_texture)
     material.set_shader_parameter("normal_texture", normal_texture)
     material.set_shader_parameter("dudv_texture", dudv_texture)
-    material.set_shader_parameter("material_color", Color(
-        material_color.x,
-        material_color.y,
-        material_color.z,
-        material_color.w
-    ))
-    material.set_shader_parameter("reflection_strength", variant.get_parameter("reflection", 0.0))
     material.set_shader_parameter("glossiness", variant.get_parameter("glossiness", 10.0))
     material.set_shader_parameter("wave_strength", variant.get_parameter("wave_strength", 0.05))
     material.set_shader_parameter("wave_speed", variant.get_parameter("wave_speed", 0.02))
