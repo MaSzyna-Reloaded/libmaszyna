@@ -9,6 +9,12 @@ extends ReloadedRuntimePlugin
 var _vehicle_catalog_provider:MaszynaVehicleCatalogProvider = null
 
 
+## libmaszyna's project settings read in GDScript registered as the game starts - this part is made
+## by the ReloadedPlugins autoload, the first, before anything of the game reads them
+func _init() -> void:
+    MaszynaProjectSettings.register()
+
+
 func _enter_tree() -> void:
     # what reads the vehicles' FIZ and MMD files, whose results the managers keep
     MaszynaFizManager.set_description_reader(

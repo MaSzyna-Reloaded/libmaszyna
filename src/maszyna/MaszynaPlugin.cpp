@@ -4,6 +4,7 @@
 #include "maszyna/MaszynaPlugin.hpp"
 #include "maszyna/cabin/MaszynaCabinLampIslands.hpp"
 #include "maszyna/cabin/PythonScreenServer.hpp"
+#include "maszyna/e3d/MaszynaE3DLightFactory.hpp"
 #include "maszyna/e3d/MaszynaE3DModel.hpp"
 #include "maszyna/e3d/MaszynaE3DModelGeometry.hpp"
 #include "maszyna/e3d/MaszynaE3DModelLightDefinition.hpp"
@@ -206,6 +207,12 @@ namespace godot {
         MaszynaLuaMemoryModule::register_module();
         LuaModules::opener_register(&MaszynaLuaEventsModule::open);
 #endif
+
+        // the settings read in C++, by their owners, before UserSettings applies the player's values
+        MaszynaE3DLightFactory::project_settings_register();
+        MaszynaE3DRenderingServer::project_settings_register();
+        MaszynaVehicleSoundServer::project_settings_register();
+        PythonScreenServer::project_settings_register();
     }
 
     void MaszynaPlugin::create_servers() {

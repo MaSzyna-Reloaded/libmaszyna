@@ -153,6 +153,10 @@ namespace godot {
                 QUANTITY_MAX,
             };
 
+            /// Registers its project settings with their defaults and hints as the library starts
+            /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
+            static void project_settings_register();
+
         private:
             static inline MaszynaVehicleSoundServer *singleton = nullptr;
 

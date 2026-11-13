@@ -44,6 +44,7 @@ class Vehicle:
 const MIRROR_GLASS_NAME_PARTS:Array[String] = ["zwierciad", "luster", "lustr"]
 ## Whether the mirror glass reflects the scene (PlanarMirror3D)
 const REAL_MIRRORS_SETTING:StringName = &"maszyna/rendering/real_mirrors"
+const REAL_MIRRORS_DEFAULT:bool = true
 ## Original engine: where a moving car keeps across its road (TDynamicObject::Init(),
 ## DynObj.cpp:2310-2327) - in the middle of a road narrower than 3.5 m; else 0.75 m off the centre
 ## line when its lane leaves more than 1.5 m free, in the middle of its lane when more than 0.1 m,
@@ -67,7 +68,7 @@ var _auto_rewident:MaszynaAutoRewident = null
 ## The vehicles' destination signs
 var destination_signs:MaszynaDestinationSigns = null
 ## REAL_MIRRORS_SETTING as the vehicles' mirrors show it
-var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
+var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING)
 
 
 ## The editor drives no vehicle and plays no sound: CabinSystem, MaszynaVehicleSoundServer and DriverServer's
@@ -367,7 +368,7 @@ func _build_sounds(vehicle:RID) -> void:
 ## The mirrors come and go with their setting on every exterior built as nodes now; the glass of a
 ## mirror taken away gets its own look back (PlanarMirror3D leaving the tree)
 func _on_project_settings_changed() -> void:
-    var real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING, true)
+    var real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING)
     if real_mirrors == _real_mirrors:
         return
     _real_mirrors = real_mirrors

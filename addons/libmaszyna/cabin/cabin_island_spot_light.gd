@@ -33,6 +33,6 @@ func set_lit(p_lit: bool) -> void:
 
 
 func _on_project_settings_changed() -> void:
-    _enabled = bool(ProjectSettings.get_setting(enabled_setting, true))
+    _enabled = bool(ProjectSettings.get_setting(enabled_setting))
     widget.light_enabled = not _enabled
     visible = _lit and _enabled

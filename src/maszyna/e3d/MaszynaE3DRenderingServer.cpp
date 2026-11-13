@@ -10,6 +10,7 @@
 #include "signalling/SignallingServer.hpp"
 #include "simulation/SimulationServer.hpp"
 #include "utils/RIDHash.hpp"
+#include "utils/ReloadedProjectSetting.hpp"
 #include "utils/Units.hpp"
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -260,7 +261,7 @@ namespace godot {
             }
             // the spotlights the NODES backend made of a vehicle's free spotlights (MaszynaE3DNodesBackend)
             const bool reverse_cull_face = ProjectSettings::get_singleton()->get_setting(
-                    MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING, false);
+                    MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING);
             for (const KeyValue<RID, MaszynaE3DInstanceData> &item: instances) {
                 Node *root = Object::cast_to<Node>(ObjectDB::get_instance(item.value.node_id));
                 if (!item.value.built || item.value.instancer != ModelRenderingServer::INSTANCER_NODES ||
@@ -1047,8 +1048,7 @@ namespace godot {
         SceneryStreamingServer *streaming = SceneryStreamingServer::get_instance();
         if (instance->stream_rid.is_valid() && streaming != nullptr) {
             const ProjectSettings *settings = ProjectSettings::get_singleton();
-            const float distance =
-                    settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE);
+            const float distance = settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING);
             const Vector3 position = (instance->transform * p_params.transform).origin;
             light.stream_rid = streaming->stream_register(light_stream_owner, rid, position, distance);
         } else {
@@ -1072,47 +1072,35 @@ namespace godot {
 
         const ProjectSettings *settings = ProjectSettings::get_singleton();
         // a passenger interior's lights have settings of their own (MaszynaE3DLightFactory::make_interior_lights())
-        float energy_scale = settings->get_setting(SCENERY_LIGHT_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_ENERGY);
-        bool shadows = settings->get_setting(SCENERY_LIGHT_SHADOWS_SETTING, DEFAULT_SCENERY_LIGHT_SHADOWS);
+        float energy_scale = settings->get_setting(SCENERY_LIGHT_ENERGY_SETTING);
+        bool shadows = settings->get_setting(SCENERY_LIGHT_SHADOWS_SETTING);
         float range = light->params.range;
         float attenuation = light->params.attenuation;
         float shadow_blur = LIGHT_SHADOW_BLUR;
         uint32_t cull_mask = ~0U;
         switch (light->params.role) {
             case LIGHT_ROLE_INTERIOR:
-                energy_scale = settings->get_setting(
-                        MaszynaE3DLightFactory::INTERIOR_LIGHT_ENERGY_SETTING,
-                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_LIGHT_ENERGY);
-                shadows = settings->get_setting(
-                        MaszynaE3DLightFactory::INTERIOR_LIGHT_SHADOWS_SETTING,
-                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_LIGHT_SHADOWS);
+                energy_scale = settings->get_setting(MaszynaE3DLightFactory::INTERIOR_LIGHT_ENERGY_SETTING);
+                shadows = settings->get_setting(MaszynaE3DLightFactory::INTERIOR_LIGHT_SHADOWS_SETTING);
                 shadow_blur = INTERIOR_LIGHT_SHADOW_BLUR;
                 cull_mask = VEHICLE_INTERIOR_LAYER;
                 break;
             case LIGHT_ROLE_INTERIOR_GLOW:
-                energy_scale = settings->get_setting(
-                        MaszynaE3DLightFactory::INTERIOR_GLOW_ENERGY_SETTING,
-                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_ENERGY);
+                energy_scale = settings->get_setting(MaszynaE3DLightFactory::INTERIOR_GLOW_ENERGY_SETTING);
                 shadows = false;
-                range = settings->get_setting(
-                        MaszynaE3DLightFactory::INTERIOR_GLOW_RANGE_SETTING,
-                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_RANGE);
-                attenuation = settings->get_setting(
-                        MaszynaE3DLightFactory::INTERIOR_GLOW_ATTENUATION_SETTING,
-                        MaszynaE3DLightFactory::DEFAULT_INTERIOR_GLOW_ATTENUATION);
+                range = settings->get_setting(MaszynaE3DLightFactory::INTERIOR_GLOW_RANGE_SETTING);
+                attenuation = settings->get_setting(MaszynaE3DLightFactory::INTERIOR_GLOW_ATTENUATION_SETTING);
                 cull_mask = ~VEHICLE_INTERIOR_LAYER;
                 break;
             case LIGHT_ROLE_SCENERY:
                 break;
         }
-        const float tint = settings->get_setting(SCENERY_LIGHT_TINT_SETTING, DEFAULT_SCENERY_LIGHT_TINT);
+        const float tint = settings->get_setting(SCENERY_LIGHT_TINT_SETTING);
         // Neither the volumetric fog nor SDFGI takes notice of a cull mask: an interior's lights would
         // light their grids in blocks around the car, flaring white and pulsing as the camera moves
         const bool scenery = light->params.role == LIGHT_ROLE_SCENERY;
-        const float fog_energy = scenery ? static_cast<float>(settings->get_setting(
-                                                   SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING,
-                                                   DEFAULT_SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY))
-                                         : 0.0F;
+        const float fog_energy =
+                scenery ? static_cast<float>(settings->get_setting(SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING)) : 0.0F;
 
         light->light = light->kind == LIGHT_KIND_OMNI ? rs->omni_light_create() : rs->spot_light_create();
         rs->light_set_color(light->light, Color(1.0, 1.0, 1.0).lerp(light->params.color, tint));
@@ -1153,11 +1141,10 @@ namespace godot {
             // maps (opengl33renderer.cpp:1758); off by default, like a Light3D.
             rs->light_set_reverse_cull_face_mode(
                     light->light,
-                    settings->get_setting(MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING, false));
+                    settings->get_setting(MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING));
             // The light keeps reaching as far as it is streamed; only its shadow map stops early,
             // because a scenery puts 152 of these within 300 m
-            const float distance =
-                    settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE);
+            const float distance = settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING);
             rs->light_set_distance_fade(
                     light->light, true, distance, SCENERY_LIGHT_SHADOW_FADE_DISTANCE,
                     distance * SCENERY_LIGHT_FADE_LENGTH_SHARE);
@@ -2206,4 +2193,26 @@ namespace godot {
         return statistics;
     }
 
+
+    void MaszynaE3DRenderingServer::project_settings_register() {
+        // A scenery light is streamed with a range of its own, shorter than the model's - a street lamp
+        // is visible from half a kilometre and lights forty metres. This is how far the camera may be
+        // from the light itself, not how far the light reaches. The densest 300 m of stary_jawor holds
+        // 152 of them, so their shadow maps are dropped 80 m out while the light itself keeps reaching
+        ReloadedProjectSetting::add(
+                SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "10.0,1000.0,5.0,suffix:m");
+        ReloadedProjectSetting::add(SCENERY_LIGHT_SHADOWS_SETTING, DEFAULT_SCENERY_LIGHT_SHADOWS, Variant::BOOL);
+        ReloadedProjectSetting::add(
+                SCENERY_LIGHT_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_ENERGY, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0.0,10.0,0.05");
+        // How much of the lamp's own colour is mixed into a white light. Used raw, a sodium lamp's
+        // (1.0, 0.66, 0.18) throws away most of the luminance and the pool comes out nearly black
+        ReloadedProjectSetting::add(
+                SCENERY_LIGHT_TINT_SETTING, DEFAULT_SCENERY_LIGHT_TINT, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0.0,1.0,0.05");
+        ReloadedProjectSetting::add(
+                SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY,
+                Variant::FLOAT, PROPERTY_HINT_RANGE, "0.0,16.0,0.1");
+    }
 } // namespace godot

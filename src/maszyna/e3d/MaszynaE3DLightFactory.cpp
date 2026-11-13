@@ -1,5 +1,6 @@
 #include "MaszynaE3DLightFactory.hpp"
 #include "MaszynaE3DSubModelLookup.hpp"
+#include "utils/ReloadedProjectSetting.hpp"
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -104,13 +105,9 @@ namespace godot {
     /// A five-armed lamp is otherwise five RenderingServer lights with five shadow maps.
     static void merge_placements(Vector<MaszynaE3DModelLightPlacement> &p_placements) {
         const ProjectSettings *settings = ProjectSettings::get_singleton();
-        const float height_offset = settings->get_setting(
-                MaszynaE3DLightFactory::ECONOMY_HEIGHT_OFFSET_SETTING,
-                MaszynaE3DLightFactory::DEFAULT_ECONOMY_HEIGHT_OFFSET);
-        const float cone_scale =
-                MAX(0.01f, static_cast<float>(settings->get_setting(
-                                   MaszynaE3DLightFactory::ECONOMY_CONE_SCALE_SETTING,
-                                   MaszynaE3DLightFactory::DEFAULT_ECONOMY_CONE_SCALE)));
+        const float height_offset = settings->get_setting(MaszynaE3DLightFactory::ECONOMY_HEIGHT_OFFSET_SETTING);
+        const float cone_scale = MAX(
+                0.01f, static_cast<float>(settings->get_setting(MaszynaE3DLightFactory::ECONOMY_CONE_SCALE_SETTING)));
 
         Vector<MaszynaE3DModelLightPlacement> merged;
         HashMap<String, int> group_of; // light name -> index in merged
@@ -210,7 +207,7 @@ namespace godot {
         if (!model_lights.placements.is_empty() && model_lights.placements[0].params.role == LIGHT_ROLE_INTERIOR) {
             return model_lights;
         }
-        const int light_mode = ProjectSettings::get_singleton()->get_setting(LIGHT_MODE_SETTING, DEFAULT_LIGHT_MODE);
+        const int light_mode = ProjectSettings::get_singleton()->get_setting(LIGHT_MODE_SETTING);
         if (light_mode == SCENERY_LIGHTS_OFF) {
             model_lights.placements.clear(); // the lit submodels stay, only the real lights go
             return model_lights;
@@ -288,7 +285,7 @@ namespace godot {
         params.omni = outer_angle > MAX_SPOT_ANGLE;
         params.spot_angle = MIN(outer_angle, MAX_SPOT_ANGLE);
         params.spot_attenuation = Math::lerp(2.0f, 0.0f, penumbra_ratio);
-        params.size = ProjectSettings::get_singleton()->get_setting(LIGHT_SIZE_SETTING, DEFAULT_LIGHT_SIZE);
+        params.size = ProjectSettings::get_singleton()->get_setting(LIGHT_SIZE_SETTING);
         params.transform = p_submodel->get_transform();
         params.color = p_submodel->get_diffuse_color();
         params.color.a = 1.0;
@@ -383,14 +380,11 @@ namespace godot {
         }
 
         const ProjectSettings *settings = ProjectSettings::get_singleton();
-        const float height_offset =
-                settings->get_setting(LAMP_LIGHT_HEIGHT_OFFSET_SETTING, DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET);
-        const float cone_scale = settings->get_setting(LAMP_LIGHT_CONE_SCALE_SETTING, DEFAULT_LAMP_LIGHT_CONE_SCALE);
+        const float height_offset = settings->get_setting(LAMP_LIGHT_HEIGHT_OFFSET_SETTING);
+        const float cone_scale = settings->get_setting(LAMP_LIGHT_CONE_SCALE_SETTING);
         // floored: the easing-curve editor reads as "output over input" and invites values near
         // zero, which here would be a light that does not fall off at all (see FINDINGS.md)
-        const float attenuation =
-                MAX(0.0f, static_cast<float>(settings->get_setting(
-                                  LAMP_LIGHT_ATTENUATION_SETTING, DEFAULT_LAMP_LIGHT_ATTENUATION)));
+        const float attenuation = MAX(0.0f, static_cast<float>(settings->get_setting(LAMP_LIGHT_ATTENUATION_SETTING)));
 
         for (const Vector3 &head: anchors.heads) {
             if (head.y <= 0.0f) {
@@ -417,8 +411,65 @@ namespace godot {
                         MAX_SPOT_ANGLE);
             params.spot_attenuation = 1.0;
             params.attenuation = attenuation;
-            params.size = settings->get_setting(LIGHT_SIZE_SETTING, DEFAULT_LIGHT_SIZE);
+            params.size = settings->get_setting(LIGHT_SIZE_SETTING);
             p_lamps.push_back(params);
         }
+    }
+
+    void MaszynaE3DLightFactory::project_settings_register() {
+        // How much a scenery model's real lights are worth. "Lights off" renders only the model's own
+        // lit submodels; "Economy" collapses the lights of one model light into a single one between
+        // them, raised by the offset and widened to cover every cone it replaces (a five-armed lamp
+        // is otherwise five lights with five shadow maps); "High quality" keeps every declared light
+        ReloadedProjectSetting::add(
+                LIGHT_MODE_SETTING, DEFAULT_LIGHT_MODE, Variant::INT, PROPERTY_HINT_ENUM,
+                "Lights off,Economy,High quality");
+        ReloadedProjectSetting::add(
+                ECONOMY_HEIGHT_OFFSET_SETTING, DEFAULT_ECONOMY_HEIGHT_OFFSET, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "-2.0,5.0,0.1,suffix:m");
+        ReloadedProjectSetting::add(
+                ECONOMY_CONE_SCALE_SETTING, DEFAULT_ECONOMY_CONE_SCALE, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0.5,3.0,0.05");
+        // Radius of the light source (Light3D.light_size). A lamp head is not a point: a size softens
+        // the apex of the shaft in the fog and gives the shadows a penumbra that grows with distance.
+        // In economy mode a merged light uses the radius of the ring of heads it replaces instead
+        ReloadedProjectSetting::add(
+                LIGHT_SIZE_SETTING, DEFAULT_LIGHT_SIZE, Variant::FLOAT, PROPERTY_HINT_RANGE, "0.0,3.0,0.05,suffix:m");
+        ReloadedProjectSetting::add(
+                VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING, DEFAULT_VEHICLE_LIGHT_VOLUMETRIC_FOG_ENERGY,
+                Variant::FLOAT, PROPERTY_HINT_RANGE, "0.0,16.0,0.1");
+        // Lifts the synthesized street lamp light above the halo billboard that marks the lamp head.
+        // Nothing in the data asks for it - a plain tuning offset
+        ReloadedProjectSetting::add(
+                LAMP_LIGHT_HEIGHT_OFFSET_SETTING, DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "-2.0,5.0,0.1,suffix:m");
+        // Widens the lamp cone past the lit patch the model draws (1.0 covers exactly the patch), and
+        // the falloff exponent below 1.0 keeps the pool bright out to its edge. Both are tuning only -
+        // a light the model declares keeps the falloff its own iFarAttenDecay asks for
+        ReloadedProjectSetting::add(
+                LAMP_LIGHT_CONE_SCALE_SETTING, DEFAULT_LAMP_LIGHT_CONE_SCALE, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0.5,4.0,0.05");
+        // Same parameter Godot calls SpotLight3D.spot_attenuation / OmniLight3D.omni_attenuation: the
+        // exponent of the falloff with distance, drawn by the editor as the curve of brightness over
+        // the light's range. Below 1.0 the pool holds its brightness and drops only near the range,
+        // above 1.0 it dies right at the lamp. Not the cone edge - that is spot_angle_attenuation
+        ReloadedProjectSetting::add(
+                LAMP_LIGHT_ATTENUATION_SETTING, DEFAULT_LAMP_LIGHT_ATTENUATION, Variant::FLOAT,
+                PROPERTY_HINT_EXP_EASING, "attenuation");
+        // the lights a passenger car is lit by inside, and the glow a lit interior throws around the
+        // car: energy, reach [m] and falloff
+        ReloadedProjectSetting::add(
+                INTERIOR_LIGHT_ENERGY_SETTING, DEFAULT_INTERIOR_LIGHT_ENERGY, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0,4,0.05");
+        ReloadedProjectSetting::add(INTERIOR_LIGHT_SHADOWS_SETTING, DEFAULT_INTERIOR_LIGHT_SHADOWS, Variant::BOOL);
+        ReloadedProjectSetting::add(
+                INTERIOR_GLOW_ENERGY_SETTING, DEFAULT_INTERIOR_GLOW_ENERGY, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0,2,0.01");
+        ReloadedProjectSetting::add(
+                INTERIOR_GLOW_RANGE_SETTING, DEFAULT_INTERIOR_GLOW_RANGE, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0,40,0.1");
+        ReloadedProjectSetting::add(
+                INTERIOR_GLOW_ATTENUATION_SETTING, DEFAULT_INTERIOR_GLOW_ATTENUATION, Variant::FLOAT,
+                PROPERTY_HINT_RANGE, "0,8,0.05");
     }
 } // namespace godot

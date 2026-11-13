@@ -148,6 +148,10 @@ namespace godot {
                     "maszyna/vehicles/interior_lights/glow_attenuation";
             static constexpr float DEFAULT_INTERIOR_GLOW_ATTENUATION = 2.4;
 
+            /// Registers its project settings with their defaults and hints as the library starts
+            /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
+            static void project_settings_register();
+
             /// Street lamps (models named "latarnia*") declare no spotlight submodel at all - none
             /// of the 9 in the data set has one, and the original never lit the scene with them
             /// either (TP_FREESPOTLIGHT only draws a glare billboard, opengl33renderer.cpp:4646).

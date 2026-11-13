@@ -6,6 +6,7 @@
 #include "roads/RoadServer.hpp"
 #include "simulation/SimulationServer.hpp"
 #include "tracks/TrackServer.hpp"
+#include "utils/ReloadedProjectSetting.hpp"
 #include "utils/Units.hpp"
 #include "vehicles/base/VehicleComponentType.hpp"
 #include "vehicles/base/VehicleController.hpp"
@@ -818,8 +819,8 @@ namespace godot {
         ProjectSettings *settings = ProjectSettings::get_singleton();
         // a player beyond gnd-sfx's hard cut is silent anyway, so nothing farther is fed
         culling_distance =
-                MIN(static_cast<double>(settings->get_setting(CULLING_DISTANCE_SETTING, CULLING_DISTANCE_DEFAULT)),
-                    static_cast<double>(settings->get_setting("gnd_sfx/hard_cut_distance", CULLING_DISTANCE_DEFAULT)));
+                MIN(static_cast<double>(settings->get_setting(CULLING_DISTANCE_SETTING)),
+                    static_cast<double>(settings->get_setting("gnd_sfx/hard_cut_distance")));
         VehicleServer *vehicle_server = VehicleServer::get_instance();
         RailVehicleServer *rail = RailVehicleServer::get_instance();
         ERR_FAIL_NULL(vehicle_server);
@@ -1422,5 +1423,11 @@ namespace godot {
         AudioServer::get_singleton()->set_playback_speed_scale(
                 static_cast<float>(
                         MIN(SimulationServer::get_instance()->simulation_get_current_speed(), TAPE_MAX_SPEED)));
+    }
+
+    void MaszynaVehicleSoundServer::project_settings_register() {
+        ReloadedProjectSetting::add(
+                CULLING_DISTANCE_SETTING, CULLING_DISTANCE_DEFAULT, Variant::FLOAT, PROPERTY_HINT_RANGE,
+                "0.0,5000.0,10.0,or_greater");
     }
 } // namespace godot

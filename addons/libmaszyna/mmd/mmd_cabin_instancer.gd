@@ -46,12 +46,14 @@ const LAMP_LIGHT_SPACING:float = 2.0
 ## An indicator lamp's glow into the cab: its brightness and reach. The defaults are SM42's
 ## hand-authored radio LED (the "i-radio" entry of MmdSemanticCatalog).
 const INDICATOR_GLOW_ENABLED_SETTING:StringName = &"maszyna/cabin/indicator_glow_enabled"
+const INDICATOR_GLOW_ENABLED_DEFAULT:bool = true
 const INDICATOR_GLOW_ENERGY_SETTING:StringName = &"maszyna/cabin/indicator_glow_energy"
 const INDICATOR_GLOW_ENERGY_DEFAULT:float = 0.05
 const INDICATOR_GLOW_RANGE_SETTING:StringName = &"maszyna/cabin/indicator_glow_range"
 const INDICATOR_GLOW_RANGE_DEFAULT:float = 0.1
 ## Whether a lamp of several pieces gets a light at each (MmdSemanticCatalog.IslandLights)
 const REAL_INSTRUMENTS_LIGHTS_SETTING:StringName = &"maszyna/cabin/real_instruments_lights"
+const REAL_INSTRUMENTS_LIGHTS_DEFAULT:bool = true
 ## The glow of each piece of an instrument backlight (MmdSemanticCatalog.IslandLights.GLOW); the
 ## defaults and the fixed parameters are SM42's hand-authored backlight light
 const INSTRUMENT_GLOW_ENERGY_SETTING:StringName = &"maszyna/cabin/instrument_glow_energy"
@@ -60,6 +62,9 @@ const INSTRUMENT_GLOW_RANGE_SETTING:StringName = &"maszyna/cabin/instrument_glow
 const INSTRUMENT_GLOW_RANGE_DEFAULT:float = 0.564628
 const INSTRUMENT_GLOW_ATTENUATION:float = 1.41
 const INSTRUMENT_GLOW_SIZE:float = 0.078
+## The cab's own texture size limit, the original's iMaxCabTextureSize (Globals.h:165)
+const DDS_MAX_CAB_TEXTURE_SIZE_SETTING:StringName = &"maszyna/import/dds_max_cab_texture_size"
+const DDS_MAX_CAB_TEXTURE_SIZE_DEFAULT:int = 4096
 const INSTRUMENT_GLOW_INDIRECT_ENERGY:float = 0.525
 ## The spotlight parameters a WIDGET_LIGHT island light copies from its widget
 const WIDGET_LIGHT_PROPERTIES:Array[StringName] = [
@@ -689,7 +694,7 @@ static func build_into(
     model.model = MaszynaE3DModelManager.load_model(data_path, definition.model_relpath)
     model.skins = resolve_skins(data_path, skin)
     # the cab loads under its own texture size limit (Train.cpp:660)
-    model.max_texture_size = int(ProjectSettings.get_setting("maszyna/import/dds_max_cab_texture_size", 4096))
+    model.max_texture_size = int(ProjectSettings.get_setting(DDS_MAX_CAB_TEXTURE_SIZE_SETTING))
     # the cab's own sun lights this layer alone (reloaded/cabin/improve_shadows_quality)
     model.layers = EnvironmentNode.CABIN_RENDER_LAYER
     # A cabin interior is self-contained (glass, instrument backlight glow, ...) and, unlike
@@ -1538,9 +1543,7 @@ static func _build_indicator_lights(
                     var glow_light:CabinGlow = CabinGlow.new()
                     glow_light.enabled_setting = REAL_INSTRUMENTS_LIGHTS_SETTING
                     glow_light.energy_setting = INSTRUMENT_GLOW_ENERGY_SETTING
-                    glow_light.energy_default = INSTRUMENT_GLOW_ENERGY_DEFAULT
                     glow_light.range_setting = INSTRUMENT_GLOW_RANGE_SETTING
-                    glow_light.range_default = INSTRUMENT_GLOW_RANGE_DEFAULT
                     glow_light.light_color = island["color"]
                     glow_light.omni_attenuation = INSTRUMENT_GLOW_ATTENUATION
                     glow_light.light_size = INSTRUMENT_GLOW_SIZE
@@ -1574,9 +1577,7 @@ static func _build_indicator_lights(
             glow.name = "%s_%s_%d_glow" % [descriptor.label, descriptor.submodel_name, i]
             glow.enabled_setting = INDICATOR_GLOW_ENABLED_SETTING
             glow.energy_setting = INDICATOR_GLOW_ENERGY_SETTING
-            glow.energy_default = INDICATOR_GLOW_ENERGY_DEFAULT
             glow.range_setting = INDICATOR_GLOW_RANGE_SETTING
-            glow.range_default = INDICATOR_GLOW_RANGE_DEFAULT
             glow.light_color = MaszynaCabinLampIslands.submodel_color(submodel)
             glow.shadow_enabled = false
             glow.set_lit((widget as CabinIndicator3D).enabled)
