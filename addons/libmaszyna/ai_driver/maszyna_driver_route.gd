@@ -316,7 +316,15 @@ func update(
             braking.acceleration_threshold, timetable.latency < 0.0)
     reach = maxf(MIN_RANGE, MOVING_RANGE + brake_distance if absf(speed) > MOVEMENT_SPEED else STANDING_RANGE)
     var front_along:float = _front_along
-    _update_table(reach, trainset)
+    # the next station's stop the whole trainset has left behind without going on from it there -
+    # driven past without stopping, or off it before the departure: the station is left behind and
+    # the next one follows. The original only forgets a player's stop (Driver.cpp:1190-1199) and
+    # keeps the station as the next one until another station's stop rewinds the timetable
+    for entry:Entry in _update_table(reach, trainset):
+        if timetable.stop_point and not _stops_done.has(entry.event) \
+                and MaszynaStations.key(entry.station) == MaszynaStations.key(timetable.next_stop):
+            timetable.leave(hours)
+            _next_station_distance = 0.0
     # the next station shown once the train has driven clear of the stop left (UpdateNextStop(),
     # Driver.cpp:6481, run for a train only, Driver.cpp:7154); the way driven is the front's along
     # the table - a table traced afresh starts from 0 and counts nothing
@@ -585,14 +593,15 @@ func update(
 ## front is along it, traced again from a switch ahead thrown since, the tracks the whole trainset
 ## has left dropped, traced on to cover `reach` [m], and every entry's distance from the front and
 ## its command read again. Traced afresh from the front vehicle when it changed or the table does not
-## hold the track it stands on.
-func _update_table(reach:float, trainset:MaszynaDriverTrainset) -> void:
+## hold the track it stands on. Returns the passenger stops on the tracks the trainset has left.
+func _update_table(reach:float, trainset:MaszynaDriverTrainset) -> Array[Entry]:
+    var stops_left:Array[Entry] = []
     var here:Array[TrackRouteSegment] = []
     if trainset.vehicles:
         here = RailVehicleServer.vehicle_trace_route(trainset.vehicles[0], trainset.front_direction, 0.0)
     if not here:
         _clear_table()
-        return
+        return stops_left
     var front:RID = trainset.vehicles[0]
     # the placement is the vehicle's middle; the distances count from the trainset's front
     var front_offset:float = VehicleServer.vehicle_get_dimensions(front).z / 2.0
@@ -625,6 +634,9 @@ func _update_table(reach:float, trainset:MaszynaDriverTrainset) -> void:
         if segment.distance + segment.length >= front_along - trainset.length:
             break
         left.append(segment)
+    for entry:Entry in _table:
+        if entry.kind == Kind.STOP_POINT and left.has(entry.segment):
+            stops_left.append(entry)
     _forget_segments(left)
     # the last track traced again with what follows: it may turn out to end the line
     var last:TrackRouteSegment = _segments.back()
@@ -640,6 +652,7 @@ func _update_table(reach:float, trainset:MaszynaDriverTrainset) -> void:
         else:
             # a trackvel event changes a track's limit (TSpeedPos::Update(), Driver.cpp:295-301)
             entry.velocity = TrackServer.track_get_velocity(entry.segment.track_rid)
+    return stops_left
 
 
 ## `segments`, traced on from the table's end, added with what stands on them: a track where the
@@ -828,7 +841,16 @@ func _update_stop_point(
 ) -> StopResult:
     var driving:int = (MaszynaAIDriver.Order.SHUNT | MaszynaAIDriver.Order.LOOSE_SHUNT
             | MaszynaAIDriver.Order.OBEY_TRAIN | MaszynaAIDriver.Order.BANK)
-    if not order & driving or _stops_done.has(entry.event):
+    if _stops_done.has(entry.event):
+        return StopResult.SKIP
+    if not order & driving:
+        # not driving yet - its engine still to be got ready: standing at its first station's stop,
+        # within the reach of a stop, it starts its run there (the original counts it arrived once
+        # it drives as a train, Driver.cpp:1094-1096, 1229-1235)
+        if speed <= MOVEMENT_SPEED and entry.distance <= PASSENGER_STOP_MAX_DISTANCE \
+                and entry.distance < signal_distance \
+                and MaszynaStations.key(entry.station) == MaszynaStations.key(timetable.next_stop):
+            timetable.record_start()
         return StopResult.SKIP
     if not MaszynaStations.key(entry.station) == MaszynaStations.key(timetable.next_stop):
         if not _scheduled_stop_visible and entry.distance > 0.0 \

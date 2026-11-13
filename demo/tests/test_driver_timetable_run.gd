@@ -4,7 +4,8 @@ extends MaszynaGutTest
 ## with a W4 (PassengerStopPoint) for each of its stations, through the driver's route
 ## (MaszynaDriverRoute.update(), TableUpdateStopPoint(), Driver.cpp:1093-1380): how far the
 ## timetable has got at every step - early, on time and late, the departure, a station passed
-## without stopping, one stopped at, and the terminus.
+## without stopping, one stopped at, the terminus, and a station left behind without going on from
+## it at its stop.
 
 const Order = MaszynaAIDriver.Order
 const EventImporter = preload("res://addons/libmaszyna/scenery/maszyna_event_importer.gd")
@@ -12,6 +13,9 @@ const SM42:VehicleController = preload("res://tests/fixtures/sm42_vehicle.tres")
 const FIXTURES:String = "res://tests/fixtures/timetables"
 const LINE_VELOCITY:float = 100.0
 const LINE_LENGTH:float = 9000.0
+## The line is tracks of this length [m], end to end: the route forgets a track the whole train has
+## left, and the stops on it
+const TRACK_LENGTH:float = 1000.0
 ## Where the train stands at the start [m along the line], and the W4 of each station, in the
 ## timetable's order: Krzyżowa, Markowo_Górne (passed), Drawowo_Główne, Chełminów (the terminus)
 const START:float = 300.0
@@ -41,6 +45,9 @@ const RUNNING_SPEED:float = 80.0
 const STANDING_SPEED:float = 0.0
 ## One step of the run [m]
 const STEP:float = 20.0
+## Beyond the track of a stop, the whole train clear of it [m along the line]
+const KRZYZOWA_LEFT_BEHIND:float = 1200.0
+const DRAWOWO_LEFT_BEHIND:float = 5200.0
 
 var _tracks:Array[RID] = []
 var _events:Array[RID] = []
@@ -54,18 +61,22 @@ var _timetable:MaszynaDriverTimetable = null
 var _announced:Array[MaszynaVehicleSoundServer.Announcement] = []
 ## Where the front of the train is [m along the line]
 var _position:float = START
+## The order the driver drives under on the updates (MaszynaAIDriver.Order)
+var _order:int = Order.OBEY_TRAIN
 
 
 func before_each() -> void:
-    var line:RID = TrackServer.track_create()
-    _tracks.append(line)
-    var curve:TrackCurve = TrackCurve.new()
-    curve.p1 = Vector3.ZERO
-    curve.p2 = Vector3(LINE_LENGTH, 0.0, 0.0)
-    TrackServer.track_update_curves(line, curve, null)
-    TrackServer.track_update(line, TrackServer.TRACK_NORMAL, "line", 1.435)
-    TrackServer.track_set_velocity(line, LINE_VELOCITY)
+    for index:int in roundi(LINE_LENGTH / TRACK_LENGTH):
+        var track:RID = TrackServer.track_create()
+        _tracks.append(track)
+        var curve:TrackCurve = TrackCurve.new()
+        curve.p1 = Vector3(index * TRACK_LENGTH, 0.0, 0.0)
+        curve.p2 = Vector3((index + 1) * TRACK_LENGTH, 0.0, 0.0)
+        TrackServer.track_update_curves(track, curve, null)
+        TrackServer.track_update(track, TrackServer.TRACK_NORMAL, "line" if index == 0 else "line%d" % index, 1.435)
+        TrackServer.track_set_velocity(track, LINE_VELOCITY)
     TrackServer.topology_rebuild()
+    _order = Order.OBEY_TRAIN
     var data:RID = MaszynaTimetableFactory.load_timetable(FIXTURES, "ex6435")
     # each W4 as ip/pkp/w4n.inc writes it, in the scenery's cp1250, read by the scenery's parser
     var text:String = ""
@@ -91,11 +102,12 @@ func before_each() -> void:
     var power_sources:Array[PowerSourceData] = []
     await MaszynaEventFactory.build(_scenery, context.events, memcells, launchers, sounds, isolated, track_data,
             track_rids, models, model_rids, power_sources)
-    for name:String in STOP_NAMES:
-        var event:RID = ScenarioEventServer.event_get_rid_by_name(StringName((name + "_stopinfo").to_lower()))
+    for index:int in STOP_NAMES.size():
+        var event:RID = ScenarioEventServer.event_get_rid_by_name(StringName((STOP_NAMES[index] + "_stopinfo").to_lower()))
         _events.append(event)
-        MaszynaScenarioEventServer.track_add_event(line, MaszynaScenarioEventServer.TRACK_EVENT1, event)
-        MaszynaScenarioEventServer.track_add_event(line, MaszynaScenarioEventServer.TRACK_EVENT2, event)
+        var track:RID = _tracks[floori(STOPS[index] / TRACK_LENGTH)]
+        MaszynaScenarioEventServer.track_add_event(track, MaszynaScenarioEventServer.TRACK_EVENT1, event)
+        MaszynaScenarioEventServer.track_add_event(track, MaszynaScenarioEventServer.TRACK_EVENT2, event)
     var physics_node:VehiclePhysicsNode = build_vehicle_node("TimetableRunTest", SM42)
     var vehicle:RailVehicle3D = RailVehicle3D.new()
     vehicle.start_track_name = "line"
@@ -280,6 +292,70 @@ func test_a_late_train_announces_the_stop_it_stands_at() -> void:
     for entry:int in extras.size():
         StationServer.timetable_entry_set_extra(_timetable.timetable, entry, extras[entry])
 
+## A train driven past its first station without stopping at it: once the whole train has left the
+## stop's track the station is passed, the next one follows and is shown, and the run is told it
+## passed it - not kept as the next station until another station's stop rewinds the timetable
+func test_a_station_driven_past_without_stopping_is_left_behind() -> void:
+    _timetable.take(_timetable.timetable, RailVehicleServer.vehicle_get_trainset(_vehicle))
+    var run:RID = _timetable.run
+
+    _run_to(STOPS[0] + CLEAR_OF_THE_STOP, KRZYZOWA_DEPARTURE - MINUTE)
+    assert_eq(_timetable.station_index, 0, "Krzyżowa, while the train is on the stop's track")
+    _run_to(KRZYZOWA_LEFT_BEHIND, KRZYZOWA_DEPARTURE)
+
+    assert_eq(_timetable.station_index, 1, "on to Markowo_Górne")
+    assert_eq(_timetable.station_start, 1, "Markowo_Górne shown")
+    assert_almost_eq(_timetable.latency, 0.0, EPSILON, "against the departure, as it left")
+    assert_eq(StationServer.run_get_current_entry(run), 1)
+    assert_eq(StationServer.run_entry_get_actual_arrival(run, 0), StationServer.NO_TIME, "not stopped at")
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 0), StationServer.NO_TIME, "but passed")
+    _timetable.take(RID())
+
+
+## A train that stopped and left before the departure: once the whole train has left the stop's
+## track it goes on to the next station, and the run is told it left
+func test_a_station_left_before_the_departure_is_left_behind() -> void:
+    _timetable.take(_timetable.timetable, RailVehicleServer.vehicle_get_trainset(_vehicle))
+    var run:RID = _timetable.run
+    _update(KRZYZOWA_DEPARTURE, STANDING_SPEED)
+    _run_to(STOPS[2] - 100.0, DRAWOWO_ARRIVAL - MINUTE)
+    _update(DRAWOWO_ARRIVAL - MINUTE, STANDING_SPEED)
+    assert_eq(_timetable.station_index, 2, "standing at Drawowo_Główne")
+
+    _run_to(DRAWOWO_LEFT_BEHIND, DRAWOWO_ARRIVAL)
+
+    assert_eq(_timetable.station_index, 3, "on to Chełminów")
+    assert_eq(_timetable.station_start, 3, "Chełminów shown")
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 2), StationServer.NO_TIME, "arrived")
+    assert_ne(StationServer.run_entry_get_actual_departure(run, 2), StationServer.NO_TIME, "and left")
+    _timetable.take(RID())
+
+
+## A train put at its first station, its driver not driving yet (the engine to be got ready): it
+## starts its run there without arriving, and driven off before the departure it has left it - a
+## departure once the driver drives as a train, not a station passed (MaSzyna-Reloaded/reports#87)
+func test_a_train_put_at_its_first_station_starts_its_run_there() -> void:
+    _timetable.take(_timetable.timetable, RailVehicleServer.vehicle_get_trainset(_vehicle))
+    var run:RID = _timetable.run
+    watch_signals(StationServer)
+    _order = Order.PREPARE_ENGINE
+
+    _update(KRZYZOWA_DEPARTURE - 5.0 * MINUTE, STANDING_SPEED)
+    assert_ne(StationServer.run_entry_get_actual_arrival(run, 0), StationServer.NO_TIME, "standing there")
+    assert_signal_not_emitted(StationServer, "run_arrived", "from the start, not arrived")
+    assert_false(_timetable.arrived, "its driver arrives there once it drives as a train")
+
+    _run_to(KRZYZOWA_LEFT_BEHIND, KRZYZOWA_DEPARTURE - MINUTE)
+    _order = Order.OBEY_TRAIN
+    _update(KRZYZOWA_DEPARTURE - MINUTE, RUNNING_SPEED)
+
+    assert_eq(_timetable.station_start, 1, "Markowo_Górne shown")
+    assert_eq(StationServer.run_get_current_entry(run), 1)
+    assert_signal_emitted_with_parameters(StationServer, "run_departed", [run, 0])
+    assert_signal_not_emitted(StationServer, "run_passed", "it left its start, it did not pass it")
+    _timetable.take(RID())
+
+
 ## The train driven forward to `position` [m] in steps at RUNNING_SPEED, the route read at every
 ## step, the time `hours`
 func _run_to(position:float, hours:float) -> void:
@@ -292,7 +368,7 @@ func _run_to(position:float, hours:float) -> void:
 ## One update of the route as the driver does it for a train (MaszynaAIDriver._update())
 func _update(hours:float, speed:float) -> void:
     _trainset.update(_vehicle, _trainset.direction, true)
-    _route.update(_vehicle, Order.OBEY_TRAIN, false, LINE_VELOCITY, speed, MaszynaDriverSpeed.EASY_ACCELERATION,
+    _route.update(_vehicle, _order, false, LINE_VELOCITY, speed, MaszynaDriverSpeed.EASY_ACCELERATION,
             LINE_VELOCITY, _trainset, _timetable, hours, LINE_VELOCITY, LINE_VELOCITY, false,
             MaszynaDriverBraking.new(), false)
     _announced.append_array(_route.announcements)
