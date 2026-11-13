@@ -4,7 +4,7 @@
 		The tracks drawn as the original draws them ([code]Track.cpp[/code]).
 	</brief_description>
 	<description>
-		MaSzyna's backend of [TrackRenderingServer], registered as [code]"maszyna"[/code] and chosen by a [MaszynaTrackData] ([method TrackData.get_rendering_backend]). Rails are swept from a rail profile ([code]&lt;game dir&gt;/models/tory/railprofile_&lt;name&gt;.txt[/code], its lines after [code]// switch blade[/code] the blade's), a switch's blades turn with its offsets, a trackbed of the track's section turns into the unique neighbour's ([code]Track.cpp:2825-2982[/code]), and a road is its surface and shoulders or curbs ([code]Track.cpp:3008-3256[/code]). A .scn's track is drawn with its own textures; any other [TrackData] with those its features map to ([code]maszyna_track_looks.tres[/code], a [MaszynaTrackLooks]). Streamed roads are drawn by cells of 125 m, one mesh of a surface per material each, streamed by [SceneryStreamingServer] as [code]"roads"[/code]. The materials come from [ReloadedMaterialServer], drawing both faces. Draws no sleepers - the original does not.
+		MaSzyna's backend of [TrackRenderingServer], registered as [code]"maszyna"[/code] and chosen by a [MaszynaTrackData] ([method TrackData.get_rendering_backend]). Rails are swept from a rail profile ([code]&lt;game dir&gt;/models/tory/railprofile_&lt;name&gt;.txt[/code], its lines after [code]// switch blade[/code] the blade's), a switch's blades turn with its offsets, a trackbed of the track's section turns into the unique neighbour's ([code]Track.cpp:2825-2982[/code]), and a road is its surface and shoulders or curbs ([code]Track.cpp:3008-3256[/code]). A .scn's track is drawn with its own textures; any other [TrackData] with those its features map to ([code]maszyna_track_looks.tres[/code], a [MaszynaTrackLooks]). Streamed tracks and streamed roads are drawn by cells of 125 m - the tracks' rails and their trackbeds a mesh each, the roads one mesh, of a surface per material - streamed by [SceneryStreamingServer] as [code]"track cells"[/code] and [code]"roads"[/code], their geometry computed on the streaming's worker; a switch of a cell draws its blades, which move, by itself, and a track that is not streamed is drawn by itself. The materials come from [ReloadedMaterialServer], drawing both faces. Draws no sleepers - the original does not.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -47,11 +47,34 @@
 				Which rail of each curve of a switch is its blade, and how far each blade is moved: [code]primary_blade_mirrored[/code], [code]primary_other_mirrored[/code], [code]secondary_blade_mirrored[/code], [code]secondary_other_mirrored[/code], [code]primary_blade_offset[/code], [code]secondary_blade_offset[/code].
 			</description>
 		</method>
+		<method name="track_cell_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="cell" type="RID" />
+			<description>
+				Whether the track cell [param cell] holds a track still.
+			</description>
+		</method>
+		<method name="track_cell_get_instance" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="cell" type="RID" />
+			<param index="1" name="layer" type="int" enum="MaszynaTrackRenderingBackend.CellLayer" />
+			<description>
+				The [RenderingServer] instance of the track cell's [param layer]; none before the layer is first built.
+			</description>
+		</method>
+		<method name="track_cell_get_mesh" qualifiers="const">
+			<return type="ArrayMesh" />
+			<param index="0" name="cell" type="RID" />
+			<param index="1" name="layer" type="int" enum="MaszynaTrackRenderingBackend.CellLayer" />
+			<description>
+				The [param layer] of the cell's tracks as one mesh, a surface per material, while the cell is built; null otherwise.
+			</description>
+		</method>
 		<method name="track_get_instances" qualifiers="const">
 			<return type="Dictionary" />
 			<param index="0" name="track_render" type="RID" />
 			<description>
-				The [RenderingServer] instances the track has made so far, by their [enum Slot].
+				The [RenderingServer] instances the track has made so far, by their [enum Slot] - only its blades for a track drawn by its cell.
 			</description>
 		</method>
 		<method name="track_get_look" qualifiers="const">
@@ -73,6 +96,13 @@
 			<param index="0" name="track_render" type="RID" />
 			<description>
 				The road cell drawing the streamed road; none for any other track.
+			</description>
+		</method>
+		<method name="track_get_track_cell" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="track_render" type="RID" />
+			<description>
+				The track cell drawing the streamed track; none for a road and for a track drawn by itself.
 			</description>
 		</method>
 		<method name="unique_endpoint_connection" qualifiers="static">
@@ -102,6 +132,15 @@
 		</constant>
 		<constant name="SLOT_MAX" value="5" enum="Slot">
 			The number of slots.
+		</constant>
+		<constant name="CELL_LAYER_RAILS" value="0" enum="CellLayer">
+			The rails of a track cell - a switch's fixed rails among them; they cast the sun's shadow.
+		</constant>
+		<constant name="CELL_LAYER_BED" value="1" enum="CellLayer">
+			The trackbeds of a track cell, the roads of a road cell; they lie on the ground and cast no shadow.
+		</constant>
+		<constant name="CELL_LAYER_MAX" value="2" enum="CellLayer">
+			The number of layers.
 		</constant>
 	</constants>
 </class>

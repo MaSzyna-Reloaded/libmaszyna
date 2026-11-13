@@ -1,6 +1,7 @@
 #pragma once
 #include "maszyna/scenery/MaszynaTrackData.hpp"
 #include "maszyna/tracks/MaszynaTrackLooks.hpp"
+#include "maszyna/tracks/MaszynaTrackMeshBuilder.hpp"
 #include "rendering/TrackRenderingBackend.hpp"
 #include "tracks/TrackCurve.hpp"
 #include "tracks/TrackEndpointRef.hpp"
@@ -12,6 +13,7 @@
 #include <godot_cpp/classes/reg_ex.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
+#include <godot_cpp/templates/mutex.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_int32_array.hpp>
@@ -24,13 +26,16 @@ namespace godot {
      * (<game dir>/models/tory/railprofile_<name>.txt), a switch's blades moving with its offsets, a
      * trackbed of a section, a road of its surface and shoulders, each of its textures. A .scn's
      * track (MaszynaTrackData) is drawn with its own textures; any other with the textures its
-     * features map to (LOOKS_PATH). A streamed road is drawn with the roads around it, in a cell of
-     * ROAD_CELL_SIZE streamed by itself. Registered with TrackRenderingServer as NAME. */
+     * features map to (LOOKS_PATH). A streamed track is drawn with the tracks around it, and a
+     * streamed road with the roads around it, in a cell of CELL_SIZE streamed by itself; a track
+     * that is not streamed (a hand-placed one) is drawn by itself. Registered with
+     * TrackRenderingServer as NAME. */
     class MaszynaTrackRenderingBackend : public TrackRenderingBackend {
             GDCLASS(MaszynaTrackRenderingBackend, TrackRenderingBackend)
 
         public:
-            /// What a track draws, each in a RenderingServer instance of its own
+            /// What a track drawn by itself draws, each in a RenderingServer instance of its own; a
+            /// track drawn by its cell has only its blades
             enum Slot {
                 SLOT_PRIMARY_RAIL,
                 SLOT_SECONDARY_RAIL,
@@ -39,51 +44,36 @@ namespace godot {
                 SLOT_TRACKBED,
                 SLOT_MAX,
             };
+            /// What a cell draws, each one mesh of a surface per material in a RenderingServer
+            /// instance of its own: the rails cast the sun's shadow, the bed - the trackbeds, a road
+            /// cell's roads - lies on the ground and casts none
+            enum CellLayer {
+                CELL_LAYER_RAILS,
+                CELL_LAYER_BED,
+                CELL_LAYER_MAX,
+            };
 
             /// Its name with TrackRenderingServer, the one MaszynaTrackData names
             static constexpr const char *NAME = MaszynaTrackData::RENDERING_BACKEND;
             /// What a TrackData's features are drawn with: textures and sections by bed and by surface
             static constexpr const char *LOOKS_PATH = "res://addons/libmaszyna/tracks/maszyna_track_looks.tres";
-            /// Side of a road cell [m]: one cell is built in one go by the streaming, so it holds about as
-            /// many roads as one frame's build budget fits (a town's ~100 segments)
-            static constexpr double ROAD_CELL_SIZE = 125.0;
+            /// Side of a cell [m]: one cell is built in one go by the streaming, so it holds about as
+            /// many tracks as one frame's build budget fits (a town's ~100 road segments)
+            static constexpr double CELL_SIZE = 125.0;
 
         private:
-            /// One point of a rail profile: its place across the rail, its normal and its u
-            struct ProfilePoint {
-                    double x = 0.0;
-                    double y = 0.0;
-                    double normal_x = 0.0;
-                    double normal_y = 0.0;
-                    double u = 0.0;
-            };
-            /// The rail's section and the blade's, the rail's for a profile with no blade of its own
-            struct RailProfile {
-                    Vector<ProfilePoint> rail;
-                    Vector<ProfilePoint> blade;
-            };
-            /// One point of a section swept along a curve, x to the left of the curve's direction
-            struct SectionPoint {
-                    Vector3 position;
-                    Vector3 normal;
-                    double u = 0.0;
-            };
-            using Section = Vector<SectionPoint>;
-            /// One vertex of a strip of the switch trackbed (Segment.cpp:452-492)
-            struct StripPoint {
-                    Vector3 position;
-                    Vector3 normal;
-                    Vector2 uv;
-            };
-            using StripChunk = Vector<StripPoint>;
-            /// The arrays of one mesh surface being built
-            struct Geometry {
-                    PackedVector3Array vertices;
-                    PackedVector3Array normals;
-                    PackedVector2Array uvs;
-                    PackedInt32Array indices;
-            };
-            /// The track's curves and sizes as TrackServer has them, read when the track is built
+            using RailProfile = MaszynaTrackMeshBuilder::RailProfile;
+            using ProfilePoint = MaszynaTrackMeshBuilder::ProfilePoint;
+            using Section = MaszynaTrackMeshBuilder::Section;
+            using Geometry = MaszynaTrackMeshBuilder::Geometry;
+            using CurveShape = MaszynaTrackMeshBuilder::CurveShape;
+            using SwitchBladeLayout = MaszynaTrackMeshBuilder::SwitchBladeLayout;
+            using BladePose = MaszynaTrackMeshBuilder::BladePose;
+            using RoadLook = MaszynaTrackMeshBuilder::RoadLook;
+            using TrackPiece = MaszynaTrackMeshBuilder::TrackPiece;
+            using PieceGeometry = MaszynaTrackMeshBuilder::PieceGeometry;
+
+            /// The track's curves and sizes as TrackServer has them, read on the main thread
             struct TrackGeometry {
                     RID track;
                     Ref<TrackCurve> curve1;
@@ -95,39 +85,24 @@ namespace godot {
 
                     bool is_valid() const;
             };
-            /// Which rail of each curve of a switch is its blade, and how far the blades are moved
-            struct SwitchBladeLayout {
-                    bool primary_blade_mirrored = false;
-                    bool primary_other_mirrored = false;
-                    bool secondary_blade_mirrored = false;
-                    bool secondary_other_mirrored = false;
-                    double primary_blade_offset = 0.0;
-                    double secondary_blade_offset = 0.0;
+            /* What a track is drawn of and with, read on the main thread from TrackServer, its look and
+             * its neighbours (_read_track_piece()): its piece, of which MaszynaTrackMeshBuilder computes
+             * its geometry - on the streaming's worker for a track of a cell, which reads nothing else of
+             * the backend - and its materials by name */
+            struct TrackSnapshot {
+                    RID track_render;
+                    TrackPiece piece;
+                    /// The rails' (the main curve's and the blades') and a road surface's material...
+                    String primary_material;
+                    /// ...the second curve's rails' and blade's...
+                    String secondary_material;
+                    /// ...and the trackbed's, a road's sides'; none draws no trackbed
+                    String bed_material;
             };
-            /// The sections a blade is lofted through, from its tip to the frog
-            struct BladeSections {
-                    int transition_sample_count = 1;
-                    Section blade_start;
-                    Section reg_trans;
-                    Section reg_blade;
-                    Section reg_end;
-            };
-            /// A blade turning about its pivot at the root as the switch moves
+            /// A blade of a switch, as its switch has moved it
             struct Blade {
-                    Vector3 move_direction;
+                    BladePose pose;
                     double offset = 0.0;
-                    Vector3 pivot;
-                    double angle_factor = 0.0;
-            };
-            /// The dimensions of a road that shape its cross-section - the ones whose change between two
-            /// roads makes the first turn into the second (Track.cpp:347-352)
-            struct RoadLook {
-                    double width = 0.0;
-                    double tex_height = 0.0;
-                    double tex_width = 0.0;
-                    double tex_slope = 0.0;
-
-                    bool same_as(const RoadLook &p_other) const;
             };
             /// What the backend keeps of a track it draws
             struct Track {
@@ -135,7 +110,7 @@ namespace godot {
                     RID scenario;
                     bool visible = true;
                     /// Made when the track first draws something there: a plain track has no blades, a road
-                    /// no rails
+                    /// no rails, a track of a cell only its blades
                     RID instances[SLOT_MAX];
                     Ref<ArrayMesh> meshes[SLOT_MAX];
                     /// Where the meshes stand, the start of the track's curve: their vertices are relative to
@@ -153,53 +128,58 @@ namespace godot {
                     String material1_name;
                     String material2_name;
                     String material_trackbed_name;
-                    Ref<Material> material1;
-                    Ref<Material> material2;
-                    Ref<Material> material_trackbed;
-                    /// Trackbed material after the neighbour walk, kept until the topology changes
-                    Ref<Material> resolved_trackbed_material;
-                    /// Length the trackbed texture covers - its material's size, else the track's own
-                    /// tex_length (TTrack::texture_length(), Track.cpp:2481-2493); resolved with the material
-                    double resolved_trackbed_texture_length = MaszynaTrackData::DEFAULT_TEX_LENGTH;
-                    bool resolved_trackbed_material_valid = false;
-                    /// A streamed road is drawn by the road cell holding it, not by instances of its own
-                    RID road_cell;
+                    /// A streamed track is drawn by the cell holding it, but for its blades
+                    RID cell;
             };
-            /// The streamed roads of one square of the map in one scenario, drawn as one mesh of a
-            /// surface per material: a town has thousands of road segments, each a draw call or two of a
-            /// few triangles when drawn by itself. Measured on an imported Olkusz (2026-10-13, 3904
-            /// roads): 42-44 ms a frame drawn by themselves against 27-36 ms without them; 5742 roads in
-            /// cells: +375 draw calls, the frame time of the scenery without roads, a cell built in 0.9
-            /// ms on average, 5.2 ms at most.
-            struct RoadCell {
+            /// What a cell holds: the streamed roads, or the streamed tracks
+            enum CellKind {
+                CELL_ROADS,
+                CELL_TRACKS,
+                CELL_KIND_MAX,
+            };
+            /* The streamed tracks (or roads) of one square of the map in one scenario, drawn as one mesh
+             * of a surface per material in each layer: a town has thousands of road segments, a large
+             * station hundreds of tracks, each a draw call or two of a few triangles when drawn by
+             * itself. Measured on an imported Olkusz (2026-10-13, 3904 roads): 42-44 ms a frame drawn
+             * by themselves against 27-36 ms without them; 5742 roads in cells: +375 draw calls, the
+             * frame time of the scenery without roads. Its geometry is computed on the streaming's
+             * worker from its pieces (_cell_preload()); the main thread only makes the meshes of it */
+            struct Cell {
+                    CellKind kind = CELL_TRACKS;
                     RID scenario;
                     Vector2i coords;
-                    /// The cell's centre, where its mesh stands and is streamed from (Track::origin)
+                    /// The cell's centre, where its meshes stand and it is streamed from (Track::origin);
+                    /// set as it is made
                     Vector3 origin;
-                    /// Track render RIDs of the roads in the cell
+                    /// Track render RIDs of the tracks in the cell
                     Vector<RID> tracks;
+                    /// Its visible tracks as the worker computes the cell's geometry from them: written on
+                    /// the main thread under cells_mutex, read by the worker under it
+                    Vector<TrackSnapshot> snapshots;
                     RID stream_rid;
                     bool streamed = false;
-                    RID instance;
-                    Ref<ArrayMesh> mesh;
-                    bool rebuild_queued = false;
+                    RID instances[CELL_LAYER_MAX];
+                    Ref<ArrayMesh> meshes[CELL_LAYER_MAX];
             };
-            struct RoadCellKey {
+            struct CellKey {
                     RID scenario;
                     Vector2i coords;
+                    CellKind kind = CELL_TRACKS;
 
-                    bool operator==(const RoadCellKey &p_other) const;
+                    bool operator==(const CellKey &p_other) const;
             };
-            struct RoadCellKeyHasher {
-                    static uint32_t hash(const RoadCellKey &p_key);
+            struct CellKeyHasher {
+                    static uint32_t hash(const CellKey &p_key);
             };
 
             RIDMap<Track> tracks;
-            /// Road cells by their RID, and by their scenario and coordinates
-            RIDMap<RoadCell> road_cells;
-            HashMap<RoadCellKey, RID, RoadCellKeyHasher> road_cells_by_key;
-            int road_stream_owner = 0;
-            bool road_rebuild_pending = false;
+            /// Cells by their RID, and by their scenario, coordinates and kind. The map is changed on
+            /// the main thread under cells_mutex: the worker looks a cell's pieces up in it
+            RIDMap<Cell> cells;
+            HashMap<CellKey, RID, CellKeyHasher> cells_by_key;
+            Mutex cells_mutex;
+            /// The streaming's owners of the road cells and of the track cells
+            int stream_owners[CELL_KIND_MAX] = {};
             /// The rail profile of a track that names none, and of one the data has not got
             RailProfile default_rail_profile;
             /// The rail profiles read so far, by name - the data's, until it is unloaded
@@ -215,76 +195,13 @@ namespace godot {
             Ref<RegEx> rail_profile_number;
 
             static TrackGeometry _read_track_geometry(const RID &p_track);
+            static CurveShape _read_curve_shape(const Ref<TrackCurve> &p_curve);
             static bool _is_road(const RID &p_track, const TrackGeometry &p_geometry);
             static bool _is_switch_track(const TrackGeometry &p_geometry);
             static double _get_track_roll(const TrackGeometry &p_geometry, int p_endpoint_index);
-            static double _get_roll_fix_height(double p_roll_degrees);
-            static Ref<Curve3D> _build_curve(const Ref<TrackCurve> &p_curve);
             static SwitchBladeLayout
             _switch_blade_layout(bool p_is_right_switch, double p_f_offset1, double p_f_offset2, double p_f_max_offset);
-            static Section
-            _build_rail_section(const Vector<ProfilePoint> &p_profile, double p_width, double p_roll, bool p_mirrored);
-            static Section _build_trackbed_section(
-                    double p_width, double p_tex_height, double p_tex_width, double p_tex_slope, double p_roll,
-                    double p_rail_height, double p_tex_length);
-            static BladeSections _get_switch_blade_sections(
-                    const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_regular_profile,
-                    const Vector<ProfilePoint> &p_blade_profile, double p_width, double p_roll_start, double p_roll_end,
-                    bool p_blade_mirrored, int p_blade_sample_count);
-            static void _append_loft_geometry_range_points(
-                    Geometry &p_geometry, const PackedVector3Array &p_sampled_points, const Section &p_start_section,
-                    const Section &p_end_section, double p_tex_length, double p_rail_height, int p_start_sample,
-                    int p_end_sample);
-            static void _append_loft_strip_indices(
-                    PackedInt32Array &p_indices, int p_step_count, int p_section_size, int p_base_vertex);
-            static Vector3 _get_section_world_center(
-                    const PackedVector3Array &p_sampled_points, int p_sample_index, const Section &p_section,
-                    double p_rail_height);
-            static Vector3 _get_switch_blade_pivot(
-                    const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_regular_profile,
-                    double p_width, double p_roll_start, double p_roll_end, bool p_blade_mirrored,
-                    int p_blade_sample_count, double p_rail_height);
-            static double _get_blade_angle_factor(
-                    const PackedVector3Array &p_sampled_points, const Vector<ProfilePoint> &p_blade_profile,
-                    double p_width, double p_roll_start, bool p_blade_mirrored, double p_rail_height,
-                    const Vector3 &p_move_direction, const Vector3 &p_pivot);
-            static Transform3D _build_blade_transform(
-                    const Vector3 &p_origin, const Vector3 &p_pivot, double p_angle_factor, double p_offset);
-            static void _append_switch_fixed_rail_geometry(
-                    Geometry &p_geometry, const PackedVector3Array &p_sampled_points,
-                    const Vector<ProfilePoint> &p_regular_profile, double p_width, double p_roll_start,
-                    double p_roll_end, double p_tex_length, double p_rail_height, bool p_other_mirrored,
-                    bool p_blade_mirrored, int p_blade_sample_count);
-            static void _append_switch_blade_geometry(
-                    Geometry &p_geometry, const PackedVector3Array &p_sampled_points,
-                    const Vector<ProfilePoint> &p_regular_profile, const Vector<ProfilePoint> &p_blade_profile,
-                    double p_width, double p_roll_start, double p_roll_end, double p_tex_length, double p_rail_height,
-                    bool p_blade_mirrored, int p_blade_sample_count);
-            static Vector<StripChunk> _build_transition_loft_strip_chunks(
-                    const Ref<Curve3D> &p_curve, const Section &p_start_section, const Section &p_end_section,
-                    double p_tex_length, double p_rail_height);
-            static double
-            _find_switch_frog_distance(const Ref<Curve3D> &p_curve1, const Ref<Curve3D> &p_curve2, double p_width);
-            static PackedVector3Array _sample_curve_points_range(
-                    const Ref<Curve3D> &p_curve, double p_start_dist, double p_end_dist, int p_segment_count);
-            static PackedVector3Array _sample_switch_curve_points(const Ref<Curve3D> &p_curve, double p_frog_dist);
-            static Vector3 _build_planar_parallel(const PackedVector3Array &p_points, int p_sample_index);
-            static double
-            _get_baked_segment_length(const PackedVector3Array &p_points, int p_start_sample, int p_end_sample);
-            static Transform3D _build_curve_frame(const PackedVector3Array &p_points, int p_sample_index);
-            static PackedVector3Array
-            _vertices_relative_to(const PackedVector3Array &p_vertices, const Vector3 &p_origin);
-            static Ref<ArrayMesh> _build_array_mesh(const Geometry &p_geometry, const Vector3 &p_origin);
-            static Section _build_road_section(double p_width, double p_roll, double p_texture_length, double p_ratio);
-            static void _build_road_side_sections(
-                    const RoadLook &p_road, const Section &p_surface, double p_texture_length, double p_ratio,
-                    Section &p_r_right, Section &p_r_left);
-            static Section _mirror_road_section(const Section &p_section);
             static bool _has_trackbed_profile_options(const Track *p_track);
-            static void _lower_strip_edge(StripChunk &p_chunk, int p_edge_point);
-            static int
-            _nearest_strip_inner_edge(const StripChunk &p_chunk, const StripChunk &p_other_chunk, int p_fallback_edge);
-            static void _append_strip_chunk(Geometry &p_geometry, const StripChunk &p_chunk);
 
             /// The track TrackServer's p_track is drawn as by this backend; null for none
             Track *_find_track(const RID &p_track);
@@ -298,35 +215,53 @@ namespace godot {
             double _load_texture_ratio(const String &p_material_name);
             /// TTrack::texture_length() (Track.cpp:2484-2494): the material's size, else the track's own
             double _load_road_texture_length(const Track &p_track, const String &p_material_name);
-            void _resolve_materials(Track &p_track) const;
-            Ref<Material> _resolve_trackbed_material(Track &p_track);
+            /// A surface of p_arrays added to p_mesh, drawn with the material of the name; an unnamed one
+            /// has no material - ReloadedMaterialServer would hand back the missing-texture placeholder
+            /// instead (Track.cpp:485-491 keeps a null handle)
+            void
+            _mesh_add_surface(const Ref<ArrayMesh> &p_mesh, const Array &p_arrays, const String &p_material_name) const;
+            /// The material the track's trackbed is drawn with, by its name - its own or a neighbour's -
+            /// and the length its texture covers; an empty name for no trackbed
+            void _resolve_trackbed(const Track &p_track, String &p_r_material_name, double &p_r_texture_length);
             const Track *_copy_adjacent_trackbed_material(const Track *p_track, RIDSet &p_visited);
             Vector<RID> _get_trackbed_material_sources(const RID &p_track, bool p_is_switch) const;
             void _build_switch_trackbed_sections(
                     const Track &p_track, const TrackGeometry &p_geometry, TrackServer::SwitchTrack p_switch_track,
-                    double p_start_roll, double p_end_roll, double p_rail_height, Section &p_r_start, Section &p_r_end);
-            Ref<ArrayMesh> _build_switch_trackbed_mesh(
-                    const Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_primary_curve,
-                    const Ref<Curve3D> &p_secondary_curve, double p_rail_height, bool p_is_right_switch);
-            /// A road drawn by itself (a hand-placed one, not streamed): its surface by the rail's
-            /// instance, its sides by the trackbed's
-            void _build_road(Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_curve);
-            void _append_road_geometry(
-                    const Track &p_track, const TrackGeometry &p_geometry, const Ref<Curve3D> &p_curve,
-                    Geometry &p_surface, Geometry &p_sides);
+                    double p_start_roll, double p_end_roll, double p_rail_height, double p_texture_length,
+                    Section &p_r_start, Section &p_r_end);
+            /// What the track is drawn of and with now, read on the main thread; false when it has no
+            /// curve
+            bool _read_track_piece(const RID &p_track_render, const Track &p_track, TrackSnapshot &p_snapshot);
+            /// A road's surface and sides (Track.cpp:1479-1517) into the snapshot, read with the next road
+            void _read_road_piece(const Track &p_track, const TrackGeometry &p_geometry, TrackSnapshot &p_snapshot);
             /// Draws the slot's mesh in the slot's instance, made as the slot first draws something
             static void _slot_draw(Track &p_track, Slot p_slot);
             static void _reset_track_instances(Track &p_track);
             static void _clear_track_meshes(Track &p_track);
-            void _road_cell_add(const RID &p_track_render, Track &p_track);
-            void _road_cell_remove(const RID &p_track_render, Track &p_track);
-            void _queue_road_cell_rebuild(RoadCell &p_cell);
-            void _rebuild_queued_road_cells();
-            void _road_cell_build(const RID &p_cell, const Variant &p_preloaded);
-            void _road_cell_clear(const RID &p_cell);
-            void _build_road_cell(RoadCell &p_cell);
+            /// The streamed track goes into the cell of its kind of its scenario holding its start, the
+            /// cell made and registered with the streaming as its first track comes
+            void _cell_add(const RID &p_track_render, Track &p_track);
+            void _cell_remove(const RID &p_track_render, Track &p_track);
+            /// The track's piece in its cell as the track is now - none while it is hidden - and the cell
+            /// streamed again with it
+            void _cell_update_track(const RID &p_track_render, const Track &p_track);
+            /* The cell streamed from its pieces as they are now: registered with SceneryStreamingServer,
+             * which builds a piece again only as it is registered again - so a cell streamed again lets
+             * its old piece of the streaming go with what it built, and its new one is computed on the
+             * worker and built as the camera wants it */
+            void _cell_stream(const RID &p_cell_rid, Cell &p_cell);
+            /// The streaming's preload of a cell, on its worker: the geometry of the cell's pieces, a
+            /// surface's arrays per layer and material, and its switches' blades
+            Variant _cell_preload(const RID &p_cell);
+            /// The streaming's build of a cell: its meshes made of what the preload computed
+            void _cell_build(const RID &p_cell, const Variant &p_preloaded);
+            void _cell_clear(const RID &p_cell);
             void _on_data_unload_requested();
-            void _on_data_reload_requested();
+            /// A cell of the kind of the track's kind: the road cell of a streamed road, the track cell
+            /// of any other track; none for a track drawn by itself
+            RID _track_get_cell(const RID &p_track_render, CellKind p_kind) const;
+            RID _cell_get_instance(const RID &p_cell, CellKind p_kind, CellLayer p_layer) const;
+            Ref<ArrayMesh> _cell_get_mesh(const RID &p_cell, CellKind p_kind, CellLayer p_layer) const;
 
         protected:
             static void _bind_methods();
@@ -341,13 +276,15 @@ namespace godot {
             void track_set_visible(const RID &p_track_render, bool p_visible) override;
             void track_set_scenario(const RID &p_track_render, const RID &p_scenario) override;
             void track_set_switch_blade_offsets(const RID &p_track_render, double p_offset1, double p_offset2) override;
-            /// A road is streamed in the cell holding it, a track by TrackRenderingServer
+            /// Every track is streamed in the cell holding it: a road in a road cell, a track in a
+            /// track cell
             bool track_stream(const RID &p_track_render) override;
             void track_build(const RID &p_track_render) override;
-            /// The track's meshes and its materials go as it leaves the camera's range
+            /// The track's meshes go as it leaves the camera's range
             void track_clear(const RID &p_track_render) override;
-            /// The resolved trackbed materials are taken again, and a road turns into the next one it is
-            /// joined to now
+            /// The tracks borrowing their trackbed are built again, and the cells' pieces read again
+            /// with the neighbours they have now: a trackbed turns into the next one, a road into the
+            /// next one it is joined to
             void topology_rebuilt() override;
 
             /// The meshes the track draws now, by their Slot
@@ -365,6 +302,13 @@ namespace godot {
             RID road_cell_get_instance(const RID &p_cell) const;
             /// The cell's roads as one mesh while it is built; null otherwise
             Ref<ArrayMesh> road_cell_get_mesh(const RID &p_cell) const;
+            /// The track cell drawing the streamed track; none for a road and a track drawn by itself
+            RID track_get_track_cell(const RID &p_track_render) const;
+            bool track_cell_exists(const RID &p_cell) const;
+            /// The cell's instance of the layer; none before it is first built
+            RID track_cell_get_instance(const RID &p_cell, CellLayer p_layer) const;
+            /// The layer of the cell's tracks as one mesh while the cell is built; null otherwise
+            Ref<ArrayMesh> track_cell_get_mesh(const RID &p_cell, CellLayer p_layer) const;
 
             /// How far apart a track of p_curve is sampled as it is drawn [m]
             static double mesh_curve_bake_interval(const Ref<TrackCurve> &p_curve);
@@ -379,3 +323,4 @@ namespace godot {
 } // namespace godot
 
 VARIANT_ENUM_CAST(MaszynaTrackRenderingBackend::Slot)
+VARIANT_ENUM_CAST(MaszynaTrackRenderingBackend::CellLayer)
