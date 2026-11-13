@@ -2,6 +2,13 @@
 // (water_*.gdshader, MaszynaMaterialFactory.SHADER_VARIANTS), each of them with its own render_mode
 // and defines
 
+// The original's water is blended by its alpha (mat_water.frag: the inverse of its fresnel and the
+// material's alpha). Here that alpha is hashed instead (ALPHA_HASH_SCALE): the water is drawn with
+// the opaque surfaces, which take the screen-space reflections - a blended surface has none, and
+// the water mirrored only the sky, not its shore. Where it is see-through, the hash dithers it
+// (smoothed by TAA).
+const float WATER_ALPHA_HASH_SCALE = 1.0;
+
 uniform sampler2D diffuse_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_texture : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D dudv_texture : filter_linear_mipmap_anisotropic, repeat_enable;
@@ -70,4 +77,5 @@ void fragment() {
     NORMAL_MAP = decode_normal_from_rg(normal_sample);
     NORMAL_MAP_DEPTH = 1.0;
     ALPHA = alpha;
+    ALPHA_HASH_SCALE = WATER_ALPHA_HASH_SCALE;
 }
