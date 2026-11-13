@@ -18,6 +18,7 @@ const FREE_SPOTLIGHT_GLARE_MATERIAL: ShaderMaterial = preload("types/free_spotli
 const FREE_SPOTLIGHT_GLARE_TEXTURE: String = "fx/lightglare"
 ## Whether free spotlights - signals, lamps - get that point and glare, as the original draws them
 const RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING: StringName = &"maszyna/scenery/railway_lights_visibility_improved"
+const RAILWAY_LIGHTS_VISIBILITY_IMPROVED_DEFAULT: bool = true
 ## How many times the original's pointsize the point is drawn (the original: 4)
 const RAILWAY_LIGHTS_POINT_SIZE_MULTIPLIER_SETTING: StringName = &"maszyna/scenery/railway_lights_point_size_multiplier"
 const RAILWAY_LIGHTS_POINT_SIZE_MULTIPLIER_DEFAULT: float = 2.0
@@ -87,8 +88,12 @@ class MaterialPreload:
         if what == NOTIFICATION_PREDELETE:
             MaszynaMaterialManager._release_preloaded(keys)
 
-## A max texture size that takes the project's maszyna/import/dds_max_texture_size
+## A max texture size that takes the project's DDS_MAX_TEXTURE_SIZE_SETTING
 const MAX_TEXTURE_SIZE_PROJECT_DEFAULT: int = 0
+## The texture size limit of everything but the cab (the original's iMaxTextureSize, Globals.h:164,
+## is 4096 - this one saves video memory)
+const DDS_MAX_TEXTURE_SIZE_SETTING: StringName = &"maszyna/import/dds_max_texture_size"
+const DDS_MAX_TEXTURE_SIZE_DEFAULT: int = 1024
 ## A self-illumination threshold no light level reaches: lit always ("selfillum: true",
 ## Model3d.cpp:346)
 const SELFILLUM_ALWAYS: float = 2.0
@@ -212,25 +217,25 @@ func _on_data_reload_requested() -> void:
 ## The shared material follows its settings, so every free spotlight changes at once; off, the
 ## point and its glare have no size and no alpha
 func _apply_railway_lights_settings() -> void:
-    var improved: bool = ProjectSettings.get_setting(RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING, true)
+    var improved: bool = ProjectSettings.get_setting(RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING)
     _free_spotlight_material.set_shader_parameter("point_size_multiplier", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_POINT_SIZE_MULTIPLIER_SETTING, RAILWAY_LIGHTS_POINT_SIZE_MULTIPLIER_DEFAULT)) if improved else 0.0)
+        RAILWAY_LIGHTS_POINT_SIZE_MULTIPLIER_SETTING)) if improved else 0.0)
     var glare: ShaderMaterial = _free_spotlight_material.next_pass
     glare.set_shader_parameter("glare_intensity", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_GLARE_INTENSITY_SETTING, RAILWAY_LIGHTS_GLARE_INTENSITY_DEFAULT)) if improved else 0.0)
+        RAILWAY_LIGHTS_GLARE_INTENSITY_SETTING)) if improved else 0.0)
     glare.set_shader_parameter("glare_fade_start", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_GLARE_FADE_START_SETTING, RAILWAY_LIGHTS_GLARE_FADE_START_DEFAULT)))
+        RAILWAY_LIGHTS_GLARE_FADE_START_SETTING)))
     glare.set_shader_parameter("glare_rotation_ratio", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_GLARE_ROTATION_RATIO_SETTING, RAILWAY_LIGHTS_GLARE_ROTATION_RATIO_DEFAULT)))
+        RAILWAY_LIGHTS_GLARE_ROTATION_RATIO_SETTING)))
     glare.set_shader_parameter("glare_edge_size", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_GLARE_EDGE_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_EDGE_SIZE_DEFAULT)))
+        RAILWAY_LIGHTS_GLARE_EDGE_SIZE_SETTING)))
     glare.set_shader_parameter("glare_min_screen_size", float(ProjectSettings.get_setting(
-        RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING, RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_DEFAULT)))
+        RAILWAY_LIGHTS_GLARE_MIN_SCREEN_SIZE_SETTING)))
 
 
 func _apply_selfillum_energy() -> void:
     RenderingServer.global_shader_parameter_set(&"maszyna_selfillum_energy", float(ProjectSettings.get_setting(
-        SELFILLUM_ENERGY_SETTING, SELFILLUM_ENERGY_DEFAULT)))
+        SELFILLUM_ENERGY_SETTING)))
 
 
 func clear_cache() -> void:
@@ -360,7 +365,7 @@ func _get_texture_key(full_path:String, max_size:int) -> String:
 ## The texture size limit: MAX_TEXTURE_SIZE_PROJECT_DEFAULT takes the project's
 func _get_max_texture_size(max_texture_size:int) -> int:
     if max_texture_size == MAX_TEXTURE_SIZE_PROJECT_DEFAULT:
-        return int(ProjectSettings.get_setting("maszyna/import/dds_max_texture_size", 1024))
+        return int(ProjectSettings.get_setting(DDS_MAX_TEXTURE_SIZE_SETTING))
     return max_texture_size
 
 func get_material(

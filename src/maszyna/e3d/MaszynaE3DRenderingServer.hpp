@@ -99,6 +99,10 @@ namespace godot {
                     "maszyna/scenery/lights/volumetric_fog_energy";
             static constexpr float DEFAULT_SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY = 4.0;
 
+            /// Registers its project settings with their defaults and hints as the library starts
+            /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
+            static void project_settings_register();
+
             /// Animating instances advanced per simulation slice, round-robin; one
             /// left for a later slice is advanced by the simulated time it waited
             static constexpr int MAX_ANIMATED_INSTANCES_PER_SLICE = 64;

@@ -8,14 +8,11 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
-    /* Reports physics inconsistencies with push_error (see _check_velocity_jumps) */
-    constexpr const char *DIAGNOSTICS_SETTING = "reloaded/debug/physics_diagnostics";
-
     /* A freed vehicle's last velocity goes with it. No explicit disconnect: callable_mp reports
      * this instance as the callable's object, so the engine drops the connection when it dies. */
     MaszynaMoverVehicleServer::MaszynaMoverVehicleServer() {
         singleton = this;
-        diagnostics = ProjectSettings::get_singleton()->get_setting(DIAGNOSTICS_SETTING, false);
+        diagnostics = ProjectSettings::get_singleton()->get_setting(RailVehicleServer::DIAGNOSTICS_SETTING);
         ProjectSettings::get_singleton()->connect(
                 "settings_changed", callable_mp(this, &MaszynaMoverVehicleServer::_on_project_settings_changed));
         VehicleServer *vehicle_server = VehicleServer::get_instance();
@@ -65,7 +62,7 @@ namespace godot {
 
     /// The velocities kept from before the diagnostics went off are no previous step to compare with
     void MaszynaMoverVehicleServer::_on_project_settings_changed() {
-        const bool enabled = ProjectSettings::get_singleton()->get_setting(DIAGNOSTICS_SETTING, false);
+        const bool enabled = ProjectSettings::get_singleton()->get_setting(RailVehicleServer::DIAGNOSTICS_SETTING);
         if (enabled && !diagnostics) {
             diagnostics_velocity.clear();
         }

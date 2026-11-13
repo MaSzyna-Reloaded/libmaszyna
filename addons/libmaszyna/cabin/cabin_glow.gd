@@ -8,9 +8,7 @@ extends OmniLight3D
 ## Project setting saying whether the glow shines at all; empty for a glow that always does
 var enabled_setting: StringName = &""
 var energy_setting: StringName = &""
-var energy_default: float = 0.0
 var range_setting: StringName = &""
-var range_default: float = 0.0
 
 ## The element it belongs to is lit
 var _lit: bool = false
@@ -34,7 +32,7 @@ func set_lit(p_lit: bool) -> void:
 
 
 func _on_project_settings_changed() -> void:
-    light_energy = float(ProjectSettings.get_setting(energy_setting, energy_default))
-    omni_range = float(ProjectSettings.get_setting(range_setting, range_default))
-    _enabled = not enabled_setting or bool(ProjectSettings.get_setting(enabled_setting, true))
+    light_energy = float(ProjectSettings.get_setting(energy_setting))
+    omni_range = float(ProjectSettings.get_setting(range_setting))
+    _enabled = not enabled_setting or bool(ProjectSettings.get_setting(enabled_setting))
     visible = _lit and _enabled

@@ -62,12 +62,21 @@ namespace godot {
             /// Where the base classes are copied out for the hosts, which read only files on disk
             static constexpr const char *BASE_SCRIPTS_COPY_PATH = "user://python";
 
+            /// Registers its project settings with their defaults and hints as the library starts
+            /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
+            static void project_settings_register();
+
             static PythonScreenServer *get_instance() {
                 return Object::cast_to<PythonScreenServer>(
                         Engine::get_singleton()->get_singleton("PythonScreenServer"));
             }
 
         private:
+            /// CPython 2.7 prefix the screens run with (lib/libpython2.7.so.1.0 on Linux); empty is
+            /// python2.7 in the game directory on Linux and the original's python64 on Windows. The
+            /// 3.x runtime the scripts that compile there run on is found in the game directory itself
+            static constexpr const char *PYTHON_HOME_SETTING = "maszyna/python/home";
+
             /// The runtime a host runs, the one a script is checked on first
             enum Runtime {
                 RUNTIME_PYTHON_3,

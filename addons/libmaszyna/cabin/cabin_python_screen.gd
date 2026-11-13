@@ -11,6 +11,7 @@ const SELF_ILLUMINATION_PARAMETER:StringName = &"emission_enabled"
 ## The glow the screen throws onto the desk in the colour of what it shows: a weak light reaching
 ## far, so that it lights the desk around the screen without dazzling
 const SCREEN_GLOW_ENABLED_SETTING:StringName = &"maszyna/cabin/screen_glow_enabled"
+const SCREEN_GLOW_ENABLED_DEFAULT:bool = true
 const SCREEN_GLOW_ENERGY_SETTING:StringName = &"maszyna/cabin/screen_glow_energy"
 const SCREEN_GLOW_ENERGY_DEFAULT:float = 0.05
 const SCREEN_GLOW_RANGE_SETTING:StringName = &"maszyna/cabin/screen_glow_range"
@@ -49,9 +50,7 @@ func _enter_tree() -> void:
         _glow.name = "Glow"
         _glow.enabled_setting = SCREEN_GLOW_ENABLED_SETTING
         _glow.energy_setting = SCREEN_GLOW_ENERGY_SETTING
-        _glow.energy_default = SCREEN_GLOW_ENERGY_DEFAULT
         _glow.range_setting = SCREEN_GLOW_RANGE_SETTING
-        _glow.range_default = SCREEN_GLOW_RANGE_DEFAULT
         _glow.light_color = Color.BLACK
         _glow.shadow_enabled = false
         _glow.set_lit(true)

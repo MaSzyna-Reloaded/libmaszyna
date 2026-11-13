@@ -160,7 +160,7 @@ func _rebuild_generated() -> void:
 func _apply_reverse_cull_face() -> void:
     if not _generated:
         return
-    var reverse:bool = ProjectSettings.get_setting("reloaded/lights/reverse_cull_face", false)
+    var reverse:bool = ProjectSettings.get_setting(SkyEnvironment.REVERSE_CULL_FACE_SETTING)
     for light:Node in _generated.find_children("*", "Light3D", true, false):
         (light as Light3D).shadow_reverse_cull_face = reverse
 

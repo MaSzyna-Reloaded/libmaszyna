@@ -66,7 +66,7 @@ func _ready() -> void:
 ## the other sprite
 func _on_project_settings_changed() -> void:
     var atlas_used:bool = uses_atlas()
-    if ProjectSettings.get_setting(GENERATOR_MODE_SETTING, GeneratorMode.ORIGINAL) == GeneratorMode.MODERN \
+    if ProjectSettings.get_setting(GENERATOR_MODE_SETTING) == GeneratorMode.MODERN \
             and not atlas_used:
         push_warning("[MaszynaSmokeSourceLibrary] Modern smoke needs the core's smoke atlas; falling back to the original sprite")
     if atlas_used == _atlas_used:
@@ -88,7 +88,7 @@ func resolve(template_name:String) -> Dictionary:
 
 ## Whether the particles are the core's own smoke: MODERN, and the project gives its flipbook
 func uses_atlas() -> bool:
-    return ProjectSettings.get_setting(GENERATOR_MODE_SETTING, GeneratorMode.ORIGINAL) == GeneratorMode.MODERN \
+    return ProjectSettings.get_setting(GENERATOR_MODE_SETTING) == GeneratorMode.MODERN \
             and SmokeServer.smoke_get_atlas() != null
 
 

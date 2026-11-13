@@ -2,6 +2,7 @@
 #include "game_data/GameDataServer.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 #include "maszyna/cabin/python_host/PythonHostProtocol.hpp"
+#include "utils/ReloadedProjectSetting.hpp"
 #include <cstdint>
 #include <cstring>
 #include <godot_cpp/classes/dir_access.hpp>
@@ -300,7 +301,7 @@ namespace godot {
                 return;
             }
         } else if (library.is_empty()) {
-            home = ProjectSettings::get_singleton()->get_setting("maszyna/python/home", "");
+            home = ProjectSettings::get_singleton()->get_setting(PYTHON_HOME_SETTING);
 #ifdef _WIN32
             // the 64-bit Windows runtime ships in the game directory
             home = home.is_empty() ? String("python64") : home;
@@ -663,5 +664,9 @@ namespace godot {
                 }
             }
         }
+    }
+
+    void PythonScreenServer::project_settings_register() {
+        ReloadedProjectSetting::add(PYTHON_HOME_SETTING, String(), Variant::STRING, PROPERTY_HINT_GLOBAL_DIR);
     }
 } // namespace godot
