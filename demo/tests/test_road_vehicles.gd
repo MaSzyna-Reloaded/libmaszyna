@@ -133,8 +133,9 @@ func test_a_car_is_followed_in_every_view() -> void:
     add_child_autofree(follow)
     var stands:Vector3 = VehicleServer.vehicle_get_transform(car).origin
 
-    for view:FollowView.View in [FollowView.View.TRAINSET_FRONT, FollowView.View.TRAINSET_REAR,
-            FollowView.View.BOGIE, FollowView.View.DRIVEBY]:
+    for view:PlayerCameraServer.CameraFollowView in [PlayerCameraServer.CAMERA_FOLLOW_VIEW_TRAINSET_FRONT,
+            PlayerCameraServer.CAMERA_FOLLOW_VIEW_BOGIE, PlayerCameraServer.CAMERA_FOLLOW_VIEW_TRAINSET_REAR,
+            PlayerCameraServer.CAMERA_FOLLOW_VIEW_DRIVEBY]:
         follow.view = view
         follow.activate(car, PlayerCameraServer.camera_get_show_transform(car))
         await wait_idle_frames(FOLLOW_FRAMES)
