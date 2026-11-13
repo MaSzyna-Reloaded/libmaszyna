@@ -145,13 +145,27 @@ func arrive(hours:float) -> bool:
     # Driver.cpp:1231); a station passed at speed is told once the train is clear of it
     if is_stop() and run.is_valid() and StationServer.run_get_current_entry(run) == station_index:
         StationServer.run_record_arrival(run)
-    if station_index < get_entry_count() - 1:
-        _next_station = station_name(station_index + 1)
-        velocity = StationServer.timetable_entry_get_speed_limit(timetable, station_index + 1)
-    else:
-        _next_station = ""
+    _name_next_station()
     changed.emit()
     return true
+
+
+## The train stands at its first station from the start of its run, without having arrived there
+## (run_record_start()) - put there before its driver drives
+func record_start() -> void:
+    if run.is_valid() and station_index == 0:
+        StationServer.run_record_start(run)
+
+
+## The train has left the next station behind at `hours` without going on from it at its stop - it
+## drove past it without stopping, or off it before the departure: where it did not arrive it passed
+## it, its delay the departure's, and the station after it is the next one
+func leave(hours:float) -> void:
+    if not arrived:
+        latency = compare_time(hours, departure(station_index))
+        delay = -latency
+        _name_next_station()
+    advance()
 
 
 ## On to the next station (StationIndexInc(), NextStop())
@@ -245,6 +259,15 @@ func rewind(station:String) -> bool:
             changed.emit()
             return true
     return false
+
+
+## The station after the one arrived at, and the speed on the way there
+func _name_next_station() -> void:
+    if station_index < get_entry_count() - 1:
+        _next_station = station_name(station_index + 1)
+        velocity = StationServer.timetable_entry_get_speed_limit(timetable, station_index + 1)
+    else:
+        _next_station = ""
 
 
 ## The run is at the entry shown: the one the train drives to or stands at
