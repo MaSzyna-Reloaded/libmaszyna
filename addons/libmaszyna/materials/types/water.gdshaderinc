@@ -14,7 +14,7 @@
 // water as deep as it is and shifted by the waves, and the water's own colour (its texture's) where
 // the water is too deep to see through. The original's alpha (its own "fresnel", pow(facing, 0.2))
 // is not taken, nor its colour and reflection, which made that alpha. The sun mirrored in it is a
-// disk as large as the sky's, and the rain rings it. Its roughness is at least that of the wind's
+// disk as large as the sky's, the rain rings it and the snow's flakes melt on it. Its roughness is at least that of the wind's
 // waves a pixel cannot tell apart, so that far off the sun spreads over them in a path of glitter
 // instead of a mirror's glare.
 
@@ -243,6 +243,12 @@ void fragment() {
     EMISSION = textureLod(screen_texture, refracted_uv, 0.0).rgb * transmitted * (1.0 - fresnel)
             + mirrored * fresnel * hit.z;
     ALBEDO = water_colour * WATER_BODY_ALBEDO * (1.0 - transmitted) * (1.0 - fresnel);
+    // the snow's flakes resting on it a moment as they melt (the core's ground weather): white
+    // specks, neither seen through nor mirroring
+    float flakes = reloaded_weather_flakes_on_water(ground, length(fwidth(ground)));
+    ALBEDO = mix(ALBEDO, RELOADED_SNOW_ALBEDO, flakes);
+    EMISSION *= 1.0 - flakes;
+    SPECULAR *= 1.0 - flakes;
 }
 
 // GGX's distribution of the microfacets of alpha^2 (alpha2) at n_dot_h
