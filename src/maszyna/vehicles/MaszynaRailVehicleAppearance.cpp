@@ -13,6 +13,16 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("set_wiper_arms", "value"), &MaszynaRailVehicleAppearance::set_wiper_arms);
         ClassDB::bind_method(D_METHOD("get_wiper_arms"), &MaszynaRailVehicleAppearance::get_wiper_arms);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "wiper_arms"), "set_wiper_arms", "get_wiper_arms");
+        ClassDB::bind_method(D_METHOD("set_wiper_pivots", "value"), &MaszynaRailVehicleAppearance::set_wiper_pivots);
+        ClassDB::bind_method(D_METHOD("get_wiper_pivots"), &MaszynaRailVehicleAppearance::get_wiper_pivots);
+        ADD_PROPERTY(
+                PropertyInfo(Variant::PACKED_VECTOR3_ARRAY, "wiper_pivots"), "set_wiper_pivots", "get_wiper_pivots");
+        ClassDB::bind_method(D_METHOD("set_wiper_axes", "value"), &MaszynaRailVehicleAppearance::set_wiper_axes);
+        ClassDB::bind_method(D_METHOD("get_wiper_axes"), &MaszynaRailVehicleAppearance::get_wiper_axes);
+        ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR3_ARRAY, "wiper_axes"), "set_wiper_axes", "get_wiper_axes");
+        ClassDB::bind_method(D_METHOD("set_wiper_turns", "value"), &MaszynaRailVehicleAppearance::set_wiper_turns);
+        ClassDB::bind_method(D_METHOD("get_wiper_turns"), &MaszynaRailVehicleAppearance::get_wiper_turns);
+        ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wiper_turns"), "set_wiper_turns", "get_wiper_turns");
         ClassDB::bind_method(D_METHOD("set_mirrors", "value"), &MaszynaRailVehicleAppearance::set_mirrors);
         ClassDB::bind_method(D_METHOD("get_mirrors"), &MaszynaRailVehicleAppearance::get_mirrors);
         ADD_PROPERTY(PropertyInfo(Variant::PACKED_STRING_ARRAY, "mirrors"), "set_mirrors", "get_mirrors");
@@ -66,6 +76,30 @@ namespace godot {
 
     PackedStringArray MaszynaRailVehicleAppearance::get_wiper_arms() const {
         return wiper_arms;
+    }
+
+    void MaszynaRailVehicleAppearance::set_wiper_pivots(const PackedVector3Array &p_value) {
+        wiper_pivots = p_value;
+    }
+
+    PackedVector3Array MaszynaRailVehicleAppearance::get_wiper_pivots() const {
+        return wiper_pivots;
+    }
+
+    void MaszynaRailVehicleAppearance::set_wiper_axes(const PackedVector3Array &p_value) {
+        wiper_axes = p_value;
+    }
+
+    PackedVector3Array MaszynaRailVehicleAppearance::get_wiper_axes() const {
+        return wiper_axes;
+    }
+
+    void MaszynaRailVehicleAppearance::set_wiper_turns(const PackedFloat64Array &p_value) {
+        wiper_turns = p_value;
+    }
+
+    PackedFloat64Array MaszynaRailVehicleAppearance::get_wiper_turns() const {
+        return wiper_turns;
     }
 
     void MaszynaRailVehicleAppearance::set_mirrors(const PackedStringArray &p_value) {

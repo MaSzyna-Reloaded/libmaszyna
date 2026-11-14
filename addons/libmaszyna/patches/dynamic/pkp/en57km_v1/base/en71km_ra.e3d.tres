@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://xb36vn3gugppm"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://camae3nqv33wn" path="res://addons/libmaszyna/vehicle/maszyna_wiper_arm_patch.gd" id="arm"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("arm")
+submodel = "banan/wycieraczka1"
+pivot = Vector3(-0.004, 0.042, 0.001)
+axis = Vector3(0, 1, 0)
+turn = -55
+
+[sub_resource type="Resource" id="item_2"]
+script = ExtResource("arm")
+submodel = "banan/wycieraczka2"
+pivot = Vector3(-0.004, 0.044, 0.001)
+axis = Vector3(0, 1, 0)
+turn = -62
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/en57km_v1/base/en71km_ra.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2")])

@@ -14,6 +14,8 @@ const FRONT_BOGIE_SUBMODEL_NAMES:Array[String] = ["bogie1", "boogie01"]
 const REAR_BOGIE_SUBMODEL_NAMES:Array[String] = ["bogie2", "boogie02"]
 ## The elements of a wiper (DynObj.cpp:5845-5866)
 const WIPER_ELEMENT_SUFFIXES:Array[String] = ["_p1", "_p2", "_p3"]
+## How far wipers driven by hand turn [deg] - the data of no WiperList gives no angle
+const MANUAL_WIPER_ANGLE:float = 90.0
 
 ## The pantograph element without which the pantograph is not animated: the slider (DynObj.cpp:5562-5566;
 ## an index of MmdCabinInstancer.PANTOGRAPH_ELEMENT_LABELS)
@@ -32,11 +34,11 @@ const ROLLING_AXLES_FIRST:int = 49
 const ROLLING_AXLES_LAST:int = 57
 
 ## Raised whenever read_mmd_data() changes what it puts into the data - the files' mtimes the
-## cache of it is kept by (MaszynaVehicleMmdManager) cannot see it. 37: the destination sign; 36: the model's description alone,
+## cache of it is kept by (MaszynaVehicleMmdManager) cannot see it. 38: wiper arms of a model's patch; 37: the destination sign; 36: the model's description alone,
 ## the slider's height from its vertices; 35: the pantographs' geometry; 34: RoadVehicleAppearance of a road vehicle; 33: MaszynaRailVehicleAppearance;
 ## 32: the cabins the MMD defines; 31: coupleradapter:; 30: pantfactors:, a pantograph needs only its
 ## slider; 29: pendulums; 28: doors and door steps; 27: rolling wheels by the axle arrangement
-const MMD_DATA_FORMAT_VERSION:int = 37
+const MMD_DATA_FORMAT_VERSION:int = 38
 
 ## Every MaSzyna-authored piece of a vehicle (exterior, low-poly interior, passengers, cab) lives in
 ## one vehicle-local frame where +Z is the direction of travel: the original draws all of them under
@@ -139,7 +141,8 @@ static func read_mmd_data(
                 MmdCabinInstancer.parse_mirror_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_door_names(abs_mmd_path, parameters),
                 MmdCabinInstancer.parse_door_step_names(abs_mmd_path, parameters),
-                MmdCabinInstancer.parse_pendulums(abs_mmd_path, parameters))
+                MmdCabinInstancer.parse_pendulums(abs_mmd_path, parameters),
+                MaszynaVehicleSystem.model_get_patch(normalized_data_path.path_join(appearance.model_filename)))
         mmd_data.pantograph_geometries = _measure_pantographs(
                 rail_appearance, model,
                 MaszynaE3DModelManager.get_model_path(normalized_data_path, appearance.model_filename), description,
@@ -237,7 +240,7 @@ static func _resolve_parts(
         appearance:MaszynaRailVehicleAppearance, model:MaszynaE3DModel, wheels:RailVehicleWheels, wheel_names:PackedStringArray,
         pantograph_elements:Array[PackedStringArray], wiper_names:PackedStringArray,
         mirror_names:PackedStringArray, door_names:PackedStringArray, door_step_names:PackedStringArray,
-        pendulums:Dictionary) -> void:
+        pendulums:Dictionary, patch:MaszynaVehicleModelPatch) -> void:
     var names:Dictionary[String, MaszynaE3DSubModel] = {}
     _index_submodels(model.submodels, names)
 
@@ -289,6 +292,24 @@ static func _resolve_parts(
     for wiper_name:String in wiper_names:
         for element:String in WIPER_ELEMENT_SUFFIXES:
             wiper_arms.append(_find_submodel(names, [(wiper_name + element).to_lower()]))
+    # Quirk: the wiper arms of a model whose MMD names none, from the game's patch of the model -
+    # each one arm, turned whole about its own point and axis by its own angle; one the model has
+    # not got is not animated, its wiper kept in its place
+    if not wiper_names and patch:
+        var pivots:PackedVector3Array = []
+        var axes:PackedVector3Array = []
+        var turns:PackedFloat64Array = []
+        for arm:MaszynaWiperArmPatch in patch.elements_of(MaszynaWiperArmPatch):
+            var submodel:MaszynaE3DSubModel = MaszynaVehicleModelPatch.find_submodel(model.submodels, arm.submodel)
+            if not submodel:
+                push_warning("MaszynaRailVehicle3DInstancer: %s has no wiper arm %s" % [patch.path, arm.submodel])
+            wiper_arms.append_array([submodel.resource_name if submodel else "", "", ""])
+            pivots.append(arm.pivot)
+            axes.append(arm.axis)
+            turns.append(arm.turn)
+        appearance.wiper_pivots = pivots
+        appearance.wiper_axes = axes
+        appearance.wiper_turns = turns
     appearance.wiper_arms = wiper_arms
     var mirrors:PackedStringArray = []
     for mirror_name:String in mirror_names:
@@ -376,12 +397,29 @@ static func _measure_pantographs(
 
 ## RailVehicleWipers has to know how many wipers the model has: from cab 2 they are numbered from the
 ## other end (DynObj.cpp:4062).
+##
+## Quirk: a FIZ of no WiperList gives the wipers no switch - the original's do not move at all, even
+## those of a model that animates them, and an old cab's are moved by hand (the EU07's handles,
+## MaszynaCabinManualWipers). Such wipers are taken as driven by hand: as many as the model
+## animates (its animwiperprefix:, or the wiper arms the game's patch gives it), or
+## every one the cab's glass can wipe (RailVehicleWipers.MANUAL_WIPERS_MAX, the channels of its
+## wiper mask) - the driver wipes the glass by the keys even of a model of none.
 static func apply_wiper_count(vehicle:RID, appearance:MaszynaRailVehicleAppearance) -> void:
     var wipers:RailVehicleWipers = VehicleServer.vehicle_component_get(
             vehicle, VehicleComponentType.COMPONENT_WIPERS) as RailVehicleWipers
-    if wipers:
-        wipers.wiper_count = appearance.wiper_arms.size() / WIPER_ELEMENT_SUFFIXES.size()
-        wipers.apply_config()
+    if not wipers:
+        return
+    var count:int = appearance.wiper_arms.size() / WIPER_ELEMENT_SUFFIXES.size()
+    if wipers.positions.is_empty():
+        # a FIZ of no WiperList has no wiper angle either
+        if is_zero_approx(wipers.angle):
+            wipers.angle = MANUAL_WIPER_ANGLE
+        wipers.manual_fit(count if count > 0 else RailVehicleWipers.MANUAL_WIPERS_MAX)
+        return
+    # a model of no animated arms leaves the count its patch gives (MaszynaWiperListPatch.wiper_count)
+    if count > 0:
+        wipers.wiper_count = count
+    wipers.apply_config()
 
 
 static func _find_submodel(names:Dictionary[String, MaszynaE3DSubModel], candidates:Array[String]) -> String:

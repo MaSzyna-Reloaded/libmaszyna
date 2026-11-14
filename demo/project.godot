@@ -749,6 +749,18 @@ anti_aliasing/quality/use_taa=true
 
 [shader_globals]
 
+reloaded_wind_speed={
+"type": "float",
+"value": 0.0
+}
+reloaded_wind_direction={
+"type": "vec2",
+"value": Vector2(1, 0)
+}
+reloaded_sun_angular_radius={
+"type": "float",
+"value": 0.00465
+}
 reloaded_hdr_output={
 "type": "bool",
 "value": false
@@ -765,9 +777,73 @@ maszyna_selfillum_energy={
 "type": "float",
 "value": 0.2
 }
+maszyna_water_screen_reflections={
+"type": "bool",
+"value": true
+}
 reloaded_light_level={
 "type": "float",
 "value": 1.0
+}
+reloaded_snow_cover={
+"type": "float",
+"value": 0.0
+}
+reloaded_snow_depth={
+"type": "float",
+"value": 0.0
+}
+reloaded_weather_ground={
+"type": "sampler3D",
+"value": ""
+}
+reloaded_weather_probe_origin={
+"type": "vec3",
+"value": Vector3(0, 0, 0)
+}
+reloaded_weather_probe_size={
+"type": "vec3",
+"value": Vector3(1, 1, 1)
+}
+reloaded_weather_probes_enabled={
+"type": "float",
+"value": 0.0
+}
+reloaded_weather_wet_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_snow_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_puddles_exist={
+"type": "bool",
+"value": false
+}
+reloaded_weather_rain_exists={
+"type": "bool",
+"value": false
+}
+reloaded_weather_surfaces_active={
+"type": "bool",
+"value": false
+}
+reloaded_snow_wetness={
+"type": "float",
+"value": 0.0
+}
+reloaded_wetness={
+"type": "float",
+"value": 0.0
+}
+reloaded_air_temperature={
+"type": "float",
+"value": 10.0
+}
+reloaded_rain={
+"type": "float",
+"value": 0.0
 }
 reloaded_rain_intensity={
 "type": "float",
@@ -780,6 +856,14 @@ reloaded_wiper_regen_time={
 reloaded_wiper_pos={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
+}
+reloaded_wiper_pass_time={
+"type": "sampler2D",
+"value": ""
+}
+reloaded_wiper_clock={
+"type": "float",
+"value": 0.0
 }
 reloaded_wiper_since_out={
 "type": "vec4",

@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://gxgmhgpwfr2vl"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://camae3nqv33wn" path="res://addons/libmaszyna/vehicle/maszyna_wiper_arm_patch.gd" id="arm"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("arm")
+submodel = "baza/ostoja/wycieraczka01"
+pivot = Vector3(-0.003, -0.001, 0.376)
+axis = Vector3(1, 0, 0)
+turn = 62
+
+[sub_resource type="Resource" id="item_2"]
+script = ExtResource("arm")
+submodel = "baza/ostoja/wycieraczka02"
+pivot = Vector3(-0.003, 0.001, 0.376)
+axis = Vector3(1, 0, 0)
+turn = -63
+
+[sub_resource type="Resource" id="item_3"]
+script = ExtResource("arm")
+submodel = "baza/ostoja/wycieraczka03"
+pivot = Vector3(-0.003, -0.001, 0.376)
+axis = Vector3(1, 0, 0)
+turn = 62
+
+[sub_resource type="Resource" id="item_4"]
+script = ExtResource("arm")
+submodel = "baza/ostoja/wycieraczka04"
+pivot = Vector3(-0.003, 0.001, 0.376)
+axis = Vector3(1, 0, 0)
+turn = -63
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/sm42_v1/6d1.e3d"
+elements = Array[ExtResource("element")]([SubResource("item_1"), SubResource("item_2"), SubResource("item_3"), SubResource("item_4")])

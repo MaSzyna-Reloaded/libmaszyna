@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://1s0dsahjsmitf"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://5o1a31gp0hm4g" path="res://addons/libmaszyna/vehicle/maszyna_material_patch.gd" id="material"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("material")
+shader = "rain_windscreen"
+textures = Dictionary[String, String]({"raindropsatlas": "textures/fx/raindrops-atlas", "wipermask": "res://addons/libmaszyna/patches/dynamic/pkp/en57al_v1/cab/szyby_wipermask.png"})
+parameters = Dictionary[String, float]({"raindrop_grid_size": 243})
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/en57al_v1/cab/szyby.mat"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MaszynaVehicleModelPatch" format=3 uid="uid://0j2pamjzz7lzq"]
+
+[ext_resource type="Script" uid="uid://ch6olrsewv5lg" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_patch.gd" id="model"]
+[ext_resource type="Script" uid="uid://bkskb5jtirhi1" path="res://addons/libmaszyna/vehicle/maszyna_vehicle_model_element_patch.gd" id="element"]
+[ext_resource type="Script" uid="uid://5o1a31gp0hm4g" path="res://addons/libmaszyna/vehicle/maszyna_material_patch.gd" id="material"]
+
+[sub_resource type="Resource" id="item_1"]
+script = ExtResource("material")
+shader = "rain_windscreen"
+textures = Dictionary[String, String]({"raindropsatlas": "textures/fx/raindrops-atlas", "wipermask": "res://addons/libmaszyna/patches/dynamic/pkp/sp42_v1/okno_czolo_gora_wipermask.png"})
+parameters = Dictionary[String, float]({"raindrop_grid_size": 111})
+vector_parameters = Dictionary[String, Vector4]({"wiper_pane_0": Vector4(-1.068, -0.269, 1.123, 1), "wiper_pane_1": Vector4(1.164, -0.236, 1.006, 2), "wiper_pane_2": Vector4(1.064, 0.205, -0.981, 3), "wiper_pane_3": Vector4(-1.168, 0.184, -0.861, 4)})
+
+[resource]
+script = ExtResource("model")
+path = "dynamic/pkp/sp42_v1/okno_czolo_gora.mat"
+elements = Array[ExtResource("element")]([SubResource("item_1")])

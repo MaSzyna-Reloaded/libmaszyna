@@ -8,4 +8,15 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<members>
+		<member name="valve_fastest_sweep_time" type="float" setter="set_valve_fastest_sweep_time" getter="get_valve_fastest_sweep_time" default="1.0">
+			A sweep's time at a full valve with a full reservoir, in seconds.
+		</member>
+		<member name="valve_sensitivity" type="float" setter="set_valve_sensitivity" getter="get_valve_sensitivity" default="1.0">
+			How much of the way to the fastest the start of the valve's turn gives: the share at an opening is [code]1 - (1 - opening)^valve_sensitivity[/code].
+		</member>
+		<member name="valve_slowest_sweep_time" type="float" setter="set_valve_slowest_sweep_time" getter="get_valve_slowest_sweep_time" default="1.0">
+			A sweep's time at a valve just cracked open with a full reservoir, in seconds.
+		</member>
+	</members>
 </class>

@@ -45,6 +45,8 @@ const DATASET_KEY_PREFIX: String = "$"
 const TIMETABLE_KEY: String = "$timetable"
 ## The diffuse texture of the materials (MaszynaMaterialFactory)
 const ALBEDO_TEXTURE_PARAMETER: StringName = &"texture_albedo"
+## A texture of the game's own, not of the data (MaszynaMaterialPatch.textures)
+const GAME_TEXTURE_SCHEME: String = "res://"
 
 ## The point with its glare, shared by every free spotlight; drawn at no size while
 ## RAILWAY_LIGHTS_VISIBILITY_IMPROVED_SETTING is off
@@ -100,6 +102,10 @@ const SELFILLUM_ALWAYS: float = 2.0
 ## How bright self-illumination is drawn, the shaders' global maszyna_selfillum_energy
 const SELFILLUM_ENERGY_SETTING: StringName = &"maszyna/rendering/selfillum_energy"
 const SELFILLUM_ENERGY_DEFAULT: float = 0.2
+## Whether the water mirrors its shore by its own screen-space reflection (water.gdshaderinc), the
+## shaders' global maszyna_water_screen_reflections - without it, the sky's reflection alone
+const WATER_SCREEN_REFLECTIONS_SETTING: StringName = &"maszyna/rendering/water_screen_reflections"
+const WATER_SCREEN_REFLECTIONS_DEFAULT: bool = true
 
 
 class MaterialOptions:
@@ -123,6 +129,11 @@ class MaterialOptions:
     # the largest texture size loaded, larger DDS drop their top mipmaps - the cab has its own
     # limit in the original (Train.cpp:660)
     var max_texture_size: int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT
+    # the environment's snow, wet and standing water lie on it (types/weather.gdshaderinc): the
+    # scenery's - its terrain, tracks and models - never a vehicle's, whose cab would fill with it
+    var weather_exposed: bool = false
+    # a glass inside the cab of its windows' texture: no rain on it (MaszynaMaterial.dry_submodels)
+    var dry: bool = false
 
 
 @export var season := SimulationServer.SEASON_SUMMER:
@@ -147,6 +158,8 @@ func _ready() -> void:
     ProjectSettings.settings_changed.connect(_apply_railway_lights_settings)
     _apply_selfillum_energy()
     ProjectSettings.settings_changed.connect(_apply_selfillum_energy)
+    _apply_water_screen_reflections()
+    ProjectSettings.settings_changed.connect(_apply_water_screen_reflections)
     MaszynaE3DRenderingServer.material_set_resolver(get_submodel_material)
     ReloadedMaterialServer.material_set_provider(_provide_material, get_material_texture_size, _provide_texture_length)
     MaszynaE3DRenderingServer.material_set_preloader(preload_model_materials)
@@ -164,6 +177,7 @@ func _exit_tree() -> void:
     SimulationServer.weather_changed.disconnect(_on_weather_changed)
     ProjectSettings.settings_changed.disconnect(_apply_railway_lights_settings)
     ProjectSettings.settings_changed.disconnect(_apply_selfillum_energy)
+    ProjectSettings.settings_changed.disconnect(_apply_water_screen_reflections)
     GameDataServer.cache_clear_requested.disconnect(clear_cache)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
     GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
@@ -173,6 +187,7 @@ func _exit_tree() -> void:
 func _provide_material(material_name: String, options: Dictionary) -> Material:
     var material_options: MaterialOptions = MaterialOptions.new()
     material_options.cull_disabled = bool(options.get("cull_disabled", false))
+    material_options.weather_exposed = true
     return get_material("", material_name, material_options)
 
 
@@ -238,6 +253,11 @@ func _apply_selfillum_energy() -> void:
         SELFILLUM_ENERGY_SETTING)))
 
 
+func _apply_water_screen_reflections() -> void:
+    RenderingServer.global_shader_parameter_set(&"maszyna_water_screen_reflections", bool(
+        ProjectSettings.get_setting(WATER_SCREEN_REFLECTIONS_SETTING)))
+
+
 func clear_cache() -> void:
     _preload_mutex.lock()
     _dds_cache.clear()
@@ -292,6 +312,10 @@ func material_preload(
         if not full_path:
             # named as the data names it: it is looked for in four places (_get_texture_file())
             MaszynaFileIndexer.missing_file_add(texture_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
+            continue
+        # the game's own is a resource, loaded with the material - by its name: a game directory may
+        # itself lie under res:// (the tests')
+        if texture_name.begins_with(GAME_TEXTURE_SCHEME):
             continue
         var texture_key:String = _get_texture_key(full_path, max_size)
         # a texture made already is not read again, nor one another preload holds
@@ -413,8 +437,13 @@ func get_submodel_material(
     if submodel.submodel_type == MaszynaE3DSubModel.SUBMODEL_FREE_SPOTLIGHT:
         return _free_spotlight_material
 
-    var unprefixed_model_path: String = "/".join(data_path.split("/").slice(1))
+    var path_segments: PackedStringArray = data_path.split("/")
+    var unprefixed_model_path: String = "/".join(path_segments.slice(1))
     var options: MaterialOptions = MaterialOptions.new()
+    # a vehicle's model is the game directory's dynamic/, its cab's too; the scenery's lie under the
+    # weather. A vehicle's data path leads with a "/" (read_mmd_data()): its first segment is empty
+    var root_dir: String = path_segments[1] if path_segments.size() > 1 and path_segments[0] == "" else path_segments[0]
+    options.weather_exposed = not root_dir.to_lower() == MaszynaVehiclesBank.DYNAMIC_DIR
 
     # TODO: handle more material options here (selfillum, etc)
     options.force_transparent = translucency == MaszynaE3DRenderingServer.TRANSLUCENCY_BLENDED
@@ -446,6 +475,8 @@ func get_submodel_material(
         return COLORED_MATERIAL
 
     if submodel.material_name:
+        options.dry = load_material(unprefixed_model_path, submodel.material_name).dry_submodels.has(
+            submodel.resource_name.to_lower())
         return get_material(unprefixed_model_path, submodel.material_name, options)
 
     return null
@@ -469,6 +500,8 @@ func load_texture(
     if not full_path:
         MaszynaFileIndexer.missing_file_add(material_name, MaszynaFileIndexer.MASZYNA_FILE_TEXTURE)
         return UNKNOWN_TEXTURE
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
+        return load(full_path) as Texture2D
 
     var texture:Texture2D = _load_clamped(full_path, _get_max_texture_size(max_texture_size))
     if not texture:
@@ -589,6 +622,9 @@ func _load_generated_texture(texture_name:String) -> Texture2D:
 func _get_texture_file(model_path:String, material_name:String) -> String:
     # a texture's traits follow its name after a colon and are no part of the file's name:
     # "peronowe/krawedz_zolty2:#" is krawedz_zolty2.dds (Texture.cpp:1310-1318)
+    # the game's own texture (a patch's, MaszynaMaterialPatch): no file of the data
+    if material_name.begins_with(GAME_TEXTURE_SCHEME):
+        return material_name if ResourceLoader.exists(material_name) else ""
     var trait_position:int = material_name.rfind(":")
     if trait_position >= 0:
         material_name = material_name.left(trait_position)
@@ -698,6 +734,8 @@ func _material_key(
         options.lights_on_threshold,
         options.cull_disabled,
         options.max_texture_size,
+        options.weather_exposed,
+        options.dry,
     ].map(str)).md5_text()
     return model_path.path_join("%s_%s" % [material_path, options_hash])
 

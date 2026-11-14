@@ -2,6 +2,7 @@
 #include "vehicles/rail/RailVehicleAppearance.hpp"
 
 #include <godot_cpp/variant/packed_string_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
 
 namespace godot {
@@ -21,6 +22,9 @@ namespace godot {
         private:
             TypedArray<PackedStringArray> pantograph_arms;
             PackedStringArray wiper_arms;
+            PackedVector3Array wiper_pivots;
+            PackedVector3Array wiper_axes;
+            PackedFloat64Array wiper_turns;
             PackedStringArray mirrors;
             PackedStringArray doors;
             PackedStringArray door_steps;
@@ -42,6 +46,16 @@ namespace godot {
             /* Arm 1, arm 2 and blade of every wiper (DynObj.cpp:5838-5870) */
             void set_wiper_arms(const PackedStringArray &p_value);
             PackedStringArray get_wiper_arms() const;
+            /* The wiper arms a game's patch gives a model whose MMD names none
+             * (MaszynaWiperArmPatch), each turned whole: the point and the axis it turns about in its
+             * own frame, and how far [deg], signed - empty for the original's animwiperprefix arms,
+             * which turn about their origin and up by the wipers' angle, every other one mirrored */
+            void set_wiper_pivots(const PackedVector3Array &p_value);
+            PackedVector3Array get_wiper_pivots() const;
+            void set_wiper_axes(const PackedVector3Array &p_value);
+            PackedVector3Array get_wiper_axes() const;
+            void set_wiper_turns(const PackedFloat64Array &p_value);
+            PackedFloat64Array get_wiper_turns() const;
             /* In the original's order, odd on the left, even on the right (DynObj.cpp:5887-5910) */
             void set_mirrors(const PackedStringArray &p_value);
             PackedStringArray get_mirrors() const;

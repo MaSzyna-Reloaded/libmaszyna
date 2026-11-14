@@ -474,6 +474,38 @@ interface.
   `RailVehicleServer.person_change_cabin()`), the
   AI keeps its cabin and the vehicle answers to it.
 
+* **Wipers of no switch are driven by hand.** A FIZ of no `WiperList:` gives the vehicle no wipers
+  at all - the cab's vehicle gets them anyway (`FizVehicleBuilder.build_into()`) - and no switch:
+  the original moves none of them, not even those a model animates, and an old cab's wipers are
+  moved by hand - the EU07's handles `mech_wyc_raczka01/02`, the SM42's, the SU46's `raczka_wyc` -
+  which no MMD key names. Wrapper: such wipers are driven by hand (`RailVehicleWipers.DRIVE_MANUAL`,
+  `MaszynaRailVehicle3DInstancer.apply_wiper_count()`): as many as the model animates, or four - the
+  channels of the cab glass's wiper mask - so the wiper switch's keys wipe the glass in any cab
+  (`MaszynaCabinManualWipers`). What the data does not define of them a game patches by hand, per
+  file (`MaszynaVehiclePatch`, `MaszynaVehicleSystem.patch_set()`), never guessed from names: a cab
+  model's handles - and its own wipers, the EU07's `wycieracz01/02` - are controls of its patch
+  (`MaszynaCabControlPatch`, `reloaded_manualwiper<N>`), each turned by the mouse, the wiper of its
+  label following it; a vehicle model's wipers are the wiper arms of its patch
+  (`MaszynaWiperArmPatch`), each turned whole about its own point and axis by its own angle - the
+  SM42's `wycieraczka01-04` have their origin in the middle of the blade, their hub 0.376 m along
+  their Z, and turn about their X, across the glass; a FIZ's patch gives it a wiper switch
+  (`MaszynaWiperListPatch`) - the 6Dg's cab has one its data names not; a texture of no .mat gets
+  the material of its patch (`MaszynaMaterialPatch`) - the SM42's, SP42's and EN57's cab glass is
+  drawn with the rain, as a `rain_windscreen` .mat draws it, its wiper mask made from the patched
+  arms' sweep over the glass's UV (`addons/libmaszyna/patches/`). A patch is read only where the file has no definition of its
+  own (`WiperList:`, `animwiperprefix:`, the MMD's label, the .mat). A patched control turns about
+  the axis and the point its patch names (`MaszynaCabControlPatch.axis`, `pivot`): the ED72's wiper
+  programmer is a knob made at its cab floor's origin, turned about its own Z. A glass texture also
+  drawn inside the cab - the ED72's `okno` on its timetable's cover - keeps that part dry
+  (`dry_pane`), and panes sharing one UV take each its own wiper's channel (`wiper_pane_N`). The
+  air motors of such wipers, which the data has no word of either: an SM42's, an EU07's, an EP08's or
+  an ET41's wiper goes by itself with its own valve open (`reloaded_wipervalve<N>`, a control of the
+  patch on `zawor_raczka02-05`, `Object12/26`, `wycieraczki_sterowanie01/02`,
+  `wycieraczka_mechu/_pomocnik`), the air of the main reservoir moving it and its handle with it -
+  each vehicle's speeds its FIZ's patch (`MaszynaWiperValvesPatch`) - an SM42's valve very sensitive,
+  full open the wiper "going as if to fall off", an EU07's far calmer; the keys open them all.
+  Wipers driven by hand keep their numbers from either cab (`CabinWindscreenWipers`).
+
 ## Scenery data
 
 * **A trainset for the player is told apart only by a dash.** Every trainset of a scenario is
@@ -675,6 +707,33 @@ interface.
     `MaszynaMaterialManager._get_texture_file()` in the original's order; `.ktx` and `.tex` are not
     read (Godot reads neither, and the data has none). A non-DDS file is read by Godot's image
     loader, halved down to the max texture size.
+
+## Drawing (`rendering/opengl33renderer.cpp`)
+
+* **A vehicle's low-poly interior lies in its body's plane, and the draw order hides it.** The
+  original draws the low-poly interior first and the body over it, with the depth test `GL_LEQUAL`
+  (`opengl33renderer.cpp:3179-3192`; the translucent pass the same, `4208-4214`), so where their
+  surfaces meet the body is seen. The data leans on it: the EN71's interior
+  (`dynamic/pkp/en57km_v1/lowpoly/en71km_lowpoly_rb.e3d`, submodel `corridor01windows`, drawn in
+  the vehicle's skin) has 145 triangles in the plane of its body (`base/en71km_rb.e3d`, `pudlo`) -
+  102 on one side, 43 on the other. Godot sets no order within the opaque pass: the two fight for
+  the depth, and the interior, darker in the body's shadow, flickers through the sunlit side in
+  large triangles.
+  - Wrapper: the low-poly interior is drawn 2 cm farther from the camera than it lies - the core's
+    vehicle rendering lays `reloaded_depth_behind` on its instance, the material types move their
+    vertices by it (`materials/types/draw_behind.gdshaderinc`) - so the body wins where they meet,
+    as with the original's order.
+* **A vehicle's glass is drawn of its skin in the plane of the paint around it, and the
+  translucent pass leaves the paint alone.** The opaque pass keeps a material's texels at its
+  `opacity:` and above; the translucent pass is given the opacity negated, and the shader then drops
+  the texels at and above it (`opengl33renderer.cpp:2247-2251`, `mat_default.frag:32`), so a glass
+  submodel draws only the glass of the skin. The EN71's door panes (`base/en71km_rb.e3d`,
+  `szyba01`-`szyba04`, 32 triangles each) lie in the plane of their doors (`door01`-`door04`) and map
+  the doors' paint too: drawn blended in full, the pane's paint fought the door's for the depth and
+  flickered in triangles round the window.
+  - Wrapper: the blended variants drop the texels at and above the material's opacity
+    (`materials/types/blended_cutout.gdshaderinc`, `blended_opacity` set by the factory; 0 - none
+    dropped - for a material without one).
 
 ## Sound (`audio/audiorenderer.cpp`, `vehicle/DynObj.cpp`)
 

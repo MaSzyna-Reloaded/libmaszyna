@@ -65,6 +65,12 @@ static func register() -> void:
         MaszynaMaterialManager.SELFILLUM_ENERGY_SETTING, MaszynaMaterialManager.SELFILLUM_ENERGY_DEFAULT,
         TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,2,0.01"
     )
+    # The water mirrors its shore by a reflection of its own marched over the screen - some twenty
+    # reads of the screen a pixel of water; without it, the sky's reflection alone
+    ReloadedProjectSetting.add(
+        MaszynaMaterialManager.WATER_SCREEN_REFLECTIONS_SETTING,
+        MaszynaMaterialManager.WATER_SCREEN_REFLECTIONS_DEFAULT, TYPE_BOOL
+    )
     # A vehicle's mirror glass reflects the scene: a camera mirrored across it renders the glass at
     # its size on the screen while the mirror is in view within 30 m (PlanarMirror3D) - a scene
     # render per mirror
@@ -125,4 +131,9 @@ static func register() -> void:
     ReloadedProjectSetting.add(
         MmdCabinInstancer.DDS_MAX_CAB_TEXTURE_SIZE_SETTING, MmdCabinInstancer.DDS_MAX_CAB_TEXTURE_SIZE_DEFAULT,
         TYPE_INT, PROPERTY_HINT_ENUM, TEXTURE_SIZE_HINT
+    )
+    # Not the original's: a scenery's big flat faces facing up split into sides of some 2 m, for the
+    # snow to lie on in drifts (MaszynaTrianglesImporter) - a game drawing them turns it on
+    ReloadedProjectSetting.add(
+        MaszynaSceneryProvider.DENSIFY_SETTING, MaszynaSceneryProvider.DENSIFY_DEFAULT, TYPE_BOOL
     )

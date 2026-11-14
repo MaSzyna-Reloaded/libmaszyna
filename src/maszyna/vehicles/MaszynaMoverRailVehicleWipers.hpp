@@ -10,7 +10,9 @@ namespace godot {
      *
      * The Mover has no wiper state at all (the original keeps it in its vehicle layer, DynObj.h
      * dWiperPos), so the wipers move here: a port of TDynamicObject::update()
-     * (DynObj.cpp:4048-4115), the switch the interface's (Train.cpp:2638-2661). */
+     * (DynObj.cpp:4048-4115), the switch the interface's (Train.cpp:2638-2661). Wipers driven by
+     * hand (RailVehicleWipers.DRIVE_MANUAL) stand where their handles do, or go by the air of the
+     * main reservoir with their valves open - not the original's, which has no such valve. */
     class MaszynaMoverRailVehicleWipers : public RailVehicleWipers, public MaszynaMoverComponent {
             GDCLASS(MaszynaMoverRailVehicleWipers, RailVehicleWipers);
 
@@ -34,11 +36,19 @@ namespace godot {
                     double out_since = 0.0;
                     double park_since = 0.0;
                     int working_switch_position = 0;
+                    bool valve_returning = false; // the way its air motor is taking it
             };
             std::vector<Wiper> wipers;
             double sweep_clock = 0.0;
             /* Every wiper stood parked after the last pass */
             bool parked = true;
+            /* Its air motor's own, the vehicle's (MaszynaWiperValvesPatch): a sweep's time at a valve
+             * just cracked open and at a full one with a full reservoir, the speed growing
+             * exponentially between them, and the share of the way to the fastest at an opening being
+             * 1 - (1 - opening)^valve_sensitivity. Of a vehicle that gives none, one speed */
+            double valve_slowest_sweep_time = 1.0;
+            double valve_fastest_sweep_time = 1.0;
+            double valve_sensitivity = 1.0;
 
         protected:
             /* As many wipers as the vehicle model has (the original counts its animated submodels,
@@ -48,5 +58,8 @@ namespace godot {
 
         public:
             PackedFloat64Array get_sweep_positions() const override;
+            MAKE_GS(double, valve_slowest_sweep_time);
+            MAKE_GS(double, valve_fastest_sweep_time);
+            MAKE_GS(double, valve_sensitivity);
     };
 } // namespace godot
