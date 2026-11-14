@@ -31,6 +31,12 @@ libmaszyna and libreloaded:
   the wrapper's side - its getter, state key, command. A change that would touch the Mover is asked
   about before the first edit, never reported after (#348 removed `PipeBrakePress` from it, #355
   put it back)
+* REQUIRED, ABSOLUTE: **a server is a singleton, never a class of static functions** - a C++
+  Engine singleton or a GDScript autoload its plugin adds, never a `class_name` of `static func`s
+  and `static var`s; none is added to such a class, one found is reported - see `CODE_STYLE.md`
+* REQUIRED, ABSOLUTE: **nothing is loaded in a constructor, and no lazy cache stands in for it**:
+  whoever makes or owns an object hands it what it needs through an explicit API (`*_set_*`) - see
+  `CODE_STYLE.md`
 * libmaszyna knows nothing of the game (`maszyna-reloaded`): no game class, path, setting or
   input action is named in it
 * the Godot project is `demo/`, libmaszyna's test project (`demo/project.godot`, `demo/tests/`,
@@ -311,6 +317,15 @@ Before every commit:
 
 Commit style:
 
+* REQUIRED: **an unclear rebase conflict is decided by the operator, not on a guess.** Where both
+  sides changed the same lines and it is not certain which change stands - or how the branch's
+  change is carried onto what the other side did since - compare the two exactly: the branch's
+  change against its base, the other side's against the same base. Lay the situation out to the
+  operator - each side's change, and what each resolution would keep and drop - and ask; neither
+  side is taken by default. After every rebase, before the push, every line the branch added is
+  checked against the rebased head, and each one missing is named to the operator with its
+  reason: a game PR's rebase onto main took main's side of its sky settings and HUD scene and
+  lost them unnoticed (2026-11-14)
 * REQUIRED, ABSOLUTE: **changes of one subject are one commit** - no trail of follow-ups. A fix, a
   correction or a next step of the same subject (the CI, one feature, one bug) goes into that
   subject's commit while it is unpushed (`--amend`, or a soft reset of the run and one recommit),

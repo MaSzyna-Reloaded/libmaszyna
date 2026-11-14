@@ -381,12 +381,16 @@ func _apply(
     elif (mmat.transparent or has_opacity) and not options.force_opaque:
         transparency = MaszynaMaterialManager.Transparency.AlphaScissor
     target_shader_material.set_shader_parameter("transparency", transparency)
+    # and its blended pass draws only the texels below it (blended_cutout.gdshaderinc)
+    target_shader_material.set_shader_parameter(
+        "blended_opacity", mmat.opacity if options.force_transparent and has_opacity else 0.0)
     target_shader_material.set_shader_parameter(
         "alpha_scissor_threshold", mmat.opacity if has_opacity else options.alpha_scissor_threshold)
     target_shader_material.set_shader_parameter("emission_enabled", options.selfillum_enabled)
     target_shader_material.set_shader_parameter("emission_color", options.selfillum_color if options.selfillum_color else Color(1.0, 1.0, 1.0, 1.0))
     target_shader_material.set_shader_parameter("emission_energy", options.selfillum_energy)
     target_shader_material.set_shader_parameter("lights_on_threshold", options.lights_on_threshold)
+    target_shader_material.set_shader_parameter("weather_exposed", options.weather_exposed)
     if options.force_transparent:
         # mat_default has no reflection unless its .mat gives one; the shaders with a normal map
         # or a reflmap reflect in full ("#param (reflection, 1, 2, 1, zero)" against "one")
@@ -396,6 +400,20 @@ func _apply(
         var default_reflection: float = 1.0 if masked else 0.0
         target_shader_material.set_shader_parameter(
             "blended_reflection", variant.get_parameter("reflection", default_reflection))
+
+
+## The shaders a game of more draws a type's materials with in place of the type's own
+## (shader_set_override()): by the type shader's path, by the VARIANT_* flags
+var _shader_overrides: Dictionary[String, Dictionary] = {}
+
+
+## A type's shaders replaced by a game of more, before any material of the type is made: the type
+## shader's path (types/<type>.gdshader, as SHADER_VARIANTS has it) and its replacements by the
+## VARIANT_* flags - 0 the base, which stands for a combination not given. A replacement is the
+## type's own .gdshaderinc included, with what the type lets a defined macro add
+## (types/rain_windscreen.gdshaderinc's RAIN_WINDSCREEN_LAYER)
+func shader_set_override(type_shader_path: String, shaders: Dictionary[int, Shader]) -> void:
+    _shader_overrides[type_shader_path] = shaders
 
 
 ## The type shader's variant the material's options and textures make (SHADER_VARIANTS): a type
@@ -415,6 +433,9 @@ func _get_shader_variant(
         flags |= VARIANT_CULL
     if variants.has(VARIANT_SPECGLOSS) and not _texture_path(variant, texture_map, texture_map.specgloss) == "":
         flags |= VARIANT_SPECGLOSS
+    var overrides: Dictionary = _shader_overrides.get(base_shader.resource_path, {})
+    if not overrides.is_empty():
+        return overrides.get(flags, overrides.get(0, base_shader))
     return variants.get(flags, base_shader)
 
 
@@ -604,6 +625,8 @@ func _apply_water(
     model_path: String,
     options: MaszynaMaterialManager.MaterialOptions,
 ) -> void:
+    # what the water shader takes of the material (water.gdshaderinc): the original's textures,
+    # glossiness and waves - not its colour and reflection, which made the alpha the water has not
     var diffuse_texture_path: String = _texture_path(variant, texture_map, texture_map.albedo)
     var normalmap_texture_path: String = _texture_path(variant, texture_map, texture_map.normalmap)
     var dudvmap_texture_path: String = _texture_path(variant, texture_map, texture_map.dudvmap)
@@ -623,20 +646,9 @@ func _apply_water(
     if dudvmap_texture_path:
         dudv_texture = MaszynaMaterialManager.load_texture(model_path, dudvmap_texture_path, false, options.max_texture_size)
 
-    var material_color := Vector4(1.0, 1.0, 1.0, 0.0)
-    if variant.has_parameter_vec4("color"):
-        material_color = variant.get_parameter_vec4("color")
-
     material.set_shader_parameter("diffuse_texture", diffuse_texture)
     material.set_shader_parameter("normal_texture", normal_texture)
     material.set_shader_parameter("dudv_texture", dudv_texture)
-    material.set_shader_parameter("material_color", Color(
-        material_color.x,
-        material_color.y,
-        material_color.z,
-        material_color.w
-    ))
-    material.set_shader_parameter("reflection_strength", variant.get_parameter("reflection", 0.0))
     material.set_shader_parameter("glossiness", variant.get_parameter("glossiness", 10.0))
     material.set_shader_parameter("wave_strength", variant.get_parameter("wave_strength", 0.05))
     material.set_shader_parameter("wave_speed", variant.get_parameter("wave_speed", 0.02))
@@ -646,6 +658,10 @@ func _apply_water(
         if specgloss_texture_path:
             specgloss_texture = MaszynaMaterialManager.load_texture(model_path, specgloss_texture_path, true, options.max_texture_size)
         material.set_shader_parameter("specgloss_texture", specgloss_texture)
+
+
+## The wipers a rain_windscreen glass tells apart, one a channel of its wiper mask
+const RAIN_WINDSCREEN_PANES:int = 4
 
 
 ## mat_rain_windscreen.frag: cab glass with raindrops wiped by the wipermask. Rain and wiper state
@@ -667,7 +683,21 @@ func _apply_rain_windscreen(
         var texture_path: String = _texture_path(variant, texture_map, textures[parameter])
         if texture_path:
             material.set_shader_parameter(parameter, MaszynaMaterialManager.load_texture(model_path, texture_path, false, options.max_texture_size))
+    # a glass of no mask its wipers sweep whole, from the driver's left to his right (a patch's)
+    material.set_shader_parameter("wiper_mask_across", variant.has_parameter_vec4("wiper_across"))
     material.set_shader_parameter("raindrop_grid_size", variant.get_parameter("raindrop_grid_size", 1.0))
+    # the panes of a glass sharing their UV, each its wiper's (a game's patch, MaszynaMaterialPatch)
+    if variant.has_parameter_vec4("wiper_across"):
+        var across:Vector4 = variant.get_parameter_vec4("wiper_across")
+        material.set_shader_parameter("wiper_across", Vector3(across.x, across.y, across.z))
+        material.set_shader_parameter("wiper_across_span", variant.get_parameter_vec4("wiper_across_span"))
+    for pane:int in RAIN_WINDSCREEN_PANES:
+        var parameter:String = "wiper_pane_%d" % pane
+        material.set_shader_parameter(parameter, variant.get_parameter_vec4(parameter))
+    # a glass inside the cab of the panes' texture, dry (a game's patch, MaszynaMaterialPatch)
+    material.set_shader_parameter("dry_pane", variant.get_parameter_vec4("dry_pane"))
+    # a glass of the texture inside the cab, dry whole (a game's patch, MaszynaMaterialPatch)
+    material.set_shader_parameter("dry", options.dry)
     if variant.has_parameter("specular"):
         material.set_shader_parameter("specular", variant.get_parameter("specular"))
     if variant.has_parameter("glossiness"):

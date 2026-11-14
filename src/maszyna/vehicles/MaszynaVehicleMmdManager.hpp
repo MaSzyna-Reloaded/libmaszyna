@@ -12,7 +12,8 @@ namespace godot {
      * (DynObj.cpp:5263) - read once and kept on disk: a scenery repeats the same type across its
      * trainsets. An entry is read again when its .mmd or .fiz changes - their own mtimes, not every
      * .e3d or include they reference; the FIZ's for the pantographs measured from the model, the
-     * ones it declares and does not give the geometry of - or the reader's format does. The reader
+     * ones it declares and does not give the geometry of - or the reader's format does, or the
+     * game's patch of the vehicles' files (set_patch_digest()). The reader
      * (MaszynaRailVehicle3DInstancer) is handed in by the plugin's runtime (set_mmd_data_reader()). */
     class MaszynaVehicleMmdManager : public Object {
             GDCLASS(MaszynaVehicleMmdManager, Object)
@@ -29,6 +30,8 @@ namespace godot {
             mutable Mutex mutex;
             Callable reader;
             int format_version = 0;
+            /* What tells the game's patch of the vehicles' files from another (set_patch_digest()) */
+            String patch_digest;
 
         protected:
             static void _bind_methods();
@@ -46,6 +49,9 @@ namespace godot {
              * MaszynaVehicleMmdData, and the version of what it puts into it - raised whenever it
              * changes */
             void set_mmd_data_reader(const Callable &p_reader, int p_format_version);
+            /* What tells the game's patch of the vehicles' files the reader reads them with from
+             * another (MaszynaVehicleSystem.patch_set()): data read with another patch is read again */
+            void set_patch_digest(const String &p_patch_digest);
             /* The MMD data of the type p_data_path/p_file_name in its skin p_livery - of the vehicle
              * p_vehicle_id when its MMD names the vehicle; null when the data cannot be read */
             Ref<Resource> load_mmd_data(

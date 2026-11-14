@@ -45,6 +45,8 @@ const MIRROR_GLASS_NAME_PARTS:Array[String] = ["zwierciad", "luster", "lustr"]
 ## Whether the mirror glass reflects the scene (PlanarMirror3D)
 const REAL_MIRRORS_SETTING:StringName = &"maszyna/rendering/real_mirrors"
 const REAL_MIRRORS_DEFAULT:bool = true
+## The extensions of a model's file (MaszynaE3DModelManager.load_model())
+const MODEL_EXTENSIONS:Array[String] = ["e3d", "t3d"]
 ## Original engine: where a moving car keeps across its road (TDynamicObject::Init(),
 ## DynObj.cpp:2310-2327) - in the middle of a road narrower than 3.5 m; else 0.75 m off the centre
 ## line when its lane leaves more than 1.5 m free, in the middle of its lane when more than 0.1 m,
@@ -69,6 +71,8 @@ var _auto_rewident:MaszynaAutoRewident = null
 var destination_signs:MaszynaDestinationSigns = null
 ## REAL_MIRRORS_SETTING as the vehicles' mirrors show it
 var _real_mirrors:bool = ProjectSettings.get_setting(REAL_MIRRORS_SETTING)
+## The game's patch of each of its vehicles' files, by _patch_key() of the file (patch_set())
+var _patches:Dictionary[String, MaszynaVehicleModelPatch] = {}
 
 
 ## The editor drives no vehicle and plays no sound: CabinSystem, MaszynaVehicleSoundServer and DriverServer's
@@ -153,6 +157,56 @@ func vehicle_exists(vehicle:RID) -> bool:
     return _vehicles.has(vehicle)
 
 
+## The game's patch of its vehicles' files (MaszynaVehiclePatch) - set before any vehicle is read,
+## as the readers of the files take it (model_get_patch())
+func patch_set(patch:MaszynaVehiclePatch) -> void:
+    _patches.clear()
+    var digests:PackedStringArray = []
+    for model:MaszynaVehicleModelPatch in patch.models:
+        _patches[_patch_key(model.path)] = model
+        digests.append(model.digest())
+    # the vehicles' MMD data is read with the patch: another patch, another entry of its cache
+    MaszynaVehicleMmdManager.set_patch_digest("".join(digests).md5_text())
+
+
+## The game's patch of a vehicle's file, by its path in the game's directory in any case - a
+## model's with its extension or none, as MaszynaE3DModelManager.load_model() takes it; null of a
+## file of none
+func model_get_patch(relative_path:String) -> MaszynaVehicleModelPatch:
+    return _patches.get(_patch_key(relative_path))
+
+
+## The wipers the game's patch gives a FIZ of no WiperList - their switch (MaszynaWiperListPatch), how
+## they go by their valves (MaszynaWiperValvesPatch) - by its path in the game's directory: a new one
+## each time, for FizVehicleBuilder to give a vehicle; null of a FIZ of none
+func fiz_get_patched_wipers(relative_path:String) -> RailVehicleWipers:
+    var patch:MaszynaVehicleModelPatch = model_get_patch(relative_path)
+    if not patch:
+        return null
+    var wipers:MaszynaMoverRailVehicleWipers = null
+    for wiper_list:MaszynaWiperListPatch in patch.elements_of(MaszynaWiperListPatch):
+        wipers = MaszynaMoverRailVehicleWipers.new()
+        wipers.angle = wiper_list.angle
+        var positions:Array[RailVehicleWiperListItem] = []
+        for position:RailVehicleWiperListItem in wiper_list.positions:
+            positions.append(position.duplicate())
+        wipers.positions = positions
+        wipers.wiper_count = wiper_list.wiper_count
+    for valves:MaszynaWiperValvesPatch in patch.elements_of(MaszynaWiperValvesPatch):
+        if not wipers:
+            wipers = MaszynaMoverRailVehicleWipers.new()
+        wipers.valve_slowest_sweep_time = valves.slowest_sweep_time
+        wipers.valve_fastest_sweep_time = valves.fastest_sweep_time
+        wipers.valve_sensitivity = valves.sensitivity
+    return wipers
+
+
+## A file told apart by its path lowercase, a model's of no extension: its .e3d is its .t3d compiled
+static func _patch_key(relative_path:String) -> String:
+    var path:String = relative_path.simplify_path().trim_prefix("/").to_lower()
+    return path.get_basename() if path.get_extension() in MODEL_EXTENSIONS else path
+
+
 ## In the order they were created, each once its files are read; one still being read waits in its
 ## place
 func _on_process_frame() -> void:
@@ -199,7 +253,8 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
     if not mmd_data:
         return read
     read["mmd_data"] = mmd_data
-    read["description"] = MaszynaFizManager.load_description(mmd_data.data_path, mmd_data.file_name)
+    read["description"] = MaszynaFizManager.load_description(mmd_data.data_path, mmd_data.file_name,
+            fiz_get_patched_wipers(mmd_data.data_path.path_join(mmd_data.file_name + ".fiz")))
     var description:VehicleController = read["description"] as VehicleController
     var load:RailVehicleLoad = description.get_component(VehicleComponentType.COMPONENT_LOAD) as RailVehicleLoad \
             if description else null
@@ -213,6 +268,13 @@ func _read_vehicle(dynamic:VehicleData) -> Dictionary:
         return read
     read["cab_logic"] = MaszynaCabinLogic.from_mmd(data_path, file_name, dynamic.livery, dynamic.vehicle_id)
     return read
+
+
+## What the snow on the vehicle is drawn with: its scenery's
+## (SceneryContentNode.vehicle_snow_material), the scene node it is drawn in; none for another node
+static func _snow_material(record:Vehicle) -> ShaderMaterial:
+    var scenery:SceneryContentNode = instance_from_id(record.scene_node_id) as SceneryContentNode
+    return scenery.vehicle_snow_material if scenery else null
 
 
 ## The vehicle's own: the scenery's values first - the controller takes them when its simulation
@@ -233,6 +295,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
         VehicleServer.vehicle_bind_controller(vehicle, record.controller)
         RoadVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
         RoadVehicleRenderingServer.vehicle_set_appearance(vehicle, mmd_data.appearance)
+        RoadVehicleRenderingServer.vehicle_set_snow_material(vehicle, _snow_material(record))
         if Engine.is_editor_hint():
             return
         if not dynamic.driver_type == VehicleData.DRIVER_NOBODY:
@@ -303,6 +366,7 @@ func _build(vehicle:RID, record:Vehicle) -> void:
 
     RailVehicleRenderingServer.vehicle_attach(vehicle, record.scene_node_id)
     RailVehicleRenderingServer.vehicle_set_appearance(vehicle, mmd_data.appearance)
+    RailVehicleRenderingServer.vehicle_set_snow_material(vehicle, _snow_material(record))
     MaszynaE3DRailVehicleRenderingServer.vehicle_set_load_model(vehicle, mmd_data.data_path, record.read["load_model_filename"])
     MaszynaRailVehicle3DInstancer.apply_wiper_count(vehicle, mmd_data.appearance)
     if mmd_data.destination_sign:
