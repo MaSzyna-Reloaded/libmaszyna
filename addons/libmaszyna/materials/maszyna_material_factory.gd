@@ -381,6 +381,9 @@ func _apply(
     elif (mmat.transparent or has_opacity) and not options.force_opaque:
         transparency = MaszynaMaterialManager.Transparency.AlphaScissor
     target_shader_material.set_shader_parameter("transparency", transparency)
+    # and its blended pass draws only the texels below it (blended_cutout.gdshaderinc)
+    target_shader_material.set_shader_parameter(
+        "blended_opacity", mmat.opacity if options.force_transparent and has_opacity else 0.0)
     target_shader_material.set_shader_parameter(
         "alpha_scissor_threshold", mmat.opacity if has_opacity else options.alpha_scissor_threshold)
     target_shader_material.set_shader_parameter("emission_enabled", options.selfillum_enabled)

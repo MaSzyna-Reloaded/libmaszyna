@@ -41,7 +41,13 @@ uniform vec3 uv1_offset;
 uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
+#include "res://addons/libmaszyna/materials/types/draw_behind.gdshaderinc"
+#ifdef MASZYNA_ALPHA_BLEND
+#include "res://addons/libmaszyna/materials/types/blended_cutout.gdshaderinc"
+#endif
+
 void vertex() {
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
 	maszyna_weather_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 }
@@ -52,6 +58,9 @@ void fragment() {
 	vec4 albedo_tex = texture(texture_albedo, base_uv);
 #ifdef MASZYNA_ALPHA_BLEND
 	ALPHA = albedo_tex.a;
+	if (maszyna_blended_cut(albedo_tex.a)) {
+		discard;
+	}
 #endif
 	if (transparency == 2 && albedo_tex.a < alpha_scissor_threshold) {
 		discard;

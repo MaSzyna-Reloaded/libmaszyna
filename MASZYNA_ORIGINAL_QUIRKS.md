@@ -708,6 +708,33 @@ interface.
     read (Godot reads neither, and the data has none). A non-DDS file is read by Godot's image
     loader, halved down to the max texture size.
 
+## Drawing (`rendering/opengl33renderer.cpp`)
+
+* **A vehicle's low-poly interior lies in its body's plane, and the draw order hides it.** The
+  original draws the low-poly interior first and the body over it, with the depth test `GL_LEQUAL`
+  (`opengl33renderer.cpp:3179-3192`; the translucent pass the same, `4208-4214`), so where their
+  surfaces meet the body is seen. The data leans on it: the EN71's interior
+  (`dynamic/pkp/en57km_v1/lowpoly/en71km_lowpoly_rb.e3d`, submodel `corridor01windows`, drawn in
+  the vehicle's skin) has 145 triangles in the plane of its body (`base/en71km_rb.e3d`, `pudlo`) -
+  102 on one side, 43 on the other. Godot sets no order within the opaque pass: the two fight for
+  the depth, and the interior, darker in the body's shadow, flickers through the sunlit side in
+  large triangles.
+  - Wrapper: the low-poly interior is drawn 2 cm farther from the camera than it lies - the core's
+    vehicle rendering lays `reloaded_depth_behind` on its instance, the material types move their
+    vertices by it (`materials/types/draw_behind.gdshaderinc`) - so the body wins where they meet,
+    as with the original's order.
+* **A vehicle's glass is drawn of its skin in the plane of the paint around it, and the
+  translucent pass leaves the paint alone.** The opaque pass keeps a material's texels at its
+  `opacity:` and above; the translucent pass is given the opacity negated, and the shader then drops
+  the texels at and above it (`opengl33renderer.cpp:2247-2251`, `mat_default.frag:32`), so a glass
+  submodel draws only the glass of the skin. The EN71's door panes (`base/en71km_rb.e3d`,
+  `szyba01`-`szyba04`, 32 triangles each) lie in the plane of their doors (`door01`-`door04`) and map
+  the doors' paint too: drawn blended in full, the pane's paint fought the door's for the depth and
+  flickered in triangles round the window.
+  - Wrapper: the blended variants drop the texels at and above the material's opacity
+    (`materials/types/blended_cutout.gdshaderinc`, `blended_opacity` set by the factory; 0 - none
+    dropped - for a material without one).
+
 ## Sound (`audio/audiorenderer.cpp`, `vehicle/DynObj.cpp`)
 
 * **The original knows its running noise combs and works around it in one line.** Every vehicle of
