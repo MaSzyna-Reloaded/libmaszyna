@@ -102,6 +102,10 @@ const SELFILLUM_ALWAYS: float = 2.0
 ## How bright self-illumination is drawn, the shaders' global maszyna_selfillum_energy
 const SELFILLUM_ENERGY_SETTING: StringName = &"maszyna/rendering/selfillum_energy"
 const SELFILLUM_ENERGY_DEFAULT: float = 0.2
+## Whether the water mirrors its shore by its own screen-space reflection (water.gdshaderinc), the
+## shaders' global maszyna_water_screen_reflections - without it, the sky's reflection alone
+const WATER_SCREEN_REFLECTIONS_SETTING: StringName = &"maszyna/rendering/water_screen_reflections"
+const WATER_SCREEN_REFLECTIONS_DEFAULT: bool = true
 
 
 class MaterialOptions:
@@ -154,6 +158,8 @@ func _ready() -> void:
     ProjectSettings.settings_changed.connect(_apply_railway_lights_settings)
     _apply_selfillum_energy()
     ProjectSettings.settings_changed.connect(_apply_selfillum_energy)
+    _apply_water_screen_reflections()
+    ProjectSettings.settings_changed.connect(_apply_water_screen_reflections)
     MaszynaE3DRenderingServer.material_set_resolver(get_submodel_material)
     ReloadedMaterialServer.material_set_provider(_provide_material, get_material_texture_size, _provide_texture_length)
     MaszynaE3DRenderingServer.material_set_preloader(preload_model_materials)
@@ -171,6 +177,7 @@ func _exit_tree() -> void:
     SimulationServer.weather_changed.disconnect(_on_weather_changed)
     ProjectSettings.settings_changed.disconnect(_apply_railway_lights_settings)
     ProjectSettings.settings_changed.disconnect(_apply_selfillum_energy)
+    ProjectSettings.settings_changed.disconnect(_apply_water_screen_reflections)
     GameDataServer.cache_clear_requested.disconnect(clear_cache)
     GameDataServer.data_unload_requested.disconnect(_on_data_unload_requested)
     GameDataServer.data_reload_requested.disconnect(_on_data_reload_requested)
@@ -244,6 +251,11 @@ func _apply_railway_lights_settings() -> void:
 func _apply_selfillum_energy() -> void:
     RenderingServer.global_shader_parameter_set(&"maszyna_selfillum_energy", float(ProjectSettings.get_setting(
         SELFILLUM_ENERGY_SETTING)))
+
+
+func _apply_water_screen_reflections() -> void:
+    RenderingServer.global_shader_parameter_set(&"maszyna_water_screen_reflections", bool(
+        ProjectSettings.get_setting(WATER_SCREEN_REFLECTIONS_SETTING)))
 
 
 func clear_cache() -> void:

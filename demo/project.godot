@@ -777,6 +777,10 @@ maszyna_selfillum_energy={
 "type": "float",
 "value": 0.2
 }
+maszyna_water_screen_reflections={
+"type": "bool",
+"value": true
+}
 reloaded_light_level={
 "type": "float",
 "value": 1.0

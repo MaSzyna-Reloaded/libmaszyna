@@ -86,6 +86,9 @@ const float N_DOT_V_MIN = 0.0001;
 
 // The environment's wind (EnvironmentNode): its speed [m/s]
 global uniform float reloaded_wind_speed;
+// Whether the shore is mirrored by the water's own screen-space reflection (MaszynaMaterialManager,
+// a graphics option): without it, the sky's reflection alone
+global uniform bool maszyna_water_screen_reflections;
 // The sun's angular radius as the sky draws it [rad] (the sky's environment): the sun mirrored in
 // the water is as large as the sun in the sky
 global uniform float reloaded_sun_angular_radius;
@@ -222,8 +225,11 @@ void fragment() {
     // the shore it mirrors, marched over the screen; the sky's reflection (the environment's)
     // where the ray finds nothing - SPECULAR's F0 scales both of Godot's terms of it
     float jitter = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
-    vec3 hit = march_reflection(VERTEX, reflect(normalize(VERTEX), NORMAL), PROJECTION_MATRIX,
-            INV_PROJECTION_MATRIX, jitter);
+    vec3 hit = vec3(0.0);
+    if (maszyna_water_screen_reflections) {
+        hit = march_reflection(VERTEX, reflect(normalize(VERTEX), NORMAL), PROJECTION_MATRIX,
+                INV_PROJECTION_MATRIX, jitter);
+    }
     vec3 mirrored = textureLod(screen_texture, hit.xy, SSR_SCREEN_LOD).rgb;
     SPECULAR = sqrt(WATER_F0 / SPECULAR_F0_SCALE * (1.0 - hit.z));
     // what lies under it, shifted by the waves and dimmed by the water it is seen through
