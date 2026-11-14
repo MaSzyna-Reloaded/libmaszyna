@@ -255,3 +255,22 @@ func test_internal_sound_is_silent_without_an_occupied_listener_vehicle() -> voi
     })
 
     assert_almost_eq(_sound.get_parameter(&"soundproofing_cab"), 0.0, 0.001)
+
+
+## A vehicle configured again while the simulation is paused - its controller bound anew, as an
+## editor applies a vehicle's edited description - is heard once the simulation runs again (#428)
+func test_vehicle_configured_again_while_paused_is_heard() -> void:
+    _build(MmdSoundCatalog.TriggerMode.TOGGLE)
+    _camera.global_position = NEAR
+    await step(ticks(SETTLE))
+    var controller:RID = VehicleServer.controller_create()
+    VehicleServer.controller_configure(controller, SM42)
+    SimulationServer.simulation_pause()
+    VehicleServer.vehicle_bind_controller(_vehicle_rid, controller)
+    SimulationServer.simulation_unpause()
+    VehicleServer.vehicle_send_command(_vehicle_rid, "battery", true)
+    var heard:bool = await wait_simulated_until(_playing, SETTLE, "the sound of the vehicle configured again")
+    VehicleServer.controller_free(controller)
+    if not heard:
+        return
+    assert_true(_playing(), "heard once the simulation runs again")
