@@ -317,6 +317,15 @@ Before every commit:
 
 Commit style:
 
+* REQUIRED: **an unclear rebase conflict is decided by the operator, not on a guess.** Where both
+  sides changed the same lines and it is not certain which change stands - or how the branch's
+  change is carried onto what the other side did since - compare the two exactly: the branch's
+  change against its base, the other side's against the same base. Lay the situation out to the
+  operator - each side's change, and what each resolution would keep and drop - and ask; neither
+  side is taken by default. After every rebase, before the push, every line the branch added is
+  checked against the rebased head, and each one missing is named to the operator with its
+  reason: a game PR's rebase onto main took main's side of its sky settings and HUD scene and
+  lost them unnoticed (2026-11-14)
 * REQUIRED, ABSOLUTE: **changes of one subject are one commit** - no trail of follow-ups. A fix, a
   correction or a next step of the same subject (the CI, one feature, one bug) goes into that
   subject's commit while it is unpushed (`--amend`, or a soft reset of the run and one recommit),
