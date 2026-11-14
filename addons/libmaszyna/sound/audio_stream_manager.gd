@@ -25,6 +25,8 @@ const OGG_EXTENSION:String = "ogg"
 const FLAC_EXTENSION:String = "flac"
 const WAV_EXTENSION:String = "wav"
 const SOUND_EXTENSIONS:PackedStringArray = [OGG_EXTENSION, FLAC_EXTENSION, WAV_EXTENSION]
+## The game's own sounds, under the game directory (audio.cpp:131)
+const SOUNDS_DIRECTORY:String = "sounds"
 
 var _silence:AudioStreamWAV = AudioStreamWAV.new()
 ## The .wav files read so far, by their path - Godot's resource cache takes .ogg only
@@ -44,16 +46,19 @@ func _init() -> void:
 ## name gives, then in sounds/, with each of the original's extensions in turn (audio.cpp:184-191);
 ## "" when there is none.
 func find_sound(name:String, vehicle_dir:String) -> String:
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var directories:Array[String] = []
     if vehicle_dir:
-        directories.append(vehicle_dir)
-    if "/" in name:
-        directories.append(game_dir)
-    directories.append(game_dir.path_join("sounds"))
-    for directory:String in directories:
         for extension:String in SOUND_EXTENSIONS:
-            var path:String = directory.path_join(ReloadedPluginServer.data_path_resolve(directory, name + "." + extension))
+            var path:String = vehicle_dir.path_join(
+                    ReloadedPluginServer.data_path_resolve(vehicle_dir, name + "." + extension))
+            if FileAccess.file_exists(path):
+                return path
+    var data_paths:Array[String] = []
+    if "/" in name:
+        data_paths.append(name)
+    data_paths.append(SOUNDS_DIRECTORY.path_join(name))
+    for data_path:String in data_paths:
+        for extension:String in SOUND_EXTENSIONS:
+            var path:String = MaszynaGameDirectory.data_path_resolve(data_path + "." + extension)
             if FileAccess.file_exists(path):
                 return path
     return ""

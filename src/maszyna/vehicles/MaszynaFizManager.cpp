@@ -1,5 +1,4 @@
 #include "MaszynaFizManager.hpp"
-#include "maszyna/MaszynaDataPath.hpp"
 #include "maszyna/MaszynaFileIndexer.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 
@@ -41,9 +40,8 @@ namespace godot {
     MaszynaFizManager::load_description(const String &p_data_path, const String &p_fiz_filename) {
         const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
         ERR_FAIL_NULL_V(game_directory, Ref<VehicleController>());
-        const String game_dir = game_directory->get_game_dir();
-        return load_description_at(game_dir.path_join(
-                MaszynaDataPath::resolve(game_dir, p_data_path.path_join(p_fiz_filename + String(".fiz")))));
+        return load_description_at(
+                game_directory->data_path_resolve(p_data_path.path_join(p_fiz_filename + String(".fiz"))));
     }
 
     Ref<VehicleController> MaszynaFizManager::load_description_at(const String &p_fiz_path) {

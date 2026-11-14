@@ -1,3 +1,4 @@
+#include "MaszynaDataPath.hpp"
 #include "MaszynaGameDirectory.hpp"
 #include "game_data/GameDataServer.hpp"
 #include "utils/ReloadedTranslationServer.hpp"
@@ -11,6 +12,7 @@
 namespace godot {
     MaszynaGameDirectory *MaszynaGameDirectory::singleton = nullptr;
     const char *MaszynaGameDirectory::game_dir_changed_signal = "game_dir_changed";
+    const char *MaszynaGameDirectory::data_path_mounts_changed_signal = "data_path_mounts_changed";
 
     /// Directories the original's data always has - eu07.exe is not one of them, a copy may come
     /// without it
@@ -45,6 +47,7 @@ namespace godot {
                 UserSettings::setting_changed_signal, callable_mp(this, &MaszynaGameDirectory::_on_setting_changed));
         if (GameDataServer *game_data = GameDataServer::get_instance(); game_data != nullptr) {
             connect(game_dir_changed_signal, callable_mp(game_data, &GameDataServer::data_reload));
+            connect(data_path_mounts_changed_signal, callable_mp(game_data, &GameDataServer::data_reload));
         }
         _update();
     }
@@ -59,7 +62,12 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("is_game_dir", "path"), &MaszynaGameDirectory::is_game_dir);
         ClassDB::bind_method(D_METHOD("is_game_dir_valid"), &MaszynaGameDirectory::is_game_dir_valid);
         ClassDB::bind_method(D_METHOD("find_game_dirs"), &MaszynaGameDirectory::find_game_dirs);
+        ClassDB::bind_method(
+                D_METHOD("data_path_mount", "data_path", "directory"), &MaszynaGameDirectory::data_path_mount);
+        ClassDB::bind_method(D_METHOD("data_path_unmount", "data_path"), &MaszynaGameDirectory::data_path_unmount);
+        ClassDB::bind_method(D_METHOD("data_path_resolve", "relative_path"), &MaszynaGameDirectory::data_path_resolve);
         ADD_SIGNAL(MethodInfo(game_dir_changed_signal));
+        ADD_SIGNAL(MethodInfo(data_path_mounts_changed_signal));
     }
 
     void MaszynaGameDirectory::_on_setting_changed(const String &p_section, const String &p_key) {
@@ -109,6 +117,52 @@ namespace godot {
 
     String MaszynaGameDirectory::get_game_dir() const {
         return game_dir;
+    }
+
+    /* A data path as a key of the mounts: the data spells it with either slash, in any case */
+    static String _mount_key(const String &p_data_path) {
+        return p_data_path.replace("\\", "/").trim_prefix("/").trim_suffix("/").to_lower();
+    }
+
+    void MaszynaGameDirectory::data_path_mount(const String &p_data_path, const String &p_directory) {
+        const String key = _mount_key(p_data_path);
+        ERR_FAIL_COND_MSG(key.is_empty(), "The game directory itself is not mounted, it is chosen");
+        ERR_FAIL_COND_MSG(!DirAccess::dir_exists_absolute(p_directory), "No directory to mount: " + p_directory);
+        {
+            MutexLock lock(mounts_mutex);
+            mounts[key] = p_directory.simplify_path();
+        }
+        emit_signal(data_path_mounts_changed_signal);
+    }
+
+    void MaszynaGameDirectory::data_path_unmount(const String &p_data_path) {
+        {
+            MutexLock lock(mounts_mutex);
+            if (!mounts.erase(_mount_key(p_data_path))) {
+                return;
+            }
+        }
+        emit_signal(data_path_mounts_changed_signal);
+    }
+
+    String MaszynaGameDirectory::data_path_resolve(const String &p_relative_path) const {
+        const String relative_path = p_relative_path.replace("\\", "/").trim_prefix("/");
+        const String key = relative_path.to_lower();
+        String base_dir = game_dir;
+        String below = relative_path;
+        {
+            MutexLock lock(mounts_mutex);
+            int64_t mounted_length = 0;
+            for (const KeyValue<String, String> &mount: mounts) {
+                if (mount.key.length() > mounted_length &&
+                    (key == mount.key || key.begins_with(mount.key + String("/")))) {
+                    mounted_length = mount.key.length();
+                    base_dir = mount.value;
+                    below = relative_path.substr(mounted_length).trim_prefix("/");
+                }
+            }
+        }
+        return below.is_empty() ? base_dir : base_dir.path_join(MaszynaDataPath::resolve(base_dir, below));
     }
 
     void MaszynaGameDirectory::save_game_dir(const String &p_path) {

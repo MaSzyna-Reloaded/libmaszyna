@@ -12,6 +12,10 @@ class_name FizVehicleBuilder
 ## marker) gets tokenized.
 
 const _INCLUDE_KEYWORD := "include"
+## Whether a parse notes where the lines it reads stand in the files (FizImportContext.source_lines,
+## includes) - for a tool that writes the files back; the game reads the files without it
+const SOURCE_LINES_SETTING:String = "maszyna/fiz/source_lines"
+const SOURCE_LINES_DEFAULT:bool = false
 const _INCLUDE_END_KEYWORD := "end"
 
 ## How the original's driver drives a car (TController of is_car()), which RoadVehicleServer drives
@@ -147,6 +151,7 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
     context.base_dir = fiz_path.get_base_dir()
     context.controller = target
     context.sections = sections
+    context.notes_sources = ProjectSettings.get_setting(SOURCE_LINES_SETTING)
 
     var table_state: Dictionary = {"prefix": "", "parser": null, "end": ""}
     _parse_file(fiz_path, context.base_dir, context, table_state)
@@ -163,8 +168,9 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
 ## create_description(), hands it a controller it has just created, which becomes the
 ## description. `fiz_path` must already be a fully resolved, openable path (res://, user://, or
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
-## `include` directives inside the file resolve relative to its own containing directory.
-static func build_into(target: VehicleController, fiz_path: String) -> void:
+## `include` directives inside the file resolve relative to its own containing directory. The
+## context the file was read with is given back: where its lines stand in the files.
+static func build_into(target: VehicleController, fiz_path: String) -> FizImportContext:
     var context: FizImportContext = parse_into(target, fiz_path, create_sections())
 
     # a diesel's legacy "main" compressor runs off its engine (CheckLocomotiveParameters, Mover.cpp:11738)
@@ -203,11 +209,17 @@ static func build_into(target: VehicleController, fiz_path: String) -> void:
     if context.get_part("RailVehicleMasterController"):
         target.add_component(MaszynaMoverRailVehicleHorns.new())
         target.add_component(MaszynaMoverRailVehicleRadio.new())
+    return context
 
 ## The vehicle the .fiz at fiz_path describes, parsed - not cached: MaszynaFizManager keeps the
 ## descriptions
 static func create_description(fiz_path: String) -> VehicleController:
-    var description: VehicleController = null
+    return read_description(fiz_path).controller
+
+
+## The .fiz at fiz_path read: the vehicle it describes (FizImportContext.controller) and where the
+## lines it was read of stand in the files (FizImportContext.source_lines)
+static func read_description(fiz_path: String) -> FizImportContext:
     # what the file describes is its Param. Category= (LoadFIZ_Param, Mover.cpp:10256), a train
     # without one (CategoryFlag = 1, MOVER.h:1565): a road vehicle (is_car(), CategoryFlag & 2,
     # Driver.h:256-257) is a RoadVehicleController, of what it is and its size, driven as the
@@ -216,18 +228,15 @@ static func create_description(fiz_path: String) -> VehicleController:
     road.category = VehicleController.CATEGORY_TRAIN
     # a file that is not there is reported once, by the Mover's read below
     if FileAccess.file_exists(fiz_path):
-        parse_into(road, fiz_path, create_road_sections())
-    if road.category & VehicleController.CATEGORY_ROAD:
-        road.following_gap = CAR_FOLLOWING_GAP
-        road.acceleration_limit = CAR_ACCELERATION_LIMIT
-        road.obstacle_range = CAR_OBSTACLE_RANGE
-        description = road
-    else:
-        # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
-        # its components are kept in the order the FIZ sections built them
-        description = MaszynaMoverRailVehicleController.new()
-        build_into(description, fiz_path)
-    return description
+        var road_context: FizImportContext = parse_into(road, fiz_path, create_road_sections())
+        if road.category & VehicleController.CATEGORY_ROAD:
+            road.following_gap = CAR_FOLLOWING_GAP
+            road.acceleration_limit = CAR_ACCELERATION_LIMIT
+            road.obstacle_range = CAR_OBSTACLE_RANGE
+            return road_context
+    # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
+    # its components are kept in the order the FIZ sections built them
+    return build_into(MaszynaMoverRailVehicleController.new(), fiz_path)
 
 
 ## Reads one logical line off a MaszynaParser's byte stream, mirroring the original
@@ -286,7 +295,7 @@ static func _read_include_directive(p: MaszynaParser, first_line_parser: Maszyna
 ## left mass at 0 (and cascaded into NaN velocity) with no substitution at all.
 static func _parse_file(
         abs_path: String, dir: String, context: FizImportContext, table_state: Dictionary,
-        parameters: Dictionary = {}) -> void:
+        parameters: Dictionary = {}, include: FizSourceInclude = null) -> void:
     context.include_depth += 1
     if context.include_depth > 32:
         push_error("FIZ include depth exceeded (circular include?): " + abs_path)
@@ -305,6 +314,7 @@ static func _parse_file(
     file.close()
 
     while not p.eof_reached():
+        var line_begin: int = p.get_position()
         var raw_line: String = _read_fiz_line(p)
         var line: String = raw_line.strip_edges(true, false)
         if parameters:
@@ -350,7 +360,18 @@ static func _parse_file(
                 for i in range(1, include_tokens.size()):
                     include_params["p%d" % i] = include_tokens[i]
                 var include_path: String = dir.path_join(MaszynaDataPath.resolve(dir, include_filename))
-                _parse_file(include_path, include_path.get_base_dir(), context, table_state, include_params)
+                var directive: FizSourceInclude = null
+                if context.notes_sources:
+                    directive = FizSourceInclude.new()
+                    directive.path = abs_path
+                    directive.begin = line_begin
+                    directive.end = p.get_position()
+                    directive.included_path = include_path
+                    directive.parameters = include_tokens.slice(1)
+                    directive.include = include
+                    context.add_include(directive)
+                _parse_file(
+                        include_path, include_path.get_base_dir(), context, table_state, include_params, directive)
             continue
         if first_token == _INCLUDE_END_KEYWORD:
             continue
@@ -362,6 +383,8 @@ static func _parse_file(
                 break
 
         if matched_section:
+            if context.notes_sources:
+                context.add_source_line(_source_line(abs_path, line_begin, matched_section["prefix"], false, include))
             _dispatch_header(matched_section, line, context, table_state)
             continue
 
@@ -374,12 +397,25 @@ static func _parse_file(
             continue
 
         if table_state["parser"] != null:
+            if context.notes_sources:
+                context.add_source_line(_source_line(abs_path, line_begin, table_state["prefix"], true, include))
             var row_parser := MaszynaParser.new()
             row_parser.initialize(Windows1250.encode(line))
             table_state["parser"].parse_row(row_parser, context)
         # else: unrecognized line outside any table - ignored, matching original tolerance.
 
     context.include_depth -= 1
+
+
+static func _source_line(
+        path: String, begin: int, section: String, row: bool, include: FizSourceInclude) -> FizSourceLine:
+    var source := FizSourceLine.new()
+    source.path = path
+    source.begin = begin
+    source.section = section
+    source.row = row
+    source.include = include
+    return source
 
 
 static func _dispatch_header(

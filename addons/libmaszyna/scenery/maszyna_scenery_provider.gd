@@ -146,7 +146,7 @@ func scenario_stop(root:SceneryContentNode) -> void:
 ## ($stary_jawor_eszelon.scn)
 func list() -> Array[SceneryInfo]:
     var sceneries:Array[SceneryInfo] = []
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join(SCENERY_DIRECTORY)
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(SCENERY_DIRECTORY)
     for file:String in DirAccess.get_files_at(scenery_dir):
         if file.get_extension().to_lower() == SCENERY_EXTENSION and not file.begins_with(NO_SCENARIO_MARK):
             var info:SceneryInfo = SceneryInfo.new()
@@ -460,8 +460,7 @@ static func _is_cache_valid(
             var game_prefix:String = MaszynaGameDirectory.get_game_dir() + "/"
             var on_disk:String = dependency_path
             if dependency_path.begins_with(game_prefix):
-                on_disk = game_prefix.path_join(MaszynaDataPath.resolve(
-                    game_prefix, dependency_path.trim_prefix(game_prefix)))
+                on_disk = MaszynaGameDirectory.data_path_resolve(dependency_path.trim_prefix(game_prefix))
             if FileAccess.file_exists(on_disk):
                 return false
             continue
@@ -495,7 +494,7 @@ static func _get_cache_path(source_path:String, parameters_hash:String) -> Strin
 
 
 static func _get_source_path(filename:String) -> String:
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join(SCENERY_DIRECTORY)
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(SCENERY_DIRECTORY)
     return scenery_dir.path_join(ReloadedPluginServer.data_path_resolve(scenery_dir, filename)).simplify_path()
 
 

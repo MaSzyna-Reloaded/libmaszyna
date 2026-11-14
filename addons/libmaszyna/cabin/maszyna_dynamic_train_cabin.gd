@@ -96,9 +96,8 @@ func _rebuild_generated() -> void:
 
     var cab_definition:int = MmdCabinInstancer.cab_definition(RailVehicleServer.cabin_get_kind(get_cabin()))
 
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = data_path.trim_prefix("/").path_join(mmd_filename + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
+    var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
+            data_path.trim_prefix("/").path_join(mmd_filename + ".mmd"))
     var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(
             VehicleServer.vehicle_get_id(get_vehicle_rid()), mmd_filename, skin)
     var definition:MmdCabinDefinition = MmdCabinInstancer.parse(

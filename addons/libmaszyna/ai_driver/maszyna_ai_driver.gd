@@ -1463,8 +1463,8 @@ func _take_timetable(
 ) -> void:
     var timetable:RID = RID()
     if not name == NO_TIMETABLE:
-        var directory:String = MaszynaGameDirectory.get_game_dir().path_join(SCENERY_DIRECTORY)
-        timetable = MaszynaTimetableFactory.load_timetable(directory, name)
+        timetable = MaszynaTimetableFactory.load_timetable(
+                MaszynaGameDirectory.data_path_resolve(SCENERY_DIRECTORY), name)
     state.timetable.take(timetable, RailVehicleServer.vehicle_get_trainset(VehicleServer.person_get_vehicle(driver)),
             roundf(minutes))
     # the guard of the timetable, speaking on the radio (Driver.cpp:4424, 4474-4483)
@@ -1478,9 +1478,8 @@ func _take_timetable(
         for suffix:String in ["", GUARD_RADIO_SUFFIX]:
             for directory:String in [SCENERY_DIRECTORY, SOUNDS_DIRECTORY]:
                 for extension:String in GUARD_SOUND_EXTENSIONS:
-                    var base_dir:String = MaszynaGameDirectory.get_game_dir().path_join(directory)
-                    var filename:String = "%s%s.%s" % [name, suffix, extension]
-                    var candidate:String = base_dir.path_join(MaszynaDataPath.resolve(base_dir, filename))
+                    var candidate:String = MaszynaGameDirectory.data_path_resolve(
+                            directory.path_join("%s%s.%s" % [name, suffix, extension]))
                     if not path and FileAccess.file_exists(candidate):
                         path = candidate
                         radio = suffix == GUARD_RADIO_SUFFIX

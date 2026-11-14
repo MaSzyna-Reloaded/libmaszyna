@@ -351,9 +351,8 @@ func _build_sounds(vehicle:RID) -> void:
         RoadVehicleRenderingServer.vehicle_mount_node(vehicle, record.sound_mount.get_instance_id())
     else:
         RailVehicleRenderingServer.vehicle_mount_node(vehicle, record.sound_mount.get_instance_id())
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_mmd_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_mmd_path))
+    var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
+            data_path.trim_prefix("/").path_join(file_name + ".mmd"))
     var diagnostics:Array[Dictionary] = []
     var no_random_choices:Dictionary = {}
     MmdSoundBankInstancer.build_into(

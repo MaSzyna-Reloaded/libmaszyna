@@ -63,9 +63,8 @@ static func read_mmd_data(
     # (e.g. "/dynamic/pkp/ep09_v1/") for exactly this reason. Normalize here so operators don't
     # need to know about this quirk.
     var normalized_data_path:String = data_path if data_path.begins_with("/") else "/" + data_path
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_mmd_path:String = normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_mmd_path))
+    var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
+            normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd"))
     var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
 
     var mmd_data := MaszynaVehicleMmdData.new()
@@ -178,9 +177,8 @@ static func load_model_filename(mmd_data:MaszynaVehicleMmdData, load_name:String
 ## view - not to run. Lies in the model's own frame; MASZYNA_VEHICLE_FRAME turns it as a vehicle.
 static func build_exterior(data_path:String, file_name:String, skin:String, vehicle_id:String) -> MaszynaE3DModelInstance:
     var normalized_data_path:String = data_path if data_path.begins_with("/") else "/" + data_path
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
+    var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
+            normalized_data_path.trim_prefix("/").path_join(file_name + ".mmd"))
     var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(vehicle_id, file_name, skin)
     var body_model:String = MmdCabinInstancer.parse_body_model(abs_mmd_path, parameters)
     if not body_model:
@@ -204,13 +202,10 @@ static func build_exterior(data_path:String, file_name:String, skin:String, vehi
 static func _model_exists(data_path:String, relpath:String) -> bool:
     if not relpath:
         return false
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_base_path:String = data_path.trim_prefix("/").path_join(relpath)
-    var e3d_path:String = MaszynaDataPath.resolve(game_dir, relative_base_path + ".e3d")
-    if FileAccess.file_exists(game_dir.path_join(e3d_path)):
+    if FileAccess.file_exists(MaszynaGameDirectory.data_path_resolve(relative_base_path + ".e3d")):
         return true
-    var t3d_path:String = MaszynaDataPath.resolve(game_dir, relative_base_path + ".t3d")
-    return FileAccess.file_exists(game_dir.path_join(t3d_path))
+    return FileAccess.file_exists(MaszynaGameDirectory.data_path_resolve(relative_base_path + ".t3d"))
 
 
 ## PackedScene.pack()-in-memory trick, already used in production by

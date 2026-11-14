@@ -212,12 +212,12 @@ static func parse(
                         break
                     i += 1
                 # a script given without a directory lives next to the vehicle (Train.cpp:10667)
-                var script_base_dir:String = (
-                    context.base_dir if not script.get_base_dir()
-                    else MaszynaGameDirectory.get_game_dir()
+                var script_file:String = (
+                    context.base_dir.path_join(MaszynaDataPath.resolve(context.base_dir, script + ".py"))
+                    if not script.get_base_dir()
+                    else MaszynaGameDirectory.data_path_resolve(script + ".py")
                 )
-                var script_file:String = MaszynaDataPath.resolve(script_base_dir, script + ".py")
-                screen.script_path = script_base_dir.path_join(script_file).trim_suffix(".py")
+                screen.script_path = script_file.trim_suffix(".py")
                 python_screens.append(screen)
             "pyscreenupdatetime:":
                 python_screen_update_time_msec = int(tokens[i])
@@ -324,9 +324,7 @@ static func resolve_skins(data_path:String, skin:String) -> Array:
         return [skin]
     if skin.contains("|"):
         return Array(skin.split("|", false, 4))
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var resolved_data_path:String = MaszynaDataPath.resolve(game_dir, data_path.trim_prefix("/"))
-    var base_dir:String = game_dir.path_join(resolved_data_path)
+    var base_dir:String = MaszynaGameDirectory.data_path_resolve(data_path.trim_prefix("/"))
     var skins:Array = []
     var n:int = 1
     while n <= 4 and _skin_slot_exists(base_dir, "%s,%d" % [skin, n]):
@@ -683,8 +681,7 @@ static func build_into(
         return
 
     # where the cab's sounds are looked for first (Global.asCurrentDynamicPath, audio.cpp:115)
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var vehicle_dir:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, data_path.trim_prefix("/")))
+    var vehicle_dir:String = MaszynaGameDirectory.data_path_resolve(data_path.trim_prefix("/"))
     var model := MaszynaE3DModelInstance.new()
     model.name = "CabModel"
     # the original loads a cab as a dynamic model (Train.cpp:10599), which hides its "_on" controls
@@ -1698,13 +1695,13 @@ static func _tokenize_file(abs_path:String, context:MmdImportContext, parameters
         context.include_depth -= 1
         return []
 
-    var game_dir:String = MaszynaGameDirectory.get_game_dir().trim_suffix("/")
-    var base_dir:String = abs_path.get_base_dir()
-    var relative_path:String = abs_path.get_file()
-    if abs_path.begins_with(game_dir + "/"):
-        base_dir = game_dir
-        relative_path = abs_path.trim_prefix(game_dir + "/")
-    abs_path = base_dir.path_join(MaszynaDataPath.resolve(base_dir, relative_path))
+    # a file of the game data is found as the data names it, in a mounted directory too
+    var game_prefix:String = MaszynaGameDirectory.get_game_dir().trim_suffix("/") + "/"
+    if abs_path.begins_with(game_prefix):
+        abs_path = MaszynaGameDirectory.data_path_resolve(abs_path.trim_prefix(game_prefix))
+    else:
+        var base_dir:String = abs_path.get_base_dir()
+        abs_path = base_dir.path_join(MaszynaDataPath.resolve(base_dir, abs_path.get_file()))
 
     var file:FileAccess = FileAccess.open(abs_path, FileAccess.READ)
     if not file:

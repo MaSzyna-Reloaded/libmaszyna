@@ -1,0 +1,8 @@
+// Synthetic FIZ fixture of where the parse finds its lines - not a real vehicle
+Param.M=74000 Mred=2000 Vmax=90 Category=train Type=Default
+include wheels.inc 1.25 end
+# a commented line
+LightsList: Size=2 Wrap=Yes Default=2
+4	34
+17	64
+endL
