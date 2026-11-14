@@ -35,7 +35,13 @@ varying vec3 v_normal_view;
 varying vec3 v_position_view;
 varying float v_dist;
 
+#include "res://addons/libmaszyna/materials/types/draw_behind.gdshaderinc"
+#ifdef MASZYNA_ALPHA_BLEND
+#include "res://addons/libmaszyna/materials/types/blended_cutout.gdshaderinc"
+#endif
+
 void vertex() {
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
     v_tangent_view = normalize(MODELVIEW_NORMAL_MATRIX * TANGENT);
     v_normal_view = normalize(MODELVIEW_NORMAL_MATRIX * NORMAL);
     v_binormal_view = normalize(MODELVIEW_NORMAL_MATRIX * -BINORMAL);
@@ -134,6 +140,9 @@ void fragment() {
 
 #ifdef MASZYNA_ALPHA_BLEND
     ALPHA = diffuse_sample.a;
+    if (maszyna_blended_cut(diffuse_sample.a)) {
+        discard;
+    }
 #endif
     if ((use_alpha_scissor || transparency == 2) && diffuse_sample.a < alpha_scissor_threshold) {
         discard;
