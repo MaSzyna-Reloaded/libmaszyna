@@ -65,6 +65,12 @@ static func register() -> void:
         MaszynaMaterialManager.SELFILLUM_ENERGY_SETTING, MaszynaMaterialManager.SELFILLUM_ENERGY_DEFAULT,
         TYPE_FLOAT, PROPERTY_HINT_RANGE, "0,2,0.01"
     )
+    # The water mirrors its shore by a reflection of its own marched over the screen - some twenty
+    # reads of the screen a pixel of water; without it, the sky's reflection alone
+    ReloadedProjectSetting.add(
+        MaszynaMaterialManager.WATER_SCREEN_REFLECTIONS_SETTING,
+        MaszynaMaterialManager.WATER_SCREEN_REFLECTIONS_DEFAULT, TYPE_BOOL
+    )
     # A vehicle's mirror glass reflects the scene: a camera mirrored across it renders the glass at
     # its size on the screen while the mirror is in view within 30 m (PlanarMirror3D) - a scene
     # render per mirror
