@@ -43,8 +43,9 @@ static var firstinit_importer = preload("res://addons/libmaszyna/scenery/maszyna
 static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_isolated_importer.gd").new()
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
-## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read
-const CACHE_FORMAT_VERSION:int = 57
+## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read; 57: the scenery's
+## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points())
+const CACHE_FORMAT_VERSION:int = 58
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -395,6 +396,8 @@ static func _compile_scenery(
     compiled.trainsets = context.trainsets
     compiled.scripts = context.scripts
     compiled.region_files = context.region_files
+    # a list of its stations (SceneryServer.station_list()), of its passenger stop indicators
+    compiled.stations = MaszynaStations.stations_of_stop_points(context.events, context.memcells)
     return compiled
 
 
