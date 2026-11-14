@@ -1,5 +1,4 @@
 #include "MaszynaVehicleMmdManager.hpp"
-#include "maszyna/MaszynaDataPath.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 
 #include <godot_cpp/classes/file_access.hpp>
@@ -58,12 +57,9 @@ namespace godot {
         ERR_FAIL_COND_V_MSG(!mmd_reader.is_valid(), Ref<Resource>(), "No reader of the vehicles' MMD data");
         const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
         ERR_FAIL_NULL_V(game_directory, Ref<Resource>());
-        const String game_dir = game_directory->get_game_dir();
         const String relative_base_path = p_data_path.trim_prefix("/").path_join(p_file_name);
-        const String abs_mmd_path =
-                game_dir.path_join(MaszynaDataPath::resolve(game_dir, relative_base_path + String(".mmd")));
-        const String abs_fiz_path =
-                game_dir.path_join(MaszynaDataPath::resolve(game_dir, relative_base_path + String(".fiz")));
+        const String abs_mmd_path = game_directory->data_path_resolve(relative_base_path + String(".mmd"));
+        const String abs_fiz_path = game_directory->data_path_resolve(relative_base_path + String(".fiz"));
         const String variant = names_vehicle(abs_mmd_path) ? p_livery + String("|") + p_vehicle_id : p_livery;
         const String cache_path = String("/")
                                           .path_join(p_data_path.trim_prefix("/"))

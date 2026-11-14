@@ -118,10 +118,9 @@ func vehicle_get_side_view_coupling_width(vehicle:VehicleData) -> float:
 ## for a vehicle of no .fiz - an index may list one (dynamic/road/jelcz's "315", its .fiz is 315dumb),
 ## which the original cannot drive either
 func vehicle_get_description(vehicle:VehicleData) -> VehicleController:
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var data_path:String = vehicle.vehicle.get_base_dir()
-    if not FileAccess.file_exists(game_dir.path_join(MaszynaDataPath.resolve(
-            game_dir, data_path.path_join(vehicle.vehicle.get_file() + ".fiz")))):
+    if not FileAccess.file_exists(MaszynaGameDirectory.data_path_resolve(
+            data_path.path_join(vehicle.vehicle.get_file() + ".fiz"))):
         return null
     return MaszynaFizManager.load_description(data_path, vehicle.vehicle.get_file())
 

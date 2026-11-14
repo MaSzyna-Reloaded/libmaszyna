@@ -18,7 +18,7 @@ func import(p: MaszynaParser, context: MaszynaImporterContext):
     if context.binary_terrain_state and String(include_token).to_lower().contains(TERRAIN_INCLUDE):
         return []
     var filename:String = resolve_filename(include_token)
-    var final_path = MaszynaGameDirectory.get_game_dir().path_join("scenery").path_join(filename)
+    var final_path = MaszynaGameDirectory.data_path_resolve(MaszynaSceneryProvider.SCENERY_DIRECTORY).path_join(filename)
     var file = FileAccess.open(final_path, FileAccess.READ)
     var parameters = {}
     for i in range(tokens.size()):
@@ -56,5 +56,5 @@ func import(p: MaszynaParser, context: MaszynaImporterContext):
 ## Include path relative to scenery/, as it exists on disk. Also used by MaszynaSceneryProvider's
 ## include prescan.
 func resolve_filename(filename: String) -> String:
-    var scenery_dir: String = MaszynaGameDirectory.get_game_dir().path_join("scenery")
+    var scenery_dir: String = MaszynaGameDirectory.data_path_resolve(MaszynaSceneryProvider.SCENERY_DIRECTORY)
     return MaszynaDataPath.resolve(scenery_dir, filename)

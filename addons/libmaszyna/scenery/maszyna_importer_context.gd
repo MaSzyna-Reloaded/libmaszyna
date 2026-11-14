@@ -159,7 +159,7 @@ func load_binary_terrain(path:String) -> void:
 func load_scenario_binary_terrain(scenario:String) -> void:
     if scenario == RAINSTED_SCENARIO:
         return
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join("scenery")
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(MaszynaSceneryProvider.SCENERY_DIRECTORY)
     var region_file:String = scenario.lstrip(RAINSTED_PREFIX).get_basename() + REGION_EXTENSION
     var path:String = scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, region_file))
     if MaszynaSBTTerrainProvider.is_region(path):

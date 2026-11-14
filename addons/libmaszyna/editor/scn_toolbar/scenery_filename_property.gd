@@ -26,10 +26,10 @@ func _on_filename_focus_exited() -> void:
 
 
 func _on_browse_pressed() -> void:
-    %Dialog.current_dir = MaszynaGameDirectory.get_game_dir().path_join(SCENERY_DIRECTORY)
+    %Dialog.current_dir = MaszynaGameDirectory.data_path_resolve(SCENERY_DIRECTORY)
     %Dialog.popup_file_dialog()
 
 
 func _on_dialog_file_selected(path:String) -> void:
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join(SCENERY_DIRECTORY)
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(SCENERY_DIRECTORY)
     emit_changed(get_edited_property(), path.trim_prefix(scenery_dir).trim_prefix("/"))

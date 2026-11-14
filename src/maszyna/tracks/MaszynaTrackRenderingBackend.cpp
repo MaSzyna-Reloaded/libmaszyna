@@ -3,7 +3,6 @@
 #include "game_data/GameDataServer.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 #include "maszyna/tracks/MaszynaTrackLook.hpp"
-#include "plugins/ReloadedPluginServer.hpp"
 #include "rendering/ReloadedMaterialServer.hpp"
 #include "rendering/TrackRenderingServer.hpp"
 #include "scenery/SceneryStreamingServer.hpp"
@@ -1442,13 +1441,11 @@ namespace godot {
         if (const RailProfile *cached = rail_profiles.getptr(p_name); cached != nullptr) {
             return *cached;
         }
-        MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
-        ReloadedPluginServer *plugins = ReloadedPluginServer::get_instance();
+        const MaszynaGameDirectory *game_directory = MaszynaGameDirectory::get_instance();
         ERR_FAIL_NULL_V(game_directory, default_rail_profile);
-        ERR_FAIL_NULL_V(plugins, default_rail_profile);
-        const String profile_dir = game_directory->get_game_dir().path_join(RAIL_PROFILE_DIRECTORY);
-        const String profile_path = profile_dir.path_join(plugins->data_path_resolve(
-                profile_dir, vformat(RAIL_PROFILE_FILE, p_name.trim_prefix(RAIL_PROFILE_PREFIX))));
+        const String profile_path = game_directory->data_path_resolve(
+                String(RAIL_PROFILE_DIRECTORY)
+                        .path_join(vformat(RAIL_PROFILE_FILE, p_name.trim_prefix(RAIL_PROFILE_PREFIX))));
         const Ref<FileAccess> file = FileAccess::file_exists(profile_path)
                                              ? FileAccess::open(profile_path, FileAccess::READ)
                                              : Ref<FileAccess>();

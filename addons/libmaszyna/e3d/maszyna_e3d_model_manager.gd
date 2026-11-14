@@ -33,11 +33,10 @@ func _set_owner_recursive(node, new_owner):
 ## The model file of a name: the binary model first, the text one when there is none
 ## (MdlMngr.cpp:144 find_on_disk); the binary one's path when neither is there
 func get_model_path(data_path:String, filename:String) -> String:
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var relative_base_path:String = data_path.trim_prefix("/").path_join(filename)
-    var path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_base_path + ".e3d"))
+    var path:String = MaszynaGameDirectory.data_path_resolve(relative_base_path + ".e3d")
     if not FileAccess.file_exists(path):
-        var t3d_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_base_path + ".t3d"))
+        var t3d_path:String = MaszynaGameDirectory.data_path_resolve(relative_base_path + ".t3d")
         if FileAccess.file_exists(t3d_path):
             path = t3d_path
     return path
