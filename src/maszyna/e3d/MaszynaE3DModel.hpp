@@ -4,6 +4,7 @@
 #include "MaszynaE3DModelSmokeSourceDefinition.hpp"
 #include "MaszynaE3DSubModel.hpp"
 #include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/classes/semaphore.hpp>
 #include <godot_cpp/templates/mutex.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
@@ -56,6 +57,10 @@ namespace godot {
             Ref<MaszynaE3DSubModel> _get_node_or_null(const PackedStringArray &p_segments) const;
             static void _apply_geometry(
                     const TypedArray<MaszynaE3DSubModel> &p_submodels, const Ref<MaszynaE3DModelGeometry> &p_geometry);
+            /* The RenderingServer call off apply_geometry()'s worker thread, run on the main thread
+             * by call_deferred() - apply_geometry() blocks on p_done until it has run */
+            void _apply_geometry_on_main_thread(
+                    const Ref<MaszynaE3DModelGeometry> &p_geometry, const Ref<Semaphore> &p_done);
             PackedStringArray _split_path(const NodePath &p_path) const;
     };
 } // namespace godot

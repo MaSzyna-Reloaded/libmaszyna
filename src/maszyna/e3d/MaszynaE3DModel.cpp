@@ -1,6 +1,8 @@
 #include "MaszynaE3DModel.hpp"
 #include "MaszynaE3DSubModelLookup.hpp"
 #include "macros.hpp"
+#include <godot_cpp/classes/thread.hpp>
+#include <godot_cpp/variant/callable_method_pointer.hpp>
 
 namespace godot {
     void MaszynaE3DModel::_bind_methods() {
@@ -62,8 +64,24 @@ namespace godot {
         if (geometry_applied) {
             return;
         }
-        _apply_geometry(submodels, p_geometry);
+        // the mesh is made in the RenderingServer, which a worker thread may not touch (its RID
+        // owner is only safe from the main thread) - load_model() runs on one, so this blocks it
+        // for the main thread's call_deferred() queue to make the mesh instead
+        if (Thread::is_main_thread()) {
+            _apply_geometry(submodels, p_geometry);
+        } else {
+            Ref<Semaphore> done;
+            done.instantiate();
+            callable_mp(this, &MaszynaE3DModel::_apply_geometry_on_main_thread).call_deferred(p_geometry, done);
+            done->wait();
+        }
         geometry_applied = true;
+    }
+
+    void MaszynaE3DModel::_apply_geometry_on_main_thread(
+            const Ref<MaszynaE3DModelGeometry> &p_geometry, const Ref<Semaphore> &p_done) {
+        _apply_geometry(submodels, p_geometry);
+        p_done->post();
     }
 
     bool MaszynaE3DModel::has_geometry() const {
