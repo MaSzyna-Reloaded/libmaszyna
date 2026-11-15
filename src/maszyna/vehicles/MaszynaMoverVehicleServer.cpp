@@ -1,5 +1,30 @@
+#include "MaszynaMoverRailVehicleAIHints.hpp"
+#include "MaszynaMoverRailVehicleBrake.hpp"
+#include "MaszynaMoverRailVehicleBuffCoupl.hpp"
+#include "MaszynaMoverRailVehicleDieselElectricEngine.hpp"
+#include "MaszynaMoverRailVehicleDieselEngine.hpp"
+#include "MaszynaMoverRailVehicleDoors.hpp"
+#include "MaszynaMoverRailVehicleElectricInductionEngine.hpp"
+#include "MaszynaMoverRailVehicleElectricSeriesEngine.hpp"
+#include "MaszynaMoverRailVehicleElectroPneumaticDynamicBrake.hpp"
+#include "MaszynaMoverRailVehicleEnginePowerSource.hpp"
+#include "MaszynaMoverRailVehicleHeating.hpp"
+#include "MaszynaMoverRailVehicleHorns.hpp"
+#include "MaszynaMoverRailVehicleLighting.hpp"
+#include "MaszynaMoverRailVehicleLoad.hpp"
+#include "MaszynaMoverRailVehicleMasterController.hpp"
+#include "MaszynaMoverRailVehiclePowerSupply.hpp"
+#include "MaszynaMoverRailVehicleRadio.hpp"
+#include "MaszynaMoverRailVehicleSecuritySystem.hpp"
+#include "MaszynaMoverRailVehicleSpeedControl.hpp"
+#include "MaszynaMoverRailVehicleSpringBrake.hpp"
+#include "MaszynaMoverRailVehicleSwitches.hpp"
+#include "MaszynaMoverRailVehicleUniversalController.hpp"
+#include "MaszynaMoverRailVehicleWheels.hpp"
+#include "MaszynaMoverRailVehicleWipers.hpp"
 #include "MaszynaMoverVehicleServer.hpp"
 #include "vehicles/base/VehicleServer.hpp"
+#include "vehicles/rail/RailVehiclePantographs.hpp"
 #include "vehicles/rail/RailVehicleServer.hpp"
 #include <map>
 
@@ -26,6 +51,100 @@ namespace godot {
             delete entry.value;
         }
         singleton = nullptr;
+    }
+
+    template<typename T>
+    static Ref<VehicleComponent> _component_make() {
+        Ref<T> component;
+        component.instantiate();
+        return component;
+    }
+
+    namespace {
+        /// A component the Mover simulates: its class's name, its title, what makes it
+        struct MoverComponent {
+                StringName name;
+                const char *title;
+                Ref<VehicleComponent> (*make)();
+        };
+    } // namespace
+
+    static const Vector<MoverComponent> &_mover_components() {
+        static const Vector<MoverComponent> components = {
+                {MaszynaMoverRailVehicleLoad::get_class_static(), "Load",
+                 &_component_make<MaszynaMoverRailVehicleLoad>},
+                {MaszynaMoverRailVehicleWheels::get_class_static(), "Wheels",
+                 &_component_make<MaszynaMoverRailVehicleWheels>},
+                {MaszynaMoverRailVehicleBrake::get_class_static(), "Brake",
+                 &_component_make<MaszynaMoverRailVehicleBrake>},
+                {MaszynaMoverRailVehicleSpringBrake::get_class_static(), "Spring brake",
+                 &_component_make<MaszynaMoverRailVehicleSpringBrake>},
+                {MaszynaMoverRailVehicleElectroPneumaticDynamicBrake::get_class_static(),
+                 "Electro-pneumatic and dynamic brake",
+                 &_component_make<MaszynaMoverRailVehicleElectroPneumaticDynamicBrake>},
+                {MaszynaMoverRailVehicleDoors::get_class_static(), "Doors",
+                 &_component_make<MaszynaMoverRailVehicleDoors>},
+                {MaszynaMoverRailVehicleBuffCoupl::get_class_static(), "Buffers and coupler",
+                 &_component_make<MaszynaMoverRailVehicleBuffCoupl>},
+                {MaszynaMoverRailVehicleMasterController::get_class_static(), "Master controller",
+                 &_component_make<MaszynaMoverRailVehicleMasterController>},
+                {MaszynaMoverRailVehicleSecuritySystem::get_class_static(), "Security system",
+                 &_component_make<MaszynaMoverRailVehicleSecuritySystem>},
+                {MaszynaMoverRailVehicleLighting::get_class_static(), "Lighting",
+                 &_component_make<MaszynaMoverRailVehicleLighting>},
+                {MaszynaMoverRailVehicleHeating::get_class_static(), "Heating",
+                 &_component_make<MaszynaMoverRailVehicleHeating>},
+                {MaszynaMoverRailVehiclePowerSupply::get_class_static(), "Power supply",
+                 &_component_make<MaszynaMoverRailVehiclePowerSupply>},
+                {MaszynaMoverRailVehicleEnginePowerSource::get_class_static(), "Engine power source",
+                 &_component_make<MaszynaMoverRailVehicleEnginePowerSource>},
+                {MaszynaMoverRailVehicleHorns::get_class_static(), "Horns",
+                 &_component_make<MaszynaMoverRailVehicleHorns>},
+                {MaszynaMoverRailVehicleRadio::get_class_static(), "Radio",
+                 &_component_make<MaszynaMoverRailVehicleRadio>},
+                {MaszynaMoverRailVehicleSpeedControl::get_class_static(), "Speed control",
+                 &_component_make<MaszynaMoverRailVehicleSpeedControl>},
+                {MaszynaMoverRailVehicleSwitches::get_class_static(), "Switches",
+                 &_component_make<MaszynaMoverRailVehicleSwitches>},
+                {MaszynaMoverRailVehicleAIHints::get_class_static(), "AI hints",
+                 &_component_make<MaszynaMoverRailVehicleAIHints>},
+                {MaszynaMoverRailVehicleWipers::get_class_static(), "Wipers",
+                 &_component_make<MaszynaMoverRailVehicleWipers>},
+                {MaszynaMoverRailVehicleUniversalController::get_class_static(), "Universal controller",
+                 &_component_make<MaszynaMoverRailVehicleUniversalController>},
+                {MaszynaMoverRailVehicleDieselEngine::get_class_static(), "Diesel engine",
+                 &_component_make<MaszynaMoverRailVehicleDieselEngine>},
+                {MaszynaMoverRailVehicleDieselElectricEngine::get_class_static(), "Diesel-electric engine",
+                 &_component_make<MaszynaMoverRailVehicleDieselElectricEngine>},
+                {MaszynaMoverRailVehicleElectricSeriesEngine::get_class_static(), "Electric series-motor engine",
+                 &_component_make<MaszynaMoverRailVehicleElectricSeriesEngine>},
+                {MaszynaMoverRailVehicleElectricInductionEngine::get_class_static(), "Electric induction-motor engine",
+                 &_component_make<MaszynaMoverRailVehicleElectricInductionEngine>},
+                {RailVehiclePantographs::get_class_static(), "Pantographs", &_component_make<RailVehiclePantographs>},
+        };
+        return components;
+    }
+
+    TypedArray<VehicleComponentInfo> MaszynaMoverVehicleServer::component_list() const {
+        TypedArray<VehicleComponentInfo> list;
+        for (const MoverComponent &component: _mover_components()) {
+            Ref<VehicleComponentInfo> info;
+            info.instantiate();
+            info->set_name(component.name);
+            info->set_title(component.title);
+            info->set_component_type(component.make()->get_component_type());
+            list.push_back(info);
+        }
+        return list;
+    }
+
+    Ref<VehicleComponent> MaszynaMoverVehicleServer::component_create(const StringName &p_name) const {
+        for (const MoverComponent &component: _mover_components()) {
+            if (component.name == p_name) {
+                return component.make();
+            }
+        }
+        return {};
     }
 
     TMoverParameters *MaszynaMoverVehicleServer::mover_create(
