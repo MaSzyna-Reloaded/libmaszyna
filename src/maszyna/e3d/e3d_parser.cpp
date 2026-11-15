@@ -104,11 +104,19 @@ namespace godot {
             UtilityFunctions::push_error("Incorrect header of E3D file: " + p_file->get_path());
             return submodels;
         }
+        // as the original reads it (Model3d.cpp, TModel3d::deserialize(): while (s.tellg() < end)) -
+        // never eof_reached(): seek() clears it, so a chunk skipped past the real end (a trailing
+        // header this short gives len=0, data_len wraps to 0xFFFFFFF8) never sets it again, and the
+        // loop reads another such header and seeks another ~4 GB forever (#388 regression, FINDINGS.md)
+        const uint64_t end = p_file->get_position() + chunk_header.data_len;
         std::vector<String> submodel_names;
         std::vector<String> material_names;
         std::vector<Transform3D> matrices;
-        while (!p_file->eof_reached()) {
+        while (p_file->get_position() < end) {
             const ChunkHeader chunk = _read_chunk_header(p_file);
+            if (chunk.len < 8) {
+                break;
+            }
             if (chunk.id == "SUB0") {
                 const int submodels_count = static_cast<int>(chunk.data_len) / SUB0_SUBMODEL_SIZE;
                 for (int i = 0; i < submodels_count; i++) {
