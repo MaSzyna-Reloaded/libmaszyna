@@ -70,3 +70,23 @@ func test_the_maszyna_data_of_a_vehicle_is_its_name_and_livery() -> void:
     assert_eq(vehicle.vehicle, "dynamic/pkp/e186_v1/p160dc")
     assert_eq(vehicle.data_path, "dynamic/pkp/e186_v1")
     assert_eq(vehicle.livery, "480_002-9")
+
+
+func test_a_livery_has_the_title_description_and_authors_its_index_gives() -> void:
+    var f140ms:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.ELECTRIC_LOCOMOTIVE).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("f140ms"))[0]
+    var livery:VehicleLivery = VehicleCatalogServer.livery_list(f140ms)[0]
+
+    assert_eq(livery.title, "E186 240")
+    assert_eq(livery.description, "ITL, Dresden, 01.02.2020, Alstom_Kassel")
+    assert_eq(livery.authors, PackedStringArray(["Anna Nowak", "Jan Kowalski"]))
+
+
+func test_a_livery_described_in_part_has_what_its_index_gives() -> void:
+    var p160dc:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.ELECTRIC_LOCOMOTIVE).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("p160dc"))[0]
+    var livery:VehicleLivery = VehicleCatalogServer.livery_list(p160dc)[0]
+
+    assert_eq(livery.title, "146-226")
+    assert_eq(livery.description, "DB, ?")
+

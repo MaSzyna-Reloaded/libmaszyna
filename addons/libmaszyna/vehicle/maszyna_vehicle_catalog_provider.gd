@@ -51,6 +51,9 @@ const CARRIAGE_CATEGORIES:Dictionary[String, VehicleInfo.VehicleCategory] = {
 }
 
 
+## A skin's name in its index that names nothing (vehicle_picker.cpp:151)
+const UNNAMED_SKIN:String = "?"
+
 ## The index's vehicles by name (VehicleInfo.vehicle), read as the provider starts and as the game's
 ## data is read again - one read takes a tenth of a second of a game directory's 1375 vehicles
 var _vehicles:Dictionary[String, MaszynaVehiclesBank.Vehicle] = {}
@@ -71,7 +74,8 @@ func read_vehicles() -> void:
     _vehicles.clear()
     for vehicle:MaszynaVehiclesBank.Vehicle in MaszynaVehiclesBank.scan(MaszynaGameDirectory.get_game_dir()):
         if not vehicle.category in UNLISTED_CATEGORIES:
-            _vehicles[vehicle.data_path.trim_prefix("/").path_join(vehicle.file_name)] = vehicle
+            var vehicle_name:String = vehicle.data_path.trim_prefix("/").path_join(vehicle.file_name)
+            _vehicles[vehicle_name] = vehicle
 
 
 func vehicle_list(category:VehicleInfo.VehicleCategory) -> Array[VehicleInfo]:
@@ -89,7 +93,10 @@ func vehicle_list(category:VehicleInfo.VehicleCategory) -> Array[VehicleInfo]:
     return vehicles
 
 
-## A livery for each skin of the vehicle's index, named after the skin
+## A livery for each skin of the vehicle's index, named after the skin; its title, description and
+## authors those its index describes it by, as the original launcher shows them
+## (vehicle_picker.cpp:151-168): its name but "?", its operator, place and revision, the authors of
+## its texture and photos
 func livery_list(vehicle:VehicleInfo) -> Array[VehicleLivery]:
     var liveries:Array[VehicleLivery] = []
     var indexed:MaszynaVehiclesBank.Vehicle = _vehicles.get(vehicle.vehicle)
@@ -98,6 +105,22 @@ func livery_list(vehicle:VehicleInfo) -> Array[VehicleLivery]:
     for skin:String in indexed.skins:
         var livery:VehicleLivery = VehicleLivery.new()
         livery.name = skin
+        var described:PackedStringArray = indexed.skin_descriptions.get(skin, PackedStringArray())
+        var fields:Array[String] = []
+        for field:int in MaszynaVehiclesBank.SkinDescription.size():
+            fields.append(described[field].strip_edges() if field < described.size() else "")
+        if not fields[MaszynaVehiclesBank.SkinDescription.NAME] == UNNAMED_SKIN:
+            livery.title = fields[MaszynaVehiclesBank.SkinDescription.NAME]
+        livery.description = ", ".join(PackedStringArray([
+                fields[MaszynaVehiclesBank.SkinDescription.OPERATOR],
+                fields[MaszynaVehiclesBank.SkinDescription.LOCATION],
+                fields[MaszynaVehiclesBank.SkinDescription.REVISION_DATE],
+                fields[MaszynaVehiclesBank.SkinDescription.REVISION_COMPANY],
+        ].filter(func(field:String) -> bool: return not field == "")))
+        for author:String in [fields[MaszynaVehiclesBank.SkinDescription.TEXTURE_AUTHOR],
+                fields[MaszynaVehiclesBank.SkinDescription.PHOTO_AUTHOR]]:
+            if author and not author in livery.authors:
+                livery.authors.append(author)
         liveries.append(livery)
     return liveries
 

@@ -53,3 +53,11 @@ func test_a_category_line_sorts_the_vehicles_listed_after_it() -> void:
     assert_eq(vehicles[0].category, MaszynaVehiclesBank.Category.ELECTRIC_LOCOS, "!=e is an electric loco")
     assert_eq(vehicles[2].category, MaszynaVehiclesBank.Category.CARRIAGES, "an upper case letter is a carriage")
     assert_eq(MaszynaVehiclesBank.category_of("?"), MaszynaVehiclesBank.Category.UNKNOWN)
+
+
+func test_a_skin_keeps_what_its_index_line_describes_it_by() -> void:
+    var f140ms: MaszynaVehiclesBank.Vehicle = _scan()[0]
+
+    assert_eq(f140ms.skin_descriptions["E186_240"][MaszynaVehiclesBank.SkinDescription.NAME], "E186 240")
+    assert_eq(f140ms.skin_descriptions["E186_240"][MaszynaVehiclesBank.SkinDescription.PHOTO_AUTHOR], "Jan Kowalski")
+

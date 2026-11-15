@@ -10,6 +10,10 @@ class_name MaszynaVehiclesBank
 
 const DYNAMIC_DIR: String = "dynamic"
 const INDEX_FILE: String = "textures.txt"
+## What a skin's line of the index describes it by, after its "//": a list split by commas
+## (vehicles_bank::parse_meta(), launcher/textures_scanner.cpp:146)
+const DESCRIPTION_MARK: String = "//"
+const DESCRIPTION_SEPARATOR: String = ","
 ## A line of the index that sets the category of the vehicles listed after it: "!=e,E186" - the
 ## letter after it is the category's code (CATEGORY_CODES), the rest is no matter here
 const CATEGORY_PREFIX: String = "!="
@@ -53,12 +57,29 @@ const CATEGORY_CODES: Dictionary[String, Category] = {
 }
 
 
+## The places of a skin's description (vehicles_bank::parse_meta(), launcher/textures_scanner.cpp:
+## 146-160): the format's version, the vehicle's name, its operator, where it is kept, the date of
+## its revision, who revised it, who made the texture and who took its photos
+enum SkinDescription {
+    VERSION,
+    NAME,
+    OPERATOR,
+    LOCATION,
+    REVISION_DATE,
+    REVISION_COMPANY,
+    TEXTURE_AUTHOR,
+    PHOTO_AUTHOR,
+}
+
+
 class Vehicle:
     ## The vehicle's directory as a `dynamic` names it ("/dynamic/pkp/en57_v1")
     var data_path: String
     var file_name: String
     ## In the order of the index
     var skins: Array[String] = []
+    ## What the index describes each skin by, its list as written (SkinDescription), by the skin
+    var skin_descriptions: Dictionary[String, PackedStringArray] = {}
     var category: Category = Category.UNKNOWN
     ## The code of its category line as the index writes it ("e", "E", "*"); empty before any
     var category_code: String = ""
@@ -85,9 +106,9 @@ static func scan(game_dir: String) -> Array[Vehicle]:
             if not file.to_lower() == INDEX_FILE:
                 continue
             var data_path: String = "/" + DYNAMIC_DIR.path_join(directory.trim_prefix(dynamic_dir).trim_prefix("/"))
-            # the descriptions are cp1250; file and vehicle names, all that is read here, are ASCII
-            var lines: PackedStringArray = FileAccess.get_file_as_bytes(
-                    absolute_dir.path_join(file)).get_string_from_ascii().split("\n")
+            # the skins' descriptions are in cp1250 or in UTF-8
+            var lines: PackedStringArray = MaszynaLegacyText.decode(
+                    FileAccess.get_file_as_bytes(absolute_dir.path_join(file))).split("\n")
             var category_code: String = ""
             for line: String in lines:
                 var rule: String = line.strip_edges()
@@ -104,6 +125,9 @@ static func scan(game_dir: String) -> Array[Vehicle]:
                     by_path[key].category_code = category_code
                 if not entry[1] in by_path[key].skins:
                     by_path[key].skins.append(entry[1])
+                    if DESCRIPTION_MARK in line:
+                        by_path[key].skin_descriptions[entry[1]] = line.get_slice(DESCRIPTION_MARK, 1).strip_edges() \
+                                .split(DESCRIPTION_SEPARATOR)
     var keys: Array[String] = []
     keys.assign(by_path.keys())
     keys.sort()

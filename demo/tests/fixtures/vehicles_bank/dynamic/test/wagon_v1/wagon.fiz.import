@@ -1,0 +1,14 @@
+[remap]
+
+importer="libmaszyna.fiz"
+type="Resource"
+uid="uid://bpu5oe7vr2xp5"
+path="res://.godot/imported/wagon.fiz-351dc2269e4b59cb2d6cbcaea6a2cdb4.res"
+
+[deps]
+
+source_file="res://tests/fixtures/vehicles_bank/dynamic/test/wagon_v1/wagon.fiz"
+dest_files=["res://.godot/imported/wagon.fiz-351dc2269e4b59cb2d6cbcaea6a2cdb4.res"]
+
+[params]
+

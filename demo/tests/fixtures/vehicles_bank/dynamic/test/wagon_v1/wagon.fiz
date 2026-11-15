@@ -1,0 +1,5 @@
+// the test's wagon
+# its wheels, of the include
+include wagon.inc 1000 end
+Param. M=(p1)
+// no comment of its authors, past its data

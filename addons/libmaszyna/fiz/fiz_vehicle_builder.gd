@@ -17,6 +17,11 @@ const _INCLUDE_KEYWORD := "include"
 const SOURCE_LINES_SETTING:String = "maszyna/fiz/source_lines"
 const SOURCE_LINES_DEFAULT:bool = false
 const _INCLUDE_END_KEYWORD := "end"
+## The deepest an include is followed - deeper is a circular include
+const INCLUDE_DEPTH_MAX:int = 32
+## A line holding it anywhere is no data (_parse_file()); what follows it is a comment
+const _HASH_COMMENT := "#"
+const _COMMENT := "//"
 
 ## How the original's driver drives a car (TController of is_car()), which RoadVehicleServer drives
 ## it by: the gap it keeps before a vehicle (fDriverDist, Driver.cpp:1878) [m], the acceleration it
@@ -217,6 +222,42 @@ static func create_description(fiz_path: String) -> VehicleController:
     return read_description(fiz_path).controller
 
 
+## What the authors of the .fiz at fiz_path wrote of it: the comment lines it opens with, and
+## those of the files it includes before its first line of data, in their order
+static func read_comments(fiz_path: String) -> PackedStringArray:
+    var comments: Array[String] = []
+    _read_comments(fiz_path, comments, 0)
+    return PackedStringArray(comments)
+
+
+static func _read_comments(abs_path: String, comments: Array[String], depth: int) -> void:
+    if depth > INCLUDE_DEPTH_MAX or not FileAccess.file_exists(abs_path):
+        return
+    # the words of an include directive being read, which may run over several lines
+    var directive: Array[String] = []
+    for raw: String in MaszynaLegacyText.decode(FileAccess.get_file_as_bytes(abs_path)).split("\n"):
+        var line: String = raw.strip_edges()
+        var hash_at: int = line.find(_HASH_COMMENT)
+        var comment_at: int = line.find(_COMMENT)
+        var data: String = "" if hash_at >= 0 else line.get_slice(_COMMENT, 0)
+        var words: PackedStringArray = data.replace("\t", " ").split(" ", false)
+        if not words:
+            var comment: String = line.substr(hash_at + _HASH_COMMENT.length()) if hash_at >= 0 \
+                    else line.substr(comment_at + _COMMENT.length()) if comment_at >= 0 else ""
+            if comment.strip_edges():
+                comments.append(comment.strip_edges())
+            continue
+        if not directive and not words[0] == _INCLUDE_KEYWORD:
+            return
+        directive.append_array(words)
+        if not _INCLUDE_END_KEYWORD in directive:
+            continue
+        if directive.size() > 1:
+            var dir: String = abs_path.get_base_dir()
+            _read_comments(dir.path_join(MaszynaDataPath.resolve(dir, directive[1])), comments, depth + 1)
+        directive.clear()
+
+
 ## The .fiz at fiz_path read: the vehicle it describes (FizImportContext.controller) and where the
 ## lines it was read of stand in the files (FizImportContext.source_lines)
 static func read_description(fiz_path: String) -> FizImportContext:
@@ -297,7 +338,7 @@ static func _parse_file(
         abs_path: String, dir: String, context: FizImportContext, table_state: Dictionary,
         parameters: Dictionary = {}, include: FizSourceInclude = null) -> void:
     context.include_depth += 1
-    if context.include_depth > 32:
+    if context.include_depth > INCLUDE_DEPTH_MAX:
         push_error("FIZ include depth exceeded (circular include?): " + abs_path)
         context.include_depth -= 1
         return

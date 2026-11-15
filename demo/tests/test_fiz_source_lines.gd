@@ -86,3 +86,13 @@ func test_the_rows_of_a_table_are_its_section_s() -> void:
     assert_eq(rows[0].section, "LightsList:")
     assert_eq(_bytes_at(rows[0].path, rows[0].begin, "4\t34"), "4\t34")
     assert_eq(_bytes_at(rows[1].path, rows[1].begin, "17\t64"), "17\t64")
+
+
+## What the authors of a .fiz wrote of it: the comment lines it opens with, those of the files it
+## includes before its data, none past its first line of data
+func test_the_comments_a_fiz_opens_with_are_read_through_its_includes() -> void:
+    var comments:PackedStringArray = FizVehicleBuilder.read_comments(
+            ProjectSettings.globalize_path("res://tests/fixtures/vehicles_bank/dynamic/test/wagon_v1/wagon.fiz"))
+
+    assert_eq(comments, PackedStringArray(["the test's wagon", "its wheels, of the include", "the wagon's include"]))
+
