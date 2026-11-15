@@ -62,7 +62,7 @@ static func from_mmd(data_path:String, mmd_filename:String, skin:String, vehicle
     return MaszynaCabinLogic.new(MaszynaCabinControls.from_mmd.bind(abs_mmd_path, parameters))
 
 
-func register(vehicle_rid:RID, cabin:RID) -> void:
+func _register(vehicle_rid:RID, cabin:RID) -> void:
     _vehicle_rid = vehicle_rid
     _cabin = cabin
     var controls:MaszynaCabinControls = _controls_for_cabin.call(cabin)
@@ -164,7 +164,7 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
         _bind(control_id, &"button", CabinState.Target.OCCUPIED, {"action": KEYBOARD_ONLY[control_id], "monostable": true})
 
 
-func unregister() -> void:
+func _unregister() -> void:
     for control_id:StringName in _held_knobs.keys():
         _let_go_knob(control_id)
     for behaviour:RefCounted in _behaviours:
@@ -189,7 +189,7 @@ func _bind(control_id:StringName, kind:StringName, target:CabinState.Target, fie
 ## The action of a gesture's field of the control - as the cab binds it, else as the catalog has
 ## it for a control the cab leaves to another (mainctrl's key works jointctrl) - if a control of
 ## the cab takes its key
-func get_action(control_id:StringName, gesture:Gesture) -> StringName:
+func _get_action(control_id:StringName, gesture:int) -> StringName:
     var fields:Dictionary = _bindings[control_id]["fields"] if _bindings.has(control_id) \
             else MmdSemanticCatalog.get_entry(control_id).get("fixed_fields", {})
     var action:String = fields.get(GESTURE_FIELDS[gesture], "")
@@ -198,7 +198,7 @@ func get_action(control_id:StringName, gesture:Gesture) -> StringName:
 
 ## The player's keys of the cab's controls - a key down is the hand on its control, a key up lets
 ## it go; a control stepping on key repeat (repeat_on_hold) takes the echoes too
-func input(event:InputEvent) -> void:
+func _input(event:InputEvent) -> void:
     for action:String in _keys:
         var control_id:StringName = _keys[action]
         var fields:Dictionary = _bindings[control_id]["fields"]
@@ -215,7 +215,7 @@ func input(event:InputEvent) -> void:
 
 ## A monostable button is held down, any other one flipped from what it shows; a two-position
 ## switch goes to its other end (CabinButton, CabinSwitch)
-func press(control_id:StringName) -> void:
+func _press(control_id:StringName) -> void:
     var binding:Dictionary = _bindings.get(control_id, {})
     var fields:Dictionary = binding.get("fields", {})
     match binding.get("kind", &""):
@@ -237,7 +237,7 @@ func press(control_id:StringName) -> void:
 
 
 ## A monostable button springs back, a self-returning switch goes back to rest, a knob stops
-func release(control_id:StringName) -> void:
+func _release(control_id:StringName) -> void:
     var binding:Dictionary = _bindings.get(control_id, {})
     var fields:Dictionary = binding.get("fields", {})
     match binding.get("kind", &""):
@@ -251,7 +251,7 @@ func release(control_id:StringName) -> void:
             _let_go_knob(control_id)
 
 
-func increase(control_id:StringName) -> void:
+func _increase(control_id:StringName) -> void:
     var binding:Dictionary = _bindings.get(control_id, {})
     match binding.get("kind", &""):
         &"switch":
@@ -263,7 +263,7 @@ func increase(control_id:StringName) -> void:
             _hold_knob(control_id, binding, binding["fields"].get("step", KNOB_KEY_SPEED))
 
 
-func decrease(control_id:StringName) -> void:
+func _decrease(control_id:StringName) -> void:
     var binding:Dictionary = _bindings.get(control_id, {})
     match binding.get("kind", &""):
         &"switch":
