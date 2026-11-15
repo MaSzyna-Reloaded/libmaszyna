@@ -19,6 +19,11 @@ const SOURCE_LINES_DEFAULT:bool = false
 const _INCLUDE_END_KEYWORD := "end"
 ## The deepest an include is followed - deeper is a circular include
 const INCLUDE_DEPTH_MAX:int = 32
+## An include directive's parameter in a line of the file it brings in: "(p" N ")"
+const _PARAMETER_OPEN := "(p"
+const _PARAMETER_CLOSE := ")"
+## What a parameter the directive does not pass reads as (cParser::substituteParameters)
+const _PARAMETER_MISSING := "none"
 ## A line holding it anywhere is no data (_parse_file()); what follows it is a comment
 const _HASH_COMMENT := "#"
 const _COMMENT := "//"
@@ -150,8 +155,11 @@ static func create_road_sections() -> Array[Dictionary]:
 
 ## Reads a FIZ file into `target` by `sections` (create_sections(), create_road_sections()) - the
 ## parse's own table; what the parse gathered for the parts made after it is in the context it
-## gives back
-static func parse_into(target: VehicleController, fiz_path: String, sections: Array[Dictionary]) -> FizImportContext:
+## gives back. `parameters` are those of an include directive bringing the file in ({"p1": ...}),
+## none for a vehicle's own file.
+static func parse_into(
+        target: VehicleController, fiz_path: String, sections: Array[Dictionary],
+        parameters: Dictionary = {}) -> FizImportContext:
     var context := FizImportContext.new()
     context.base_dir = fiz_path.get_base_dir()
     context.controller = target
@@ -159,7 +167,7 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
     context.notes_sources = ProjectSettings.get_setting(SOURCE_LINES_SETTING)
 
     var table_state: Dictionary = {"prefix": "", "parser": null, "end": ""}
-    _parse_file(fiz_path, context.base_dir, context, table_state)
+    _parse_file(fiz_path, context.base_dir, context, table_state, parameters)
 
     if table_state["parser"] != null:
         table_state["parser"].end_table(context)
@@ -175,8 +183,9 @@ static func parse_into(target: VehicleController, fiz_path: String, sections: Ar
 ## absolute) - e.g. MaszynaGameDirectory.get_game_dir().path_join("pkp/eu04_v1/eu04-01.fiz").
 ## `include` directives inside the file resolve relative to its own containing directory. The
 ## context the file was read with is given back: where its lines stand in the files.
-static func build_into(target: VehicleController, fiz_path: String) -> FizImportContext:
-    var context: FizImportContext = parse_into(target, fiz_path, create_sections())
+static func build_into(
+        target: VehicleController, fiz_path: String, parameters: Dictionary = {}) -> FizImportContext:
+    var context: FizImportContext = parse_into(target, fiz_path, create_sections(), parameters)
 
     # a diesel's legacy "main" compressor runs off its engine (CheckLocomotiveParameters, Mover.cpp:11738)
     var brake: RailVehicleBrake = context.get_part("RailVehicleBrake") as RailVehicleBrake
@@ -258,9 +267,11 @@ static func _read_comments(abs_path: String, comments: Array[String], depth: int
         directive.clear()
 
 
-## The .fiz at fiz_path read: the vehicle it describes (FizImportContext.controller) and where the
-## lines it was read of stand in the files (FizImportContext.source_lines)
-static func read_description(fiz_path: String) -> FizImportContext:
+## The .fiz at fiz_path read: the vehicle it describes (FizImportContext.controller), where the
+## lines it was read of stand in the files (FizImportContext.source_lines) and the parameters it
+## takes (FizImportContext.parameter_count). A file an include directive brings in (a .inc) is read
+## as that directive reads it with its `parameters` ({"p1": ..., "p2": ...}).
+static func read_description(fiz_path: String, parameters: Dictionary = {}) -> FizImportContext:
     # what the file describes is its Param. Category= (LoadFIZ_Param, Mover.cpp:10256), a train
     # without one (CategoryFlag = 1, MOVER.h:1565): a road vehicle (is_car(), CategoryFlag & 2,
     # Driver.h:256-257) is a RoadVehicleController, of what it is and its size, driven as the
@@ -269,7 +280,7 @@ static func read_description(fiz_path: String) -> FizImportContext:
     road.category = VehicleController.CATEGORY_TRAIN
     # a file that is not there is reported once, by the Mover's read below
     if FileAccess.file_exists(fiz_path):
-        var road_context: FizImportContext = parse_into(road, fiz_path, create_road_sections())
+        var road_context: FizImportContext = parse_into(road, fiz_path, create_road_sections(), parameters)
         if road.category & VehicleController.CATEGORY_ROAD:
             road.following_gap = CAR_FOLLOWING_GAP
             road.acceleration_limit = CAR_ACCELERATION_LIMIT
@@ -277,7 +288,7 @@ static func read_description(fiz_path: String) -> FizImportContext:
             return road_context
     # FIZ is the Mover's own format, so any other vehicle it describes is built on the Mover;
     # its components are kept in the order the FIZ sections built them
-    return build_into(MaszynaMoverRailVehicleController.new(), fiz_path)
+    return build_into(MaszynaMoverRailVehicleController.new(), fiz_path, parameters)
 
 
 ## Reads one logical line off a MaszynaParser's byte stream, mirroring the original
@@ -330,10 +341,11 @@ static func _read_include_directive(p: MaszynaParser, first_line_parser: Maszyna
 
 
 ## `parameters` substitutes "(p1)", "(p2)", etc. directly in each raw line's text before any
-## tokenizing happens - positional args from an `include file p1 p2 end` directive that brought
-## this file in (empty for a top-level, non-included file). Confirmed necessary against real
-## data: dynamic/pkp/sm42_v1/6d.fiz.inc's `Param. ... M=(p1) ...` / `Brake: ... MaxBP=(p2) ...`
-## left mass at 0 (and cascaded into NaN velocity) with no substitution at all.
+## tokenizing happens (_substitute_parameters()) - positional args from an `include file p1 p2 end`
+## directive that brought this file in (empty for a top-level, non-included file). Confirmed
+## necessary against real data: dynamic/pkp/sm42_v1/6d.fiz.inc's `Param. ... M=(p1) ...` /
+## `Brake: ... MaxBP=(p2) ...` left mass at 0 (and cascaded into NaN velocity) with no substitution
+## at all. The file read first notes the parameters it takes (FizImportContext.parameter_count).
 static func _parse_file(
         abs_path: String, dir: String, context: FizImportContext, table_state: Dictionary,
         parameters: Dictionary = {}, include: FizSourceInclude = null) -> void:
@@ -357,10 +369,8 @@ static func _parse_file(
     while not p.eof_reached():
         var line_begin: int = p.get_position()
         var raw_line: String = _read_fiz_line(p)
-        var line: String = raw_line.strip_edges(true, false)
-        if parameters:
-            for key: String in parameters:
-                line = line.replace("(%s)" % key, str(parameters[key]))
+        var written: String = raw_line.strip_edges(true, false)
+        var line: String = _substitute_parameters(written, parameters)
 
         # FIZ-specific: a line containing an unescaped '#' anywhere is fully ignored. This is
         # distinct from `//`/`/* */`, which MaszynaParser's tokenizer already strips on its
@@ -372,6 +382,13 @@ static func _parse_file(
                 table_state["parser"] = null
                 table_state["end"] = ""
             continue
+
+        # the parameters the file read first takes are those of its data, not of a line commented
+        # out (dynamic/pkp/en57_v1/6bb.fiz.inc: `//include fiz_brakes_rb_(p1).inc end`); `include`
+        # is noted only with the sources, the depth always
+        if context.include_depth == 1:
+            var data: String = written.get_slice(_COMMENT, 0)
+            context.parameter_count = maxi(context.parameter_count, _highest_parameter(data))
 
         if not line:
             if table_state["prefix"] == "BPT":
@@ -446,6 +463,50 @@ static func _parse_file(
         # else: unrecognized line outside any table - ignored, matching original tolerance.
 
     context.include_depth -= 1
+
+
+## The line's (pN) replaced by the parameters of the include directive that brought its file in -
+## cParser::substituteParameters (utilities/parser.cpp:276): N is the number its digits begin
+## with (atoi), a parameter the directive does not pass reads as "none", and the line of a file
+## brought in with no parameters is left as it is. Unlike the original, the search goes on after
+## the parameter put in: one that is itself "(pN)" (`include x.inc (p1) end` in a file read with
+## none) would be replaced again and again there.
+static func _substitute_parameters(line: String, parameters: Dictionary) -> String:
+    if not parameters:
+        return line
+    var at: int = line.find(_PARAMETER_OPEN)
+    while at >= 0:
+        var close: int = line.find(_PARAMETER_CLOSE, at)
+        if close < 0:
+            break
+        var value: String = str(parameters.get("p%d" % _parameter_number(line, at, close), _PARAMETER_MISSING))
+        line = line.substr(0, at) + value + line.substr(close + _PARAMETER_CLOSE.length())
+        at = line.find(_PARAMETER_OPEN, at + value.length())
+    return line
+
+
+## The highest N of the line's (pN), as _substitute_parameters() reads it; 0 when it has none. The
+## directive passes the parameters by their place, so a file of (p1) and (p3) takes three.
+static func _highest_parameter(line: String) -> int:
+    var highest: int = 0
+    var at: int = line.find(_PARAMETER_OPEN)
+    while at >= 0:
+        var close: int = line.find(_PARAMETER_CLOSE, at)
+        if close < 0:
+            break
+        highest = maxi(highest, _parameter_number(line, at, close))
+        at = line.find(_PARAMETER_OPEN, close)
+    return highest
+
+
+## The N of the line's (pN) opening at `at` and closing at `close`, as atoi() reads it: the digits
+## it begins with, 0 when there are none
+static func _parameter_number(line: String, at: int, close: int) -> int:
+    var begin: int = at + _PARAMETER_OPEN.length()
+    var end: int = begin
+    while end < close and line[end] >= "0" and line[end] <= "9":
+        end += 1
+    return line.substr(begin, end - begin).to_int()
 
 
 static func _source_line(

@@ -50,6 +50,9 @@ var notes_sources: bool = false
 var source_lines: Array[FizSourceLine] = []
 ## Every include directive the parse followed, in the order read - noted only with notes_sources
 var includes: Array[FizSourceInclude] = []
+## The parameters the file read first takes - its highest (pN): an include directive bringing it in
+## passes p1 ... pN by their place (FizVehicleBuilder.read_description())
+var parameter_count: int = 0
 
 ## Names of recognized FIZ sections with no registered parser yet (see the `sections` table
 ## in FizVehicleBuilder - `parser == null`); used to only log once per vehicle per
