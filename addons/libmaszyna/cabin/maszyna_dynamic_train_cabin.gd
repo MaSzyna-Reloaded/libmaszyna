@@ -44,6 +44,11 @@ var _random_choices:Dictionary = {}
 var _occluders:Array[RID] = []
 
 
+## A cab of an MMD file is built by MaSzyna's cab implementation
+func _init() -> void:
+    implementation = MaszynaCabinImplementation.NAME
+
+
 func _ready() -> void:
     vehicle_rid_changed.connect(_on_vehicle_rid_changed)
     cabin_changed.connect(_on_cabin_changed)

@@ -1188,19 +1188,15 @@ const BUTTON_TYPES:Dictionary[String, CabinButton.ButtonType] = {
 }
 
 
-static func _build_widget(
-        descriptor:MmdInstrumentDescriptor, vehicle_rid:RID,
-        cab_number:int, diagnostics:Array[Dictionary]) -> Node:
-    var entry:Dictionary = MmdSemanticCatalog.get_entry(descriptor.label)
+## The widget of a catalog role, with the fields its entry gives as the vehicle's configuration
+## shapes them - what a cab built of an MMD file holds, and what MaszynaCabinImplementation makes
+static func widget_create(label:String, button_type:CabinButton.ButtonType, vehicle_config:Dictionary) -> Node:
+    var entry:Dictionary = MmdSemanticCatalog.get_entry(label)
     var widget:Node = entry["widget_class"].new()
-    widget.name = "%s_%s" % [descriptor.label, descriptor.submodel_name]
     if "control_id" in widget:
-        widget.control_id = StringName(descriptor.label)
-        widget.caption = MmdCabControlCaptions.caption(StringName(descriptor.label))
-
-    var button_type:CabinButton.ButtonType = BUTTON_TYPES.get(descriptor.button_type, CabinButton.ButtonType.TOGGLE)
-    var fields:Dictionary = MmdSemanticCatalog.resolve_fields(
-            descriptor.label, button_type, CabinSystem.vehicle_config(vehicle_rid))
+        widget.control_id = StringName(label)
+        widget.caption = MmdCabControlCaptions.caption(StringName(label))
+    var fields:Dictionary = MmdSemanticCatalog.resolve_fields(label, button_type, vehicle_config)
     for field_name:String in fields:
         widget.set(field_name, fields[field_name])
     # the keys are the cab logic's (MaszynaCabinLogic); the widget only names them under its caption
@@ -1212,6 +1208,18 @@ static func _build_widget(
         widget.hint_actions = hint_actions
     if "target" in widget:
         widget.target = entry.get("target", CabinState.Target.OCCUPIED)
+    if widget is CabinButton:
+        widget.button_type = button_type
+    return widget
+
+
+static func _build_widget(
+        descriptor:MmdInstrumentDescriptor, vehicle_rid:RID,
+        cab_number:int, diagnostics:Array[Dictionary]) -> Node:
+    var entry:Dictionary = MmdSemanticCatalog.get_entry(descriptor.label)
+    var button_type:CabinButton.ButtonType = BUTTON_TYPES.get(descriptor.button_type, CabinButton.ButtonType.TOGGLE)
+    var widget:Node = widget_create(descriptor.label, button_type, CabinSystem.vehicle_config(vehicle_rid))
+    widget.name = "%s_%s" % [descriptor.label, descriptor.submodel_name]
 
     # names of positions that lie where the vehicle says - a brake valve's, per its handle type
     var position_names_config:Dictionary = entry.get("position_names_config", {})
@@ -1223,8 +1231,6 @@ static func _build_widget(
                 names[roundi(float(config[config_key]))] = position_names_config[config_key]
         widget.set("position_names", names)
 
-    if widget is CabinButton:
-        widget.button_type = button_type
     # a gauge of a car of the train reads the value its numbers name (MaszynaCabinTrainsetPressures)
     if entry.has("state_property_of_leading_numbers") and descriptor.leading_numbers.size() == LEADING_NUMBER_COUNT:
         widget.set("state_property", MaszynaCabinTrainsetPressures.state_key(
