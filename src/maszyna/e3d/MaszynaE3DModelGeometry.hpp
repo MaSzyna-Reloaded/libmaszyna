@@ -20,7 +20,7 @@ namespace godot {
 
         public:
             /* Must be raised when what the parsers put into the geometry changes: it invalidates the cache */
-            static constexpr int FORMAT_VERSION = 20261110;
+            static constexpr int FORMAT_VERSION = 20261115;
             /* Keys of a surface Dictionary */
             static constexpr const char *SURFACE_VERTICES = "vertices";
             static constexpr const char *SURFACE_NORMALS = "normals";

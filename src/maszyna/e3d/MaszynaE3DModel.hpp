@@ -24,7 +24,7 @@ namespace godot {
             bool geometry_applied = false;
 
         public:
-            static constexpr int FORMAT_VERSION = 20261111; // must be incremented when public API of MaszynaE3DModel or
+            static constexpr int FORMAT_VERSION = 20261115; // must be incremented when public API of MaszynaE3DModel or
                                                             // MaszynaE3DSubModel is changing
 
             TypedDictionary<String, MaszynaE3DModelLightDefinition> get_lights() const;
