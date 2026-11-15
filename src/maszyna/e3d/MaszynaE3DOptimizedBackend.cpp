@@ -35,6 +35,7 @@ namespace godot {
         p_instance.materials.clear();
         p_instance.emissive_materials.clear();
         p_instance.light_submodels.clear();
+        p_instance.skin_parts.clear();
     }
 
     void MaszynaE3DOptimizedBackend::update(MaszynaE3DInstanceData &p_instance) {
@@ -181,6 +182,9 @@ namespace godot {
                         local_transform, chain);
                 RenderingServer::get_singleton()->instance_set_custom_aabb(
                         rid, _visibility_aabb(submodel->get_mesh()->get_aabb(), local_transform));
+                if (submodel->get_dynamic_material()) {
+                    p_instance.skin_parts.push_back({rid, ObjectID(), submodel.ptr(), translucency});
+                }
             }
             // A free spotlight's light is MaszynaE3DRenderingServer's (streamed with a range of its own);
             // here it is only the point (and the glare) the original draws where the light is

@@ -198,6 +198,16 @@ namespace godot {
             /// The instance's own copies of its emissive materials, while it drives their energy
             /// (emission_energy or submodel_emission) - both backends draw with them
             Vector<EmissiveMaterial> emissive_materials;
+            /// A submodel drawn in a replaceable skin, as built: what draws it - a RenderingServer
+            /// instance or a node - and its translucency, for the skins swapped in place
+            /// (MaszynaE3DInstanceBackend::skins_apply())
+            struct SkinPart {
+                    RID rid;
+                    ObjectID node;
+                    MaszynaE3DSubModel *submodel = nullptr;
+                    int translucency = 0;
+            };
+            Vector<SkinPart> skin_parts;
             // NODES backend
             Vector<ObjectID> root_nodes;
             HashMap<String, LightNodes> light_nodes;
@@ -218,6 +228,10 @@ namespace godot {
             virtual void clear(MaszynaE3DInstanceData &p_instance) = 0;
             /// Applies transform, visibility, layers and lights state
             virtual void update(MaszynaE3DInstanceData &p_instance) = 0;
+            /// The parts drawn in a replaceable skin take the instance's skins as they are now: each
+            /// one's material resolved again and drawn by what draws it, nothing built again; a part
+            /// drawn with a material of its own (instance_set_part_material_override()) keeps it
+            void skins_apply(MaszynaE3DInstanceData &p_instance, MaszynaE3DMaterialResolver &p_material_resolver);
             /// Applies what is shown, after the lights state, a submodel's or the instance's own
             /// visibility changed - a blinking lamp touches nothing else
             virtual void update_visibility(MaszynaE3DInstanceData &p_instance) {

@@ -1,8 +1,11 @@
 #include "MaszynaE3DInstanceBackend.hpp"
 #include "MaszynaE3DInstanceTypes.hpp"
+#include "MaszynaE3DMaterialResolver.hpp"
 #include "rendering/ModelRenderingServer.hpp"
 #include "rendering/MousePicking.hpp"
 #include <godot_cpp/classes/base_material3d.hpp>
+#include <godot_cpp/classes/geometry_instance3d.hpp>
+#include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/core/math.hpp>
 
 namespace godot {
@@ -107,6 +110,39 @@ namespace godot {
                (!(dynamic_instance && p_submodel->get_dynamic_hidden()) ||
                 p_instance.shown_submodels.has(p_submodel)) &&
                !p_instance.hidden_submodels.has(p_submodel);
+    }
+
+    void MaszynaE3DInstanceBackend::skins_apply(
+            MaszynaE3DInstanceData &p_instance, MaszynaE3DMaterialResolver &p_material_resolver) {
+        RenderingServer *rs = RenderingServer::get_singleton();
+        ERR_FAIL_NULL(rs);
+        for (const MaszynaE3DInstanceData::SkinPart &part: p_instance.skin_parts) {
+            if (p_instance.submodel_materials.has(part.submodel)) {
+                continue;
+            }
+            // the emissive copy of the material it was drawn with goes with it
+            for (int64_t index = p_instance.emissive_materials.size() - 1; index >= 0; index--) {
+                if (p_instance.emissive_materials[index].submodel == part.submodel) {
+                    p_instance.emissive_materials.remove_at(index);
+                }
+            }
+            const Ref<Material> material = _own_emissive_material(
+                    p_instance, part.submodel,
+                    p_material_resolver.resolve(p_instance, part.submodel, part.translucency));
+            if (material.is_null()) {
+                continue;
+            }
+            if (part.rid.is_valid()) {
+                p_instance.materials.push_back(material);
+                rs->instance_geometry_set_material_override(part.rid, material->get_rid());
+            } else if (
+                    GeometryInstance3D *geometry =
+                            Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(part.node));
+                    geometry != nullptr) {
+                geometry->set_material_override(material);
+            }
+        }
+        _apply_emission(p_instance);
     }
 
     Vector<MaszynaE3DSubModel *>
