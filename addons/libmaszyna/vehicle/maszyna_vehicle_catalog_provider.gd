@@ -125,6 +125,16 @@ func livery_list(vehicle:VehicleInfo) -> Array[VehicleLivery]:
     return liveries
 
 
+## The formations the vehicle runs in, as its index groups its skin lines (MaszynaVehiclesBank.
+## FORMATION_PREFIX)
+func formation_list(vehicle:VehicleInfo) -> Array[VehicleFormation]:
+    var indexed:MaszynaVehiclesBank.Vehicle = _vehicles.get(vehicle.vehicle)
+    if not indexed:
+        var none:Array[VehicleFormation] = []
+        return none
+    return formations_of(indexed)
+
+
 ## The side view of the vehicle's model in its skin (VehicleData.livery)
 func vehicle_get_side_view(vehicle:VehicleData) -> Texture2D:
     return await MaszynaVehicleProfileManager.get_profile(
@@ -167,6 +177,22 @@ func vehicle_free(vehicle:RID) -> void:
 
 func vehicle_get_data(vehicle:RID) -> VehicleData:
     return MaszynaVehicleSystem.vehicle_get_dynamic(vehicle)
+
+
+## The formations a vehicle of an index runs in: each vehicle of one, front to rear, in the skin of
+## its line
+static func formations_of(vehicle:MaszynaVehiclesBank.Vehicle) -> Array[VehicleFormation]:
+    var formations:Array[VehicleFormation] = []
+    for formation:MaszynaVehiclesBank.Formation in vehicle.formations:
+        var listed:VehicleFormation = VehicleFormation.new()
+        for index:int in formation.vehicles.size():
+            var data:MaszynaVehicleData = MaszynaVehicleData.new()
+            data.data_path = formation.vehicles[index].data_path
+            data.file_name = formation.vehicles[index].file_name
+            data.skin = formation.skins[index]
+            listed.vehicles.append(data)
+        formations.append(listed)
+    return formations
 
 
 ## The catalogue's kind of a vehicle of the index
