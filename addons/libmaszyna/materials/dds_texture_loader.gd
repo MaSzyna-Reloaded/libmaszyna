@@ -1,14 +1,32 @@
 @tool
-## Minimal DDS (DXT1/DXT3/DXT5) loader that can discard the top mipmap levels of an
-## oversized texture before it ever reaches the GPU - port of the original engine's own
-## texture size clamp (Texture.cpp's CurrentMaxTextureSize mip-skip loop, Globals.h's
+## Minimal DDS (DXT1/DXT3/DXT5, and DX10-extended BC4/BC5/BC7) loader that can discard the top
+## mipmap levels of an oversized texture before it ever reaches the GPU - port of the original
+## engine's own texture size clamp (Texture.cpp's CurrentMaxTextureSize mip-skip loop, Globals.h's
 ## iMaxTextureSize/maxtexturesize .ini option), which this wrapper had no equivalent of:
 ## MaszynaMaterialManager.load_texture() used to hand every .dds straight to Godot's own loader
 ## at full native resolution with no way to cap VRAM use on a weaker GPU.
+##
+## A fifth of the game's .dds files are DX10-extended (BC7, the data set's dynamic/pkp normal
+## maps among them): the classic header's fourCC is "DX10" and a second, 20-byte header right
+## after it names the real format (DXGI_FORMAT) - Godot's own loader is stricter about the
+## classic header's flags than the files this loader has to read are, and refuses some of them
+## outright (MaSzyna-Reloaded/libmaszyna#436).
 
 
 ## Where the pixel format's fourCC stands: magic, then the header up to ddspf.dwFourCC
 const PIXEL_FORMAT_FOURCC_OFFSET:int = 84
+## DX10_HEADER_SIZE bytes right after the classic header, before the pixel data, when the classic
+## header's fourCC is "DX10": DXGI_FORMAT, D3D10_RESOURCE_DIMENSION, misc flag, array size, misc
+## flags 2 - only the first is read
+const DX10_HEADER_SIZE:int = 20
+## DXGI_FORMAT values this loader maps to a Godot Image.Format (the data set has none but
+## BC7_UNORM; BC4/BC5 are read the same way and are common in other DDS files of the format)
+const DXGI_FORMAT_BC4_UNORM:int = 80
+const DXGI_FORMAT_BC4_SNORM:int = 81
+const DXGI_FORMAT_BC5_UNORM:int = 83
+const DXGI_FORMAT_BC5_SNORM:int = 84
+const DXGI_FORMAT_BC7_UNORM:int = 98
+const DXGI_FORMAT_BC7_UNORM_SRGB:int = 99
 
 ## Whether the texture has an alpha channel, read from its header alone - the original's
 ## data_components: GL_RGB for DXT1, GL_RGBA for DXT3 and DXT5 (Texture.cpp:618-621)
@@ -60,6 +78,7 @@ static func load_image(path:String, max_size:int) -> Image:
 
     var format:Image.Format
     var block_size:int
+    var data_start:int = 4 + 124  # magic + header
     match fourcc:
         "DXT1":
             format = Image.FORMAT_DXT1
@@ -70,10 +89,27 @@ static func load_image(path:String, max_size:int) -> Image:
         "DXT5":
             format = Image.FORMAT_DXT5
             block_size = 16
+        "DX10":
+            # the DX10 header always starts right after the classic one (DDS_HEADER is a fixed
+            # 124 bytes whichever pixel format it names), not right after fourCC
+            file.seek(4 + 124)
+            var dxgi_format:int = file.get_32()
+            file.seek(file.get_position() + DX10_HEADER_SIZE - 4)  # the rest of the DX10 header
+            data_start += DX10_HEADER_SIZE
+            match dxgi_format:
+                DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC4_SNORM:
+                    format = Image.FORMAT_RGTC_R
+                    block_size = 8
+                DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC5_SNORM:
+                    format = Image.FORMAT_RGTC_RG
+                    block_size = 16
+                DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB:
+                    format = Image.FORMAT_BPTC_RGBA
+                    block_size = 16
+                _:
+                    return null
         _:
             return null
-
-    var data_start:int = 4 + 124  # magic + header
     var file_size:int = file.get_length()
     var offset:int = 0
     while (width > max_size or height > max_size) and mipmap_count > 1:
