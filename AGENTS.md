@@ -31,6 +31,15 @@ libmaszyna and libreloaded:
   the wrapper's side - its getter, state key, command. A change that would touch the Mover is asked
   about before the first edit, never reported after (#348 removed `PipeBrakePress` from it, #355
   put it back)
+* REQUIRED, ABSOLUTE: **a server is a singleton, never a class of static functions** - a C++
+  Engine singleton or a GDScript autoload its plugin adds, never a `class_name` of `static func`s
+  and `static var`s; none is added to such a class, one found is reported.
+  A server is what holds state that changes while the game runs: handles (RIDs), registrations,
+  signals, a lifecycle. A class whose `static var` is a table filled once and then only read, with
+  static functions that read it, is data, not a server: the rule does not apply to it, and it is
+  never reported, planned or filed as a breach (`MmdSemanticCatalog`, the MMD roles' table, is
+  data). Before citing the rule, check: does the class hold state that changes at runtime, hand out
+  handles or take registrations? No - it is no server
 * libmaszyna knows nothing of the game (`maszyna-reloaded`): no game class, path, setting or
   input action is named in it
 * the Godot project is `demo/`, libmaszyna's test project (`demo/project.godot`, `demo/tests/`,
