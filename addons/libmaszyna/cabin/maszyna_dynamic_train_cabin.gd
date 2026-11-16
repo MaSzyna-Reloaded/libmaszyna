@@ -36,12 +36,21 @@ const CAB_LAMP_SUBMODEL_NAMES:Array[String] = [
 ## Distance of the cab light below the found ceiling lamp - inside the lamp's shadow casting mesh
 ## it would light nothing.
 const CAB_LIGHT_BELOW_LAMP:float = 0.05
+## The fields of a cab widget that name the submodels it moves or lights
+const MOVED_PATH_FIELDS:Array[StringName] = [&"mesh_path", &"target_mesh_path", &"on_target_path", &"off_target_path"]
 
 var _generated:Node3D
 var _diagnostics:Array[Dictionary] = []
 var _random_choices:Dictionary = {}
 ## The cab model's meshes as CabinHUDMouseSystem occluders - the desk hides what runs under it
 var _occluders:Array[RID] = []
+## What the cab is built of, if whoever shows it gives it (set_definition_reader()), else its file
+var _definition_reader:Callable = Callable()
+## The definition the cab is built of, and the nodes each of its controls is built as
+var _definition:MmdCabinDefinition = null
+var _instrument_nodes:Dictionary[MmdInstrumentDescriptor, Array] = {}
+## The pose each node of the cab's model is built in, before any control moves it
+var _rest_transforms:Dictionary[Node3D, Transform3D] = {}
 
 
 ## A cab of an MMD file is built by MaSzyna's cab implementation
@@ -88,6 +97,87 @@ func reload() -> void:
     _rebuild_generated()
 
 
+## Whoever shows the cab may hand it the definitions it is built of, in place of its MMD file's -
+## an editor's cab as edited: reader(cab_number:int) -> MmdCabinDefinition (cab0definition: 0). An
+## invalid callable reads the file again. Takes effect at the next build (reload())
+func set_definition_reader(reader:Callable) -> void:
+    _definition_reader = reader
+
+
+## A control of the definition the cab is built of, built into the cab as it stands - an editor's
+## control added: the rest of the cab, and where its camera looks, as they are
+func instrument_add(descriptor:MmdInstrumentDescriptor) -> void:
+    var model:Node3D = _generated.get_node_or_null("CabModel") if _generated else null
+    var sound_player:SfxPlayer3D = _generated.get_node_or_null("CabinControlsSfxPlayer3D") if _generated else null
+    if not model or not sound_player or _instrument_nodes.has(descriptor):
+        return
+    var sound_events:Array[SfxEvent] = []
+    sound_events.assign(sound_player.bank.events)
+    var diagnostics:Array[Dictionary] = []
+    _instrument_nodes[descriptor] = MmdCabinInstancer.instrument_build_into(
+            _generated, descriptor, get_vehicle_rid(), _definition.cab_number, _definition.driver_pos,
+            MmdCabinInstancer.submodel_index(model), sound_player, sound_events,
+            MaszynaGameDirectory.data_path_resolve(data_path.trim_prefix("/")), diagnostics)
+    sound_player.bank.events = sound_events
+    _diagnostics.append_array(diagnostics)
+
+
+## A control taken out of the cab as it stands - an editor's control removed: the submodels it
+## moved back in the pose the model builds them in, so that a control built on them anew starts there
+func instrument_remove(descriptor:MmdInstrumentDescriptor) -> void:
+    for node:Node in _instrument_nodes.get(descriptor, []):
+        if not is_instance_valid(node):
+            continue
+        for field:StringName in MOVED_PATH_FIELDS:
+            var path:Variant = node.get(field)
+            if path is NodePath and not (path as NodePath).is_empty():
+                var moved:Node3D = node.get_node_or_null(path) as Node3D
+                if moved:
+                    _rest_transforms_restore(moved)
+        node.get_parent().remove_child(node)
+        node.queue_free()
+    _instrument_nodes.erase(descriptor)
+
+
+func _rest_transforms_keep(node:Node) -> void:
+    var spatial:Node3D = node as Node3D
+    if spatial:
+        _rest_transforms[spatial] = spatial.transform
+    for child:Node in node.get_children(true):
+        _rest_transforms_keep(child)
+
+
+func _rest_transforms_restore(node:Node) -> void:
+    var spatial:Node3D = node as Node3D
+    if spatial and _rest_transforms.has(spatial):
+        spatial.transform = _rest_transforms[spatial]
+    for child:Node in node.get_children(true):
+        _rest_transforms_restore(child)
+
+
+## The submodels the widgets of a control move or light, as the cab wired them - what the mouse
+## outlines of it; none for a control the cab has not built
+func instrument_submodels(descriptor:MmdInstrumentDescriptor) -> Array[Node3D]:
+    var submodels:Array[Node3D] = []
+    for node:Node in _instrument_nodes.get(descriptor, []):
+        if not is_instance_valid(node) or not node.is_inside_tree():
+            continue
+        for field:StringName in MOVED_PATH_FIELDS:
+            var path:Variant = node.get(field)
+            if path is NodePath and not (path as NodePath).is_empty():
+                var moved:Node3D = node.get_node_or_null(path) as Node3D
+                if moved and not moved in submodels:
+                    submodels.append(moved)
+    return submodels
+
+
+## A control built anew in the cab as it stands - an editor's control moved to another submodel or
+## animated otherwise
+func instrument_rebuild(descriptor:MmdInstrumentDescriptor) -> void:
+    instrument_remove(descriptor)
+    instrument_add(descriptor)
+
+
 func _rebuild_generated() -> void:
     _free_occluders()
     if _generated:
@@ -103,10 +193,13 @@ func _rebuild_generated() -> void:
 
     var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
             data_path.trim_prefix("/").path_join(mmd_filename + ".mmd"))
-    var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(
-            VehicleServer.vehicle_get_id(get_vehicle_rid()), mmd_filename, skin)
-    var definition:MmdCabinDefinition = MmdCabinInstancer.parse(
-            abs_mmd_path, parameters, cab_definition, _random_choices)
+    var definition:MmdCabinDefinition = null
+    if _definition_reader.is_valid():
+        definition = _definition_reader.call(cab_definition)
+    else:
+        var parameters:Dictionary = MmdCabinInstancer.vehicle_parameters(
+                VehicleServer.vehicle_get_id(get_vehicle_rid()), mmd_filename, skin)
+        definition = MmdCabinInstancer.parse(abs_mmd_path, parameters, cab_definition, _random_choices)
     _diagnostics.append_array(definition.diagnostics)
 
     camera_bound_min = definition.bounds_min
@@ -132,7 +225,14 @@ func _rebuild_generated() -> void:
     add_child(_generated, false, INTERNAL_MODE_BACK)
 
     var build_diagnostics:Array[Dictionary] = []
-    MmdCabinInstancer.build_into(_generated, definition, get_vehicle_rid(), data_path, skin, build_diagnostics)
+    _definition = definition
+    _instrument_nodes.clear()
+    _rest_transforms.clear()
+    MmdCabinInstancer.build_into(
+            _generated, definition, get_vehicle_rid(), data_path, skin, build_diagnostics, _instrument_nodes)
+    var built_model:Node3D = _generated.get_node_or_null("CabModel")
+    if built_model:
+        _rest_transforms_keep(built_model)
     _diagnostics.append_array(build_diagnostics)
 
     var cab_model:MaszynaE3DModelInstance = _generated.get_node_or_null("CabModel") as MaszynaE3DModelInstance

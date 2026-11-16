@@ -664,7 +664,8 @@ static func parse_attachments(abs_mmd_path:String, parameters:Dictionary) -> Pac
 ## `definition.diagnostics` by MaszynaDynamicTrainCabin.get_diagnostics()).
 static func build_into(
         generated_root:Node3D, definition:MmdCabinDefinition, vehicle_rid:RID,
-        data_path:String, skin:String, diagnostics:Array[Dictionary]) -> void:
+        data_path:String, skin:String, diagnostics:Array[Dictionary],
+        instrument_nodes:Dictionary[MmdInstrumentDescriptor, Array] = {}) -> void:
     # the cab's radio, a model or none: at the middle of the cab a metre up until its lamp places it
     # (Train.cpp:10730-10739)
     var radio := CabinRadio3D.new()
@@ -727,50 +728,10 @@ static func build_into(
     var sound_events:Array[SfxEvent] = []
 
     for descriptor:MmdInstrumentDescriptor in definition.instruments:
-        if not MmdSemanticCatalog.has_label(descriptor.label):
-            diagnostics.append(_diag("info", "MMD_BINDING_UNSUPPORTED", "MMD label '%s' is not in the supported catalog" % descriptor.label, definition.cab_number, descriptor.label, descriptor.submodel_name))
-            continue
-        var entry:Dictionary = MmdSemanticCatalog.get_entry(descriptor.label)
-        if entry.get("position_at_submodel", false):
-            # Some real cabins have multiple physical lamp housings sharing the SAME MMD-declared
-            # submodel base name (confirmed real: sm_42_cabin.tscn's own hand-authored reference
-            # has 3 "CzuwakOmni" lights for its one "i-security_aware:" label) - one widget per
-            # matched submodel instance, not just the first, unlike every other instrument label
-            # (which only ever has one real target mesh).
-            _build_indicator_lights(
-                    descriptor, entry, vehicle_rid, submodel_index, generated_root,
-                    definition.cab_number, definition.driver_pos, sound_player, sound_events, vehicle_dir,
-                    diagnostics)
-            continue
-        # a label repeated in one cab (EP07 cab0 has two cablight_sw switches) is one control with
-        # one state in the original (e.g. "cablight_sw:" -> Cabine[].bLight, Train.cpp:10237): its
-        # key is the cab logic's, once, and every widget of it follows the cabin state
-        var widget:Node = _build_widget(descriptor, vehicle_rid, definition.cab_number, diagnostics)
-        generated_root.add_child(widget)
-        # mesh_path must be resolved AFTER the widget has a place in the tree - the widget shares
-        # no common ancestor with `model`'s submodels until it's actually parented under the same
-        # generated_root.
-        _wire_mesh_path(widget, descriptor, submodel_index, entry["mesh_path_field"], definition.cab_number, diagnostics)
-        # a control sounds where its submodel is, or at the cab's origin without one (Gauge.cpp:75-95)
-        var mesh_path:NodePath = widget.get(entry["mesh_path_field"])
-        var sound_position:Vector3 = (
-                generated_root.to_local((widget.get_node(mesh_path) as Node3D).global_position) if mesh_path
-                else Vector3.ZERO)
-        _apply_sound(widget, descriptor, sound_player, sound_position, sound_events, vehicle_dir)
-        widget.set_vehicle_rid(vehicle_rid)
-        # A gauge's own lamp: TGauge takes "<name>_on" as the lit state of the control, shown
-        # instead of the control while the flag its entry names is set (Gauge.cpp:204-210, 386-392)
-        var on_matches:Array = submodel_index.get(descriptor.submodel_name.validate_node_name().to_lower() + ON_SUFFIX, [])
-        if entry.has("state_light") and on_matches:
-            var lamp := CabinIndicator3D.new()
-            lamp.name = "%s_%s_on" % [descriptor.label, descriptor.submodel_name]
-            for field_name:String in entry["state_light"]:
-                lamp.set(field_name, entry["state_light"][field_name])
-            generated_root.add_child(lamp)
-            lamp.on_target_path = lamp.get_path_to(on_matches[0])
-            if widget.get("mesh_path"):
-                lamp.off_target_path = lamp.get_path_to(widget.get_node(widget.get("mesh_path")))
-            lamp.set_vehicle_rid(vehicle_rid)
+        var nodes:Array[Node] = instrument_build_into(
+                generated_root, descriptor, vehicle_rid, definition.cab_number, definition.driver_pos,
+                submodel_index, sound_player, sound_events, vehicle_dir, diagnostics)
+        instrument_nodes[descriptor] = nodes
 
     # the gauges of the train's cars read their pressures from it (Train.cpp:8670-8680)
     var pressure_keys:PackedStringArray = []
@@ -844,6 +805,76 @@ static func build_into(
         generated_root.add_child(screen)
 
     sound_bank.events = sound_events
+
+
+## The nodes of one control of a cab, built under the cab's generated root beside the others - as
+## build_into() builds each of them, and as an editor adds or rebuilds one: its widget wired to its
+## submodel (submodel_index, _index_submodels()), its sounds added to the cab's bank, its own lamp.
+## Returns the nodes it added, none for a role the catalog has not
+static func instrument_build_into(
+        generated_root:Node3D, descriptor:MmdInstrumentDescriptor, vehicle_rid:RID, cab_number:int,
+        driver_pos:Vector3, submodel_index:Dictionary, sound_player:SfxPlayer3D, sound_events:Array[SfxEvent],
+        vehicle_dir:String, diagnostics:Array[Dictionary]) -> Array[Node]:
+    var first_child:int = generated_root.get_child_count()
+    if not MmdSemanticCatalog.has_label(descriptor.label):
+        diagnostics.append(_diag("info", "MMD_BINDING_UNSUPPORTED", "MMD label '%s' is not in the supported catalog" % descriptor.label, cab_number, descriptor.label, descriptor.submodel_name))
+        return []
+    var entry:Dictionary = MmdSemanticCatalog.get_entry(descriptor.label)
+    if entry.get("position_at_submodel", false):
+        # Some real cabins have multiple physical lamp housings sharing the SAME MMD-declared
+        # submodel base name (confirmed real: sm_42_cabin.tscn's own hand-authored reference
+        # has 3 "CzuwakOmni" lights for its one "i-security_aware:" label) - one widget per
+        # matched submodel instance, not just the first, unlike every other instrument label
+        # (which only ever has one real target mesh).
+        _build_indicator_lights(
+                descriptor, entry, vehicle_rid, submodel_index, generated_root,
+                cab_number, driver_pos, sound_player, sound_events, vehicle_dir,
+                diagnostics)
+        return _children_from(generated_root, first_child)
+    # a label repeated in one cab (EP07 cab0 has two cablight_sw switches) is one control with
+    # one state in the original (e.g. "cablight_sw:" -> Cabine[].bLight, Train.cpp:10237): its
+    # key is the cab logic's, once, and every widget of it follows the cabin state
+    var widget:Node = _build_widget(descriptor, vehicle_rid, cab_number, diagnostics)
+    generated_root.add_child(widget)
+    # mesh_path must be resolved AFTER the widget has a place in the tree - the widget shares
+    # no common ancestor with `model`'s submodels until it's actually parented under the same
+    # generated_root.
+    _wire_mesh_path(widget, descriptor, submodel_index, entry["mesh_path_field"], cab_number, diagnostics)
+    # a control sounds where its submodel is, or at the cab's origin without one (Gauge.cpp:75-95)
+    var mesh_path:NodePath = widget.get(entry["mesh_path_field"])
+    var sound_position:Vector3 = (
+            generated_root.to_local((widget.get_node(mesh_path) as Node3D).global_position) if mesh_path
+            else Vector3.ZERO)
+    _apply_sound(widget, descriptor, sound_player, sound_position, sound_events, vehicle_dir)
+    widget.set_vehicle_rid(vehicle_rid)
+    # A gauge's own lamp: TGauge takes "<name>_on" as the lit state of the control, shown
+    # instead of the control while the flag its entry names is set (Gauge.cpp:204-210, 386-392)
+    var on_matches:Array = submodel_index.get(descriptor.submodel_name.validate_node_name().to_lower() + ON_SUFFIX, [])
+    if entry.has("state_light") and on_matches:
+        var lamp := CabinIndicator3D.new()
+        lamp.name = "%s_%s_on" % [descriptor.label, descriptor.submodel_name]
+        for field_name:String in entry["state_light"]:
+            lamp.set(field_name, entry["state_light"][field_name])
+        generated_root.add_child(lamp)
+        lamp.on_target_path = lamp.get_path_to(on_matches[0])
+        if widget.get("mesh_path"):
+            lamp.off_target_path = lamp.get_path_to(widget.get_node(widget.get("mesh_path")))
+        lamp.set_vehicle_rid(vehicle_rid)
+    return _children_from(generated_root, first_child)
+
+
+static func _children_from(parent:Node, first:int) -> Array[Node]:
+    var children:Array[Node] = []
+    for index:int in range(first, parent.get_child_count()):
+        children.append(parent.get_child(index))
+    return children
+
+
+## The submodels of a cab's model by their lower-cased names, as its controls find them
+static func submodel_index(model:Node) -> Dictionary:
+    var index:Dictionary = {}
+    _index_submodels(model, index)
+    return index
 
 
 static func _empty_cab_data() -> Dictionary:
