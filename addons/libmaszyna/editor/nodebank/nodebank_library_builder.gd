@@ -2,6 +2,8 @@
 extends Node
 
 const EMPTY_NODEBANK = preload("./empty_nodebank.tscn")
+## The scenery editor's bank of objects, under the game directory
+const NODEBANK_FILE: String = "nodebank.txt"
 const CACHE_FILE: String = "nodebank.tscn"
 const CACHE_VERSION: String = "6"
 const STOP_TOKENS: Array = [" ", ";", char(9), char(10), char(13)]
@@ -10,8 +12,7 @@ var _cache: ResourceCache = ResourceCache.create("nodebank")
 
 
 func load_library(force_rebuild: bool = false) -> PackedScene:
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var nodebank_path:String = game_dir.path_join(ReloadedPluginServer.data_path_resolve(game_dir, "nodebank.txt"))
+    var nodebank_path:String = MaszynaGameDirectory.data_path_resolve(NODEBANK_FILE)
     if not FileAccess.file_exists(nodebank_path):
         push_warning("Nodebank file does not exist: %s" % nodebank_path)
         return EMPTY_NODEBANK

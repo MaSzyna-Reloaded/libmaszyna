@@ -241,7 +241,7 @@ static func _create(header:Header, lines:Array[Line], directory:String) -> RID:
         var extra:Dictionary = {EXTRA_FACILITIES: line.facilities}
         if not line.arrival == NO_TIME:
             var stop_name:String = line.station_name.trim_suffix(SMALL_STOP_SUFFIX)
-            for sounds:String in [directory, MaszynaGameDirectory.get_game_dir().path_join(NAME_SOUND_DIRECTORY)]:
+            for sounds:String in [directory, MaszynaGameDirectory.data_path_resolve(NAME_SOUND_DIRECTORY)]:
                 for extension:String in NAME_SOUND_EXTENSIONS:
                     var file:String = sounds.path_join(MaszynaDataPath.resolve(sounds, stop_name + extension))
                     if sounds and not extra.has(EXTRA_NAME_SOUND) and FileAccess.file_exists(file):

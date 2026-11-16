@@ -61,6 +61,11 @@ namespace godot {
             MaszynaMoverVehicleServer();
             ~MaszynaMoverVehicleServer() override;
 
+            /* Every component the Mover simulates, each engine type its own, made with its
+             * defaults by its class's name */
+            TypedArray<VehicleComponentInfo> component_list() const override;
+            Ref<VehicleComponent> component_create(const StringName &p_name) const override;
+
             /* C++ only and unbound: the Mover is this implementation's own business, and the
              * pointers stay in it - the vehicle's Mover controller and components take it from
              * here when its simulation starts and let go of it before it is freed. */

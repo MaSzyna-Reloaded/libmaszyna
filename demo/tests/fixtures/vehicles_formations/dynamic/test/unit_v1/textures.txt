@@ -1,0 +1,15 @@
+// units of the test: a line before any group runs alone, a group of one too
+!=z,UNIT-RA,UNIT-S,UNIT-RB
+lone.dds=ra,UNIT-RA//v2,alone
+^3
+red_ra.dds=ra,UNIT-RA//v2,red
+red_s.dds=s,UNIT-S//v2,red
+red_rb.dds=rb,UNIT-RB//v2,red
+blue_ra.dds=ra,UNIT-RA//v2,blue
+blue_s.dds=s_blue,UNIT-S//v2,blue
+blue_rb.dds=rb,UNIT-RB//v2,blue
+^2
+half_a.dds=half_a,UNIT-RA
+half_b.dds=half_b,UNIT-RB
+^1
+solo.dds=solo,UNIT-S

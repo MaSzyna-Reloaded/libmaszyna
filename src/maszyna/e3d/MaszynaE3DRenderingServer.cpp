@@ -1728,6 +1728,23 @@ namespace godot {
         return instance->skins;
     }
 
+    void MaszynaE3DRenderingServer::instance_set_skins(const RID &p_instance, const PackedStringArray &p_skins) {
+        MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL(instance);
+        instance->skins = p_skins;
+        {
+            // what a worker preloads for the instance's next build
+            MutexLock lock(models_mutex);
+            StreamModel *stream_model = stream_models.getptr(p_instance);
+            if (stream_model != nullptr) {
+                stream_model->skins = instance->skins;
+            }
+        }
+        if (instance->built) {
+            _get_backend(*instance).skins_apply(*instance, material_resolver);
+        }
+    }
+
     void MaszynaE3DRenderingServer::instance_set_skin(const RID &p_instance, const int p_slot, const String &p_skin) {
         MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);

@@ -316,6 +316,11 @@ namespace godot {
         vehicle_server->connect(
                 VehicleServer::vehicle_controller_changed_signal,
                 callable_mp(this, &MaszynaVehicleSoundServer::_on_vehicle_controller_changed));
+        // a vehicle configured again has new components, simulation-ready only now - while the
+        // simulation is paused not yet when its controller changed
+        vehicle_server->connect(
+                VehicleServer::vehicle_configured_signal,
+                callable_mp(this, &MaszynaVehicleSoundServer::_on_vehicle_controller_changed));
         vehicle_server->connect(
                 VehicleServer::vehicle_freed_signal, callable_mp(this, &MaszynaVehicleSoundServer::_on_vehicle_freed));
         RailVehicleServer *rail = RailVehicleServer::get_instance();

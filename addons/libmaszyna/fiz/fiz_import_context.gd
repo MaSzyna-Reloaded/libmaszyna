@@ -43,6 +43,17 @@ var power_kv: Dictionary = {}
 ## engine node created by Engine:).
 var parts: Dictionary = {}
 
+## Whether the parse notes where its lines stand (FizVehicleBuilder.SOURCE_LINES_SETTING)
+var notes_sources: bool = false
+## Where the lines the parse read stand in the files, in the order they were read: every section's
+## header line and every row of its table - noted only with notes_sources
+var source_lines: Array[FizSourceLine] = []
+## Every include directive the parse followed, in the order read - noted only with notes_sources
+var includes: Array[FizSourceInclude] = []
+## The parameters the file read first takes - its highest (pN): an include directive bringing it in
+## passes p1 ... pN by their place (FizVehicleBuilder.read_description())
+var parameter_count: int = 0
+
 ## Names of recognized FIZ sections with no registered parser yet (see the `sections` table
 ## in FizVehicleBuilder - `parser == null`); used to only log once per vehicle per
 ## section instead of once per line. This does NOT mean the destination Godot class is
@@ -58,6 +69,14 @@ func add_part(part_name: String, node: VehicleComponent) -> void:
 
 func get_part(part_name: String) -> VehicleComponent:
     return parts.get(part_name, null)
+
+
+func add_source_line(line: FizSourceLine) -> void:
+    source_lines.append(line)
+
+
+func add_include(directive: FizSourceInclude) -> void:
+    includes.append(directive)
 
 
 func warn_unmapped_section(section: String) -> void:

@@ -13,6 +13,8 @@ extends Node
 
 ## The one smoke texture the original uses for every emitter (opengl33renderer.cpp:105)
 const SMOKE_TEXTURE:String = "fx/smoke"
+## Where the templates of the emitters are, under the game directory (particles.cpp:465)
+const DATA_DIRECTORY:String = "data"
 
 ## Which sprite a particle is drawn with. ORIGINAL is the single round blob the original binds for
 ## every emitter; MODERN is the core's own smoke - SmokeServer's flipbook.
@@ -96,8 +98,7 @@ func get_source(template_name:String) -> SmokeSource:
     if _sources.has(template_name):
         return _sources[template_name]
 
-    var data_dir:String = MaszynaGameDirectory.get_game_dir().path_join("data")
-    var path:String = data_dir.path_join(ReloadedPluginServer.data_path_resolve(data_dir, template_name + ".txt"))
+    var path:String = MaszynaGameDirectory.data_path_resolve(DATA_DIRECTORY.path_join(template_name + ".txt"))
     var source:SmokeSource = parse_file(path)
     if source:
         source.resource_name = template_name

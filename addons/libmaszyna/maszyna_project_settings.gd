@@ -118,6 +118,10 @@ static func register() -> void:
         MaszynaSmokeSourceLibrary.GENERATOR_MODE_SETTING, MaszynaSmokeSourceLibrary.GeneratorMode.ORIGINAL,
         TYPE_INT, PROPERTY_HINT_ENUM, ",".join(MaszynaSmokeSourceLibrary.GeneratorMode.keys())
     )
+    # A FIZ parse notes where its lines stand in the files, for a tool that writes them back
+    ReloadedProjectSetting.add(
+        FizVehicleBuilder.SOURCE_LINES_SETTING, FizVehicleBuilder.SOURCE_LINES_DEFAULT, TYPE_BOOL
+    )
     ReloadedProjectSetting.add(
         MaszynaMaterialManager.DDS_MAX_TEXTURE_SIZE_SETTING, MaszynaMaterialManager.DDS_MAX_TEXTURE_SIZE_DEFAULT,
         TYPE_INT, PROPERTY_HINT_ENUM, TEXTURE_SIZE_HINT

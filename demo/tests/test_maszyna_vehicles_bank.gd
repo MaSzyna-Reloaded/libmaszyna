@@ -1,9 +1,12 @@
 extends MaszynaGutTest
 
 ## MaszynaVehiclesBank: every vehicle of dynamic/ with its skins, from the textures.txt of each
-## vehicle directory, as the launcher of the original gathers them (launcher/textures_scanner.cpp)
+## vehicle directory, as the launcher of the original gathers them (launcher/textures_scanner.cpp),
+## and the formations its "^N" lines group them in
 
 const GAME_DIR: String = "res://tests/fixtures/vehicles_bank"
+## Vehicles of a unit, its skin lines grouped by "^N" lines
+const FORMATIONS_GAME_DIR: String = "res://tests/fixtures/vehicles_formations"
 
 
 func _scan() -> Array[MaszynaVehiclesBank.Vehicle]:
@@ -53,3 +56,37 @@ func test_a_category_line_sorts_the_vehicles_listed_after_it() -> void:
     assert_eq(vehicles[0].category, MaszynaVehiclesBank.Category.ELECTRIC_LOCOS, "!=e is an electric loco")
     assert_eq(vehicles[2].category, MaszynaVehiclesBank.Category.CARRIAGES, "an upper case letter is a carriage")
     assert_eq(MaszynaVehiclesBank.category_of("?"), MaszynaVehiclesBank.Category.UNKNOWN)
+
+
+func test_a_skin_keeps_what_its_index_line_describes_it_by() -> void:
+    var f140ms: MaszynaVehiclesBank.Vehicle = _scan()[0]
+
+    assert_eq(f140ms.skin_descriptions["E186_240"][MaszynaVehiclesBank.SkinDescription.NAME], "E186 240")
+    assert_eq(f140ms.skin_descriptions["E186_240"][MaszynaVehiclesBank.SkinDescription.PHOTO_AUTHOR], "Jan Kowalski")
+
+
+func _formations_of(file_name: String) -> Array[Array]:
+    var formations: Array[Array] = []
+    for vehicle: MaszynaVehiclesBank.Vehicle in MaszynaVehiclesBank.scan(
+            ProjectSettings.globalize_path(FORMATIONS_GAME_DIR)):
+        if not vehicle.file_name == file_name:
+            continue
+        for formation: MaszynaVehiclesBank.Formation in vehicle.formations:
+            var cars: Array[String] = []
+            for index: int in formation.vehicles.size():
+                cars.append("%s:%s" % [formation.vehicles[index].file_name, formation.skins[index]])
+            formations.append(cars)
+    return formations
+
+
+func test_a_group_of_skin_lines_is_a_formation_of_their_vehicles_in_their_skins() -> void:
+    assert_eq(_formations_of("ra"), [
+            ["ra:red_ra", "s:red_s", "rb:red_rb"],
+            ["ra:blue_ra", "s_blue:blue_s", "rb:blue_rb"]], "each group of three, front to rear")
+    assert_eq(_formations_of("s_blue"), [["ra:blue_ra", "s_blue:blue_s", "rb:blue_rb"]])
+    assert_eq(_formations_of("half_b"), [["half_a:half_a", "half_b:half_b"]], "a later ^2 groups by two")
+
+
+func test_a_vehicle_of_no_group_or_a_group_of_one_runs_alone() -> void:
+    assert_eq(_formations_of("solo"), [], "^1")
+    assert_eq(_formations_of("ra").size(), 2, "its line before any ^ makes no formation")

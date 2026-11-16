@@ -108,12 +108,11 @@ func _find_texture(sign:Sign, name:String) -> String:
     if name.begins_with(MaszynaMaterialManager.GENERATED_TEXTURE_SCHEME):
         return name
     var plain:String = Windows1250.to_ascii(name).to_lower()
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
     var model_path:String = sign.data_path.trim_prefix("/")
     for candidate:String in [plain + "@" + sign.type_name.to_lower(), plain]:
         for path:String in [model_path.path_join(candidate), candidate, TEXTURES_DIRECTORY.path_join(candidate)]:
             for extension:String in TEXTURE_EXTENSIONS:
-                if FileAccess.file_exists(game_dir.path_join(MaszynaDataPath.resolve(game_dir, path + extension))):
+                if FileAccess.file_exists(MaszynaGameDirectory.data_path_resolve(path + extension)):
                     return candidate
     return ""
 

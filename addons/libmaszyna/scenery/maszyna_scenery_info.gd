@@ -46,7 +46,7 @@ const DRIVER_TYPES:Dictionary[String, VehicleData.DriverType] = {
 ## without the words an earlier one already has - the file name is what tells apart the scenarios
 ## of one scenery ("baltyk_skm1.scn" with "//$l Bałtyk" and "//$n Bałtyk" -> "Bałtyk · SKM1").
 static func read_display_name(filename:String) -> String:
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join(MaszynaSceneryProvider.SCENERY_DIRECTORY)
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(MaszynaSceneryProvider.SCENERY_DIRECTORY)
     var file:FileAccess = FileAccess.open(
         scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)), FileAccess.READ
     )
@@ -139,7 +139,7 @@ static func read(filename:String) -> MaszynaSceneryInfo:
     var info := MaszynaSceneryInfo.new()
     info.provider = MaszynaSceneryProvider.NAME
     info.id = filename
-    var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join(MaszynaSceneryProvider.SCENERY_DIRECTORY)
+    var scenery_dir:String = MaszynaGameDirectory.data_path_resolve(MaszynaSceneryProvider.SCENERY_DIRECTORY)
     var file:FileAccess = FileAccess.open(
         scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)), FileAccess.READ
     )
