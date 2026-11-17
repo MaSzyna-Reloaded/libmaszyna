@@ -41,7 +41,7 @@ varying float v_dist;
 #endif
 
 void vertex() {
-	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, draw_behind_depth);
     v_tangent_view = normalize(MODELVIEW_NORMAL_MATRIX * TANGENT);
     v_normal_view = normalize(MODELVIEW_NORMAL_MATRIX * NORMAL);
     v_binormal_view = normalize(MODELVIEW_NORMAL_MATRIX * -BINORMAL);

@@ -385,7 +385,8 @@ namespace godot {
             void instance_set_options(
                     const RID &p_instance, const String &p_data_path, const PackedStringArray &p_skins,
                     const Array &p_exclude_node_names, bool p_force_alpha,
-                    const TypedArray<NodePath> &p_force_alpha_part_paths, int p_max_texture_size) override;
+                    const TypedArray<NodePath> &p_force_alpha_part_paths, int p_max_texture_size,
+                    bool p_low_poly_interior) override;
             void instance_attach_object_instance_id(const RID &p_instance, uint64_t p_id) override;
             /// The node attached, by its ObjectID - 0 for none, or for one that is gone
             uint64_t instance_get_attached_node(const RID &p_instance) const;

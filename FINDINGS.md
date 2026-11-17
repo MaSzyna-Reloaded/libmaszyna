@@ -500,6 +500,11 @@ code belongs to the game's `FINDINGS.md`.
   handler covers only the main thread. The host's stderr and exit code go to the log.
   *(10-09 Python screens ended the game without a trace)*
 
+* An `instance uniform` reserves a block of Godot's global shader buffer for every mesh drawn with
+  its shader, set or not - about 4000 blocks in all: never in a shader the scenery draws; a value
+  some meshes need is an option of their material. *(11-17 the scenery that ran out of shader
+  slots)*
+
 ## Threads and teardown
 * A worker never takes an object back from a `WeakRef` the main thread may be letting go: what
   workers share with the main thread is held by a counted registry, and a worker only asks whether

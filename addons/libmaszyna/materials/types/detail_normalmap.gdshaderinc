@@ -55,7 +55,7 @@ uniform vec3 uv2_offset;
 #endif
 
 void vertex() {
-	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, draw_behind_depth);
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 }
 

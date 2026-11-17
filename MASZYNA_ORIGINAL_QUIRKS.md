@@ -688,9 +688,10 @@ interface.
   the depth, and the interior, darker in the body's shadow, flickers through the sunlit side in
   large triangles.
   - Wrapper: the low-poly interior is drawn 2 cm farther from the camera than it lies - the core's
-    vehicle rendering lays `reloaded_depth_behind` on its instance, the material types move their
-    vertices by it (`materials/types/draw_behind.gdshaderinc`) - so the body wins where they meet,
-    as with the original's order.
+    vehicle rendering sets its model up as a low-poly interior, the material factory gives its
+    materials `draw_behind_depth` and the material types move their vertices by it
+    (`materials/types/draw_behind.gdshaderinc`) - so the body wins where they meet, as with the
+    original's order.
 * **A vehicle's glass is drawn of its skin in the plane of the paint around it, and the
   translucent pass leaves the paint alone.** The opaque pass keeps a material's texels at its
   `opacity:` and above; the translucent pass is given the opacity negated, and the shader then drops
