@@ -12,6 +12,12 @@ const SHADER_EXTENSIONS: Array[String] = ["gdshader", "gdshaderinc"]
 ## The free spotlights carry their light by instance uniforms, one instance per lamp
 const INSTANCE_UNIFORM_SHADER_PREFIX: String = "free_spotlight"
 const INSTANCE_UNIFORM: String = "instance uniform"
+const DRAW_BEHIND_CALL: String = "maszyna_draw_behind("
+## Where maszyna_draw_behind() is defined
+const DRAW_BEHIND_INCLUDE: String = "draw_behind.gdshaderinc"
+## The player's camera, the same in every pass - a double precision build keeps CAMERA_POSITION_WORLD
+## negated, and the interior came out through the body
+const DRAW_BEHIND_FROM_PLAYER_CAMERA: String = "maszyna_draw_behind(VERTEX, MODEL_MATRIX, MAIN_CAM_INV_VIEW_MATRIX[3].xyz, draw_behind_depth)"
 
 var _previous_game_dir: String = ""
 
@@ -67,3 +73,17 @@ func test_material_types_declare_no_instance_uniform() -> void:
             continue
         var code: String = FileAccess.get_file_as_string(TYPES_DIR.path_join(file_name))
         assert_false(code.contains(INSTANCE_UNIFORM), file_name)
+
+
+func test_low_poly_interior_is_moved_away_from_the_players_camera() -> void:
+    var callers: int = 0
+    for file_name: String in DirAccess.get_files_at(TYPES_DIR):
+        if not file_name.get_extension() in SHADER_EXTENSIONS:
+            continue
+        var code: String = FileAccess.get_file_as_string(TYPES_DIR.path_join(file_name))
+        var calls: int = code.count(DRAW_BEHIND_CALL)
+        if not calls or file_name == DRAW_BEHIND_INCLUDE:
+            continue
+        callers += 1
+        assert_eq(code.count(DRAW_BEHIND_FROM_PLAYER_CAMERA), calls, file_name)
+    assert_gt(callers, 0, "the material types move the low-poly interior")
