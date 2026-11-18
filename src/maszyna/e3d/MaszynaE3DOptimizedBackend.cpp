@@ -1,5 +1,6 @@
 #include "MaszynaE3DInstanceTypes.hpp"
 #include "MaszynaE3DOptimizedBackend.hpp"
+#include "rendering/ModelRenderingServer.hpp"
 #include <godot_cpp/classes/rendering_server.hpp>
 
 namespace godot {
@@ -231,6 +232,13 @@ namespace godot {
         }
         rs->instance_set_base(rid, p_mesh);
         rs->instance_set_scenario(rid, p_instance.scenario);
+        // a vehicle moves: baked into SDFGI's distance field where a cascade found it, it shades
+        // itself black after it has moved on - it takes the GI without making it, as
+        // GeometryInstance3D::GI_MODE_DYNAMIC in MaszynaE3DNodesBackend
+        if (p_instance.instance_kind == ModelRenderingServer::INSTANCE_KIND_DYNAMIC) {
+            rs->instance_geometry_set_flag(rid, RenderingServer::INSTANCE_FLAG_USE_BAKED_LIGHT, false);
+            rs->instance_geometry_set_flag(rid, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, true);
+        }
 
         // the instance range (scenery node range_min/range_max) limits the submodel's own range
         float range_begin = MAX(p_submodel->get_visibility_range_begin(), p_instance.visibility_range_begin);
