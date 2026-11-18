@@ -46,6 +46,14 @@ func test_variant_inherits_default_shader_when_season_has_no_shader() -> void:
     assert_eq(variant.get_texture_path("tex1"), "spring_diffuse")
 
 
+## "texture1_variants: [ a b ]" names slot 1 the same as "texture1: a" does - the renderer always
+## looks the slot up as "tex1" (maszyna_material_manager.gd), random set or not.
+func test_numbered_texture_variants_resolve_to_the_same_slot_as_a_plain_texture() -> void:
+    var material: MaszynaMaterial = MaszynaMaterialManager.load_material("", "numbered_variants_manager")
+
+    assert_eq(material.default.get_texture_path("tex1"), "random_diffuse")
+
+
 func test_weather_shader_overrides_season_shader() -> void:
     var material: MaszynaMaterial = MaszynaMaterialManager.load_material("", MATERIAL_NAME)
     var variant: MaszynaMaterial.MaszynaMaterialVariant = material.get_variant(
