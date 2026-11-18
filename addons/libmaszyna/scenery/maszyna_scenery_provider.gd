@@ -44,8 +44,9 @@ static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
 ## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read; 57: the scenery's
-## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points())
-const CACHE_FORMAT_VERSION:int = 58
+## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points());
+## 59: the terrain files of `terrain` read (.txtf, .btf)
+const CACHE_FORMAT_VERSION:int = 59
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -317,6 +318,17 @@ func instantiate_content(root:SceneryContentNode, compiled:CompiledScenery, trac
             return
         if opened:
             root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
+    # and the terrain of a binary terrain file the same way, its shapes merged as the text's are
+    for terrain_file:String in scn.terrain_binary_files:
+        var provider:MaszynaBTFTerrainProvider = MaszynaBTFTerrainProvider.new()
+        var opened:bool = await SceneryServer.run_on_worker(
+            root, provider.open.bind(terrain_file, MaszynaMaterialManager.is_material_translucent),
+            TERRAIN_PROGRESS, SceneryContentNode.LoadStage.TERRAIN, "Registering terrain"
+        )
+        if SceneryServer.is_load_given_up(root):
+            return
+        if opened:
+            root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
     print("[SceneryMemory] events %d, terrain chunks %d" % [scn.events.size(), scn.triangle_chunks.size()])
 
 
@@ -396,6 +408,7 @@ static func _compile_scenery(
     compiled.trainsets = context.trainsets
     compiled.scripts = context.scripts
     compiled.region_files = context.region_files
+    compiled.terrain_binary_files = context.terrain_binary_files
     # a list of its stations (SceneryServer.station_list()), of its passenger stop indicators
     compiled.stations = MaszynaStations.stations_of_stop_points(context.events, context.memcells)
     return compiled
@@ -563,6 +576,7 @@ func parse_subscene_task(
         cached.lines.assign(compiled.lines)
         cached.trainsets.assign(compiled.trainsets)
         cached.region_files.assign(compiled.region_files)
+        cached.terrain_binary_files.assign(compiled.terrain_binary_files)
         cached.join_duplicated_events = compiled.join_duplicated_events
         cached.hidden_events = compiled.hidden_events
         for chunk_path:String in compiled.triangle_chunk_paths:

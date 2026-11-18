@@ -35,6 +35,8 @@
 #include "maszyna/scenario/MaszynaTrackVelocityAction.hpp"
 #include "maszyna/scenario/MaszynaVehicleCommandAction.hpp"
 #include "maszyna/scenario/MaszynaVoltageAction.hpp"
+#include "maszyna/scenery/MaszynaBTFTerrainProvider.hpp"
+#include "maszyna/scenery/MaszynaBTFTerrainWriter.hpp"
 #include "maszyna/scenery/MaszynaSBTTerrainProvider.hpp"
 #include "maszyna/scenery/MaszynaTrackData.hpp"
 #include "maszyna/scenery/MaszynaTrianglesChunkGeometry.hpp"
@@ -157,6 +159,8 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaTrianglesSector);
         GDREGISTER_CLASS(MaszynaTrianglesSink);
         GDREGISTER_CLASS(MaszynaSBTTerrainProvider);
+        GDREGISTER_CLASS(MaszynaBTFTerrainProvider);
+        GDREGISTER_CLASS(MaszynaBTFTerrainWriter);
         GDREGISTER_CLASS(MaszynaTrackData);
         GDREGISTER_CLASS(MaszynaTrackLook);
         GDREGISTER_CLASS(MaszynaTrackLooks);
