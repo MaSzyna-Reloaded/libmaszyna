@@ -111,6 +111,10 @@ func _update_variant(variant: MaszynaMaterial.MaszynaMaterialVariant, key: Strin
         var texture_name = key.substr(7)
         if texture_name[0] == "_":
             texture_name = key.substr(8)
+        # "texture1_variants: [ a b ]" names slot 1 the same as "texture1: a" does - the "_variants"
+        # suffix only says the slot's value is a random set, read above into a TYPE_ARRAY already
+        if texture_name.ends_with("_variants"):
+            texture_name = texture_name.left(texture_name.length() - "_variants".length())
         if texture_name.is_valid_int():
             texture_name = "tex%s" % texture_name
         if typeof(value) == TYPE_ARRAY:

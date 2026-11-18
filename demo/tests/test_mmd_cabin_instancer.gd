@@ -14,6 +14,12 @@ func test_parse_loads_reads_every_cargo_model_including_the_passengers():
     assert_eq(loads.get("passengers", ""), "loads/test_passengers")
 
 
+## A "key: [ a b ... ]" entry is a random set, same as `attachments:`'s - not the literal "[".
+func test_parse_loads_resolves_a_random_set_like_attachments_does():
+    var loads:Dictionary[String, String] = MmdCabinInstancer.parse_loads(FIXTURE_PATH, {})
+    assert_eq(loads.get("containers", ""), "loads/test_container")
+
+
 func test_resolve_skins_maps_numbered_materials_directly_to_dynamic_slots():
     var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
     MaszynaGameDirectory.save_game_dir("res://tests/materials")

@@ -1086,10 +1086,14 @@ namespace godot {
                 }
             }
         }
+        // the floor's own height lifts the load onto the deck; load_height only ever sinks it from
+        // there as it empties (DynObj.cpp: vFloor baked into the load's root alongside LoadOffset)
+        const double floor_height = vehicle.is_valid() ? vehicle->get_dimensions_floor_height() : 0.0;
         models->instance_set_transform(
                 p_maszyna.load,
                 p_visual.transform * p_visual.model_transform *
-                        Transform3D(Basis(), Vector3(0.0, static_cast<real_t>(p_maszyna.load_height), 0.0)));
+                        Transform3D(
+                                Basis(), Vector3(0.0, static_cast<real_t>(p_maszyna.load_height + floor_height), 0.0)));
     }
 
     /* A coupling changed at either end: the couplers are drawn again, and the neighbours', whose
