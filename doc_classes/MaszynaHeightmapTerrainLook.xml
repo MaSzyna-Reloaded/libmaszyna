@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainLook" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		What a heightmap terrain is drawn with.
+	</brief_description>
+	<description>
+		The shader of a heightmap terrain and the textures of every layer of its palette in three arrays, made of the materials of the palette ([code]MaszynaHeightmapTerrainLooks[/code]), and what the shader needs of each layer.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="diffuse_layers" type="Texture2DArray" setter="set_diffuse_layers" getter="get_diffuse_layers">
+			The diffuse texture of each layer of the palette, by its index.
+		</member>
+		<member name="normal_layers" type="Texture2DArray" setter="set_normal_layers" getter="get_normal_layers">
+			The normal map of each layer of the palette, by its index; flat for a layer without one.
+		</member>
+		<member name="palette" type="PackedFloat32Array" setter="set_palette" getter="get_palette" default="PackedFloat32Array()">
+			What each layer of the palette is, [constant PALETTE_FLOATS] a layer: its index in the arrays, 1 / metres its textures repeat at, whether it has a normal map and a specular/gloss map, its reflection, the cosine and the sine of the angle its textures are turned by, its glossiness.
+		</member>
+		<member name="shader" type="Shader" setter="set_shader" getter="get_shader">
+			The shader of the terrain's clipmap rings.
+		</member>
+		<member name="specgloss_layers" type="Texture2DArray" setter="set_specgloss_layers" getter="get_specgloss_layers">
+			The specular/gloss map of each layer of the palette, by its index.
+		</member>
+	</members>
+	<constants>
+		<constant name="PALETTE_FLOATS" value="8">
+			The floats of a layer in [member palette].
+		</constant>
+	</constants>
+</class>

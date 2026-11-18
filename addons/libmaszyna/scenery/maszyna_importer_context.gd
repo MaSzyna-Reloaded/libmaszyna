@@ -16,7 +16,7 @@ class JoinChange:
 
 const RESULT_LISTS:Array[String] = [
     "tracks", "traction", "power_sources", "models", "events", "memcells", "launchers", "sounds", "isolated_sections", "terrains",
-    "scripts", "region_files", "terrain_binary_files", "trainsets", "lines"
+    "scripts", "region_files", "terrain_binary_files", "heightmap_terrains", "trainsets", "lines"
 ]
 
 ## The region file's extension (EU07_FILEEXTENSION_REGION, scene.cpp:27)
@@ -53,6 +53,9 @@ var region_files:Array[String] = []
 ## The binary terrain files (.btf) whose terrain the scenery is drawn with
 ## (MaszynaBTFTerrainProvider, maszyna_terrain_importer.gd)
 var terrain_binary_files:Array[String] = []
+## The folders of the heightmap terrains `heightmap_terrain` named, in their order: the last is the
+## scenery's (maszyna_heightmap_terrain_importer.gd)
+var heightmap_terrains:Array[String] = []
 var terrains: Array = []
 ## Where the "triangles" nodes go as they are parsed - shared by the includes of one scenery, a
 ## subscene's own (MaszynaSceneryProvider.parse_subscene_task())

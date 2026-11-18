@@ -37,6 +37,7 @@
 #include "maszyna/scenario/MaszynaVoltageAction.hpp"
 #include "maszyna/scenery/MaszynaBTFTerrainProvider.hpp"
 #include "maszyna/scenery/MaszynaBTFTerrainWriter.hpp"
+#include "maszyna/scenery/MaszynaHeightmapTerrainProvider.hpp"
 #include "maszyna/scenery/MaszynaSBTTerrainProvider.hpp"
 #include "maszyna/scenery/MaszynaTrackData.hpp"
 #include "maszyna/scenery/MaszynaTrianglesChunkGeometry.hpp"
@@ -46,6 +47,11 @@
 #include "maszyna/signalling/MaszynaSignalHeadKindFactory.hpp"
 #include "maszyna/signalling/MaszynaSignallingImplementation.hpp"
 #include "maszyna/sound/MaszynaVehicleSoundServer.hpp"
+#include "maszyna/terrain/MaszynaHeightmapTerrainChunk.hpp"
+#include "maszyna/terrain/MaszynaHeightmapTerrainLook.hpp"
+#include "maszyna/terrain/MaszynaHeightmapTerrainPack.hpp"
+#include "maszyna/terrain/MaszynaHeightmapTerrainRegion.hpp"
+#include "maszyna/terrain/MaszynaHeightmapTerrainRenderingServer.hpp"
 #include "maszyna/tracks/MaszynaTrackLook.hpp"
 #include "maszyna/tracks/MaszynaTrackLooks.hpp"
 #include "maszyna/tracks/MaszynaTrackRenderingBackend.hpp"
@@ -161,6 +167,12 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaSBTTerrainProvider);
         GDREGISTER_CLASS(MaszynaBTFTerrainProvider);
         GDREGISTER_CLASS(MaszynaBTFTerrainWriter);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainChunk);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainPack);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainRegion);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainProvider);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainLook);
+        GDREGISTER_CLASS(MaszynaHeightmapTerrainRenderingServer);
         GDREGISTER_CLASS(MaszynaTrackData);
         GDREGISTER_CLASS(MaszynaTrackLook);
         GDREGISTER_CLASS(MaszynaTrackLooks);
@@ -279,6 +291,10 @@ namespace godot {
         Engine::get_singleton()->register_singleton("MaszynaScenarioEventServer", scenario_event_server);
         turntable_server = memnew(MaszynaTurntableServer);
         Engine::get_singleton()->register_singleton("MaszynaTurntableServer", turntable_server);
+        // after SceneryStreamingServer: the heightmap terrains' chunks are its pieces
+        heightmap_terrain_rendering_server = memnew(MaszynaHeightmapTerrainRenderingServer);
+        Engine::get_singleton()->register_singleton(
+                "MaszynaHeightmapTerrainRenderingServer", heightmap_terrain_rendering_server);
         // after VehicleServer, RoadVehicleServer and MaszynaScenarioEventServer: the constructor
         // follows the vehicles' lifetime, and it reads the roads' memories
         car_driver = memnew(MaszynaCarDriver);
@@ -325,6 +341,10 @@ namespace godot {
         Engine::get_singleton()->unregister_singleton("MaszynaCarDriver");
         memdelete(car_driver);
         car_driver = nullptr;
+
+        Engine::get_singleton()->unregister_singleton("MaszynaHeightmapTerrainRenderingServer");
+        memdelete(heightmap_terrain_rendering_server);
+        heightmap_terrain_rendering_server = nullptr;
 
         Engine::get_singleton()->unregister_singleton("MaszynaTurntableServer");
         memdelete(turntable_server);

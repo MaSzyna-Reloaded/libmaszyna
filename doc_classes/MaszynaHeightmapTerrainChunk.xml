@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainChunk" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A chunk of the original's heightmap terrain, as a pack file holds it.
+	</brief_description>
+	<description>
+		A square of 250 m of the original's heightmap terrain (heightmap::chunk_data): a grid of heights of its own point spacing, the palette indices of up to 8 layers painted over it and their weights - read from a pack file by [MaszynaHeightmapTerrainPack].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_weight_images" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="side" type="int" />
+			<description>
+				The weights of the first four layers and of the next four as the channels of two RGBA8 images, [param side] samples along a side (the chunk's own when 0). A chunk without paint gives a texel of its first layer alone.
+			</description>
+		</method>
+		<method name="get_average_weights" qualifiers="const">
+			<return type="PackedFloat32Array" />
+			<description>
+				The weight of each layer in use over the whole chunk, 0..1 - how it looks from afar; 8 of them.
+			</description>
+		</method>
+		<method name="get_cells" qualifiers="const">
+			<return type="int" />
+			<description>
+				The cells of its grid along a side; it has [code](cells + 1)^2[/code] heights.
+			</description>
+		</method>
+		<method name="get_height" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="x" type="int" />
+			<param index="1" name="z" type="int" />
+			<description>
+				The height of the grid point ([param x], [param z]), clamped to the chunk.
+			</description>
+		</method>
+		<method name="get_heights" qualifiers="const">
+			<return type="PackedFloat32Array" />
+			<description>
+				The heights of its grid points, in rows of growing z.
+			</description>
+		</method>
+		<method name="get_key" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+				Where the chunk lies, in chunks.
+			</description>
+		</method>
+		<method name="get_layers" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				The palette indices of the layers in use, the used ones first.
+			</description>
+		</method>
+		<method name="get_paint" qualifiers="const">
+			<return type="int" />
+			<description>
+				Its paint samples along a side, less one; 0 when it is covered with its first layer alone.
+			</description>
+		</method>
+		<method name="get_spacing" qualifiers="const">
+			<return type="float" />
+			<description>
+				Metres between the points of its grid.
+			</description>
+		</method>
+		<method name="get_weights" qualifiers="const">
+			<return type="PackedByteArray" />
+			<description>
+				The weights of the layers in use, planar: [code](paint + 1)^2[/code] a layer, the weights of a sample adding up to 255.
+			</description>
+		</method>
+		<method name="key_get_corner" qualifiers="static">
+			<return type="Vector2" />
+			<param index="0" name="key" type="Vector2i" />
+			<description>
+				The corner with the lowest coordinates of the chunk of [param key] (heightmap::chunk_corner()).
+			</description>
+		</method>
+		<method name="key_get_pack" qualifiers="static">
+			<return type="Vector2i" />
+			<param index="0" name="key" type="Vector2i" />
+			<description>
+				The pack holding the chunk of [param key] (heightmap::pack_of()).
+			</description>
+		</method>
+		<method name="set_data">
+			<return type="void" />
+			<param index="0" name="key" type="Vector2i" />
+			<param index="1" name="cells" type="int" />
+			<param index="2" name="heights" type="PackedFloat32Array" />
+			<param index="3" name="paint" type="int" />
+			<param index="4" name="layers" type="PackedInt32Array" />
+			<param index="5" name="weights" type="PackedByteArray" />
+			<description>
+				Takes what a pack file holds of the chunk: its grid of [code](cells + 1)^2[/code] [param heights] in rows of growing z, its [param paint] samples along a side less one, the palette indices of its [param layers], the [param weights] of each layer in use, planar.
+			</description>
+		</method>
+	</methods>
+</class>

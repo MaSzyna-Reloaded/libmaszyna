@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainRenderingServer" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Draws the original's heightmap terrain as a clipmap.
+	</brief_description>
+	<description>
+		The heightmap terrain a scenery names ([code]heightmap_terrain[/code]) drawn as rings of a fixed grid around the camera, each twice as coarse as the one inside it, whose points its shader raises to the heights of the chunks under them and paints with their layers. Nothing is built per chunk: the chunks' heights and paint are textures, supplied a region of 1 km at a time by a streaming provider ([MaszynaHeightmapTerrainProvider], [constant SceneryStreamingProvider.CONTENT_HEIGHTMAP]) - the server is the consumer of the regions and reads no file. Regions are supplied as far as the clipmap's outer ring reaches ([method terrain_get_range]), past the draw distance. A region is drawn from afar as soon as it is adopted - its heights [constant COARSE_TEXELS] a side with what its chunks are - and in detail within 1.5 km, a piece the server streams by that range: its heights at the terrain's own spacing with the paint of its painted chunks.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="region_adopt">
+			<return type="RID" />
+			<param index="0" name="region" type="MaszynaHeightmapTerrainRegion" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
+				Draws a region streaming supplies in the terrain it names ([method MaszynaHeightmapTerrainRegion.get_terrain]): from afar at once, in detail as the camera comes within 1.5 km; the server's consumer of [constant SceneryStreamingProvider.CONTENT_HEIGHTMAP]. An empty RID when the region's terrain is unknown or the region lies outside it. [param scenario] is not used: the terrain's rings are drawn in its own.
+			</description>
+		</method>
+		<method name="region_free">
+			<return type="void" />
+			<param index="0" name="region" type="RID" />
+			<description>
+				Lets go of a region adopted, the textures it took freed.
+			</description>
+		</method>
+		<method name="terrain_create">
+			<return type="RID" />
+			<param index="0" name="regions" type="Vector2i[]" />
+			<param index="1" name="spacing" type="float" />
+			<param index="2" name="look" type="MaszynaHeightmapTerrainLook" />
+			<param index="3" name="scenario" type="RID" />
+			<description>
+				A terrain of the [param regions] its provider lists ([method SceneryStreamingProvider.get_chunk_cells]), drawn into [param scenario] with [param look]; [param spacing] is its manifest's point spacing, the finest the clipmap draws. The regions are drawn as streaming supplies them ([method region_adopt]).
+			</description>
+		</method>
+		<method name="terrain_free">
+			<return type="void" />
+			<param index="0" name="terrain" type="RID" />
+			<description>
+				Frees the terrain and what it streamed.
+			</description>
+		</method>
+		<method name="terrain_get_range" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="terrain" type="RID" />
+			<description>
+				How far from the camera the terrain draws its regions [lb]m[rb]: the corner of the clipmap's outer ring, past the draw distance - the range its provider is given ([method MaszynaHeightmapTerrainProvider.set_range]).
+			</description>
+		</method>
+		<method name="terrain_get_region_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="terrain" type="RID" />
+			<description>
+				The regions adopted into the terrain and not freed yet.
+			</description>
+		</method>
+		<method name="terrain_get_ring_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="terrain" type="RID" />
+			<description>
+				The rings of its clipmap.
+			</description>
+		</method>
+		<method name="terrain_set_scenario">
+			<return type="void" />
+			<param index="0" name="terrain" type="RID" />
+			<param index="1" name="scenario" type="RID" />
+			<description>
+				The world the terrain is drawn in, an empty RID for none.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="COARSE_TEXELS" value="65">
+			The heights of a region afar along its side.
+		</constant>
+		<constant name="PAINT_SLOTS" value="128">
+			The painted chunks near the camera that get their own paint; the others are drawn with their average weights.
+		</constant>
+		<constant name="CLIPMAP_CELLS" value="128">
+			The cells of a ring of the clipmap along its side.
+		</constant>
+	</constants>
+</class>

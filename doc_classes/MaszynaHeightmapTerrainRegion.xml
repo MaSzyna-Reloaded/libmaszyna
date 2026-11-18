@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainRegion" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A region of a heightmap terrain as streaming supplies it.
+	</brief_description>
+	<description>
+		A streaming cell of 1 km of a heightmap terrain - [constant CHUNKS_SIDE] chunks along its side - with its chunks read and the terrain it is drawn in: what [MaszynaHeightmapTerrainProvider] supplies as [constant SceneryStreamingProvider.CONTENT_HEIGHTMAP] and [MaszynaHeightmapTerrainRenderingServer] draws.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="chunk_get_region" qualifiers="static">
+			<return type="Vector2i" />
+			<param index="0" name="key" type="Vector2i" />
+			<description>
+				The region holding the chunk of [param key].
+			</description>
+		</method>
+		<method name="get_chunks" qualifiers="const">
+			<return type="MaszynaHeightmapTerrainChunk[]" />
+			<description>
+				Its chunks, [constant CHUNKS_SIDE] squared in rows of growing z, null where there is none - a hole in the terrain.
+			</description>
+		</method>
+		<method name="get_key" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+				Its key, the streaming cell it is.
+			</description>
+		</method>
+		<method name="get_terrain" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The terrain it is drawn in.
+			</description>
+		</method>
+		<method name="set_data">
+			<return type="void" />
+			<param index="0" name="terrain" type="RID" />
+			<param index="1" name="key" type="Vector2i" />
+			<param index="2" name="chunks" type="MaszynaHeightmapTerrainChunk[]" />
+			<description>
+				Takes the [param terrain] it is drawn in, its [param key] and its [param chunks], as [method get_chunks] gives them.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="CHUNKS_SIDE" value="4">
+			The chunks of a region along its side: a streaming cell of 1 km of chunks of 250 m.
+		</constant>
+	</constants>
+</class>
