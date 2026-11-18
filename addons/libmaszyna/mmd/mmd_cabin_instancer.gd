@@ -603,6 +603,8 @@ static func parse_cabin_kinds(abs_mmd_path:String, parameters:Dictionary) -> Arr
 ## declares one entry per cargo it can carry (`logs: loads/eaos_vrz-99_logs`), and `passengers` is
 ## one of those entries - which is why the passenger model comes out of here too. 235 vehicles of
 ## the datapack declare the block; the rest rely on the model simply being named after the cargo.
+## An entry "key: [ a b ... ]" is one of them picked at random, same as `parse_attachments()`'s -
+## the pick is made once for the vehicle's structure, shared by every vehicle of the type and skin.
 static func parse_loads(abs_mmd_path:String, parameters:Dictionary) -> Dictionary[String, String]:
     var models:Dictionary[String, String] = {}
     var context := MmdImportContext.new()
@@ -622,7 +624,16 @@ static func parse_loads(abs_mmd_path:String, parameters:Dictionary) -> Dictionar
                 break
         elif depth == 1 and token.ends_with(":") and i + 1 < tokens.size():
             var name:String = token.substr(0, token.length() - 1).to_lower()
-            models[name] = _resolve_model_relpath(tokens[i + 1])
+            if tokens[i + 1] == _RANDOM_INCLUDE_OPEN:
+                var random_set:Array[String] = []
+                var j:int = i + 2
+                while j < tokens.size() and not tokens[j] == _RANDOM_INCLUDE_CLOSE:
+                    random_set.append(tokens[j])
+                    j += 1
+                if random_set:
+                    models[name] = _resolve_model_relpath(random_set.pick_random())
+            else:
+                models[name] = _resolve_model_relpath(tokens[i + 1])
     return models
 
 
