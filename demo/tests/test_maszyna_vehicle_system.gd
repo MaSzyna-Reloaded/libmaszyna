@@ -70,6 +70,21 @@ func test_a_vehicle_is_built_by_its_handle_without_a_node() -> void:
     assert_eq(MaszynaVehicleSystem.vehicle_get_dynamic(vehicle).vehicle_id, "system_test")
 
 
+## A vehicle with no exterior built - beyond the draw distance, here with no camera at all - is
+## passed over when the real mirrors are switched: it gets them once its exterior is built
+func test_switching_the_real_mirrors_passes_over_a_vehicle_without_its_exterior() -> void:
+    var vehicle:RID = await _create("system_test_no_exterior")
+    assert_false(RailVehicleRenderingServer.vehicle_get_model(vehicle).is_valid(), "no exterior is built")
+    var real_mirrors:bool = ProjectSettings.get_setting(MaszynaVehicleSystem.REAL_MIRRORS_SETTING)
+
+    ProjectSettings.set_setting(MaszynaVehicleSystem.REAL_MIRRORS_SETTING, not real_mirrors)
+    await wait_idle_frames(2)
+    ProjectSettings.set_setting(MaszynaVehicleSystem.REAL_MIRRORS_SETTING, real_mirrors)
+    await wait_idle_frames(2)
+
+    assert_engine_error_count(0, "no exterior asked of a vehicle that has none")
+
+
 ## A `dynamic` that names no file has nothing to be built from
 func test_a_vehicle_without_a_file_is_built_without_a_simulation() -> void:
     var vehicle:RID = await _create("system_test_missing", "")
