@@ -46,8 +46,9 @@ static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
 ## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read; 57: the scenery's
 ## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points());
-## 59: the terrain files of `terrain` read (.txtf, .btf); 60: `heightmap_terrain` read
-const CACHE_FORMAT_VERSION:int = 60
+## 59: the terrain files of `terrain` read (.txtf, .btf); 60: `heightmap_terrain` read; 61: a `model`
+## node's `scale` clause read (MaszynaNodeModelImporter.import())
+const CACHE_FORMAT_VERSION:int = 61
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
