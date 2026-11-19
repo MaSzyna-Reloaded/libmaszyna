@@ -69,6 +69,47 @@ velocity 45
 endtrack
 MARKER
 """
+## l204/tory/brn.scm's brn_d13, the road over the Braniewo level crossing: its first control point
+## is 1.7 cm off a third of its chord, so the original takes it for a straight line (#450)
+const NEARLY_STRAIGHT_ROAD_SOURCE:String = """
+road -683 7 0.2 0 20 5 flat vis
+road/asphaltdark1_solidwhite 6 road/asphaltdark1_side_solidwhite 1 0.8 1.625
+-2572.0642 4.6606 6071.8289 0
+-10.8369 0.0183 17.2191
+10.8369 0.0406 -17.2191
+-2604.575 4.6652 6123.4862 0
+0
+velocity 100
+endtrack
+"""
+## The same road with its first control point 5 cm off a third of its chord: a curve
+const CURVED_ROAD_SOURCE:String = """
+road -683 7 0.2 0 20 5 flat vis
+road/asphaltdark1_solidwhite 6 road/asphaltdark1_side_solidwhite 1 0.8 1.625
+-2572.0642 4.6606 6071.8289 0
+-10.8369 0.0515 17.2191
+10.8369 0.0406 -17.2191
+-2604.575 4.6652 6123.4862 0
+0
+velocity 100
+endtrack
+"""
+## A crossroad whose both roads' control points lie on a third of their chords
+const STRAIGHT_CROSS_SOURCE:String = """
+cross 0 8 0.85 0 20 0 flat vis
+asphalt1_solidwhite 8 none 0.38 0.38 0.38
+0 0 0 0
+13.3333 0 0
+-13.3333 0 0
+40 0 0 0
+0
+20 0 -20 0
+0 0 13.3333
+0 0 -13.3333
+20 0 20 0
+0
+endtrack
+"""
 
 
 func _import(source:String) -> Array:
@@ -159,3 +200,27 @@ func test_a_turntable_is_read_as_its_own_type() -> void:
     assert_eq(parser.next_token(), "MARKER", "the node read to its end")
     var table:MaszynaTrackData = _import(TURNTABLE_SOURCE.replace("turn 0", "table 0"))[0]
     assert_eq(table.kind, TrackServer.TRACK_TABLE, "table is tt_Table too (Track.cpp:412-416)")
+
+
+## Track.cpp:856, :908: a curve whose first control point lies within 2 cm of a third of its chord
+## loses both control points (#450)
+func test_a_nearly_straight_track_is_a_straight_line() -> void:
+    var track:MaszynaTrackData = _import(NEARLY_STRAIGHT_ROAD_SOURCE)[0]
+
+    assert_eq(track.curve.c1, Vector3.ZERO)
+    assert_eq(track.curve.c2, Vector3.ZERO)
+
+
+func test_a_curved_track_keeps_its_control_points() -> void:
+    var track:MaszynaTrackData = _import(CURVED_ROAD_SOURCE)[0]
+
+    assert_eq(track.curve.c1, Vector3(-10.8369, 0.0515, 17.2191))
+    assert_eq(track.curve.c2, Vector3(10.8369, 0.0406, -17.2191))
+
+
+## Track.cpp:1001: a crossroad is given its control points on purpose
+func test_a_crossroad_keeps_its_control_points() -> void:
+    var track:MaszynaTrackData = _import(STRAIGHT_CROSS_SOURCE)[0]
+
+    assert_eq(track.curve.c1, Vector3(13.3333, 0.0, 0.0))
+    assert_eq(track.diverging_curve.c2, Vector3(0.0, 0.0, -13.3333))
