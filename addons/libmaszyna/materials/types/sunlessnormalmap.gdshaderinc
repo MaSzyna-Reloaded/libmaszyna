@@ -7,13 +7,13 @@
 #endif
 
 uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform int transparency = 0;
 uniform float alpha_scissor_threshold : hint_range(0.0, 1.0) = 0.5;
 uniform ivec2 albedo_texture_size;
 uniform float point_size : hint_range(0.1, 128.0, 0.1);
 
-uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float normal_scale : hint_range(-16.0, 16.0);
 
 uniform bool emission_enabled = false;
