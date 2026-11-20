@@ -87,6 +87,9 @@ enum Hint {
     DOOR_RIGHT_PERMIT_OFF,
     DOOR_LEFT_PERMIT_ON,
     DOOR_LEFT_PERMIT_OFF,
+    ## Not the original's: one key that force-revokes both sides at once, where the per-side
+    ## revoking hints have no key at all (see CONTROLS)
+    DOOR_PERMIT_REVOKE_ALL,
     HORN_ON,
     HORN_OFF,
     CONSIST_LIGHTS_ON,
@@ -213,6 +216,7 @@ const TEXTS:Dictionary[Hint, String] = {
     Hint.DOOR_RIGHT_PERMIT_OFF: "Revoke permit to open doors",
     Hint.DOOR_LEFT_PERMIT_ON: "Grant permit to open doors",
     Hint.DOOR_LEFT_PERMIT_OFF: "Revoke permit to open doors",
+    Hint.DOOR_PERMIT_REVOKE_ALL: "Revoke all permits to open doors",
     Hint.HORN_ON: "Sound the horn",
     Hint.HORN_OFF: "Switch off horn",
     Hint.CONSIST_LIGHTS_ON: "Switch on consist lights",
@@ -398,6 +402,8 @@ const CONTROLS:Dictionary = {
     # where the vehicle has one (get_list())
     Hint.DOOR_RIGHT_PERMIT_ON: [&"doorrightpermit_sw", CabinLogic.Gesture.PRESS],
     Hint.DOOR_LEFT_PERMIT_ON: [&"doorleftpermit_sw", CabinLogic.Gesture.PRESS],
+    Hint.DOOR_PERMIT_REVOKE_ALL: [MaszynaCabinDoorPermitRevoke.CONTROL, CabinLogic.Gesture.PRESS],
+    Hint.SANDING_ON: [&"sand_bt", CabinLogic.Gesture.PRESS],
     Hint.HORN_ON: [&"hornlow_bt", CabinLogic.Gesture.PRESS],
     Hint.CONSIST_HEATING_ON: [&"trainheating_sw", CabinLogic.Gesture.PRESS],
     Hint.CONSIST_HEATING_OFF: [&"trainheating_sw", CabinLogic.Gesture.PRESS],
@@ -1227,6 +1233,13 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
             var left:bool = hint == Hint.DOOR_LEFT_PERMIT_ON or hint == Hint.DOOR_LEFT_PERMIT_OFF
             var permitted:bool = doors != null and (doors.get_left_open_permit() if left else doors.get_right_open_permit())
             return doors == null or permitted == (hint == Hint.DOOR_RIGHT_PERMIT_ON or hint == Hint.DOOR_LEFT_PERMIT_ON)
+        Hint.DOOR_PERMIT_REVOKE_ALL:
+            var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
+                    vehicle, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
+            # a vehicle with permit presets steps aside for them (Train.cpp:7203) - the key does
+            # nothing there (MaszynaCabinDoorPermitRevoke), so the hint counts as done
+            return doors == null or doors.permit_list \
+                    or not (doors.get_left_open_permit() or doors.get_right_open_permit())
         # differs from the original, done once the vigilance alone stops (driverhints.cpp:1206): it is
         # cued for the cab signal as well (is_blinking(), Driver.cpp:6397), and with no button of
         # its own the cab signal is acknowledged by this one - an SHP flashing alone hinted nothing

@@ -241,6 +241,7 @@ static func _static_init() -> void:
             "fixed_fields": {
                 "monostable": true,
                 "command": "sand",
+                "action": "sand",
                 "state_property": "sand_active",
             },
             "config_max_property": "",

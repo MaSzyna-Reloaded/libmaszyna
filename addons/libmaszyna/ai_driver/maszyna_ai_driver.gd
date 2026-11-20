@@ -407,6 +407,10 @@ func _close_doors(situation:MaszynaDriverTraction.Situation) -> void:
     if doors and doors.permit_required:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
+        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, 0.0,
+                func() -> void:
+                    MaszynaDriverHints.send(vehicle, "doors_left_permit", false)
+                    MaszynaDriverHints.send(vehicle, "doors_right_permit", false))
     var in_control:bool = DriverServer.vehicle_is_control_active(vehicle)
     for car:RID in state.trainset.vehicles:
         var car_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(car, VehicleComponentType.COMPONENT_DOORS)
@@ -957,6 +961,10 @@ func _update(driver:RID) -> void:
             and _asks_for_power(situation):
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
+        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, 0.0,
+                func() -> void:
+                    MaszynaDriverHints.send(vehicle, "doors_left_permit", false)
+                    MaszynaDriverHints.send(vehicle, "doors_right_permit", false))
     # the same for the independent brake of a car left: it brakes that car whatever the cab driving
     # (the player sent there by the standing driver's hints before going to the other cab)
     if _asks_for_power(situation):
