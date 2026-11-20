@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaBTFTerrainWriter" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Makes the original's binary terrain file (.btf) of a text terrain file (.txtf).
+	</brief_description>
+	<description>
+		Writes what the original writes before it loads a text terrain file: the [code]triangles[/code] of the text put in the cells of the original's 1 km sections, a triangle reaching more than 200 m out of its section cut at the section's edge, and the shapes of one material, lighting and range within 25 m of each other merged. The file is read by [MaszynaBTFTerrainProvider], so a terrain kept as text is streamed as one kept in binary. A text that holds anything but [code]triangles[/code] nodes is not written; the scenery reads it as text, as the original does.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="checksum" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				The CRC-32 of zlib of [param data], as the original checks the text of a binary terrain file and the slices of a heightmap terrain's packs.
+			</description>
+		</method>
+		<method name="write" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="text_path" type="String" />
+			<param index="1" name="binary_path" type="String" />
+			<description>
+				Writes the binary file of the text at [param text_path] to [param binary_path], its folders made, replacing a file there in one go. Returns [code]false[/code], with the reason reported, when the text holds a node of another type or a word outside a node, or the file cannot be written.
+			</description>
+		</method>
+	</methods>
+</class>

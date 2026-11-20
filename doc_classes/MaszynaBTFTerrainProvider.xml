@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaBTFTerrainProvider" inherits="SceneryStreamingProvider" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The terrain of the original's binary terrain file (.btf), supplied section by section.
+	</brief_description>
+	<description>
+		The "triangles" of a text terrain file (.txtf) the original converted to binary and arranged by its 1 km sections, supplied section by section as the camera comes near. A section's shapes are merged as the original merges them: a translucent shape, or one seen only within a range, in a chunk per texture and range around its cell's centre; the others by texture over the whole section. The original takes the binary file in place of its text when it was made from that text, or alone.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_source_length" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="path" type="String" />
+			<description>
+				The length of the text the file at [param path] was made from, which the original checks it against its .txtf by; [code]-1[/code] when the file is no binary terrain file of the version and layout the original writes.
+			</description>
+		</method>
+		<method name="open">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="translucency" type="Callable" />
+			<description>
+				Lists the materials and sections of the file at [param path], without reading the sections; [code]false[/code] when it is no binary terrain file. [param translucency] tells a translucent material by its name ([code]MaszynaMaterialManager.is_material_translucent()[/code]): only the opaque shapes are merged over a whole section.
+			</description>
+		</method>
+	</methods>
+</class>

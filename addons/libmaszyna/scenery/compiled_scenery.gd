@@ -18,5 +18,11 @@ class_name MaszynaCompiledScenery
 ## The region files (.sbt) whose terrain is supplied as the camera comes near
 ## (MaszynaSBTTerrainProvider), not read into triangle_chunks
 @export var region_files:Array[String] = []
+## The binary terrain files (.btf) whose terrain is supplied as the camera comes near
+## (MaszynaBTFTerrainProvider), not read into triangle_chunks
+@export var terrain_binary_files:Array[String] = []
+## The folders of the heightmap terrains named, the last the scenery's
+## (MaszynaHeightmapTerrainRenderingServer)
+@export var heightmap_terrains:Array[String] = []
 ## Merged triangle meshes, streamed by MaszynaSceneryChunkRenderingServer (not nodes, so not in [member nodes])
 @export var triangle_chunks:Array[MaszynaTrianglesChunkData] = []

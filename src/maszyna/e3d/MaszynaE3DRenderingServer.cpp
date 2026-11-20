@@ -486,7 +486,8 @@ namespace godot {
     void MaszynaE3DRenderingServer::instance_set_options(
             const RID &p_instance, const String &p_data_path, const PackedStringArray &p_skins,
             const Array &p_exclude_node_names, const bool p_force_alpha,
-            const TypedArray<NodePath> &p_force_alpha_part_paths, const int p_max_texture_size) {
+            const TypedArray<NodePath> &p_force_alpha_part_paths, const int p_max_texture_size,
+            const bool p_low_poly_interior) {
         MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL(instance);
         instance->data_path = p_data_path;
@@ -495,6 +496,7 @@ namespace godot {
         instance->force_alpha = p_force_alpha;
         instance->force_alpha_submodel_paths = p_force_alpha_part_paths;
         instance->max_texture_size = p_max_texture_size;
+        instance->low_poly_interior = p_low_poly_interior;
         _rebuild_if_built(*instance);
     }
 

@@ -8,9 +8,9 @@ namespace godot {
     struct MaszynaE3DInstanceData;
     class MaszynaE3DSubModel;
 
-    /// Calls the material resolver callable once per submodel, data path, skins, translucency and
-    /// max texture size; later calls return the same material while it is alive (a scenery
-    /// instances the same models thousands of times).
+    /// Calls the material resolver callable once per submodel, data path, skins, translucency, max
+    /// texture size and low-poly interior; later calls return the same material while it is alive
+    /// (a scenery instances the same models thousands of times).
     class MaszynaE3DMaterialResolver {
         private:
             Callable callable;

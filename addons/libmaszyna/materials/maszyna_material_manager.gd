@@ -120,6 +120,9 @@ class MaterialOptions:
     # platforms tend to miss parts of shadows" (opengl33renderer.cpp:3609), and an open rail profile
     # with its front faces culled casts almost nothing
     var cull_disabled: bool = false
+    # A vehicle's low-poly interior (ModelRenderingServer.instance_set_options()): its materials are
+    # drawn behind the body where they meet (draw_behind.gdshaderinc)
+    var low_poly_interior: bool = false
     # the largest texture size loaded, larger DDS drop their top mipmaps - the cab has its own
     # limit in the original (Train.cpp:660)
     var max_texture_size: int = MAX_TEXTURE_SIZE_PROJECT_DEFAULT
@@ -408,6 +411,7 @@ func get_submodel_material(
     skins: PackedStringArray,
     translucency: MaszynaE3DRenderingServer.Translucency,
     max_texture_size: int,
+    low_poly_interior: bool = false,
 ) -> Material:
     # MaszynaE3DOptimizedBackend draws a free spotlight only when it gets a material for it
     if submodel.submodel_type == MaszynaE3DSubModel.SUBMODEL_FREE_SPOTLIGHT:
@@ -420,6 +424,7 @@ func get_submodel_material(
     options.force_transparent = translucency == MaszynaE3DRenderingServer.TRANSLUCENCY_BLENDED
     options.force_opaque = translucency == MaszynaE3DRenderingServer.TRANSLUCENCY_OPAQUE
     options.max_texture_size = max_texture_size
+    options.low_poly_interior = low_poly_interior
     options.diffuse_color = submodel.diffuse_color
     options.selfillum_color = (
         submodel.self_illumination
@@ -698,6 +703,7 @@ func _material_key(
         options.lights_on_threshold,
         options.cull_disabled,
         options.max_texture_size,
+        options.low_poly_interior,
     ].map(str)).md5_text()
     return model_path.path_join("%s_%s" % [material_path, options_hash])
 

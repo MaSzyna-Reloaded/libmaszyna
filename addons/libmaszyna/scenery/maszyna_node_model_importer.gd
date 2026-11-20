@@ -64,6 +64,9 @@ func import(p:MaszynaParser, context: MaszynaImporterContext) -> MaszynaModelDat
                     deg_to_rad(float(angles[1])),
                     deg_to_rad(float(angles[2])),
                 )
+            "scale":
+                var factors:Array = p.get_tokens(3)
+                obj.scale = Vector3(float(factors[0]), float(factors[1]), float(factors[2]))
         token = p.next_token().to_lower()
 
     return obj

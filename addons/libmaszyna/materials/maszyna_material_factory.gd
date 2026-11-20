@@ -186,6 +186,10 @@ var MATERIAL_SHADER_FACTORIES: Dictionary[String, MaszynaShaderMeta] = {
     ),
 }
 
+## How much farther from the camera a vehicle's low-poly interior is drawn [m]
+## (MaterialOptions.low_poly_interior, types/draw_behind.gdshaderinc)
+const LOW_POLY_INTERIOR_DEPTH_BEHIND: float = 0.02
+
 ## What makes a type shader's variant: alpha-blended (MaterialOptions.force_transparent), two-sided
 ## (MaterialOptions.cull_disabled), its specgloss texture bound (types/specgloss.gdshaderinc, in the
 ## types that offer it as a variant)
@@ -386,6 +390,9 @@ func _apply(
         "blended_opacity", mmat.opacity if options.force_transparent and has_opacity else 0.0)
     target_shader_material.set_shader_parameter(
         "alpha_scissor_threshold", mmat.opacity if has_opacity else options.alpha_scissor_threshold)
+    # a low-poly interior is drawn behind the body where they meet (draw_behind.gdshaderinc)
+    target_shader_material.set_shader_parameter(
+        "draw_behind_depth", LOW_POLY_INTERIOR_DEPTH_BEHIND if options.low_poly_interior else 0.0)
     target_shader_material.set_shader_parameter("emission_enabled", options.selfillum_enabled)
     target_shader_material.set_shader_parameter("emission_color", options.selfillum_color if options.selfillum_color else Color(1.0, 1.0, 1.0, 1.0))
     target_shader_material.set_shader_parameter("emission_energy", options.selfillum_energy)

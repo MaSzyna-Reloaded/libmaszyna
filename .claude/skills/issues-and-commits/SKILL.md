@@ -1,6 +1,6 @@
 ---
 name: issues-and-commits
-description: Group what was found by its root cause and file it as one GitHub issue and one commit per cause, with every issue, comment and edit shown to the operator as a draft before it is posted. Use before creating, editing or closing any GitHub issue, pull request or comment, before committing fixes of an audit or a search, and whenever several findings, places or files are about to be filed or fixed.
+description: Group what was found by its root cause and file it as one GitHub issue and one commit per cause, with every issue, comment and edit shown to the operator as a draft before it is posted. Use before creating, editing or closing any GitHub issue, pull request or comment, before committing fixes of an audit or a search, whenever several findings, places or files are about to be filed or fixed, before moving a parent repository's `vendor/` to new commits, and before opening or editing the pull request of a release branch.
 ---
 
 # Issues and commits
@@ -45,3 +45,10 @@ GitHub posts as the operator. Before `gh issue create`, `gh issue edit`, `gh iss
   after step 2.
 - The pull request's body closes every issue it fixes, across repositories in full
   (`Closes MaSzyna-Reloaded/reports#N`); check `gh pr view --json closingIssuesReferences`.
+- The parent repository (the game) moves `vendor/libmaszyna` and `vendor/libreloaded` of a branch
+  in one `Update deps for <what>` commit: a bullet per fix with its issue in full, every next move
+  amended into it and pushed with `--force-with-lease` - never a commit per commit of a library
+  (AGENTS.md, "Commit style").
+- The pull request of a release branch (`release/<version>`) is titled after the release
+  (`Prepare the 26.11 alpha release`) in every repository; its body lists every commit on the
+  branch with its issue and is brought up to date at every push (AGENTS.md, "Commit style").

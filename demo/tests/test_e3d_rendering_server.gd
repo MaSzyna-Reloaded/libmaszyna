@@ -145,7 +145,8 @@ func test_forced_translucent_submodel_is_blended_as_nodes_and_opaque_optimized()
     var resolved: Dictionary[String, int] = {}
     MaszynaE3DRenderingServer.material_set_resolver(
         func(submodel: MaszynaE3DSubModel, _data_path: String, _skins: PackedStringArray,
-                translucency: MaszynaE3DRenderingServer.Translucency, _max_texture_size: int) -> Material:
+                translucency: MaszynaE3DRenderingServer.Translucency, _max_texture_size: int,
+                _low_poly_interior: bool) -> Material:
             resolved[submodel.resource_name] = translucency
             return null)
 

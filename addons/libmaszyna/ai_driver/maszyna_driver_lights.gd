@@ -72,7 +72,9 @@ static func control(situation:MaszynaDriverTraction.Situation) -> void:
                     func() -> void: _light(situation, PC2, KEEP))
         elif acting:
             _light(situation, hints.x, KEEP)
-        if hints.y == NO_HINT:
+        # a plain wagon's tail markers are not a key the cab has - only a lone vehicle or an
+        # EMU/DMU (push_pull) is suggested Pc5
+        if hints.y == NO_HINT and situation.trainset.push_pull:
             MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.HEADCODE_PC5, 0.0,
                     func() -> void: _light(situation, KEEP, PC5))
         elif acting:
