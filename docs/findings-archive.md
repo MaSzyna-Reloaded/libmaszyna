@@ -4895,3 +4895,26 @@ lighting or the trainset.
 * **Rule:** an `instance uniform` only in a shader drawn by few meshes, counted; a value some meshes
   of a material need is an option of the material. Reviewed after every plan and before every
   commit (`.claude/skills/precommit-code-review`).
+
+
+## 2026-11-22 The trees of Bałtyk drawn twice
+
+* **Symptom:**
+  - after the data pack of 2026-11-16, trees and grass of `baltyk_skm1.scn` flickered when the
+    camera turned; in the editor a model hidden (its sector, or one tree) left a tree standing
+    in its place that could not be clicked.
+* **What proved it:**
+  - the streaming held every model once (no two models of one name within 2 m at 13 825 spots);
+    the second tree was terrain. `scenery/baltyk_skm1.sbt` (2026-09-23, not a file of the pack) held
+    shapes in 42 textures that the pack of 2026-11-16 uses only as skins of the new `tree.t3d` and
+    `grass.t3d` models of `nowa_roslinnosc*.scm`; 9080 of its 9812 new tree models had a shape of
+    their own texture at their foot, all 386 around the flickering spots. Two copies of one plant
+    fought over the depth.
+  - the original writes `<scenario>.sbt` on a load without one (simulationstateserializer.cpp:195)
+    and takes it by its header alone (`basic_region::is_scene()`, scene.cpp:1173): it never brings
+    it up to date with the scenery, so it showed the same.
+* **Fix:** `<scenario>.sbt` is the scenario's terrain only where an include of terrain
+  (`_ter.scm`) is missing - the scenery is parsed again, the region file's
+  (`MaszynaSceneryProvider.compile()`); `terrain x.sbt` only where `x.scm` is missing
+  (`maszyna_terrain_importer.gd`).
+* **Rule:** a region file is read only where what it was made of is missing.

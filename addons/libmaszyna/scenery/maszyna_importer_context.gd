@@ -21,6 +21,11 @@ const RESULT_LISTS:Array[String] = [
 
 ## The region file's extension (EU07_FILEEXTENSION_REGION, scene.cpp:27)
 const REGION_EXTENSION:String = ".sbt"
+## What a region file named by `terrain` is made of: the scenery file of its name beside it
+## (l107/l107_teren.sbt of l107/l107_teren.scm)
+const REGION_SOURCE_EXTENSION:String = ".scm"
+## What an include of terrain is named with (parser.cpp:330)
+const TERRAIN_INCLUDE:String = "_ter.scm"
 ## What Rainsted prefixes a scenario it modified with, and the base scenario it writes
 const RAINSTED_PREFIX:String = "$"
 const RAINSTED_SCENARIO:String = "$.scn"
@@ -149,8 +154,9 @@ func get_current_file() -> String:
 
 ## The scenery's terrain from here on is the region file's: `terrain <file>.sbt` in the scenery
 ## (state_serializer::deserialize_terrain(), simulationstateserializer.cpp:786), or the scenario's
-## own <scenario>.sbt from the start (:51-66). Its shapes are not read here: the scenery supplies
-## them as the camera comes near (MaszynaSBTTerrainProvider)
+## own <scenario>.sbt from the start (:51-66) - each only where what it was made of is missing
+## (maszyna_terrain_importer.gd, MaszynaSceneryProvider.compile()). Its shapes are not read here:
+## the scenery supplies them as the camera comes near (MaszynaSBTTerrainProvider)
 func load_binary_terrain(path:String) -> void:
     binary_terrain = MaszynaSBTTerrainProvider.is_region(path)
     binary_terrain_state = true
@@ -159,17 +165,25 @@ func load_binary_terrain(path:String) -> void:
         region_files.append(path)
 
 
-## The scenario's own region file, <scenario>.sbt beside it, holds its terrain from the start
-## (simulationstateserializer.cpp:51-66). basic_region::is_scene() trims Rainsted's leading "$",
-## and the "$.scn" Rainsted writes has none (scene.cpp:1113)
-func load_scenario_binary_terrain(scenario:String) -> void:
+## The scenario's own region file, <scenario>.sbt beside it (simulationstateserializer.cpp:51-66),
+## empty when there is none. basic_region::is_scene() trims Rainsted's leading "$", and the "$.scn"
+## Rainsted writes has none (scene.cpp:1113)
+static func get_scenario_region_file(scenario:String) -> String:
     if scenario == RAINSTED_SCENARIO:
-        return
+        return ""
     var scenery_dir:String = MaszynaGameDirectory.get_game_dir().path_join("scenery")
     var region_file:String = scenario.lstrip(RAINSTED_PREFIX).get_basename() + REGION_EXTENSION
     var path:String = scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, region_file))
-    if MaszynaSBTTerrainProvider.is_region(path):
-        load_binary_terrain(path)
+    return path if MaszynaSBTTerrainProvider.is_region(path) else ""
+
+
+## Whether an include of terrain (TERRAIN_INCLUDE) the parse looked for is not there - what the
+## scenario's region file stands in for (MaszynaSceneryProvider.compile())
+func misses_terrain_include() -> bool:
+    for path:String in dependencies:
+        if path.to_lower().contains(TERRAIN_INCLUDE) and dependencies[path].get("missing", false):
+            return true
+    return false
 
 
 ## `config joinduplicatedevents <yes|no>`: the events defined from here on (join_duplicated_events)

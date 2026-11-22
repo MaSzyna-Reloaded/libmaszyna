@@ -48,8 +48,9 @@ static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_i
 ## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points());
 ## 59: the terrain files of `terrain` read (.txtf, .btf); 60: `heightmap_terrain` read; 61: a `model`
 ## node's `scale` clause read (MaszynaNodeModelImporter.import()); 62: tracks straightened as the
-## original straightens them (maszyna_node_track_importer.gd, _straighten())
-const CACHE_FORMAT_VERSION:int = 62
+## original straightens them (maszyna_node_track_importer.gd, _straighten()); 63: a region file read
+## only where what it was made of is missing (compile(), maszyna_terrain_importer.gd)
+const CACHE_FORMAT_VERSION:int = 63
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -218,13 +219,30 @@ func compile(root:SceneryContentNode, id:String, parameters:Dictionary) -> Compi
         # its terrain goes to disk chunk by chunk as it is parsed (MaszynaTrianglesSink), its nodes
         # are packed, and the scenery is built below from that alone, as from the cache - a large
         # scenery kept whole in memory as it was parsed filled it
+        var sink_directory:String = _cache.get_file_path(cache_path.get_basename())
         var triangles_sink:MaszynaTrianglesSink = MaszynaTrianglesSink.create(
-            _cache.get_file_path(cache_path.get_basename()), MaszynaMaterialManager.is_material_translucent
+            sink_directory, MaszynaMaterialManager.is_material_translucent
         )
         var context:MaszynaImporterContext = await _parse_file_with_progress(
-                include, filename, parameters, triangles_sink)
+                include, filename, parameters, triangles_sink, "")
         if not context:
             return null
+        # The scenario's region file is the original's, written beside it on a load without one
+        # (simulationstateserializer.cpp:195) and never brought up to date with the scenery: it
+        # stands in for the terrain only where an include of terrain is missing, as in a scenery
+        # packed with the region file alone - the scenery is parsed again, the region file's
+        var region_file:String = MaszynaImporterContext.get_scenario_region_file(filename)
+        if region_file and context.misses_terrain_include():
+            for object:Variant in context.objects:
+                if object is Node:
+                    (object as Node).free()
+            # the terrain includes the region file leaves out stay what the cache depends on
+            var text_dependencies:Dictionary = context.dependencies
+            triangles_sink = MaszynaTrianglesSink.create(sink_directory, MaszynaMaterialManager.is_material_translucent)
+            context = await _parse_file_with_progress(include, filename, parameters, triangles_sink, region_file)
+            if not context:
+                return null
+            context.dependencies.merge(text_dependencies)
         SceneryLoadMeasurement.print_process(CONVERT_TAG, "parsed")
         await SceneryServer.run_on_worker(
             root, assign_signal_head_kinds.bind(context.models, context.events), SceneryServer.PARSE_PROGRESS,
@@ -655,9 +673,10 @@ func parse_subscene_task(
 
 ## Parses root's scenery on WorkerTaskQueue workers (every include is a task), reporting
 ## progress as they finish, at most once per SceneryServer.FRAME_BUDGET_MSEC: finished tasks / tasks submitted
-## so far.
+## so far. A region_file is the scenario's terrain from the start (MaszynaImporterContext.load_binary_terrain()).
 func _parse_file_with_progress(
-    root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:MaszynaTrianglesSink
+    root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:MaszynaTrianglesSink,
+    region_file:String
 ) -> MaszynaImporterContext:
     var root_context := MaszynaImporterContext.new()
     root_context.rotate = root.context_rotate
@@ -666,7 +685,8 @@ func _parse_file_with_progress(
     var queue := WorkerTaskQueue.new()
     SceneryServer.queue_add(queue)
     # the scenario's region file first: what is parsed after it depends on whether it is there
-    root_context.load_scenario_binary_terrain(filename)
+    if region_file:
+        root_context.load_binary_terrain(region_file)
     var task_id:int = queue.submit(parse_file_task.bind(filename, parameters, root_context.get_state(), queue))
     # every include is a task submitted while parsing, so the total grows with the parse; the bar
     # does not go back when it does

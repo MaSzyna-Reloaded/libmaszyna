@@ -3,7 +3,9 @@ extends RefCounted
 
 ## `terrain <file> ... endterrain` (state_serializer::deserialize_terrain(),
 ## simulationstateserializer.cpp:1296): the scenery's terrain from the files it names, in their
-## order. A region file (.sbt) is the scenery's terrain from here on; a terrain file - static
+## order. A region file (.sbt) is the scenery's terrain from here on where the scenery file it was
+## made of (REGION_SOURCE_EXTENSION) is missing - the scenery includes that file itself, and a
+## region file is not brought up to date with it; a terrain file - static
 ## geometry kept as text (.txtf), or the same geometry in binary (.btf, MaszynaBTFTerrainProvider) -
 ## is read where the directive stands (include_terrain_file(), :1196).
 
@@ -36,7 +38,12 @@ func import(p:MaszynaParser, context:MaszynaImporterContext) -> Array:
         var filename:String = String(token).replace("\\", "/")
         var extension:String = "." + filename.get_extension().to_lower()
         if extension == MaszynaImporterContext.REGION_EXTENSION:
-            context.load_binary_terrain(scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)))
+            var source_path:String = scenery_dir.path_join(MaszynaDataPath.resolve(
+                scenery_dir, filename.get_basename() + MaszynaImporterContext.REGION_SOURCE_EXTENSION
+            ))
+            context.register_dependency(source_path)
+            if not FileAccess.file_exists(source_path):
+                context.load_binary_terrain(scenery_dir.path_join(MaszynaDataPath.resolve(scenery_dir, filename)))
             continue
         if not (extension in [TEXT_EXTENSION, BINARY_EXTENSION]):
             var named:String = MaszynaDataPath.resolve(scenery_dir, filename)

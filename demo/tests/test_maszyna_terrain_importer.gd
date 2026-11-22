@@ -89,3 +89,19 @@ func test_under_an_origin_only_the_text_is_read() -> void:
     var context:MaszynaImporterContext = _parse("terrain_relocated.scn")
     assert_eq(_models(context), ["text"])
     assert_eq(context.terrain_binary_files, [] as Array[String])
+
+
+## A region file named by the directive stands in for the scenery file it was made of: with that
+## file there, the region file is passed over and the terrain includes are read
+func test_a_region_file_with_its_scenery_file_is_passed_over() -> void:
+    var context:MaszynaImporterContext = _parse("terrain_region_sourced.scn")
+    assert_eq(context.region_files, [] as Array[String])
+    assert_false(context.binary_terrain_state)
+    assert_eq(_models(context), ["scm"], "the include of terrain is read")
+
+
+func test_a_region_file_without_its_scenery_file_is_the_terrain() -> void:
+    var context:MaszynaImporterContext = _parse("terrain_region_alone.scn")
+    assert_eq(context.region_files, _binary("region_alone.sbt"))
+    assert_true(context.binary_terrain)
+    assert_eq(_models(context), [], "the include of terrain is left out")
