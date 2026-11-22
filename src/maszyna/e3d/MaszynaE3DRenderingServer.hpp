@@ -53,10 +53,16 @@ namespace godot {
             static constexpr float DEFAULT_SCENERY_LIGHT_DISTANCE = 400.0;
             static constexpr const char *SCENERY_LIGHT_SHADOWS_SETTING = "maszyna/scenery/lights/cast_shadows";
             static constexpr bool DEFAULT_SCENERY_LIGHT_SHADOWS = true;
-            /// Shadows are dropped well before the light itself is, the way MaszynaE3DNodesBackend fades
-            /// a vehicle spotlight out
-            static constexpr float SCENERY_LIGHT_SHADOW_FADE_DISTANCE = 80.0;
-            /// The light fades out over this share of its streaming distance - the wrapper's own
+            /// How far from the camera [m] a scenery light casts its shadow, well before the light itself
+            /// ends. Past it Godot leaves the light out of the shadow atlas altogether
+            /// (light_instance_is_shadow_visible_at_position()), so the lamps near the camera share
+            /// the atlas, not every lamp the light distance streams in
+            static constexpr const char *SCENERY_LIGHT_SHADOW_DISTANCE_SETTING =
+                    "maszyna/scenery/lights/shadow_distance";
+            static constexpr float DEFAULT_SCENERY_LIGHT_SHADOW_DISTANCE = 50.0;
+            /// The shadow and the light fade out over this share of the shadow distance - the
+            /// wrapper's own. Godot takes one fade length for both, and the shadow has to end near
+            /// where its distance says
             static constexpr float SCENERY_LIGHT_FADE_LENGTH_SHARE = 0.25;
             /// A lamp must not shadow its own light. With one light per arm each arm was lit by its
             /// neighbours; economy mode leaves a single light in the middle, below which the arms

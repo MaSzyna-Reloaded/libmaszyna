@@ -155,6 +155,7 @@ namespace godot {
     static const char *const LIGHT_BUILD_SETTING_NAMES[] = {
             MaszynaE3DRenderingServer::SCENERY_LIGHT_ENERGY_SETTING,
             MaszynaE3DRenderingServer::SCENERY_LIGHT_SHADOWS_SETTING,
+            MaszynaE3DRenderingServer::SCENERY_LIGHT_SHADOW_DISTANCE_SETTING,
             MaszynaE3DRenderingServer::SCENERY_LIGHT_TINT_SETTING,
             MaszynaE3DRenderingServer::SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING,
             MaszynaE3DLightFactory::LIGHTS_SHADOW_REVERSE_CULL_FACE_SETTING,
@@ -1156,9 +1157,9 @@ namespace godot {
             // The light keeps reaching as far as it is streamed; only its shadow map stops early,
             // because a scenery puts 152 of these within 300 m
             const float distance = settings->get_setting(SCENERY_LIGHT_DISTANCE_SETTING);
+            const float shadow_distance = settings->get_setting(SCENERY_LIGHT_SHADOW_DISTANCE_SETTING);
             rs->light_set_distance_fade(
-                    light->light, true, distance, SCENERY_LIGHT_SHADOW_FADE_DISTANCE,
-                    distance * SCENERY_LIGHT_FADE_LENGTH_SHARE);
+                    light->light, true, distance, shadow_distance, shadow_distance * SCENERY_LIGHT_FADE_LENGTH_SHARE);
         }
 
         light->light_instance = rs->instance_create();
@@ -2283,6 +2284,9 @@ namespace godot {
                 SCENERY_LIGHT_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_DISTANCE, Variant::FLOAT, PROPERTY_HINT_RANGE,
                 "10.0,1000.0,5.0,suffix:m");
         ReloadedProjectSetting::add(SCENERY_LIGHT_SHADOWS_SETTING, DEFAULT_SCENERY_LIGHT_SHADOWS, Variant::BOOL);
+        ReloadedProjectSetting::add(
+                SCENERY_LIGHT_SHADOW_DISTANCE_SETTING, DEFAULT_SCENERY_LIGHT_SHADOW_DISTANCE, Variant::FLOAT,
+                PROPERTY_HINT_RANGE, "5.0,400.0,5.0,suffix:m");
         ReloadedProjectSetting::add(
                 SCENERY_LIGHT_ENERGY_SETTING, DEFAULT_SCENERY_LIGHT_ENERGY, Variant::FLOAT, PROPERTY_HINT_RANGE,
                 "0.0,10.0,0.05");

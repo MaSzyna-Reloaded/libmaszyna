@@ -74,6 +74,13 @@ func test_economy_mode_merges_a_multi_armed_lamp_into_one_light() -> void:
     assert_eq(statistics["lit"], 1)
 
 
+func test_lamps_cast_their_shadows_within_a_distance_of_their_own() -> void:
+    # their shadows end long before the lights do, so the lamps near the camera share the atlas
+    assert_eq(ProjectSettings.get_setting("maszyna/scenery/lights/shadow_distance"), 50.0)
+    assert_lt(float(ProjectSettings.get_setting("maszyna/scenery/lights/shadow_distance")),
+            float(ProjectSettings.get_setting("reloaded/scenery/lights/distance")))
+
+
 func test_lights_off_creates_no_real_lights() -> void:
     MaszynaE3DRenderingServer.environment_set_light_level(NIGHT_LIGHT_LEVEL)
     ProjectSettings.set_setting("maszyna/scenery/lights/mode", LIGHTS_OFF)
