@@ -439,7 +439,7 @@ namespace godot {
         ReloadedProjectSetting::add(
                 LAMP_LIGHT_HEIGHT_OFFSET_SETTING, DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET, Variant::FLOAT, PROPERTY_HINT_RANGE,
                 "-2.0,5.0,0.1,suffix:m");
-        // Widens the lamp cone past the lit patch the model draws (1.0 covers exactly the patch), and
+        // Widens the lamp cone past the lit patch the model draws (1.0, the default, covers exactly the patch), and
         // the falloff exponent below 1.0 keeps the pool bright out to its edge. Both are tuning only -
         // a light the model declares keeps the falloff its own iFarAttenDecay asks for
         ReloadedProjectSetting::add(

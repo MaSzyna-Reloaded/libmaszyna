@@ -81,6 +81,10 @@ func test_lamps_cast_their_shadows_within_a_distance_of_their_own() -> void:
             float(ProjectSettings.get_setting("reloaded/scenery/lights/distance")))
 
 
+func test_a_lamps_cone_covers_the_patch_its_model_draws() -> void:
+    assert_eq(ProjectSettings.get_setting("maszyna/scenery/lights/lamp_cone_scale"), 1.0)
+
+
 func test_lights_off_creates_no_real_lights() -> void:
     MaszynaE3DRenderingServer.environment_set_light_level(NIGHT_LIGHT_LEVEL)
     ProjectSettings.set_setting("maszyna/scenery/lights/mode", LIGHTS_OFF)

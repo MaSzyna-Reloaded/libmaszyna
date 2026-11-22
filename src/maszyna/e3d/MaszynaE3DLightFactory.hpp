@@ -117,9 +117,10 @@ namespace godot {
             /// the lamp head. Nothing in the data asks for it - it is a plain tuning offset.
             static constexpr const char *LAMP_LIGHT_HEIGHT_OFFSET_SETTING = "maszyna/scenery/lights/lamp_height_offset";
             static constexpr float DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET = 0.5;
-            /// Widens the cone past the patch the model draws. 1.0 covers exactly the patch.
+            /// Widens the cone past the patch the model draws. 1.0 covers exactly the patch: 1.5 lit
+            /// about three times its area (#454)
             static constexpr const char *LAMP_LIGHT_CONE_SCALE_SETTING = "maszyna/scenery/lights/lamp_cone_scale";
-            static constexpr float DEFAULT_LAMP_LIGHT_CONE_SCALE = 1.5;
+            static constexpr float DEFAULT_LAMP_LIGHT_CONE_SCALE = 1.0;
             /// Falloff exponent of a synthesized lamp light; below 1.0 keeps the pool bright out to
             /// its edge instead of fading through most of it. Lights the model declares keep the
             /// falloff their own iFarAttenDecay asks for.
