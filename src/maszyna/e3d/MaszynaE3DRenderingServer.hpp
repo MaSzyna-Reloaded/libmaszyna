@@ -12,6 +12,7 @@
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/time.hpp>
+#include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/mutex.hpp>
 
@@ -160,7 +161,18 @@ namespace godot {
                     RID light_instance;  // its RenderingServer instance
                     RID stream_rid;      // SceneryStreamingServer registration, scenery lights only
                     bool streamed_in = false;
+                    /// Where a street lamp's light stands in the world, while it is in lamp_light_cells
+                    Vector3 lamp_position;
+                    bool in_lamp_cells = false;
             };
+
+            /// In economy mode the lamps of one pole light it once: lamp fixtures stand on it as
+            /// models of their own (elektryczne/opr_sgp340 in pairs 0.93 m apart), each with a light,
+            /// where a two-armed lamp model has its heads merged (MaszynaE3DLightFactory). Closer than
+            /// this [m] - less than lamps a pole apart ever stand - a lamp gives no light of its own
+            static constexpr float LAMP_LIGHT_MERGE_DISTANCE = 2.0;
+            /// The street lamp lights by the cell of LAMP_LIGHT_MERGE_DISTANCE they stand in
+            HashMap<Vector3i, LocalVector<RID>> lamp_light_cells;
 
             RIDMap<MaszynaE3DInstanceData> instances;
             /// The instance drawing each attached signal head (instance_attach_signal_head())
@@ -257,6 +269,10 @@ namespace godot {
                     const MaszynaE3DInstanceData &p_instance_data, const String &p_light_name,
                     MaszynaE3DLightParams &p_params);
             void _clear_instance_lights(MaszynaE3DInstanceData &p_instance_data);
+            /// Whether a street lamp's light stands closer than LAMP_LIGHT_MERGE_DISTANCE to p_position
+            bool _is_lamp_light_near(const Vector3 &p_position) const;
+            void _remember_lamp_light(const RID &p_light, LightObject &p_object, const Vector3 &p_position);
+            void _forget_lamp_light(const RID &p_light, LightObject &p_object);
 
             void _build_instance_smoke_sources(MaszynaE3DInstanceData &p_instance_data);
             static void _clear_instance_smoke_sources(MaszynaE3DInstanceData &p_instance_data);

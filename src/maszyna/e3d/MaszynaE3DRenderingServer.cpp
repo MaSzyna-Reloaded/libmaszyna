@@ -247,8 +247,7 @@ namespace godot {
                     continue;
                 }
                 _clear_instance_lights(instance);
-                instance.model_lights.placements =
-                        MaszynaE3DLightFactory::discover(instance.model, instance.model_filename).placements;
+                instance.model_lights.placements = MaszynaE3DLightFactory::discover(instance.model).placements;
                 _build_instance_lights(item.key, instance);
             }
         } else if (build != light_build_settings) {
@@ -306,6 +305,7 @@ namespace godot {
             _light_clear(light.key);
         }
         lights.clear();
+        lamp_light_cells.clear();
         _set_light_processing(false);
         _set_animation_processing(false);
         _set_clock_processing(false);
@@ -452,7 +452,7 @@ namespace godot {
         // Identifying the model's lights is neither instancer's job - both only render what this
         // lists. Resolved before the build too, because the backend applies lights_state as it
         // builds.
-        instance->model_lights = MaszynaE3DLightFactory::discover(instance->model, instance->model_filename);
+        instance->model_lights = MaszynaE3DLightFactory::discover(instance->model);
         _resolve_lights(*instance);
         instance->built = true;
         built_instances.insert(p_instance);
@@ -1215,15 +1215,29 @@ namespace godot {
         // model declares (a street lamp's, a passenger interior's) have no node: every instance gets them.
         const bool declared = p_instance_data.instancer == ModelRenderingServer::INSTANCER_OPTIMIZED &&
                               p_instance_data.stream_rid.is_valid();
+        const int light_mode =
+                ProjectSettings::get_singleton()->get_setting(MaszynaE3DLightFactory::LIGHT_MODE_SETTING);
+        // the lamps of one pole stand together and stream in and out together: the first one built
+        // lights it, the rest give no light of their own
+        const bool merging =
+                light_mode == MaszynaE3DLightFactory::SCENERY_LIGHTS_ECONOMY && p_instance_data.stream_rid.is_valid();
         for (const MaszynaE3DModelLightPlacement &placement: p_instance_data.model_lights.placements) {
             if (!declared && !placement.synthesized) {
                 continue;
             }
             MaszynaE3DLightParams params = placement.params;
             _apply_declared_color(p_instance_data, placement.light_name, params);
-            _light_create(
+            const bool lamp = merging && placement.synthesized && params.role == LIGHT_ROLE_SCENERY;
+            const Vector3 position = (p_instance_data.transform * params.transform).origin;
+            if (lamp && _is_lamp_light_near(position)) {
+                continue;
+            }
+            const RID light = _light_create(
                     p_instance, placement.light_name, params.omni ? LIGHT_KIND_OMNI : LIGHT_KIND_SPOT, params,
                     placement.synthesized);
+            if (LightObject *object = lights.getptr(light); lamp && object != nullptr) {
+                _remember_lamp_light(light, *object, position);
+            }
         }
         // The model now owns a light, so keep its own geometry out of every scenery shadow map.
         // Only this layer: Godot casts when (layer_mask & shadow_caster_mask) is non-zero
@@ -1263,10 +1277,63 @@ namespace godot {
             if (light->stream_rid.is_valid() && streaming != nullptr) {
                 streaming->stream_free(light->stream_rid);
             }
+            _forget_lamp_light(light_rid, *light);
             _light_clear(light_rid);
             lights.erase(light_rid);
         }
         p_instance_data.light_objects.clear();
+    }
+
+    static Vector3i lamp_light_cell(const Vector3 &p_position, const float p_size) {
+        return Vector3i(
+                static_cast<int32_t>(Math::floor(p_position.x / p_size)),
+                static_cast<int32_t>(Math::floor(p_position.y / p_size)),
+                static_cast<int32_t>(Math::floor(p_position.z / p_size)));
+    }
+
+    bool MaszynaE3DRenderingServer::_is_lamp_light_near(const Vector3 &p_position) const {
+        const Vector3i cell = lamp_light_cell(p_position, LAMP_LIGHT_MERGE_DISTANCE);
+        for (int32_t x = -1; x <= 1; x++) {
+            for (int32_t y = -1; y <= 1; y++) {
+                for (int32_t z = -1; z <= 1; z++) {
+                    const LocalVector<RID> *near = lamp_light_cells.getptr(cell + Vector3i(x, y, z));
+                    if (near == nullptr) {
+                        continue;
+                    }
+                    for (const RID &light_rid: *near) {
+                        const LightObject *light = lights.getptr(light_rid);
+                        if (light != nullptr &&
+                            light->lamp_position.distance_to(p_position) < LAMP_LIGHT_MERGE_DISTANCE) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    void MaszynaE3DRenderingServer::_remember_lamp_light(
+            const RID &p_light, LightObject &p_object, const Vector3 &p_position) {
+        p_object.lamp_position = p_position;
+        p_object.in_lamp_cells = true;
+        lamp_light_cells[lamp_light_cell(p_position, LAMP_LIGHT_MERGE_DISTANCE)].push_back(p_light);
+    }
+
+    void MaszynaE3DRenderingServer::_forget_lamp_light(const RID &p_light, LightObject &p_object) {
+        if (!p_object.in_lamp_cells) {
+            return;
+        }
+        p_object.in_lamp_cells = false;
+        const Vector3i cell = lamp_light_cell(p_object.lamp_position, LAMP_LIGHT_MERGE_DISTANCE);
+        LocalVector<RID> *lamps = lamp_light_cells.getptr(cell);
+        if (lamps == nullptr) {
+            return;
+        }
+        lamps->erase(p_light);
+        if (lamps->is_empty()) {
+            lamp_light_cells.erase(cell);
+        }
     }
 
     /// Creates the emitters of a freshly built instance out of what MaszynaE3DSmokeSourceFactory found
@@ -1937,9 +2004,10 @@ namespace godot {
         const int64_t second = whole_seconds % Units::SECONDS_PER_MINUTE;
         // Time.second(): the second with its milliseconds
         const double second_exact = static_cast<double>(second) + day_seconds - static_cast<double>(whole_seconds);
-        const int64_t digits[DIGITAL_CLOCK_DRUMS] = {second % DIGITAL_CLOCK_BASE, second / DIGITAL_CLOCK_BASE,
-                                                     minute % DIGITAL_CLOCK_BASE, minute / DIGITAL_CLOCK_BASE,
-                                                     hour % DIGITAL_CLOCK_BASE,   hour / DIGITAL_CLOCK_BASE};
+        const int64_t digits[DIGITAL_CLOCK_DRUMS] = {
+                second % DIGITAL_CLOCK_BASE, second / DIGITAL_CLOCK_BASE, minute % DIGITAL_CLOCK_BASE,
+                minute / DIGITAL_CLOCK_BASE, hour % DIGITAL_CLOCK_BASE,   hour / DIGITAL_CLOCK_BASE,
+        };
         const int visits = MIN(static_cast<int>(clock_instances.size()), MAX_CLOCK_INSTANCES_PER_SLICE);
         for (int visit = 0; visit < visits; visit++) {
             if (clock_cursor >= clock_instances.size()) {
@@ -2048,6 +2116,7 @@ namespace godot {
             item->value.stream_rid.is_valid() && streaming != nullptr) {
             streaming->stream_free(item->value.stream_rid);
         }
+        _forget_lamp_light(p_light, item->value);
         _light_clear(p_light);
         lights.remove(item);
     }

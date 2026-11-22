@@ -5,10 +5,10 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <array>
+#include <utility>
 
 namespace godot {
     namespace {
-        constexpr const char *STREET_LAMP_PREFIX = "latarnia";
         /// The halo billboards around the lamp head, and the lit patch on the ground
         constexpr const char *HALO_MATERIAL = "poswiata";
         constexpr const char *POOL_MATERIAL_1 = "light1";
@@ -167,11 +167,10 @@ namespace godot {
             result.params.size = size;
             merged.push_back(result);
         }
-        p_placements = merged;
+        p_placements = std::move(merged);
     }
 
-    MaszynaE3DModelLights
-    MaszynaE3DLightFactory::discover(const Ref<MaszynaE3DModel> &p_model, const String &p_model_filename) {
+    MaszynaE3DModelLights MaszynaE3DLightFactory::discover(const Ref<MaszynaE3DModel> &p_model) {
         MaszynaE3DModelLights model_lights;
         if (p_model.is_null()) {
             return model_lights;
@@ -213,7 +212,7 @@ namespace godot {
             return model_lights;
         }
         const bool economy = light_mode == SCENERY_LIGHTS_ECONOMY;
-        if (!model_lights.placements.is_empty() || !is_street_lamp(p_model_filename)) {
+        if (!model_lights.placements.is_empty()) {
             if (economy) {
                 merge_placements(model_lights.placements);
             }
@@ -362,10 +361,6 @@ namespace godot {
         }
     }
 
-    bool MaszynaE3DLightFactory::is_street_lamp(const String &p_model_filename) {
-        return p_model_filename.get_file().to_lower().begins_with(STREET_LAMP_PREFIX);
-    }
-
     void MaszynaE3DLightFactory::make_street_lamps(
             MaszynaE3DSubModel *p_on_submodel, const Transform3D &p_on_transform,
             Vector<MaszynaE3DLightParams> &p_lamps) {
@@ -375,7 +370,7 @@ namespace godot {
 
         StreetLampAnchors anchors;
         collect_street_lamp_anchors(p_on_submodel->get_submodels(), p_on_transform, anchors);
-        if (anchors.heads.is_empty() || !anchors.has_pool) {
+        if (anchors.heads.is_empty()) {
             return;
         }
 
@@ -387,10 +382,13 @@ namespace godot {
         const float attenuation = MAX(0.0f, static_cast<float>(settings->get_setting(LAMP_LIGHT_ATTENUATION_SETTING)));
 
         for (const Vector3 &head: anchors.heads) {
-            if (head.y <= 0.0f) {
+            if (anchors.has_pool && head.y <= 0.0f) {
                 continue; // a head at or below the ground gives no cone to compute
             }
             const Vector3 origin = head + Vector3(0.0, height_offset, 0.0);
+            // a fixture stands at no height of its own: the scenery places it on its pole
+            const float patch_per_height = anchors.has_pool ? anchors.pool_extent / static_cast<float>(origin.y)
+                                                            : LAMP_FIXTURE_PATCH_PER_HEIGHT;
             MaszynaE3DLightParams params;
             params.omni = false;
             // pointing straight down: Godot's spot shines along -Z
@@ -406,9 +404,7 @@ namespace godot {
             // pool in the dimmest part of the falloff.
             params.range = DEFAULT_LIGHT_SPOT_RANGE;
             // from the raised origin, so the cone still covers the patch the model draws
-            params.spot_angle =
-                    MIN(Math::rad_to_deg(Math::atan2(anchors.pool_extent * cone_scale, static_cast<float>(origin.y))),
-                        MAX_SPOT_ANGLE);
+            params.spot_angle = MIN(Math::rad_to_deg(Math::atan(patch_per_height * cone_scale)), MAX_SPOT_ANGLE);
             params.spot_attenuation = 1.0;
             params.attenuation = attenuation;
             params.size = settings->get_setting(LIGHT_SIZE_SETTING);

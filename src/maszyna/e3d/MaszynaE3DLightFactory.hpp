@@ -81,7 +81,7 @@ namespace godot {
             /// SUBMODEL_FREE_SPOTLIGHTs with the light of their nearest "on" ancestor and their
             /// transform relative to the model root, and adds the street lamp quirk for models
             /// that light the scene without declaring a spotlight at all.
-            static MaszynaE3DModelLights discover(const Ref<MaszynaE3DModel> &p_model, const String &p_model_filename);
+            static MaszynaE3DModelLights discover(const Ref<MaszynaE3DModel> &p_model);
 
             /// How much a scenery model's real lights are worth: OFF renders only the model's own
             /// lit submodels, ECONOMY collapses the lights of one MaszynaE3DModelLight into a single one
@@ -125,6 +125,11 @@ namespace godot {
             /// falloff their own iFarAttenDecay asks for.
             static constexpr const char *LAMP_LIGHT_ATTENUATION_SETTING = "maszyna/scenery/lights/lamp_attenuation";
             static constexpr float DEFAULT_LAMP_LIGHT_ATTENUATION = 0.5;
+            /// A lamp fixture's lit patch is a model of its own placed beside it (elektryczne/
+            /// opr_sgp340 and smuga1hps/smuga2hps), so its cone is the one of the street lamps that
+            /// carry their patch: about as wide across (7.50 m) as their heads are high above the
+            /// ground with the light's offset (7.6-9.4 m) - before the cone scale
+            static constexpr float LAMP_FIXTURE_PATCH_PER_HEIGHT = 1.0;
             static constexpr float FORCED_END_LIGHT_SPOT_RANGE = 3.0;
 
             /// Parameters of a SUBMODEL_FREE_SPOTLIGHT, as the model declares them. The light name
@@ -152,23 +157,22 @@ namespace godot {
             /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
             static void project_settings_register();
 
-            /// Street lamps (models named "latarnia*") declare no spotlight submodel at all - none
-            /// of the 9 in the data set has one, and the original never lit the scene with them
-            /// either (TP_FREESPOTLIGHT only draws a glare billboard, opengl33renderer.cpp:4646).
-            /// The lamp head and the lit patch are still modelled, as billboards under light_onNN:
-            /// the halo carries the only non-identity matrix in the model (the head), and the
-            /// ground patch quad spans the area the lamp is meant to light. Both are found by
-            /// their material, not by name - latarnial_str calls its halos pos11/pos22/pos33 while
-            /// the rest call them plane02/plane04/plane06.
+            /// Street lamps that declare no spotlight submodel - 331 of the data set's models with a
+            /// light, among them the 305 of elektryczne/latarnie_cnodax - do not light the scene in
+            /// the original either (TP_FREESPOTLIGHT only draws a glare billboard,
+            /// opengl33renderer.cpp:4646). The lamp head is still modelled, as halo billboards under
+            /// light_onNN, and most of them model the lit patch on the ground there as well: the
+            /// halo carries the head's place, the patch quad spans the area the lamp is meant to
+            /// light. Both are found by their material, not by name - latarnial_str calls its halos
+            /// pos11/pos22/pos33 while the rest call them plane02/plane04/plane06. A lamp fixture
+            /// (15 models) has the halo alone, its patch being a model of its own, and gets the cone
+            /// of LAMP_FIXTURE_PATCH_PER_HEIGHT.
             /// One light per lamp head: the "latarniay_*" models are two-armed and carry a halo at
-            /// each end (z of -0.76 and +0.76 on latarniay_str). Appends nothing when either
-            /// anchor is missing, rather than inventing a light.
+            /// each end (z of -0.76 and +0.76 on latarniay_str). Appends nothing without a halo,
+            /// rather than inventing a light.
             static void make_street_lamps(
                     MaszynaE3DSubModel *p_on_submodel, const Transform3D &p_on_transform,
                     Vector<MaszynaE3DLightParams> &p_lamps);
-
-            /// True for the models the street lamp quirk applies to
-            static bool is_street_lamp(const String &p_model_filename);
 
             /* A low-poly interior with a passenger section (TDynamicObject::init_sections(), DynObj.cpp:2448-2453,
              * 2560-2595) has no light of its own - the original lights its walls and passengers by their
