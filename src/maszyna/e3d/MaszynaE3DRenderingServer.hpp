@@ -148,11 +148,12 @@ namespace godot {
 
             /// An addressable light of an instance. An emission light only switches the model's
             /// own light_onNN/light_offNN submodels (the backends do that from lights_state), a
-            /// spot or omni light additionally owns a RenderingServer light.
+            /// spot, omni or area light additionally owns a RenderingServer light.
             enum LightKind {
                 LIGHT_KIND_EMISSION,
                 LIGHT_KIND_SPOT,
                 LIGHT_KIND_OMNI,
+                LIGHT_KIND_AREA,
             };
 
             struct LightObject {

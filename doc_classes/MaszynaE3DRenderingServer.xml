@@ -246,7 +246,7 @@
 		<method name="light_get_statistics" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
+				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code], [code]area[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
 			</description>
 		</method>
 		<method name="material_set_preloader">
