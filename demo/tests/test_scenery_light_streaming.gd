@@ -130,6 +130,19 @@ func test_a_lamp_fixture_without_its_patch_is_lit_from_its_halo() -> void:
     assert_eq(statistics["lit"], 1)
 
 
+func test_a_shelter_lights_the_patch_it_draws_from_one_area_light() -> void:
+    MaszynaE3DRenderingServer.environment_set_light_level(NIGHT_LIGHT_LEVEL)
+    # otoczenie/obiekty_stacyjne/wiata1: its lamps 3.5 m up, the patch they light drawn on the
+    # ground in the halo's material
+    _instance = _register_model("models/test/halo_lamp_shelter")
+    MaszynaE3DRenderingServer.instance_set_lights_modes(_instance, [float(MaszynaE3DRenderingServer.LIGHT_MODE_DARK)])
+
+    var statistics: Dictionary = await _await_lights()
+    assert_eq(statistics["area"], 1, "the patch is lit by one area light")
+    assert_eq(statistics["spot"] + statistics["omni"], 0, "and taken for no lamp head")
+    assert_eq(statistics["lit"], 1)
+
+
 func test_economy_mode_lights_the_fixtures_of_one_pole_once() -> void:
     MaszynaE3DRenderingServer.environment_set_light_level(NIGHT_LIGHT_LEVEL)
     ProjectSettings.set_setting("maszyna/scenery/lights/mode", ECONOMY)
@@ -232,7 +245,8 @@ func _load_model(_data_path: String, model_filename: String) -> MaszynaE3DModel:
 
 
 ## A light_on00 with no FREE_SPOTLIGHT: with `kind` "patch" the halo of a head 7 m up and the lit
-## patch on the ground, "fixture" the halo alone at the model's origin, "none" a lit window
+## patch on the ground, "fixture" the halo alone at the model's origin, "none" a lit window,
+## "shelter" a shelter's lamps over the patch it draws in the halo's material
 func _load_halo_lamp(kind: String) -> MaszynaE3DModel:
     var model: MaszynaE3DModel = MaszynaE3DModel.new()
     var light_on: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
@@ -245,6 +259,16 @@ func _load_halo_lamp(kind: String) -> MaszynaE3DModel:
     halo.material_name = "elektryczne/poswiata" if not kind == "none" else "okno_on"
     halo.transform = Transform3D(Basis(), Vector3(0.0, 7.0 if kind == "patch" else 0.0, 0.0))
     lit.append(halo)
+    if kind == "shelter":
+        # the lamps are light_on00's own geometry, the patch its one child
+        var drawn_patch: BoxMesh = BoxMesh.new()
+        drawn_patch.size = Vector3(7.6, 0.01, 26.5)
+        halo.mesh = drawn_patch
+        halo.transform = Transform3D(Basis(), Vector3(0.0, 0.12, 0.0))
+        var tubes: BoxMesh = BoxMesh.new()
+        tubes.size = Vector3(5.2, 3.47, 20.2)
+        light_on.mesh = tubes
+        light_on.material_name = "otoczenie/obiekty_stacyjne/wiata"
     if kind == "patch":
         var patch: MaszynaE3DSubModel = MaszynaE3DSubModel.new()
         patch.resource_name = "plane01"

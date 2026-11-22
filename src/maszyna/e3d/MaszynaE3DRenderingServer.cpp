@@ -1114,7 +1114,21 @@ namespace godot {
         const float fog_energy =
                 scenery ? static_cast<float>(settings->get_setting(SCENERY_LIGHT_VOLUMETRIC_FOG_ENERGY_SETTING)) : 0.0F;
 
-        light->light = light->kind == LIGHT_KIND_OMNI ? rs->omni_light_create() : rs->spot_light_create();
+        switch (light->kind) {
+            case LIGHT_KIND_OMNI:
+                light->light = rs->omni_light_create();
+                break;
+            case LIGHT_KIND_AREA:
+                light->light = rs->area_light_create();
+                rs->light_area_set_size(light->light, light->params.area_size);
+                // its energy is per square metre of its surface (MaszynaE3DLightFactory::AREA_LIGHT_ENERGY):
+                // the patch it lights is as bright whatever the shelter's size
+                rs->light_area_set_normalize_energy(light->light, false);
+                break;
+            default:
+                light->light = rs->spot_light_create();
+                break;
+        }
         rs->light_set_color(light->light, Color(1.0, 1.0, 1.0).lerp(light->params.color, tint));
         light->energy = light->params.energy * energy_scale;
         const bool dimmed = instance->lights_dimmed.get(light->light_name, false);
@@ -1228,14 +1242,25 @@ namespace godot {
             }
             MaszynaE3DLightParams params = placement.params;
             _apply_declared_color(p_instance_data, placement.light_name, params);
-            const bool lamp = merging && placement.synthesized && params.role == LIGHT_ROLE_SCENERY;
+            // a shelter's area light stands for no pole
+            const bool lamp = merging && placement.synthesized && params.role == LIGHT_ROLE_SCENERY &&
+                              params.shape != LIGHT_SHAPE_AREA;
             const Vector3 position = (p_instance_data.transform * params.transform).origin;
             if (lamp && _is_lamp_light_near(position)) {
                 continue;
             }
-            const RID light = _light_create(
-                    p_instance, placement.light_name, params.omni ? LIGHT_KIND_OMNI : LIGHT_KIND_SPOT, params,
-                    placement.synthesized);
+            LightKind kind = LIGHT_KIND_SPOT;
+            switch (params.shape) {
+                case LIGHT_SHAPE_OMNI:
+                    kind = LIGHT_KIND_OMNI;
+                    break;
+                case LIGHT_SHAPE_AREA:
+                    kind = LIGHT_KIND_AREA;
+                    break;
+                case LIGHT_SHAPE_SPOT:
+                    break;
+            }
+            const RID light = _light_create(p_instance, placement.light_name, kind, params, placement.synthesized);
             if (LightObject *object = lights.getptr(light); lamp && object != nullptr) {
                 _remember_lamp_light(light, *object, position);
             }
@@ -2248,6 +2273,7 @@ namespace godot {
         int lit = 0;
         int spot = 0;
         int omni = 0;
+        int area = 0;
         int synthesized = 0;
         for (const KeyValue<RID, LightObject> &item: lights) {
             if (item.value.kind == LIGHT_KIND_EMISSION) {
@@ -2256,10 +2282,16 @@ namespace godot {
             if (item.value.enabled) {
                 lit++;
             }
-            if (item.value.kind == LIGHT_KIND_OMNI) {
-                omni++;
-            } else {
-                spot++;
+            switch (item.value.kind) {
+                case LIGHT_KIND_OMNI:
+                    omni++;
+                    break;
+                case LIGHT_KIND_AREA:
+                    area++;
+                    break;
+                default:
+                    spot++;
+                    break;
             }
             if (item.value.synthesized) {
                 synthesized++;
@@ -2270,6 +2302,7 @@ namespace godot {
         statistics["lit"] = lit;
         statistics["spot"] = spot;
         statistics["omni"] = omni;
+        statistics["area"] = area;
         statistics["synthesized"] = synthesized;
         return statistics;
     }
