@@ -2,9 +2,10 @@ extends MaszynaGutTest
 
 ## The driver's door hints at the closing of the doors (Doors(), Driver.cpp:4380-4395): the doors
 ## closed first, then the permits revoked - closing the doors revokes the permits (Mover.cpp:
-## 8745-8749), so the revoking hints have no key: a push permit button only grants
-## (Train.cpp:7213-7220). On an EN57's driving trailer: a permit needed (DoorNeedPermit), no permit
-## presets, the doors closed from the cab (CloseCtrl=DriverCtrl).
+## 8745-8749), so a vehicle whose doors are closed from the cab is hinted only to close them while
+## they are still open, never a permit hint on top of it; a permit standing once they are already
+## shut is on its own hint again. On an EN57's driving trailer: a permit needed (DoorNeedPermit),
+## no permit presets, the doors closed from the cab (CloseCtrl=DriverCtrl).
 
 const CONTROL_CAR_PATH:String = "res://tests/fixtures/dynamic/pkp/en57-2000_v1/6bs.fiz"
 ## The track the vehicle stands on, and where [m]: off the tracks a vehicle is in no trainset, whose
@@ -68,7 +69,7 @@ func test_closing_the_doors_revokes_their_permit() -> void:
     assert_false(_doors().get_left_open_permit(), "closing the doors revokes their permit")
 
 
-func test_a_player_is_hinted_to_close_the_doors_before_the_permits() -> void:
+func test_a_player_is_hinted_only_to_close_the_doors() -> void:
     var driver:RID = get_vehicle_driver(_vehicle)
     attach_driver_implementation(driver, MaszynaAIDriver.new())
     PlayerServer.player_take_over_vehicle(_vehicle)
@@ -83,15 +84,85 @@ func test_a_player_is_hinted_to_close_the_doors_before_the_permits() -> void:
     StationServer.dispatch_depart(_vehicle)
     # on the driver's next update, a standing driver's reaction time away at most
     if not await wait_simulated_until(
-            func() -> bool: return _hints(driver).has(MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF),
-            MaszynaAIDriver.PREPARE_TIME + TICK, "the hint to revoke the left doors' permit"):
+            func() -> bool: return _hints(driver).has(MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE),
+            MaszynaAIDriver.PREPARE_TIME + TICK, "the hint to close the left doors"):
         return
     var hints:Array[MaszynaDriverHints.Hint] = _hints(driver)
     assert_has(hints, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE, "the open doors are to be closed")
-    assert_lt(hints.find(MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE),
-            hints.find(MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF), "the doors first, then the permit")
-    assert_lt(hints.find(MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE),
-            hints.find(MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF), "the doors first, then the permits")
+    # closing the doors from the cab already revokes the permits by itself (Mover.cpp:8745-8749):
+    # a permit hint of its own, with or without a key, would only ask for the same thing twice
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF,
+            "the left doors' revoking hint is merged into closing the doors")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF,
+            "the right doors' revoking hint is merged into closing the doors")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL,
+            "the revoke-all button's hint is merged into closing the doors")
+    attach_driver_implementation(driver, null)
+
+
+func test_a_player_with_doors_closed_by_hand_is_hinted_to_close_them_all() -> void:
+    # no remote close method: the doors passengers close by hand give the permit no other way back
+    # than the dedicated button (DOOR_PERMIT_REVOKE_ALL) - this fixture has no permit presets either
+    _doors().close_method = RailVehicleDoors.CONTROLS_PASSENGER
+    _doors().apply_config()
+    var driver:RID = get_vehicle_driver(_vehicle)
+    attach_driver_implementation(driver, MaszynaAIDriver.new())
+    PlayerServer.player_take_over_vehicle(_vehicle)
+    if not await wait_simulated_until(
+            func() -> bool: return get_driver_internal_state(driver).get("trainset_vehicles", []).size() > 0,
+            TICK, "the driver's trainset checked"):
+        return
+    var cars:Array[RID] = [_vehicle]
+    StationServer.dispatch_start(_vehicle, cars)
+    StationServer.dispatch_depart(_vehicle)
+    if not await wait_simulated_until(
+            func() -> bool: return _hints(driver).has(MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL),
+            MaszynaAIDriver.PREPARE_TIME + TICK, "the hint to close all doors"):
+        return
+    var hints:Array[MaszynaDriverHints.Hint] = _hints(driver)
+    assert_has(hints, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, "the dedicated button closes all doors")
+    assert_eq(MaszynaDriverHints.TEXTS[MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL], "Close all doors",
+            "the dedicated button's hint reads as closing the doors, not revoking a permit")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF,
+            "a vehicle with no permit presets has no per-side revoking hint beside it")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF,
+            "a vehicle with no permit presets has no per-side revoking hint beside it")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE,
+            "the doors are not worked from the cab")
+    attach_driver_implementation(driver, null)
+
+
+func test_a_player_with_doors_shut_but_permit_still_granted_is_hinted_to_revoke_it() -> void:
+    # closed from the cab, but the permit stands again - a permit a deactivated cab grants
+    # (InactiveCabFlag doorpermition, Mover.cpp:2690-2694) left standing after the doors it opened
+    # are shut some other way
+    VehicleServer.vehicle_send_command(_vehicle, "doors_left", false)
+    if not await wait_simulated_until(func() -> bool: return not _doors().get_left_open(),
+            _doors().close_delay + _doors().max_shift / _doors().close_speed + TICK, "the left doors closed"):
+        return
+    VehicleServer.vehicle_send_command(_vehicle, "doors_left_permit", true)
+    if not await wait_simulated_until(func() -> bool: return _doors().get_left_open_permit(), TICK,
+            "the left doors' permit granted again"):
+        return
+    var driver:RID = get_vehicle_driver(_vehicle)
+    attach_driver_implementation(driver, MaszynaAIDriver.new())
+    PlayerServer.player_take_over_vehicle(_vehicle)
+    if not await wait_simulated_until(
+            func() -> bool: return get_driver_internal_state(driver).get("trainset_vehicles", []).size() > 0,
+            TICK, "the driver's trainset checked"):
+        return
+    var cars:Array[RID] = [_vehicle]
+    StationServer.dispatch_start(_vehicle, cars)
+    StationServer.dispatch_depart(_vehicle)
+    if not await wait_simulated_until(
+            func() -> bool: return _hints(driver).has(MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL),
+            MaszynaAIDriver.PREPARE_TIME + TICK, "the hint to close all doors"):
+        return
+    var hints:Array[MaszynaDriverHints.Hint] = _hints(driver)
+    assert_has(hints, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL,
+            "the permit still stands even though the doors it opened are shut")
+    assert_does_not_have(hints, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE,
+            "the doors are already closed - nothing left to close")
     attach_driver_implementation(driver, null)
 
 

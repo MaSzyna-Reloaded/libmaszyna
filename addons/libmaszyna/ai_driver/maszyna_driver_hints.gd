@@ -216,7 +216,7 @@ const TEXTS:Dictionary[Hint, String] = {
     Hint.DOOR_RIGHT_PERMIT_OFF: "Revoke permit to open doors",
     Hint.DOOR_LEFT_PERMIT_ON: "Grant permit to open doors",
     Hint.DOOR_LEFT_PERMIT_OFF: "Revoke permit to open doors",
-    Hint.DOOR_PERMIT_REVOKE_ALL: "Revoke all permits to open doors",
+    Hint.DOOR_PERMIT_REVOKE_ALL: "Close all doors",
     Hint.HORN_ON: "Sound the horn",
     Hint.HORN_OFF: "Switch off horn",
     Hint.CONSIST_LIGHTS_ON: "Switch on consist lights",
@@ -394,9 +394,12 @@ const CONTROLS:Dictionary = {
     Hint.CONSIST_DOOR_LOCKS_ON: [&"door_signalling_sw", CabinLogic.Gesture.PRESS],
     Hint.DEPARTURE_SIGNAL_ON: [&"departure_signal_bt", CabinLogic.Gesture.PRESS],
     Hint.DOOR_RIGHT_OPEN: [&"door_right_sw", CabinLogic.Gesture.PRESS],
-    Hint.DOOR_RIGHT_CLOSE: [&"door_right_sw", CabinLogic.Gesture.PRESS],
+    # the all-close button closes both sides under the same condition as the side toggles
+    # (_driver_controlled(), doors.gd) - its key is the one actually on a modern cab's panel,
+    # where the legacy per-side toggle has no gauge and only a keyboard fallback (reports: 36WE)
+    Hint.DOOR_RIGHT_CLOSE: [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS],
     Hint.DOOR_LEFT_OPEN: [&"door_left_sw", CabinLogic.Gesture.PRESS],
-    Hint.DOOR_LEFT_CLOSE: [&"door_left_sw", CabinLogic.Gesture.PRESS],
+    Hint.DOOR_LEFT_CLOSE: [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS],
     # a permit is revoked by closing the doors (Mover.cpp:8745-8749) - a push permit button only
     # grants (Train.cpp:7213-7220), so the revoking hints have no key; but the preset switch's,
     # where the vehicle has one (get_list())
@@ -914,6 +917,11 @@ static func get_list(situation:MaszynaDriverTraction.Situation) -> Array[Diction
                         target = index
                 var upwards:bool = target > current or (target == current and current < doors.permit_list.size() - 1)
                 control = [DOOR_PERMIT_PRESET, CabinLogic.Gesture.INCREASE if upwards else CabinLogic.Gesture.DECREASE]
+        # the all-close button closes doors that may already be shut just the same, revoking the
+        # permit with them (Mover.cpp:8745-8749) - its key, not the dedicated button's, even where
+        # the all-close button itself does nothing (operator, 2026-11-24: shown Ctrl+/ regardless)
+        if shown == Hint.DOOR_PERMIT_REVOKE_ALL:
+            control = [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS]
         # a lamp code set by the light selector, where the vehicle has one (LightsList): its key
         # towards the preset that shows it - in an active cab: an inactive one shows its red
         # markers whatever the preset (InactiveCabFlag redmarkers, SetLights(), DynObj.cpp:7324)
