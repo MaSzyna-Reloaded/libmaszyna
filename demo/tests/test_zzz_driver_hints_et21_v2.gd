@@ -27,7 +27,7 @@ func test_pantograph_air_is_hinted_before_the_pantographs() -> void:
     await key_tap(&"battery_toggle")
     await key_tap(&"cab_activation_toggle")
     await key_tap(&"brake_level_drive")
-    if not await wait_simulated_until(func() -> bool: return _index(driver, MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON) >= 0,
+    if not await wait_simulated_until(func() -> bool: return _index(driver, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON) >= 0,
             DRIVER_UPDATE_SECONDS, "the pantographs hinted up with the tank on the main reservoir"):
         return
     if not await wait_simulated_until(
@@ -40,7 +40,7 @@ func test_pantograph_air_is_hinted_before_the_pantographs() -> void:
         return
     var valve:int = _index(driver, MaszynaDriverHints.Hint.PANTOGRAPH_AIR_SOURCE_SET_AUXILIARY)
     var compressor:int = _index(driver, MaszynaDriverHints.Hint.PANTOGRAPH_COMPRESSOR_ON)
-    var raising:int = _index(driver, MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON)
+    var raising:int = _index(driver, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON)
     var texts:String = str(_texts(driver))
     assert_lt(valve, compressor, "the valve before the compressor: %s" % texts)
     assert_lt(compressor, raising, "the compressor before the pantographs: %s" % texts)
