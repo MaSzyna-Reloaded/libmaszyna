@@ -36,6 +36,7 @@ static var origin_importer = preload("res://addons/libmaszyna/scenery/maszyna_or
 static var endorigin_importer = preload("res://addons/libmaszyna/scenery/maszyna_endorigin_importer.gd").new()
 static var rotate_importer = preload("res://addons/libmaszyna/scenery/maszyna_rotate_importer.gd").new()
 static var terrain_importer = preload("res://addons/libmaszyna/scenery/maszyna_terrain_importer.gd").new()
+static var heightmap_terrain_importer = preload("res://addons/libmaszyna/scenery/maszyna_heightmap_terrain_importer.gd").new()
 static var include_importer = preload("res://addons/libmaszyna/scenery/maszyna_include_importer.gd").new()
 static var trainset_importer = preload("res://addons/libmaszyna/scenery/maszyna_trainset_importer.gd").new()
 static var endtrainset_importer = preload("res://addons/libmaszyna/scenery/maszyna_endtrainset_importer.gd").new()
@@ -44,8 +45,12 @@ static var isolated_importer = preload("res://addons/libmaszyna/scenery/maszyna_
 static var area_importer = preload("res://addons/libmaszyna/scenery/maszyna_area_importer.gd").new()
 static var lua_importer = preload("res://addons/libmaszyna/scenery/maszyna_lua_importer.gd").new()
 ## 55: ModelData.model_provider renamed rendering_backend; 56: `cross` tracks read; 57: the scenery's
-## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points())
-const CACHE_FORMAT_VERSION:int = 58
+## event actions and modes; 58: the stations of its W4 (MaszynaStations.stations_of_stop_points());
+## 59: the terrain files of `terrain` read (.txtf, .btf); 60: `heightmap_terrain` read; 61: a `model`
+## node's `scale` clause read (MaszynaNodeModelImporter.import()); 62: tracks straightened as the
+## original straightens them (maszyna_node_track_importer.gd, _straighten()); 63: a region file read
+## only where what it was made of is missing (compile(), maszyna_terrain_importer.gd)
+const CACHE_FORMAT_VERSION:int = 63
 ## The root the scenery's nodes are packed under (_pack_objects())
 const PACKED_ROOT_NAME:String = "Scenery"
 const CACHE_DIRECTORY:String = "scenery_compiled"
@@ -214,13 +219,30 @@ func compile(root:SceneryContentNode, id:String, parameters:Dictionary) -> Compi
         # its terrain goes to disk chunk by chunk as it is parsed (MaszynaTrianglesSink), its nodes
         # are packed, and the scenery is built below from that alone, as from the cache - a large
         # scenery kept whole in memory as it was parsed filled it
+        var sink_directory:String = _cache.get_file_path(cache_path.get_basename())
         var triangles_sink:MaszynaTrianglesSink = MaszynaTrianglesSink.create(
-            _cache.get_file_path(cache_path.get_basename()), MaszynaMaterialManager.is_material_translucent
+            sink_directory, MaszynaMaterialManager.is_material_translucent
         )
         var context:MaszynaImporterContext = await _parse_file_with_progress(
-                include, filename, parameters, triangles_sink)
+                include, filename, parameters, triangles_sink, "")
         if not context:
             return null
+        # The scenario's region file is the original's, written beside it on a load without one
+        # (simulationstateserializer.cpp:195) and never brought up to date with the scenery: it
+        # stands in for the terrain only where an include of terrain is missing, as in a scenery
+        # packed with the region file alone - the scenery is parsed again, the region file's
+        var region_file:String = MaszynaImporterContext.get_scenario_region_file(filename)
+        if region_file and context.misses_terrain_include():
+            for object:Variant in context.objects:
+                if object is Node:
+                    (object as Node).free()
+            # the terrain includes the region file leaves out stay what the cache depends on
+            var text_dependencies:Dictionary = context.dependencies
+            triangles_sink = MaszynaTrianglesSink.create(sink_directory, MaszynaMaterialManager.is_material_translucent)
+            context = await _parse_file_with_progress(include, filename, parameters, triangles_sink, region_file)
+            if not context:
+                return null
+            context.dependencies.merge(text_dependencies)
         SceneryLoadMeasurement.print_process(CONVERT_TAG, "parsed")
         await SceneryServer.run_on_worker(
             root, assign_signal_head_kinds.bind(context.models, context.events), SceneryServer.PARSE_PROGRESS,
@@ -317,6 +339,41 @@ func instantiate_content(root:SceneryContentNode, compiled:CompiledScenery, trac
             return
         if opened:
             root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
+    # and the terrain of a binary terrain file the same way, its shapes merged as the text's are
+    for terrain_file:String in scn.terrain_binary_files:
+        var provider:MaszynaBTFTerrainProvider = MaszynaBTFTerrainProvider.new()
+        var opened:bool = await SceneryServer.run_on_worker(
+            root, provider.open.bind(terrain_file, MaszynaMaterialManager.is_material_translucent),
+            TERRAIN_PROGRESS, SceneryContentNode.LoadStage.TERRAIN, "Registering terrain"
+        )
+        if SceneryServer.is_load_given_up(root):
+            return
+        if opened:
+            root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
+    # the heightmap terrain supplied region by region as the camera comes near, as the terrain
+    # files are, as far as its server draws it - past the draw distance; its packs are listed on a
+    # worker
+    if scn.heightmap_terrains:
+        var directory:String = scn.heightmap_terrains.back()
+        var manifest:MaszynaHeightmapTerrainManifest = MaszynaHeightmapTerrainManifest.read(directory)
+        var provider:MaszynaHeightmapTerrainProvider = MaszynaHeightmapTerrainProvider.new()
+        var opened:bool = false
+        if manifest:
+            opened = await SceneryServer.run_on_worker(
+                root, provider.open.bind(directory), TERRAIN_PROGRESS, SceneryContentNode.LoadStage.TERRAIN, "Registering terrain"
+            )
+        if SceneryServer.is_load_given_up(root):
+            return
+        if not manifest:
+            push_error("Bad scenario: heightmap terrain \"%s\" has no %s" % [directory, MaszynaHeightmapTerrainManifest.FILE_NAME])
+        elif opened:
+            var terrain:RID = MaszynaHeightmapTerrainRenderingServer.terrain_create(
+                provider.get_chunk_cells(), manifest.spacing, MaszynaHeightmapTerrainLooks.make(manifest), world_3d.scenario)
+            root.content_own([terrain] as Array[RID], MaszynaHeightmapTerrainRenderingServer.terrain_free,
+                MaszynaHeightmapTerrainRenderingServer.terrain_set_scenario)
+            provider.set_terrain(terrain)
+            provider.set_range(MaszynaHeightmapTerrainRenderingServer.terrain_get_range(terrain))
+            root._provider_rids.append(SceneryStreamingServer.provider_register(provider, world_3d.scenario))
     print("[SceneryMemory] events %d, terrain chunks %d" % [scn.events.size(), scn.triangle_chunks.size()])
 
 
@@ -396,6 +453,8 @@ static func _compile_scenery(
     compiled.trainsets = context.trainsets
     compiled.scripts = context.scripts
     compiled.region_files = context.region_files
+    compiled.terrain_binary_files = context.terrain_binary_files
+    compiled.heightmap_terrains = context.heightmap_terrains
     # a list of its stations (SceneryServer.station_list()), of its passenger stop indicators
     compiled.stations = MaszynaStations.stations_of_stop_points(context.events, context.memcells)
     return compiled
@@ -563,6 +622,8 @@ func parse_subscene_task(
         cached.lines.assign(compiled.lines)
         cached.trainsets.assign(compiled.trainsets)
         cached.region_files.assign(compiled.region_files)
+        cached.terrain_binary_files.assign(compiled.terrain_binary_files)
+        cached.heightmap_terrains.assign(compiled.heightmap_terrains)
         cached.join_duplicated_events = compiled.join_duplicated_events
         cached.hidden_events = compiled.hidden_events
         for chunk_path:String in compiled.triangle_chunk_paths:
@@ -612,9 +673,10 @@ func parse_subscene_task(
 
 ## Parses root's scenery on WorkerTaskQueue workers (every include is a task), reporting
 ## progress as they finish, at most once per SceneryServer.FRAME_BUDGET_MSEC: finished tasks / tasks submitted
-## so far.
+## so far. A region_file is the scenario's terrain from the start (MaszynaImporterContext.load_binary_terrain()).
 func _parse_file_with_progress(
-    root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:MaszynaTrianglesSink
+    root:MaszynaIncludeNode, filename:String, parameters:Dictionary, triangles_sink:MaszynaTrianglesSink,
+    region_file:String
 ) -> MaszynaImporterContext:
     var root_context := MaszynaImporterContext.new()
     root_context.rotate = root.context_rotate
@@ -623,7 +685,8 @@ func _parse_file_with_progress(
     var queue := WorkerTaskQueue.new()
     SceneryServer.queue_add(queue)
     # the scenario's region file first: what is parsed after it depends on whether it is there
-    root_context.load_scenario_binary_terrain(filename)
+    if region_file:
+        root_context.load_binary_terrain(region_file)
     var task_id:int = queue.submit(parse_file_task.bind(filename, parameters, root_context.get_state(), queue))
     # every include is a task submitted while parsing, so the total grows with the parse; the bar
     # does not go back when it does
@@ -694,6 +757,7 @@ func open_parser(filename: String, parameters: Dictionary, context: MaszynaImpor
     parser.register_handler("endorigin", _make_importer_callback(endorigin_importer, context))
     parser.register_handler("rotate", _make_importer_callback(rotate_importer, context))
     parser.register_handler("terrain", _make_importer_callback(terrain_importer, context))
+    parser.register_handler("heightmap_terrain", _make_importer_callback(heightmap_terrain_importer, context))
     parser.register_handler("include", _make_importer_callback(include_importer, context))
     parser.register_handler("trainset", _make_importer_callback(trainset_importer, context))
     parser.register_handler("endtrainset", _make_importer_callback(endtrainset_importer, context))
@@ -705,7 +769,7 @@ func open_parser(filename: String, parameters: Dictionary, context: MaszynaImpor
 
 
 func _close_parser(parser:MaszynaParser, filename:String, context:MaszynaImporterContext) -> void:
-    for token in ["sky", "atmo", "config", "node", "event", "origin", "endorigin", "rotate", "terrain", "include", "trainset", "endtrainset", "firstinit", "isolated", "area", "lua"]:
+    for token in ["sky", "atmo", "config", "node", "event", "origin", "endorigin", "rotate", "terrain", "heightmap_terrain", "include", "trainset", "endtrainset", "firstinit", "isolated", "area", "lua"]:
         parser.unregister_handler(token)
     context.end_file(_get_source_path(filename))
 

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainProvider" inherits="SceneryStreamingProvider" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Supplies the original's heightmap terrain region by region from its pack files.
+	</brief_description>
+	<description>
+		A streaming provider of a heightmap terrain a scenery names ([code]heightmap_terrain[/code]): its pack files (.tch, [MaszynaHeightmapTerrainPack]) listed as it opens, and the regions of 1 km - the streaming's cells - supplied as the camera comes near as [MaszynaHeightmapTerrainRegion]s ([constant SceneryStreamingProvider.CONTENT_HEIGHTMAP]), their chunks read on the streaming worker. [MaszynaHeightmapTerrainRenderingServer] takes them by the terrain they name.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_chunk_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				The chunks its pack files hold.
+			</description>
+		</method>
+		<method name="get_terrain" qualifiers="const">
+			<return type="RID" />
+			<description>
+				The terrain its regions name, set with [method set_terrain].
+			</description>
+		</method>
+		<method name="open">
+			<return type="bool" />
+			<param index="0" name="directory" type="String" />
+			<description>
+				Opens the pack files of [param directory] - [code]terrain/&lt;name&gt;/[/code] of the game. Returns [code]false[/code], with an error, when it holds none.
+			</description>
+		</method>
+		<method name="set_range">
+			<return type="void" />
+			<param index="0" name="range" type="float" />
+			<description>
+				How far from the camera its regions are wanted [lb]m[rb] ([method SceneryStreamingProvider.get_range]) - as far as its terrain draws them, [method MaszynaHeightmapTerrainRenderingServer.terrain_get_range], past the draw distance. Given before the provider is registered.
+			</description>
+		</method>
+		<method name="set_terrain">
+			<return type="void" />
+			<param index="0" name="terrain" type="RID" />
+			<description>
+				The terrain its regions are drawn in ([method MaszynaHeightmapTerrainRenderingServer.terrain_create]), given before the provider is registered.
+			</description>
+		</method>
+	</methods>
+</class>

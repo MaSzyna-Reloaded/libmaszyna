@@ -4868,3 +4868,53 @@ lighting or the trainset.
   members release their references by themselves.
 * **Rule:** a destructor never clears a `Dictionary` or an `Array` member - it empties every copy
   handed out; without a reference cycle there is nothing to clear.
+
+
+## 2026-11-17 The scenery that ran out of shader slots
+
+* **Symptom:**
+  - #442: on `wrzosy_rpj69110.scn` the log said "Too many instances using shader instance
+    variables" while the vehicles were built, and then 46 thousand times
+    `Condition "global_shader_uniforms.instance_buffer_pos.has(p_instance)" is true`
+    (`material_storage.cpp`, `global_shader_parameters_instance_allocate`); the log grew to 12 MB.
+* **What proved it:**
+  - #422 put `instance uniform float reloaded_depth_behind` in `draw_behind.gdshaderinc`, included
+    by every material type. Godot reserves 16 slots of its global shader buffer for every geometry
+    instance whose material declares an instance uniform (`InstanceUniforms::materials_finish()`),
+    whether it is set or not; the 65536 slots of
+    `rendering/limits/global_shader_variables/buffer_size` hold about 4000 such blocks, and every
+    scenery submodel took one.
+  - A failed reservation is kept with the position -1 (`instance_buffer_pos[p_instance] = pos;
+    //save anyway`), so every later update of the instance asks again and fails on the kept entry.
+    The meshes left without a block read no value - the low-poly interiors built after the buffer
+    ran out flickered through the body again.
+* **Fix:** the vehicle rendering sets the low-poly interior's model up as one
+  (`ModelRenderingServer.instance_set_options()`, `low_poly_interior`); `MaszynaMaterialManager`
+  gives its materials an option of their own and the factory sets the plain uniform
+  `draw_behind_depth` on them. No material type declares an instance uniform.
+* **Rule:** an `instance uniform` only in a shader drawn by few meshes, counted; a value some meshes
+  of a material need is an option of the material. Reviewed after every plan and before every
+  commit (`.claude/skills/precommit-code-review`).
+
+
+## 2026-11-22 The trees of Bałtyk drawn twice
+
+* **Symptom:**
+  - after the data pack of 2026-11-16, trees and grass of `baltyk_skm1.scn` flickered when the
+    camera turned; in the editor a model hidden (its sector, or one tree) left a tree standing
+    in its place that could not be clicked.
+* **What proved it:**
+  - the streaming held every model once (no two models of one name within 2 m at 13 825 spots);
+    the second tree was terrain. `scenery/baltyk_skm1.sbt` (2026-09-23, not a file of the pack) held
+    shapes in 42 textures that the pack of 2026-11-16 uses only as skins of the new `tree.t3d` and
+    `grass.t3d` models of `nowa_roslinnosc*.scm`; 9080 of its 9812 new tree models had a shape of
+    their own texture at their foot, all 386 around the flickering spots. Two copies of one plant
+    fought over the depth.
+  - the original writes `<scenario>.sbt` on a load without one (simulationstateserializer.cpp:195)
+    and takes it by its header alone (`basic_region::is_scene()`, scene.cpp:1173): it never brings
+    it up to date with the scenery, so it showed the same.
+* **Fix:** `<scenario>.sbt` is the scenario's terrain only where an include of terrain
+  (`_ter.scm`) is missing - the scenery is parsed again, the region file's
+  (`MaszynaSceneryProvider.compile()`); `terrain x.sbt` only where `x.scm` is missing
+  (`maszyna_terrain_importer.gd`).
+* **Rule:** a region file is read only where what it was made of is missing.

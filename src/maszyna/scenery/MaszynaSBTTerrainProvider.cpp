@@ -1,5 +1,6 @@
 #include "maszyna/scenery/MaszynaSBTTerrainProvider.hpp"
 
+#include "maszyna/scenery/MaszynaTerrainShapes.hpp"
 #include "maszyna/scenery/MaszynaTrianglesSink.hpp"
 #include "scenery/SceneryLinesGeometry.hpp"
 
@@ -19,79 +20,6 @@ namespace godot {
         /// without it
         constexpr const char *TEXTURES_PREFIX = "textures/";
 
-        /// The little-endian values of sn_utils (scene/sn_utils.cpp) read out of one section
-        class SectionCursor {
-                const PackedByteArray &data;
-                int64_t position = 0;
-
-                /// The offset of the next p_bytes, marking an overrun when they are not there
-                int64_t take(const int64_t p_bytes) {
-                    if (overrun || position + p_bytes > data.size()) {
-                        overrun = true;
-                        return -1;
-                    }
-                    const int64_t offset = position;
-                    position += p_bytes;
-                    return offset;
-                }
-
-            public:
-                bool overrun = false;
-
-                explicit SectionCursor(const PackedByteArray &p_data) : data(p_data) {}
-
-                void skip(const int64_t p_bytes) {
-                    take(p_bytes);
-                }
-
-                uint32_t u32() {
-                    const int64_t offset = take(sizeof(uint32_t));
-                    return offset < 0 ? 0 : static_cast<uint32_t>(data.decode_u32(offset));
-                }
-
-                float f32() {
-                    const int64_t offset = take(sizeof(float));
-                    return offset < 0 ? 0.0F : static_cast<float>(data.decode_float(offset));
-                }
-
-                double f64() {
-                    const int64_t offset = take(sizeof(double));
-                    return offset < 0 ? 0.0 : data.decode_double(offset);
-                }
-
-                /// sn_utils::d_bool(): a uint16 that is 1
-                bool boolean() {
-                    const int64_t offset = take(sizeof(uint16_t));
-                    return offset >= 0 && data.decode_u16(offset) == 1;
-                }
-
-                /// sn_utils::d_str(): bytes up to a zero, as the scenery parser reads them
-                String string() {
-                    String text;
-                    while (true) {
-                        const int64_t offset = take(1);
-                        if (offset < 0 || data[offset] == 0) {
-                            return text;
-                        }
-                        text += static_cast<char32_t>(data[offset]);
-                    }
-                }
-
-                Vector3 dvec3() {
-                    const double x = f64();
-                    const double y = f64();
-                    const double z = f64();
-                    return {x, y, z};
-                }
-
-                Vector3 vec3() {
-                    const float x = f32();
-                    const float y = f32();
-                    const float z = f32();
-                    return {x, y, z};
-                }
-        };
-
         /// bounding_area::serialize(): its centre and radius (scenenode.cpp:41)
         constexpr int64_t AREA_BYTES = (3 * sizeof(double)) + sizeof(float);
         /// lighting_data::serialize(): diffuse, ambient and specular vec4 (scenenode.cpp:21)
@@ -100,49 +28,10 @@ namespace godot {
         constexpr int64_t VERTEX_BYTES = 8 * sizeof(float);
         /// vertex_userdata::serialize(): one vec4 (geometrybank.cpp:460)
         constexpr int64_t USERDATA_BYTES = 4 * sizeof(float);
-        /// A visibility range squared at this or above is no limit (shape_node::import(),
-        /// scenenode.cpp:157)
-        constexpr double NO_RANGE_SQUARED = std::numeric_limits<double>::max();
-        /// The range a "triangles" node without a limit gives the sink
-        constexpr float NO_RANGE = -1.0F;
-
     } // namespace
 
-    /// The vectors of a chunk of terrain, relative to its origin, as floats, and its groups: each
-    /// one shape or one texture of a section (MaszynaTrianglesChunkGeometry)
-    struct ShapeGeometry {
-            std::vector<float> vertices;
-            std::vector<float> normals;
-            std::vector<float> uvs;
-            PackedVector3Array group_centres;
-            PackedInt32Array group_ends;
-    };
-
-    struct ShapeVertex {
-            Vector3 position;
-            Vector3 normal;
-            Vector2 uv;
-    };
-
-    /// One shape as the file holds it, in world space
-    struct Shape {
-            String texture;
-            float range_min = 0.0F;
-            float range_max = 0.0F;
-            /// What the original measures the shape's range from (bounding_area, scenenode.cpp:41)
-            Vector3 centre;
-            std::vector<ShapeVertex> vertices;
-    };
-
-    static PackedFloat32Array to_packed(const std::vector<float> &p_values) {
-        PackedFloat32Array packed;
-        packed.resize(static_cast<int64_t>(p_values.size()));
-        std::copy(p_values.begin(), p_values.end(), packed.ptrw());
-        return packed;
-    }
-
     /// shape_node::deserialize() (scenenode.cpp:139, :99); false for a shape not drawn
-    static bool read_shape(SectionCursor &p_cursor, Shape &p_shape) {
+    static bool read_shape(MaszynaSectionCursor &p_cursor, MaszynaTerrainShape &p_shape) {
         p_cursor.string(); // name
         p_shape.centre = p_cursor.dvec3();
         p_cursor.f32(); // radius
@@ -158,7 +47,7 @@ namespace godot {
         p_shape.vertices.clear();
         p_shape.vertices.reserve(vertex_count);
         for (uint32_t index = 0; index < vertex_count && !p_cursor.overrun; index++) {
-            ShapeVertex vertex;
+            MaszynaTerrainVertex vertex;
             vertex.position = origin + p_cursor.vec3();
             vertex.normal = p_cursor.vec3();
             const float u = p_cursor.f32();
@@ -173,56 +62,12 @@ namespace godot {
             return false;
         }
         p_shape.texture = p_shape.texture.trim_prefix(TEXTURES_PREFIX);
-        p_shape.range_min = static_cast<float>(Math::sqrt(range_squared_min));
-        p_shape.range_max =
-                range_squared_max >= NO_RANGE_SQUARED ? NO_RANGE : static_cast<float>(Math::sqrt(range_squared_max));
+        p_shape.set_ranges_squared(range_squared_min, range_squared_max);
         return true;
     }
 
-    /// The shape's triangles relative to p_origin, turned around as MaszynaTrianglesImporter turns a
-    /// "triangles" node
-    static void append_shape(ShapeGeometry &p_geometry, const Shape &p_shape, const Vector3 &p_origin) {
-        for (auto vertex = p_shape.vertices.rbegin(); vertex != p_shape.vertices.rend(); ++vertex) {
-            const Vector3 position = vertex->position - p_origin;
-            p_geometry.vertices.insert(
-                    p_geometry.vertices.end(),
-                    {static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)});
-            p_geometry.normals.insert(
-                    p_geometry.normals.end(),
-                    {static_cast<float>(vertex->normal.x), static_cast<float>(vertex->normal.y),
-                     static_cast<float>(vertex->normal.z)});
-            p_geometry.uvs.insert(
-                    p_geometry.uvs.end(), {static_cast<float>(vertex->uv.x), static_cast<float>(vertex->uv.y)});
-        }
-    }
-
-    static Ref<MaszynaTrianglesChunkGeometry> to_geometry(
-            const String &p_texture, const Vector3 &p_origin, const float p_range_min, const float p_range_max,
-            const ShapeGeometry &p_geometry) {
-        Ref<MaszynaTrianglesChunkGeometry> geometry;
-        geometry.instantiate();
-        geometry->set_texture(p_texture);
-        geometry->set_origin(p_origin);
-        geometry->set_range_min(p_range_min);
-        geometry->set_range_max(p_range_max);
-        geometry->set_vertices(to_packed(p_geometry.vertices));
-        geometry->set_normals(to_packed(p_geometry.normals));
-        geometry->set_uvs(to_packed(p_geometry.uvs));
-        geometry->set_group_centres(p_geometry.group_centres);
-        geometry->set_group_ends(p_geometry.group_ends);
-        return geometry;
-    }
-
-    /// The shape appended as a group of its own, its centre relative to p_origin
-    static void append_group(ShapeGeometry &p_geometry, const Shape &p_shape, const Vector3 &p_origin) {
-        append_shape(p_geometry, p_shape, p_origin);
-        p_geometry.group_centres.push_back(p_shape.centre - p_origin);
-        p_geometry.group_ends.push_back(
-                static_cast<int32_t>(p_geometry.vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
-    }
-
     /// shape_node::deserialize() (scenenode.cpp:139, :99) read past - what read_shape() reads
-    static void skip_shape(SectionCursor &p_cursor) {
+    static void skip_shape(MaszynaSectionCursor &p_cursor) {
         p_cursor.string(); // name
         // area, range min and max, visible, translucent
         p_cursor.skip(AREA_BYTES + (2 * sizeof(double)) + (2 * sizeof(uint16_t)));
@@ -233,7 +78,7 @@ namespace godot {
     }
 
     /// lines_node::deserialize() (scenenode.cpp:550, :513) read past, by the terrain
-    static void skip_lines(SectionCursor &p_cursor) {
+    static void skip_lines(MaszynaSectionCursor &p_cursor) {
         p_cursor.string(); // name
         // area, range min and max, visible, line width, lighting, origin
         p_cursor.skip(
@@ -244,7 +89,7 @@ namespace godot {
 
     /// lines_node::deserialize() (scenenode.cpp:550, :513): a node as the original merged it in its
     /// cell, its lines added to p_geometry; a node not drawn is left out
-    static void read_lines(SectionCursor &p_cursor, const Ref<SceneryLinesGeometry> &p_geometry) {
+    static void read_lines(MaszynaSectionCursor &p_cursor, const Ref<SceneryLinesGeometry> &p_geometry) {
         p_cursor.string();         // name
         p_cursor.skip(AREA_BYTES); // the points give it again
         const double range_squared_min = p_cursor.f64();
@@ -267,12 +112,14 @@ namespace godot {
         }
         p_geometry->add_lines(
                 points, Color(red, green, blue), width, static_cast<float>(Math::sqrt(range_squared_min)),
-                range_squared_max >= NO_RANGE_SQUARED ? 0.0F : static_cast<float>(Math::sqrt(range_squared_max)));
+                range_squared_max >= MaszynaTerrainShape::NO_RANGE_SQUARED
+                        ? 0.0F
+                        : static_cast<float>(Math::sqrt(range_squared_max)));
     }
 
     /// The lines of a section's cells (basic_cell::deserialize(), scene.cpp:227), past the shapes:
     /// one geometry around the section's centre
-    static Array read_section_lines(SectionCursor &p_cursor, const Vector2i &p_cell) {
+    static Array read_section_lines(MaszynaSectionCursor &p_cursor, const Vector2i &p_cell) {
         Ref<SceneryLinesGeometry> geometry;
         geometry.instantiate();
         geometry->set_origin(MaszynaTrianglesSink::cell_get_origin(p_cell));
@@ -396,14 +243,14 @@ namespace godot {
             file->seek(section->offset);
             data = file->get_buffer(section->size);
         }
-        SectionCursor cursor(data);
+        MaszynaSectionCursor cursor(data);
         if (p_kind == CONTENT_LINES) {
             return read_section_lines(cursor, p_cell);
         }
         const Vector3 section_origin = MaszynaTrianglesSink::cell_get_origin(p_cell);
         std::vector<String> section_textures;
-        HashMap<String, ShapeGeometry> section_geometries;
-        Shape shape;
+        HashMap<String, MaszynaTerrainGeometry> section_geometries;
+        MaszynaTerrainShape shape;
         cursor.skip(AREA_BYTES);
         for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
             if (!read_shape(cursor, shape)) {
@@ -412,15 +259,15 @@ namespace godot {
             if (!section_geometries.has(shape.texture)) {
                 section_textures.push_back(shape.texture);
             }
-            append_shape(section_geometries[shape.texture], shape, section_origin);
+            section_geometries[shape.texture].append_shape(shape, section_origin);
         }
         for (int cell = 0; cell < SECTION_CELL_COUNT && !cursor.overrun; cell++) {
             // a cell's shapes by texture and range - one chunk each - around the cell's centre
             const Vector3 cell_origin = cursor.dvec3();
             cursor.f32(); // radius
             std::vector<String> cell_keys;
-            HashMap<String, ShapeGeometry> cell_geometries;
-            HashMap<String, Shape> cell_shapes; // the texture and range of each key, without its vertices
+            HashMap<String, MaszynaTerrainGeometry> cell_geometries;
+            HashMap<String, MaszynaTerrainShape> cell_shapes; // the texture and range of each key, without its vertices
             // opaque shapes, then translucent ones
             for (int kind = 0; kind < 2; kind++) {
                 for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
@@ -431,33 +278,31 @@ namespace godot {
                             shape.texture + "|" + String::num(shape.range_min) + "|" + String::num(shape.range_max);
                     if (!cell_geometries.has(key)) {
                         cell_keys.push_back(key);
-                        Shape &described = cell_shapes[key];
+                        MaszynaTerrainShape &described = cell_shapes[key];
                         described.texture = shape.texture;
                         described.range_min = shape.range_min;
                         described.range_max = shape.range_max;
                     }
-                    append_group(cell_geometries[key], shape, cell_origin);
+                    cell_geometries[key].append_group(shape, cell_origin);
                 }
             }
             for (uint32_t count = cursor.u32(); count > 0 && !cursor.overrun; count--) {
                 skip_lines(cursor);
             }
             for (const String &key: cell_keys) {
-                const Shape &first = cell_shapes[key];
+                const MaszynaTerrainShape &first = cell_shapes[key];
                 geometries.append_array(
-                        to_geometry(first.texture, cell_origin, first.range_min, first.range_max, cell_geometries[key])
+                        cell_geometries[key]
+                                .to_chunk_geometry(first.texture, cell_origin, first.range_min, first.range_max)
                                 ->split());
             }
         }
         ERR_FAIL_COND_V_MSG(cursor.overrun, Array(), "Bad file: a region section ends early");
         for (const String &texture: section_textures) {
-            ShapeGeometry &geometry = section_geometries[texture];
-            // a section's texture is one group, drawn whatever its range (Render(shape, true),
-            // opengl33renderer.cpp:2495)
-            geometry.group_centres.push_back(Vector3());
-            geometry.group_ends.push_back(
-                    static_cast<int32_t>(geometry.vertices.size() / MaszynaTrianglesChunkGeometry::VECTOR3_FLOATS));
-            geometries.append_array(to_geometry(texture, section_origin, 0.0F, NO_RANGE, geometry)->split());
+            MaszynaTerrainGeometry &geometry = section_geometries[texture];
+            geometry.close_group();
+            geometries.append_array(
+                    geometry.to_chunk_geometry(texture, section_origin, 0.0F, MaszynaTerrainShape::NO_RANGE)->split());
         }
         return geometries;
     }

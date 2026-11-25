@@ -7,21 +7,21 @@
 #endif
 
 uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform int transparency = 0;
 uniform float alpha_scissor_threshold : hint_range(0.0, 1.0) = 0.5;
 uniform ivec2 albedo_texture_size;
 uniform float point_size : hint_range(0.1, 128.0, 0.1);
 
 uniform float roughness : hint_range(0.0, 1.0);
-uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 metallic_texture_channel;
-uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap_anisotropic, repeat_enable;
 
 uniform float specular : hint_range(0.0, 1.0, 0.01);
 uniform float metallic : hint_range(0.0, 1.0, 0.01);
 
-uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float normal_scale : hint_range(-16.0, 16.0);
 
 uniform bool emission_enabled = false;
@@ -45,7 +45,7 @@ uniform vec3 uv2_offset;
 #endif
 
 void vertex() {
-	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, MAIN_CAM_INV_VIEW_MATRIX[3].xyz, draw_behind_depth);
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 }
 

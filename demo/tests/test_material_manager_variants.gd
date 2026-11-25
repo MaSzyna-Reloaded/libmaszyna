@@ -6,6 +6,15 @@ const NONTRANSPARENT_MATERIAL_NAME = "nontransparent_manager"
 const NORMALMAP_SHADER_PATH = "res://addons/libmaszyna/materials/types/normalmap.gdshader"
 const SHADOWLESS_SHADER_PATH = "res://addons/libmaszyna/materials/types/shadowlessnormalmap.gdshader"
 const WATER_SHADER_PATH = "res://addons/libmaszyna/materials/types/water.gdshader"
+const TYPES_DIR: String = "res://addons/libmaszyna/materials/types"
+## The code of a material type, included by its shader and its variants
+const TYPE_CODE_EXTENSION: String = "gdshaderinc"
+const SAMPLER_DECLARATION: String = "uniform sampler2D"
+const MIPMAP_FILTER: String = "filter_linear_mipmap"
+const ANISOTROPIC_FILTER: String = "filter_linear_mipmap_anisotropic"
+const SCREEN_TEXTURE_HINT: String = "hint_screen_texture"
+## The windscreen is seen square-on from the cab
+const SQUARE_ON_TYPE_CODE: String = "rain_windscreen.gdshaderinc"
 
 var _previous_game_dir: String = ""
 var _previous_season: SimulationServer.Season
@@ -44,6 +53,14 @@ func test_variant_inherits_default_shader_when_season_has_no_shader() -> void:
 
     assert_eq(variant.shader, "normalmap")
     assert_eq(variant.get_texture_path("tex1"), "spring_diffuse")
+
+
+## "texture1_variants: [ a b ]" names slot 1 the same as "texture1: a" does - the renderer always
+## looks the slot up as "tex1" (maszyna_material_manager.gd), random set or not.
+func test_numbered_texture_variants_resolve_to_the_same_slot_as_a_plain_texture() -> void:
+    var material: MaszynaMaterial = MaszynaMaterialManager.load_material("", "numbered_variants_manager")
+
+    assert_eq(material.default.get_texture_path("tex1"), "random_diffuse")
 
 
 func test_weather_shader_overrides_season_shader() -> void:
@@ -374,3 +391,19 @@ func test_keys_with_capitals_are_read_in_lower_case() -> void:
     assert_almost_eq(mmat.opacity, 0.5, 0.00001)
     assert_true(mmat.variants.has(MaszynaMaterial.SEASON_WINTER_KEY), "the winter block")
     assert_eq(mmat.variants[MaszynaMaterial.SEASON_WINTER_KEY].get_texture_path("diffuse"), "winter_diffuse")
+
+
+## A road or a track bed seen along its length blurred into a smear a short way ahead (#449): the
+## material types' textures are filtered anisotropically, as the original filters every texture
+## (Texture.cpp:1640)
+func test_material_types_filter_their_textures_anisotropically() -> void:
+    var samplers: int = 0
+    for file_name: String in DirAccess.get_files_at(TYPES_DIR):
+        if not file_name.get_extension() == TYPE_CODE_EXTENSION or file_name == SQUARE_ON_TYPE_CODE:
+            continue
+        for line: String in FileAccess.get_file_as_string(TYPES_DIR.path_join(file_name)).split("\n"):
+            if not line.begins_with(SAMPLER_DECLARATION) or not line.contains(MIPMAP_FILTER) or line.contains(SCREEN_TEXTURE_HINT):
+                continue
+            samplers += 1
+            assert_true(line.contains(ANISOTROPIC_FILTER), "%s: %s" % [file_name, line])
+    assert_gt(samplers, 0, "the material types sample mipmapped textures")

@@ -1,6 +1,7 @@
 #include "MaszynaE3DInstanceTypes.hpp"
 #include "MaszynaE3DLightFactory.hpp"
 #include "MaszynaE3DNodesBackend.hpp"
+#include "rendering/ModelRenderingServer.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -277,6 +278,11 @@ namespace godot {
                 mesh_instance->set_mesh(p_submodel->get_mesh());
                 mesh_instance->set_visibility_range_begin(p_submodel->get_visibility_range_begin());
                 mesh_instance->set_visibility_range_end(p_submodel->get_visibility_range_end());
+                // a vehicle moves: baked into SDFGI's distance field where a cascade found it, it
+                // shades itself black after it has moved on - it takes the GI without making it
+                if (p_instance.instance_kind == ModelRenderingServer::INSTANCE_KIND_DYNAMIC) {
+                    mesh_instance->set_gi_mode(GeometryInstance3D::GI_MODE_DYNAMIC);
+                }
                 node = mesh_instance;
                 break;
             }

@@ -3,7 +3,7 @@
 #include <godot_cpp/core/object.hpp>
 
 namespace godot {
-    /// `p_callable(submodel, data_path, skins, translucency, max_texture_size) -> Material`,
+    /// `p_callable(submodel, data_path, skins, translucency, max_texture_size, low_poly_interior) -> Material`,
     /// see MaszynaMaterialManager.get_submodel_material()
     void MaszynaE3DMaterialResolver::set_callable(const Callable &p_callable) {
         callable = p_callable;
@@ -21,7 +21,8 @@ namespace godot {
         }
         const String key = String::num_uint64(static_cast<int64_t>(p_submodel->get_instance_id())) + "|" +
                            p_instance.data_path + "|" + String("|").join(p_instance.skins) + "|" +
-                           String::num_int64(p_translucency) + "|" + String::num_int64(p_instance.max_texture_size);
+                           String::num_int64(p_translucency) + "|" + String::num_int64(p_instance.max_texture_size) +
+                           "|" + String::num_int64(static_cast<int64_t>(p_instance.low_poly_interior));
         const HashMap<String, ObjectID>::ConstIterator cached = materials.find(key);
         if (cached != materials.end()) {
             Material *material = Object::cast_to<Material>(ObjectDB::get_instance(cached->value));
@@ -30,7 +31,8 @@ namespace godot {
             }
         }
         const Ref<Material> material = callable.call(
-                Ref(p_submodel), p_instance.data_path, p_instance.skins, p_translucency, p_instance.max_texture_size);
+                Ref(p_submodel), p_instance.data_path, p_instance.skins, p_translucency, p_instance.max_texture_size,
+                p_instance.low_poly_interior);
         if (material.is_valid()) {
             materials[key] = material->get_instance_id();
         }

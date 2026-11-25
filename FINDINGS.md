@@ -266,6 +266,9 @@ code belongs to the game's `FINDINGS.md`.
 * A scenery shape's range applies only where the original tests it: a large opaque shape is drawn
   with its section whatever its range, and a ranged one is measured from its 25 m group's centre,
   never from a 1 km mesh. *(10-12 Całkowo's ground missing under its houses)*
+* A region file (.sbt) is the original's cache of a scenery's shapes, written once and never
+  checked against the text: it is read only where what it was made of is missing. *(11-22 the
+  trees of Bałtyk drawn twice)*
 * What the original reads in lower case is an id, not what the player reads: a vehicle's
   `vehicle_id` (lower case) finds it, its name as the `.scn` writes it (`vehicle_get_name()`) is
   shown - never one word for both. *(10-12 the HUD showed "tem2-234" over "TEM2-234")*
@@ -499,6 +502,11 @@ code belongs to the game's `FINDINGS.md`.
   never in the game's: its fatal error is `abort()` on a stderr nobody sees, and Godot's crash
   handler covers only the main thread. The host's stderr and exit code go to the log.
   *(10-09 Python screens ended the game without a trace)*
+
+* An `instance uniform` reserves a block of Godot's global shader buffer for every mesh drawn with
+  its shader, set or not - about 4000 blocks in all: never in a shader the scenery draws; a value
+  some meshes need is an option of their material. *(11-17 the scenery that ran out of shader
+  slots)*
 
 ## Threads and teardown
 * A worker never takes an object back from a `WeakRef` the main thread may be letting go: what

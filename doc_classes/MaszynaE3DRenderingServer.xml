@@ -246,7 +246,7 @@
 		<method name="light_get_statistics" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
-				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
+				[code]total[/code], [code]lit[/code], [code]spot[/code], [code]omni[/code], [code]area[/code] and [code]synthesized[/code] counts of the lights, for the scenery streaming debug panel.
 			</description>
 		</method>
 		<method name="material_set_preloader">
@@ -260,7 +260,7 @@
 			<return type="void" />
 			<param index="0" name="material_resolver" type="Callable" />
 			<description>
-				Called as [code]material_resolver(submodel: MaszynaE3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int) -&gt; Material[/code] for every rendered submodel. Set by [code]MaszynaMaterialManager[/code].
+				Called as [code]material_resolver(submodel: MaszynaE3DSubModel, data_path: String, skins: PackedStringArray, translucency: Translucency, max_texture_size: int, low_poly_interior: bool) -&gt; Material[/code] for every rendered submodel. Set by [code]MaszynaMaterialManager[/code].
 			</description>
 		</method>
 		<method name="model_set_loader">

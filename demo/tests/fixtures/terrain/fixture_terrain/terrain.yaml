@@ -1,0 +1,9 @@
+# MaSzyna heightmap terrain; the chunks are in the .tch files next to this one
+version: 1
+compress: true
+spacing: 5
+water_material: water
+layers:
+  - grass
+  - "@fixture_quoted"
+  - materials/fixture_path

@@ -5,10 +5,10 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <array>
+#include <utility>
 
 namespace godot {
     namespace {
-        constexpr const char *STREET_LAMP_PREFIX = "latarnia";
         /// The halo billboards around the lamp head, and the lit patch on the ground
         constexpr const char *HALO_MATERIAL = "poswiata";
         constexpr const char *POOL_MATERIAL_1 = "light1";
@@ -23,6 +23,12 @@ namespace godot {
                 float pool_extent = 0.0;
                 Color color = Color(1.0, 1.0, 1.0);
                 bool has_pool = false;
+                /// A shelter's lit patch, drawn in the halo's material (make_street_lamps())
+                AABB lit_patch;
+                bool has_lit_patch = false;
+                /// The top of the lit geometry, halos and patches aside: a shelter's lamps
+                float lit_top = 0.0;
+                bool has_lit_geometry = false;
         };
     } // namespace
 
@@ -40,16 +46,26 @@ namespace godot {
                 continue;
             }
             const Transform3D transform = p_parent_transform * submodel->get_transform();
+            const bool pool =
+                    has_material(submodel.ptr(), POOL_MATERIAL_1) || has_material(submodel.ptr(), POOL_MATERIAL_2);
             if (has_material(submodel.ptr(), HALO_MATERIAL)) {
-                // several halo billboards sit at each head; one light per distinct position
-                if (!p_anchors.heads.has(transform.origin)) {
+                const AABB box = submodel->get_mesh().is_valid() ? transform.xform(submodel->get_mesh()->get_aabb())
+                                                                 : AABB(transform.origin, Vector3());
+                if (MAX(box.size.x, box.size.z) > MaszynaE3DLightFactory::LIT_PATCH_MIN_WIDTH) {
+                    p_anchors.lit_patch = box;
+                    p_anchors.has_lit_patch = true;
+                } else if (!p_anchors.heads.has(transform.origin)) {
+                    // several halo billboards sit at each head; one light per distinct position
                     p_anchors.heads.push_back(transform.origin);
                 }
                 p_anchors.color = submodel->get_diffuse_color();
+            } else if (!pool && submodel->get_mesh().is_valid()) {
+                p_anchors.lit_top =
+                        MAX(p_anchors.lit_top,
+                            static_cast<float>(transform.xform(submodel->get_mesh()->get_aabb()).get_end().y));
+                p_anchors.has_lit_geometry = true;
             }
-            if (!p_anchors.has_pool &&
-                (has_material(submodel.ptr(), POOL_MATERIAL_1) || has_material(submodel.ptr(), POOL_MATERIAL_2)) &&
-                submodel->get_mesh().is_valid()) {
+            if (!p_anchors.has_pool && pool && submodel->get_mesh().is_valid()) {
                 p_anchors.pool_extent = static_cast<float>(submodel->get_mesh()->get_aabb().size.x * 0.5f);
                 p_anchors.has_pool = p_anchors.pool_extent > 0.0f;
             }
@@ -155,23 +171,23 @@ namespace godot {
                 energy = MAX(energy, placement.params.energy);
                 // the one light stands in for a ring of heads, so it is as wide as that ring
                 size = MAX(size, MAX(reach, placement.params.size));
-                omni = omni || placement.params.omni;
+                omni = omni || placement.params.shape == LIGHT_SHAPE_OMNI;
             }
             angle *= cone_scale;
             const Vector3 up = Math::abs(axis.y) > 0.99 ? Vector3(0, 0, -1) : Vector3(0, 1, 0);
             result.params.transform = Transform3D(Basis::looking_at(axis, up), origin);
             result.params.spot_angle = MIN(angle, MaszynaE3DLightFactory::MAX_SPOT_ANGLE);
-            result.params.omni = omni || angle > MaszynaE3DLightFactory::MAX_SPOT_ANGLE;
+            result.params.shape =
+                    omni || angle > MaszynaE3DLightFactory::MAX_SPOT_ANGLE ? LIGHT_SHAPE_OMNI : LIGHT_SHAPE_SPOT;
             result.params.range = range;
             result.params.energy = energy;
             result.params.size = size;
             merged.push_back(result);
         }
-        p_placements = merged;
+        p_placements = std::move(merged);
     }
 
-    MaszynaE3DModelLights
-    MaszynaE3DLightFactory::discover(const Ref<MaszynaE3DModel> &p_model, const String &p_model_filename) {
+    MaszynaE3DModelLights MaszynaE3DLightFactory::discover(const Ref<MaszynaE3DModel> &p_model) {
         MaszynaE3DModelLights model_lights;
         if (p_model.is_null()) {
             return model_lights;
@@ -213,7 +229,7 @@ namespace godot {
             return model_lights;
         }
         const bool economy = light_mode == SCENERY_LIGHTS_ECONOMY;
-        if (!model_lights.placements.is_empty() || !is_street_lamp(p_model_filename)) {
+        if (!model_lights.placements.is_empty()) {
             if (economy) {
                 merge_placements(model_lights.placements);
             }
@@ -282,7 +298,7 @@ namespace godot {
         const float outer_angle = MAX(p_submodel->get_light_angle(), 0.001f);
         const float penumbra_ratio = CLAMP((outer_angle - inner_angle) / outer_angle, 0.0f, 1.0f);
 
-        params.omni = outer_angle > MAX_SPOT_ANGLE;
+        params.shape = outer_angle > MAX_SPOT_ANGLE ? LIGHT_SHAPE_OMNI : LIGHT_SHAPE_SPOT;
         params.spot_angle = MIN(outer_angle, MAX_SPOT_ANGLE);
         params.spot_attenuation = Math::lerp(2.0f, 0.0f, penumbra_ratio);
         params.size = ProjectSettings::get_singleton()->get_setting(LIGHT_SIZE_SETTING);
@@ -343,7 +359,7 @@ namespace godot {
             MaszynaE3DModelLightPlacement placement;
             placement.light_name = INTERIOR_LIGHT_NAME;
             placement.synthesized = true;
-            placement.params.omni = true;
+            placement.params.shape = LIGHT_SHAPE_OMNI;
             placement.params.role = LIGHT_ROLE_INTERIOR;
             placement.params.transform.origin =
                     Vector3(bounds.get_center().x, bounds.get_end().y - INTERIOR_LIGHT_CEILING_OFFSET,
@@ -362,10 +378,6 @@ namespace godot {
         }
     }
 
-    bool MaszynaE3DLightFactory::is_street_lamp(const String &p_model_filename) {
-        return p_model_filename.get_file().to_lower().begins_with(STREET_LAMP_PREFIX);
-    }
-
     void MaszynaE3DLightFactory::make_street_lamps(
             MaszynaE3DSubModel *p_on_submodel, const Transform3D &p_on_transform,
             Vector<MaszynaE3DLightParams> &p_lamps) {
@@ -374,27 +386,54 @@ namespace godot {
         }
 
         StreetLampAnchors anchors;
-        collect_street_lamp_anchors(p_on_submodel->get_submodels(), p_on_transform, anchors);
-        if (anchors.heads.is_empty() || !anchors.has_pool) {
-            return;
+        // a shelter's lamps are light_onNN's own geometry, its patch a child of it (wiata1, wiata_l276)
+        if (p_on_submodel->get_mesh().is_valid()) {
+            anchors.lit_top =
+                    static_cast<float>(p_on_transform.xform(p_on_submodel->get_mesh()->get_aabb()).get_end().y);
+            anchors.has_lit_geometry = true;
         }
+        collect_street_lamp_anchors(p_on_submodel->get_submodels(), p_on_transform, anchors);
 
         const ProjectSettings *settings = ProjectSettings::get_singleton();
-        const float height_offset = settings->get_setting(LAMP_LIGHT_HEIGHT_OFFSET_SETTING);
-        const float cone_scale = settings->get_setting(LAMP_LIGHT_CONE_SCALE_SETTING);
         // floored: the easing-curve editor reads as "output over input" and invites values near
         // zero, which here would be a light that does not fall off at all (see FINDINGS.md)
         const float attenuation = MAX(0.0f, static_cast<float>(settings->get_setting(LAMP_LIGHT_ATTENUATION_SETTING)));
+        // pointing straight down: Godot's spot and area lights shine along -Z
+        const Basis down = Basis(Vector3(1, 0, 0), Math::PI * -0.5);
+        if (anchors.has_lit_patch && anchors.has_lit_geometry) {
+            // a shelter's lamps light the patch it draws: one rectangle of their height over the
+            // patch, its width along x and its height along the patch's z (-Y of the turned basis)
+            const Vector3 centre = anchors.lit_patch.get_center();
+            MaszynaE3DLightParams params;
+            params.shape = LIGHT_SHAPE_AREA;
+            params.transform = Transform3D(down, Vector3(centre.x, anchors.lit_top, centre.z));
+            params.area_size = Vector2(anchors.lit_patch.size.x, anchors.lit_patch.size.z);
+            params.color = anchors.color;
+            params.color.a = 1.0;
+            params.energy = AREA_LIGHT_ENERGY;
+            params.range = AREA_LIGHT_RANGE;
+            params.attenuation = attenuation;
+            params.size = settings->get_setting(LIGHT_SIZE_SETTING);
+            p_lamps.push_back(params);
+            return;
+        }
+        if (anchors.heads.is_empty()) {
+            return;
+        }
+
+        const float height_offset = settings->get_setting(LAMP_LIGHT_HEIGHT_OFFSET_SETTING);
+        const float cone_scale = settings->get_setting(LAMP_LIGHT_CONE_SCALE_SETTING);
 
         for (const Vector3 &head: anchors.heads) {
-            if (head.y <= 0.0f) {
+            if (anchors.has_pool && head.y <= 0.0f) {
                 continue; // a head at or below the ground gives no cone to compute
             }
             const Vector3 origin = head + Vector3(0.0, height_offset, 0.0);
+            // a fixture stands at no height of its own: the scenery places it on its pole
+            const float patch_per_height = anchors.has_pool ? anchors.pool_extent / static_cast<float>(origin.y)
+                                                            : LAMP_FIXTURE_PATCH_PER_HEIGHT;
             MaszynaE3DLightParams params;
-            params.omni = false;
-            // pointing straight down: Godot's spot shines along -Z
-            params.transform = Transform3D(Basis(Vector3(1, 0, 0), Math::PI * -0.5), origin);
+            params.transform = Transform3D(down, origin);
             params.color = anchors.color;
             params.color.a = 1.0;
             params.energy = DEFAULT_LIGHT_ENERGY;
@@ -406,9 +445,7 @@ namespace godot {
             // pool in the dimmest part of the falloff.
             params.range = DEFAULT_LIGHT_SPOT_RANGE;
             // from the raised origin, so the cone still covers the patch the model draws
-            params.spot_angle =
-                    MIN(Math::rad_to_deg(Math::atan2(anchors.pool_extent * cone_scale, static_cast<float>(origin.y))),
-                        MAX_SPOT_ANGLE);
+            params.spot_angle = MIN(Math::rad_to_deg(Math::atan(patch_per_height * cone_scale)), MAX_SPOT_ANGLE);
             params.spot_attenuation = 1.0;
             params.attenuation = attenuation;
             params.size = settings->get_setting(LIGHT_SIZE_SETTING);
@@ -443,7 +480,7 @@ namespace godot {
         ReloadedProjectSetting::add(
                 LAMP_LIGHT_HEIGHT_OFFSET_SETTING, DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET, Variant::FLOAT, PROPERTY_HINT_RANGE,
                 "-2.0,5.0,0.1,suffix:m");
-        // Widens the lamp cone past the lit patch the model draws (1.0 covers exactly the patch), and
+        // Widens the lamp cone past the lit patch the model draws (1.0, the default, covers exactly the patch), and
         // the falloff exponent below 1.0 keeps the pool bright out to its edge. Both are tuning only -
         // a light the model declares keeps the falloff its own iFarAttenDecay asks for
         ReloadedProjectSetting::add(

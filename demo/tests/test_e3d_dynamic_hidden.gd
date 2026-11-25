@@ -76,3 +76,27 @@ func test_a_client_can_show_a_dynamic_hidden_submodel() -> void:
     MaszynaE3DRenderingServer.instance_set_part_visible(model, "_on", false)
     assert_false((instance.get_node(NodePath("karzel2/_on")) as Node3D).visible,
             "an explicit hide should still win")
+
+
+## The GI modes of every mesh under [param node], the backend's internal children among them
+func _gi_modes(node:Node) -> Array[GeometryInstance3D.GIMode]:
+    var modes:Array[GeometryInstance3D.GIMode] = []
+    for child:Node in node.get_children(true):
+        if child is MeshInstance3D:
+            modes.append((child as MeshInstance3D).gi_mode)
+        modes.append_array(_gi_modes(child))
+    return modes
+
+
+## A vehicle moves: baked into SDFGI's distance field where a cascade found it, it would shade
+## itself black after it has moved on - it takes the GI without making it; the scenery's model stays
+## baked. A light's point takes no part in the GI at all (GI_MODE_DISABLED)
+func test_a_vehicle_model_is_not_baked_into_the_gi() -> void:
+    var lights:Dictionary[String, bool] = {}
+    var vehicle:Array[GeometryInstance3D.GIMode] = _gi_modes(_instance(ModelRenderingServer.INSTANCE_KIND_DYNAMIC, lights))
+    assert_true(vehicle.has(GeometryInstance3D.GI_MODE_DYNAMIC), "a vehicle model's meshes take the GI")
+    assert_false(vehicle.has(GeometryInstance3D.GI_MODE_STATIC), "and none is baked into it")
+
+    var scenery:Array[GeometryInstance3D.GIMode] = _gi_modes(_instance(ModelRenderingServer.INSTANCE_KIND_STATIC, lights))
+    assert_true(scenery.has(GeometryInstance3D.GI_MODE_STATIC), "a scenery model's meshes are baked into the GI")
+    assert_false(scenery.has(GeometryInstance3D.GI_MODE_DYNAMIC), "every one of them")

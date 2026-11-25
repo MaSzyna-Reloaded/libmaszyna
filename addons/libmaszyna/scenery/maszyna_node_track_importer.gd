@@ -32,6 +32,9 @@ const TYPES:Dictionary[String, TrackServer.TrackType] = {
 }
 ## The types with a second curve: a switch's diverging one, a crossroad's second road
 const TWO_CURVE_TYPES:Array[String] = ["switch", "cross"]
+## A curve whose first control point lies nearer than this [m] to a third of its chord is a straight
+## line to the original (TTrack::straightened(), Track.cpp:856)
+const STRAIGHT_TOLERANCE:float = 0.02
 
 
 ## Plain data holder - scenery-loaded tracks are built directly against TrackServer/
@@ -105,6 +108,11 @@ func import(p:MaszynaParser, _context: MaszynaImporterContext) -> MaszynaTrackDa
     # undrawn, as before it was read at all - its roads are RoadServer's (MaszynaRoadNetwork)
     if data.kind == TrackServer.TRACK_CROSS:
         data.visible = false
+    else:
+        # a crossroad keeps its control points, it is given them on purpose (Track.cpp:1001)
+        _straighten(data.curve)
+        if data.diverging_curve:
+            _straighten(data.diverging_curve)
     _read_features(data)
     return data
 
@@ -124,6 +132,14 @@ func _read_features(data:MaszynaTrackData) -> void:
         if data.material2.match(rule.material):
             data.bed = rule.bed
             break
+
+
+## The original's "prostowanie" (Track.cpp:908, :1004, :1068): a curve whose first control point lies
+## within STRAIGHT_TOLERANCE of a third of its chord loses both control points and is a straight line
+func _straighten(curve:TrackCurve) -> void:
+    if ((curve.p2 - curve.p1) / 3.0 - curve.c1).length() < STRAIGHT_TOLERANCE:
+        curve.c1 = Vector3.ZERO
+        curve.c2 = Vector3.ZERO
 
 
 func get_curve_from_tokens(points) -> TrackCurve:

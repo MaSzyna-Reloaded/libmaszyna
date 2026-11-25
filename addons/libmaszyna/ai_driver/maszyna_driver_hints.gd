@@ -87,6 +87,9 @@ enum Hint {
     DOOR_RIGHT_PERMIT_OFF,
     DOOR_LEFT_PERMIT_ON,
     DOOR_LEFT_PERMIT_OFF,
+    ## Not the original's: one key that force-revokes both sides at once, where the per-side
+    ## revoking hints have no key at all (see CONTROLS)
+    DOOR_PERMIT_REVOKE_ALL,
     HORN_ON,
     HORN_OFF,
     CONSIST_LIGHTS_ON,
@@ -213,6 +216,7 @@ const TEXTS:Dictionary[Hint, String] = {
     Hint.DOOR_RIGHT_PERMIT_OFF: "Revoke permit to open doors",
     Hint.DOOR_LEFT_PERMIT_ON: "Grant permit to open doors",
     Hint.DOOR_LEFT_PERMIT_OFF: "Revoke permit to open doors",
+    Hint.DOOR_PERMIT_REVOKE_ALL: "Close all doors",
     Hint.HORN_ON: "Sound the horn",
     Hint.HORN_OFF: "Switch off horn",
     Hint.CONSIST_LIGHTS_ON: "Switch on consist lights",
@@ -390,14 +394,19 @@ const CONTROLS:Dictionary = {
     Hint.CONSIST_DOOR_LOCKS_ON: [&"door_signalling_sw", CabinLogic.Gesture.PRESS],
     Hint.DEPARTURE_SIGNAL_ON: [&"departure_signal_bt", CabinLogic.Gesture.PRESS],
     Hint.DOOR_RIGHT_OPEN: [&"door_right_sw", CabinLogic.Gesture.PRESS],
-    Hint.DOOR_RIGHT_CLOSE: [&"door_right_sw", CabinLogic.Gesture.PRESS],
+    # the all-close button closes both sides under the same condition as the side toggles
+    # (_driver_controlled(), doors.gd) - its key is the one actually on a modern cab's panel,
+    # where the legacy per-side toggle has no gauge and only a keyboard fallback (reports: 36WE)
+    Hint.DOOR_RIGHT_CLOSE: [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS],
     Hint.DOOR_LEFT_OPEN: [&"door_left_sw", CabinLogic.Gesture.PRESS],
-    Hint.DOOR_LEFT_CLOSE: [&"door_left_sw", CabinLogic.Gesture.PRESS],
+    Hint.DOOR_LEFT_CLOSE: [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS],
     # a permit is revoked by closing the doors (Mover.cpp:8745-8749) - a push permit button only
     # grants (Train.cpp:7213-7220), so the revoking hints have no key; but the preset switch's,
     # where the vehicle has one (get_list())
     Hint.DOOR_RIGHT_PERMIT_ON: [&"doorrightpermit_sw", CabinLogic.Gesture.PRESS],
     Hint.DOOR_LEFT_PERMIT_ON: [&"doorleftpermit_sw", CabinLogic.Gesture.PRESS],
+    Hint.DOOR_PERMIT_REVOKE_ALL: [MaszynaCabinDoorPermitRevoke.CONTROL, CabinLogic.Gesture.PRESS],
+    Hint.SANDING_ON: [&"sand_bt", CabinLogic.Gesture.PRESS],
     Hint.HORN_ON: [&"hornlow_bt", CabinLogic.Gesture.PRESS],
     Hint.CONSIST_HEATING_ON: [&"trainheating_sw", CabinLogic.Gesture.PRESS],
     Hint.CONSIST_HEATING_OFF: [&"trainheating_sw", CabinLogic.Gesture.PRESS],
@@ -908,6 +917,11 @@ static func get_list(situation:MaszynaDriverTraction.Situation) -> Array[Diction
                         target = index
                 var upwards:bool = target > current or (target == current and current < doors.permit_list.size() - 1)
                 control = [DOOR_PERMIT_PRESET, CabinLogic.Gesture.INCREASE if upwards else CabinLogic.Gesture.DECREASE]
+        # the all-close button closes doors that may already be shut just the same, revoking the
+        # permit with them (Mover.cpp:8745-8749) - its key, not the dedicated button's, even where
+        # the all-close button itself does nothing (operator, 2026-11-24: shown Ctrl+/ regardless)
+        if shown == Hint.DOOR_PERMIT_REVOKE_ALL:
+            control = [MaszynaCabinDoors.ALL_CLOSE, CabinLogic.Gesture.PRESS]
         # a lamp code set by the light selector, where the vehicle has one (LightsList): its key
         # towards the preset that shows it - in an active cab: an inactive one shows its red
         # markers whatever the preset (InactiveCabFlag redmarkers, SetLights(), DynObj.cpp:7324)
@@ -1227,6 +1241,18 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
             var left:bool = hint == Hint.DOOR_LEFT_PERMIT_ON or hint == Hint.DOOR_LEFT_PERMIT_OFF
             var permitted:bool = doors != null and (doors.get_left_open_permit() if left else doors.get_right_open_permit())
             return doors == null or permitted == (hint == Hint.DOOR_RIGHT_PERMIT_ON or hint == Hint.DOOR_LEFT_PERMIT_ON)
+        Hint.DOOR_PERMIT_REVOKE_ALL:
+            var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
+                    vehicle, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
+            # a vehicle with permit presets steps aside for them (Train.cpp:7203) - the key does
+            # nothing there (MaszynaCabinDoorPermitRevoke), so the hint counts as done. Never
+            # before the departure time, and not once the doors are shut and the permit is gone -
+            # a passenger toggling the platform-side door otherwise flickered the hint on Bałtyk's
+            # SKM1 well before the train was due to leave (operator, 2026-11-25)
+            if doors == null or doors.permit_list or situation.state.route.waiting_for_departure:
+                return true
+            return not (doors.get_left_open() or doors.get_right_open()
+                    or doors.get_left_open_permit() or doors.get_right_open_permit())
         # differs from the original, done once the vigilance alone stops (driverhints.cpp:1206): it is
         # cued for the cab signal as well (is_blinking(), Driver.cpp:6397), and with no button of
         # its own the cab signal is acknowledged by this one - an SHP flashing alone hinted nothing

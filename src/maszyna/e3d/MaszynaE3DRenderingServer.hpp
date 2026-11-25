@@ -12,6 +12,7 @@
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/time.hpp>
+#include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/mutex.hpp>
 
@@ -52,10 +53,16 @@ namespace godot {
             static constexpr float DEFAULT_SCENERY_LIGHT_DISTANCE = 400.0;
             static constexpr const char *SCENERY_LIGHT_SHADOWS_SETTING = "maszyna/scenery/lights/cast_shadows";
             static constexpr bool DEFAULT_SCENERY_LIGHT_SHADOWS = true;
-            /// Shadows are dropped well before the light itself is, the way MaszynaE3DNodesBackend fades
-            /// a vehicle spotlight out
-            static constexpr float SCENERY_LIGHT_SHADOW_FADE_DISTANCE = 80.0;
-            /// The light fades out over this share of its streaming distance - the wrapper's own
+            /// How far from the camera [m] a scenery light casts its shadow, well before the light itself
+            /// ends. Past it Godot leaves the light out of the shadow atlas altogether
+            /// (light_instance_is_shadow_visible_at_position()), so the lamps near the camera share
+            /// the atlas, not every lamp the light distance streams in
+            static constexpr const char *SCENERY_LIGHT_SHADOW_DISTANCE_SETTING =
+                    "maszyna/scenery/lights/shadow_distance";
+            static constexpr float DEFAULT_SCENERY_LIGHT_SHADOW_DISTANCE = 50.0;
+            /// The shadow and the light fade out over this share of the shadow distance - the
+            /// wrapper's own. Godot takes one fade length for both, and the shadow has to end near
+            /// where its distance says
             static constexpr float SCENERY_LIGHT_FADE_LENGTH_SHARE = 0.25;
             /// A lamp must not shadow its own light. With one light per arm each arm was lit by its
             /// neighbours; economy mode leaves a single light in the middle, below which the arms
@@ -141,11 +148,12 @@ namespace godot {
 
             /// An addressable light of an instance. An emission light only switches the model's
             /// own light_onNN/light_offNN submodels (the backends do that from lights_state), a
-            /// spot or omni light additionally owns a RenderingServer light.
+            /// spot, omni or area light additionally owns a RenderingServer light.
             enum LightKind {
                 LIGHT_KIND_EMISSION,
                 LIGHT_KIND_SPOT,
                 LIGHT_KIND_OMNI,
+                LIGHT_KIND_AREA,
             };
 
             struct LightObject {
@@ -160,7 +168,18 @@ namespace godot {
                     RID light_instance;  // its RenderingServer instance
                     RID stream_rid;      // SceneryStreamingServer registration, scenery lights only
                     bool streamed_in = false;
+                    /// Where a street lamp's light stands in the world, while it is in lamp_light_cells
+                    Vector3 lamp_position;
+                    bool in_lamp_cells = false;
             };
+
+            /// In economy mode the lamps of one pole light it once: lamp fixtures stand on it as
+            /// models of their own (elektryczne/opr_sgp340 in pairs 0.93 m apart), each with a light,
+            /// where a two-armed lamp model has its heads merged (MaszynaE3DLightFactory). Closer than
+            /// this [m] - less than lamps a pole apart ever stand - a lamp gives no light of its own
+            static constexpr float LAMP_LIGHT_MERGE_DISTANCE = 2.0;
+            /// The street lamp lights by the cell of LAMP_LIGHT_MERGE_DISTANCE they stand in
+            HashMap<Vector3i, LocalVector<RID>> lamp_light_cells;
 
             RIDMap<MaszynaE3DInstanceData> instances;
             /// The instance drawing each attached signal head (instance_attach_signal_head())
@@ -257,6 +276,10 @@ namespace godot {
                     const MaszynaE3DInstanceData &p_instance_data, const String &p_light_name,
                     MaszynaE3DLightParams &p_params);
             void _clear_instance_lights(MaszynaE3DInstanceData &p_instance_data);
+            /// Whether a street lamp's light stands closer than LAMP_LIGHT_MERGE_DISTANCE to p_position
+            bool _is_lamp_light_near(const Vector3 &p_position) const;
+            void _remember_lamp_light(const RID &p_light, LightObject &p_object, const Vector3 &p_position);
+            void _forget_lamp_light(const RID &p_light, LightObject &p_object);
 
             void _build_instance_smoke_sources(MaszynaE3DInstanceData &p_instance_data);
             static void _clear_instance_smoke_sources(MaszynaE3DInstanceData &p_instance_data);
@@ -385,7 +408,8 @@ namespace godot {
             void instance_set_options(
                     const RID &p_instance, const String &p_data_path, const PackedStringArray &p_skins,
                     const Array &p_exclude_node_names, bool p_force_alpha,
-                    const TypedArray<NodePath> &p_force_alpha_part_paths, int p_max_texture_size) override;
+                    const TypedArray<NodePath> &p_force_alpha_part_paths, int p_max_texture_size,
+                    bool p_low_poly_interior) override;
             void instance_attach_object_instance_id(const RID &p_instance, uint64_t p_id) override;
             /// The node attached, by its ObjectID - 0 for none, or for one that is gone
             uint64_t instance_get_attached_node(const RID &p_instance) const;

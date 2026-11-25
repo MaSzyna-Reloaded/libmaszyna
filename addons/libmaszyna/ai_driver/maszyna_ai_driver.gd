@@ -401,12 +401,27 @@ func _close_doors(situation:MaszynaDriverTraction.Situation) -> void:
     state.departure_warned = false
     var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(vehicle, VehicleComponentType.COMPONENT_DOORS)
     # the doors closed first: closing them revokes the permits (Mover.cpp:8745-8749)
-    if doors and doors.close_method in REMOTE_CLOSE_CONTROLS:
+    var remote_close:bool = doors != null and doors.close_method in REMOTE_CLOSE_CONTROLS
+    if remote_close:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_CLOSE)
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE)
-    if doors and doors.permit_required:
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
+    # closing the doors remotely above already revokes the permits by itself (Mover.cpp:8745-8749) -
+    # but only while they are still open to close; once they are shut the permit can still stand
+    # (a door closed some other way than the hinted button) and is on its own hint again
+    var closing_doors:bool = remote_close \
+            and (not MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_CLOSE, 0.0) \
+                or not MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE, 0.0))
+    if doors and doors.permit_required and not closing_doors:
+        if doors.permit_list:
+            # a vehicle with permit presets revokes per side, by the preset switch's own key
+            # (get_list()) - the dedicated button's hint steps aside for it (is_done())
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
+        else:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, 0.0,
+                    func() -> void:
+                        MaszynaDriverHints.send(vehicle, "doors_left_permit", false)
+                        MaszynaDriverHints.send(vehicle, "doors_right_permit", false))
     var in_control:bool = DriverServer.vehicle_is_control_active(vehicle)
     for car:RID in state.trainset.vehicles:
         var car_doors:RailVehicleDoors = VehicleServer.vehicle_component_get(car, VehicleComponentType.COMPONENT_DOORS)
@@ -949,14 +964,34 @@ func _update(driver:RID) -> void:
             and state.speed.acceleration_desired > MaszynaDriverSpeed.NO_ACCELERATION \
             and state.traction.action_time >= 0.0:
         _start_closing_doors(situation)
+    # cued on its own, every update, so it shows as soon as it is due rather than only once the
+    # train wants to move off - is_done() alone decides whether it still applies (operator,
+    # 2026-11-25: flickered with the platform doors on Bałtyk's SKM1, well before departure).
+    # Closing the doors remotely already revokes the permit by itself (Mover.cpp:8745-8749): while
+    # they are still open to close that way, the close hint already asks for the same thing
+    var remote_close:bool = own_doors != null and own_doors.close_method in REMOTE_CLOSE_CONTROLS
+    var closing_doors:bool = remote_close \
+            and (not MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_CLOSE, 0.0) \
+                or not MaszynaDriverHints.is_done(situation, MaszynaDriverHints.Hint.DOOR_LEFT_CLOSE, 0.0))
+    if own_doors and own_doors.permit_required and not own_doors.permit_list and not closing_doors:
+        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, 0.0,
+                func() -> void:
+                    MaszynaDriverHints.send(vehicle, "doors_left_permit", false)
+                    MaszynaDriverHints.send(vehicle, "doors_right_permit", false))
     # differs from the original, which takes the permits back only as its own driver departs
     # (Driver.cpp:4389-4392): an EIM controller asked for power gives none while a door permit stands
     # (eimic_max, Mover.cpp:6758-6769) - the permits a deactivated cab grants (InactiveCabFlag,
     # Mover.cpp:2690-2694) left a player in the other cab at full power, standing, told nothing
     if own_doors and (own_doors.get_left_open_permit() or own_doors.get_right_open_permit()) \
             and _asks_for_power(situation):
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
-        MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
+        if own_doors.permit_list:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_LEFT_PERMIT_OFF)
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_RIGHT_PERMIT_OFF)
+        else:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.DOOR_PERMIT_REVOKE_ALL, 0.0,
+                    func() -> void:
+                        MaszynaDriverHints.send(vehicle, "doors_left_permit", false)
+                        MaszynaDriverHints.send(vehicle, "doors_right_permit", false))
     # the same for the independent brake of a car left: it brakes that car whatever the cab driving
     # (the player sent there by the standing driver's hints before going to the other cab)
     if _asks_for_power(situation):

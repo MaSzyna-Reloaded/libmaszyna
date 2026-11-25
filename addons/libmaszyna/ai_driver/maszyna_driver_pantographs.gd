@@ -4,10 +4,14 @@ class_name MaszynaDriverPantographs
 
 ## The original driver's pantographs (the pantograph part of TController::PrepareEngine(),
 ## control_pantographs(), Driver.cpp:2782-2811, 6219-6345): the air for them from the small
-## compressor until the main reservoir takes over, both raised to start, and on the move the one at
-## the rear the way it drives - or the vehicle's suggested setup - the front one lowered once the
-## rear one carries the current. Every step is cued (MaszynaDriverHints): a driver the
-## computer is takes it, a player is hinted.
+## compressor until the main reservoir takes over, and the one at the rear the way it drives - or
+## the vehicle's suggested setup (the pantograph selector) - raised from the start, the other one
+## only once the first no longer carries the current. Every step is cued (MaszynaDriverHints): a
+## driver the computer is takes it, a player is hinted.
+##
+## Differs from the original: PrepareEngine() there raises both to start and lowers the front one
+## only once rolling (Driver.cpp:2782-2811, 2812-2813) - here only the one actually wanted is
+## raised from the start, whoever drives (operator, 2026-11-20).
 ##
 ## Not ported: running without current or with the pantographs down where the track says so
 ## (fOverhead2, iOverheadDown), and the front one raised too when standing long at a stop
@@ -27,8 +31,8 @@ const SETUP_SPEED:float = 5.0
 
 ## PrepareEngine()'s pantographs (Driver.cpp:2782-2811): the small compressor while the tank is
 ## short of air - its three-way valve turned to it first, unless it turns by itself - and off once
-## the tank has enough or the main reservoir feeds it; both raised - whichever cars of the unit
-## have them - the one at the back of the way it drives hinted only until it moves off
+## the tank has enough or the main reservoir feeds it; the one the pantograph selector wants raised,
+## or the one at the back of the way the train drives, raised - never the other one as well
 static func prepare(situation:MaszynaDriverTraction.Situation, emu:bool) -> void:
     var unit:RID = situation.trainset.pantograph_unit
     if not unit.is_valid():
@@ -48,11 +52,17 @@ static func prepare(situation:MaszynaDriverTraction.Situation, emu:bool) -> void
             or tank <= (brake.get_compressor_pressure() if brake else 0.0):
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.PANTOGRAPH_COMPRESSOR_OFF)
     MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.PANTOGRAPHS_VALVE_ON)
-    var forward:bool = situation.state.direction >= 0
-    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON,
-            SETUP_SPEED if forward else 0.0)
-    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON,
-            0.0 if forward else SETUP_SPEED)
+    var hints:RailVehicleAIHints = RailVehicleServer.vehicle_component_get(
+            situation.vehicle, RailVehicleComponentType.COMPONENT_AI_HINTS) as RailVehicleAIHints
+    var setup:RailVehicleAIHints.PantographState = hints.pantograph_state if hints else RailVehicleAIHints.PANTOGRAPH_STATE_AUTOMATIC
+    if not setup == RailVehicleAIHints.PANTOGRAPH_STATE_AUTOMATIC:
+        if setup & RailVehicleAIHints.PANTOGRAPH_STATE_FRONT:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON)
+        if setup & RailVehicleAIHints.PANTOGRAPH_STATE_REAR:
+            MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON)
+        return
+    MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON
+            if _on_rear(situation, unit, emu) else MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON)
 
 
 ## control_pantographs() (Driver.cpp:6219-6345), on every update of a driver with its engine ready:
@@ -83,16 +93,10 @@ static func control(situation:MaszynaDriverTraction.Situation, emu:bool, waiting
             MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON
                     if setup & RailVehicleAIHints.PANTOGRAPH_STATE_REAR else MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_OFF)
         return
-    # the regular layout: a lone vehicle, an EMU, an ET41 (Driver.cpp:6243-6246)
-    var train_type:MaszynaMoverRailVehicleController.TrainType = (
-            VehicleServer.vehicle_get_controller(unit) as RailVehicleController).train_type
-    var regular:bool = RailVehicleServer.vehicle_get_coupled(
-            vehicle, RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_CONTROL).size() == 1 \
-            or emu or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_ET41
     var voltage:float = power_source.get_collector_voltage()
     var front_voltage:float = power_source.get_collector_pantograph_first_voltage()
     var rear_voltage:float = power_source.get_collector_pantograph_second_voltage()
-    var on_rear:bool = situation.state.direction >= 0 and regular
+    var on_rear:bool = _on_rear(situation, unit, emu)
     # more than one by CollectorsNo, which a layout of B alone makes 2 (Mover.cpp:11636-11637)
     var both:bool = power_source.current_collector_number_of_collectors > 1
     # the one at the rear up, unless another one works and it is the only one
@@ -104,3 +108,16 @@ static func control(situation:MaszynaDriverTraction.Situation, emu:bool, waiting
     if speed > SETUP_SPEED and both and not front_voltage == 0.0 and not rear_voltage == 0.0:
         MaszynaDriverHints.cue(situation, MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_OFF
                 if on_rear else MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_OFF)
+
+
+## Whether the rear pantograph (the way the driver drives) is the one to raise: the layout is
+## "regular" - a lone vehicle, an EMU, or an ET41 (Driver.cpp:6243-6246) - and the train moves
+## forward; an irregular layout (several units coupled by their control line) raises the front one
+## instead, whichever way it drives
+static func _on_rear(situation:MaszynaDriverTraction.Situation, unit:RID, emu:bool) -> bool:
+    var train_type:MaszynaMoverRailVehicleController.TrainType = (
+            VehicleServer.vehicle_get_controller(unit) as RailVehicleController).train_type
+    var regular:bool = RailVehicleServer.vehicle_get_coupled(
+            situation.vehicle, RailVehicleController.COUPLER_END_FRONT, RailVehicleController.COUPLING_FLAG_CONTROL).size() == 1 \
+            or emu or train_type == MaszynaMoverRailVehicleController.TRAIN_TYPE_ET41
+    return situation.state.direction >= 0 and regular

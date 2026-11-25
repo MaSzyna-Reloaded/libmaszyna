@@ -71,10 +71,13 @@ func _lit(index:int, end:String) -> PackedStringArray:
     return lit
 
 
-func test_a_train_shows_pc1_at_its_head_and_red_markers_at_its_tail():
+## Pc5 at the tail is suggested only for a lone vehicle or an EMU/DMU (push_pull), never a plain
+## wagon's - this trainset's tail has no key the cab has for it (6ae1266f, "Stop suggesting
+## end-of-train lights on a wagon consist")
+func test_a_train_shows_pc1_at_its_head_and_nothing_on_a_plain_wagon_tail():
     MaszynaDriverLights.check_vehicles(_situation(1, MaszynaAIDriver.Order.OBEY_TRAIN, NO_HINTS))
     assert_eq(_lit(0, "front"), PC1)
-    assert_eq(_lit(WAGON, "rear"), RED_MARKERS)
+    assert_eq(_lit(WAGON, "rear"), PackedStringArray())
     assert_eq(_lit(0, "rear"), PackedStringArray())
     assert_eq(_lit(WAGON, "front"), PackedStringArray())
 
@@ -101,13 +104,15 @@ func test_shunting_shows_tb1():
     assert_eq(_lit(WAGON, "rear"), PackedStringArray(["headlight_left"]))
 
 
-# SetLights: the scenery's pattern in place of Pc1 - here Pc2 (driverhints.cpp:1252)
+# SetLights: the scenery's pattern in place of Pc1 - here Pc2 (driverhints.cpp:1252). The tail's
+# hint is still NO_HINT, and this trainset's tail is a plain wagon's - no Pc5 suggested for it
+# either (6ae1266f)
 func test_a_train_shows_the_pattern_the_scenery_asked_for():
     var pc2:int = MaszynaDriverLights.REDMARKER_LEFT | MaszynaDriverLights.HEADLIGHT_RIGHT \
             | MaszynaDriverLights.HEADLIGHT_UPPER
     MaszynaDriverLights.check_vehicles(_situation(1, MaszynaAIDriver.Order.OBEY_TRAIN, Vector2i(pc2, -1)))
     assert_eq(_lit(0, "front"), PackedStringArray(["headlight_upper", "headlight_right", "redmarker_left"]))
-    assert_eq(_lit(WAGON, "rear"), RED_MARKERS)
+    assert_eq(_lit(WAGON, "rear"), PackedStringArray())
 
 
 func test_lights_off_puts_out_the_head_and_the_tail():

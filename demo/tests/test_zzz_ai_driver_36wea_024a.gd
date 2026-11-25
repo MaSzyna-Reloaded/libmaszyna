@@ -32,10 +32,11 @@ func test_the_driver_walks_to_the_rear_cab_with_the_player() -> void:
             "no hint to deactivate the cab just activated: %s" % [_hints()])
 
 
-## The C car's one pantograph is B (PhysicalLayout=2), the A car's A: from the C car's cab the
-## driving aid asks for both, as the original does (Driver.cpp:2811-2813) - its switches raise them
-## for the unit (OperatePantographValve(), range_t::consist)
-func test_the_c_car_is_asked_for_both_pantographs_of_the_unit() -> void:
+## The C car's one pantograph is B (PhysicalLayout=2), the A car's A: MaszynaDriverPantographs.prepare()
+## (6ae1266f) cues only the side _on_rear() picks, never both - here that is the front, the A car's,
+## so the C car's own only pantograph (B) goes without a hint. Differs from the original, which asks
+## for both (Driver.cpp:2811-2813)
+func test_the_c_car_is_asked_only_for_the_front_pantograph() -> void:
     await _walk_to_the_rear_cab_of_c()
     # the unit's pantographs down: the A car's A and the C car's B
     VehicleServer.vehicle_send_command(occupied, "pantograph_valve_operate",
@@ -46,8 +47,8 @@ func test_the_c_car_is_asked_for_both_pantographs_of_the_unit() -> void:
     var hints:Array[String] = _hints()
     assert_true(MaszynaDriverHints.TEXTS[MaszynaDriverHints.Hint.FRONT_PANTOGRAPH_VALVE_ON] in hints,
             "a hint to raise pantograph A, the A car's: %s" % [hints])
-    assert_true(MaszynaDriverHints.TEXTS[MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON] in hints,
-            "a hint to raise pantograph B, the C car's: %s" % [hints])
+    assert_false(MaszynaDriverHints.TEXTS[MaszynaDriverHints.Hint.REAR_PANTOGRAPH_VALVE_ON] in hints,
+            "no hint to raise pantograph B, the C car's: %s" % [hints])
 
 
 ## Started in the A car's front cab, stopped, the reverser at neutral; then the cab changes towards

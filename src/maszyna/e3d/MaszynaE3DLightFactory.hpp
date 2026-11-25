@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/transform3d.hpp>
+#include <godot_cpp/variant/vector2.hpp>
 
 namespace godot {
     /// What a light lights
@@ -17,11 +18,23 @@ namespace godot {
         LIGHT_ROLE_INTERIOR_GLOW,
     };
 
+    /// What a real light shines from
+    enum MaszynaE3DLightShape {
+        /// A point, in a cone (SpotLight3D)
+        LIGHT_SHAPE_SPOT,
+        /// A point, every way (OmniLight3D): Godot's spot cone is capped below 90 degrees, so a wider
+        /// one is this
+        LIGHT_SHAPE_OMNI,
+        /// A rectangle, along its -Z (AreaLight3D): the lamps of a shelter over the patch they light
+        LIGHT_SHAPE_AREA,
+    };
+
     /// Light parameters derived from a model, shared by every backend that turns an E3D light into
     /// a real one (a SpotLight3D node or a RenderingServer light RID).
     struct MaszynaE3DLightParams {
-            /// Godot's spot cone is capped below 90 degrees, so a wider one has to be an omni
-            bool omni = false;
+            MaszynaE3DLightShape shape = LIGHT_SHAPE_SPOT;
+            /// Width and height of a LIGHT_SHAPE_AREA [m]
+            Vector2 area_size;
             Transform3D transform; // relative to the model root
             Color color = Color(1.0, 1.0, 1.0);
             float energy = 0.0;
@@ -81,7 +94,7 @@ namespace godot {
             /// SUBMODEL_FREE_SPOTLIGHTs with the light of their nearest "on" ancestor and their
             /// transform relative to the model root, and adds the street lamp quirk for models
             /// that light the scene without declaring a spotlight at all.
-            static MaszynaE3DModelLights discover(const Ref<MaszynaE3DModel> &p_model, const String &p_model_filename);
+            static MaszynaE3DModelLights discover(const Ref<MaszynaE3DModel> &p_model);
 
             /// How much a scenery model's real lights are worth: OFF renders only the model's own
             /// lit submodels, ECONOMY collapses the lights of one MaszynaE3DModelLight into a single one
@@ -117,14 +130,30 @@ namespace godot {
             /// the lamp head. Nothing in the data asks for it - it is a plain tuning offset.
             static constexpr const char *LAMP_LIGHT_HEIGHT_OFFSET_SETTING = "maszyna/scenery/lights/lamp_height_offset";
             static constexpr float DEFAULT_LAMP_LIGHT_HEIGHT_OFFSET = 0.5;
-            /// Widens the cone past the patch the model draws. 1.0 covers exactly the patch.
+            /// Widens the cone past the patch the model draws. 1.0 covers exactly the patch: 1.5 lit
+            /// about three times its area (#454)
             static constexpr const char *LAMP_LIGHT_CONE_SCALE_SETTING = "maszyna/scenery/lights/lamp_cone_scale";
-            static constexpr float DEFAULT_LAMP_LIGHT_CONE_SCALE = 1.5;
+            static constexpr float DEFAULT_LAMP_LIGHT_CONE_SCALE = 1.0;
             /// Falloff exponent of a synthesized lamp light; below 1.0 keeps the pool bright out to
             /// its edge instead of fading through most of it. Lights the model declares keep the
             /// falloff their own iFarAttenDecay asks for.
             static constexpr const char *LAMP_LIGHT_ATTENUATION_SETTING = "maszyna/scenery/lights/lamp_attenuation";
             static constexpr float DEFAULT_LAMP_LIGHT_ATTENUATION = 0.5;
+            /// A lamp fixture's lit patch is a model of its own placed beside it (elektryczne/
+            /// opr_sgp340 and smuga1hps/smuga2hps), so its cone is the one of the street lamps that
+            /// carry their patch: about as wide across (7.50 m) as their heads are high above the
+            /// ground with the light's offset (7.6-9.4 m) - before the cone scale
+            static constexpr float LAMP_FIXTURE_PATCH_PER_HEIGHT = 1.0;
+            /// A halo wider than this [m] is a lit patch on the ground: the halos are 1.0 m at most,
+            /// the three patches 7.6 m and more
+            static constexpr float LIT_PATCH_MIN_WIDTH = 3.0;
+            /// A shelter's area light: its energy per square metre of its surface, half of what
+            /// lights the middle of wiata1's patch as bright as the ground under a street lamp
+            /// fixture (opr_sgp340 at 9.35 m: 0.70 against 0.76 at 0.05, measured in one shot) -
+            /// at that the platforms looked far too bright in the game - and its reach [m]: the
+            /// ground 3.5-5.4 m below and a few metres past the patch, not a lamp's 40 m
+            static constexpr float AREA_LIGHT_ENERGY = 0.025;
+            static constexpr float AREA_LIGHT_RANGE = 8.0;
             static constexpr float FORCED_END_LIGHT_SPOT_RANGE = 3.0;
 
             /// Parameters of a SUBMODEL_FREE_SPOTLIGHT, as the model declares them. The light name
@@ -152,23 +181,26 @@ namespace godot {
             /// (MaszynaPlugin::register_classes(), ReloadedProjectSetting)
             static void project_settings_register();
 
-            /// Street lamps (models named "latarnia*") declare no spotlight submodel at all - none
-            /// of the 9 in the data set has one, and the original never lit the scene with them
-            /// either (TP_FREESPOTLIGHT only draws a glare billboard, opengl33renderer.cpp:4646).
-            /// The lamp head and the lit patch are still modelled, as billboards under light_onNN:
-            /// the halo carries the only non-identity matrix in the model (the head), and the
-            /// ground patch quad spans the area the lamp is meant to light. Both are found by
-            /// their material, not by name - latarnial_str calls its halos pos11/pos22/pos33 while
-            /// the rest call them plane02/plane04/plane06.
+            /// Street lamps that declare no spotlight submodel - 331 of the data set's models with a
+            /// light, among them the 305 of elektryczne/latarnie_cnodax - do not light the scene in
+            /// the original either (TP_FREESPOTLIGHT only draws a glare billboard,
+            /// opengl33renderer.cpp:4646). The lamp head is still modelled, as halo billboards under
+            /// light_onNN, and most of them model the lit patch on the ground there as well: the
+            /// halo carries the head's place, the patch quad spans the area the lamp is meant to
+            /// light. Both are found by their material, not by name - latarnial_str calls its halos
+            /// pos11/pos22/pos33 while the rest call them plane02/plane04/plane06. A lamp fixture
+            /// (15 models) has the halo alone, its patch being a model of its own, and gets the cone
+            /// of LAMP_FIXTURE_PATCH_PER_HEIGHT.
             /// One light per lamp head: the "latarniay_*" models are two-armed and carry a halo at
-            /// each end (z of -0.76 and +0.76 on latarniay_str). Appends nothing when either
-            /// anchor is missing, rather than inventing a light.
+            /// each end (z of -0.76 and +0.76 on latarniay_str). Appends nothing without a halo,
+            /// rather than inventing a light.
+            /// A shelter (otoczenie/obiekty_stacyjne/wiata1, peronowe/wiata_l276, bud/poroninstacja)
+            /// draws its lit patch on the ground in the halo's material, wider than any halo
+            /// (LIT_PATCH_MIN_WIDTH): one area light the size of the patch over it, at the top of the
+            /// lit geometry - its lamps (#455).
             static void make_street_lamps(
                     MaszynaE3DSubModel *p_on_submodel, const Transform3D &p_on_transform,
                     Vector<MaszynaE3DLightParams> &p_lamps);
-
-            /// True for the models the street lamp quirk applies to
-            static bool is_street_lamp(const String &p_model_filename);
 
             /* A low-poly interior with a passenger section (TDynamicObject::init_sections(), DynObj.cpp:2448-2453,
              * 2560-2595) has no light of its own - the original lights its walls and passengers by their

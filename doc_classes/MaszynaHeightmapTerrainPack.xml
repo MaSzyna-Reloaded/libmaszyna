@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaHeightmapTerrainPack" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A pack file of the original's heightmap terrain (.tch).
+	</brief_description>
+	<description>
+		16 x 16 chunks of the original's heightmap terrain (heightmap::pack_file), each a list of slices - its header, its heights, its paint - stored or zstd-compressed, with a CRC-32. Opening it reads its index; a chunk is read when asked for, on any thread.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_chunk_keys" qualifiers="const">
+			<return type="Vector2i[]" />
+			<description>
+				The chunks the pack holds.
+			</description>
+		</method>
+		<method name="get_key" qualifiers="const">
+			<return type="Vector2i" />
+			<description>
+				Where the pack lies, in packs.
+			</description>
+		</method>
+		<method name="open">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Reads the pack's index; [code]false[/code] when the file at [param path] is no pack of the version and layout the original writes.
+			</description>
+		</method>
+		<method name="read_chunk" qualifiers="const">
+			<return type="MaszynaHeightmapTerrainChunk" />
+			<param index="0" name="key" type="Vector2i" />
+			<description>
+				The chunk of [param key] read; [code]null[/code] when the pack has none there or its data is damaged.
+			</description>
+		</method>
+	</methods>
+</class>

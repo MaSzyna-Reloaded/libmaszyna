@@ -7,7 +7,7 @@
 #endif
 
 uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform int transparency = 0;
 uniform float alpha_scissor_threshold : hint_range(0.0, 1.0) = 0.5;
 uniform ivec2 albedo_texture_size;
@@ -35,7 +35,7 @@ uniform vec3 uv2_offset;
 #endif
 
 void vertex() {
-	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, CAMERA_POSITION_WORLD, reloaded_depth_behind);
+	VERTEX = maszyna_draw_behind(VERTEX, MODEL_MATRIX, MAIN_CAM_INV_VIEW_MATRIX[3].xyz, draw_behind_depth);
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 }
 

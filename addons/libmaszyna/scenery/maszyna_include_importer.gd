@@ -1,10 +1,6 @@
 @tool
 extends RefCounted
 
-## What an include of terrain is named with (parser.cpp:330)
-const TERRAIN_INCLUDE:String = "_ter.scm"
-
-
 func import(p: MaszynaParser, context: MaszynaImporterContext):
     var tokens = p.get_tokens_until("end")
     tokens.pop_back()
@@ -15,14 +11,19 @@ func import(p: MaszynaParser, context: MaszynaImporterContext):
         push_error("Include without a filename at offset %d" % p.get_position())
         return []
     # with a region file the terrain is the file's (parser.cpp:330, "SBT found, ignoring")
-    if context.binary_terrain_state and String(include_token).to_lower().contains(TERRAIN_INCLUDE):
+    if context.binary_terrain_state and String(include_token).to_lower().contains(MaszynaImporterContext.TERRAIN_INCLUDE):
         return []
-    var filename:String = resolve_filename(include_token)
-    var final_path = MaszynaGameDirectory.get_game_dir().path_join("scenery").path_join(filename)
-    var file = FileAccess.open(final_path, FileAccess.READ)
     var parameters = {}
     for i in range(tokens.size()):
         parameters["p%s" % (i+1)] = tokens[i]
+    return include_file(resolve_filename(include_token), parameters, context)
+
+
+## A scenery file read where it is named - by an "include", or by a "terrain" directive
+## (maszyna_terrain_importer.gd) - its path relative to scenery/ as it exists on disk
+func include_file(filename:String, parameters:Dictionary, context:MaszynaImporterContext) -> Array:
+    var final_path = MaszynaGameDirectory.get_game_dir().path_join("scenery").path_join(filename)
+    var file = FileAccess.open(final_path, FileAccess.READ)
     if file:
         # The original engine uses the same "include" for parameterised object instances and for
         # parts of the scenery. An object - placed thousands of times (grass.inc, tree.inc), any

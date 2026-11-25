@@ -104,6 +104,9 @@ namespace godot {
             bool force_alpha = false;
             TypedArray<NodePath> force_alpha_submodel_paths;
             int max_texture_size = 0; // 0 - the project's DDS size limit, see MaszynaMaterialManager
+            /// A vehicle's low-poly interior: its materials are drawn behind the body where they meet
+            /// (MaszynaMaterialManager.MaterialOptions.low_poly_interior)
+            bool low_poly_interior = false;
             ObjectID node_id;
             /// Where the model sits in the attached node, for the node tree built under it
             /// (instance_set_node_transform()); `transform` is the model's own, in the world

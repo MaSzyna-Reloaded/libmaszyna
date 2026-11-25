@@ -28,6 +28,7 @@ const KEYBOARD_ONLY:Dictionary[StringName, StringName] = {
     MaszynaCabinSpringBrakeShutOff.CONTROL: MaszynaCabinSpringBrakeShutOff.ACTION,
     MaszynaCabinBrakeCharging.CONTROL: MaszynaCabinBrakeCharging.ACTION,
     MaszynaCabinMainSwitch.KEY: MaszynaCabinMainSwitch.KEY_ACTION,
+    MaszynaCabinDoorPermitRevoke.CONTROL: MaszynaCabinDoorPermitRevoke.ACTION,
 }
 ## The field of a control's entry naming the key of each gesture
 const GESTURE_FIELDS:Dictionary[Gesture, String] = {
@@ -146,6 +147,7 @@ func register(vehicle_rid:RID, cabin:RID) -> void:
     _behaviours.append(MaszynaCabinBrakeCharging.new())
     _behaviours.append(MaszynaCabinOccupiedCouplerDisconnect.new())
     _behaviours.append(MaszynaCabinSpringBrakeShutOff.new())
+    _behaviours.append(MaszynaCabinDoorPermitRevoke.new())
     for behaviour:RefCounted in _behaviours:
         behaviour.register(vehicle_rid, cabin)
     # last: whatever is registered by now is taken care of

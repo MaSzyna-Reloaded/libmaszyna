@@ -3,14 +3,33 @@ extends MaszynaGutTest
 ## The original's binary region file (.sbt): its sections are listed as streaming cells, and a
 ## cell's shapes are supplied as terrain chunks the way "triangles" nodes make them, its "lines"
 ## nodes as the section's lines. With a region
-## file the scenery's own "triangles", terrain models and "_ter.scm" includes are left out.
+## file the scenery's own "triangles", terrain models and "_ter.scm" includes are left out. The
+## scenario's own region file, beside it, is its terrain only where an include of terrain is
+## missing: the original writes it once and never brings it up to date.
 
 const FIXTURES:String = "res://tests/fixtures/region"
+const FIXTURES_GAME_DIR:String = "res://tests/fixtures"
+## Scenarios with a region file beside them: one with its include of terrain there, one packed
+## without it
+const SOURCED_SCENARIO:String = "region_scenario.scn"
+const PACKED_SCENARIO:String = "region_scenario_packed.scn"
 ## The fixture's one section has the original's index 7 - column 7 of row 0
 ## (MaszynaSBTTerrainProvider.REGION_SIDE_SECTION_COUNT)
 const FIXTURE_CELL:Vector2i = Vector2i(7 - 250, -250)
 ## The fixture's section shape: three vertices around this origin
 const GROUND_ORIGIN:Vector3 = Vector3(100.5, 2.0, 200.25)
+
+
+var _previous_game_dir:String = ""
+
+
+func before_each() -> void:
+    _previous_game_dir = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
+
+
+func after_each() -> void:
+    MaszynaGameDirectory.save_game_dir(_previous_game_dir)
 
 
 func _region_path(file_name:String) -> String:
@@ -121,3 +140,33 @@ func test_a_cells_lines_are_supplied_as_the_sections_lines() -> void:
     var looks:PackedFloat32Array = arrays[Mesh.ARRAY_CUSTOM2]
     assert_eq(Vector3(looks[0], looks[1], looks[2]), Vector3(2, 0, 1000), "the width and the range")
     assert_eq((arrays[Mesh.ARRAY_COLOR] as PackedColorArray)[0], Color.WHITE)
+
+
+func _compile(scenario:String) -> MaszynaCompiledScenery:
+    var include := MaszynaIncludeNode.new()
+    include.use_cache = false
+    add_child_autofree(include)
+    var provider:MaszynaSceneryProvider = instance_from_id(
+        SceneryServer.provider_get(MaszynaSceneryProvider.NAME)
+    ) as MaszynaSceneryProvider
+    return await provider.compile(include, scenario, {}) as MaszynaCompiledScenery
+
+
+func _scenery_path(file_name:String) -> String:
+    return MaszynaGameDirectory.get_game_dir().path_join("scenery").path_join(file_name).simplify_path()
+
+
+func test_a_scenarios_region_file_beside_its_terrain_is_passed_over() -> void:
+    var compiled:MaszynaCompiledScenery = await _compile(SOURCED_SCENARIO)
+    assert_eq(compiled.region_files, [] as Array[String])
+    assert_false(compiled.dependencies.has(_scenery_path("region_scenario.sbt")))
+
+
+func test_a_scenarios_region_file_stands_in_for_a_missing_include_of_terrain() -> void:
+    var compiled:MaszynaCompiledScenery = await _compile(PACKED_SCENARIO)
+    assert_eq(compiled.region_files, [_scenery_path("region_scenario_packed.sbt")] as Array[String])
+    assert_true(
+        compiled.dependencies[_scenery_path("terrain/packed_ter.scm")].get("missing", false),
+        "the cache is made again once the include of terrain is there"
+    )
+    assert_push_error("Cannot load include file")
