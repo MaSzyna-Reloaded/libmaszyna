@@ -1245,9 +1245,14 @@ static func is_done(situation:MaszynaDriverTraction.Situation, hint:Hint, parame
             var doors:RailVehicleDoors = VehicleServer.vehicle_component_get(
                     vehicle, VehicleComponentType.COMPONENT_DOORS) as RailVehicleDoors
             # a vehicle with permit presets steps aside for them (Train.cpp:7203) - the key does
-            # nothing there (MaszynaCabinDoorPermitRevoke), so the hint counts as done
-            return doors == null or doors.permit_list \
-                    or not (doors.get_left_open_permit() or doors.get_right_open_permit())
+            # nothing there (MaszynaCabinDoorPermitRevoke), so the hint counts as done. Never
+            # before the departure time, and not once the doors are shut and the permit is gone -
+            # a passenger toggling the platform-side door otherwise flickered the hint on Bałtyk's
+            # SKM1 well before the train was due to leave (operator, 2026-11-25)
+            if doors == null or doors.permit_list or situation.state.route.waiting_for_departure:
+                return true
+            return not (doors.get_left_open() or doors.get_right_open()
+                    or doors.get_left_open_permit() or doors.get_right_open_permit())
         # differs from the original, done once the vigilance alone stops (driverhints.cpp:1206): it is
         # cued for the cab signal as well (is_blinking(), Driver.cpp:6397), and with no button of
         # its own the cab signal is acknowledged by this one - an SHP flashing alone hinted nothing
