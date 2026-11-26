@@ -325,8 +325,7 @@ namespace godot {
         // the passengers light nothing themselves: the interior's lights light them (#333), on its layer
         if (visual->passengers.is_valid()) {
             models->instance_set_emission_energy(visual->passengers, 0.0);
-            MaszynaE3DRenderingServer::get_instance()->instance_set_layer_mask(
-                    visual->passengers, MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER);
+            models->instance_set_layer_mask(visual->passengers, MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER);
         }
         maszyna->interior_light_intensity = -1.0F;
         _update_interior_lights(p_vehicle, *visual, *maszyna);
@@ -995,7 +994,7 @@ namespace godot {
         const Ref<RailVehicleElectricEngine> electric_engine = engine;
         const int engine_type = engine.is_valid() ? engine->get_type() : RailVehicleEngine::NONE;
         if (engine_type != RailVehicleEngine::DIESEL && engine_type != RailVehicleEngine::DIESEL_ELECTRIC) {
-            MaszynaE3DRenderingServer::get_instance()->instance_set_smoke_intensity(p_visual.model, 1.0);
+            models->instance_set_smoke_intensity(p_visual.model, 1.0);
             return;
         }
         // particles.cpp:188-205
@@ -1030,8 +1029,7 @@ namespace godot {
         // particles already in the air, so it scales how many are born instead - the plume thins
         // out rather than stepping down as a whole (see FINDINGS.md).
         const double fill = CLAMP(diesel_engine.is_valid() ? diesel_engine->get_fill() : 0.0, 0.0, 1.0);
-        MaszynaE3DRenderingServer::get_instance()->instance_set_smoke_intensity(
-                p_visual.model, static_cast<float>(CLAMP(intensity, 0.0, 1.0) * fill));
+        models->instance_set_smoke_intensity(p_visual.model, static_cast<float>(CLAMP(intensity, 0.0, 1.0) * fill));
     }
 
     // Original engine: every low-poly cab is drawn, but in the view from inside the player's

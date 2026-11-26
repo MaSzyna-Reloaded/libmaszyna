@@ -33,9 +33,6 @@ namespace godot {
                 &MaszynaE3DRenderingServer::instance_get_attached_node);
         ClassDB::bind_method(D_METHOD("smoke_rebuild"), &MaszynaE3DRenderingServer::smoke_rebuild);
         ClassDB::bind_method(
-                D_METHOD("instance_set_layer_mask", "instance", "mask"),
-                &MaszynaE3DRenderingServer::instance_set_layer_mask);
-        ClassDB::bind_method(
                 D_METHOD("instance_set_visibility_range", "instance", "begin", "end"),
                 &MaszynaE3DRenderingServer::instance_set_visibility_range);
         ClassDB::bind_method(
@@ -103,9 +100,6 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("light_enable", "light"), &MaszynaE3DRenderingServer::light_enable);
         ClassDB::bind_method(D_METHOD("light_disable", "light"), &MaszynaE3DRenderingServer::light_disable);
         ClassDB::bind_method(D_METHOD("light_get_statistics"), &MaszynaE3DRenderingServer::light_get_statistics);
-        ClassDB::bind_method(
-                D_METHOD("instance_set_smoke_intensity", "instance", "intensity"),
-                &MaszynaE3DRenderingServer::instance_set_smoke_intensity);
         ClassDB::bind_method(
                 D_METHOD("environment_set_time", "hours"), &MaszynaE3DRenderingServer::environment_set_time);
         ClassDB::bind_method(

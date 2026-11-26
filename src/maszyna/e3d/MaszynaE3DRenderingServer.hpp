@@ -395,7 +395,7 @@ namespace godot {
             void instance_set_scenario(const RID &p_instance, const RID &p_scenario) override;
             void instance_set_transform(const RID &p_instance, const Transform3D &p_transform) override;
             void instance_set_visible(const RID &p_instance, bool p_visible) override;
-            void instance_set_layer_mask(const RID &p_instance, uint32_t p_mask);
+            void instance_set_layer_mask(const RID &p_instance, uint32_t p_mask) override;
             void instance_set_visibility_range(const RID &p_instance, float p_begin, float p_end);
             void instance_set_material_overlay(const RID &p_instance, const Ref<Material> &p_material) override;
             void instance_set_shader_parameter(
@@ -454,7 +454,7 @@ namespace godot {
             /// opacity of a particle by dizel_fill in its spawn routine (particles.cpp:330);
             /// Godot's only spawn-time channel is the emission itself, so dizel_fill is folded
             /// into the rate by the caller.
-            void instance_set_smoke_intensity(const RID &p_instance, float p_intensity);
+            void instance_set_smoke_intensity(const RID &p_instance, float p_intensity) override;
 
             /// Pushed by EnvironmentNode; they drive the automatic light modes
             void environment_set_time(double p_hours);
