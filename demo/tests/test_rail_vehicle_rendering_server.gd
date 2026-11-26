@@ -298,6 +298,44 @@ func test_the_low_poly_interior_hides_the_cab_whose_interior_is_shown() -> void:
     assert_true((low_poly.get_node("cab0") as Node3D).visible, "with no interior shown every low-poly cab is drawn")
 
 
+## A low-poly interior of another backend than E3D's - a glTF one, of a scene - gives way whole to
+## the cab shown, not by its cab's part: one named cab1 stays as it is, the whole interior hidden
+func test_a_scene_low_poly_interior_gives_way_whole_to_the_cab_shown() -> void:
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURES_GAME_DIR)
+    var vehicle:MaszynaRailVehicle3D = await spawn_maszyna_vehicle(
+            "dynamic/test/synthetic_v1", "synthetic", "", "rendering_scene_interior")
+    if not await wait_detailed(vehicle):
+        return
+    var rid:RID = vehicle.get_rid()
+    vehicle.set_editable_in_editor(true)
+    var appearance:MaszynaRailVehicleAppearance = MaszynaRailVehicleAppearance.new()
+    appearance.data_path = FIXTURES_GAME_DIR
+    appearance.model_filename = "scene_body.tscn"
+    appearance.low_poly_model_filename = "scene_interior.tscn"
+    appearance.rendering_backend = &"scene"
+    RailVehicleRenderingServer.vehicle_set_appearance(rid, appearance)
+    var interior:Node3D = vehicle.find_child("Interior", true, false) as Node3D
+    assert_not_null(interior, "the low-poly interior stands as nodes")
+    if not interior:
+        vehicle.free()
+        MaszynaGameDirectory.save_game_dir(previous_game_dir)
+        return
+    var cabin:RID = RailVehicleServer.vehicle_get_cabin(rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+    if not cabin.is_valid():
+        cabin = RailVehicleServer.vehicle_add_cabin(rid, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT)
+
+    RailVehicleRenderingServer.vehicle_set_shown_cabin(rid, cabin)
+
+    assert_false(interior.visible, "the whole interior hidden")
+    assert_true((interior.get_node("cab1") as Node3D).visible, "its part named as a cab left alone")
+
+    RailVehicleRenderingServer.vehicle_set_shown_cabin(rid, RID())
+    assert_true(interior.visible, "drawn again as the cab is left")
+    vehicle.free()
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
+
+
 func test_coupling_shows_the_owned_submodel_and_keeps_missing_hose_geometry_off() -> void:
     var description:VehicleController = MaszynaFizManager.load_description_at(VEHICLE_FIXTURE)
     _model = _coupler_model("cpneumatic2", HoseGeometry.HANGING_ONLY)

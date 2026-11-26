@@ -432,6 +432,18 @@ namespace godot {
         _update_low_poly_cabs(p_vehicle, *visual);
     }
 
+    /* An E3D low-poly interior - of the project's default backend, or named - has its cabs as
+     * submodels (cab0-cab2), and the cab shown alone gives way (_update_low_poly_cabs()); any other,
+     * a glTF one, gives way whole, as the core hides it */
+    bool MaszynaE3DRailVehicleRenderingServer::_low_poly_interior_keeps_cabins(const RID &p_vehicle) const {
+        const Visual *visual = _get_visual(p_vehicle);
+        if (visual == nullptr || visual->appearance.is_null()) {
+            return false;
+        }
+        const StringName backend = visual->appearance->get_rendering_backend();
+        return backend.is_empty() || backend == StringName(MaszynaE3DRenderingServer::BACKEND_NAME);
+    }
+
     /* The low-poly interiors still following their roof light */
     void MaszynaE3DRailVehicleRenderingServer::_frame_processed(const double p_delta) {
         ModelRenderingServer *models = ModelRenderingServer::get_instance();
@@ -1041,7 +1053,7 @@ namespace godot {
     void
     MaszynaE3DRailVehicleRenderingServer::_update_low_poly_cabs(const RID &p_vehicle, const Visual &p_visual) const {
         ModelRenderingServer *models = ModelRenderingServer::get_instance();
-        if (models == nullptr || !p_visual.low_poly.is_valid() || p_visual.appearance.is_null()) {
+        if (models == nullptr || !p_visual.low_poly.is_valid() || !_low_poly_interior_keeps_cabins(p_vehicle)) {
             return;
         }
         const Ref<MaszynaRailVehicleAppearance> appearance = p_visual.appearance;

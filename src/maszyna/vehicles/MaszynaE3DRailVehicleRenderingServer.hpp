@@ -157,6 +157,7 @@ namespace godot {
             void _vehicle_update(const RID &p_vehicle) override;
             void _vehicle_pose(const RID &p_vehicle) override;
             void _vehicle_shown_cabin_changed(const RID &p_vehicle) override;
+            bool _low_poly_interior_keeps_cabins(const RID &p_vehicle) const override;
             void _frame_processed(double p_delta) override;
 
         public:
