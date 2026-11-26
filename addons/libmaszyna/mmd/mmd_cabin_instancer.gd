@@ -706,8 +706,6 @@ static func build_into(
     model.skins = resolve_skins(data_path, skin)
     # the cab loads under its own texture size limit (Train.cpp:660)
     model.max_texture_size = int(ProjectSettings.get_setting(DDS_MAX_CAB_TEXTURE_SIZE_SETTING))
-    # the cab's own sun lights this layer alone (reloaded/cabin/improve_shadows_quality)
-    model.layers = EnvironmentNode.CABIN_RENDER_LAYER
     # A cabin interior is self-contained (glass, instrument backlight glow, ...) and, unlike
     # mixed-purpose exterior E3D content, alpha-scissor's crisp cutout looks wrong across the
     # board here - real alpha blending for every already-transparent-flagged submodel instead.
