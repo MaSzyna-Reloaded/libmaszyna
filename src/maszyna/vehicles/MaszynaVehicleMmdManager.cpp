@@ -1,3 +1,4 @@
+#include "MaszynaFileMmdProvider.hpp"
 #include "MaszynaVehicleMmdManager.hpp"
 #include "maszyna/MaszynaGameDirectory.hpp"
 
@@ -8,9 +9,11 @@ namespace godot {
     MaszynaVehicleMmdManager *MaszynaVehicleMmdManager::singleton = nullptr;
 
     void MaszynaVehicleMmdManager::_bind_methods() {
-        ClassDB::bind_static_method(
-                "MaszynaVehicleMmdManager", D_METHOD("names_vehicle", "abs_mmd_path"),
-                &MaszynaVehicleMmdManager::names_vehicle);
+        ClassDB::bind_method(D_METHOD("names_vehicle", "abs_mmd_path"), &MaszynaVehicleMmdManager::names_vehicle);
+        ClassDB::bind_method(D_METHOD("set_mmd_provider", "provider"), &MaszynaVehicleMmdManager::set_mmd_provider);
+        ClassDB::bind_method(D_METHOD("get_mmd_provider"), &MaszynaVehicleMmdManager::get_mmd_provider);
+        ClassDB::bind_method(D_METHOD("mmd_file_exists", "abs_path"), &MaszynaVehicleMmdManager::mmd_file_exists);
+        ClassDB::bind_method(D_METHOD("mmd_read_file", "abs_path"), &MaszynaVehicleMmdManager::mmd_read_file);
         ClassDB::bind_method(
                 D_METHOD("set_mmd_data_reader", "reader", "format_version"),
                 &MaszynaVehicleMmdManager::set_mmd_data_reader);
@@ -26,14 +29,37 @@ namespace godot {
     MaszynaVehicleMmdManager::MaszynaVehicleMmdManager() {
         singleton = this;
         cache = ResourceCache::create(CACHE_DIRECTORY);
+        provider = Ref<MaszynaMmdProvider>(memnew(MaszynaFileMmdProvider));
     }
 
     MaszynaVehicleMmdManager::~MaszynaVehicleMmdManager() {
         singleton = nullptr;
     }
 
-    bool MaszynaVehicleMmdManager::names_vehicle(const String &p_abs_mmd_path) {
-        return FileAccess::get_file_as_bytes(p_abs_mmd_path).get_string_from_ascii().contains(VEHICLE_NAME_PARAMETER);
+    bool MaszynaVehicleMmdManager::names_vehicle(const String &p_abs_mmd_path) const {
+        return mmd_read_file(p_abs_mmd_path).get_string_from_ascii().contains(VEHICLE_NAME_PARAMETER);
+    }
+
+    void MaszynaVehicleMmdManager::set_mmd_provider(const Ref<MaszynaMmdProvider> &p_provider) {
+        MutexLock lock(mutex);
+        if (p_provider.is_valid()) {
+            provider = p_provider;
+            return;
+        }
+        provider = Ref<MaszynaMmdProvider>(memnew(MaszynaFileMmdProvider));
+    }
+
+    Ref<MaszynaMmdProvider> MaszynaVehicleMmdManager::get_mmd_provider() const {
+        MutexLock lock(mutex);
+        return provider;
+    }
+
+    bool MaszynaVehicleMmdManager::mmd_file_exists(const String &p_abs_path) const {
+        return get_mmd_provider()->file_exists(p_abs_path);
+    }
+
+    PackedByteArray MaszynaVehicleMmdManager::mmd_read_file(const String &p_abs_path) const {
+        return get_mmd_provider()->read_file(p_abs_path);
     }
 
     void MaszynaVehicleMmdManager::set_mmd_data_reader(const Callable &p_reader, const int p_format_version) {
@@ -64,7 +90,7 @@ namespace godot {
         const String cache_path = String("/")
                                           .path_join(p_data_path.trim_prefix("/"))
                                           .path_join(vformat("%s_%s.res", p_file_name, variant.md5_text()));
-        const String cache_hash = vformat("%d:%d:%d:%s", version, FileAccess::get_modified_time(abs_mmd_path),
+        const String cache_hash = vformat("%d:%d:%d:%s", version, get_mmd_provider()->get_modified_time(abs_mmd_path),
                                           FileAccess::get_modified_time(abs_fiz_path), abs_mmd_path)
                                           .md5_text();
         Ref<Resource> mmd_data = cache->get(cache_path, cache_hash);

@@ -1740,14 +1740,13 @@ static func _tokenize_file(abs_path:String, context:MmdImportContext, parameters
         var base_dir:String = abs_path.get_base_dir()
         abs_path = base_dir.path_join(MaszynaDataPath.resolve(base_dir, abs_path.get_file()))
 
-    var file:FileAccess = FileAccess.open(abs_path, FileAccess.READ)
-    if not file:
+    # read as the vehicles' MMD files are, of wherever they are kept (MaszynaMmdProvider)
+    if not MaszynaVehicleMmdManager.mmd_file_exists(abs_path):
         context.add_diagnostic("error", "MMD_INCLUDE_NOT_FOUND", "Cannot open MMD file: " + abs_path, abs_path)
         MaszynaFileIndexer.missing_file_add(abs_path, MaszynaFileIndexer.MASZYNA_FILE_MMD)
         context.include_depth -= 1
         return []
-    var buffer:PackedByteArray = _strip_bom(file.get_buffer(file.get_length()))
-    file.close()
+    var buffer:PackedByteArray = _strip_bom(MaszynaVehicleMmdManager.mmd_read_file(abs_path))
 
     var p := MaszynaParser.new()
     p.initialize(buffer)

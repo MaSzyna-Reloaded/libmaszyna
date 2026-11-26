@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaMmdProvider" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Where the vehicles' MMD files are read from.
+	</brief_description>
+	<description>
+		Whether an MMD file is there, what it says and when it last changed, by its absolute path. [MaszynaVehicleMmdManager] reads every MMD file, and every file one includes, through the provider it holds ([method MaszynaVehicleMmdManager.set_mmd_provider]) - [MaszynaFileMmdProvider], the disk's, unless a tool that keeps a vehicle's MMD elsewhere (an editor writing it of a description of its own) hands in one deriving from this class and overriding [method _file_exists], [method _read_file] and [method _get_modified_time]. Called on the vehicles' worker threads.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_file_exists" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns whether the file at [param abs_path] is there.
+			</description>
+		</method>
+		<method name="_get_modified_time" qualifiers="virtual const">
+			<return type="int" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns when the file at [param abs_path] last changed, as [method FileAccess.get_modified_time] tells it; 0 for none.
+			</description>
+		</method>
+		<method name="_read_file" qualifiers="virtual const">
+			<return type="PackedByteArray" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns what the file at [param abs_path] says; empty for none.
+			</description>
+		</method>
+		<method name="file_exists" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns whether the file at [param abs_path] is there.
+			</description>
+		</method>
+		<method name="get_modified_time" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns when the file at [param abs_path] last changed; 0 for none.
+			</description>
+		</method>
+		<method name="read_file" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="abs_path" type="String" />
+			<description>
+				Returns what the file at [param abs_path] says; empty for none.
+			</description>
+		</method>
+	</methods>
+</class>

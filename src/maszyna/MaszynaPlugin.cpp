@@ -52,7 +52,9 @@
 #include "maszyna/vehicles/MaszynaCarDriver.hpp"
 #include "maszyna/vehicles/MaszynaE3DRailVehicleRenderingServer.hpp"
 #include "maszyna/vehicles/MaszynaE3DRoadVehicleRenderingServer.hpp"
+#include "maszyna/vehicles/MaszynaFileMmdProvider.hpp"
 #include "maszyna/vehicles/MaszynaFizManager.hpp"
+#include "maszyna/vehicles/MaszynaMmdProvider.hpp"
 #include "maszyna/vehicles/MaszynaMoverBrakePressureTableItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverCompressorListItem.hpp"
 #include "maszyna/vehicles/MaszynaMoverDieselConfiguration.hpp"
@@ -125,6 +127,8 @@ namespace godot {
         GDREGISTER_CLASS(MaszynaE3DRailVehicleRenderingServer);
         GDREGISTER_ABSTRACT_CLASS(MaszynaPantographGeometryReader);
         GDREGISTER_CLASS(MaszynaFizManager);
+        GDREGISTER_CLASS(MaszynaMmdProvider);
+        GDREGISTER_CLASS(MaszynaFileMmdProvider);
         GDREGISTER_CLASS(MaszynaVehicleMmdManager);
         GDREGISTER_CLASS(MaszynaE3DRoadVehicleRenderingServer);
         GDREGISTER_CLASS(MaszynaTractionServer);
