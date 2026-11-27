@@ -325,8 +325,7 @@ namespace godot {
         // the passengers light nothing themselves: the interior's lights light them (#333), on its layer
         if (visual->passengers.is_valid()) {
             models->instance_set_emission_energy(visual->passengers, 0.0);
-            MaszynaE3DRenderingServer::get_instance()->instance_set_layer_mask(
-                    visual->passengers, MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER);
+            models->instance_set_layer_mask(visual->passengers, MaszynaE3DRenderingServer::VEHICLE_INTERIOR_LAYER);
         }
         maszyna->interior_light_intensity = -1.0F;
         _update_interior_lights(p_vehicle, *visual, *maszyna);
@@ -431,6 +430,18 @@ namespace godot {
         const Visual *visual = _get_visual(p_vehicle);
         ERR_FAIL_NULL(visual);
         _update_low_poly_cabs(p_vehicle, *visual);
+    }
+
+    /* An E3D low-poly interior - of the project's default backend, or named - has its cabs as
+     * submodels (cab0-cab2), and the cab shown alone gives way (_update_low_poly_cabs()); any other,
+     * a glTF one, gives way whole, as the core hides it */
+    bool MaszynaE3DRailVehicleRenderingServer::_low_poly_interior_keeps_cabins(const RID &p_vehicle) const {
+        const Visual *visual = _get_visual(p_vehicle);
+        if (visual == nullptr || visual->appearance.is_null()) {
+            return false;
+        }
+        const StringName backend = visual->appearance->get_rendering_backend();
+        return backend.is_empty() || backend == StringName(MaszynaE3DRenderingServer::BACKEND_NAME);
     }
 
     /* The low-poly interiors still following their roof light */
@@ -995,7 +1006,7 @@ namespace godot {
         const Ref<RailVehicleElectricEngine> electric_engine = engine;
         const int engine_type = engine.is_valid() ? engine->get_type() : RailVehicleEngine::NONE;
         if (engine_type != RailVehicleEngine::DIESEL && engine_type != RailVehicleEngine::DIESEL_ELECTRIC) {
-            MaszynaE3DRenderingServer::get_instance()->instance_set_smoke_intensity(p_visual.model, 1.0);
+            models->instance_set_smoke_intensity(p_visual.model, 1.0);
             return;
         }
         // particles.cpp:188-205
@@ -1030,8 +1041,7 @@ namespace godot {
         // particles already in the air, so it scales how many are born instead - the plume thins
         // out rather than stepping down as a whole (see FINDINGS.md).
         const double fill = CLAMP(diesel_engine.is_valid() ? diesel_engine->get_fill() : 0.0, 0.0, 1.0);
-        MaszynaE3DRenderingServer::get_instance()->instance_set_smoke_intensity(
-                p_visual.model, static_cast<float>(CLAMP(intensity, 0.0, 1.0) * fill));
+        models->instance_set_smoke_intensity(p_visual.model, static_cast<float>(CLAMP(intensity, 0.0, 1.0) * fill));
     }
 
     // Original engine: every low-poly cab is drawn, but in the view from inside the player's
@@ -1043,7 +1053,7 @@ namespace godot {
     void
     MaszynaE3DRailVehicleRenderingServer::_update_low_poly_cabs(const RID &p_vehicle, const Visual &p_visual) const {
         ModelRenderingServer *models = ModelRenderingServer::get_instance();
-        if (models == nullptr || !p_visual.low_poly.is_valid() || p_visual.appearance.is_null()) {
+        if (models == nullptr || !p_visual.low_poly.is_valid() || !_low_poly_interior_keeps_cabins(p_vehicle)) {
             return;
         }
         const Ref<MaszynaRailVehicleAppearance> appearance = p_visual.appearance;

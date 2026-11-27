@@ -141,7 +141,7 @@ func test_cabin_controls_are_registered_and_forwarded() -> void:
     assert_has(controls, &"main_on_bt")
     # the console "cabin <train> controls" listing formats these arrays
     assert_string_contains("\n".join(controls), "main_on_bt")
-    assert_string_contains(", ".join(CabinSystem.ACTIONS), "hold")
+    assert_string_contains(", ".join(CabinSystem.get_actions()), "hold")
     CabinSystem.act(cabin, &"battery_sw", &"toggle", true)
     assert_true(controller.get_state().get("battery_enabled", false), "battery_sw through CabinSystem switches the battery")
     var power_supply:RailVehiclePowerSupply = _power_supply()

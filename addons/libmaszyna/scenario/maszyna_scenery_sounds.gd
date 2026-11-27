@@ -102,7 +102,7 @@ func build(progressed:Callable = Callable()) -> void:
                 0.0 if heard_everywhere else minf(reach * STOP_REACH_SHARE, STOP_REACH_MAX),
                 0.0 if heard_everywhere else minf(reach * START_REACH_SHARE, START_REACH_MAX))
         _transcripts_by_name[sound_name] = MaszynaSoundCaption.from_sound_file(
-                MaszynaGameDirectory.get_game_dir().path_join(SOUNDS_DIRECTORY).path_join(sound.file))
+                MaszynaGameDirectory.data_path_resolve(SOUNDS_DIRECTORY.path_join(sound.file)))
         built_count += 1
         if progressed.is_valid():
             progressed.call(float(built_count) / _data_by_name.size())

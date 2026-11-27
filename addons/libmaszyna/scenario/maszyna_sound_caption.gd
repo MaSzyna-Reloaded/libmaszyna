@@ -18,13 +18,6 @@ const SECONDS_PER_CHARACTER:float = 0.12
 const SEPARATORS:PackedStringArray = ["[", "]", "\n"]
 ## A legacy caption's new line mark, shown as a space (uitranscripts.cpp:24)
 const LINE_MARK:String = "|"
-## UTF-8: the top two bits of a byte, what they are on a continuation byte, and the lead bytes of
-## a sequence of two, three and four bytes
-const UTF8_CONTINUATION_MASK:int = 0xC0
-const UTF8_CONTINUATION:int = 0x80
-const UTF8_LEAD_TWO:int = 0xC0
-const UTF8_LEAD_THREE:int = 0xE0
-const UTF8_LEAD_FOUR:int = 0xF0
 
 
 ## The transcript of the sound file (its full path, without its extension) in the simulation's
@@ -35,25 +28,7 @@ static func from_sound_file(sound_path:String) -> Transcript:
     var path:String = base_dir.path_join(MaszynaDataPath.resolve(base_dir, filename))
     if not FileAccess.file_exists(path):
         return null
-    var bytes:PackedByteArray = FileAccess.get_file_as_bytes(path)
-    # a valid UTF-8 sequence throughout is UTF-8, anything else is cp1250
-    var utf8:bool = true
-    var continuation_bytes:int = 0
-    for byte:int in bytes:
-        if continuation_bytes > 0:
-            utf8 = (byte & UTF8_CONTINUATION_MASK) == UTF8_CONTINUATION
-            continuation_bytes -= 1
-        elif byte >= UTF8_LEAD_FOUR:
-            continuation_bytes = 3
-        elif byte >= UTF8_LEAD_THREE:
-            continuation_bytes = 2
-        elif byte >= UTF8_LEAD_TWO:
-            continuation_bytes = 1
-        else:
-            utf8 = byte < UTF8_CONTINUATION
-        if not utf8:
-            break
-    return parse(bytes.get_string_from_utf8() if utf8 and continuation_bytes == 0 else Windows1250.decode(bytes))
+    return parse(MaszynaLegacyText.decode(FileAccess.get_file_as_bytes(path)))
 
 
 ## The transcript of a caption's text: `[show][hide]text` a line; whatever is left with no times

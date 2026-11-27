@@ -24,9 +24,12 @@ func _enter_tree() -> void:
     _vehicle_catalog_provider = MaszynaVehicleCatalogProvider.new()
     add_child(_vehicle_catalog_provider)
     VehicleCatalogServer.provider_register(MaszynaVehicleData.VEHICLE_PROVIDER, _vehicle_catalog_provider.get_instance_id())
+    # the controls the cabs of the MMD files have, for whoever builds or edits a cab
+    CabinSystem.implementation_register(MaszynaCabinImplementation.NAME, MaszynaCabinImplementation.new())
 
 
 func _exit_tree() -> void:
+    CabinSystem.implementation_unregister(MaszynaCabinImplementation.NAME)
     VehicleCatalogServer.provider_unregister(MaszynaVehicleData.VEHICLE_PROVIDER)
     _vehicle_catalog_provider.queue_free()
     _vehicle_catalog_provider = null

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MaszynaFileMmdProvider" inherits="MaszynaMmdProvider" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		The vehicles' MMD files as they are on the disk.
+	</brief_description>
+	<description>
+		The provider [MaszynaVehicleMmdManager] reads the MMD files through until another is handed in ([method MaszynaVehicleMmdManager.set_mmd_provider]). A provider of one's own derives from [MaszynaMmdProvider], not from this class: its virtual methods are not called here.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

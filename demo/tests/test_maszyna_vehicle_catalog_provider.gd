@@ -2,9 +2,12 @@ extends MaszynaGutTest
 
 ## MaszynaVehicleCatalogProvider: the vehicles of MaSzyna's index for the catalogue, of the kind
 ## their category code says (a carriage by its series letter), a livery for each skin; and the
-## MaSzyna data of a vehicle derived from the catalogue's name and livery
+## MaSzyna data of a vehicle derived from the catalogue's name and livery, and the formations its
+## index groups its skin lines in
 
 const GAME_DIR:String = "res://tests/fixtures/vehicles_bank"
+## Vehicles of a unit, its skin lines grouped by "^N" lines
+const FORMATIONS_GAME_DIR:String = "res://tests/fixtures/vehicles_formations"
 
 var _previous_game_dir:String = ""
 
@@ -70,3 +73,46 @@ func test_the_maszyna_data_of_a_vehicle_is_its_name_and_livery() -> void:
     assert_eq(vehicle.vehicle, "dynamic/pkp/e186_v1/p160dc")
     assert_eq(vehicle.data_path, "dynamic/pkp/e186_v1")
     assert_eq(vehicle.livery, "480_002-9")
+
+
+func test_a_livery_has_the_title_description_and_authors_its_index_gives() -> void:
+    var f140ms:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.ELECTRIC_LOCOMOTIVE).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("f140ms"))[0]
+    var livery:VehicleLivery = VehicleCatalogServer.livery_list(f140ms)[0]
+
+    assert_eq(livery.title, "E186 240")
+    assert_eq(livery.description, "ITL, Dresden, 01.02.2020, Alstom_Kassel")
+    assert_eq(livery.authors, PackedStringArray(["Anna Nowak", "Jan Kowalski"]))
+
+
+func test_a_livery_described_in_part_has_what_its_index_gives() -> void:
+    var p160dc:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.ELECTRIC_LOCOMOTIVE).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("p160dc"))[0]
+    var livery:VehicleLivery = VehicleCatalogServer.livery_list(p160dc)[0]
+
+    assert_eq(livery.title, "146-226")
+    assert_eq(livery.description, "DB, ?")
+
+
+func test_a_vehicles_formations_are_its_index_groups_in_their_skins() -> void:
+    MaszynaGameDirectory.save_game_dir(FORMATIONS_GAME_DIR)
+    var ra:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.MULTIPLE_UNIT).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("/ra"))[0]
+
+    var formations:Array[VehicleFormation] = VehicleCatalogServer.formation_list(ra)
+
+    assert_eq(formations.size(), 2)
+    var cars:Array[String] = []
+    for data:VehicleData in formations[1].vehicles:
+        cars.append("%s:%s" % [data.vehicle, data.livery])
+    assert_eq(cars, [
+            "dynamic/test/unit_v1/ra:blue_ra",
+            "dynamic/test/unit_v1/s_blue:blue_s",
+            "dynamic/test/unit_v1/rb:blue_rb"] as Array[String])
+
+
+func test_a_vehicle_of_no_formation_lists_none() -> void:
+    var p160dc:VehicleInfo = VehicleCatalogServer.vehicle_list(VehicleInfo.VehicleCategory.ELECTRIC_LOCOMOTIVE).filter(
+            func(info:VehicleInfo) -> bool: return info.vehicle.ends_with("p160dc"))[0]
+
+    assert_eq(VehicleCatalogServer.formation_list(p160dc).size(), 0)

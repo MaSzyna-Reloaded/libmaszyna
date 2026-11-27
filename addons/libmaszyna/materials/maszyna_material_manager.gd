@@ -562,8 +562,9 @@ func _load_generated_texture(texture_name:String) -> Texture2D:
             vehicle = VehicleServer.vehicle_get_rid_by_id(value.to_lower())
         elif not key.begins_with(DATASET_KEY_PREFIX):
             state[key] = value
-    var lua_script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + MaszynaTextureLuaNode.EXTENSION)
-    if FileAccess.file_exists(game_dir.path_join(lua_script)):
+    var lua_script:String = MaszynaGameDirectory.data_path_resolve(
+            request[0].to_lower() + MaszynaTextureLuaNode.EXTENSION)
+    if FileAccess.file_exists(lua_script):
         var node: MaszynaTextureLuaNode = MaszynaTextureLuaNode.new()
         node.texture = DrawingTexture.new()
         # upside down, as the data's textures are (abstractscreenrenderer.py:69)
@@ -572,14 +573,14 @@ func _load_generated_texture(texture_name:String) -> Texture2D:
         node.set_vehicle(vehicle)
         node.parameters = state
         node.data_dir = game_dir
-        node.script_path = game_dir.path_join(lua_script)
+        node.script_path = lua_script
         _generated_nodes.append(node)
         add_child(node)
         return node.texture
     if vehicle.is_valid():
         state.merge(PythonScreenState.timetable_state(vehicle), true)
-    var script:String = MaszynaDataPath.resolve(game_dir, request[0].to_lower() + ".py")
-    screen = PythonScreenServer.screen_create(game_dir.path_join(script).trim_suffix(".py"), Callable())
+    var script:String = MaszynaGameDirectory.data_path_resolve(request[0].to_lower() + ".py")
+    screen = PythonScreenServer.screen_create(script.trim_suffix(".py"), Callable())
     _generated_screens[texture_name] = screen
     PythonScreenServer.screen_request_render(screen, state)
     return PythonScreenServer.screen_get_texture(screen)
@@ -595,12 +596,6 @@ func _get_texture_file(model_path:String, material_name:String) -> String:
     # nor the extension the data may give it: "loads/coal.bmp" is looked for as "loads/coal" in every
     # format (Texture.cpp:1321)
     material_name = MaszynaDataPath.erase_extension(material_name)
-    var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
-    if (project_data_dir.ends_with("\\")):
-        project_data_dir = project_data_dir.trim_suffix("\\")
-    if (project_data_dir.ends_with("/")):
-        project_data_dir = project_data_dir.trim_suffix("/")
-
     var possible_paths:Array[String] = [
         model_path.path_join(material_name),
         "textures".path_join(model_path.path_join(material_name)),
@@ -610,20 +605,20 @@ func _get_texture_file(model_path:String, material_name:String) -> String:
     # the default extension in every place first, then each place with every extension
     # (find_on_disk(), Texture.cpp:1482-1504; FileExists(), utilities.cpp:334-349)
     for p:String in possible_paths:
-        var found:String = _find_data_file(project_data_dir, p + DEFAULT_TEXTURE_EXTENSION)
+        var found:String = _find_data_file(p + DEFAULT_TEXTURE_EXTENSION)
         if found:
             return found
     for p:String in possible_paths:
         for extension:String in TEXTURE_EXTENSIONS:
-            var found:String = _find_data_file(project_data_dir, p + extension)
+            var found:String = _find_data_file(p + extension)
             if found:
                 return found
     return ""
 
 
 ## The file of the game data's path, resolved as the data names it; empty when there is none
-static func _find_data_file(data_dir:String, path:String) -> String:
-    var resolved_path:String = data_dir.path_join(MaszynaDataPath.resolve(data_dir, path))
+static func _find_data_file(path:String) -> String:
+    var resolved_path:String = MaszynaGameDirectory.data_path_resolve(path)
     return resolved_path if FileAccess.file_exists(resolved_path) else ""
 
 

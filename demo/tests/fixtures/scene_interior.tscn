@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_seats"]
+size = Vector3(1.8, 0.8, 9.6)
+
+[node name="Interior" type="Node3D"]
+
+[node name="cab1" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_seats")

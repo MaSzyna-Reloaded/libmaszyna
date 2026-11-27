@@ -48,6 +48,7 @@ namespace godot {
             node->queue_free();
         }
         p_instance.root_nodes.clear();
+        p_instance.skin_parts.clear();
         p_instance.light_nodes.clear();
         p_instance.submodel_nodes.clear();
         p_instance.emissive_materials.clear();
@@ -198,6 +199,10 @@ namespace godot {
                         p_material_resolver.resolve(p_instance, submodel.ptr(), translucency));
                 if (material.is_valid()) {
                     geometry->set_material_override(material);
+                }
+                if (submodel->get_dynamic_material()) {
+                    p_instance.skin_parts.push_back(
+                            {RID(), ObjectID(geometry->get_instance_id()), submodel.ptr(), translucency});
                 }
                 if (submodel->get_material_colored()) {
                     geometry->set_instance_shader_parameter("albedo_color", submodel->get_diffuse_color());

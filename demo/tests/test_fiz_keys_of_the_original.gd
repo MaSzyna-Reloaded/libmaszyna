@@ -80,6 +80,26 @@ func test_relay_reset_buttons() -> void:
     assert_eq(switches.relay_reset_button_2, 4)
 
 
+# a Switches: line given again (dynamic/pkp/ew60_v1/ew60-ra.fiz) is read onto the same switches, as
+# LoadFIZ_Switches reads every line onto the Mover's (Mover.cpp:11371): what the later line leaves
+# out stays, but the pantograph presets, which fall back to their default
+func test_switches_given_again_keep_what_the_later_line_leaves_out() -> void:
+    var context:FizImportContext = FizImportContext.new()
+    var parser:FizTrainSwitchesParser = FizTrainSwitchesParser.new()
+    for line:String in ["Pantograph=impulse Converter=impulse PantographPresets=0|3",
+            "Pantograph=Continous RelayResetButton1=101"]:
+        var line_parser:MaszynaParser = MaszynaParser.new()
+        line_parser.initialize(line.to_utf8_buffer())
+        parser.parse(line_parser, context, "Switches:")
+    var switches:RailVehicleSwitches = context.get_part("RailVehicleSwitches")
+    assert_false(switches.pantograph_impulse, "the later line's")
+    assert_true(switches.converter_impulse, "the earlier line's, left out of the later one")
+    assert_eq(switches.relay_reset_button_1, 101)
+    assert_eq(switches.pantograph_presets, PackedInt32Array([RailVehicleSwitches.PANTOGRAPH_PRESET_NONE,
+            RailVehicleSwitches.PANTOGRAPH_PRESET_OWN_END, RailVehicleSwitches.PANTOGRAPH_PRESET_BOTH,
+            RailVehicleSwitches.PANTOGRAPH_PRESET_OTHER_END]), "back to their default")
+
+
 # LoadFIZ_TurboPos (Mover.cpp:10714) - the diesel engine's turbocharger position (SP42: TurboPos=5)
 func test_turbo_position_reaches_the_diesel_engine() -> void:
     var description:VehicleController = MaszynaFizManager.load_description_at(

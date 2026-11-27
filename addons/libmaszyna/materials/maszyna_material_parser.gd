@@ -7,7 +7,6 @@ const STOP_VALUE = [" ", ";", char(9), char(10), char(13)]
 
 func parse(model_path:String, material_file:String) -> MaszynaMaterial:
     var final_path:String = ""
-    var project_data_dir:String = MaszynaGameDirectory.get_game_dir()
     # the extension the data may give the name is no part of the file's (material.cpp:486)
     var material_name:String = MaszynaDataPath.erase_extension(material_file)
     # FIXME: move this to MaszynaMaterialManager
@@ -18,8 +17,7 @@ func parse(model_path:String, material_file:String) -> MaszynaMaterial:
         "textures".path_join(material_name + ".mat"),
     ]
     for relative_path:String in possible_paths:
-        relative_path = MaszynaDataPath.resolve(project_data_dir, relative_path)
-        var full_path:String = project_data_dir.path_join(relative_path)
+        var full_path:String = MaszynaGameDirectory.data_path_resolve(relative_path)
         if FileAccess.file_exists(full_path):
             final_path = full_path
             break

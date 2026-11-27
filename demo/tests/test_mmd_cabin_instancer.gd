@@ -1,6 +1,8 @@
 extends MaszynaGutTest
 
 const FIXTURE_PATH := "res://tests/fixtures/test_cabin.mmd"
+## The bounds of a cab definition given in place of the file's
+const EDITED_BOUNDS_MIN:Vector3 = Vector3(-3.0, 1.0, 2.0)
 
 
 func test_parse_body_model_reads_top_level_models_key():
@@ -595,3 +597,94 @@ func test_a_cab_leaves_the_vehicles_logic_alone():
 
     assert_eq(CabinSystem.vehicle_get_cab_logic(vehicle), vehicle_logic, "freed, the cab takes nothing away")
     CabinSystem.vehicle_attach_cab_logic(vehicle, null)
+
+
+## A cab whose shower hands it its definitions (an editor's cab as edited) is built of them, not of
+## its file - the fixture has no cab model, so its bounds tell
+func test_a_cab_is_built_of_the_definitions_its_shower_gives():
+    var previous_game_dir:String = MaszynaGameDirectory.get_game_dir()
+    MaszynaGameDirectory.save_game_dir(FIXTURE_PATH.get_base_dir())
+    var vehicle:RID = build_vehicle("CabDefinitionReaderTest").get_rid()
+    var cabin:MaszynaDynamicTrainCabin = MaszynaDynamicTrainCabin.new()
+    cabin.mmd_filename = FIXTURE_PATH.get_file().get_basename()
+    add_child(cabin)
+    cabin.set_cabin(RailVehicleServer.vehicle_get_cabin(vehicle, RailVehicleCabinKind.RAIL_VEHICLE_CABIN_FRONT))
+    var asked:Array[int] = []
+    var definition:MmdCabinDefinition = MmdCabinDefinition.new()
+    definition.bounds_min = EDITED_BOUNDS_MIN
+    cabin.set_definition_reader(func(cab_number:int) -> MmdCabinDefinition:
+        asked.append(cab_number)
+        return definition)
+    cabin.reload()
+
+    assert_eq(asked, [1] as Array[int], "asked for the definition of the cab shown")
+    assert_eq(cabin.camera_bound_min, EDITED_BOUNDS_MIN, "built of the definition given")
+
+    remove_child(cabin)
+    cabin.free()
+    MaszynaGameDirectory.save_game_dir(previous_game_dir)
+
+
+## One control of a cab's definition is built, taken out and built anew in the cab as it stands -
+## the other controls and the cab's model the same nodes
+func test_a_control_is_added_taken_out_and_rebuilt_in_the_cab_as_it_stands():
+    var generated := Node3D.new()
+    add_child_autofree(generated)
+    var model := Node3D.new()
+    model.name = "CabModel"
+    generated.add_child(model)
+    var handle := MeshInstance3D.new()
+    handle.name = "kran"
+    model.add_child(handle)
+    var sound_player := SfxPlayer3D.new()
+    sound_player.bank = SfxBank.new()
+    generated.add_child(sound_player)
+    var descriptor := MmdInstrumentDescriptor.new()
+    descriptor.label = "brakectrl"
+    descriptor.submodel_name = "kran"
+    var events:Array[SfxEvent] = []
+    var diagnostics:Array[Dictionary] = []
+    var nodes:Array[Node] = MmdCabinInstancer.instrument_build_into(
+            generated, descriptor, RID(), 1, Vector3.ZERO, MmdCabinInstancer.submodel_index(model),
+            sound_player, events, "", diagnostics)
+    assert_eq(nodes.size(), 1, "the handle's widget")
+    assert_true(nodes[0] is CabinKnob)
+    assert_eq(nodes[0].get_parent(), generated, "beside the cab's model")
+    assert_eq(nodes[0].get_node(nodes[0].mesh_path), handle, "on its submodel")
+
+
+
+## A control built anew starts from the pose the model builds its submodel in, not from where the
+## control it replaces left it: rebuilt again and again, it does not turn further each time
+func test_a_control_rebuilt_starts_from_its_submodels_pose_in_the_model():
+    var cabin := MaszynaDynamicTrainCabin.new()
+    add_child_autofree(cabin)
+    var generated := Node3D.new()
+    generated.name = "Generated"
+    cabin.add_child(generated)
+    cabin._generated = generated
+    var model := Node3D.new()
+    model.name = "CabModel"
+    generated.add_child(model)
+    var handle := MeshInstance3D.new()
+    handle.name = "kran"
+    model.add_child(handle)
+    var sound_player := SfxPlayer3D.new()
+    sound_player.name = "CabinControlsSfxPlayer3D"
+    sound_player.bank = SfxBank.new()
+    generated.add_child(sound_player)
+    cabin._definition = MmdCabinDefinition.new()
+    cabin._rest_transforms_keep(model)
+    var rest:Transform3D = handle.transform
+    var descriptor := MmdInstrumentDescriptor.new()
+    descriptor.label = "brakectrl"
+    descriptor.submodel_name = "kran"
+    cabin.instrument_add(descriptor)
+
+    # the control's pose, as it shows its value
+    handle.transform.basis = Basis(Vector3.UP, 1.0)
+    cabin.instrument_rebuild(descriptor)
+
+    assert_eq(handle.transform, rest, "the submodel back in the model's pose")
+    assert_eq(cabin._instrument_nodes[descriptor].size(), 1, "one widget, built anew")
+    assert_eq(cabin.instrument_submodels(descriptor), [handle] as Array[Node3D], "the submodel its widget moves")

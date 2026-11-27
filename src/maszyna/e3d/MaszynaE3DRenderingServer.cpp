@@ -33,9 +33,6 @@ namespace godot {
                 &MaszynaE3DRenderingServer::instance_get_attached_node);
         ClassDB::bind_method(D_METHOD("smoke_rebuild"), &MaszynaE3DRenderingServer::smoke_rebuild);
         ClassDB::bind_method(
-                D_METHOD("instance_set_layer_mask", "instance", "mask"),
-                &MaszynaE3DRenderingServer::instance_set_layer_mask);
-        ClassDB::bind_method(
                 D_METHOD("instance_set_visibility_range", "instance", "begin", "end"),
                 &MaszynaE3DRenderingServer::instance_set_visibility_range);
         ClassDB::bind_method(
@@ -103,9 +100,6 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("light_enable", "light"), &MaszynaE3DRenderingServer::light_enable);
         ClassDB::bind_method(D_METHOD("light_disable", "light"), &MaszynaE3DRenderingServer::light_disable);
         ClassDB::bind_method(D_METHOD("light_get_statistics"), &MaszynaE3DRenderingServer::light_get_statistics);
-        ClassDB::bind_method(
-                D_METHOD("instance_set_smoke_intensity", "instance", "intensity"),
-                &MaszynaE3DRenderingServer::instance_set_smoke_intensity);
         ClassDB::bind_method(
                 D_METHOD("environment_set_time", "hours"), &MaszynaE3DRenderingServer::environment_set_time);
         ClassDB::bind_method(
@@ -1726,6 +1720,23 @@ namespace godot {
         const MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
         ERR_FAIL_NULL_V(instance, PackedStringArray());
         return instance->skins;
+    }
+
+    void MaszynaE3DRenderingServer::instance_set_skins(const RID &p_instance, const PackedStringArray &p_skins) {
+        MaszynaE3DInstanceData *instance = instances.getptr(p_instance);
+        ERR_FAIL_NULL(instance);
+        instance->skins = p_skins;
+        {
+            // what a worker preloads for the instance's next build
+            MutexLock lock(models_mutex);
+            StreamModel *stream_model = stream_models.getptr(p_instance);
+            if (stream_model != nullptr) {
+                stream_model->skins = instance->skins;
+            }
+        }
+        if (instance->built) {
+            _get_backend(*instance).skins_apply(*instance, material_resolver);
+        }
     }
 
     void MaszynaE3DRenderingServer::instance_set_skin(const RID &p_instance, const int p_slot, const String &p_skin) {

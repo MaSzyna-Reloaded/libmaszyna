@@ -105,14 +105,6 @@
 				The offset [param submodel] of [param instance] is moved to now by [method instance_set_submodel_translation], zero for a submodel no event animated ([code]TAnimContainer::vTranslation[/code]).
 			</description>
 		</method>
-		<method name="instance_set_layer_mask">
-			<return type="void" />
-			<param index="0" name="instance" type="RID" />
-			<param index="1" name="mask" type="int" />
-			<description>
-				Render layers of an [constant ModelRenderingServer.INSTANCER_OPTIMIZED] instance.
-			</description>
-		</method>
 		<method name="instance_set_light_blink">
 			<return type="void" />
 			<param index="0" name="instance" type="RID" />
@@ -166,15 +158,6 @@
 			<param index="2" name="skin" type="String" />
 			<description>
 				The replaceable skin of [param slot] - 0 for the first, the one a submodel's material -1 names - is [param skin] from now on, and [param instance] is built again with it.
-			</description>
-		</method>
-		<method name="instance_set_smoke_intensity">
-			<return type="void" />
-			<param index="0" name="instance" type="RID" />
-			<param index="1" name="intensity" type="float" />
-			<description>
-				Spawn rate multiplier of every particle emitter of the instance, as the engine state drives it. [code]1.0[/code] is the emitter template's own rate - what a scenery chimney keeps. An [constant ModelRenderingServer.INSTANCE_KIND_DYNAMIC] instance starts at [code]0.0[/code] and spawns nothing until its client sets the rate.
-				Only the rate: nothing here may reach a particle that is already in the air. Both the process material's colour and its initial colour ramp are read on every frame, so driving either of them from the engine state steps the whole plume down together instead of letting it thin out.
 			</description>
 		</method>
 		<method name="instance_set_submodel_done_event">

@@ -20,6 +20,9 @@ const PANTOGRAPH_PRESETS: Dictionary[String, RailVehicleSwitches.PantographPrese
     "3": RailVehicleSwitches.PANTOGRAPH_PRESET_BOTH,
 }
 
+## PantographPresets= when the line gives none (LoadFIZ_Switches, Mover.cpp:11390)
+const PANTOGRAPH_PRESETS_DEFAULT: String = "0|1|3|2"
+
 var _dimmer_rows: Array[RailVehicleDimmerListItem] = []
 
 
@@ -39,9 +42,15 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
         _dimmer_rows = []
         return
 
+    # A Switches: line given again (dynamic/pkp/ew60_v1/ew60-ra.fiz, through its includes) is read
+    # onto the same switches, as LoadFIZ_Switches reads every line onto the Mover's fields: a key
+    # the line leaves out keeps the earlier line's value (extract_value's empty default), but the
+    # pantograph presets, which fall back to their default (Mover.cpp:11390)
     var kv: Dictionary = FizLineUtil.read_key_values(p)
-    var node := create_node()
-    context.add_part("RailVehicleSwitches", node)
+    var node := _get_node(context)
+    if not node:
+        node = create_node()
+        context.add_part("RailVehicleSwitches", node)
 
     if kv.has("Pantograph"):
         node.pantograph_impulse = FizLineUtil.get_string(kv, "Pantograph").to_lower() == "impulse"
@@ -56,13 +65,11 @@ func parse(p: MaszynaParser, context: FizImportContext, prefix: String = "") -> 
         node.relay_reset_button_2 = FizLineUtil.get_int(kv, "RelayResetButton2")
     if kv.has("RelayResetButton3"):
         node.relay_reset_button_3 = FizLineUtil.get_int(kv, "RelayResetButton3")
-    if kv.has("PantographPresets"):
-        var tokens: PackedStringArray = FizLineUtil.get_string(kv, "PantographPresets").split("|")
-        var presets := PackedInt32Array()
-        for token: String in tokens:
-            if PANTOGRAPH_PRESETS.has(token.strip_edges()):
-                presets.append(PANTOGRAPH_PRESETS[token.strip_edges()])
-        node.pantograph_presets = presets
+    var presets := PackedInt32Array()
+    for token: String in FizLineUtil.get_string(kv, "PantographPresets", PANTOGRAPH_PRESETS_DEFAULT).split("|"):
+        if PANTOGRAPH_PRESETS.has(token.strip_edges()):
+            presets.append(PANTOGRAPH_PRESETS[token.strip_edges()])
+    node.pantograph_presets = presets
     if kv.has("PantographPresetDefault"):
         node.pantograph_preset_default = FizLineUtil.get_int(kv, "PantographPresetDefault")
     if kv.has("ModernDimmer"):

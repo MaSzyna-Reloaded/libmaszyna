@@ -74,9 +74,8 @@ func clear_cache() -> void:
 func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:String) -> Texture2D:
     # callers spell the path with or without the leading slash, it is the same vehicle
     var key:String = "%s:%s" % [data_path.to_lower().trim_prefix("/"), skin.to_lower()]
-    var game_dir:String = MaszynaGameDirectory.get_game_dir()
-    var relative_path:String = data_path.trim_prefix("/").path_join(file_name + ".mmd")
-    var abs_mmd_path:String = game_dir.path_join(MaszynaDataPath.resolve(game_dir, relative_path))
+    var abs_mmd_path:String = MaszynaGameDirectory.data_path_resolve(
+            data_path.trim_prefix("/").path_join(file_name + ".mmd"))
     if MaszynaVehicleMmdManager.names_vehicle(abs_mmd_path):
         key += ":" + vehicle_id
     if _profiles.has(key):
@@ -84,7 +83,7 @@ func get_profile(data_path:String, file_name:String, skin:String, vehicle_id:Str
         _remember_profile(key, kept)
         return kept
 
-    var cache_path:String = _get_cache_path(key)
+    var cache_path:String = _get_cache_path(key, abs_mmd_path.get_base_dir())
     var cached:Image = await _run_in_queue(_cache.get.bind(cache_path)) as Image
     if cached:
         var texture:Texture2D = ImageTexture.create_from_image(cached)
@@ -297,8 +296,9 @@ func _ensure_viewport() -> void:
     _viewport.add_child(_camera)
 
 
-## The same vehicle is another vehicle in another game directory
-static func _get_cache_path(key:String) -> String:
+## The same vehicle is another vehicle in another directory: another game directory's, or one its
+## data path is mounted from
+static func _get_cache_path(key:String, vehicle_dir:String) -> String:
     return ("%s:%s:%d:%d" % [
-        MaszynaGameDirectory.get_game_dir(), key, PROFILE_VERSION, MaszynaE3DModel.FORMAT_VERSION
+        vehicle_dir, key, PROFILE_VERSION, MaszynaE3DModel.FORMAT_VERSION
     ]).md5_text() + ".res"

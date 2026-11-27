@@ -9,6 +9,28 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="data_path_mount">
+			<return type="void" />
+			<param index="0" name="data_path" type="String" />
+			<param index="1" name="directory" type="String" />
+			<description>
+				Reads the files below the data path [param data_path] of the game directory (e.g. [code]dynamic/pkp/ep07_v1[/code]) from [param directory] instead, whatever the letter case the data spells the path in. Mounted again, the path is read from the new directory. The game's data is read again, as for another game directory.
+			</description>
+		</method>
+		<method name="data_path_resolve" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="relative_path" type="String" />
+			<description>
+				Returns the file of a path the data names, relative to the game directory: below the longest data path mounted with [method data_path_mount], in its directory, otherwise in the game directory - found on disk whatever its letter case, as written when it is nowhere. Every reader of the game's data makes its paths files with it.
+			</description>
+		</method>
+		<method name="data_path_unmount">
+			<return type="void" />
+			<param index="0" name="data_path" type="String" />
+			<description>
+				Reads the files below the data path [param data_path] from the game directory again. The game's data is read again.
+			</description>
+		</method>
 		<method name="find_game_dirs" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
@@ -45,6 +67,11 @@
 		</method>
 	</methods>
 	<signals>
+		<signal name="data_path_mounts_changed">
+			<description>
+				Emitted when a data path is mounted or unmounted ([method data_path_mount], [method data_path_unmount]).
+			</description>
+		</signal>
 		<signal name="game_dir_changed">
 			<description>
 				Emitted when the [code]maszyna/game_dir[/code] setting changes.
